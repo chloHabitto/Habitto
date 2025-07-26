@@ -55,7 +55,7 @@ struct CountdownTimerPicker: UIViewRepresentable {
             minutesLabel.leadingAnchor.constraint(equalTo: containerView.centerXAnchor, constant: -containerView.frame.width / 6 + 20),
             
             secondsLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            secondsLabel.leadingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -containerView.frame.width / 6 + -40)
+            secondsLabel.leadingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -containerView.frame.width / 6 + -44)
         ])
         
         return containerView

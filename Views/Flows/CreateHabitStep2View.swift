@@ -14,6 +14,7 @@ struct CreateHabitStep2View: View {
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
     @State private var showingGoalSheet = false
+    @State private var showingReminderSheet = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -127,7 +128,20 @@ struct CreateHabitStep2View: View {
                             .font(.labelMedium)
                             .foregroundColor(.primaryDim)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showingReminderSheet = true
+                    }
                     .selectionRowStyle()
+                    .sheet(isPresented: $showingReminderSheet) {
+                        ReminderBottomSheet(
+                            onClose: { showingReminderSheet = false },
+                            onReminderSelected: { selectedReminder in
+                                reminder = selectedReminder
+                                showingReminderSheet = false
+                            }
+                        )
+                    }
                     
                     // Period
                     VStack(alignment: .leading, spacing: 12) {
