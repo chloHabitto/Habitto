@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AlarmItem: Identifiable {
     let id = UUID()
-    let time: Date
+    var time: Date
     var isActive: Bool
 }
 
@@ -19,6 +19,7 @@ struct ReminderBottomSheet: View {
     @State private var showingAddAlarmSheet = false
     @State private var alarms: [AlarmItem]
     @State private var isEditMode = false
+    @State private var editingAlarmIndex: Int? = nil
     
     init(onClose: @escaping () -> Void, onReminderSelected: @escaping (String) -> Void, initialAlarms: [AlarmItem] = [], onAlarmsUpdated: @escaping ([AlarmItem]) -> Void) {
         self.onClose = onClose
@@ -108,7 +109,10 @@ struct ReminderBottomSheet: View {
                         HStack(spacing: 16) {
                             if isEditMode {
                                 Button(action: {
-                                    alarms.remove(at: index)
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        alarms.remove(at: index)
+                                        isEditMode = false
+                                    }
                                 }) {
                                     Image(systemName: "minus.circle.fill")
                                         .resizable()
@@ -130,14 +134,10 @@ struct ReminderBottomSheet: View {
                                 Spacer()
                                 
                                 if isEditMode {
-                                    Button(action: {
-                                        // TODO: Edit time functionality
-                                    }) {
-                                        Image(systemName: "chevron.right")
-                                            .font(.labelMedium)
-                                            .foregroundColor(.primaryDim)
-                                    }
-                                    .frame(width: 32, height: 32)
+                                    Image(systemName: "chevron.right")
+                                        .font(.labelMedium)
+                                        .foregroundColor(.primaryDim)
+                                        .frame(width: 32, height: 32)
                                 } else {
                                     Toggle("", isOn: $alarms[index].isActive)
                                         .toggleStyle(SwitchToggleStyle(tint: .primary))
@@ -148,9 +148,21 @@ struct ReminderBottomSheet: View {
                             .padding(.vertical, 8)
                             .background(.secondaryContainer)
                             .cornerRadius(8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if isEditMode {
+                                    editingAlarmIndex = index
+                                    selectedTime = alarm.time
+                                    showingAddAlarmSheet = true
+                                }
+                            }
                         }
                         .padding(.horizontal, 24)
                         .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
+                        ))
                     }
                 }
                 .padding(.top, 16)
@@ -192,8 +204,16 @@ struct ReminderBottomSheet: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
         .sheet(isPresented: $showingAddAlarmSheet) {
-            AddAlarmSheet { newAlarm in
-                alarms.append(AlarmItem(time: newAlarm, isActive: true))
+            AddAlarmSheet(initialTime: selectedTime, isEditing: editingAlarmIndex != nil) { newTime in
+                if let editingIndex = editingAlarmIndex {
+                    // Editing existing alarm
+                    alarms[editingIndex].time = newTime
+                    editingAlarmIndex = nil
+                    isEditMode = false
+                } else {
+                    // Adding new alarm
+                    alarms.append(AlarmItem(time: newTime, isActive: true))
+                }
             }
             .presentationBackground(.regularMaterial)
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
@@ -203,8 +223,17 @@ struct ReminderBottomSheet: View {
 
 struct AddAlarmSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTime = Date()
+    @State private var selectedTime: Date
+    @State private var originalTime: Date
     let onSave: (Date) -> Void
+    let isEditing: Bool
+    
+    init(initialTime: Date = Date(), isEditing: Bool = false, onSave: @escaping (Date) -> Void) {
+        self._selectedTime = State(initialValue: initialTime)
+        self._originalTime = State(initialValue: initialTime)
+        self.isEditing = isEditing
+        self.onSave = onSave
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -241,19 +270,20 @@ struct AddAlarmSheet: View {
             
             Spacer()
             
-            // Add Button
+            // Save/Add Button
             Button(action: {
                 onSave(selectedTime)
                 dismiss()
             }) {
-                Text("Add")
+                Text(isEditing ? "Save" : "Add")
                     .font(Font.buttonText1)
                     .foregroundColor(.onPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(Color(hex: "1C274C"))
+                    .background(isEditing && selectedTime == originalTime ? Color.gray : Color(hex: "1C274C"))
                     .clipShape(Capsule())
             }
+            .disabled(isEditing && selectedTime == originalTime)
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
             
