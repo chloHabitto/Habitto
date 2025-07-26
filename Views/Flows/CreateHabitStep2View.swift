@@ -7,9 +7,16 @@ struct CreateHabitStep2View: View {
     let onSave: (Habit) -> Void
     
     @Environment(\.dismiss) private var dismiss
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
     @State private var schedule: String = "Everyday"
     @State private var goal: String = "1 time"
     @State private var reminder: String = "No reminder"
+    @State private var alarms: [AlarmItem] = []
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
@@ -116,21 +123,49 @@ struct CreateHabitStep2View: View {
                     }
                     
                     // Reminder
-                    HStack {
-                        Text("Reminder")
-                            .font(.titleMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        Text("Add")
-                            .font(.bodyLarge)
-                            .foregroundColor(.text04)
-                        Image(systemName: "chevron.right")
-                            .font(.labelMedium)
-                            .foregroundColor(.primaryDim)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        showingReminderSheet = true
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Reminder")
+                                .font(.titleMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            Text(alarms.isEmpty ? "Add" : "\(alarms.count) alarm\(alarms.count == 1 ? "" : "s")")
+                                .font(.bodyLarge)
+                                .foregroundColor(.text04)
+                            Image(systemName: "chevron.right")
+                                .font(.labelMedium)
+                                .foregroundColor(.primaryDim)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showingReminderSheet = true
+                        }
+                        
+                        if !alarms.isEmpty {
+                            VStack(spacing: 4) {
+                                ForEach(alarms) { alarm in
+                                    HStack {
+                                        Text(formatTime(alarm.time))
+                                            .font(.bodyMedium)
+                                            .foregroundColor(.text01)
+                                        Spacer()
+                                        if alarm.isActive {
+                                            Text("Active")
+                                                .font(.labelSmall)
+                                                .foregroundColor(.primary)
+                                        } else {
+                                            Text("Inactive")
+                                                .font(.labelSmall)
+                                                .foregroundColor(.text04)
+                                        }
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(.secondaryContainer)
+                                    .cornerRadius(6)
+                                }
+                            }
+                        }
                     }
                     .selectionRowStyle()
                     .sheet(isPresented: $showingReminderSheet) {
@@ -138,6 +173,16 @@ struct CreateHabitStep2View: View {
                             onClose: { showingReminderSheet = false },
                             onReminderSelected: { selectedReminder in
                                 reminder = selectedReminder
+                                showingReminderSheet = false
+                            },
+                            initialAlarms: alarms,
+                            onAlarmsUpdated: { updatedAlarms in
+                                alarms = updatedAlarms
+                                if !updatedAlarms.isEmpty {
+                                    reminder = "\(updatedAlarms.count) alarm\(updatedAlarms.count == 1 ? "" : "s")"
+                                } else {
+                                    reminder = "No reminder"
+                                }
                                 showingReminderSheet = false
                             }
                         )

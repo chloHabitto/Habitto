@@ -9,14 +9,24 @@ struct AlarmItem: Identifiable {
 struct ReminderBottomSheet: View {
     let onClose: () -> Void
     let onReminderSelected: (String) -> Void
+    let initialAlarms: [AlarmItem]
+    let onAlarmsUpdated: ([AlarmItem]) -> Void
     
     @State private var selectedReminderType: String = "Notification"
     @State private var selectedTab = 0
     @State private var selectedTime = Date()
     @State private var selectedDays: Set<String> = []
     @State private var showingAddAlarmSheet = false
-    @State private var alarms: [AlarmItem] = []
+    @State private var alarms: [AlarmItem]
     @State private var isEditMode = false
+    
+    init(onClose: @escaping () -> Void, onReminderSelected: @escaping (String) -> Void, initialAlarms: [AlarmItem] = [], onAlarmsUpdated: @escaping ([AlarmItem]) -> Void) {
+        self.onClose = onClose
+        self.onReminderSelected = onReminderSelected
+        self.initialAlarms = initialAlarms
+        self.onAlarmsUpdated = onAlarmsUpdated
+        self._alarms = State(initialValue: initialAlarms)
+    }
     
     private var selectedReminderText: String {
         if selectedTab == 0 {
@@ -80,7 +90,7 @@ struct ReminderBottomSheet: View {
             
             // Header
             VStack(alignment: .leading, spacing: 4) {
-                Text("Set Reminder")
+                Text("Reminder")
                     .font(.headlineSmallEmphasised)
                     .foregroundColor(.text01)
                 Text("Choose when you want to be reminded about this habit")
@@ -97,7 +107,7 @@ struct ReminderBottomSheet: View {
                     ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
                         HStack {
                             Text(formatTime(alarm.time))
-                                .font(.labelLarge)
+                                .font(.bodyLarge)
                                 .foregroundColor(.text01)
                             
                             Spacer()
@@ -144,8 +154,7 @@ struct ReminderBottomSheet: View {
 //                    .cornerRadius(8)
                     
                     Button("Confirm") {
-                        onReminderSelected(selectedReminderText)
-                        onClose()
+                        onAlarmsUpdated(alarms)
                     }
                     .font(Font.buttonText1)
                     .foregroundColor(.onPrimary)
@@ -158,11 +167,15 @@ struct ReminderBottomSheet: View {
             }
         }
         .background(.surface)
-        .cornerRadius(16, corners: [.topLeft, .topRight])
+        .presentationDetents([.height(400)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
         .sheet(isPresented: $showingAddAlarmSheet) {
             AddAlarmSheet { newAlarm in
                 alarms.append(AlarmItem(time: newAlarm, isActive: true))
             }
+            .presentationBackground(.regularMaterial)
+            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         }
     }
 }
@@ -190,14 +203,14 @@ struct AddAlarmSheet: View {
                     dismiss()
                 }
                 .font(.buttonText2)
-                .foregroundColor(.primary)
+                .foregroundColor(.text01)
                 .frame(width: 62, height: 44)
             }
-            .padding(.horizontal, 2)
+            .padding(.horizontal, 16)
             .padding(.vertical, 16)
             
             // Title
-            Text("Add Alarm")
+            Text("Select Time")
                 .font(.headlineSmallEmphasised)
                 .foregroundColor(.text01)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -213,13 +226,17 @@ struct AddAlarmSheet: View {
             Spacer()
         }
         .background(.surface)
-        .cornerRadius(16, corners: [.topLeft, .topRight])
+        .presentationDetents([.medium, .height(400)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
     }
 }
 
 #Preview {
     ReminderBottomSheet(
         onClose: {},
-        onReminderSelected: { _ in }
+        onReminderSelected: { _ in },
+        initialAlarms: [],
+        onAlarmsUpdated: { _ in }
     )
 } 
