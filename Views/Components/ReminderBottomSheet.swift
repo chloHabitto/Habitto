@@ -102,73 +102,82 @@ struct ReminderBottomSheet: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 4)
             
+            // Divider under header
+            Divider()
+                .background(.outline)
+                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
+            
             // Alarms List
             if !alarms.isEmpty {
-                VStack(spacing: 12) {
-                    ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
-                        HStack(spacing: 16) {
-                            if isEditMode {
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        alarms.remove(at: index)
-                                        isEditMode = false
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
+                            HStack(spacing: 16) {
+                                if isEditMode {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            alarms.remove(at: index)
+                                            isEditMode = false
+                                        }
+                                    }) {
+                                        Image(systemName: "minus.circle.fill")
+                                            .resizable()
+                                            .frame(width: 24, height: 24)
+                                            .foregroundColor(.red)
                                     }
-                                }) {
-                                    Image(systemName: "minus.circle.fill")
-                                        .resizable()
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.red)
+                                    .frame(width: 40, height: 40)
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .leading).combined(with: .opacity),
+                                        removal: .move(edge: .leading).combined(with: .opacity)
+                                    ))
                                 }
-                                .frame(width: 40, height: 40)
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .leading).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                            }
-                            
-                            HStack {
-                                Text(formatTime(alarm.time))
-                                    .font(.bodyLarge)
-                                    .foregroundColor(.text01)
                                 
-                                Spacer()
-                                
-                                if isEditMode {
-                                    Image(systemName: "chevron.right")
-                                        .font(.labelMedium)
-                                        .foregroundColor(.primaryDim)
-                                        .frame(width: 32, height: 32)
-                                } else {
-                                    Toggle("", isOn: $alarms[index].isActive)
-                                        .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                HStack {
+                                    Text(formatTime(alarm.time))
+                                        .font(.bodyLarge)
+                                        .foregroundColor(.text01)
+                                    
+                                    Spacer()
+                                    
+                                    if isEditMode {
+                                        Image(systemName: "chevron.right")
+                                            .font(.labelMedium)
+                                            .foregroundColor(.primaryDim)
+                                            .frame(width: 32, height: 32)
+                                    } else {
+                                        Toggle("", isOn: $alarms[index].isActive)
+                                            .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                    }
+                                }
+                                .padding(.leading, 24)
+                                .padding(.trailing, 16)
+                                .padding(.vertical, 8)
+                                .background(.secondaryContainer)
+                                .cornerRadius(8)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    if isEditMode {
+                                        editingAlarmIndex = index
+                                        selectedTime = alarm.time
+                                        showingAddAlarmSheet = true
+                                    }
                                 }
                             }
-                            .padding(.leading, 24)
-                            .padding(.trailing, 16)
-                            .padding(.vertical, 8)
-                            .background(.secondaryContainer)
-                            .cornerRadius(8)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if isEditMode {
-                                    editingAlarmIndex = index
-                                    selectedTime = alarm.time
-                                    showingAddAlarmSheet = true
-                                }
-                            }
+                            .padding(.horizontal, 24)
+                            .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
+                            ))
                         }
-                        .padding(.horizontal, 24)
-                        .animation(.easeInOut(duration: 0.3), value: isEditMode)
-                        .transition(.asymmetric(
-                            insertion: .scale.combined(with: .opacity),
-                            removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
-                        ))
                     }
+                    .padding(.top, 16)
+                    .padding(.bottom, 16)
                 }
-                .padding(.top, 16)
+            } else {
+                Spacer()
             }
-            
-            Spacer()
             
             // Button dock
             VStack(spacing: 0) {
@@ -200,7 +209,7 @@ struct ReminderBottomSheet: View {
             }
         }
         .background(.surface)
-        .presentationDetents([.height(400)])
+        .presentationDetents([.height(500)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
         .sheet(isPresented: $showingAddAlarmSheet) {
@@ -262,6 +271,10 @@ struct AddAlarmSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 4)
             
+            // Spacer below title
+            Spacer()
+                .frame(height: 16)
+            
             // Time Picker
             DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
                 .datePickerStyle(WheelDatePickerStyle())
@@ -289,7 +302,7 @@ struct AddAlarmSheet: View {
             
         }
         .background(.surface)
-        .presentationDetents([.medium, .height(400)])
+        .presentationDetents([.height(500)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
     }
