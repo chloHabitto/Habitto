@@ -142,7 +142,7 @@ struct CreateHabitStep2View: View {
                                 .font(.titleMedium)
                                 .foregroundColor(.text01)
                             Spacer()
-                            Text(alarms.isEmpty ? "Add" : "\(alarms.count) reminder\(alarms.count == 1 ? "" : "s")")
+                            Text(alarms.isEmpty ? "Add" : "\(alarms.filter { $0.isActive }.count) reminder\(alarms.filter { $0.isActive }.count == 1 ? "" : "s")")
                                 .font(.bodyLarge)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
@@ -160,21 +160,15 @@ struct CreateHabitStep2View: View {
                                 .padding(.vertical, 4)
                             
                             VStack(spacing: 4) {
-                                ForEach(alarms) { alarm in
+                                ForEach(alarms.filter { $0.isActive }) { alarm in
                                     HStack {
                                         Text(formatTime(alarm.time))
                                             .font(.bodyMedium)
                                             .foregroundColor(.text01)
                                         Spacer()
-                                        if alarm.isActive {
-                                            Text("Active")
-                                                .font(.labelSmall)
-                                                .foregroundColor(.primary)
-                                        } else {
-                                            Text("Inactive")
-                                                .font(.labelSmall)
-                                                .foregroundColor(.text04)
-                                        }
+                                        Text("Active")
+                                            .font(.labelSmall)
+                                            .foregroundColor(.primary)
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
@@ -195,8 +189,9 @@ struct CreateHabitStep2View: View {
                             initialAlarms: alarms,
                             onAlarmsUpdated: { updatedAlarms in
                                 alarms = updatedAlarms
-                                if !updatedAlarms.isEmpty {
-                                    reminder = "\(updatedAlarms.count) reminder\(updatedAlarms.count == 1 ? "" : "s")"
+                                let activeAlarms = updatedAlarms.filter { $0.isActive }
+                                if !activeAlarms.isEmpty {
+                                    reminder = "\(activeAlarms.count) reminder\(activeAlarms.count == 1 ? "" : "s")"
                                 } else {
                                     reminder = "No reminder"
                                 }
