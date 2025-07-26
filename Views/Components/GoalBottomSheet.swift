@@ -208,8 +208,8 @@ struct GoalBottomSheet: View {
                     
                     // 3. Countdown Timer Picker
                     VStack(spacing: 12) {
-                        Spacer()
-                            .frame(height: 16)
+//                        Spacer()
+//                            .frame(height: 16)
                         
                         CountdownTimerPicker(
                             hours: $selectedHours,
@@ -218,14 +218,17 @@ struct GoalBottomSheet: View {
                         )
 //                        .frame(height: 150)
                         .padding(.trailing, 16)
+                        Spacer()
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
-//                    .background(.red)
+//                    .padding(.top, 8)
+                    Spacer()
+                    .background(.red)
                     
 
                     
                     Spacer()
+                        .frame(height: 16)
                     
                     // 4. Confirm button dock
                     VStack {
