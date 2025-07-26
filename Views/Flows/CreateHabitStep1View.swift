@@ -76,6 +76,7 @@ struct CreateHabitStep1View: View {
                             .inputFieldStyle()
                             .contentShape(Rectangle())
                             .frame(minHeight: 48)
+                            .submitLabel(.done)
                         
                         // Description field
                         TextField("Description (Optional)", text: $description, axis: .vertical)
@@ -86,6 +87,7 @@ struct CreateHabitStep1View: View {
                             .inputFieldStyle()
                             .contentShape(Rectangle())
                             .frame(minHeight: 48)
+                            .submitLabel(.done)
                         
                         // Icon selection
                         Button(action: {
@@ -235,6 +237,11 @@ struct CreateHabitStep1View: View {
         }
         .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onAppear {
+            // Customize keyboard return button appearance globally
+            UITextField.appearance().tintColor = UIColor(Color(hex: "1C274C"))
+            UITextField.appearance().keyboardAppearance = .light
+        }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(
                 selectedIcon: $icon,
