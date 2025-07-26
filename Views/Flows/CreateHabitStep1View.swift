@@ -9,6 +9,9 @@ struct CreateHabitStep1View: View {
     let onNext: (String, String, String, Color, HabitType) -> Void
     let onCancel: () -> Void
     
+    @State private var showingIconSheet = false
+    @State private var showingColorSheet = false
+    
     static let colorOptions: [(Color, String)] = [
         (Color(red: 0.11, green: 0.15, blue: 0.30), "Navy"),
         (Color(red: 0.91, green: 0.30, blue: 0.30), "Red"),
@@ -50,7 +53,7 @@ struct CreateHabitStep1View: View {
             
             // Header
             VStack(alignment: .leading, spacing: 8) {
-                                            Text("Create Habit")
+                Text("Create Habit")
                     .font(.headlineMediumEmphasised)
                     .foregroundColor(.text01)
                 Text("Let's get started!")
@@ -68,7 +71,7 @@ struct CreateHabitStep1View: View {
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     // Description field
                     TextField("Description (Optional)", text: $description, axis: .vertical)
@@ -76,42 +79,50 @@ struct CreateHabitStep1View: View {
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     // Icon selection
-                    HStack {
-                        Text("Icon")
-                            .font(.titleMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        Text(icon == "None" ? "None" : icon)
-                            .font(.bodyLarge)
-                            .foregroundColor(.text04)
-                        Image(systemName: "chevron.right")
-                            .font(.labelMedium)
-                            .foregroundColor(.primaryDim)
-                    }
-                    .modifier(SelectionRowModifier())
-                    
-                    // Color selection
-                    HStack {
-                        Text("Colour")
-                            .font(.titleMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(color)
-                                .frame(width: 16, height: 16)
-                            Text(colorName(for: color))
+                    Button(action: {
+                        showingIconSheet = true
+                    }) {
+                        HStack {
+                            Text("Icon")
+                                .font(.titleMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            Text(icon == "None" ? "None" : icon)
                                 .font(.bodyLarge)
                                 .foregroundColor(.text04)
+                            Image(systemName: "chevron.right")
+                                .font(.labelMedium)
+                                .foregroundColor(.primaryDim)
                         }
-                        Image(systemName: "chevron.right")
-                            .font(.labelMedium)
-                            .foregroundColor(.primaryDim)
                     }
-                    .modifier(SelectionRowModifier())
+                    .selectionRowStyle()
+                    
+                    // Color selection
+                    Button(action: {
+                        showingColorSheet = true
+                    }) {
+                        HStack {
+                            Text("Colour")
+                                .font(.titleMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(color)
+                                    .frame(width: 16, height: 16)
+                                Text(colorName(for: color))
+                                    .font(.bodyLarge)
+                                    .foregroundColor(.text04)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.labelMedium)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
                     
                     // Habit type selection
                     VStack(alignment: .leading, spacing: 12) {
@@ -139,7 +150,7 @@ struct CreateHabitStep1View: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                                                                .background(habitType == .formation ? .primary : .primaryContainer)
+                                .background(habitType == .formation ? .primary : .primaryContainer)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(.outline, lineWidth: 1.5)
@@ -214,15 +225,46 @@ struct CreateHabitStep1View: View {
         }
         .background(.surface2)
         .navigationBarHidden(true)
+        .sheet(isPresented: $showingIconSheet) {
+            IconBottomSheet(
+                selectedIcon: $icon,
+                onClose: { showingIconSheet = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingColorSheet) {
+            ColorBottomSheet(
+                onClose: { showingColorSheet = false },
+                onColorSelected: { selectedColor in
+                    color = selectedColor
+                    showingColorSheet = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
     }
     
     private func colorName(for color: Color) -> String {
-        for (optionColor, name) in Self.colorOptions {
+        // Match the colors from ColorBottomSheet
+        let colorOptions: [(Color, String)] = [
+            (Color(hex: "222222"), "Black"),
+            (.primary, "Navy"),
+            (Color(hex: "6096FD"), "Blue"),
+            (Color(hex: "CB30E0"), "Purple"),
+            (Color(hex: "FF2D55"), "Red"),
+            (Color(hex: "FF7838"), "Orange"),
+            (Color(hex: "34C759"), "Green"),
+            (Color(hex: "21EAF1"), "Teal")
+        ]
+        
+        for (optionColor, name) in colorOptions {
             if color == optionColor {
                 return name
             }
         }
-        return "Navy"
+        return "Navy" // Default fallback
     }
 }
 

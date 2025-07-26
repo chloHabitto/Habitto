@@ -15,72 +15,91 @@ struct CreateHabitStep2View: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Cancel button (same as Step 1)
             HStack {
-                Button(action: goBack) {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.primary)
+                Spacer()
+                Button("Cancel") {
+                    dismiss()
                 }
-                Spacer()
-                Text("Step 2")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-                Spacer()
-                Color.clear.frame(width: 24)
+                .font(.buttonText2)
+                .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
             
+            // Progress indicator (both filled for Step 2)
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(.primaryDim)
+                    .frame(width: 32, height: 8)
+                Rectangle()
+                    .fill(.primaryDim)
+                    .frame(width: 32, height: 8)
+            }
+            .frame(width: 64, height: 8)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            
+            // Header (same as Step 1)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Create Habit")
+                    .font(.headlineMediumEmphasised)
+                    .foregroundColor(.text01)
+                Text("Let's get started!")
+                    .font(.titleSmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Schedule
-                    VStack(alignment: .leading, spacing: 8) {
+                    HStack {
                         Text("Schedule")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        HStack {
-                            Text(schedule)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("Change") {
-                                schedule = "Daily"
-                            }
-                        }
-                        .modifier(InputFieldModifier())
+                            .font(.titleMedium)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        Text("Everyday")
+                            .font(.bodyLarge)
+                            .foregroundColor(.text04)
+                        Image(systemName: "chevron.right")
+                            .font(.labelMedium)
+                            .foregroundColor(.primaryDim)
                     }
+                    .selectionRowStyle()
                     
                     // Goal
-                    VStack(alignment: .leading, spacing: 8) {
+                    HStack {
                         Text("Goal")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        HStack {
-                            Text(goal)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("Change") {
-                                goal = "1 time"
-                            }
-                        }
-                        .modifier(InputFieldModifier())
+                            .font(.titleMedium)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        Text("1 time")
+                            .font(.bodyLarge)
+                            .foregroundColor(.text04)
+                        Image(systemName: "chevron.right")
+                            .font(.labelMedium)
+                            .foregroundColor(.primaryDim)
                     }
+                    .selectionRowStyle()
                     
                     // Reminder
-                    VStack(alignment: .leading, spacing: 8) {
+                    HStack {
                         Text("Reminder")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        HStack {
-                            Text(reminder)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("Add") {
-                                reminder = "9:00 AM"
-                            }
-                        }
-                        .modifier(InputFieldModifier())
+                            .font(.titleMedium)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        Text("Add")
+                            .font(.bodyLarge)
+                            .foregroundColor(.text04)
+                        Image(systemName: "chevron.right")
+                            .font(.labelMedium)
+                            .foregroundColor(.primaryDim)
                     }
+                    .selectionRowStyle()
                     
                     // Period
                     VStack(alignment: .leading, spacing: 12) {
@@ -90,34 +109,29 @@ struct CreateHabitStep2View: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Start Date")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                                HStack {
-                                    Text("Today")
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    Button("Change") {
-                                        startDate = Date()
-                                    }
-                                }
-                                .modifier(InputFieldModifier())
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.text05)
+                                Text("Today")
+                                    .font(.bodyLarge)
+                                    .foregroundColor(.text04)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                .inputFieldStyle()
                             }
+                            .frame(maxWidth: .infinity)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("End Date")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                                HStack {
-                                    Text("Not Selected")
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Button("Set") {
-                                        endDate = Date().addingTimeInterval(30 * 24 * 60 * 60) // 30 days
-                                    }
-                                }
-                                .modifier(InputFieldModifier())
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.text05)
+                                Text("Not Selected")
+                                    .font(.bodyLarge)
+                                    .foregroundColor(.text04)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                .inputFieldStyle()
                             }
+                            .frame(maxWidth: .infinity)
                         }
                     }
+                    .selectionRowStyle()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -125,35 +139,53 @@ struct CreateHabitStep2View: View {
             
             Spacer()
             
-            // Save Button
-            Button(action: {
-                let newHabit = Habit(
-                    name: step1Data.0,
-                    description: step1Data.1,
-                    icon: step1Data.2,
-                    color: step1Data.3,
-                    habitType: step1Data.4,
-                    schedule: schedule,
-                    goal: goal,
-                    reminder: reminder,
-                    startDate: startDate,
-                    endDate: endDate
-                )
-                onSave(newHabit)
-                dismiss()
-            }) {
-                Text("Save")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(step1Data.3)
-                    .clipShape(Capsule())
+            // Bottom Buttons
+            HStack(spacing: 12) {
+                // Back Button
+                Button(action: {
+                    goBack()
+                }) {
+                    Image("Icon-leftArrow")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.onPrimaryContainer)
+                        .frame(width: 48, height: 48)
+                        .background(.primaryContainer)
+                        .clipShape(Circle())
+                }
+                
+                Spacer()
+                
+                // Save Button
+                Button(action: {
+                    let newHabit = Habit(
+                        name: step1Data.0,
+                        description: step1Data.1,
+                        icon: step1Data.2,
+                        color: step1Data.3,
+                        habitType: step1Data.4,
+                        schedule: schedule,
+                        goal: goal,
+                        reminder: reminder,
+                        startDate: startDate,
+                        endDate: endDate
+                    )
+                    onSave(newHabit)
+                    dismiss()
+                }) {
+                    Text("Save")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: UIScreen.main.bounds.width * 0.5)
+                        .padding(.vertical, 16)
+                        .background(step1Data.3)
+                        .clipShape(Capsule())
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .background(Color(.systemBackground))
+        .background(.surface2)
         .navigationBarHidden(true)
     }
 }

@@ -4,33 +4,8 @@ import SwiftUI
 // This file demonstrates how to efficiently organize Create Habit step code
 
 // MARK: - Common Modifiers
-struct InputFieldModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
-            )
-            .cornerRadius(12)
-    }
-}
-
-struct SelectionRowModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
-            )
-            .cornerRadius(12)
-    }
-}
+// Note: InputFieldModifier and SelectionRowModifier are now defined in CreateHabitModifiers.swift
+// to avoid conflicts and ensure consistency across the app.
 
 // 1. REUSABLE COMPONENTS (in CreateHabitStepBaseView.swift)
 /*
@@ -259,7 +234,7 @@ struct SelectionRow: View {
                     .foregroundColor(.primaryDim)
             }
         }
-        .modifier(SelectionRowModifier())
+        .selectionRowStyle()
     }
 }
 
@@ -303,7 +278,7 @@ struct ButtonGroupRow: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .modifier(SelectionRowModifier())
+        .selectionRowStyle()
     }
 }
 
@@ -396,14 +371,14 @@ struct CreateHabitStep1Efficient: View {
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     TextField("Description (Optional)", text: $description, axis: .vertical)
                         .lineLimit(3...6)
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     // Selection Rows (reusable components)
                     SelectionRow(
@@ -432,7 +407,7 @@ struct CreateHabitStep1Efficient: View {
                             .font(.labelMedium)
                             .foregroundColor(.primaryDim)
                     }
-                    .modifier(SelectionRowModifier())
+                    .selectionRowStyle()
                     
                     // Button Group (reusable component)
                     ButtonGroupRow(
@@ -538,19 +513,19 @@ struct CreateHabitStep2Efficient: View {
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     TextField("Goal", text: $goal)
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     TextField("Reminder", text: $reminder)
                         .font(.bodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
-                        .modifier(InputFieldModifier())
+                        .inputFieldStyle()
                     
                     // Selection Rows (reusable components)
                     SelectionRow(
