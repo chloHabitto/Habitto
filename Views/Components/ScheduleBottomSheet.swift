@@ -4,7 +4,7 @@ struct ScheduleBottomSheet: View {
     let onClose: () -> Void
     let onScheduleSelected: (String) -> Void
     
-    @State private var selectedSchedule: String = "Everyday"
+    @State private var selectedSchedule: String = "Daily"
     @State private var selectedTab = 0
     
     private let scheduleOptions: [String] = [
@@ -43,7 +43,7 @@ struct ScheduleBottomSheet: View {
             if selectedTab == 0 {
                 VStack(spacing: 0) {
                     // 1. VStack: Text and Pill
-                    VStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("I want to repeat this habit")
                             .font(.titleMedium)
                             .foregroundColor(.text01)
@@ -58,9 +58,11 @@ struct ScheduleBottomSheet: View {
                                 .clipShape(Capsule())
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 4)
                     .padding(.top, 16)
                     .padding(.horizontal, 16)
-                    .background(.red)
+//                    .background(.red)
 
                     // 2. Divider
                     Divider()
