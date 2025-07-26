@@ -105,33 +105,53 @@ struct ReminderBottomSheet: View {
             if !alarms.isEmpty {
                 VStack(spacing: 12) {
                     ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
-                        HStack {
-                            Text(formatTime(alarm.time))
-                                .font(.bodyLarge)
-                                .foregroundColor(.text01)
-                            
-                            Spacer()
-                            
+                        HStack(spacing: 12) {
                             if isEditMode {
                                 Button(action: {
                                     alarms.remove(at: index)
                                 }) {
-                                    Image("Icon-close")
+                                    Image("Icon-minus")
                                         .resizable()
                                         .frame(width: 16, height: 16)
-                                        .foregroundColor(.text04)
+                                        .foregroundColor(.white)
                                 }
                                 .frame(width: 32, height: 32)
-                            } else {
-                                Toggle("", isOn: $alarms[index].isActive)
-                                    .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                .background(Color.red)
+                                .clipShape(Circle())
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .leading).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
                             }
+                            
+                            HStack {
+                                Text(formatTime(alarm.time))
+                                    .font(.bodyLarge)
+                                    .foregroundColor(.text01)
+                                
+                                Spacer()
+                                
+                                if isEditMode {
+                                    Button(action: {
+                                        // TODO: Edit time functionality
+                                    }) {
+                                        Image(systemName: "chevron.right")
+                                            .font(.labelMedium)
+                                            .foregroundColor(.primaryDim)
+                                    }
+                                    .frame(width: 32, height: 32)
+                                } else {
+                                    Toggle("", isOn: $alarms[index].isActive)
+                                        .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 8)
+                            .background(.secondaryContainer)
+                            .cornerRadius(8)
                         }
                         .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(.secondaryContainer)
-                        .cornerRadius(8)
-                        .padding(.horizontal, 24)
+                        .animation(.easeInOut(duration: 0.3), value: isEditMode)
                     }
                 }
                 .padding(.top, 16)
