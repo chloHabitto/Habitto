@@ -13,6 +13,17 @@ struct CreateHabitStep2View: View {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+    
+    private func isToday(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        return calendar.isDateInToday(date)
+    }
     @State private var schedule: String = "Everyday"
     @State private var goal: String = "1 time"
     @State private var reminder: String = "No reminder"
@@ -22,6 +33,8 @@ struct CreateHabitStep2View: View {
     @State private var showingScheduleSheet = false
     @State private var showingGoalSheet = false
     @State private var showingReminderSheet = false
+    @State private var showingPeriodSheet = false
+    @State private var isSelectingStartDate = true
     
     var body: some View {
         VStack(spacing: 0) {
@@ -198,31 +211,59 @@ struct CreateHabitStep2View: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.primary)
                         HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Start Date")
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.text05)
-                                Text("Today")
-                                    .font(.bodyLarge)
-                                    .foregroundColor(.text04)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                .inputFieldStyle()
+                            // Start Date
+                            Button(action: {
+                                isSelectingStartDate = true
+                                showingPeriodSheet = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Start Date")
+                                        .font(.bodyMedium)
+                                        .foregroundColor(.text05)
+                                    Text(isToday(startDate) ? "Today" : formatDate(startDate))
+                                        .font(.bodyLarge)
+                                        .foregroundColor(.text04)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .inputFieldStyle()
+                                }
                             }
                             .frame(maxWidth: .infinity)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("End Date")
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.text05)
-                                Text("Not Selected")
-                                    .font(.bodyLarge)
-                                    .foregroundColor(.text04)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                .inputFieldStyle()
+                            
+                            // End Date
+                            Button(action: {
+                                isSelectingStartDate = false
+                                showingPeriodSheet = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("End Date")
+                                        .font(.bodyMedium)
+                                        .foregroundColor(.text05)
+                                    Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
+                                        .font(.bodyLarge)
+                                        .foregroundColor(.text04)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .inputFieldStyle()
+                                }
                             }
                             .frame(maxWidth: .infinity)
                         }
                     }
                     .selectionRowStyle()
+                    .sheet(isPresented: $showingPeriodSheet) {
+                        PeriodBottomSheet(
+                            isSelectingStartDate: isSelectingStartDate,
+                            startDate: startDate,
+                            initialDate: isSelectingStartDate ? startDate : (endDate ?? Date()),
+                            onStartDateSelected: { selectedDate in
+                                startDate = selectedDate
+                                showingPeriodSheet = false
+                            },
+                            onEndDateSelected: { selectedDate in
+                                endDate = selectedDate
+                                showingPeriodSheet = false
+                            }
+                        )
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)

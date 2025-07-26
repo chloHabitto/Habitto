@@ -1,0 +1,224 @@
+import SwiftUI
+
+struct PeriodBottomSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedDate: Date
+    @State private var currentMonth: Date
+    let isSelectingStartDate: Bool
+    let startDate: Date
+    let onStartDateSelected: (Date) -> Void
+    let onEndDateSelected: (Date) -> Void
+    
+    init(isSelectingStartDate: Bool, startDate: Date, initialDate: Date = Date(), onStartDateSelected: @escaping (Date) -> Void, onEndDateSelected: @escaping (Date) -> Void) {
+        self.isSelectingStartDate = isSelectingStartDate
+        self.startDate = startDate
+        self._selectedDate = State(initialValue: initialDate)
+        self._currentMonth = State(initialValue: initialDate)
+        self.onStartDateSelected = onStartDateSelected
+        self.onEndDateSelected = onEndDateSelected
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            BottomSheetHeader(
+                title: isSelectingStartDate ? "Start Date" : "End Date",
+                description: "Select a date for your habit period",
+                onClose: {
+                    dismiss()
+                }
+            )
+            
+            // Custom Calendar View
+            VStack(spacing: 24) {
+                // Month Navigation
+                HStack {
+                    Button(action: {
+                        withAnimation {
+                            currentMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+                        }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.text01)
+                            .frame(width: 44, height: 44)
+                    }
+                    
+                    Spacer()
+                    
+                    Text(monthYearString(from: currentMonth))
+                        .font(.titleMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation {
+                            currentMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+                        }
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.text01)
+                            .frame(width: 44, height: 44)
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                // Calendar Grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                    // Day headers
+                    ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+                        Text(day)
+                            .font(.labelMedium)
+                            .foregroundColor(.text05)
+                            .frame(height: 32)
+                    }
+                    
+                    // Calendar days
+                    ForEach(daysInMonth(), id: \.self) { date in
+                        if let date = date {
+                            Button(action: {
+                                if isSelectingStartDate && !isDateInPast(date) {
+                                    selectedDate = date
+                                } else if !isSelectingStartDate && !isDateBeforeOrEqualToStartDate(date) {
+                                    selectedDate = date
+                                }
+                            }) {
+                                Text("\(Calendar.current.component(.day, from: date))")
+                                    .font(.bodyMedium)
+                                    .foregroundColor(dateColor(for: date))
+                                    .frame(width: 40, height: 40)
+                                    .background(backgroundForDate(date))
+                                    .clipShape(Circle())
+                            }
+                            .frame(width: 48, height: 48)
+                            .contentShape(Rectangle())
+                            .disabled((isSelectingStartDate && isDateInPast(date)) || (!isSelectingStartDate && isDateBeforeOrEqualToStartDate(date)))
+                        } else {
+                            Color.clear
+                                .frame(width: 40, height: 40)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.vertical, 20)
+            
+            Spacer()
+            
+            // Button dock
+            VStack(spacing: 0) {
+                Divider()
+                
+                HStack(spacing: 12) {
+                    Button("Confirm") {
+                        if isSelectingStartDate {
+                            onStartDateSelected(selectedDate)
+                        } else {
+                            onEndDateSelected(selectedDate)
+                        }
+                        dismiss()
+                    }
+                    .font(Font.buttonText1)
+                    .foregroundColor(.onPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(Color(hex: "1C274C"))
+                    .clipShape(Capsule())
+                    .contentShape(Rectangle())
+                }
+                .padding(24)
+            }
+        }
+        .background(.surface)
+        .presentationDetents([.height(700)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
+    }
+    
+    // Helper functions
+    private func monthYearString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func daysInMonth() -> [Date?] {
+        let calendar = Calendar.current
+        let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
+        let firstWeekday = calendar.component(.weekday, from: startOfMonth)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 0
+        
+        var days: [Date?] = []
+        
+        // Add empty cells for days before the first day of the month
+        for _ in 1..<firstWeekday {
+            days.append(nil)
+        }
+        
+        // Add all days in the month
+        for day in 1...daysInMonth {
+            if let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) {
+                days.append(date)
+            }
+        }
+        
+        // Add empty cells to complete the grid (6 rows * 7 columns = 42 cells)
+        while days.count < 42 {
+            days.append(nil)
+        }
+        
+        return days
+    }
+    
+    private func dateColor(for date: Date) -> Color {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        if calendar.isDate(date, inSameDayAs: selectedDate) {
+            return .onPrimary
+        } else if calendar.isDate(date, inSameDayAs: today) {
+            return .primary
+        } else if isSelectingStartDate && isDateInPast(date) {
+            return .text06
+        } else if !isSelectingStartDate && isDateBeforeOrEqualToStartDate(date) {
+            return .text06
+        } else {
+            return .text01
+        }
+    }
+    
+    private func isDateInPast(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
+    }
+    
+    private func isDateBeforeOrEqualToStartDate(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        return calendar.compare(date, to: startDate, toGranularity: .day) != .orderedDescending
+    }
+    
+    private func backgroundForDate(_ date: Date) -> Color {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        if calendar.isDate(date, inSameDayAs: selectedDate) {
+            return Color(hex: "1C274C")
+        } else if calendar.isDate(date, inSameDayAs: today) && !calendar.isDate(date, inSameDayAs: selectedDate) {
+            return Color(hex: "1C274C").opacity(0.2)
+        } else if isSelectingStartDate && isDateInPast(date) {
+            return Color.clear
+        } else {
+            return Color.clear
+        }
+    }
+}
+
+#Preview {
+    PeriodBottomSheet(
+        isSelectingStartDate: true,
+        startDate: Date(),
+        onStartDateSelected: { _ in },
+        onEndDateSelected: { _ in }
+    )
+} 
