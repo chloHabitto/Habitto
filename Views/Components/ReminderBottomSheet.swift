@@ -105,19 +105,17 @@ struct ReminderBottomSheet: View {
             if !alarms.isEmpty {
                 VStack(spacing: 12) {
                     ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
-                        HStack(spacing: 12) {
+                        HStack(spacing: 16) {
                             if isEditMode {
                                 Button(action: {
                                     alarms.remove(at: index)
                                 }) {
-                                    Image("Icon-minus")
+                                    Image(systemName: "minus.circle.fill")
                                         .resizable()
-                                        .frame(width: 16, height: 16)
-                                        .foregroundColor(.white)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundColor(.red)
                                 }
-                                .frame(width: 32, height: 32)
-                                .background(Color.red)
-                                .clipShape(Circle())
+                                .frame(width: 40, height: 40)
                                 .transition(.asymmetric(
                                     insertion: .move(edge: .leading).combined(with: .opacity),
                                     removal: .move(edge: .leading).combined(with: .opacity)
@@ -145,7 +143,8 @@ struct ReminderBottomSheet: View {
                                         .toggleStyle(SwitchToggleStyle(tint: .primary))
                                 }
                             }
-                            .padding(.horizontal, 24)
+                            .padding(.leading, 24)
+                            .padding(.trailing, 16)
                             .padding(.vertical, 8)
                             .background(.secondaryContainer)
                             .cornerRadius(8)
