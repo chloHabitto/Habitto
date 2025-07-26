@@ -153,15 +153,17 @@ struct ReminderBottomSheet: View {
 //                    .foregroundColor(.onSecondaryContainer)
 //                    .cornerRadius(8)
                     
-                    Button("Confirm") {
+                    Button(action: {
                         onAlarmsUpdated(alarms)
+                    }) {
+                        Text("Confirm")
+                            .font(Font.buttonText1)
+                            .foregroundColor(.onPrimary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color(hex: "1C274C"))
+                            .clipShape(Capsule())
                     }
-                    .font(Font.buttonText1)
-                    .foregroundColor(.onPrimary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color(hex: "1C274C"))
-                    .clipShape(Capsule())
                 }
                 .padding(24)
             }
@@ -189,24 +191,19 @@ struct AddAlarmSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Button("Cancel") {
+                Button(action: {
                     dismiss()
+                }) {
+                    Image("Icon-leftArrow")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.text01)
                 }
-                .font(.buttonText2)
-                .foregroundColor(.text01)
-                .frame(width: 62, height: 44)
+                .frame(width: 48, height: 48)
                 
                 Spacer()
-                
-                Button("Save") {
-                    onSave(selectedTime)
-                    dismiss()
-                }
-                .font(.buttonText2)
-                .foregroundColor(.text01)
-                .frame(width: 62, height: 44)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 4)
             .padding(.vertical, 16)
             
             // Title
@@ -224,6 +221,23 @@ struct AddAlarmSheet: View {
                 .padding(.horizontal, 24)
             
             Spacer()
+            
+            // Add Button
+            Button(action: {
+                onSave(selectedTime)
+                dismiss()
+            }) {
+                Text("Add")
+                    .font(Font.buttonText1)
+                    .foregroundColor(.onPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color(hex: "1C274C"))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+            
         }
         .background(.surface)
         .presentationDetents([.medium, .height(400)])
