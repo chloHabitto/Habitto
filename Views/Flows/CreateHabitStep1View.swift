@@ -72,6 +72,8 @@ struct CreateHabitStep1View: View {
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
+                        .contentShape(Rectangle())
+                        .frame(minHeight: 48)
                     
                     // Description field
                     TextField("Description (Optional)", text: $description, axis: .vertical)
@@ -80,6 +82,8 @@ struct CreateHabitStep1View: View {
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
+                        .contentShape(Rectangle())
+                        .frame(minHeight: 48)
                     
                     // Icon selection
                     Button(action: {
