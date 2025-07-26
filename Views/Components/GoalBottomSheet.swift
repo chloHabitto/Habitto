@@ -95,7 +95,7 @@ struct GoalBottomSheet: View {
                     // 2. Divider
                     Divider()
                         .background(.outline)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 20)
                         .padding(.horizontal, 16)
                     
                     // 3. Stepper
@@ -203,7 +203,7 @@ struct GoalBottomSheet: View {
                     // 2. Divider
                     Divider()
                         .background(.outline)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 20)
                         .padding(.horizontal, 16)
                     
                     // 3. Countdown Timer Picker
@@ -259,7 +259,7 @@ struct GoalBottomSheet: View {
             Spacer()
         }
         .background(.surface)
-        .presentationDetents([.large, .height(600)])
+        .presentationDetents([.large, .height(700)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
     }

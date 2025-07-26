@@ -165,7 +165,7 @@ struct ScheduleBottomSheet: View {
                     // 2. Divider
                     Divider()
                         .background(.outline)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 20)
                         .padding(.horizontal, 16)
 
                     // 3. Segmented Picker
@@ -298,7 +298,7 @@ struct ScheduleBottomSheet: View {
                     // 2. Divider
                     Divider()
                         .background(.outline)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 20)
                         .padding(.horizontal, 16)
                     
                     // 3. Segmented Picker
@@ -456,7 +456,7 @@ struct ScheduleBottomSheet: View {
             Spacer()
         }
         .background(.surface)
-        .presentationDetents([.large, .height(600)])
+        .presentationDetents([.large, .height(700)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
     }
