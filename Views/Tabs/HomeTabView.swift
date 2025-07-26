@@ -17,62 +17,63 @@ struct HomeTabView: View {
             VStack(spacing: 0) {
                 dateSection
                 weeklyCalendar
-                                 VStack(spacing: 0) {
-                     // Stats row content (tab bar)
-                     VStack(spacing: 0) {
-                         HStack(spacing: 0) {
-                             ForEach(0..<stats.count, id: \.self) { idx in
-                                 Button(action: { selectedStatsTab = idx }) {
-                                     HStack(spacing: 4) {
-                                         Text(stats[idx].0)
-                                             .font(.system(size: 15, weight: .semibold))
-                                             .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                                         Text("\(stats[idx].1)")
-                                             .font(.system(size: 15, weight: .semibold))
-                                             .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                                     }
-                                     .padding(.horizontal, 16)
-                                     .padding(.vertical, 8)
-                                     .background(GeometryReader { geo in
-                                         Color.clear
-                                             .preference(key: TabWidthPreferenceKey.self, value: [idx: geo.size.width])
-                                     })
-                                 }
-                                 .buttonStyle(PlainButtonStyle())
-                             }
-                             Spacer()
-                         }
-                         .background(Color.white)
-                         .onPreferenceChange(TabWidthPreferenceKey.self) { value in
-                             for (idx, width) in value {
-                                 if tabWidths.count > idx {
-                                     tabWidths[idx] = width
-                                 }
-                             }
-                         }
-                         
-                         // Colored underline for selected tab
-                         GeometryReader { geo in
-                             let xOffset = tabWidths.prefix(selectedStatsTab).reduce(0, +)
-                             Rectangle()
-                                 .fill(selectedColor)
-                                 .frame(width: tabWidths[selectedStatsTab], height: 3)
-                                 .offset(x: xOffset, y: 0)
-                                 .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
-                         }
-                         .frame(height: 3)
-                         
-                         // Gray underline directly under the colored underline
-                         Rectangle()
-                             .fill(Color(red: 0.91, green: 0.93, blue: 0.97))
-                             .frame(height: 1)
-                             .frame(maxWidth: .infinity)
-                     }
-                     .padding(.horizontal, 0)
-                     .padding(.top, 2)
-                     .padding(.bottom, 0)
-                     .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-                 }
+                
+                VStack(spacing: 0) {
+                    // Stats row content (tab bar)
+                    VStack(spacing: 0) {
+                        HStack(spacing: 0) {
+                            ForEach(0..<stats.count, id: \.self) { idx in
+                                Button(action: { selectedStatsTab = idx }) {
+                                    HStack(spacing: 4) {
+                                        Text(stats[idx].0)
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
+                                        Text("\(stats[idx].1)")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(GeometryReader { geo in
+                                        Color.clear
+                                            .preference(key: TabWidthPreferenceKey.self, value: [idx: geo.size.width])
+                                    })
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                            Spacer()
+                        }
+                        .background(Color.white)
+                        .onPreferenceChange(TabWidthPreferenceKey.self) { value in
+                            for (idx, width) in value {
+                                if tabWidths.count > idx {
+                                    tabWidths[idx] = width
+                                }
+                            }
+                        }
+                        
+                        // Colored underline for selected tab
+                        GeometryReader { geo in
+                            let xOffset = tabWidths.prefix(selectedStatsTab).reduce(0, +)
+                            Rectangle()
+                                .fill(selectedColor)
+                                .frame(width: tabWidths[selectedStatsTab], height: 3)
+                                .offset(x: xOffset, y: 0)
+                                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+                        }
+                        .frame(height: 3)
+                        
+                        // Gray underline directly under the colored underline
+                        Rectangle()
+                            .fill(Color(red: 0.91, green: 0.93, blue: 0.97))
+                            .frame(height: 1)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 0)
+                    .padding(.top, 2)
+                    .padding(.bottom, 0)
+                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                }
             }
             .padding(.horizontal, 0)
             .padding(.bottom, 0)

@@ -7,12 +7,13 @@ struct CreateHabitStep2View: View {
     let onSave: (Habit) -> Void
     
     @Environment(\.dismiss) private var dismiss
-    @State private var schedule: String = "Daily"
+    @State private var schedule: String = "Everyday"
     @State private var goal: String = "1 time"
     @State private var reminder: String = "No reminder"
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
+    @State private var showingGoalSheet = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -86,19 +87,32 @@ struct CreateHabitStep2View: View {
                     }
                     
                     // Goal
-                    HStack {
-                        Text("Goal")
-                            .font(.titleMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        Text("1 time")
-                            .font(.bodyLarge)
-                            .foregroundColor(.text04)
-                        Image(systemName: "chevron.right")
-                            .font(.labelMedium)
-                            .foregroundColor(.primaryDim)
+                    Button(action: {
+                        showingGoalSheet = true
+                    }) {
+                        HStack {
+                            Text("Goal")
+                                .font(.titleMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            Text(goal)
+                                .font(.bodyLarge)
+                                .foregroundColor(.text04)
+                            Image(systemName: "chevron.right")
+                                .font(.labelMedium)
+                                .foregroundColor(.primaryDim)
+                        }
+                        .selectionRowStyle()
                     }
-                    .selectionRowStyle()
+                    .sheet(isPresented: $showingGoalSheet) {
+                        GoalBottomSheet(
+                            onClose: { showingGoalSheet = false },
+                            onGoalSelected: { selectedGoal in
+                                goal = selectedGoal
+                                showingGoalSheet = false
+                            }
+                        )
+                    }
                     
                     // Reminder
                     HStack {

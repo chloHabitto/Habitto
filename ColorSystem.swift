@@ -130,6 +130,7 @@ struct ColorTokens {
     static let error = ColorPrimitives.red500
     static let errorBackground = ColorPrimitives.red50
     static let disabledBackground = ColorPrimitives.grey100
+    static let onDisabledBackground = ColorPrimitives.grey400
 }
 
 // MARK: - Color Extensions
@@ -207,6 +208,7 @@ extension Color {
     static let error = ColorTokens.error
     static let errorBackground = ColorTokens.errorBackground
     static let disabledBackground = ColorTokens.disabledBackground
+    static let onDisabledBackground = ColorTokens.onDisabledBackground
     
     // Component Colors
     static let componentBackground = ColorTokens.componentBackground
@@ -259,6 +261,7 @@ extension ShapeStyle where Self == Color {
     static var error: Color { ColorTokens.error }
     static var errorBackground: Color { ColorTokens.errorBackground }
     static var disabledBackground: Color { ColorTokens.disabledBackground }
+    static var onDisabledBackground: Color { ColorTokens.onDisabledBackground }
     
     // Component Colors
     static var componentBackground: Color { ColorTokens.componentBackground }
