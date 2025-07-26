@@ -216,11 +216,12 @@ struct GoalBottomSheet: View {
                             minutes: $selectedMinutes,
                             seconds: $selectedSeconds
                         )
-                        .frame(height: 150)
+//                        .frame(height: 150)
                         .padding(.trailing, 16)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
+//                    .background(.red)
                     
 
                     
