@@ -49,13 +49,13 @@ struct CountdownTimerPicker: UIViewRepresentable {
             
             // Position labels to align with selected numbers (right-aligned in each column)
             hoursLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            hoursLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: containerView.frame.width / 6 + 75),
+            hoursLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: containerView.frame.width / 6 + 83),
             
             minutesLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            minutesLabel.leadingAnchor.constraint(equalTo: containerView.centerXAnchor, constant: -containerView.frame.width / 6 + 10),
+            minutesLabel.leadingAnchor.constraint(equalTo: containerView.centerXAnchor, constant: -containerView.frame.width / 6 + 20),
             
             secondsLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            secondsLabel.leadingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -containerView.frame.width / 6 + -54)
+            secondsLabel.leadingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -containerView.frame.width / 6 + -40)
         ])
         
         return containerView
