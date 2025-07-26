@@ -12,6 +12,7 @@ struct CreateHabitStep2View: View {
     @State private var reminder: String = "No reminder"
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
+    @State private var showingScheduleSheet = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -57,19 +58,32 @@ struct CreateHabitStep2View: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Schedule
-                    HStack {
-                        Text("Schedule")
-                            .font(.titleMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        Text("Everyday")
-                            .font(.bodyLarge)
-                            .foregroundColor(.text04)
-                        Image(systemName: "chevron.right")
-                            .font(.labelMedium)
-                            .foregroundColor(.primaryDim)
+                    Button(action: {
+                        showingScheduleSheet = true
+                    }) {
+                        HStack {
+                            Text("Schedule")
+                                .font(.titleMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            Text(schedule)
+                                .font(.bodyLarge)
+                                .foregroundColor(.text04)
+                            Image(systemName: "chevron.right")
+                                .font(.labelMedium)
+                                .foregroundColor(.primaryDim)
+                        }
+                        .selectionRowStyle()
                     }
-                    .selectionRowStyle()
+                    .sheet(isPresented: $showingScheduleSheet) {
+                        ScheduleBottomSheet(
+                            onClose: { showingScheduleSheet = false },
+                            onScheduleSelected: { selectedSchedule in
+                                schedule = selectedSchedule
+                                showingScheduleSheet = false
+                            }
+                        )
+                    }
                     
                     // Goal
                     HStack {
