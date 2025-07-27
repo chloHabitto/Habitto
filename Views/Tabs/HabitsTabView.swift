@@ -118,61 +118,14 @@ struct HabitsTabView: View {
     }
     
     private func habitDetailRow(_ habit: Habit) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                // Color indicator
-                Circle()
-                    .fill(habit.color)
-                    .frame(width: 16, height: 16)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(habit.name)
-                                                        .font(.appButtonText1)
-                        .foregroundColor(.primary)
-                    
-                    if !habit.description.isEmpty {
-                        Text(habit.description)
-                                                            .font(.appBodyMedium)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                // Status indicator
-                HStack(spacing: 8) {
-                    // Streak indicator
-                    HStack(spacing: 4) {
-                        Text("🔥")
-                                                            .font(.appLabelSmall)
-                        Text("\(habit.streak)")
-                                                            .font(.appBodyMediumEmphasised)
-                            .foregroundColor(.primary)
-                    }
-                    
-                    // More options icon with popup
-                    Button(action: {
-                        showingPopupForHabit = habit
-                    }) {
-                        Image("Icon-moreDots")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.secondary)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            
-            // Habit details
-            HStack(spacing: 16) {
-                detailItem(icon: "calendar", text: habit.schedule)
-                detailItem(icon: "bell", text: habit.reminder)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        AddedHabitItem(
+            title: habit.name,
+            description: habit.description.isEmpty ? "No description" : habit.description,
+            selectedColor: habit.color,
+            icon: habit.icon,
+            schedule: habit.schedule,
+            goal: habit.goal
+        )
         .onTapGesture {
             onToggleHabit(habit)
         }
