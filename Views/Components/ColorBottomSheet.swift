@@ -80,7 +80,7 @@ struct ColorButton: View {
         Button(action: onTap) {
             VStack(spacing: 8) {
                 // Color container
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(color)
                     .frame(width: 36, height: 36)
                 

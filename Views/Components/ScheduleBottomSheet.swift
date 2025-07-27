@@ -312,10 +312,10 @@ struct ScheduleBottomSheet: View {
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
+                                            RoundedRectangle(cornerRadius: 24)
                                                 .stroke(.outline, lineWidth: 1)
                                         )
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .clipShape(RoundedRectangle(cornerRadius: 24))
                                     
                                     // Plus button
                                     Button(action: {
@@ -369,10 +369,10 @@ struct ScheduleBottomSheet: View {
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
+                                            RoundedRectangle(cornerRadius: 24)
                                                 .stroke(.outline, lineWidth: 1)
                                         )
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .clipShape(RoundedRectangle(cornerRadius: 24))
                                     
                                     // Plus button
                                     Button(action: {

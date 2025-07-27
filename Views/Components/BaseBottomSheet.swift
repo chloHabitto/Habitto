@@ -41,15 +41,10 @@ struct BaseBottomSheet<Content: View>: View {
                 VStack(spacing: 0) {
                     Divider()
                     
-                    Button(action: confirmButton) {
-                        Text(confirmButtonTitle)
-                            .font(.appButtonText1)
-                            .foregroundColor(.onPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color(hex: "1C274C"))
-                            .clipShape(Capsule())
-                    }
+                    HabittoButton.largeFillPrimary(
+                        text: confirmButtonTitle,
+                        action: confirmButton
+                    )
                     .padding(24)
                 }
             }

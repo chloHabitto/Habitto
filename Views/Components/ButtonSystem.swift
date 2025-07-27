@@ -232,7 +232,7 @@ struct HabittoButton: View {
             .padding(.vertical, size.padding)
             .frame(maxWidth: .infinity)
             .background(style.backgroundColor(for: state))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
     }
     
     @ViewBuilder
@@ -243,7 +243,7 @@ struct HabittoButton: View {
             .foregroundColor(style.iconColor(for: state))
             .frame(width: size.containerSize, height: size.containerSize)
             .background(style.backgroundColor(for: state))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
     }
     
     @ViewBuilder
@@ -262,7 +262,7 @@ struct HabittoButton: View {
         .padding(.vertical, size.padding)
         .frame(maxWidth: .infinity)
         .background(style.backgroundColor(for: state))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 }
 

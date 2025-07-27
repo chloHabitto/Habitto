@@ -251,19 +251,14 @@ struct AddReminderSheet: View {
             Spacer()
             
             // Save/Add Button
-            Button(action: {
-                onSave(selectedTime)
-                dismiss()
-            }) {
-                Text(isEditing ? "Save" : "Add")
-                    .font(.appButtonText1)
-                    .foregroundColor(.onPrimary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(isEditing && selectedTime == originalTime ? Color.gray : Color(hex: "1C274C"))
-                    .clipShape(Capsule())
-            }
-            .disabled(isEditing && selectedTime == originalTime)
+            HabittoButton.largeFillPrimary(
+                text: isEditing ? "Save" : "Add",
+                state: isEditing && selectedTime == originalTime ? .disabled : .default,
+                action: {
+                    onSave(selectedTime)
+                    dismiss()
+                }
+            )
             .padding(.horizontal, 24)
             .padding(.bottom, 24)
             
