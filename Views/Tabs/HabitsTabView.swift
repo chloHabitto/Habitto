@@ -92,9 +92,7 @@ struct HabitsTabView: View {
         let today = calendar.startOfDay(for: Date())
         
         switch selectedStatsTab {
-        case 0: // All
-            return habits
-        case 1: // Active
+        case 0: // Active
             return habits.filter { habit in
                 // Check if habit is currently active (within its period)
                 let startDate = calendar.startOfDay(for: habit.startDate)
@@ -103,7 +101,7 @@ struct HabitsTabView: View {
                 // Habit is active if today is within its period
                 return today >= startDate && today <= endDate
             }
-        case 2: // Inactive
+        case 1: // Inactive
             return habits.filter { habit in
                 // Check if habit is currently inactive (outside its period)
                 let startDate = calendar.startOfDay(for: habit.startDate)
@@ -112,6 +110,8 @@ struct HabitsTabView: View {
                 // Habit is inactive if today is outside its period
                 return today < startDate || today > endDate
             }
+        case 2, 3: // Dummy tabs - show all habits
+            return habits
         default:
             return habits
         }
@@ -224,60 +224,53 @@ struct HabitsTabView: View {
         }
         
         let stats = [
-            ("All", habits.count),
             ("Active", activeHabits.count),
-            ("Inactive", inactiveHabits.count)
+            ("Inactive", inactiveHabits.count),
+            ("", 0), // Dummy third tab
+            ("", 0) // Dummy fourth tab
         ]
-        let selectedColor = Color(red: 0.15, green: 0.23, blue: 0.42) // Dark blue to match theme
-        let unselectedColor = Color(UIColor.systemGray)
         
-        return VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    ForEach(0..<stats.count, id: \.self) { idx in
-                        Button(action: { selectedStatsTab = idx }) {
-                            HStack(spacing: 4) {
-                                Text(stats[idx].0)
-                                    .font(.appBodyMediumEmphasised)
-                                    .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                                Text("\(stats[idx].1)")
-                                    .font(.appBodyMediumEmphasised)
-                                    .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    Spacer()
-                }
-                .background(Color.white)
-
-                
-                // Colored underline for selected tab
-                HStack(spacing: 0) {
-                    ForEach(0..<stats.count, id: \.self) { idx in
-                        Rectangle()
-                            .fill(selectedStatsTab == idx ? selectedColor : Color.clear)
-                            .frame(height: 3)
-                            .frame(maxWidth: .infinity)
-                            .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
-                    }
-                }
-                
-                // Gray underline directly under the colored underline
-                                 Rectangle()
-                     .fill(Color(red: 0.91, green: 0.93, blue: 0.97))
-                     .frame(height: 1)
-                     .frame(maxWidth: .infinity)
-             }
-             .padding(.horizontal, 0)
-             .padding(.top, 2)
-             .padding(.bottom, 0)
-             .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        return HStack(spacing: 0) {
+            ForEach(0..<stats.count, id: \.self) { idx in
+                statsTabButton(for: idx, stats: stats)
+            }
         }
+        .frame(maxWidth: .infinity)
         .background(Color.white)
+    }
+    
+    @ViewBuilder
+    private func statsTabButton(for idx: Int, stats: [(String, Int)]) -> some View {
+        VStack(spacing: 0) {
+            Button(action: { 
+                if idx < 2 { // Only allow clicking for first two tabs (Active, Inactive)
+                    selectedStatsTab = idx 
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Text(stats[idx].0)
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                        .opacity(idx >= 2 ? 0 : 1) // Make third and fourth tab text invisible
+                    Text("\(stats[idx].1)")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                        .opacity(idx >= 2 ? 0 : 1) // Make third and fourth tab text invisible
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: idx >= 2 ? .infinity : nil) // Expand third and fourth tabs
+            .disabled(idx >= 2) // Disable clicking for third and fourth tabs
+            
+            // Bottom stroke for each tab
+            Rectangle()
+                .fill(selectedStatsTab == idx ? .text03 : .divider)
+                .frame(height: 3)
+                .frame(maxWidth: .infinity)
+                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+        }
     }
 }
 
