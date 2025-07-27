@@ -19,16 +19,22 @@ struct PeriodBottomSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            BottomSheetHeader(
-                title: isSelectingStartDate ? "Start Date" : "End Date",
-                description: "Select a date for your habit period",
-                onClose: {
-                    dismiss()
+        BaseBottomSheet(
+            title: isSelectingStartDate ? "Start Date" : "End Date",
+            description: "Select a date for your habit period",
+            onClose: {
+                dismiss()
+            },
+            confirmButton: {
+                if isSelectingStartDate {
+                    onStartDateSelected(selectedDate)
+                } else {
+                    onEndDateSelected(selectedDate)
                 }
-            )
-            
+                dismiss()
+            },
+            confirmButtonTitle: "Confirm"
+        ) {
             // Custom Calendar View
             VStack(spacing: 24) {
                 // Month Navigation
@@ -46,7 +52,7 @@ struct PeriodBottomSheet: View {
                     Spacer()
                     
                     Text(monthYearString(from: currentMonth))
-                        .font(.titleMediumEmphasised)
+                        .font(.title2)
                         .foregroundColor(.text01)
                     
                     Spacer()
@@ -68,7 +74,7 @@ struct PeriodBottomSheet: View {
                     // Day headers
                     ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
                         Text(day)
-                            .font(.labelMedium)
+                            .font(.caption2)
                             .foregroundColor(.text05)
                             .frame(height: 32)
                     }
@@ -84,7 +90,7 @@ struct PeriodBottomSheet: View {
                                 }
                             }) {
                                 Text("\(Calendar.current.component(.day, from: date))")
-                                    .font(.bodyMedium)
+                                    .font(.body)
                                     .foregroundColor(dateColor(for: date))
                                     .frame(width: 40, height: 40)
                                     .background(backgroundForDate(date))
@@ -104,35 +110,7 @@ struct PeriodBottomSheet: View {
             .padding(.vertical, 20)
             
             Spacer()
-            
-            // Button dock
-            VStack(spacing: 0) {
-                Divider()
-                
-                HStack(spacing: 12) {
-                    Button("Confirm") {
-                        if isSelectingStartDate {
-                            onStartDateSelected(selectedDate)
-                        } else {
-                            onEndDateSelected(selectedDate)
-                        }
-                        dismiss()
-                    }
-                    .font(Font.buttonText1)
-                    .foregroundColor(.onPrimary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color(hex: "1C274C"))
-                    .clipShape(Capsule())
-                    .contentShape(Rectangle())
-                }
-                .padding(24)
-            }
         }
-        .background(.surface)
-        .presentationDetents([.height(700)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(20)
     }
     
     // Helper functions

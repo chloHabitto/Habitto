@@ -10,9 +10,9 @@ struct HeaderView: View {
                 Image("Icon-fire")
                     .resizable()
                     .frame(width: 32, height: 32)
-                Text("0 streak")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
+                Text("Habitto")
+                    .font(.title2)
+                    .foregroundColor(.text01)
             }
             .padding(.top, 8)
             .padding(.bottom, 8)

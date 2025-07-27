@@ -81,8 +81,8 @@ struct EmojiKeyboardView: View {
                             onEmojiSelected(emoji)
                         }) {
                             Text(emoji)
-                                .font(.system(size: 32))
-                                .frame(width: 44, height: 44)
+                                .font(.largeTitle)
+                                .frame(width: 48, height: 48)
                                 .background(Color.clear)
                         }
                     }

@@ -44,7 +44,7 @@ struct CreateHabitStep2View: View {
                 Button("Cancel") {
                     dismiss()
                 }
-                .font(.buttonText2)
+                .font(.title)
                 .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
             }
             .padding(.horizontal, 20)
@@ -67,10 +67,10 @@ struct CreateHabitStep2View: View {
             // Header (same as Step 1)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create Habit")
-                    .font(.headlineMediumEmphasised)
+                    .font(.headline)
                     .foregroundColor(.text01)
                 Text("Let's get started!")
-                    .font(.titleSmall)
+                    .font(.title)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,14 +85,14 @@ struct CreateHabitStep2View: View {
                     }) {
                         HStack {
                             Text("Schedule")
-                                .font(.titleMedium)
+                                .font(.title)
                                 .foregroundColor(.text01)
                             Spacer()
                             Text(schedule)
-                                .font(.bodyLarge)
+                                .font(.body)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
-                                .font(.labelMedium)
+                                .font(.caption2)
                                 .foregroundColor(.primaryDim)
                         }
                         .selectionRowStyle()
@@ -113,14 +113,14 @@ struct CreateHabitStep2View: View {
                     }) {
                         HStack {
                             Text("Goal")
-                                .font(.titleMedium)
+                                .font(.title2)
                                 .foregroundColor(.text01)
                             Spacer()
                             Text(goal)
-                                .font(.bodyLarge)
+                                .font(.body)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
-                                .font(.labelMedium)
+                                .font(.caption2)
                                 .foregroundColor(.primaryDim)
                         }
                         .selectionRowStyle()
@@ -139,14 +139,14 @@ struct CreateHabitStep2View: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Reminder")
-                                .font(.titleMedium)
+                                .font(.title2)
                                 .foregroundColor(.text01)
                             Spacer()
                             Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
-                                .font(.bodyLarge)
+                                .font(.body)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
-                                .font(.labelMedium)
+                                .font(.caption2)
                                 .foregroundColor(.primaryDim)
                         }
                         .contentShape(Rectangle())
@@ -163,11 +163,11 @@ struct CreateHabitStep2View: View {
                                 ForEach(reminders.filter { $0.isActive }) { reminder in
                                     HStack {
                                         Text(formatTime(reminder.time))
-                                            .font(.bodyMedium)
+                                            .font(.body)
                                             .foregroundColor(.text01)
                                         Spacer()
                                         Text("Active")
-                                            .font(.labelSmall)
+                                            .font(.caption)
                                             .foregroundColor(.primary)
                                     }
                                     .padding(.horizontal, 12)
@@ -203,7 +203,7 @@ struct CreateHabitStep2View: View {
                     // Period
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Period")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.title2)
                             .foregroundColor(.primary)
                         HStack(spacing: 12) {
                             // Start Date
@@ -213,10 +213,10 @@ struct CreateHabitStep2View: View {
                             }) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Start Date")
-                                        .font(.bodyMedium)
+                                        .font(.body)
                                         .foregroundColor(.text05)
                                     Text(isToday(startDate) ? "Today" : formatDate(startDate))
-                                        .font(.bodyLarge)
+                                        .font(.body)
                                         .foregroundColor(.text04)
                                         .frame(maxWidth: .infinity, alignment: .center)
                                         .inputFieldStyle()
@@ -231,10 +231,10 @@ struct CreateHabitStep2View: View {
                             }) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("End Date")
-                                        .font(.bodyMedium)
+                                        .font(.body)
                                         .foregroundColor(.text05)
                                     Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
-                                        .font(.bodyLarge)
+                                        .font(.body)
                                         .foregroundColor(.text04)
                                         .frame(maxWidth: .infinity, alignment: .center)
                                         .inputFieldStyle()
@@ -301,7 +301,7 @@ struct CreateHabitStep2View: View {
                     dismiss()
                 }) {
                     Text("Save")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.title2)
                         .foregroundColor(.white)
                         .frame(width: UIScreen.main.bounds.width * 0.5)
                         .padding(.vertical, 16)

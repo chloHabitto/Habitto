@@ -93,372 +93,324 @@ struct ScheduleBottomSheet: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            BottomSheetHeader(
-                title: "Schedule",
-                description: "Set which day(s) you'd like to do this habit",
-                onClose: onClose
-            )
-            
-            // Spacing between header and tabs
-            Spacer()
-                .frame(height: 16)
-            
-            // Tab Menu
-            TabMenu(
-                selectedTab: $selectedTab,
-                tabs: ["Repeat", "Frequency"]
-            )
-            
-            // Content based on selected tab
-            if selectedTab == 0 {
-                VStack(spacing: 0) {
-                    // 1. VStack: Text and Pill
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("I want to repeat this habit")
-                            .font(Font.titleMedium)
-                            .foregroundColor(.text01)
-                        
-                        HStack {
-                            if selectedSchedule == "Weekly" {
-                                if pillTexts.isEmpty {
-                                    Text("Select days")
-                                        .font(Font.bodyLarge)
+        BaseBottomSheet(
+            title: "Schedule",
+            description: "Set which day(s) you'd like to do this habit",
+            onClose: onClose,
+            confirmButton: {
+                onScheduleSelected(selectedScheduleText)
+                onClose()
+            },
+            confirmButtonTitle: "Confirm"
+        ) {
+            VStack(spacing: 0) {
+                // Tab Menu
+                TabMenu(
+                    selectedTab: $selectedTab,
+                    tabs: ["Repeat", "Frequency"]
+                )
+                
+                // Content based on selected tab
+                if selectedTab == 0 {
+                    VStack(spacing: 0) {
+                        // 1. VStack: Text and Pill
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Set Schedule")
+                                .font(.title2)
+                                .foregroundColor(.text01)
+                            
+                            Text("Choose your habit schedule")
+                                .font(.body)
+                                .foregroundColor(.text04)
+                            
+                            HStack {
+                                if selectedSchedule == "Weekly" {
+                                    if pillTexts.isEmpty {
+                                        Text("Select days")
+                                            .font(.body)
+                                            .foregroundColor(.onPrimary)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(Color(hex: "1C274C"))
+                                            .clipShape(Capsule())
+                                    } else {
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 8) {
+                                                ForEach(pillTexts, id: \.self) { pillText in
+                                                    Text(pillText)
+                                                        .font(.body)
+                                                        .foregroundColor(.onPrimary)
+                                                        .padding(.horizontal, 16)
+                                                        .padding(.vertical, 8)
+                                                        .background(Color(hex: "1C274C"))
+                                                        .clipShape(Capsule())
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text(selectedDays)
+                                        .font(.body)
+                                        .foregroundColor(.onPrimary)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color(hex: "1C274C"))
+                                        .clipShape(Capsule())
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                        .padding(.top, 16)
+                        .padding(.horizontal, 16)
+
+                        // 2. Divider
+                        Divider()
+                            .background(.outline)
+                            .padding(.vertical, 20)
+                            .padding(.horizontal, 16)
+
+                        // 3. Segmented Picker
+                        VStack(spacing: 12) {
+                            Picker("Frequency", selection: $selectedSchedule) {
+                                Text("Daily").tag("Daily")
+                                Text("Weekly").tag("Weekly")
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                        }
+                        .padding(.horizontal, 16)
+
+                        // Weekly days selection (only show when Weekly is selected)
+                        if selectedSchedule == "Weekly" {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Spacer()
+                                    .frame(height: 16)
+                                
+                                Text("On those days")
+                                    .font(.title3)
+                                    .foregroundColor(.text05)
+                                
+                                HStack(spacing: 8) {
+                                    ForEach(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"], id: \.self) { day in
+                                        Button(action: {
+                                            if selectedWeekDays.contains(day) {
+                                                selectedWeekDays.remove(day)
+                                            } else {
+                                                selectedWeekDays.insert(day)
+                                            }
+                                        }) {
+                                            Text(day)
+                                                .font(.caption2)
+                                                .foregroundColor(selectedWeekDays.contains(day) ? .onPrimary : .onSecondaryContainer)
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: 36)
+                                                .background(selectedWeekDays.contains(day) ? .primary : .secondaryContainer)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(.outline, lineWidth: 1)
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                        }
+
+                        // 4. iOS scrollable date picker (only show when Daily is selected)
+                        if selectedSchedule == "Daily" {
+                            VStack(spacing: 12) {
+                                Picker("Frequency", selection: $selectedDays) {
+                                    ForEach(dayOptions, id: \.self) { option in
+                                        Text(option).tag(option)
+                                    }
+                                }
+                                .pickerStyle(WheelPickerStyle())
+                                .labelsHidden()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                        }
+
+                        Spacer()
+                    }
+                } else {
+                    // Frequency tab
+                    VStack(spacing: 0) {
+                        // 1. VStack: Text and Pill
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Set Schedule")
+                                .font(.title2)
+                                .foregroundColor(.text01)
+                            
+                            Text("Choose your habit schedule")
+                                .font(.body)
+                                .foregroundColor(.text04)
+                            
+                            HStack {
+                                if selectedFrequency == "Monthly" {
+                                    Text(monthlyValue == 1 ? "1 time a month" : "\(monthlyValue) times a month")
+                                        .font(.body)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
                                         .background(Color(hex: "1C274C"))
                                         .clipShape(Capsule())
                                 } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(pillTexts, id: \.self) { pillText in
-                                                Text(pillText)
-                                                    .font(Font.bodyLarge)
-                                                    .foregroundColor(.onPrimary)
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 8)
-                                                    .background(Color(hex: "1C274C"))
-                                                    .clipShape(Capsule())
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                Text(selectedDays)
-                                    .font(Font.bodyLarge)
-                                    .foregroundColor(.onPrimary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color(hex: "1C274C"))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-                    .padding(.top, 16)
-                    .padding(.horizontal, 16)
-//                    .background(.red)
-
-                    // 2. Divider
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 16)
-
-                    // 3. Segmented Picker
-                    VStack(spacing: 12) {
-                        Picker("Frequency", selection: $selectedSchedule) {
-                            Text("Daily").tag("Daily")
-                            Text("Weekly").tag("Weekly")
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                    }
-                    .padding(.horizontal, 16)
-
-                    // Weekly days selection (only show when Weekly is selected)
-                    if selectedSchedule == "Weekly" {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Spacer()
-                                .frame(height: 16)
-                            
-                            Text("On those days")
-                                .font(Font.titleSmall)
-                                .foregroundColor(.text05)
-                            
-                            HStack(spacing: 8) {
-                                ForEach(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"], id: \.self) { day in
-                                    Button(action: {
-                                        if selectedWeekDays.contains(day) {
-                                            selectedWeekDays.remove(day)
-                                        } else {
-                                            selectedWeekDays.insert(day)
-                                        }
-                                    }) {
-                                        Text(day)
-                                            .font(Font.labelMediumEmphasised)
-                                            .foregroundColor(selectedWeekDays.contains(day) ? .onPrimary : .onSecondaryContainer)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 36)
-                                            .background(selectedWeekDays.contains(day) ? .primary : .secondaryContainer)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(.outline, lineWidth: 1)
-                                            )
-                                    }
+                                    Text(weeklyValue == 1 ? "1 time a week" : "\(weeklyValue) times a week")
+                                        .font(.body)
+                                        .foregroundColor(.onPrimary)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color(hex: "1C274C"))
+                                        .clipShape(Capsule())
                                 }
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-//                        .background(.red)
+                        .padding(.vertical, 4)
+                        .padding(.top, 16)
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    }
-
-                    // 4. iOS scrollable date picker (only show when Daily is selected)
-                    if selectedSchedule == "Daily" {
-                        VStack(spacing: 12) {
-                            Picker("Frequency", selection: $selectedDays) {
-                                ForEach(dayOptions, id: \.self) { option in
-                                    Text(option).tag(option)
-                                }
-                            }
-                            .pickerStyle(WheelPickerStyle())
-                            .labelsHidden()
-                        }
-//                        .background(.red)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    }
-
-                    Spacer()
-
-                    // 5. Confirm button dock
-                    VStack {
-                        Button(action: {
-                            onScheduleSelected(selectedScheduleText)
-                            onClose()
-                        }) {
-                            Text("Confirm")
-                                .font(Font.buttonText1)
-                                .foregroundColor(.onPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
-                    .background(.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(.outline)
-                            .frame(height: 1),
-                        alignment: .top
-                    )
-                }
-            } else {
-                // Frequency tab
-                VStack(spacing: 0) {
-                    // 1. VStack: Text and Pill
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("I want to repeat this habit")
-                            .font(Font.titleMedium)
-                            .foregroundColor(.text01)
                         
-                        HStack {
-                            if selectedFrequency == "Monthly" {
-                                Text(monthlyValue == 1 ? "1 time a month" : "\(monthlyValue) times a month")
-                                    .font(Font.bodyLarge)
-                                    .foregroundColor(.onPrimary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color(hex: "1C274C"))
-                                    .clipShape(Capsule())
-                            } else {
-                                Text(weeklyValue == 1 ? "1 time a week" : "\(weeklyValue) times a week")
-                                    .font(Font.bodyLarge)
-                                    .foregroundColor(.onPrimary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color(hex: "1C274C"))
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-                    .padding(.top, 16)
-                    .padding(.horizontal, 16)
-                    
-                    // 2. Divider
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 16)
-                    
-                    // 3. Segmented Picker
-                    VStack(spacing: 12) {
-                        Picker("Frequency", selection: $selectedFrequency) {
-                            Text("Weekly").tag("Weekly")
-                            Text("Monthly").tag("Monthly")
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                    }
-                    .padding(.horizontal, 16)
-                    
-                    // Monthly stepper (only show when Monthly is selected)
-                    if selectedFrequency == "Monthly" {
+                        // 2. Divider
+                        Divider()
+                            .background(.outline)
+                            .padding(.vertical, 20)
+                            .padding(.horizontal, 16)
+                        
+                        // 3. Segmented Picker
                         VStack(spacing: 12) {
-                            Spacer()
-                                .frame(height: 16)
-                            
-                            HStack(spacing: 16) {
-                                // Minus button
-                                Button(action: {
-                                    if monthlyValue > 1 {
-                                        monthlyValue -= 1
-                                    }
-                                }) {
-                                    Image(systemName: "minus")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(monthlyValue > 1 ? Color.white : .onDisabledBackground)
-                                        .frame(width: 44, height: 44)
-                                        .background(monthlyValue > 1 ? .primary : .disabledBackground)
-                                        .clipShape(Circle())
-                                }
-                                .frame(width: 48, height: 48)
-                                .disabled(monthlyValue <= 1)
-                                
-                                // Number display
-                                Text("\(monthlyValue)")
-                                    .font(Font.headlineSmallEmphasised)
-                                    .foregroundColor(.text01)
-                                    .frame(width: 52, height: 52)
-                                    .background(.surface)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(.outline, lineWidth: 1)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                
-                                // Plus button
-                                Button(action: {
-                                    if monthlyValue < 30 {
-                                        monthlyValue += 1
-                                    }
-                                }) {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(monthlyValue < 30 ? Color.white : .onDisabledBackground)
-                                        .frame(width: 44, height: 44)
-                                        .background(monthlyValue < 30 ? .primary : .disabledBackground)
-                                        .clipShape(Circle())
-                                }
-                                .frame(width: 48, height: 48)
-                                .disabled(monthlyValue >= 30)
+                            Picker("Frequency", selection: $selectedFrequency) {
+                                Text("Weekly").tag("Weekly")
+                                Text("Monthly").tag("Monthly")
                             }
-                            .frame(maxWidth: .infinity)
+                            .pickerStyle(SegmentedPickerStyle())
                         }
                         .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    }
-                    
-                    // 4. Stepper (only show when Weekly is selected)
-                    if selectedFrequency == "Weekly" {
-                        VStack(spacing: 12) {
-                            Spacer()
-                                .frame(height: 16)
-                            
-                            HStack(spacing: 16) {
-                                // Minus button
-                                Button(action: {
-                                    if weeklyValue > 1 {
-                                        weeklyValue -= 1
-                                    }
-                                }) {
-                                    Image(systemName: "minus")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(weeklyValue > 1 ? Color.white : .onDisabledBackground)
-                                        .frame(width: 44, height: 44)
-                                        .background(weeklyValue > 1 ? .primary : .disabledBackground)
-                                        .clipShape(Circle())
-                                }
-                                .frame(width: 48, height: 48)
-                                .disabled(weeklyValue <= 1)
+                        
+                        // Monthly stepper (only show when Monthly is selected)
+                        if selectedFrequency == "Monthly" {
+                            VStack(spacing: 12) {
+                                Spacer()
+                                    .frame(height: 16)
                                 
-                                // Number display
-                                Text("\(weeklyValue)")
-                                    .font(Font.headlineSmallEmphasised)
-                                    .foregroundColor(.text01)
-                                    .frame(width: 52, height: 52)
-                                    .background(.surface)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(.outline, lineWidth: 1)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                
-                                // Plus button
-                                Button(action: {
-                                    if weeklyValue < 30 {
-                                        weeklyValue += 1
+                                HStack(spacing: 16) {
+                                    // Minus button
+                                    Button(action: {
+                                        if monthlyValue > 1 {
+                                            monthlyValue -= 1
+                                        }
+                                    }) {
+                                        Image(systemName: "minus")
+                                            .font(.body)
+                                            .foregroundColor(monthlyValue > 1 ? Color.white : .onDisabledBackground)
+                                            .frame(width: 44, height: 44)
+                                            .background(monthlyValue > 1 ? .primary : .disabledBackground)
+                                            .clipShape(Circle())
                                     }
-                                }) {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(weeklyValue < 30 ? Color.white : .onDisabledBackground)
-                                        .frame(width: 44, height: 44)
-                                        .background(weeklyValue < 30 ? .primary : .disabledBackground)
-                                        .clipShape(Circle())
+                                    .frame(width: 48, height: 48)
+                                    .disabled(monthlyValue <= 1)
+                                    
+                                    // Number display
+                                    Text("\(monthlyValue)")
+                                        .font(.title2)
+                                        .foregroundColor(.text01)
+                                        .frame(width: 52, height: 52)
+                                        .background(.surface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(.outline, lineWidth: 1)
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    
+                                    // Plus button
+                                    Button(action: {
+                                        if monthlyValue < 30 {
+                                            monthlyValue += 1
+                                        }
+                                    }) {
+                                        Image(systemName: "plus")
+                                            .font(.body)
+                                            .foregroundColor(monthlyValue < 30 ? Color.white : .onDisabledBackground)
+                                            .frame(width: 44, height: 44)
+                                            .background(monthlyValue < 30 ? .primary : .disabledBackground)
+                                            .clipShape(Circle())
+                                    }
+                                    .frame(width: 48, height: 48)
+                                    .disabled(monthlyValue >= 30)
                                 }
-                                .frame(width: 48, height: 48)
-                                .disabled(weeklyValue >= 30)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    }
-                    
-                    Spacer()
-                    
-                    // 5. Confirm button dock
-                    VStack {
-                        Button(action: {
-                            onScheduleSelected(selectedScheduleText)
-                            onClose()
-                        }) {
-                            Text("Confirm")
-                                .font(Font.buttonText1)
-                                .foregroundColor(.onPrimary)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
                         }
+                        
+                        // 4. Stepper (only show when Weekly is selected)
+                        if selectedFrequency == "Weekly" {
+                            VStack(spacing: 12) {
+                                Spacer()
+                                    .frame(height: 16)
+                                
+                                HStack(spacing: 16) {
+                                    // Minus button
+                                    Button(action: {
+                                        if weeklyValue > 1 {
+                                            weeklyValue -= 1
+                                        }
+                                    }) {
+                                        Image(systemName: "minus")
+                                            .font(.body)
+                                            .foregroundColor(weeklyValue > 1 ? Color.white : .onDisabledBackground)
+                                            .frame(width: 44, height: 44)
+                                            .background(weeklyValue > 1 ? .primary : .disabledBackground)
+                                            .clipShape(Circle())
+                                    }
+                                    .frame(width: 48, height: 48)
+                                    .disabled(weeklyValue <= 1)
+                                    
+                                    // Number display
+                                    Text("\(weeklyValue)")
+                                        .font(.title2)
+                                        .foregroundColor(.text01)
+                                        .frame(width: 52, height: 52)
+                                        .background(.surface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(.outline, lineWidth: 1)
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    
+                                    // Plus button
+                                    Button(action: {
+                                        if weeklyValue < 30 {
+                                            weeklyValue += 1
+                                        }
+                                    }) {
+                                        Image(systemName: "plus")
+                                            .font(.body)
+                                            .foregroundColor(weeklyValue < 30 ? Color.white : .onDisabledBackground)
+                                            .frame(width: 44, height: 44)
+                                            .background(weeklyValue < 30 ? .primary : .disabledBackground)
+                                            .clipShape(Circle())
+                                    }
+                                    .frame(width: 48, height: 48)
+                                    .disabled(weeklyValue >= 30)
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                        }
+                        
+                        Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
-                    .background(.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(.outline)
-                            .frame(height: 1),
-                        alignment: .top
-                    )
                 }
+                Spacer()
             }
-            Spacer()
         }
-        .background(.surface)
         .presentationDetents([.large, .height(700)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(20)
     }
 }
 

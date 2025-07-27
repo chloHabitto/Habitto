@@ -35,56 +35,51 @@ struct IconBottomSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            BottomSheetHeader(
-                title: "Select Icon",
-                description: "Choose an icon for your habit",
-                onClose: onClose
-            )
-            
-            // Spacing between header and tabs
-            Spacer()
-                .frame(height: 16)
-            
-            // Tab Menu
-            TabMenu(
-                selectedTab: $selectedTab,
-                tabs: ["Emoji", "Simple"]
-            )
-            
-            // Content based on selected tab
-            if selectedTab == 0 {
-                // Emoji tab - iOS emoji keyboard
-                EmojiKeyboardView { emoji in
-                    selectedIcon = emoji
-                    onClose()
-                }
-            } else {
-                // Simple tab - Custom icon grid
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 16) {
-                        ForEach(icons, id: \.self) { icon in
-                            Button(action: {
-                                selectedIcon = icon
-                                onClose()
-                            }) {
-                                Text(icon)
-                                    .font(.system(size: 32))
-                                    .frame(width: 48, height: 48)
-                                    .background(selectedIcon == icon ? .primary : .surface)
-                                    .foregroundColor(selectedIcon == icon ? .onPrimary : .text01)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(selectedIcon == icon ? .primary : .outline, lineWidth: 1.5)
-                                    )
+        BaseBottomSheet(
+            title: "Select Icon",
+            description: "Choose an icon for your habit",
+            onClose: onClose
+        ) {
+            VStack(spacing: 0) {
+                // Tab Menu
+                TabMenu(
+                    selectedTab: $selectedTab,
+                    tabs: ["Emoji", "Simple"]
+                )
+                
+                // Content based on selected tab
+                if selectedTab == 0 {
+                    // Emoji tab - iOS emoji keyboard
+                    EmojiKeyboardView { emoji in
+                        selectedIcon = emoji
+                        onClose()
+                    }
+                } else {
+                    // Simple tab - Custom icon grid
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 16) {
+                            ForEach(icons, id: \.self) { icon in
+                                Button(action: {
+                                    selectedIcon = icon
+                                    onClose()
+                                }) {
+                                    Text(icon)
+                                        .font(.largeTitle)
+                                        .frame(width: 48, height: 48)
+                                        .background(selectedIcon == icon ? .primary : .surface)
+                                        .foregroundColor(selectedIcon == icon ? .onPrimary : .text01)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedIcon == icon ? .primary : .outline, lineWidth: 1.5)
+                                        )
+                                }
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
                 }
             }
         }

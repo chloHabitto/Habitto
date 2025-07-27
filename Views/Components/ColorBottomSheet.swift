@@ -24,16 +24,11 @@ struct ColorBottomSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            BottomSheetHeader(
-                title: "Colour",
-                description: "Set a colour for your habit",
-                onClose: onClose
-            )
-            .padding(.bottom, 16)
-
-            // Color grid
+        BaseBottomSheet(
+            title: "Colour",
+            description: "Set a colour for your habit",
+            onClose: onClose
+        ) {
             VStack(spacing: 16) {
                 // First row - 4 colors
                 HStack(spacing: 16) {
@@ -72,7 +67,6 @@ struct ColorBottomSheet: View {
             .padding(.bottom, 32)
             Spacer()
         }
-        .background(.surface)
     }
 }
 
@@ -92,8 +86,8 @@ struct ColorButton: View {
                 
                 // Color name
                 Text(name)
-                    .font(.bodyLarge)
-                    .foregroundColor(.text04)
+                    .font(.body)
+                    .foregroundColor(.text01)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)

@@ -25,7 +25,7 @@ struct CreateHabitStepModifier: ViewModifier {
                 if showBackButton {
                     Button(action: { onBack?() }) {
                         Image(systemName: "arrow.left")
-                            .font(.system(size: 20, weight: .medium))
+                            .font(.title2)
                             .foregroundColor(.primary)
                     }
                 } else {
@@ -34,7 +34,7 @@ struct CreateHabitStepModifier: ViewModifier {
                 Spacer()
                 Button(action: { onCancel?() }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.title2)
                         .foregroundColor(.primary)
                 }
             }
@@ -58,10 +58,10 @@ struct CreateHabitStepModifier: ViewModifier {
             // Title and subtitle
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
-                    .font(.headlineMediumEmphasised)
+                    .font(.title)
                     .foregroundColor(.text01)
                 Text(subtitle)
-                    .font(.titleSmall)
+                    .font(.title3)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -81,162 +81,15 @@ struct CreateHabitStepModifier: ViewModifier {
     }
 }
 
-// 2. REUSABLE INPUT FIELD MODIFIER
-struct InputFieldModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
-            )
-            .cornerRadius(12)
-    }
-}
-
-// 3. REUSABLE SELECTION ROW MODIFIER
-struct SelectionRowModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
-            )
-            .cornerRadius(12)
-    }
-}
-
 // 4. REUSABLE SELECTION ROW COMPONENT
-struct SelectionRow: View {
-    let title: String
-    let value: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.titleMedium)
-                    .foregroundColor(.text01)
-                Spacer()
-                Text(value)
-                    .font(.bodyLarge)
-                    .foregroundColor(.text04)
-                Image(systemName: "chevron.right")
-                    .font(.labelMedium)
-                    .foregroundColor(.primaryDim)
-            }
-        }
-        .modifier(SelectionRowModifier())
-    }
-}
+// Note: SelectionRow is now defined in SelectionComponents.swift for consistency
 
-// 5. REUSABLE BUTTON GROUP COMPONENT
-struct ButtonGroupRow: View {
-    let title: String
-    let buttons: [ButtonGroupItem]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.titleMedium)
-                .foregroundColor(.text01)
-            
-            HStack(spacing: 12) {
-                ForEach(buttons) { button in
-                    Button(action: button.action) {
-                        HStack(spacing: 8) {
-                            if button.isSelected {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.onPrimary)
-                            }
-                            Text(button.title)
-                                .font(button.isSelected ? .labelLargeEmphasised : .labelLarge)
-                                .foregroundColor(button.isSelected ? .onPrimary : .onPrimaryContainer)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(button.isSelected ? .primary : .primaryContainer)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline, lineWidth: 1.5)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .modifier(SelectionRowModifier())
-    }
-}
 
-struct ButtonGroupItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-}
 
-// 6. REUSABLE CONTINUE BUTTON COMPONENT
-struct ContinueButton: View {
-    let isEnabled: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        HStack {
-            Spacer()
-            Button(action: action) {
-                Text("Continue")
-                    .font(.buttonText1)
-                    .foregroundColor(isEnabled ? .onPrimary : .text06)
-                    .frame(width: UIScreen.main.bounds.width * 0.5)
-                    .padding(.vertical, 16)
-                    .background(isEnabled ? .primary : .disabledBackground)
-                    .clipShape(Capsule())
-            }
-            .disabled(!isEnabled)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-    }
-}
 */
 
 // MARK: - REUSABLE COMPONENTS
-struct SelectionRow: View {
-    let title: String
-    let value: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.titleMedium)
-                    .foregroundColor(.text01)
-                Spacer()
-                Text(value)
-                    .font(.bodyLarge)
-                    .foregroundColor(.text04)
-                Image(systemName: "chevron.right")
-                    .font(.labelMedium)
-                    .foregroundColor(.primaryDim)
-            }
-        }
-        .selectionRowStyle()
-    }
-}
+// Note: SelectionRow is now defined in SelectionComponents.swift
 
 struct ButtonGroupRow: View {
     let title: String
@@ -245,7 +98,7 @@ struct ButtonGroupRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.titleMedium)
+                .font(.title2)
                 .foregroundColor(.text01)
             
             HStack(spacing: 12) {
@@ -254,11 +107,11 @@ struct ButtonGroupRow: View {
                         HStack(spacing: 8) {
                             if button.isSelected {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.caption)
                                     .foregroundColor(.onPrimary)
                             }
                             Text(button.title)
-                                .font(button.isSelected ? .labelLargeEmphasised : .labelLarge)
+                                .font(.caption)
                                 .foregroundColor(button.isSelected ? .onPrimary : .onPrimaryContainer)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
@@ -298,7 +151,7 @@ struct ContinueButton: View {
             Spacer()
             Button(action: action) {
                 Text("Continue")
-                    .font(.buttonText1)
+                    .font(.title2)
                     .foregroundColor(isEnabled ? .onPrimary : .text06)
                     .frame(width: UIScreen.main.bounds.width * 0.5)
                     .padding(.vertical, 16)
@@ -330,7 +183,7 @@ struct CreateHabitStep1Efficient: View {
                 Button("Cancel") {
                     onCancel()
                 }
-                .font(.buttonText2)
+                .font(.body)
                 .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
             }
             .padding(.horizontal, 20)
@@ -353,10 +206,11 @@ struct CreateHabitStep1Efficient: View {
             // Title (reusable)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create Habit")
-                    .font(.headlineMediumEmphasised)
+                    .font(.title)
                     .foregroundColor(.text01)
-                Text("Let's get started!")
-                    .font(.titleSmall)
+                
+                Text("Step 1 of 2")
+                    .font(.title3)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -368,14 +222,14 @@ struct CreateHabitStep1Efficient: View {
                 VStack(spacing: 16) {
                     // Input Fields (reusable pattern)
                     TextField("Name", text: $name)
-                        .font(.bodyLarge)
+                        .font(.body)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Description (Optional)", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                        .font(.bodyLarge)
+                        .font(.body)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
@@ -383,8 +237,9 @@ struct CreateHabitStep1Efficient: View {
                     // Selection Rows (reusable components)
                     SelectionRow(
                         title: "Icon",
-                        value: icon == "None" ? "None" : icon,
-                        action: {
+                        subtitle: icon == "None" ? "None" : icon,
+                        isSelected: false,
+                        onTap: {
                             // Icon selection logic
                         }
                     )
@@ -392,7 +247,7 @@ struct CreateHabitStep1Efficient: View {
                     // Custom Color Selection (specific implementation)
                     HStack {
                         Text("Colour")
-                            .font(.titleMedium)
+                            .font(.title2)
                             .foregroundColor(.text01)
                         Spacer()
                         HStack(spacing: 8) {
@@ -400,11 +255,11 @@ struct CreateHabitStep1Efficient: View {
                                 .fill(color)
                                 .frame(width: 16, height: 16)
                             Text(colorName(for: color))
-                                .font(.bodyLarge)
+                                .font(.body)
                                 .foregroundColor(.text04)
                         }
                         Image(systemName: "chevron.right")
-                            .font(.labelMedium)
+                            .font(.caption2)
                             .foregroundColor(.primaryDim)
                     }
                     .selectionRowStyle()
@@ -465,13 +320,13 @@ struct CreateHabitStep2Efficient: View {
             HStack {
                 Button(action: onBack) {
                     Image(systemName: "arrow.left")
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.title2)
                         .foregroundColor(.primary)
                 }
                 Spacer()
                 Button(action: onCancel) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.title2)
                         .foregroundColor(.primary)
                 }
             }
@@ -495,10 +350,10 @@ struct CreateHabitStep2Efficient: View {
             // Title (reusable)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Set Up Your Habit")
-                    .font(.headlineMediumEmphasised)
+                    .font(.title)
                     .foregroundColor(.text01)
                 Text("Configure your habit settings")
-                    .font(.titleSmall)
+                    .font(.title3)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -510,19 +365,19 @@ struct CreateHabitStep2Efficient: View {
                 VStack(spacing: 16) {
                     // Input Fields (reusable pattern)
                     TextField("Schedule", text: $schedule)
-                        .font(.bodyLarge)
+                        .font(.body)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Goal", text: $goal)
-                        .font(.bodyLarge)
+                        .font(.body)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Reminder", text: $reminder)
-                        .font(.bodyLarge)
+                        .font(.body)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
@@ -530,16 +385,18 @@ struct CreateHabitStep2Efficient: View {
                     // Selection Rows (reusable components)
                     SelectionRow(
                         title: "Frequency",
-                        value: "Daily",
-                        action: {
+                        subtitle: "Daily",
+                        isSelected: false,
+                        onTap: {
                             // Frequency selection logic
                         }
                     )
                     
                     SelectionRow(
                         title: "Time",
-                        value: "9:00 AM",
-                        action: {
+                        subtitle: "9:00 AM",
+                        isSelected: false,
+                        onTap: {
                             // Time selection logic
                         }
                     )

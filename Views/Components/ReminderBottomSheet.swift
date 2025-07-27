@@ -64,154 +64,121 @@ struct ReminderBottomSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Custom Buttons
-            HStack {
-                Button(isEditMode ? "Done" : "Edit") {
-                    isEditMode.toggle()
-                }
-                .font(.buttonText2)
-                .foregroundColor(.text01)
-                .frame(width: 62, height: 44)
-                
-                Spacer()
-                
-                Button(action: {
-                    showingAddReminderSheet = true
-                }) {
-                    Image("Icon-plus")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.primary)
-                }
-                .frame(width: 48, height: 48)
-            }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 16)
-            
-            // Header
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Reminder")
-                    .font(.headlineSmallEmphasised)
-                    .foregroundColor(.text01)
-                Text("Choose when you want to be reminded about this habit")
-                    .font(.titleSmall)
-                    .foregroundColor(.text05)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 4)
-            
-            // Divider under header
-            Divider()
-                .background(.outline)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 20)
-            
-            // Reminders List
-            if !reminders.isEmpty {
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
-                            HStack(spacing: 16) {
-                                if isEditMode {
-                                    Button(action: {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            reminders.remove(at: index)
-                                            isEditMode = false
-                                        }
-                                    }) {
-                                        Image(systemName: "minus.circle.fill")
-                                            .resizable()
-                                            .frame(width: 24, height: 24)
-                                            .foregroundColor(.red)
-                                    }
-                                    .frame(width: 40, height: 40)
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .leading).combined(with: .opacity),
-                                        removal: .move(edge: .leading).combined(with: .opacity)
-                                    ))
-                                }
-                                
-                                HStack {
-                                    Text(formatTime(reminder.time))
-                                        .font(.bodyLarge)
-                                        .foregroundColor(.text01)
-                                    
-                                    Spacer()
-                                    
-                                    if isEditMode {
-                                        Image(systemName: "chevron.right")
-                                            .font(.labelMedium)
-                                            .foregroundColor(.primaryDim)
-                                            .frame(width: 32, height: 32)
-                                    } else {
-                                        Toggle("", isOn: $reminders[index].isActive)
-                                            .toggleStyle(SwitchToggleStyle(tint: .primary))
-                                    }
-                                }
-                                .padding(.leading, 24)
-                                .padding(.trailing, 16)
-                                .padding(.vertical, 8)
-                                .background(.secondaryContainer)
-                                .cornerRadius(8)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    if isEditMode {
-                                        editingReminderIndex = index
-                                        selectedTime = reminder.time
-                                        showingAddReminderSheet = true
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .animation(.easeInOut(duration: 0.3), value: isEditMode)
-                            .transition(.asymmetric(
-                                insertion: .scale.combined(with: .opacity),
-                                removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
-                            ))
-                        }
-                    }
-                    .padding(.top, 16)
-                    .padding(.bottom, 16)
-                }
-            } else {
-                Spacer()
-            }
-            
-            // Button dock
+        BaseBottomSheet(
+            title: "Reminder",
+            description: "Choose when you want to be reminded about this habit",
+            onClose: onClose,
+            confirmButton: {
+                onRemindersUpdated(reminders)
+            },
+            confirmButtonTitle: "Confirm"
+        ) {
             VStack(spacing: 0) {
-                Divider()
-                
-                HStack(spacing: 12) {
-//                    Button("Cancel") {
-//                        onClose()
-//                    }
-//                    .frame(maxWidth: .infinity)
-//                    .frame(height: 48)
-//                    .background(.secondaryContainer)
-//                    .foregroundColor(.onSecondaryContainer)
-//                    .cornerRadius(8)
+                // Custom Buttons
+                HStack {
+                    Button(isEditMode ? "Done" : "Edit") {
+                        isEditMode.toggle()
+                    }
+                    .font(.body)
+                    .foregroundColor(.text01)
+                    .frame(width: 62, height: 44)
+                    
+                    Spacer()
                     
                     Button(action: {
-                        onRemindersUpdated(reminders)
+                        showingAddReminderSheet = true
                     }) {
-                        Text("Confirm")
-                            .font(Font.buttonText1)
-                            .foregroundColor(.onPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color(hex: "1C274C"))
-                            .clipShape(Capsule())
+                        Image("Icon-plus")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.primary)
                     }
+                    .frame(width: 48, height: 48)
                 }
-                .padding(24)
+                .padding(.horizontal, 2)
+                .padding(.vertical, 16)
+                
+                // Divider under header
+                Divider()
+                    .background(.outline)
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 20)
+                
+                // Reminders List
+                if !reminders.isEmpty {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
+                                HStack(spacing: 16) {
+                                    if isEditMode {
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                reminders.remove(at: index)
+                                                isEditMode = false
+                                            }
+                                        }) {
+                                            Image(systemName: "minus.circle.fill")
+                                                .resizable()
+                                                .frame(width: 24, height: 24)
+                                                .foregroundColor(.red)
+                                        }
+                                        .frame(width: 40, height: 40)
+                                        .transition(.asymmetric(
+                                            insertion: .move(edge: .leading).combined(with: .opacity),
+                                            removal: .move(edge: .leading).combined(with: .opacity)
+                                        ))
+                                    }
+                                    
+                                    HStack {
+                                        Text(formatTime(reminder.time))
+                                            .font(.body)
+                                            .foregroundColor(.text01)
+                                        
+                                        Spacer()
+                                        
+                                        if isEditMode {
+                                            Image(systemName: "chevron.right")
+                                                .font(.caption2)
+                                                .foregroundColor(.primaryDim)
+                                                .frame(width: 32, height: 32)
+                                        } else {
+                                            Toggle("", isOn: $reminders[index].isActive)
+                                                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                        }
+                                    }
+                                    .padding(.leading, 24)
+                                    .padding(.trailing, 16)
+                                    .padding(.vertical, 8)
+                                    .background(.secondaryContainer)
+                                    .cornerRadius(8)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if isEditMode {
+                                            editingReminderIndex = index
+                                            selectedTime = reminder.time
+                                            showingAddReminderSheet = true
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                                .transition(.asymmetric(
+                                    insertion: .scale.combined(with: .opacity),
+                                    removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
+                                ))
+                            }
+                        }
+                        .padding(.top, 16)
+                        .padding(.bottom, 16)
+                    }
+                } else {
+                    Spacer()
+                }
+                
+                Spacer()
             }
         }
-        .background(.surface)
         .presentationDetents([.height(500)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(20)
         .sheet(isPresented: $showingAddReminderSheet) {
             AddReminderSheet(initialTime: selectedTime, isEditing: editingReminderIndex != nil) { newTime in
                 if let editingIndex = editingReminderIndex {
@@ -265,7 +232,7 @@ struct AddReminderSheet: View {
             
             // Title
             Text("Select Time")
-                .font(.headlineSmallEmphasised)
+                .font(.title2)
                 .foregroundColor(.text01)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -289,7 +256,7 @@ struct AddReminderSheet: View {
                 dismiss()
             }) {
                 Text(isEditing ? "Save" : "Add")
-                    .font(Font.buttonText1)
+                    .font(.title2)
                     .foregroundColor(.onPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)

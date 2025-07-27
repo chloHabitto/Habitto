@@ -49,219 +49,157 @@ struct GoalBottomSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            BottomSheetHeader(
-                title: "Goal",
-                description: "Set how many times or how long you want to do this habit for each session",
-                onClose: onClose
-            )
-            
-            // Spacing between header and tabs
-            Spacer()
-                .frame(height: 16)
-            
-            // Tab Menu
-            TabMenu(
-                selectedTab: $selectedTab,
-                tabs: ["Number", "Time"]
-            )
-            
-            // Content based on selected tab
-            if selectedTab == 0 {
-                // Daily tab
-                VStack(spacing: 0) {
-                    // 1. VStack: Text and Pill
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("I want to achieve this goal")
-                            .font(Font.titleMedium)
-                            .foregroundColor(.text01)
-                        
-                        HStack {
-                            Text(selectedGoalText)
-                                .font(Font.bodyLarge)
-                                .foregroundColor(.onPrimary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
+        BaseBottomSheet(
+            title: "Goal",
+            description: "Set how many times or how long you want to do this habit for each session",
+            onClose: onClose,
+            confirmButton: {
+                onGoalSelected(selectedGoalText)
+                onClose()
+            },
+            confirmButtonTitle: "Confirm"
+        ) {
+            VStack(spacing: 0) {
+                // Tab Menu
+                TabMenu(
+                    selectedTab: $selectedTab,
+                    tabs: ["Number", "Time"]
+                )
+                
+                // Content based on selected tab
+                if selectedTab == 0 {
+                    // Number tab
+                    VStack(spacing: 0) {
+                        // 1. VStack: Text and Pill
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Set Goal")
+                                .font(.title2)
+                                .foregroundColor(.text01)
+                            
+                            HStack {
+                                Text(selectedGoalText)
+                                    .font(.body)
+                                    .foregroundColor(.onPrimary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color(hex: "1C274C"))
+                                    .clipShape(Capsule())
+                            }
                         }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-                    .padding(.top, 16)
-                    .padding(.horizontal, 16)
-                    
-                    // 2. Divider
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 20)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                        .padding(.top, 16)
                         .padding(.horizontal, 16)
-                    
-                    // 3. Stepper
-                    VStack(spacing: 12) {
+                        
+                        // 2. Divider
+                        Divider()
+                            .background(.outline)
+                            .padding(.vertical, 20)
+                            .padding(.horizontal, 16)
+                        
+                        // 3. Stepper
+                        VStack(spacing: 12) {
+                            Spacer()
+                                .frame(height: 16)
+                            
+                            HStack(spacing: 16) {
+                                // Minus button
+                                Button(action: {
+                                    if dailyValue > 1 { dailyValue -= 1 }
+                                }) {
+                                    Image(systemName: "minus")
+                                        .font(.body)
+                                        .foregroundColor(dailyValue > 1 ? Color.white : .onDisabledBackground)
+                                        .frame(width: 44, height: 44)
+                                        .background(dailyValue > 1 ? .primary : .disabledBackground)
+                                        .clipShape(Circle())
+                                }
+                                .frame(width: 48, height: 48)
+                                .disabled(dailyValue <= 1)
+                                
+                                // Number display
+                                Text("\(dailyValue)")
+                                    .font(.title2)
+                                    .foregroundColor(.text01)
+                                    .frame(width: 52, height: 52)
+                                    .background(.surface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(.outline, lineWidth: 1)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                
+                                // Plus button
+                                Button(action: {
+                                    if dailyValue < 30 { dailyValue += 1 }
+                                }) {
+                                    Image(systemName: "plus")
+                                        .font(.body)
+                                        .foregroundColor(dailyValue < 30 ? Color.white : .onDisabledBackground)
+                                        .frame(width: 44, height: 44)
+                                        .background(dailyValue < 30 ? .primary : .disabledBackground)
+                                        .clipShape(Circle())
+                                }
+                                .frame(width: 48, height: 48)
+                                .disabled(dailyValue >= 30)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        
+                        Spacer()
+                    }
+                } else {
+                    // Time tab - same structure as Number tab
+                    VStack(spacing: 0) {
+                        // 1. VStack: Text and Pill
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Goal")
+                                .font(.title2)
+                                .foregroundColor(.text01)
+                            
+                            HStack {
+                                Text(selectedGoalText)
+                                    .font(.body)
+                                    .foregroundColor(.onPrimary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color(hex: "1C274C"))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                        .padding(.top, 16)
+                        .padding(.horizontal, 16)
+                        
+                        // 2. Divider
+                        Divider()
+                            .background(.outline)
+                            .padding(.vertical, 20)
+                            .padding(.horizontal, 16)
+                        
+                        // 3. Countdown Timer Picker
+                        VStack(spacing: 12) {
+                            CountdownTimerPicker(
+                                hours: $selectedHours,
+                                minutes: $selectedMinutes,
+                                seconds: $selectedSeconds
+                            )
+                            .padding(.trailing, 16)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        
                         Spacer()
                             .frame(height: 16)
-                        
-                        HStack(spacing: 16) {
-                            // Minus button
-                            Button(action: {
-                                if dailyValue > 1 { dailyValue -= 1 }
-                            }) {
-                                Image(systemName: "minus")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(dailyValue > 1 ? Color.white : .onDisabledBackground)
-                                    .frame(width: 44, height: 44)
-                                    .background(dailyValue > 1 ? .primary : .disabledBackground)
-                                    .clipShape(Circle())
-                            }
-                            .frame(width: 48, height: 48)
-                            .disabled(dailyValue <= 1)
-                            
-                            // Number display
-                            Text("\(dailyValue)")
-                                .font(Font.headlineSmallEmphasised)
-                                .foregroundColor(.text01)
-                                .frame(width: 52, height: 52)
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            
-                            // Plus button
-                            Button(action: {
-                                if dailyValue < 30 { dailyValue += 1 }
-                            }) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(dailyValue < 30 ? Color.white : .onDisabledBackground)
-                                    .frame(width: 44, height: 44)
-                                    .background(dailyValue < 30 ? .primary : .disabledBackground)
-                                    .clipShape(Circle())
-                            }
-                            .frame(width: 48, height: 48)
-                            .disabled(dailyValue >= 30)
-                        }
-                        .frame(maxWidth: .infinity)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    
-                    Spacer()
-                    
-                    // 4. Confirm button dock
-                    VStack {
-                        Button(action: {
-                            onGoalSelected(selectedGoalText)
-                            onClose()
-                        }) {
-                            Text("Confirm")
-                                .font(Font.buttonText1)
-                                .foregroundColor(.onPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
-                    .background(.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(.outline)
-                            .frame(height: 1),
-                        alignment: .top
-                    )
                 }
-            } else {
-                // Time tab - same structure as Number tab
-                VStack(spacing: 0) {
-                    // 1. VStack: Text and Pill
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("I want to achieve this goal")
-                            .font(Font.titleMedium)
-                            .foregroundColor(.text01)
-                        
-                        HStack {
-                            Text(selectedGoalText)
-                                .font(Font.bodyLarge)
-                                .foregroundColor(.onPrimary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
-                    .padding(.top, 16)
-                    .padding(.horizontal, 16)
-                    
-                    // 2. Divider
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 16)
-                    
-                    // 3. Countdown Timer Picker
-                    VStack(spacing: 12) {
-//                        Spacer()
-//                            .frame(height: 16)
-                        
-                        CountdownTimerPicker(
-                            hours: $selectedHours,
-                            minutes: $selectedMinutes,
-                            seconds: $selectedSeconds
-                        )
-//                        .frame(height: 150)
-                        .padding(.trailing, 16)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-//                    .padding(.top, 8)
-                    Spacer()
-                    .background(.red)
-                    
-
-                    
-                    Spacer()
-                        .frame(height: 16)
-                    
-                    // 4. Confirm button dock
-                    VStack {
-                        Button(action: {
-                            onGoalSelected(selectedGoalText)
-                            onClose()
-                        }) {
-                            Text("Confirm")
-                                .font(Font.buttonText1)
-                                .foregroundColor(.onPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color(hex: "1C274C"))
-                                .clipShape(Capsule())
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
-                    .background(.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(.outline)
-                            .frame(height: 1),
-                        alignment: .top
-                    )
-                }
+                Spacer()
             }
-            Spacer()
         }
-        .background(.surface)
         .presentationDetents([.large, .height(700)])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(20)
     }
 }
 
