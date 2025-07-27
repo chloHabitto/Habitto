@@ -59,59 +59,131 @@ struct HabitEditView: View {
                         )
                         
                         // Description
-                        inputFieldSection(
-                            title: "Description",
-                            placeholder: "Description (Optional)",
-                            text: $habitDescription
-                        )
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Description")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text05)
+                            
+                            TextField("Description (Optional)", text: $habitDescription, axis: .vertical)
+                                .lineLimit(3...6)
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text01)
+                                .accentColor(.text01)
+                                .inputFieldStyle()
+                                .contentShape(Rectangle())
+                                .frame(minHeight: 48)
+                                .submitLabel(.done)
+                        }
                         
                         // Icon Selection
-                        selectionRow(
-                            title: "Icon",
-                            value: getIconDisplayName(selectedIcon),
-                            icon: selectedIcon,
-                            color: selectedColor
-                        ) {
+                        Button(action: {
                             showingIconSheet = true
+                        }) {
+                            HStack {
+                                Text("Icon")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                
+                                Spacer()
+                                
+                                Text(getIconDisplayName(selectedIcon))
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.primaryDim)
+                            }
                         }
+                        .selectionRowStyle()
                         
                         // Color Selection
-                        selectionRow(
-                            title: "Colour",
-                            value: getColorDisplayName(selectedColor),
-                            color: selectedColor
-                        ) {
+                        Button(action: {
                             showingColorSheet = true
+                        }) {
+                            HStack {
+                                Text("Colour")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                
+                                Spacer()
+                                
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(selectedColor)
+                                        .frame(width: 16, height: 16)
+                                    Text(getColorDisplayName(selectedColor))
+                                        .font(.appBodyLarge)
+                                        .foregroundColor(.text04)
+                                }
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.primaryDim)
+                            }
                         }
+                        .selectionRowStyle()
                         
                         // Habit Type
                         habitTypeSection
                         
                         // Schedule
-                        selectionRow(
-                            title: "Schedule",
-                            value: selectedSchedule
-                        ) {
+                        Button(action: {
                             showingScheduleSheet = true
+                        }) {
+                            HStack {
+                                Text("Schedule")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                
+                                Spacer()
+                                
+                                Text(selectedSchedule)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryDim)
+                            }
                         }
+                        .selectionRowStyle()
                         
                         // Goal
-                        selectionRow(
-                            title: "Goal",
-                            value: selectedGoal
-                        ) {
+                        Button(action: {
                             showingGoalSheet = true
+                        }) {
+                            HStack {
+                                Text("Goal")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                
+                                Spacer()
+                                
+                                Text(selectedGoal)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryDim)
+                            }
                         }
+                        .selectionRowStyle()
                         
                         // Reminder
                         reminderSection
                         
                         // Period
                         periodSection
+                        
+                        // Extra spacing at bottom for better scrolling
+                        Spacer(minLength: 120)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 100) // Space for save button
+                    .padding(.top, 16)
                 }
+                .background(.surface2)
                 
                 // Save Button
                 saveButton
@@ -164,18 +236,39 @@ struct HabitEditView: View {
     
     // MARK: - Top Navigation Bar
     private var topNavigationBar: some View {
-        HStack {
-            Spacer()
-            
-            Button("Cancel") {
-                dismiss()
+        VStack(spacing: 0) {
+            HStack {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .font(.appBodyMedium)
+                .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Text("Edit Habit")
+                    .font(.appHeadlineMediumEmphasised)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Button("Save") {
+                    saveHabit()
+                }
+                .font(.appBodyMedium)
+                .foregroundColor(.primary)
             }
-            .font(.appBodyMedium)
-            .foregroundColor(.primary)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+            
+            Text("Update your habit details")
+                .font(.appTitleSmall)
+                .foregroundColor(.text04)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
         .background(.surface)
     }
     
@@ -187,15 +280,13 @@ struct HabitEditView: View {
                 .foregroundColor(.text05)
             
             TextField(placeholder, text: text)
-                .font(.appTitleSmallEmphasised)
-                .foregroundColor(.primary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline, lineWidth: 1)
-                )
+                .font(.appBodyLarge)
+                .foregroundColor(.text01)
+                .accentColor(.text01)
+                .inputFieldStyle()
+                .contentShape(Rectangle())
+                .frame(minHeight: 48)
+                .submitLabel(.done)
         }
     }
     
@@ -252,178 +343,199 @@ struct HabitEditView: View {
     private var habitTypeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Habit Type")
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
             
-            HStack(spacing: 8) {
-                Button("✓ Habit Formation") {
+            HStack(spacing: 12) {
+                // Habit Formation button
+                Button(action: {
                     selectedHabitType = .formation
+                }) {
+                    HStack(spacing: 8) {
+                        if selectedHabitType == .formation {
+                            Image(systemName: "checkmark")
+                                .font(.appLabelSmallEmphasised)
+                                .foregroundColor(.onPrimary)
+                        }
+                        Text("Habit Formation")
+                            .font(selectedHabitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
+                            .foregroundColor(selectedHabitType == .formation ? .onPrimary : .onPrimaryContainer)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(selectedHabitType == .formation ? .primary : .primaryContainer)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline, lineWidth: 1.5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .font(.appBodyMedium)
-                .foregroundColor(selectedHabitType == .formation ? .onPrimary : .text05)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(selectedHabitType == .formation ? .primary : .surfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .frame(maxWidth: .infinity)
                 
-                Button("Habit Breaking") {
+                // Habit Breaking button
+                Button(action: {
                     selectedHabitType = .breaking
+                }) {
+                    HStack(spacing: 8) {
+                        if selectedHabitType == .breaking {
+                            Image(systemName: "checkmark")
+                                .font(.appLabelSmallEmphasised)
+                                .foregroundColor(.onPrimary)
+                        }
+                        Text("Habit Breaking")
+                            .font(selectedHabitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
+                            .foregroundColor(selectedHabitType == .breaking ? .onPrimary : .onPrimaryContainer)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(selectedHabitType == .breaking ? .primary : .primaryContainer)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline, lineWidth: 1.5)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .font(.appBodyMedium)
-                .foregroundColor(selectedHabitType == .breaking ? .onPrimary : .text05)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(selectedHabitType == .breaking ? .primary : .surfaceContainer)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .frame(maxWidth: .infinity)
             }
+            .frame(maxWidth: .infinity)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(.outline, lineWidth: 1.5)
+        )
+        .cornerRadius(12)
     }
     
     // MARK: - Reminder Section
     private var reminderSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Reminder")
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Reminder")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+                Text(selectedReminder.isEmpty || selectedReminder == "No reminder" ? "Add" : selectedReminder)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text04)
+                Image(systemName: "chevron.right")
+                    .font(.appLabelMedium)
+                    .foregroundColor(.primaryDim)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showingReminderSheet = true
+            }
             
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Add")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.text05)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline, lineWidth: 1)
-                )
-                .onTapGesture {
-                    showingReminderSheet = true
-                }
+            if !selectedReminder.isEmpty && selectedReminder != "No reminder" {
+                Divider()
+                    .background(.outline)
+                    .padding(.vertical, 4)
                 
-                HStack {
-                    Text(selectedReminder.isEmpty ? "9:41 AM" : selectedReminder)
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Toggle("", isOn: $isReminderEnabled)
-                        .toggleStyle(SwitchToggleStyle(tint: .primary))
+                VStack(spacing: 4) {
+                    HStack {
+                        Text(selectedReminder)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        Text("Active")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.primary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.secondaryContainer)
+                    .cornerRadius(6)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline, lineWidth: 1)
-                )
             }
         }
+        .selectionRowStyle()
     }
     
     // MARK: - Period Section
     private var periodSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Period")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                
-                Spacer()
-                
-                activeStatusTag
-            }
+            Text("Period")
+                .font(.appTitleMedium)
+                .foregroundColor(.primary)
             
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Start Date")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text05)
-                    
-                    Text(formatDate(startDate))
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.primary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline, lineWidth: 1)
-                )
-                .onTapGesture {
+            HStack(spacing: 12) {
+                // Start Date
+                Button(action: {
                     showingPeriodSheet = true
+                }) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Start Date")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
+                        Text(formatDate(startDate))
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text04)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .inputFieldStyle()
+                    }
                 }
+                .frame(maxWidth: .infinity)
                 
-                Text("-")
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.text05)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("End Date")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text05)
-                    
-                    Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.primary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline, lineWidth: 1)
-                )
-                .onTapGesture {
+                // End Date
+                Button(action: {
                     showingPeriodSheet = true
+                }) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("End Date")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
+                        Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text04)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .inputFieldStyle()
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .selectionRowStyle()
     }
     
     // MARK: - Save Button
     private var saveButton: some View {
-        VStack {
-            Spacer()
-            
-            HabittoButton.largeFillPrimary(
-                text: "Save",
-                action: {
-                    // Create updated habit with current values
-                    let updatedHabit = Habit(
-                        name: habitName,
-                        description: habitDescription,
-                        icon: selectedIcon,
-                        color: selectedColor,
-                        habitType: selectedHabitType,
-                        schedule: selectedSchedule,
-                        goal: selectedGoal,
-                        reminder: isReminderEnabled ? selectedReminder : "",
-                        startDate: startDate,
-                        endDate: endDate,
-                        isCompleted: habit.isCompleted,
-                        streak: habit.streak
-                    )
-                    onSave(updatedHabit)
-                    dismiss()
-                }
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-        }
+        HabittoButton.largeFillPrimary(
+            text: "Save Changes",
+            action: saveHabit
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .background(.surface2)
+    }
+    
+    // MARK: - Save Function
+    private func saveHabit() {
+        // Create updated habit with current values
+        let updatedHabit = Habit(
+            name: habitName,
+            description: habitDescription,
+            icon: selectedIcon,
+            color: selectedColor,
+            habitType: selectedHabitType,
+            schedule: selectedSchedule,
+            goal: selectedGoal,
+            reminder: isReminderEnabled ? selectedReminder : "",
+            startDate: startDate,
+            endDate: endDate,
+            isCompleted: habit.isCompleted,
+            streak: habit.streak
+        )
+        onSave(updatedHabit)
+        dismiss()
     }
     
     // MARK: - Active Status Tag
@@ -444,8 +556,33 @@ struct HabitEditView: View {
     }
     
     private func getColorDisplayName(_ color: Color) -> String {
-        // This would need to be implemented based on your color system
-        return "Navy"
+        // Map colors to display names
+        switch color {
+        case .blue:
+            return "Blue"
+        case .green:
+            return "Green"
+        case .orange:
+            return "Orange"
+        case .red:
+            return "Red"
+        case .purple:
+            return "Purple"
+        case .pink:
+            return "Pink"
+        case .yellow:
+            return "Yellow"
+        case .mint:
+            return "Mint"
+        case .teal:
+            return "Teal"
+        case .indigo:
+            return "Indigo"
+        case .brown:
+            return "Brown"
+        default:
+            return "Custom"
+        }
     }
     
     private func formatDate(_ date: Date) -> String {
