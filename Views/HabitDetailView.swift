@@ -2,8 +2,10 @@ import SwiftUI
 
 struct HabitDetailView: View {
     let habit: Habit
+    let onUpdateHabit: ((Habit) -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var todayProgress: Int = 0
+    @State private var showingEditView = false
     
     var body: some View {
         NavigationView {
@@ -20,6 +22,11 @@ struct HabitDetailView: View {
             }
             .background(Color(.systemGray6))
             .navigationBarHidden(true)
+            .sheet(isPresented: $showingEditView) {
+                HabitEditView(habit: habit, onSave: { updatedHabit in
+                    onUpdateHabit?(updatedHabit)
+                })
+            }
         }
     }
     
@@ -40,9 +47,9 @@ struct HabitDetailView: View {
                 
                 // More options button
                 Menu {
-                    Button(action: {
-                        // TODO: Add edit action
-                    }) {
+                                    Button(action: {
+                    showingEditView = true
+                }) {
                         Label("Edit", systemImage: "pencil")
                     }
                     
@@ -305,5 +312,5 @@ struct HabitDetailView: View {
         endDate: nil,
         isCompleted: false,
         streak: 5
-    ))
+    ), onUpdateHabit: nil)
 } 

@@ -39,6 +39,12 @@ struct HomeView: View {
                             habits: habits,
                             onToggleHabit: { habit in
                                 toggleHabitCompletion(habit)
+                            },
+                            onUpdateHabit: { updatedHabit in
+                                if let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) {
+                                    habits[index] = updatedHabit
+                                    Habit.saveHabits(habits)
+                                }
                             }
                         )
                     case .habits:

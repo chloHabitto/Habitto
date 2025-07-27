@@ -10,6 +10,7 @@ struct HomeTabView: View {
     @State private var selectedHabit: Habit? = nil
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
+    let onUpdateHabit: ((Habit) -> Void)?
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -28,7 +29,7 @@ struct HomeTabView: View {
             print("🏠 HomeTabView appeared!")
         }
         .sheet(item: $selectedHabit) { habit in
-            HabitDetailView(habit: habit)
+            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
         }
     }
     
