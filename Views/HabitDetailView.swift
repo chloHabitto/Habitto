@@ -224,9 +224,7 @@ struct HabitDetailView: View {
                 
                 // Increment button
                 Button(action: {
-                    if todayProgress < 1 {
-                        todayProgress += 1
-                    }
+                    todayProgress += 1
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .medium))
