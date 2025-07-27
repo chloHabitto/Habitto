@@ -238,15 +238,6 @@ struct HabitEditView: View {
     private var topNavigationBar: some View {
         VStack(spacing: 0) {
             HStack {
-                // Back button
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.primary)
-                }
-                
                 Spacer()
                 
                 // Cancel button
