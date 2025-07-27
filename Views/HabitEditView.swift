@@ -249,11 +249,11 @@ struct HabitEditView: View {
                 
                 Spacer()
                 
-                // Save button
-                Button("Save") {
-                    saveHabit()
+                // Cancel button
+                Button("Cancel") {
+                    dismiss()
                 }
-                .font(.appBodyMedium)
+                .font(.appBodyLarge)
                 .foregroundColor(.primary)
             }
             .padding(.horizontal, 16)
