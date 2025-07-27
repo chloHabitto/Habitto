@@ -45,6 +45,7 @@ extension Font {
     static let appBodyMediumEmphasised = Font.system(size: 14, weight: .medium)
     static let appBodySmall = Font.system(size: 12, weight: .regular)
     static let appBodySmallEmphasised = Font.system(size: 12, weight: .medium)
+    static let appBodyExtraSmall = Font.system(size: 10, weight: .regular)
 
     // MARK: - Button Text
     static let appButtonText1 = Font.system(size: 18, weight: .semibold)

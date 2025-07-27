@@ -141,49 +141,16 @@ struct HomeTabView: View {
     }
     
     private func habitRow(_ habit: Habit) -> some View {
-        HStack(spacing: 12) {
-            // Color indicator
-            Circle()
-                .fill(habit.color)
-                .frame(width: 12, height: 12)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.name)
-                                                    .font(.appTitleMedium)
-                    .foregroundColor(.primary)
-                
-                if !habit.description.isEmpty {
-                    Text(habit.description)
-                                                        .font(.appBodyMedium)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            
-            Spacer()
-            
-            // Streak indicator
-            HStack(spacing: 4) {
-                Text("🔥")
-                                                    .font(.appLabelSmall)
-                Text("\(habit.streak)")
-                                                    .font(.appBodyMediumEmphasised)
-                    .foregroundColor(.primary)
-            }
-            
-            // Checkbox
-            Button(action: {
-                onToggleHabit(habit)
-            }) {
-                Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
-                                                    .font(.appHeadlineSmall)
-                    .foregroundColor(habit.isCompleted ? .green : .secondary)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        ScheduledHabitItem(
+            title: habit.name,
+            description: habit.description.isEmpty ? "No description" : habit.description,
+            selectedColor: habit.color,
+            icon: habit.icon,
+            isCompleted: Binding(
+                get: { habit.isCompleted },
+                set: { _ in onToggleHabit(habit) }
+            )
+        )
     }
     
     private var habitsForSelectedDate: [Habit] {
