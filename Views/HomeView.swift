@@ -71,6 +71,16 @@ struct HomeView: View {
                             },
                             onCreateHabit: {
                                 showingCreateHabit = true
+                            },
+                            onUpdateHabit: { updatedHabit in
+                                print("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
+                                if let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) {
+                                    habits[index] = updatedHabit
+                                    Habit.saveHabits(habits)
+                                    // Force SwiftUI to recognize the array has changed by creating a new instance
+                                    habits = Array(habits)
+                                    print("🔄 HomeView: Habit updated and saved successfully")
+                                }
                             }
                         )
                     case .progress:
