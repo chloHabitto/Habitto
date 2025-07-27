@@ -85,6 +85,7 @@ struct ColorTokens {
     static let primaryContainer = ColorPrimitives.navy50
     static let onPrimaryContainer = ColorPrimitives.navy900
     static let primaryDim = ColorPrimitives.navy300
+    static let primaryContainerFocus = ColorPrimitives.navy200
     
     // Secondary Colors
     static let secondary = ColorPrimitives.pastelBlue300
@@ -170,6 +171,7 @@ extension Color {
     static let primaryContainer = ColorTokens.primaryContainer
     static let onPrimaryContainer = ColorTokens.onPrimaryContainer
     static let primaryDim = ColorTokens.primaryDim
+    static let primaryContainerFocus = ColorTokens.primaryContainerFocus
     
     // Secondary Colors
     static let secondary = ColorTokens.secondary
@@ -223,6 +225,7 @@ extension ShapeStyle where Self == Color {
     static var primaryContainer: Color { ColorTokens.primaryContainer }
     static var onPrimaryContainer: Color { ColorTokens.onPrimaryContainer }
     static var primaryDim: Color { ColorTokens.primaryDim }
+    static var primaryContainerFocus: Color { ColorTokens.primaryContainerFocus }
     
     // Secondary Colors
     static var secondary: Color { ColorTokens.secondary }

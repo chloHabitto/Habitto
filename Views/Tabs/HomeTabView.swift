@@ -295,7 +295,6 @@ struct HomeTabView: View {
              
              HStack(spacing: 4) {
                  // Today button (shown when not on current week or selected date is not today)
-                 // Show Today button when not on current week or selected date is not today
                  let calendar = Calendar.current
                  let today = Date()
                  let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
@@ -348,9 +347,46 @@ struct HomeTabView: View {
     
              // MARK: - Weekly Calendar
     private var weeklyCalendar: some View {
-        GeometryReader { geometry in
-            weekView(for: currentWeekOffset, width: geometry.size.width)
-                .frame(width: geometry.size.width)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 0) {
+                    ForEach(-100...100, id: \.self) { weekOffset in
+                        weekView(for: weekOffset, width: UIScreen.main.bounds.width - 16)
+                            .frame(width: UIScreen.main.bounds.width - 16)
+                            .id(weekOffset)
+                            .onAppear {
+                                // Debug: Print when each week appears
+                                print("📅 Week \(weekOffset) appeared")
+                            }
+                    }
+                }
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $scrollPosition)
+            .onChange(of: scrollPosition) { oldValue, newValue in
+                if let newValue = newValue {
+                    print("📱 Scroll position changed from \(oldValue ?? -999) to \(newValue)")
+                    currentWeekOffset = newValue
+                }
+            }
+            .onAppear {
+                print("📱 Weekly calendar appeared with currentWeekOffset: \(currentWeekOffset)")
+                // Force scroll to current week (0) to ensure we can scroll both directions
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo(0, anchor: .center)
+                    }
+                }
+            }
+            .simultaneousGesture(
+                DragGesture()
+                    .onChanged { value in
+                        print("🖱️ Drag gesture detected: \(value.translation.width)")
+                    }
+                    .onEnded { value in
+                        print("🖱️ Drag gesture ended: \(value.translation.width)")
+                    }
+            )
         }
         .frame(height: 72)
         .padding(.horizontal, 8)
@@ -477,12 +513,14 @@ struct HomeTabView: View {
         
         // Get the start of the week containing today (Monday)
         guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start else {
+            print("❌ Failed to get week start for weekOffset: \(weekOffset)")
             return []
         }
         
         // Calculate the target week based on offset
         // weekOffset 0 = current week, -1 = previous week, +1 = next week
         guard let targetWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: weekStart) else {
+            print("❌ Failed to calculate target week for weekOffset: \(weekOffset)")
             return []
         }
         
@@ -494,7 +532,12 @@ struct HomeTabView: View {
         // Debug: Print the dates for this week
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        print("Week offset \(weekOffset): \(dates.map { formatter.string(from: $0) })")
+        print("📅 Week offset \(weekOffset): \(dates.map { formatter.string(from: $0) })")
+        
+        // Additional debug for past weeks
+        if weekOffset < 0 {
+            print("🔍 Past week \(weekOffset): First date = \(formatter.string(from: dates.first ?? Date())), Last date = \(formatter.string(from: dates.last ?? Date()))")
+        }
         
         return dates
     }
