@@ -238,20 +238,18 @@ struct HabitEditView: View {
     private var topNavigationBar: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("Cancel") {
+                // Back button
+                Button(action: {
                     dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.primary)
                 }
-                .font(.appBodyMedium)
-                .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Text("Edit Habit")
-                    .font(.appHeadlineMediumEmphasised)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-                
+                // Save button
                 Button("Save") {
                     saveHabit()
                 }
@@ -259,17 +257,24 @@ struct HabitEditView: View {
                 .foregroundColor(.primary)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 8)
             .padding(.bottom, 16)
             
-            Text("Update your habit details")
-                .font(.appTitleSmall)
-                .foregroundColor(.text04)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+            // Title and description
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Edit habit")
+                    .font(.appHeadlineMediumEmphasised)
+                    .foregroundColor(.text01)
+                
+                Text("Update your habit details.")
+                    .font(.appTitleSmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .background(.surface)
+        .padding(.top, 0) // Let the system handle safe area
     }
     
     // MARK: - Input Field Section

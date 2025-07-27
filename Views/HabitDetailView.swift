@@ -39,6 +39,8 @@ struct HabitDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                 }
+                .frame(width: 40, height: 40)
+                .contentShape(Rectangle())
                 
                 Spacer()
                 
@@ -60,8 +62,10 @@ struct HabitDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                 }
+                .frame(width: 40, height: 40)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 4)
             .padding(.top, 8)
             .padding(.bottom, 16)
             
