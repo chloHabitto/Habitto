@@ -44,6 +44,8 @@ struct HomeView: View {
                                 if let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) {
                                     habits[index] = updatedHabit
                                     Habit.saveHabits(habits)
+                                    // Force SwiftUI to recognize the array has changed by creating a new instance
+                                    habits = Array(habits)
                                 }
                             }
                         )
@@ -92,6 +94,8 @@ struct HomeView: View {
                 if let index = habits.firstIndex(where: { $0.id == habit.id }) {
                     habits[index] = updatedHabit
                     Habit.saveHabits(habits)
+                    // Force SwiftUI to recognize the array has changed by creating a new instance
+                    habits = Array(habits)
                 }
                 habitToEdit = nil
             }, habitToEdit: habit)
@@ -122,6 +126,8 @@ struct HomeView: View {
                 habits[index].streak = max(0, habits[index].streak - 1)
             }
             Habit.saveHabits(habits)
+            // Force SwiftUI to recognize the array has changed by creating a new instance
+            habits = Array(habits)
         }
     }
     

@@ -119,12 +119,7 @@ struct HabitsTabView: View {
     
     private func habitDetailRow(_ habit: Habit) -> some View {
         AddedHabitItem(
-            title: habit.name,
-            description: habit.description.isEmpty ? "No description" : habit.description,
-            selectedColor: habit.color,
-            icon: habit.icon,
-            schedule: habit.schedule,
-            goal: habit.goal
+            habit: habit
         )
         .onTapGesture {
             onToggleHabit(habit)

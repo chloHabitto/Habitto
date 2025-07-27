@@ -147,10 +147,7 @@ struct HomeTabView: View {
     
     private func habitRow(_ habit: Habit) -> some View {
         ScheduledHabitItem(
-            title: habit.name,
-            description: habit.description.isEmpty ? "No description" : habit.description,
-            selectedColor: habit.color,
-            icon: habit.icon,
+            habit: habit,
             isCompleted: Binding(
                 get: { habit.isCompleted },
                 set: { _ in onToggleHabit(habit) }

@@ -1,18 +1,13 @@
 import SwiftUI
 
 struct AddedHabitItem: View {
-    let title: String
-    let description: String
-    let selectedColor: Color
-    let icon: String // Can be emoji or asset name
-    let schedule: String
-    let goal: String
+    let habit: Habit
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(selectedColor)
+                .fill(habit.color)
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             
@@ -22,15 +17,15 @@ struct AddedHabitItem: View {
                     .fill(.surfaceContainer)
                     .frame(width: 30, height: 30)
                 
-                if icon.hasPrefix("Icon-") {
+                if habit.icon.hasPrefix("Icon-") {
                     // Asset icon
-                    Image(icon)
+                    Image(habit.icon)
                         .resizable()
                         .frame(width: 14, height: 14)
-                        .foregroundColor(selectedColor)
+                        .foregroundColor(habit.color)
                 } else {
                     // Emoji or system icon
-                    Text(icon)
+                    Text(habit.icon)
                         .font(.system(size: 14))
                 }
             }
@@ -43,13 +38,13 @@ struct AddedHabitItem: View {
                 HStack(spacing: 4) {
                     // Text container
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(title)
+                        Text(habit.name)
                             .font(.appTitleMediumEmphasised)
                             .foregroundColor(.text02)
                             .lineLimit(1)
                             .truncationMode(.tail)
                         
-                        Text(description)
+                        Text(habit.description.isEmpty ? "No description" : habit.description)
                             .font(.appBodyExtraSmall)
                             .foregroundColor(.text05)
                             .lineLimit(1)
@@ -81,7 +76,7 @@ struct AddedHabitItem: View {
                                     .frame(width: 16, height: 16)
                                     .foregroundColor(.text05)
                                 
-                                Text(schedule)
+                                Text(habit.schedule)
                                     .font(.appBodyExtraSmall)
                                     .foregroundColor(.text05)
                             }
@@ -100,7 +95,7 @@ struct AddedHabitItem: View {
                                     .frame(width: 16, height: 16)
                                     .foregroundColor(.text05)
                                 
-                                Text(goal)
+                                Text(habit.goal)
                                     .font(.appBodyExtraSmall)
                                     .foregroundColor(.text05)
                             }
@@ -123,21 +118,37 @@ struct AddedHabitItem: View {
 #Preview {
     VStack(spacing: 16) {
         AddedHabitItem(
-            title: "Morning Exercise",
-            description: "Start the day with a quick workout",
-            selectedColor: .blue,
-            icon: "🏃‍♂️",
-            schedule: "Daily",
-            goal: "30 minutes"
+            habit: Habit(
+                name: "Morning Exercise",
+                description: "Start the day with a quick workout",
+                icon: "🏃‍♂️",
+                color: .blue,
+                habitType: .formation,
+                schedule: "Daily",
+                goal: "30 minutes",
+                reminder: "No reminder",
+                startDate: Date(),
+                endDate: nil,
+                isCompleted: false,
+                streak: 0
+            )
         )
         
         AddedHabitItem(
-            title: "Read Books",
-            description: "Read at least one chapter every day",
-            selectedColor: .green,
-            icon: "📚",
-            schedule: "Weekdays",
-            goal: "1 chapter"
+            habit: Habit(
+                name: "Read Books",
+                description: "Read at least one chapter every day",
+                icon: "📚",
+                color: .green,
+                habitType: .formation,
+                schedule: "Weekdays",
+                goal: "1 chapter",
+                reminder: "No reminder",
+                startDate: Date(),
+                endDate: nil,
+                isCompleted: false,
+                streak: 0
+            )
         )
     }
     .padding()

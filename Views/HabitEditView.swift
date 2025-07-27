@@ -26,6 +26,20 @@ struct HabitEditView: View {
     @State private var showingReminderSheet = false
     @State private var showingPeriodSheet = false
     
+    // Computed property to check if any changes have been made
+    private var hasChanges: Bool {
+        return habitName != habit.name ||
+               habitDescription != habit.description ||
+               selectedIcon != habit.icon ||
+               selectedColor != habit.color ||
+               selectedHabitType != habit.habitType ||
+               selectedSchedule != habit.schedule ||
+               selectedGoal != habit.goal ||
+               selectedReminder != habit.reminder ||
+               startDate != habit.startDate ||
+               endDate != habit.endDate
+    }
+    
     init(habit: Habit, onSave: @escaping (Habit) -> Void) {
         self.habit = habit
         self.onSave = onSave
@@ -505,9 +519,10 @@ struct HabitEditView: View {
     // MARK: - Save Button
     private var saveButton: some View {
         HabittoButton.largeFillPrimary(
-            text: "Save Changes",
+            text: "Save",
             action: saveHabit
         )
+        .disabled(!hasChanges)
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .background(.surface2)

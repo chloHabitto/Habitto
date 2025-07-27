@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HabitDetailView: View {
-    let habit: Habit
+    @State var habit: Habit
     let onUpdateHabit: ((Habit) -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var todayProgress: Int = 0
@@ -22,6 +22,7 @@ struct HabitDetailView: View {
         .background(Color(.systemGray6))
         .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in
+                habit = updatedHabit
                 onUpdateHabit?(updatedHabit)
             })
         }

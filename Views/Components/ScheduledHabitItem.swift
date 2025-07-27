@@ -1,17 +1,14 @@
 import SwiftUI
 
 struct ScheduledHabitItem: View {
-    let title: String
-    let description: String
-    let selectedColor: Color
-    let icon: String // Can be emoji or asset name
+    let habit: Habit
     @Binding var isCompleted: Bool
     
     var body: some View {
         HStack(spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(selectedColor)
+                .fill(habit.color)
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             
@@ -21,15 +18,15 @@ struct ScheduledHabitItem: View {
                     .fill(.surfaceContainer)
                     .frame(width: 30, height: 30)
                 
-                if icon.hasPrefix("Icon-") {
+                if habit.icon.hasPrefix("Icon-") {
                     // Asset icon
-                    Image(icon)
+                    Image(habit.icon)
                         .resizable()
                         .frame(width: 14, height: 14)
-                        .foregroundColor(selectedColor)
+                        .foregroundColor(habit.color)
                 } else {
                     // Emoji or system icon
-                    Text(icon)
+                    Text(habit.icon)
                         .font(.system(size: 14))
                 }
             }
@@ -38,13 +35,13 @@ struct ScheduledHabitItem: View {
             
             // VStack with title and description
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(habit.name)
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.text02)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 
-                Text(description)
+                Text(habit.description.isEmpty ? "No description" : habit.description)
                     .font(.appBodyExtraSmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -80,26 +77,56 @@ struct ScheduledHabitItem: View {
 #Preview {
     VStack(spacing: 16) {
         ScheduledHabitItem(
-            title: "Morning Exercise",
-            description: "30 minutes of cardio",
-            selectedColor: .green,
-            icon: "🏃‍♂️",
+            habit: Habit(
+                name: "Morning Exercise",
+                description: "30 minutes of cardio",
+                icon: "🏃‍♂️",
+                color: .green,
+                habitType: .formation,
+                schedule: "Everyday",
+                goal: "30 minutes",
+                reminder: "No reminder",
+                startDate: Date(),
+                endDate: nil,
+                isCompleted: false,
+                streak: 0
+            ),
             isCompleted: .constant(false)
         )
         
         ScheduledHabitItem(
-            title: "Read Books",
-            description: "Read 20 pages daily",
-            selectedColor: .blue,
-            icon: "📚",
+            habit: Habit(
+                name: "Read Books",
+                description: "Read 20 pages daily",
+                icon: "📚",
+                color: .blue,
+                habitType: .formation,
+                schedule: "Everyday",
+                goal: "20 pages",
+                reminder: "No reminder",
+                startDate: Date(),
+                endDate: nil,
+                isCompleted: true,
+                streak: 5
+            ),
             isCompleted: .constant(true)
         )
         
         ScheduledHabitItem(
-            title: "Drink Water",
-            description: "8 glasses of water per day",
-            selectedColor: .orange,
-            icon: "💧",
+            habit: Habit(
+                name: "Drink Water",
+                description: "8 glasses of water per day",
+                icon: "💧",
+                color: .orange,
+                habitType: .formation,
+                schedule: "Everyday",
+                goal: "8 glasses",
+                reminder: "No reminder",
+                startDate: Date(),
+                endDate: nil,
+                isCompleted: false,
+                streak: 0
+            ),
             isCompleted: .constant(false)
         )
     }
