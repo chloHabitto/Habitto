@@ -10,6 +10,12 @@ struct HomeTabView: View {
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
     
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter
+    }()
+    
     var body: some View {
         VStack(spacing: 0) {
             headerSection
@@ -287,9 +293,17 @@ struct HomeTabView: View {
              
              Spacer()
              
-             HStack(spacing: 12) {
-                 // Today button (shown when selected date is not today)
-                 if !Calendar.current.isDate(selectedDate, inSameDayAs: Date()) {
+             HStack(spacing: 4) {
+                 // Today button (shown when not on current week or selected date is not today)
+                 // Show Today button when not on current week or selected date is not today
+                 let calendar = Calendar.current
+                 let today = Date()
+                 let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
+                     calendar.isDate(date, inSameDayAs: today)
+                 }
+                 let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: today)
+                 
+                 if !isTodayInCurrentWeek || !isTodaySelected {
                      Button(action: {
                          withAnimation(.easeInOut(duration: 0.08)) {
                              selectedDate = Date()
@@ -299,18 +313,18 @@ struct HomeTabView: View {
                              Image("Icon-replay")
                                  .resizable()
                                  .frame(width: 12, height: 12)
+                                 .foregroundColor(.primaryFocus)
                              Text("Today")
-                                 .font(.appLabelSmallEmphasised)
-                                 .lineSpacing(16)
+                                 .font(.appLabelMedium)
+                                 .foregroundColor(.primaryFocus)
                          }
-                         .foregroundColor(Color(red: 0.11, green: 0.15, blue: 0.30)) // #1C274C
-                         .padding(.leading, 8)
-                         .padding(.trailing, 12)
+                         .padding(.leading, 12)
+                         .padding(.trailing, 8)
                          .padding(.top, 4)
                          .padding(.bottom, 4)
                          .overlay(
                              RoundedRectangle(cornerRadius: .infinity)
-                                 .stroke(Color(red: 0.11, green: 0.15, blue: 0.30), lineWidth: 1) // #1C274C
+                                 .stroke(.primaryFocus, lineWidth: 1)
                          )
                      }
                  }
@@ -332,89 +346,41 @@ struct HomeTabView: View {
          .padding(.bottom, 0)
      }
     
-         // MARK: - Weekly Calendar
-     private var weeklyCalendar: some View {
-         GeometryReader { geometry in
-             ScrollViewReader { proxy in
-                 ScrollView(.horizontal, showsIndicators: false) {
-                     LazyHStack(spacing: 0) {
-                         ForEach(-52...52, id: \.self) { weekOffset in
-                             weekView(for: weekOffset, width: geometry.size.width)
-                                 .frame(width: geometry.size.width)
-                                 .id(weekOffset)
-                         }
-                     }
-                     .scrollTargetLayout()
-                     .scrollPosition(id: $scrollPosition)
-                 }
-                 .scrollTargetBehavior(.paging)
-                 .onAppear {
-                     print("📱 Weekly calendar appeared!")
-                     print("📅 Calendar range: -52 to +52 weeks (104 total weeks)")
-                     print("📅 Current week offset: 0")
-                     
-                     // Scroll to the current week (offset 0) immediately
-                     proxy.scrollTo(0, anchor: .center)
-                 }
-                 .onChange(of: scrollPosition) { oldValue, newValue in
-                     if let newPosition = newValue, newPosition != oldValue {
-                         // Update current week offset
-                         currentWeekOffset = newPosition
-                         
-                         // Trigger haptic feedback when week changes
-                         if newPosition != lastHapticWeek {
-                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                             impactFeedback.impactOccurred()
-                             lastHapticWeek = newPosition
-                         }
-                     }
-                 }
-                 .simultaneousGesture(
-                     DragGesture()
-                         .onChanged { _ in
-                             isDragging = true
-                         }
-                         .onEnded { _ in
-                             isDragging = false
-                             // Trigger haptic when drag ends
-                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                             impactFeedback.impactOccurred()
-                         }
-                 )
-                 .onTapGesture {
-                     // Trigger haptic on tap as well
-                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                     impactFeedback.impactOccurred()
-                 }
-             }
-         }
-         .frame(height: 72)
-         .padding(.horizontal, 8)
-         .padding(.top, 4)
-         .padding(.bottom, 8)
-     }
+             // MARK: - Weekly Calendar
+    private var weeklyCalendar: some View {
+        GeometryReader { geometry in
+            weekView(for: currentWeekOffset, width: geometry.size.width)
+                .frame(width: geometry.size.width)
+        }
+        .frame(height: 72)
+        .padding(.horizontal, 8)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+    }
     
     private func weekView(for weekOffset: Int, width: CGFloat) -> some View {
         HStack(spacing: 2) {
             ForEach(daysOfWeek(for: weekOffset), id: \.self) { date in
-                VStack(spacing: 4) {
-                    Text(dayAbbreviation(for: date))
-                                                        .font(.appLabelSmallEmphasised)
-                        .foregroundColor(textColor(for: date))
-                    
-                    Text("\(Calendar.current.component(.day, from: date))")
-                                                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(textColor(for: date))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 60)
-                .background(backgroundColor(for: date))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .onTapGesture {
+                Button(action: {
                     withAnimation(.easeInOut(duration: 0.08)) {
                         selectedDate = date
                     }
+                }) {
+                    VStack(spacing: 4) {
+                        Text(dayAbbreviation(for: date))
+                            .font(.appLabelSmall)
+                            .foregroundColor(textColor(for: date))
+                        
+                        Text("\(Calendar.current.component(.day, from: date))")
+                            .font(dateFont(for: date))
+                            .foregroundColor(textColor(for: date))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(backgroundColor(for: date))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(PlainButtonStyle())
                 .onAppear {
                     // Debug: Print when each date appears
                     let formatter = DateFormatter()
@@ -436,40 +402,65 @@ struct HomeTabView: View {
     }
     
     private func backgroundColor(for date: Date) -> Color {
-        print("🎨 backgroundColor called for date: \(date)")
-        
         let calendar = Calendar.current
         let today = Date()
-        
-        // Debug: Print the dates being compared
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        print("Comparing: date=\(formatter.string(from: date)), today=\(formatter.string(from: today)), selected=\(formatter.string(from: selectedDate))")
         
         // Normalize dates to start of day for comparison
         let normalizedDate = calendar.startOfDay(for: date)
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
+        print("🎨 backgroundColor for date: \(date), selected: \(selectedDate), normalizedDate: \(normalizedDate), normalizedSelected: \(normalizedSelected)")
+        
         // Check if this is the selected date
         if normalizedDate == normalizedSelected {
-            print("✅ Selected date match found!")
-            return Color(red: 0.70, green: 0.77, blue: 1.0) // #B3C4FF
+            print("✅ Selected date - returning .secondary")
+            return .secondary
         }
         
         // Check for today's date (but not selected)
         if normalizedDate == normalizedToday && normalizedDate != normalizedSelected {
-            print("✅ Today match found!")
-            return Color(red: 0.93, green: 0.95, blue: 1.0) // #EDF1FF
+            print("📅 Today's date (not selected) - returning .surfaceDim")
+            return .surfaceDim
         }
         
         // Default - no background
+        print("⚪ Default - returning clear")
         return Color.clear
     }
     
     private func textColor(for date: Date) -> Color {
-        // All dates use #191919 text
-        return Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Normalize dates to start of day for comparison
+        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedToday = calendar.startOfDay(for: today)
+        let normalizedSelected = calendar.startOfDay(for: selectedDate)
+        
+        // If this is today or selected date, use the original color
+        if normalizedDate == normalizedToday || normalizedDate == normalizedSelected {
+            return Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
+        }
+        
+        // For all other dates, use text04
+        return .text04
+    }
+    
+    private func dateFont(for date: Date) -> Font {
+        let calendar = Calendar.current
+        
+        // Normalize dates to start of day for comparison
+        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedSelected = calendar.startOfDay(for: selectedDate)
+        
+        // If this is the selected date, use emphasized font
+        if normalizedDate == normalizedSelected {
+            return .appLabelLargeEmphasised
+        }
+        
+        // For all other dates, use regular font
+        return .appLabelLarge
     }
     
     // MARK: - Helper Functions

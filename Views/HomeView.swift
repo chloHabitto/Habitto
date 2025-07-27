@@ -34,7 +34,7 @@ struct HomeView: View {
                     switch selectedTab {
                     case .home:
                         HomeTabView(
-                            selectedDate: .constant(Date()),
+                            selectedDate: $selectedDate,
                             selectedStatsTab: $selectedStatsTab,
                             habits: habits,
                             onToggleHabit: { habit in
