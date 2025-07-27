@@ -9,7 +9,6 @@ struct HomeView: View {
     @State private var habitToEdit: Habit? = nil
     @State private var habits: [Habit] = []
     @State private var selectedStatsTab: Int = 0
-    @State private var tabWidths: [CGFloat] = [0, 0, 0]
     @State private var showingDeleteConfirmation = false
     @State private var habitToDelete: Habit?
     
@@ -36,8 +35,7 @@ struct HomeView: View {
                     case .home:
                         HomeTabView(
                             selectedDate: .constant(Date()),
-                            selectedStatsTab: .constant(0),
-                            tabWidths: .constant([0, 0, 0]),
+                            selectedStatsTab: $selectedStatsTab,
                             habits: habits,
                             onToggleHabit: { habit in
                                 toggleHabitCompletion(habit)

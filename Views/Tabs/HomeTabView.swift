@@ -3,7 +3,6 @@ import SwiftUI
 struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
-    @Binding var tabWidths: [CGFloat]
     @State private var currentWeekOffset: Int = 0
     @State private var scrollPosition: Int? = 0
     @State private var lastHapticWeek: Int = 0
@@ -13,109 +12,125 @@ struct HomeTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Fixed header
-            VStack(spacing: 0) {
-                dateSection
-                weeklyCalendar
-                
-                VStack(spacing: 0) {
-                    // Stats row content (tab bar)
-                    VStack(spacing: 0) {
-                        HStack(spacing: 0) {
-                            ForEach(0..<stats.count, id: \.self) { idx in
-                                Button(action: { selectedStatsTab = idx }) {
-                                    HStack(spacing: 4) {
-                                        Text(stats[idx].0)
-                                            .font(.appBodyMediumEmphasised)
-                                            .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                                        Text("\(stats[idx].1)")
-                                            .font(.appBodyMediumEmphasised)
-                                            .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(GeometryReader { geo in
-                                        Color.clear
-                                            .preference(key: TabWidthPreferenceKey.self, value: [idx: geo.size.width])
-                                    })
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            Spacer()
-                        }
-                        .background(Color.white)
-                        .onPreferenceChange(TabWidthPreferenceKey.self) { value in
-                            for (idx, width) in value {
-                                if tabWidths.count > idx {
-                                    tabWidths[idx] = width
-                                }
-                            }
-                        }
-                        
-                        // Colored underline for selected tab
-                        GeometryReader { geo in
-                            let xOffset = tabWidths.prefix(selectedStatsTab).reduce(0, +)
-                            Rectangle()
-                                .fill(selectedColor)
-                                .frame(width: tabWidths[selectedStatsTab], height: 3)
-                                .offset(x: xOffset, y: 0)
-                                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
-                        }
-                        .frame(height: 3)
-                        
-                        // Gray underline directly under the colored underline
-                        Rectangle()
-                            .fill(Color(red: 0.91, green: 0.93, blue: 0.97))
-                            .frame(height: 1)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .padding(.horizontal, 0)
-                    .padding(.top, 2)
-                    .padding(.bottom, 0)
-                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-                }
-            }
-            .padding(.horizontal, 0)
-            .padding(.bottom, 0)
-            .frame(alignment: .top)
-            .roundedTopBackground()
-            // Scrollable habits list fills the rest
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    if habitsForSelectedDate.isEmpty {
-                        // Empty state
-                        VStack(spacing: 12) {
-                            Image(systemName: "list.bullet.circle")
-                                .font(.appDisplaySmall)
-                                .foregroundColor(.secondary)
-                            Text("No habits yet")
-                                .font(.appButtonText2)
-                                .foregroundColor(.secondary)
-                            Text("Create your first habit to get started")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 40)
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(habitsForSelectedDate) { habit in
-                                habitRow(habit)
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 20)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            headerSection
+            habitsListSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .roundedTopBackground()
         .onAppear {
             print("🏠 HomeTabView appeared!")
+        }
+    }
+    
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(spacing: 0) {
+            dateSection
+            weeklyCalendar
+            statsRowSection
+        }
+        .padding(.horizontal, 0)
+        .padding(.bottom, 0)
+        .frame(alignment: .top)
+        .roundedTopBackground()
+    }
+    
+    @ViewBuilder
+    private var statsRowSection: some View {
+        statsTabBar
+            .padding(.horizontal, 0)
+            .padding(.top, 2)
+            .padding(.bottom, 0)
+    }
+    
+    @ViewBuilder
+    private var statsTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<stats.count, id: \.self) { idx in
+                statsTabButton(for: idx)
+
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+    }
+    
+    @ViewBuilder
+    private func statsTabButton(for idx: Int) -> some View {
+        VStack(spacing: 0) {
+            Button(action: { 
+                if idx != 3 { // Only allow clicking for non-fourth tabs
+                    selectedStatsTab = idx 
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Text(stats[idx].0)
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                        .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
+                    Text("\(stats[idx].1)")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                        .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: idx == 3 ? .infinity : nil) // Only expand the fourth tab (index 3)
+            .disabled(idx == 3) // Disable clicking for fourth tab
+            
+            // Bottom stroke for each tab
+            Rectangle()
+                .fill(selectedStatsTab == idx ? .text03 : .divider)
+                .frame(height: 3)
+                .frame(maxWidth: .infinity)
+                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+        }
+    }
+    
+
+    
+    @ViewBuilder
+    private var habitsListSection: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                if habitsForSelectedDate.isEmpty {
+                    emptyStateView
+                } else {
+                    habitsListView
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 20)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    @ViewBuilder
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "list.bullet.circle")
+                .font(.appDisplaySmall)
+                .foregroundColor(.secondary)
+            Text("No habits yet")
+                .font(.appButtonText2)
+                .foregroundColor(.secondary)
+            Text("Create your first habit to get started")
+                .font(.appBodyMedium)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 40)
+    }
+    
+    @ViewBuilder
+    private var habitsListView: some View {
+        LazyVStack(spacing: 12) {
+            ForEach(habitsForSelectedDate) { habit in
+                habitRow(habit)
+            }
         }
     }
     
@@ -255,17 +270,12 @@ struct HomeTabView: View {
         return [
             ("Total", habitsForDate.count),
             ("Undone", habitsForDate.filter { !$0.isCompleted }.count),
-            ("Done", habitsForDate.filter { $0.isCompleted }.count)
+            ("Done", habitsForDate.filter { $0.isCompleted }.count),
+            ("New", habitsForDate.filter { Calendar.current.isDate($0.createdAt, inSameDayAs: selectedDate) }.count)
         ]
     }
     
-    private var selectedColor: Color {
-        Color(red: 0.15, green: 0.23, blue: 0.42) // Dark blue to match your theme
-    }
-    
-    private var unselectedColor: Color {
-        Color(UIColor.systemGray)
-    }
+
     
          // MARK: - Date Section
      private var dateSection: some View {
@@ -509,11 +519,7 @@ struct HomeTabView: View {
     }
 }
 
-struct TabWidthPreferenceKey: PreferenceKey {
-    static var defaultValue: [Int: CGFloat] = [:]
-    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
-        value.merge(nextValue(), uniquingKeysWith: { $1 })
-    }
-}
+
 
  
+

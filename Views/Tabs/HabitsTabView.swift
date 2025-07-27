@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HabitsTabView: View {
     @State private var selectedStatsTab: Int = 0
-    @State private var tabWidths: [CGFloat] = [0, 0, 0]
     @State private var showingPopupForHabit: Habit? = nil
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
@@ -294,34 +293,25 @@ struct HabitsTabView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(GeometryReader { geo in
-                                Color.clear
-                                    .preference(key: TabWidthPreferenceKey.self, value: [idx: geo.size.width])
-                            })
+
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
                     Spacer()
                 }
                 .background(Color.white)
-                .onPreferenceChange(TabWidthPreferenceKey.self) { value in
-                    for (idx, width) in value {
-                        if tabWidths.count > idx {
-                            tabWidths[idx] = width
-                        }
-                    }
-                }
+
                 
                 // Colored underline for selected tab
-                GeometryReader { geo in
-                    let xOffset = tabWidths.prefix(selectedStatsTab).reduce(0, +)
-                    Rectangle()
-                        .fill(selectedColor)
-                        .frame(width: tabWidths[selectedStatsTab], height: 3)
-                        .offset(x: xOffset, y: 0)
-                        .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+                HStack(spacing: 0) {
+                    ForEach(0..<stats.count, id: \.self) { idx in
+                        Rectangle()
+                            .fill(selectedStatsTab == idx ? selectedColor : Color.clear)
+                            .frame(height: 3)
+                            .frame(maxWidth: .infinity)
+                            .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+                    }
                 }
-                .frame(height: 3)
                 
                 // Gray underline directly under the colored underline
                                  Rectangle()

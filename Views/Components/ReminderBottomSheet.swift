@@ -73,108 +73,108 @@ struct ReminderBottomSheet: View {
             },
             confirmButtonTitle: "Confirm"
         ) {
-            VStack(spacing: 0) {
-                // Custom Buttons
-                HStack {
-                    Button(isEditMode ? "Done" : "Edit") {
-                        isEditMode.toggle()
-                    }
-                    .font(.appButtonText2)
-                    .foregroundColor(.text01)
-                    .frame(width: 62, height: 44)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        showingAddReminderSheet = true
-                    }) {
-                        Image("Icon-plus")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(.primary)
-                    }
-                    .frame(width: 48, height: 48)
+        VStack(spacing: 0) {
+            // Custom Buttons
+            HStack {
+                Button(isEditMode ? "Done" : "Edit") {
+                    isEditMode.toggle()
                 }
-                .padding(.horizontal, 2)
+                    .font(.appButtonText2)
+                .foregroundColor(.text01)
+                .frame(width: 62, height: 44)
+                
+                Spacer()
+                
+                Button(action: {
+                        showingAddReminderSheet = true
+                }) {
+                    Image("Icon-plus")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.primary)
+                }
+                .frame(width: 48, height: 48)
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 16)
+            
+            // Divider under header
+            Divider()
+                .background(.outline)
                 .padding(.vertical, 16)
-                
-                // Divider under header
-                Divider()
-                    .background(.outline)
-                    .padding(.vertical, 16)
-                    .padding(.horizontal, 20)
-                
+                .padding(.horizontal, 20)
+            
                 // Reminders List
                 if !reminders.isEmpty {
-                    ScrollView {
-                        VStack(spacing: 12) {
+                ScrollView {
+                    VStack(spacing: 12) {
                             ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
-                                HStack(spacing: 16) {
-                                    if isEditMode {
-                                        Button(action: {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
+                            HStack(spacing: 16) {
+                                if isEditMode {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
                                                 reminders.remove(at: index)
-                                                isEditMode = false
-                                            }
-                                        }) {
-                                            Image(systemName: "minus.circle.fill")
-                                                .resizable()
-                                                .frame(width: 24, height: 24)
-                                                .foregroundColor(.red)
+                                            isEditMode = false
                                         }
-                                        .frame(width: 40, height: 40)
-                                        .transition(.asymmetric(
-                                            insertion: .move(edge: .leading).combined(with: .opacity),
-                                            removal: .move(edge: .leading).combined(with: .opacity)
-                                        ))
+                                    }) {
+                                        Image(systemName: "minus.circle.fill")
+                                            .resizable()
+                                            .frame(width: 24, height: 24)
+                                            .foregroundColor(.red)
                                     }
-                                    
-                                    HStack {
+                                    .frame(width: 40, height: 40)
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .leading).combined(with: .opacity),
+                                        removal: .move(edge: .leading).combined(with: .opacity)
+                                    ))
+                                }
+                                
+                                HStack {
                                         Text(formatTime(reminder.time))
                                             .font(.appBodyLarge)
-                                            .foregroundColor(.text01)
-                                        
-                                        Spacer()
-                                        
-                                        if isEditMode {
-                                            Image(systemName: "chevron.right")
+                                        .foregroundColor(.text01)
+                                    
+                                    Spacer()
+                                    
+                                    if isEditMode {
+                                        Image(systemName: "chevron.right")
                                                 .font(.appLabelMedium)
-                                                .foregroundColor(.primaryDim)
-                                                .frame(width: 32, height: 32)
-                                        } else {
+                                            .foregroundColor(.primaryDim)
+                                            .frame(width: 32, height: 32)
+                                    } else {
                                             Toggle("", isOn: $reminders[index].isActive)
-                                                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                                        }
+                                            .toggleStyle(SwitchToggleStyle(tint: .primary))
                                     }
-                                    .padding(.leading, 24)
-                                    .padding(.trailing, 16)
-                                    .padding(.vertical, 8)
-                                    .background(.secondaryContainer)
-                                    .cornerRadius(8)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        if isEditMode {
+                                }
+                                .padding(.leading, 24)
+                                .padding(.trailing, 16)
+                                .padding(.vertical, 8)
+                                .background(.secondaryContainer)
+                                .cornerRadius(8)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    if isEditMode {
                                             editingReminderIndex = index
                                             selectedTime = reminder.time
                                             showingAddReminderSheet = true
-                                        }
                                     }
                                 }
-                                .padding(.horizontal, 24)
-                                .animation(.easeInOut(duration: 0.3), value: isEditMode)
-                                .transition(.asymmetric(
-                                    insertion: .scale.combined(with: .opacity),
-                                    removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
-                                ))
                             }
+                            .padding(.horizontal, 24)
+                            .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity),
+                                removal: .scale.combined(with: .opacity).combined(with: .move(edge: .trailing))
+                            ))
                         }
-                        .padding(.top, 16)
-                        .padding(.bottom, 16)
                     }
-                } else {
-                    Spacer()
+                    .padding(.top, 16)
+                    .padding(.bottom, 16)
                 }
-                
+            } else {
+                Spacer()
+            }
+            
                 Spacer()
             }
         }

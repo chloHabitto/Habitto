@@ -23,17 +23,16 @@ struct TabBarView: View {
     
     private func tabBarItem(icon: String, title: String, tab: HomeView.Tab) -> some View {
         let selectedColor = Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
-        let unselectedColor = Color(red: 0.29, green: 0.32, blue: 0.44) // #495270
         return Button(action: { selectedTab = tab }) {
             VStack(spacing: 4) {
                 Image(icon)
                     .resizable()
                     .frame(width: 24, height: 24)
-                    .foregroundColor(selectedTab == tab ? selectedColor : unselectedColor)
+                    .foregroundColor(selectedTab == tab ? selectedColor : Color(red: 0.29, green: 0.32, blue: 0.44))
                 Text(title)
-                                                    .font(.appLabelSmallEmphasised)
+                    .font(.appLabelSmallEmphasised)
                     .lineLimit(1)
-                    .foregroundColor(selectedTab == tab ? selectedColor : unselectedColor)
+                    .foregroundColor(selectedTab == tab ? selectedColor : Color(red: 0.29, green: 0.32, blue: 0.44))
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 10)
