@@ -22,8 +22,10 @@ struct HabitDetailView: View {
         .background(Color(.systemGray6))
         .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in
+                print("🔄 HabitDetailView: Habit updated - \(updatedHabit.name)")
                 habit = updatedHabit
                 onUpdateHabit?(updatedHabit)
+                print("🔄 HabitDetailView: onUpdateHabit callback called")
             })
         }
     }

@@ -41,11 +41,16 @@ struct HomeView: View {
                                 toggleHabitCompletion(habit)
                             },
                             onUpdateHabit: { updatedHabit in
+                                print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
                                 if let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) {
+                                    print("🔄 HomeView: Found habit at index \(index)")
                                     habits[index] = updatedHabit
                                     Habit.saveHabits(habits)
                                     // Force SwiftUI to recognize the array has changed by creating a new instance
                                     habits = Array(habits)
+                                    print("🔄 HomeView: Habit array updated and saved")
+                                } else {
+                                    print("❌ HomeView: Could not find habit with id \(updatedHabit.id)")
                                 }
                             }
                         )

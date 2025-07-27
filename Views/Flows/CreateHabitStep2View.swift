@@ -314,6 +314,16 @@ struct CreateHabitStep2View: View {
         }
         .background(.surface2)
         .navigationBarHidden(true)
+        .onAppear {
+            // Initialize values if editing
+            if let habit = habitToEdit {
+                schedule = habit.schedule
+                goal = habit.goal
+                reminder = habit.reminder
+                startDate = habit.startDate
+                endDate = habit.endDate
+            }
+        }
     }
 }
 

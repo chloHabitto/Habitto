@@ -530,8 +530,9 @@ struct HabitEditView: View {
     
     // MARK: - Save Function
     private func saveHabit() {
-        // Create updated habit with current values
-        let updatedHabit = Habit(
+        print("🔄 HabitEditView: saveHabit called")
+        // Create updated habit with current values, preserving the original ID
+        var updatedHabit = Habit(
             name: habitName,
             description: habitDescription,
             icon: selectedIcon,
@@ -545,6 +546,9 @@ struct HabitEditView: View {
             isCompleted: habit.isCompleted,
             streak: habit.streak
         )
+        // Preserve the original habit's ID
+        updatedHabit.id = habit.id
+        print("🔄 HabitEditView: Created updated habit - \(updatedHabit.name) with ID \(updatedHabit.id)")
         onSave(updatedHabit)
         dismiss()
     }

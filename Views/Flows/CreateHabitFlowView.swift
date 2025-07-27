@@ -50,9 +50,9 @@ struct CreateHabitFlowView: View {
             if let habit = habitToEdit {
                 name = habit.name
                 description = habit.description
-                icon = "None"
+                icon = habit.icon
                 color = habit.color
-                habitType = .formation
+                habitType = habit.habitType
             }
         }
     }
