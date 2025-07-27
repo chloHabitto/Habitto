@@ -27,7 +27,7 @@ struct CreateHabitStep2View: View {
     @State private var schedule: String = "Everyday"
     @State private var goal: String = "1 time"
     @State private var reminder: String = "No reminder"
-    @State private var alarms: [AlarmItem] = []
+    @State private var reminders: [ReminderItem] = []
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
@@ -142,7 +142,7 @@ struct CreateHabitStep2View: View {
                                 .font(.titleMedium)
                                 .foregroundColor(.text01)
                             Spacer()
-                            Text(alarms.isEmpty ? "Add" : "\(alarms.filter { $0.isActive }.count) reminder\(alarms.filter { $0.isActive }.count == 1 ? "" : "s")")
+                            Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
                                 .font(.bodyLarge)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
@@ -154,15 +154,15 @@ struct CreateHabitStep2View: View {
                             showingReminderSheet = true
                         }
                         
-                        if !alarms.isEmpty {
+                        if !reminders.isEmpty {
                             Divider()
                                 .background(.outline)
                                 .padding(.vertical, 4)
                             
                             VStack(spacing: 4) {
-                                ForEach(alarms.filter { $0.isActive }) { alarm in
+                                ForEach(reminders.filter { $0.isActive }) { reminder in
                                     HStack {
-                                        Text(formatTime(alarm.time))
+                                        Text(formatTime(reminder.time))
                                             .font(.bodyMedium)
                                             .foregroundColor(.text01)
                                         Spacer()
@@ -186,12 +186,12 @@ struct CreateHabitStep2View: View {
                                 reminder = selectedReminder
                                 showingReminderSheet = false
                             },
-                            initialAlarms: alarms,
-                            onAlarmsUpdated: { updatedAlarms in
-                                alarms = updatedAlarms
-                                let activeAlarms = updatedAlarms.filter { $0.isActive }
-                                if !activeAlarms.isEmpty {
-                                    reminder = "\(activeAlarms.count) reminder\(activeAlarms.count == 1 ? "" : "s")"
+                            initialReminders: reminders,
+                            onRemindersUpdated: { updatedReminders in
+                                reminders = updatedReminders
+                                let activeReminders = updatedReminders.filter { $0.isActive }
+                                if !activeReminders.isEmpty {
+                                    reminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
                                 } else {
                                     reminder = "No reminder"
                                 }

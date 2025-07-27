@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AlarmItem: Identifiable {
+struct ReminderItem: Identifiable {
     let id = UUID()
     var time: Date
     var isActive: Bool
@@ -9,24 +9,24 @@ struct AlarmItem: Identifiable {
 struct ReminderBottomSheet: View {
     let onClose: () -> Void
     let onReminderSelected: (String) -> Void
-    let initialAlarms: [AlarmItem]
-    let onAlarmsUpdated: ([AlarmItem]) -> Void
+    let initialReminders: [ReminderItem]
+    let onRemindersUpdated: ([ReminderItem]) -> Void
     
     @State private var selectedReminderType: String = "Notification"
     @State private var selectedTab = 0
     @State private var selectedTime = Date()
     @State private var selectedDays: Set<String> = []
-    @State private var showingAddAlarmSheet = false
-    @State private var alarms: [AlarmItem]
+    @State private var showingAddReminderSheet = false
+    @State private var reminders: [ReminderItem]
     @State private var isEditMode = false
-    @State private var editingAlarmIndex: Int? = nil
+    @State private var editingReminderIndex: Int? = nil
     
-    init(onClose: @escaping () -> Void, onReminderSelected: @escaping (String) -> Void, initialAlarms: [AlarmItem] = [], onAlarmsUpdated: @escaping ([AlarmItem]) -> Void) {
+    init(onClose: @escaping () -> Void, onReminderSelected: @escaping (String) -> Void, initialReminders: [ReminderItem] = [], onRemindersUpdated: @escaping ([ReminderItem]) -> Void) {
         self.onClose = onClose
         self.onReminderSelected = onReminderSelected
-        self.initialAlarms = initialAlarms
-        self.onAlarmsUpdated = onAlarmsUpdated
-        self._alarms = State(initialValue: initialAlarms)
+        self.initialReminders = initialReminders
+        self.onRemindersUpdated = onRemindersUpdated
+        self._reminders = State(initialValue: initialReminders)
     }
     
     private var selectedReminderText: String {
@@ -77,7 +77,7 @@ struct ReminderBottomSheet: View {
                 Spacer()
                 
                 Button(action: {
-                    showingAddAlarmSheet = true
+                    showingAddReminderSheet = true
                 }) {
                     Image("Icon-plus")
                         .resizable()
@@ -108,16 +108,16 @@ struct ReminderBottomSheet: View {
                 .padding(.vertical, 16)
                 .padding(.horizontal, 20)
             
-            // Alarms List
-            if !alarms.isEmpty {
+            // Reminders List
+            if !reminders.isEmpty {
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(Array(alarms.enumerated()), id: \.element.id) { index, alarm in
+                        ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
                             HStack(spacing: 16) {
                                 if isEditMode {
                                     Button(action: {
                                         withAnimation(.easeInOut(duration: 0.3)) {
-                                            alarms.remove(at: index)
+                                            reminders.remove(at: index)
                                             isEditMode = false
                                         }
                                     }) {
@@ -134,7 +134,7 @@ struct ReminderBottomSheet: View {
                                 }
                                 
                                 HStack {
-                                    Text(formatTime(alarm.time))
+                                    Text(formatTime(reminder.time))
                                         .font(.bodyLarge)
                                         .foregroundColor(.text01)
                                     
@@ -146,7 +146,7 @@ struct ReminderBottomSheet: View {
                                             .foregroundColor(.primaryDim)
                                             .frame(width: 32, height: 32)
                                     } else {
-                                        Toggle("", isOn: $alarms[index].isActive)
+                                        Toggle("", isOn: $reminders[index].isActive)
                                             .toggleStyle(SwitchToggleStyle(tint: .primary))
                                     }
                                 }
@@ -158,9 +158,9 @@ struct ReminderBottomSheet: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     if isEditMode {
-                                        editingAlarmIndex = index
-                                        selectedTime = alarm.time
-                                        showingAddAlarmSheet = true
+                                        editingReminderIndex = index
+                                        selectedTime = reminder.time
+                                        showingAddReminderSheet = true
                                     }
                                 }
                             }
@@ -194,7 +194,7 @@ struct ReminderBottomSheet: View {
 //                    .cornerRadius(8)
                     
                     Button(action: {
-                        onAlarmsUpdated(alarms)
+                        onRemindersUpdated(reminders)
                     }) {
                         Text("Confirm")
                             .font(Font.buttonText1)
@@ -212,16 +212,16 @@ struct ReminderBottomSheet: View {
         .presentationDetents([.height(500)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
-        .sheet(isPresented: $showingAddAlarmSheet) {
-            AddAlarmSheet(initialTime: selectedTime, isEditing: editingAlarmIndex != nil) { newTime in
-                if let editingIndex = editingAlarmIndex {
-                    // Editing existing alarm
-                    alarms[editingIndex].time = newTime
-                    editingAlarmIndex = nil
+        .sheet(isPresented: $showingAddReminderSheet) {
+            AddReminderSheet(initialTime: selectedTime, isEditing: editingReminderIndex != nil) { newTime in
+                if let editingIndex = editingReminderIndex {
+                    // Editing existing reminder
+                    reminders[editingIndex].time = newTime
+                    editingReminderIndex = nil
                     isEditMode = false
                 } else {
-                    // Adding new alarm
-                    alarms.append(AlarmItem(time: newTime, isActive: true))
+                    // Adding new reminder
+                    reminders.append(ReminderItem(time: newTime, isActive: true))
                 }
             }
             .presentationBackground(.regularMaterial)
@@ -230,7 +230,7 @@ struct ReminderBottomSheet: View {
     }
 }
 
-struct AddAlarmSheet: View {
+struct AddReminderSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTime: Date
     @State private var originalTime: Date
@@ -312,7 +312,7 @@ struct AddAlarmSheet: View {
     ReminderBottomSheet(
         onClose: {},
         onReminderSelected: { _ in },
-        initialAlarms: [],
-        onAlarmsUpdated: { _ in }
+        initialReminders: [],
+        onRemindersUpdated: { _ in }
     )
 } 
