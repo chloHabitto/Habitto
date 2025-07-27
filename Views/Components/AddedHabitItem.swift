@@ -2,6 +2,14 @@ import SwiftUI
 
 struct AddedHabitItem: View {
     let habit: Habit
+    let onEdit: (() -> Void)?
+    let onDelete: (() -> Void)?
+    
+    init(habit: Habit, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil) {
+        self.habit = habit
+        self.onEdit = onEdit
+        self.onDelete = onDelete
+    }
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -53,10 +61,20 @@ struct AddedHabitItem: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 8)
                     
-                    // More button
-                    Button(action: {
-                        // TODO: Add more button action
-                    }) {
+                    // More button with menu
+                    Menu {
+                        Button(action: {
+                            onEdit?()
+                        }) {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive, action: {
+                            onDelete?()
+                        }) {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    } label: {
                         Image("Icon-more_vert")
                             .resizable()
                             .frame(width: 24, height: 24)
@@ -131,7 +149,13 @@ struct AddedHabitItem: View {
                 endDate: nil,
                 isCompleted: false,
                 streak: 0
-            )
+            ),
+            onEdit: {
+                print("Edit tapped")
+            },
+            onDelete: {
+                print("Delete tapped")
+            }
         )
         
         AddedHabitItem(
@@ -148,7 +172,13 @@ struct AddedHabitItem: View {
                 endDate: nil,
                 isCompleted: false,
                 streak: 0
-            )
+            ),
+            onEdit: {
+                print("Edit tapped")
+            },
+            onDelete: {
+                print("Delete tapped")
+            }
         )
     }
     .padding()

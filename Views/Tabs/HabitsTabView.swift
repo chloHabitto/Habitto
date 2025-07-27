@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HabitsTabView: View {
     @State private var selectedStatsTab: Int = 0
-    @State private var showingPopupForHabit: Habit? = nil
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
     let onDeleteHabit: (Habit) -> Void
@@ -81,10 +80,6 @@ struct HabitsTabView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .roundedTopBackground()
-        .onTapGesture {
-            // Dismiss popup when tapping outside
-            showingPopupForHabit = nil
-        }
     }
     
     private var filteredHabits: [Habit] {
@@ -119,59 +114,17 @@ struct HabitsTabView: View {
     
     private func habitDetailRow(_ habit: Habit) -> some View {
         AddedHabitItem(
-            habit: habit
+            habit: habit,
+            onEdit: {
+                onEditHabit(habit)
+            },
+            onDelete: {
+                onDeleteHabit(habit)
+            }
         )
         .onTapGesture {
             onToggleHabit(habit)
         }
-        .overlay(
-            // Popup menu
-            Group {
-                if showingPopupForHabit?.id == habit.id {
-                    VStack(alignment: .trailing, spacing: 0) {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            VStack(alignment: .leading, spacing: 0) {
-                                popupMenuItem(
-                                    icon: "pencil",
-                                    text: "Edit",
-                                    color: .primary,
-                                    action: {
-                                        onEditHabit(habit)
-                                        showingPopupForHabit = nil
-                                    }
-                                )
-                                
-                                Divider()
-                                    .frame(height: 1)
-                                    .background(Color(.systemGray4))
-                                
-                                popupMenuItem(
-                                    icon: "trash",
-                                    text: "Delete",
-                                    color: .red,
-                                    action: {
-                                        onDeleteHabit(habit)
-                                        showingPopupForHabit = nil
-                                    }
-                                )
-                            }
-                            .frame(width: 120)
-                            .padding(.leading, 8)
-                            .background(
-                                Color.white.opacity(0.95)
-                                    .blur(radius: 0.5)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                            .padding(.trailing, 16)
-                            .padding(.bottom, 8)
-                        }
-                    }
-                }
-            }
-        )
     }
     
     private func detailItem(icon: String, text: String) -> some View {
@@ -186,20 +139,7 @@ struct HabitsTabView: View {
         }
     }
     
-    private func popupMenuItem(icon: String, text: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.appBodyLarge)
-                Text(text)
-                    .font(.appBodyLarge)
-                    .lineSpacing(3)
-            }
-            .foregroundColor(color)
-            .padding(12)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
+
     
     // MARK: - Stats Row
     private var statsRow: some View {
