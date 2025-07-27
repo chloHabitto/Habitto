@@ -22,8 +22,8 @@ struct HabitsTabView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
+                .padding(.vertical, 16)
+
                 
                 // Stats row
                 statsRow

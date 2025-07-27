@@ -29,9 +29,8 @@ struct ProgressTabView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
