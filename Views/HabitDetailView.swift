@@ -20,7 +20,7 @@ struct HabitDetailView: View {
             Spacer()
         }
         .background(Color(.systemGray6))
-        .sheet(isPresented: $showingEditView) {
+        .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in
                 onUpdateHabit?(updatedHabit)
             })
