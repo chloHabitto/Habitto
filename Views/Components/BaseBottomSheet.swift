@@ -55,7 +55,7 @@ struct BaseBottomSheet<Content: View>: View {
             }
         }
         .background(.surface)
-        .presentationDetents([.height(500)])
+        .presentationDetents([.height(700)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
     }
