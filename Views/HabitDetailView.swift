@@ -62,8 +62,9 @@ struct HabitDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                 }
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44) // Increased touch target to 44x44
                 .contentShape(Rectangle())
+                .background(Color.clear) // Add background for better touch feedback
             }
             .padding(.horizontal, 4)
             .padding(.top, 8)

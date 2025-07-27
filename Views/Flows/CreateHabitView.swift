@@ -10,9 +10,9 @@ struct CreateHabitView: View {
     }
     
     var body: some View {
-        CreateHabitFlowView(habitToEdit: habitToEdit) { habit in
+        CreateHabitFlowView(onSave: { habit in
             onSave(habit)
-        }
+        }, habitToEdit: habitToEdit)
     }
 }
 

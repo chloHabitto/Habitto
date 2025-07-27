@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct Habit: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     var name: String
     var description: String
     var icon: String // System icon name

@@ -13,7 +13,7 @@ struct CountdownTimerPicker: UIViewRepresentable {
         let picker = UIPickerView()
         picker.delegate = context.coordinator
         picker.dataSource = context.coordinator
-        picker.showsSelectionIndicator = false // Disable default selection indicators
+        // Note: showsSelectionIndicator was deprecated in iOS 13.0 and has no effect
         picker.translatesAutoresizingMaskIntoConstraints = false
         
         containerView.addSubview(picker)
