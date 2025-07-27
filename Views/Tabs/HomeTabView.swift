@@ -7,6 +7,7 @@ struct HomeTabView: View {
     @State private var scrollPosition: Int? = 0
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
+    @State private var selectedHabit: Habit? = nil
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
     
@@ -25,6 +26,9 @@ struct HomeTabView: View {
         .roundedTopBackground()
         .onAppear {
             print("🏠 HomeTabView appeared!")
+        }
+        .sheet(item: $selectedHabit) { habit in
+            HabitDetailView(habit: habit)
         }
     }
     
@@ -151,6 +155,9 @@ struct HomeTabView: View {
                 set: { _ in onToggleHabit(habit) }
             )
         )
+        .onTapGesture {
+            selectedHabit = habit
+        }
     }
     
     private var habitsForSelectedDate: [Habit] {
