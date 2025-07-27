@@ -8,25 +8,22 @@ struct HabitDetailView: View {
     @State private var showingEditView = false
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Top navigation bar
-                topNavigationBar
-                
-                // Main content card
-                mainContentCard
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                
-                Spacer()
-            }
-            .background(Color(.systemGray6))
-            .navigationBarHidden(true)
-            .sheet(isPresented: $showingEditView) {
-                HabitEditView(habit: habit, onSave: { updatedHabit in
-                    onUpdateHabit?(updatedHabit)
-                })
-            }
+        VStack(spacing: 0) {
+            // Top navigation bar
+            topNavigationBar
+            
+            // Main content card
+            mainContentCard
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+            
+            Spacer()
+        }
+        .background(Color(.systemGray6))
+        .sheet(isPresented: $showingEditView) {
+            HabitEditView(habit: habit, onSave: { updatedHabit in
+                onUpdateHabit?(updatedHabit)
+            })
         }
     }
     
@@ -47,9 +44,9 @@ struct HabitDetailView: View {
                 
                 // More options button
                 Menu {
-                                    Button(action: {
-                    showingEditView = true
-                }) {
+                    Button(action: {
+                        showingEditView = true
+                    }) {
                         Label("Edit", systemImage: "pencil")
                     }
                     
@@ -63,11 +60,9 @@ struct HabitDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                 }
-                .padding(.top, 12)
-                .padding(.bottom, 16)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 8)
             .padding(.bottom, 16)
             
             // Title and description
@@ -84,7 +79,7 @@ struct HabitDetailView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
-//        .background(.surface)
+        .padding(.top, 0) // Let the system handle safe area
     }
     
     // MARK: - Main Content Card

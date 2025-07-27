@@ -28,7 +28,7 @@ struct HomeTabView: View {
         .onAppear {
             print("🏠 HomeTabView appeared!")
         }
-        .sheet(item: $selectedHabit) { habit in
+        .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
         }
     }
