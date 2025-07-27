@@ -41,8 +41,11 @@ struct HabitEditView: View {
     }
     
     init(habit: Habit, onSave: @escaping (Habit) -> Void) {
+        print("🔄 HabitEditView: Initializing with habit: \(habit.name)")
         self.habit = habit
         self.onSave = onSave
+        
+        // Initialize state with habit values
         self._habitName = State(initialValue: habit.name)
         self._habitDescription = State(initialValue: habit.description)
         self._selectedIcon = State(initialValue: habit.icon)
@@ -54,156 +57,151 @@ struct HabitEditView: View {
         self._isReminderEnabled = State(initialValue: !habit.reminder.isEmpty)
         self._startDate = State(initialValue: habit.startDate)
         self._endDate = State(initialValue: habit.endDate)
+        print("🔄 HabitEditView: Initialization completed for habit: \(habit.name)")
     }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Top navigation bar
-                topNavigationBar
-                
-                // Main content
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Habit Name
-                        inputFieldSection(
-                            title: "Habit Name",
-                            placeholder: "Enter habit name",
-                            text: $habitName
-                        )
+        VStack(spacing: 0) {
+            // Top navigation bar
+            topNavigationBar
+            
+            // Main content
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Habit Name
+                    inputFieldSection(
+                        title: "Habit Name",
+                        placeholder: "Enter habit name",
+                        text: $habitName
+                    )
+                    
+                    // Description
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Description")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
                         
-                        // Description
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Description")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text05)
-                            
-                            TextField("Description (Optional)", text: $habitDescription, axis: .vertical)
-                                .lineLimit(3...6)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .accentColor(.text01)
-                                .inputFieldStyle()
-                                .contentShape(Rectangle())
-                                .frame(minHeight: 48)
-                                .submitLabel(.done)
-                        }
-                        
-                        // Icon Selection
-                        Button(action: {
-                            showingIconSheet = true
-                        }) {
-                            HStack {
-                                Text("Icon")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                
-                                Spacer()
-                                
-                                Text(getIconDisplayName(selectedIcon))
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primaryDim)
-                            }
-                        }
-                        .selectionRowStyle()
-                        
-                        // Color Selection
-                        Button(action: {
-                            showingColorSheet = true
-                        }) {
-                            HStack {
-                                Text("Colour")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                
-                                Spacer()
-                                
-                                HStack(spacing: 8) {
-                                    Circle()
-                                        .fill(selectedColor)
-                                        .frame(width: 16, height: 16)
-                                    Text(getColorDisplayName(selectedColor))
-                                        .font(.appBodyLarge)
-                                        .foregroundColor(.text04)
-                                }
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primaryDim)
-                            }
-                        }
-                        .selectionRowStyle()
-                        
-                        // Habit Type
-                        habitTypeSection
-                        
-                        // Schedule
-                        Button(action: {
-                            showingScheduleSheet = true
-                        }) {
-                            HStack {
-                                Text("Schedule")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                
-                                Spacer()
-                                
-                                Text(selectedSchedule)
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelMedium)
-                                    .foregroundColor(.primaryDim)
-                            }
-                        }
-                        .selectionRowStyle()
-                        
-                        // Goal
-                        Button(action: {
-                            showingGoalSheet = true
-                        }) {
-                            HStack {
-                                Text("Goal")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                
-                                Spacer()
-                                
-                                Text(selectedGoal)
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelMedium)
-                                    .foregroundColor(.primaryDim)
-                            }
-                        }
-                        .selectionRowStyle()
-                        
-                        // Reminder
-                        reminderSection
-                        
-                        // Period
-                        periodSection
-                        
-                        // Extra spacing at bottom for better scrolling
-                        Spacer(minLength: 120)
+                        TextField("Description (Optional)", text: $habitDescription, axis: .vertical)
+                            .lineLimit(3...6)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                            .accentColor(.text01)
+                            .inputFieldStyle()
+                            .contentShape(Rectangle())
+                            .frame(minHeight: 48)
+                            .submitLabel(.done)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                    
+                    // Icon Selection
+                    Button(action: {
+                        showingIconSheet = true
+                    }) {
+                        HStack {
+                            Text("Icon")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            Spacer()
+                            
+                            Text(getIconDisplayName(selectedIcon))
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
+                    
+                    // Color Selection
+                    Button(action: {
+                        showingColorSheet = true
+                    }) {
+                        HStack {
+                            Text("Colour")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(selectedColor)
+                                    .frame(width: 16, height: 16)
+                                Text(getColorDisplayName(selectedColor))
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                            }
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
+                    
+                    // Habit Type
+                    habitTypeSection
+                    
+                    // Schedule
+                    Button(action: {
+                        showingScheduleSheet = true
+                    }) {
+                        HStack {
+                            Text("Schedule")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            Spacer()
+                            
+                            Text(selectedSchedule)
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
+                    
+                    // Goal
+                    Button(action: {
+                        showingGoalSheet = true
+                    }) {
+                        HStack {
+                            Text("Goal")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            Spacer()
+                            
+                            Text(selectedGoal)
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
+                    
+                    // Reminder Section
+                    reminderSection
+                    
+                    // Period Section
+                    periodSection
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
                 .background(.surface2)
                 
                 // Save Button
                 saveButton
             }
             .background(.surface2)
-            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })

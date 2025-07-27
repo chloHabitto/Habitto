@@ -65,6 +65,8 @@ struct HomeView: View {
                                 showingDeleteConfirmation = true
                             },
                             onEditHabit: { habit in
+                                print("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
+                                print("🔄 HomeView: Setting habitToEdit to open HabitEditView")
                                 habitToEdit = habit
                             },
                             onCreateHabit: {
@@ -94,16 +96,18 @@ struct HomeView: View {
                 showingCreateHabit = false
             })
         }
-        .sheet(item: $habitToEdit) { habit in
-            CreateHabitFlowView(onSave: { updatedHabit in
+        .fullScreenCover(item: $habitToEdit) { habit in
+            HabitEditView(habit: habit, onSave: { updatedHabit in
+                print("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
                 if let index = habits.firstIndex(where: { $0.id == habit.id }) {
                     habits[index] = updatedHabit
                     Habit.saveHabits(habits)
                     // Force SwiftUI to recognize the array has changed by creating a new instance
                     habits = Array(habits)
+                    print("🔄 HomeView: Habit updated and saved successfully")
                 }
                 habitToEdit = nil
-            }, habitToEdit: habit)
+            })
         }
         .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }

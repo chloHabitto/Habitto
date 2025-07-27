@@ -4,11 +4,13 @@ struct AddedHabitItem: View {
     let habit: Habit
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
+    let onTap: (() -> Void)?
     
-    init(habit: Habit, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil) {
+    init(habit: Habit, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil, onTap: (() -> Void)? = nil) {
         self.habit = habit
         self.onEdit = onEdit
         self.onDelete = onDelete
+        self.onTap = onTap
     }
     
     var body: some View {
@@ -44,7 +46,7 @@ struct AddedHabitItem: View {
             VStack(spacing: 8) {
                 // Top row: Text container and more button
                 HStack(spacing: 4) {
-                    // Text container
+                    // Text container - tappable area
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habit.name)
                             .font(.appTitleMediumEmphasised)
@@ -60,8 +62,12 @@ struct AddedHabitItem: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 8)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        onTap?()
+                    }
                     
-                    // More button with menu
+                    // More button with menu - separate from tap gesture
                     Menu {
                         Button(action: {
                             onEdit?()
