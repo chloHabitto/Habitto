@@ -156,6 +156,7 @@ struct HomeTabView: View {
                 set: { _ in onToggleHabit(habit) }
             )
         )
+        .contentShape(Rectangle())
         .onTapGesture {
             selectedHabit = habit
         }

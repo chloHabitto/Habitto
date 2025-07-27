@@ -63,6 +63,7 @@ struct ScheduledHabitItem: View {
                     .foregroundColor(.primaryDim)
             }
             .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .padding(.leading, 16)
             .padding(.trailing, 8)
         }
