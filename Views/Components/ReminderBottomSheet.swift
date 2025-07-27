@@ -79,7 +79,7 @@ struct ReminderBottomSheet: View {
                     Button(isEditMode ? "Done" : "Edit") {
                         isEditMode.toggle()
                     }
-                    .font(.body)
+                    .font(.appButtonText2)
                     .foregroundColor(.text01)
                     .frame(width: 62, height: 44)
                     
@@ -131,14 +131,14 @@ struct ReminderBottomSheet: View {
                                     
                                     HStack {
                                         Text(formatTime(reminder.time))
-                                            .font(.body)
+                                            .font(.appBodyLarge)
                                             .foregroundColor(.text01)
                                         
                                         Spacer()
                                         
                                         if isEditMode {
                                             Image(systemName: "chevron.right")
-                                                .font(.caption2)
+                                                .font(.appLabelMedium)
                                                 .foregroundColor(.primaryDim)
                                                 .frame(width: 32, height: 32)
                                         } else {
@@ -232,7 +232,7 @@ struct AddReminderSheet: View {
             
             // Title
             Text("Select Time")
-                .font(.title2)
+                .font(.appHeadlineSmallEmphasised)
                 .foregroundColor(.text01)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -256,7 +256,7 @@ struct AddReminderSheet: View {
                 dismiss()
             }) {
                 Text(isEditing ? "Save" : "Add")
-                    .font(.title2)
+                    .font(.appButtonText1)
                     .foregroundColor(.onPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)

@@ -60,5 +60,5 @@ struct CreateHabitFlowView: View {
 
 #Preview {
     Text("Create Habit Flow")
-        .font(.title)
+        .font(.appTitleMedium)
 } 

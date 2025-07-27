@@ -61,7 +61,7 @@ struct EmojiKeyboardView: View {
                             selectedCategory = index
                         }) {
                             Text(categories[index])
-                                .font(.title2)
+                                .font(.appHeadlineSmall)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                                 .background(selectedCategory == index ? Color.blue.opacity(0.2) : Color.clear)
@@ -81,8 +81,8 @@ struct EmojiKeyboardView: View {
                             onEmojiSelected(emoji)
                         }) {
                             Text(emoji)
-                                .font(.largeTitle)
-                                .frame(width: 48, height: 48)
+                                .font(.appHeadlineMedium)
+                                .frame(width: 44, height: 44)
                                 .background(Color.clear)
                         }
                     }

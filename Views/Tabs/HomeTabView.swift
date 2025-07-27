@@ -26,10 +26,10 @@ struct HomeTabView: View {
                                 Button(action: { selectedStatsTab = idx }) {
                                     HStack(spacing: 4) {
                                         Text(stats[idx].0)
-                                            .font(.system(size: 15, weight: .semibold))
+                                            .font(.appBodyMediumEmphasised)
                                             .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
                                         Text("\(stats[idx].1)")
-                                            .font(.system(size: 15, weight: .semibold))
+                                            .font(.appBodyMediumEmphasised)
                                             .foregroundColor(selectedStatsTab == idx ? selectedColor : unselectedColor)
                                     }
                                     .padding(.horizontal, 16)
@@ -86,13 +86,13 @@ struct HomeTabView: View {
                         // Empty state
                         VStack(spacing: 12) {
                             Image(systemName: "list.bullet.circle")
-                                .font(.system(size: 48))
+                                .font(.appDisplaySmall)
                                 .foregroundColor(.secondary)
                             Text("No habits yet")
-                                .font(.system(size: 18, weight: .medium))
+                                .font(.appButtonText2)
                                 .foregroundColor(.secondary)
                             Text("Create your first habit to get started")
-                                .font(.system(size: 14))
+                                .font(.appBodyMedium)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
@@ -128,12 +128,12 @@ struct HomeTabView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(habit.name)
-                    .font(.system(size: 16, weight: .medium))
+                                                    .font(.appTitleMedium)
                     .foregroundColor(.primary)
                 
                 if !habit.description.isEmpty {
                     Text(habit.description)
-                        .font(.system(size: 14))
+                                                        .font(.appBodyMedium)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
@@ -144,9 +144,9 @@ struct HomeTabView: View {
             // Streak indicator
             HStack(spacing: 4) {
                 Text("🔥")
-                    .font(.system(size: 12))
+                                                    .font(.appLabelSmall)
                 Text("\(habit.streak)")
-                    .font(.system(size: 14, weight: .medium))
+                                                    .font(.appBodyMediumEmphasised)
                     .foregroundColor(.primary)
             }
             
@@ -155,7 +155,7 @@ struct HomeTabView: View {
                 onToggleHabit(habit)
             }) {
                 Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
+                                                    .font(.appHeadlineSmall)
                     .foregroundColor(habit.isCompleted ? .green : .secondary)
             }
         }
@@ -271,7 +271,7 @@ struct HomeTabView: View {
      private var dateSection: some View {
          HStack {
              Text(formattedCurrentDate)
-                 .font(.system(size: 16, weight: .bold))
+                                                 .font(.appTitleLargeEmphasised)
                  .lineSpacing(8)
                  .foregroundColor(.primary)
              
@@ -290,7 +290,7 @@ struct HomeTabView: View {
                                  .resizable()
                                  .frame(width: 12, height: 12)
                              Text("Today")
-                                 .font(.system(size: 12, weight: .medium))
+                                 .font(.appLabelSmallEmphasised)
                                  .lineSpacing(16)
                          }
                          .foregroundColor(Color(red: 0.11, green: 0.15, blue: 0.30)) // #1C274C
@@ -389,11 +389,11 @@ struct HomeTabView: View {
             ForEach(daysOfWeek(for: weekOffset), id: \.self) { date in
                 VStack(spacing: 4) {
                     Text(dayAbbreviation(for: date))
-                        .font(.system(size: 12, weight: .medium))
+                                                        .font(.appLabelSmallEmphasised)
                         .foregroundColor(textColor(for: date))
                     
                     Text("\(Calendar.current.component(.day, from: date))")
-                        .font(.system(size: 16, weight: .semibold))
+                                                        .font(.appTitleMediumEmphasised)
                         .foregroundColor(textColor(for: date))
                 }
                 .frame(maxWidth: .infinity)

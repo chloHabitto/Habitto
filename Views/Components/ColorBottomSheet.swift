@@ -86,8 +86,8 @@ struct ColorButton: View {
                 
                 // Color name
                 Text(name)
-                    .font(.body)
-                    .foregroundColor(.text01)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text04)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)

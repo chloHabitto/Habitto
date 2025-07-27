@@ -64,7 +64,7 @@ struct IconBottomSheet: View {
                                     onClose()
                                 }) {
                                     Text(icon)
-                                        .font(.largeTitle)
+                                        .font(.appHeadlineMedium)
                                         .frame(width: 48, height: 48)
                                         .background(selectedIcon == icon ? .primary : .surface)
                                         .foregroundColor(selectedIcon == icon ? .onPrimary : .text01)

@@ -18,5 +18,5 @@ struct CreateHabitView: View {
 
 #Preview {
     Text("Create Habit View")
-        .font(.title)
+        .font(.appTitleMedium)
 } 

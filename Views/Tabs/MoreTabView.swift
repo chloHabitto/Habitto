@@ -7,7 +7,7 @@ struct MoreTabView: View {
             VStack(spacing: 0) {
                 HStack {
                     Text("More")
-                        .font(.system(size: 16, weight: .bold))
+                                                        .font(.appTitleLargeEmphasised)
                         .foregroundColor(.primary)
                     
                     Spacer()
@@ -24,7 +24,7 @@ struct MoreTabView: View {
             // Content area
             VStack(spacing: 20) {
                 Text("Manage your app settings")
-                    .font(.system(size: 16, weight: .medium))
+                                                    .font(.appTitleMedium)
                     .foregroundColor(.secondary)
                 
                 Spacer()

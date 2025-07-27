@@ -52,7 +52,7 @@ struct PeriodBottomSheet: View {
                     Spacer()
                     
                     Text(monthYearString(from: currentMonth))
-                        .font(.title2)
+                        .font(.appTitleMediumEmphasised)
                         .foregroundColor(.text01)
                     
                     Spacer()
@@ -74,7 +74,7 @@ struct PeriodBottomSheet: View {
                     // Day headers
                     ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
                         Text(day)
-                            .font(.caption2)
+                                                            .font(.appLabelMedium)
                             .foregroundColor(.text05)
                             .frame(height: 32)
                     }
@@ -90,7 +90,7 @@ struct PeriodBottomSheet: View {
                                 }
                             }) {
                                 Text("\(Calendar.current.component(.day, from: date))")
-                                    .font(.body)
+                                    .font(.appBodyMedium)
                                     .foregroundColor(dateColor(for: date))
                                     .frame(width: 40, height: 40)
                                     .background(backgroundForDate(date))

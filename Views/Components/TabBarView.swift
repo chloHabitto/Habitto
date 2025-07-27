@@ -31,7 +31,8 @@ struct TabBarView: View {
                     .frame(width: 24, height: 24)
                     .foregroundColor(selectedTab == tab ? selectedColor : unselectedColor)
                 Text(title)
-                    .font(.caption)
+                                                    .font(.appLabelSmallEmphasised)
+                    .lineLimit(1)
                     .foregroundColor(selectedTab == tab ? selectedColor : unselectedColor)
             }
             .frame(maxWidth: .infinity)

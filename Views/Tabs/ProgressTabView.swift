@@ -7,7 +7,7 @@ struct ProgressTabView: View {
             VStack(spacing: 0) {
                 HStack {
                     Text("Progress")
-                        .font(.system(size: 16, weight: .bold))
+                                                        .font(.appTitleLargeEmphasised)
                         .foregroundColor(.primary)
                     
                     Spacer()
@@ -24,7 +24,7 @@ struct ProgressTabView: View {
             // Content area
             VStack(spacing: 20) {
                 Text("Track your habit progress here")
-                    .font(.system(size: 16, weight: .medium))
+                                                    .font(.appTitleMedium)
                     .foregroundColor(.secondary)
                 
                 Spacer()

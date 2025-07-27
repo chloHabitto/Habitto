@@ -13,10 +13,10 @@ struct SelectionRow: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                     Text(subtitle)
-                        .font(.body)
+                        .font(.appBodyMedium)
                         .foregroundColor(.text04)
                 }
                 
@@ -24,7 +24,7 @@ struct SelectionRow: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.caption2)
+                        .font(.appLabelMedium)
                         .foregroundColor(.primary)
                 }
             }
@@ -73,7 +73,7 @@ struct PillSelectionRow: View {
     @ViewBuilder
     private var titleView: some View {
         Text(title)
-            .font(.body)
+            .font(.appBodyLarge)
             .foregroundColor(.text01)
     }
     
@@ -90,15 +90,13 @@ struct PillSelectionRow: View {
     
     @ViewBuilder
     private func pillView(for pill: String) -> some View {
-        Group {
-            Text(pill)
-                .font(.body)
-                .foregroundColor(.onPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(hex: "1C274C"))
-                .clipShape(Capsule())
-        }
+        Text(pill)
+            .font(.appBodyMedium)
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(red: 0.11, green: 0.15, blue: 0.30)) // 1C274C in RGB
+            .clipShape(Capsule())
     }
 }
 
@@ -110,77 +108,57 @@ struct NumberStepper: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            titleView
-            stepperContent
+            Text(title)
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            HStack {
+                Button(action: {
+                    if value.wrappedValue > range.lowerBound {
+                        value.wrappedValue -= 1
+                    }
+                }) {
+                    Image("Icon-minus")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(value.wrappedValue > range.lowerBound ? .text01 : .text05)
+                }
+                .frame(width: 48, height: 48)
+                .background(.secondaryContainer)
+                .cornerRadius(8)
+                .disabled(value.wrappedValue <= range.lowerBound)
+                
+                Spacer()
+                
+                VStack(spacing: 4) {
+                    Text("\(value.wrappedValue)")
+                        .font(.appHeadlineMediumEmphasised)
+                        .foregroundColor(.text01)
+                    Text(unit)
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text04)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    if value.wrappedValue < range.upperBound {
+                        value.wrappedValue += 1
+                    }
+                }) {
+                    Image("Icon-plus")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(value.wrappedValue < range.upperBound ? .text01 : .text05)
+                }
+                .frame(width: 48, height: 48)
+                .background(.secondaryContainer)
+                .cornerRadius(8)
+                .disabled(value.wrappedValue >= range.upperBound)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
-    }
-    
-    @ViewBuilder
-    private var titleView: some View {
-        Text(title)
-            .font(.title2)
-            .foregroundColor(.text01)
-    }
-    
-    @ViewBuilder
-    private var stepperContent: some View {
-        HStack {
-            decrementButton
-            Spacer()
-            valueDisplay
-            Spacer()
-            incrementButton
-        }
-    }
-    
-    @ViewBuilder
-    private var decrementButton: some View {
-        Button(action: {
-            if value.wrappedValue > range.lowerBound {
-                value.wrappedValue -= 1
-            }
-        }) {
-            Image("Icon-minus")
-                .resizable()
-                .frame(width: 24, height: 24)
-                .foregroundColor(value.wrappedValue > range.lowerBound ? .text01 : .text05)
-        }
-        .frame(width: 48, height: 48)
-        .background(.secondaryContainer)
-        .cornerRadius(8)
-        .disabled(value.wrappedValue <= range.lowerBound)
-    }
-    
-    @ViewBuilder
-    private var valueDisplay: some View {
-        VStack(spacing: 4) {
-            Text("\(value.wrappedValue)")
-                .font(.title)
-                .foregroundColor(.text01)
-            Text(unit)
-                .font(.body)
-                .foregroundColor(.text04)
-        }
-    }
-    
-    @ViewBuilder
-    private var incrementButton: some View {
-        Button(action: {
-            if value.wrappedValue < range.upperBound {
-                value.wrappedValue += 1
-            }
-        }) {
-            Image("Icon-plus")
-                .resizable()
-                .frame(width: 24, height: 24)
-                .foregroundColor(value.wrappedValue < range.upperBound ? .text01 : .text05)
-        }
-        .frame(width: 48, height: 48)
-        .background(.secondaryContainer)
-        .cornerRadius(8)
-        .disabled(value.wrappedValue >= range.upperBound)
     }
 }
 
@@ -192,78 +170,62 @@ struct TimePicker: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            titleView
-            pickerContent
+            Text(title)
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            HStack(spacing: 16) {
+                // Hours
+                VStack(spacing: 8) {
+                    Text("Hours")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text04)
+                    
+                    Picker("Hours", selection: hours) {
+                        ForEach(0...23, id: \.self) { hour in
+                            Text("\(hour)").tag(hour)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    .frame(height: 120)
+                }
+                .frame(maxWidth: .infinity)
+                
+                // Minutes
+                VStack(spacing: 8) {
+                    Text("Minutes")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text04)
+                    
+                    Picker("Minutes", selection: minutes) {
+                        ForEach(0...59, id: \.self) { minute in
+                            Text("\(minute)").tag(minute)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    .frame(height: 120)
+                }
+                .frame(maxWidth: .infinity)
+                
+                // Seconds
+                VStack(spacing: 8) {
+                    Text("Seconds")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text04)
+                    
+                    Picker("Seconds", selection: seconds) {
+                        ForEach(0...59, id: \.self) { second in
+                            Text("\(second)").tag(second)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    .frame(height: 120)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
-    }
-    
-    @ViewBuilder
-    private var titleView: some View {
-        Text(title)
-            .font(.title2)
-            .foregroundColor(.text01)
-    }
-    
-    @ViewBuilder
-    private var pickerContent: some View {
-        HStack(spacing: 16) {
-            hoursPicker
-            minutesPicker
-            secondsPicker
-        }
-    }
-    
-    @ViewBuilder
-    private var hoursPicker: some View {
-        VStack(spacing: 8) {
-            Text("Hours")
-                .font(.body)
-                .foregroundColor(.text04)
-            
-            Picker("Hours", selection: hours) {
-                ForEach(0...23, id: \.self) { hour in
-                    Text("\(hour)").tag(hour)
-                }
-            }
-            .pickerStyle(WheelPickerStyle())
-            .frame(height: 120)
-        }
-    }
-    
-    @ViewBuilder
-    private var minutesPicker: some View {
-        VStack(spacing: 8) {
-            Text("Minutes")
-                .font(.body)
-                .foregroundColor(.text04)
-            
-            Picker("Minutes", selection: minutes) {
-                ForEach(0...59, id: \.self) { minute in
-                    Text("\(minute)").tag(minute)
-                }
-            }
-            .pickerStyle(WheelPickerStyle())
-            .frame(height: 120)
-        }
-    }
-    
-    @ViewBuilder
-    private var secondsPicker: some View {
-        VStack(spacing: 8) {
-            Text("Seconds")
-                .font(.body)
-                .foregroundColor(.text04)
-            
-            Picker("Seconds", selection: seconds) {
-                ForEach(0...59, id: \.self) { second in
-                    Text("\(second)").tag(second)
-                }
-            }
-            .pickerStyle(WheelPickerStyle())
-            .frame(height: 120)
-        }
     }
 }
 

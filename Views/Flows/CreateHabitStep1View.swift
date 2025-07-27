@@ -33,7 +33,7 @@ struct CreateHabitStep1View: View {
                     Button("Cancel") {
                         onCancel()
                     }
-                    .font(.title)
+                    .font(.appTitleMedium)
                     .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
                 }
                 .padding(.horizontal, 20)
@@ -55,11 +55,11 @@ struct CreateHabitStep1View: View {
                 
                 // Header
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Create Habit")
-                        .font(.subheadline)
-                        .foregroundColor(.text01)
+                                    Text("Create Habit")
+                    .font(.appHeadlineSmall)
+                    .foregroundColor(.text01)
                     Text("Let's get started!")
-                        .font(.title)
+                        .font(.appTitleMedium)
                         .foregroundColor(.text04)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -70,7 +70,7 @@ struct CreateHabitStep1View: View {
                     VStack(spacing: 16) {
                         // Name field
                         TextField("Name", text: $name)
-                            .font(.body)
+                            .font(.appBodyLarge)
                             .foregroundColor(.text01)
                             .accentColor(.text01)
                             .inputFieldStyle()
@@ -81,7 +81,7 @@ struct CreateHabitStep1View: View {
                         // Description field
                         TextField("Description (Optional)", text: $description, axis: .vertical)
                             .lineLimit(3...6)
-                            .font(.body)
+                            .font(.appBodyLarge)
                             .foregroundColor(.text01)
                             .accentColor(.text01)
                             .inputFieldStyle()
@@ -95,14 +95,14 @@ struct CreateHabitStep1View: View {
                         }) {
                             HStack {
                                 Text("Icon")
-                                    .font(.title2)
+                                    .font(.appTitleMedium)
                                     .foregroundColor(.text01)
                                 Spacer()
                                 Text(icon == "None" ? "None" : icon)
-                                    .font(.body)
+                                    .font(.appBodyLarge)
                                     .foregroundColor(.text04)
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(.appLabelSmall)
                                     .foregroundColor(.primaryDim)
                             }
                         }
@@ -114,7 +114,7 @@ struct CreateHabitStep1View: View {
                         }) {
                             HStack {
                                 Text("Colour")
-                                    .font(.title)
+                                    .font(.appTitleMedium)
                                     .foregroundColor(.text01)
                                 Spacer()
                                 HStack(spacing: 8) {
@@ -122,11 +122,11 @@ struct CreateHabitStep1View: View {
                                         .fill(color)
                                         .frame(width: 16, height: 16)
                                     Text(colorName(for: color))
-                                        .font(.body)
+                                        .font(.appBodyLarge)
                                         .foregroundColor(.text04)
                                 }
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(.appLabelMedium)
                                     .foregroundColor(.primaryDim)
                             }
                         }
@@ -135,7 +135,7 @@ struct CreateHabitStep1View: View {
                         // Habit type selection
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Habit Type")
-                                .font(.title2)
+                                .font(.appTitleMedium)
                                 .foregroundColor(.text01)
                             
                             HStack(spacing: 12) {
@@ -146,11 +146,11 @@ struct CreateHabitStep1View: View {
                                     HStack(spacing: 8) {
                                         if habitType == .formation {
                                             Image(systemName: "checkmark")
-                                                .font(.caption)
+                                                .font(.appLabelSmallEmphasised)
                                                 .foregroundColor(.onPrimary)
                                         }
                                         Text("Habit Formation")
-                                            .font(.caption)
+                                            .font(habitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
                                             .foregroundColor(habitType == .formation ? .onPrimary : .onPrimaryContainer)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
@@ -174,11 +174,11 @@ struct CreateHabitStep1View: View {
                                     HStack(spacing: 8) {
                                         if habitType == .breaking {
                                             Image(systemName: "checkmark")
-                                                .font(.caption)
+                                                .font(.appLabelSmallEmphasised)
                                                 .foregroundColor(.onPrimary)
                                         }
                                         Text("Habit Breaking")
-                                            .font(.caption)
+                                            .font(habitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
                                             .foregroundColor(habitType == .breaking ? .onPrimary : .onPrimaryContainer)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
@@ -221,8 +221,8 @@ struct CreateHabitStep1View: View {
                         onNext(name, description, icon, color, habitType)
                     }) {
                         Text("Continue")
-                            .font(.title2)
-                            .foregroundColor(.white)
+                            .font(.appButtonText1)
+                            .foregroundColor(name.isEmpty ? .text06 : .onPrimary)
                             .frame(width: UIScreen.main.bounds.width * 0.5)
                             .padding(.vertical, 16)
                             .background(name.isEmpty ? .disabledBackground : .primary)
@@ -287,5 +287,5 @@ struct CreateHabitStep1View: View {
 
 #Preview {
     Text("Create Habit Step 1")
-        .font(.title)
+        .font(.appTitleMedium)
 } 

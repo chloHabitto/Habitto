@@ -18,14 +18,14 @@ struct CreateHabitStepModifier: ViewModifier {
     let onBack: (() -> Void)?
     let onCancel: (() -> Void)?
     
-    func body(content: Content) -> some View {
+    func appBody(content: Content) -> some View {
         VStack(spacing: 0) {
             // Header with back/cancel buttons
             HStack {
                 if showBackButton {
                     Button(action: { onBack?() }) {
                         Image(systemName: "arrow.left")
-                            .font(.title2)
+                            .font(.appButtonText2)
                             .foregroundColor(.primary)
                     }
                 } else {
@@ -34,7 +34,7 @@ struct CreateHabitStepModifier: ViewModifier {
                 Spacer()
                 Button(action: { onCancel?() }) {
                     Image(systemName: "xmark")
-                        .font(.title2)
+                        .font(.appButtonText2)
                         .foregroundColor(.primary)
                 }
             }
@@ -58,10 +58,10 @@ struct CreateHabitStepModifier: ViewModifier {
             // Title and subtitle
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
-                    .font(.title)
+                    .font(.appHeadlineMediumEmphasised)
                     .foregroundColor(.text01)
                 Text(subtitle)
-                    .font(.title3)
+                    .font(.appTitleSmall)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,20 +98,20 @@ struct ButtonGroupRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.title2)
+                                        .font(.appTitleMedium)
                 .foregroundColor(.text01)
             
             HStack(spacing: 12) {
-                ForEach(buttons) { button in
+                ForEach(Array(buttons.enumerated()), id: \.element.id) { index, button in
                     Button(action: button.action) {
                         HStack(spacing: 8) {
                             if button.isSelected {
                                 Image(systemName: "checkmark")
-                                    .font(.caption)
+                                    .font(.appLabelSmallEmphasised)
                                     .foregroundColor(.onPrimary)
                             }
                             Text(button.title)
-                                .font(.caption)
+                                .font(button.isSelected ? .appLabelLargeEmphasised : .appLabelLarge)
                                 .foregroundColor(button.isSelected ? .onPrimary : .onPrimaryContainer)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
@@ -151,7 +151,7 @@ struct ContinueButton: View {
             Spacer()
             Button(action: action) {
                 Text("Continue")
-                    .font(.title2)
+                    .font(.appButtonText1)
                     .foregroundColor(isEnabled ? .onPrimary : .text06)
                     .frame(width: UIScreen.main.bounds.width * 0.5)
                     .padding(.vertical, 16)
@@ -183,7 +183,7 @@ struct CreateHabitStep1Efficient: View {
                 Button("Cancel") {
                     onCancel()
                 }
-                .font(.body)
+                .font(.appButtonText2)
                 .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
             }
             .padding(.horizontal, 20)
@@ -206,11 +206,10 @@ struct CreateHabitStep1Efficient: View {
             // Title (reusable)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Create Habit")
-                    .font(.title)
+                    .font(.appHeadlineMediumEmphasised)
                     .foregroundColor(.text01)
-                
-                Text("Step 1 of 2")
-                    .font(.title3)
+                Text("Let's get started!")
+                    .font(.appTitleSmall)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -222,14 +221,14 @@ struct CreateHabitStep1Efficient: View {
                 VStack(spacing: 16) {
                     // Input Fields (reusable pattern)
                     TextField("Name", text: $name)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Description (Optional)", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
@@ -247,7 +246,7 @@ struct CreateHabitStep1Efficient: View {
                     // Custom Color Selection (specific implementation)
                     HStack {
                         Text("Colour")
-                            .font(.title2)
+                            .font(.appTitleMedium)
                             .foregroundColor(.text01)
                         Spacer()
                         HStack(spacing: 8) {
@@ -255,11 +254,11 @@ struct CreateHabitStep1Efficient: View {
                                 .fill(color)
                                 .frame(width: 16, height: 16)
                             Text(colorName(for: color))
-                                .font(.body)
+                                .font(.appBodyLarge)
                                 .foregroundColor(.text04)
                         }
                         Image(systemName: "chevron.right")
-                            .font(.caption2)
+                                                            .font(.appLabelMedium)
                             .foregroundColor(.primaryDim)
                     }
                     .selectionRowStyle()
@@ -320,13 +319,13 @@ struct CreateHabitStep2Efficient: View {
             HStack {
                 Button(action: onBack) {
                     Image(systemName: "arrow.left")
-                        .font(.title2)
+                        .font(.appButtonText2)
                         .foregroundColor(.primary)
                 }
                 Spacer()
                 Button(action: onCancel) {
                     Image(systemName: "xmark")
-                        .font(.title2)
+                        .font(.appButtonText2)
                         .foregroundColor(.primary)
                 }
             }
@@ -350,10 +349,10 @@ struct CreateHabitStep2Efficient: View {
             // Title (reusable)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Set Up Your Habit")
-                    .font(.title)
+                    .font(.appHeadlineMediumEmphasised)
                     .foregroundColor(.text01)
                 Text("Configure your habit settings")
-                    .font(.title3)
+                    .font(.appTitleSmall)
                     .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -365,19 +364,19 @@ struct CreateHabitStep2Efficient: View {
                 VStack(spacing: 16) {
                     // Input Fields (reusable pattern)
                     TextField("Schedule", text: $schedule)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Goal", text: $goal)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()
                     
                     TextField("Reminder", text: $reminder)
-                        .font(.body)
+                        .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
                         .inputFieldStyle()

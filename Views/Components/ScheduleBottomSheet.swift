@@ -115,19 +115,15 @@ struct ScheduleBottomSheet: View {
                     VStack(spacing: 0) {
                         // 1. VStack: Text and Pill
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Set Schedule")
-                                .font(.title2)
+                            Text("I want to repeat this habit")
+                                .font(.appTitleMedium)
                                 .foregroundColor(.text01)
-                            
-                            Text("Choose your habit schedule")
-                                .font(.body)
-                                .foregroundColor(.text04)
                             
                             HStack {
                                 if selectedSchedule == "Weekly" {
                                     if pillTexts.isEmpty {
                                         Text("Select days")
-                                            .font(.body)
+                                            .font(.appBodyLarge)
                                             .foregroundColor(.onPrimary)
                                             .padding(.horizontal, 16)
                                             .padding(.vertical, 8)
@@ -138,7 +134,7 @@ struct ScheduleBottomSheet: View {
                                             HStack(spacing: 8) {
                                                 ForEach(pillTexts, id: \.self) { pillText in
                                                     Text(pillText)
-                                                        .font(.body)
+                                                        .font(.appBodyLarge)
                                                         .foregroundColor(.onPrimary)
                                                         .padding(.horizontal, 16)
                                                         .padding(.vertical, 8)
@@ -150,7 +146,7 @@ struct ScheduleBottomSheet: View {
                                     }
                                 } else {
                                     Text(selectedDays)
-                                        .font(.body)
+                                        .font(.appBodyLarge)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
@@ -187,7 +183,7 @@ struct ScheduleBottomSheet: View {
                                     .frame(height: 16)
                                 
                                 Text("On those days")
-                                    .font(.title3)
+                                    .font(.appTitleSmall)
                                     .foregroundColor(.text05)
                                 
                                 HStack(spacing: 8) {
@@ -200,7 +196,7 @@ struct ScheduleBottomSheet: View {
                                             }
                                         }) {
                                             Text(day)
-                                                .font(.caption2)
+                                                .font(.appLabelMediumEmphasised)
                                                 .foregroundColor(selectedWeekDays.contains(day) ? .onPrimary : .onSecondaryContainer)
                                                 .frame(maxWidth: .infinity)
                                                 .frame(height: 36)
@@ -241,18 +237,14 @@ struct ScheduleBottomSheet: View {
                     VStack(spacing: 0) {
                         // 1. VStack: Text and Pill
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Set Schedule")
-                                .font(.title2)
+                            Text("I want to repeat this habit")
+                                .font(.appTitleMedium)
                                 .foregroundColor(.text01)
-                            
-                            Text("Choose your habit schedule")
-                                .font(.body)
-                                .foregroundColor(.text04)
                             
                             HStack {
                                 if selectedFrequency == "Monthly" {
                                     Text(monthlyValue == 1 ? "1 time a month" : "\(monthlyValue) times a month")
-                                        .font(.body)
+                                        .font(.appBodyLarge)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
@@ -260,7 +252,7 @@ struct ScheduleBottomSheet: View {
                                         .clipShape(Capsule())
                                 } else {
                                     Text(weeklyValue == 1 ? "1 time a week" : "\(weeklyValue) times a week")
-                                        .font(.body)
+                                        .font(.appBodyLarge)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
@@ -304,7 +296,7 @@ struct ScheduleBottomSheet: View {
                                         }
                                     }) {
                                         Image(systemName: "minus")
-                                            .font(.body)
+                                            .font(.appTitleMedium)
                                             .foregroundColor(monthlyValue > 1 ? Color.white : .onDisabledBackground)
                                             .frame(width: 44, height: 44)
                                             .background(monthlyValue > 1 ? .primary : .disabledBackground)
@@ -315,7 +307,7 @@ struct ScheduleBottomSheet: View {
                                     
                                     // Number display
                                     Text("\(monthlyValue)")
-                                        .font(.title2)
+                                        .font(.appHeadlineSmallEmphasised)
                                         .foregroundColor(.text01)
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
@@ -332,7 +324,7 @@ struct ScheduleBottomSheet: View {
                                         }
                                     }) {
                                         Image(systemName: "plus")
-                                            .font(.body)
+                                            .font(.appTitleMedium)
                                             .foregroundColor(monthlyValue < 30 ? Color.white : .onDisabledBackground)
                                             .frame(width: 44, height: 44)
                                             .background(monthlyValue < 30 ? .primary : .disabledBackground)
@@ -361,7 +353,7 @@ struct ScheduleBottomSheet: View {
                                         }
                                     }) {
                                         Image(systemName: "minus")
-                                            .font(.body)
+                                            .font(.appTitleMedium)
                                             .foregroundColor(weeklyValue > 1 ? Color.white : .onDisabledBackground)
                                             .frame(width: 44, height: 44)
                                             .background(weeklyValue > 1 ? .primary : .disabledBackground)
@@ -372,7 +364,7 @@ struct ScheduleBottomSheet: View {
                                     
                                     // Number display
                                     Text("\(weeklyValue)")
-                                        .font(.title2)
+                                        .font(.appHeadlineSmallEmphasised)
                                         .foregroundColor(.text01)
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
@@ -389,7 +381,7 @@ struct ScheduleBottomSheet: View {
                                         }
                                     }) {
                                         Image(systemName: "plus")
-                                            .font(.body)
+                                            .font(.appTitleMedium)
                                             .foregroundColor(weeklyValue < 30 ? Color.white : .onDisabledBackground)
                                             .frame(width: 44, height: 44)
                                             .background(weeklyValue < 30 ? .primary : .disabledBackground)

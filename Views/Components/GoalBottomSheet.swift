@@ -72,13 +72,13 @@ struct GoalBottomSheet: View {
                     VStack(spacing: 0) {
                         // 1. VStack: Text and Pill
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Set Goal")
-                                .font(.title2)
+                            Text("I want to achieve this goal")
+                                .font(.appTitleMedium)
                                 .foregroundColor(.text01)
                             
                             HStack {
                                 Text(selectedGoalText)
-                                    .font(.body)
+                                    .font(.appBodyLarge)
                                     .foregroundColor(.onPrimary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 8)
@@ -107,8 +107,8 @@ struct GoalBottomSheet: View {
                                 Button(action: {
                                     if dailyValue > 1 { dailyValue -= 1 }
                                 }) {
-                                    Image(systemName: "minus")
-                                        .font(.body)
+                                                                            Image(systemName: "minus")
+                                            .font(.appTitleMedium)
                                         .foregroundColor(dailyValue > 1 ? Color.white : .onDisabledBackground)
                                         .frame(width: 44, height: 44)
                                         .background(dailyValue > 1 ? .primary : .disabledBackground)
@@ -119,7 +119,7 @@ struct GoalBottomSheet: View {
                                 
                                 // Number display
                                 Text("\(dailyValue)")
-                                    .font(.title2)
+                                    .font(.appHeadlineSmallEmphasised)
                                     .foregroundColor(.text01)
                                     .frame(width: 52, height: 52)
                                     .background(.surface)
@@ -133,8 +133,8 @@ struct GoalBottomSheet: View {
                                 Button(action: {
                                     if dailyValue < 30 { dailyValue += 1 }
                                 }) {
-                                    Image(systemName: "plus")
-                                        .font(.body)
+                                                                            Image(systemName: "plus")
+                                            .font(.appTitleMedium)
                                         .foregroundColor(dailyValue < 30 ? Color.white : .onDisabledBackground)
                                         .frame(width: 44, height: 44)
                                         .background(dailyValue < 30 ? .primary : .disabledBackground)
@@ -155,13 +155,13 @@ struct GoalBottomSheet: View {
                     VStack(spacing: 0) {
                         // 1. VStack: Text and Pill
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Goal")
-                                .font(.title2)
+                            Text("I want to achieve this goal")
+                                .font(.appTitleMedium)
                                 .foregroundColor(.text01)
                             
                             HStack {
                                 Text(selectedGoalText)
-                                    .font(.body)
+                                    .font(.appBodyLarge)
                                     .foregroundColor(.onPrimary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 8)

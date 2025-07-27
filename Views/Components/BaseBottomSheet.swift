@@ -43,12 +43,12 @@ struct BaseBottomSheet<Content: View>: View {
                     
                     Button(action: confirmButton) {
                         Text(confirmButtonTitle)
-                            .font(.title)
+                            .font(.appButtonText1)
                             .foregroundColor(.onPrimary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                            .frame(height: 48)
                             .background(Color(hex: "1C274C"))
-                            .cornerRadius(12)
+                            .clipShape(Capsule())
                     }
                     .padding(24)
                 }

@@ -12,8 +12,8 @@ struct TabMenu: View {
                 }) {
                     VStack(spacing: 0) {
                         Text(tabs[index])
-                            .font(.title2)
-                            .foregroundColor(selectedTab == index ? .primary : .text04)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(selectedTab == index ? .onPrimaryContainer : .text06)
                             .padding(.top, 8)
                             .padding(.bottom, 12)
                         
