@@ -338,12 +338,6 @@ struct HomeTabView: View {
             }
             .onAppear {
                 print("📱 Weekly calendar appeared with currentWeekOffset: \(currentWeekOffset)")
-                // Force scroll to current week (0) to ensure we can scroll both directions
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        proxy.scrollTo(0, anchor: .center)
-                    }
-                }
             }
             .simultaneousGesture(
                 DragGesture()
