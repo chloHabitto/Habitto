@@ -39,9 +39,19 @@ struct HabitDetailView: View {
                 Spacer()
                 
                 // More options button
-                Button(action: {
-                    // TODO: Add more options
-                }) {
+                Menu {
+                    Button(action: {
+                        // TODO: Add edit action
+                    }) {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    
+                    Button(role: .destructive, action: {
+                        // TODO: Add delete action
+                    }) {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
