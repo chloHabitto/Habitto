@@ -426,7 +426,7 @@ struct StreakView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Yearly heatmap (365 rectangles)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0.5), count: 30), spacing: 0.5) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
                         ForEach(0..<365, id: \.self) { dayIndex in
                             heatmapCell(intensity: yearlyHeatmapData[habitIndex][dayIndex])
                                 .frame(height: 4)
