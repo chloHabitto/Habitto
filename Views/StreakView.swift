@@ -260,6 +260,7 @@ struct StreakView: View {
             
             // Date range selector
             dateRangeSelector
+                .padding(.horizontal, 16)
             
             // Content based on selected tab
             Group {
@@ -275,7 +276,6 @@ struct StreakView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
     
@@ -303,10 +303,12 @@ struct StreakView: View {
                         .frame(maxWidth: .infinity)
                         .animation(.easeInOut(duration: 0.2), value: selectedProgressTab)
                 }
+                .frame(maxWidth: .infinity)
             }
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
+        .ignoresSafeArea(.container, edges: .horizontal)
     }
     
     private var dateRangeSelector: some View {
