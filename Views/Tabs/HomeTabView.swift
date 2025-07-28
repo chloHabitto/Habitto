@@ -26,6 +26,7 @@ struct HomeTabView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .roundedTopBackground()
         .onAppear {
+            print("🏠 HomeTabView appeared!")
             // Ensure selectedDate is set to today when the view appears
             let today = Calendar.current.startOfDay(for: Date())
             if selectedDate != today {
@@ -324,7 +325,7 @@ struct HomeTabView: View {
     
              // MARK: - Weekly Calendar
     private var weeklyCalendar: some View {
-        ScrollViewReader { proxy in
+        return ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 0) {
                     ForEach(-100...100, id: \.self) { weekOffset in
@@ -346,8 +347,13 @@ struct HomeTabView: View {
             }
             .onAppear {
                 // Ensure we're on the current week
-                scrollPosition = 0
-                currentWeekOffset = 0
+                DispatchQueue.main.async {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo(0, anchor: .center)
+                    }
+                    scrollPosition = 0
+                    currentWeekOffset = 0
+                }
             }
             .simultaneousGesture(
                 DragGesture()
@@ -366,7 +372,7 @@ struct HomeTabView: View {
     }
     
     private func weekView(for weekOffset: Int, width: CGFloat) -> some View {
-        HStack(spacing: 2) {
+        return HStack(spacing: 2) {
             ForEach(daysOfWeek(for: weekOffset), id: \.self) { date in
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.08)) {
@@ -386,6 +392,7 @@ struct HomeTabView: View {
                     .frame(height: 60)
                     .background(backgroundColor(for: date))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+
                 }
                 .buttonStyle(PlainButtonStyle())
                 .onAppear {
@@ -406,30 +413,33 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-
-        
-        // Check for today's date (highest priority)
-        if normalizedDate == normalizedToday {
-            print("🎯 Today's date found! Using green background")
-            print("🎯 Date: \(date)")
-            print("🎯 Normalized date: \(normalizedDate)")
-            print("🎯 Normalized today: \(normalizedToday)")
-            return .success // Use success color (green500) for maximum visibility
-        }
-        
         // Debug: Print all dates being processed
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        print("🔍 backgroundColor called for date: \(formatter.string(from: date))")
+        print("🔍 Normalized date: \(formatter.string(from: normalizedDate))")
+        print("🔍 Normalized today: \(formatter.string(from: normalizedToday))")
+        print("🔍 Is today? \(normalizedDate == normalizedToday)")
+        print("🔍 Week offset: \(currentWeekOffset)")
+        
+                    // Check for today's date (highest priority)
+            if normalizedDate == normalizedToday {
+                return ColorPrimitives.navy500 // Use primary color for today's date
+            }
+        
+        // Debug: Print all dates being processed
         print("📅 Processing date: \(formatter.string(from: date))")
         print("📅 Is today? \(normalizedDate == normalizedToday)")
         print("📅 Is selected? \(normalizedDate == normalizedSelected)")
         
         // Check if this is the selected date (but not today)
         if normalizedDate == normalizedSelected {
+            print("🔍 Selected date found: \(date)")
             return .secondary
         }
         
         // Default - no background
+        print("🔍 Returning clear background for date: \(date)")
         return Color.clear
     }
     
@@ -442,7 +452,7 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        // If this is today, use white text for contrast against green background
+        // If this is today, use white text for contrast against primary background
         if normalizedDate == normalizedToday {
             return .white
         }
@@ -486,17 +496,21 @@ struct HomeTabView: View {
         calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let today = Date()
         
-        // Get the start of the week containing today (Monday)
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start else {
-            print("❌ Failed to get week start for weekOffset: \(weekOffset)")
-            return []
-        }
-        
-        // Calculate the target week based on offset
-        // weekOffset 0 = current week, -1 = previous week, +1 = next week
-        guard let targetWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: weekStart) else {
-            print("❌ Failed to calculate target week for weekOffset: \(weekOffset)")
-            return []
+        // For weekOffset 0, we want the current week that contains today
+        // For other offsets, we calculate relative to the current week
+        let targetWeekStart: Date
+        if weekOffset == 0 {
+            // Get today's weekday (1 = Sunday, 2 = Monday, etc.)
+            let weekday = calendar.component(.weekday, from: today)
+            // Calculate how many days to subtract to get to Monday
+            let daysToSubtract = weekday == 1 ? 6 : weekday - 2 // If Sunday, subtract 6; otherwise subtract (weekday - 2)
+            targetWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
+        } else {
+            // For other weeks, calculate relative to the current week
+            let weekday = calendar.component(.weekday, from: today)
+            let daysToSubtract = weekday == 1 ? 6 : weekday - 2
+            let currentWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
+            targetWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentWeekStart)!
         }
         
         // Generate 7 days starting from the target week start (Monday)
@@ -504,12 +518,7 @@ struct HomeTabView: View {
             calendar.date(byAdding: .day, value: dayOffset, to: targetWeekStart)
         }
         
-        // Debug: Print the dates for this week
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        print("📅 Week \(weekOffset) dates: \(dates.map { formatter.string(from: $0) })")
-        print("📅 Today: \(formatter.string(from: Date()))")
-        print("📅 Selected date: \(formatter.string(from: selectedDate))")
+
         
         return dates
     }
@@ -524,8 +533,3 @@ struct HomeTabView: View {
         Calendar.current.isDate(date, inSameDayAs: Date())
     }
 }
-
-
-
- 
-
