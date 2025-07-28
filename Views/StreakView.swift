@@ -9,6 +9,10 @@ struct StreakView: View {
     @State private var completionRate = 0
     @State private var consistencyRate = 0
     
+    // Performance optimization: Cache expensive data
+    @State private var yearlyHeatmapData: [[Int]] = []
+    @State private var isDataLoaded = false
+    
     private let progressTabs = ["Weekly", "Monthly", "Yearly"]
     
     var body: some View {
@@ -48,6 +52,28 @@ struct StreakView: View {
         .safeAreaInset(edge: .top) {
             Color.clear
                 .frame(height: 0)
+        }
+        .onAppear {
+            loadData()
+        }
+    }
+    
+    // MARK: - Data Loading
+    private func loadData() {
+        guard !isDataLoaded else { return }
+        
+        // Load data on background thread to avoid blocking UI
+        DispatchQueue.global(qos: .userInitiated).async {
+            let yearlyData = [
+                generateYearlyData(),
+                generateYearlyData(),
+                generateYearlyData()
+            ]
+            
+            DispatchQueue.main.async {
+                self.yearlyHeatmapData = yearlyData
+                self.isDataLoaded = true
+            }
         }
     }
     
@@ -180,15 +206,17 @@ struct StreakView: View {
             dateRangeSelector
             
             // Content based on selected tab
-            if selectedProgressTab == 0 {
-                // Weekly view
-                weeklyCalendarGrid
-            } else if selectedProgressTab == 1 {
-                // Monthly view
-                monthlyCalendarGrid
-            } else {
-                // Yearly view
-                yearlyCalendarGrid
+            Group {
+                if selectedProgressTab == 0 {
+                    // Weekly view
+                    weeklyCalendarGrid
+                } else if selectedProgressTab == 1 {
+                    // Monthly view
+                    monthlyCalendarGrid
+                } else {
+                    // Yearly view
+                    yearlyCalendarGrid
+                }
             }
         }
         .padding(.vertical, 12)
@@ -251,6 +279,7 @@ struct StreakView: View {
         }
     }
     
+    // MARK: - Weekly Calendar Grid
     private var weeklyCalendarGrid: some View {
         VStack(spacing: 12) {
             // Days of week header
@@ -305,44 +334,6 @@ struct StreakView: View {
         }
     }
     
-    private func heatmapCell(intensity: Int) -> some View {
-        Rectangle()
-            .fill(heatmapColor(for: intensity))
-            .cornerRadius(2)
-    }
-    
-    private func heatmapColor(for intensity: Int) -> Color {
-        switch intensity {
-        case 0:
-            return .surfaceContainer
-        case 1:
-            return ColorPrimitives.green500.opacity(0.3)
-        case 2:
-            return ColorPrimitives.green500.opacity(0.6)
-        case 3:
-            return ColorPrimitives.green500
-        default:
-            return .surfaceContainer
-        }
-    }
-    
-    // Sample data for heatmap
-    private var habitNames: [String] {
-        ["Exercise", "Read", "Meditate"]
-    }
-    
-    private var heatmapData: [[Int]] {
-        [
-            [3, 2, 3, 1, 2, 3, 0], // Exercise
-            [2, 1, 2, 3, 2, 1, 2], // Read
-            [1, 3, 2, 2, 3, 2, 1]  // Meditate
-        ]
-    }
-    
-    private var totalHeatmapData: [Int] {
-        [6, 6, 7, 6, 7, 6, 3] // Sum of each day
-    }
-    
     // MARK: - Monthly Calendar Grid
     private var monthlyCalendarGrid: some View {
         VStack(spacing: 12) {
@@ -391,7 +382,105 @@ struct StreakView: View {
         }
     }
     
-    // Sample monthly data
+    // MARK: - Yearly Calendar Grid (Optimized)
+    private var yearlyCalendarGrid: some View {
+        VStack(spacing: 12) {
+            if isDataLoaded {
+                // Habit rows with yearly heatmap (365 days)
+                ForEach(0..<3, id: \.self) { habitIndex in
+                    VStack(spacing: 6) {
+                        // Habit name
+                        HStack(spacing: 8) {
+                            Rectangle()
+                                .fill(Color.primary)
+                                .frame(width: 8, height: 8)
+                                .cornerRadius(2)
+                            
+                            Text(yearlyHabitNames[habitIndex])
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Yearly heatmap (365 rectangles) - Optimized rendering
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
+                            ForEach(0..<365, id: \.self) { dayIndex in
+                                heatmapCell(intensity: yearlyHeatmapData[habitIndex][dayIndex])
+                                    .frame(height: 4)
+                                    .aspectRatio(1, contentMode: .fit)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                    }
+                    .padding(.vertical, 6)
+                }
+            } else {
+                // Loading placeholder
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading heatmap data...")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text04)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func heatmapCell(intensity: Int) -> some View {
+        Rectangle()
+            .fill(heatmapColor(for: intensity))
+            .cornerRadius(2)
+    }
+    
+    private func heatmapColor(for intensity: Int) -> Color {
+        switch intensity {
+        case 0:
+            return .surfaceContainer
+        case 1:
+            return ColorPrimitives.green500.opacity(0.3)
+        case 2:
+            return ColorPrimitives.green500.opacity(0.6)
+        case 3:
+            return ColorPrimitives.green500
+        default:
+            return .surfaceContainer
+        }
+    }
+    
+    private func generateYearlyData() -> [Int] {
+        var data: [Int] = []
+        for _ in 0..<365 {
+            data.append(Int.random(in: 0...3))
+        }
+        return data
+    }
+    
+    // MARK: - Static Data (Performance optimization)
+    private var habitNames: [String] {
+        ["Exercise", "Read", "Meditate"]
+    }
+    
+    private var yearlyHabitNames: [String] {
+        ["Exercise", "Read", "Meditate"]
+    }
+    
+    private var heatmapData: [[Int]] {
+        [
+            [3, 2, 3, 1, 2, 3, 0], // Exercise
+            [2, 1, 2, 3, 2, 1, 2], // Read
+            [1, 3, 2, 2, 3, 2, 1]  // Meditate
+        ]
+    }
+    
+    private var totalHeatmapData: [Int] {
+        [6, 6, 7, 6, 7, 6, 3] // Sum of each day
+    }
+    
     private var monthlyHeatmapData: [[Int]] {
         [
             [3, 2, 3, 1, 2, 3, 0], // Week 1
@@ -404,62 +493,6 @@ struct StreakView: View {
     
     private var monthlyTotalHeatmapData: [Int] {
         [11, 11, 10, 10, 11, 10, 8] // Sum of each day across weeks
-    }
-    
-    // MARK: - Yearly Calendar Grid
-    private var yearlyCalendarGrid: some View {
-        VStack(spacing: 12) {
-            // Habit rows with yearly heatmap (365 days)
-            ForEach(0..<3, id: \.self) { habitIndex in
-                VStack(spacing: 6) {
-                    // Habit name
-                    HStack(spacing: 8) {
-                        Rectangle()
-                            .fill(Color.primary)
-                            .frame(width: 8, height: 8)
-                            .cornerRadius(2)
-                        
-                        Text(yearlyHabitNames[habitIndex])
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    // Yearly heatmap (365 rectangles)
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
-                        ForEach(0..<365, id: \.self) { dayIndex in
-                            heatmapCell(intensity: yearlyHeatmapData[habitIndex][dayIndex])
-                                .frame(height: 4)
-                                .aspectRatio(1, contentMode: .fit)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .clipped()
-                }
-                .padding(.vertical, 6)
-            }
-        }
-    }
-    
-    // Sample yearly data (365 days)
-    private var yearlyHabitNames: [String] {
-        ["Exercise", "Read", "Meditate"]
-    }
-    
-    private var yearlyHeatmapData: [[Int]] {
-        [
-            generateYearlyData(), // Exercise
-            generateYearlyData(), // Read
-            generateYearlyData()  // Meditate
-        ]
-    }
-    
-    private func generateYearlyData() -> [Int] {
-        var data: [Int] = []
-        for _ in 0..<365 {
-            data.append(Int.random(in: 0...3))
-        }
-        return data
     }
     
     // MARK: - Summary Statistics
@@ -502,6 +535,8 @@ struct StreakView: View {
         .cornerRadius(12)
     }
 }
+
+
 
 #Preview {
     StreakView()
