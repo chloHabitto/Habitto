@@ -45,6 +45,21 @@ struct StreakView: View {
                                     summaryStatistics
                                 }
                             )
+                        },
+                        rightButton: {
+                            AnyView(
+                                Button(action: {
+                                    // More button action
+                                }) {
+                                    Image("Icon-moreDots")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(PlainButtonStyle())
+                            )
                         }
                     ) {
                         // Empty content since we're using custom header content

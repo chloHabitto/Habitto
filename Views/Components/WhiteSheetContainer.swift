@@ -4,17 +4,20 @@ struct WhiteSheetContainer<Content: View>: View {
     let title: String?
     let subtitle: String?
     let headerContent: (() -> AnyView)?
+    let rightButton: (() -> AnyView)?
     let content: Content
     
     init(
         title: String? = nil,
         subtitle: String? = nil,
         headerContent: (() -> AnyView)? = nil,
+        rightButton: (() -> AnyView)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
         self.headerContent = headerContent
+        self.rightButton = rightButton
         self.content = content()
     }
     
@@ -40,6 +43,10 @@ struct WhiteSheetContainer<Content: View>: View {
                         .foregroundColor(.primary)
                     
                     Spacer()
+                    
+                    if let rightButton = rightButton {
+                        rightButton()
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
@@ -71,22 +78,27 @@ struct WhiteSheetContainer<Content: View>: View {
 extension WhiteSheetContainer {
     /// Creates a white sheet container with just a title
     init(title: String, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: nil, headerContent: nil, content: content)
+        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: nil, content: content)
     }
     
     /// Creates a white sheet container with title and subtitle
     init(title: String, subtitle: String, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: subtitle, headerContent: nil, content: content)
+        self.init(title: title, subtitle: subtitle, headerContent: nil, rightButton: nil, content: content)
     }
     
     /// Creates a white sheet container with custom header content
     init(title: String, headerContent: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: nil, headerContent: headerContent, content: content)
+        self.init(title: title, subtitle: nil, headerContent: headerContent, rightButton: nil, content: content)
     }
     
     /// Creates a white sheet container with only custom header content (no title)
     init(headerContent: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
-        self.init(title: nil, subtitle: nil, headerContent: headerContent, content: content)
+        self.init(title: nil, subtitle: nil, headerContent: headerContent, rightButton: nil, content: content)
+    }
+    
+    /// Creates a white sheet container with title and right button
+    init(title: String, rightButton: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
+        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: rightButton, content: content)
     }
 }
 
