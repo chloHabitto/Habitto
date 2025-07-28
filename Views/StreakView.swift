@@ -24,17 +24,24 @@ struct StreakView: View {
                     // Streak Summary Cards
                     streakSummaryCards
                     
-                    // Progress Section
-                    progressSection
-                    
-                    // Summary Statistics
-                    summaryStatistics
+                    // Content in ZStack with white background
+                    VStack(spacing: 24) {
+                        // Progress Section
+                        progressSection
+                        
+                        // Summary Statistics
+                        summaryStatistics
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .roundedTopBackground()
                 }
-                .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
         }
-        .background(.surface2)
+        .background(Color.primary)
     }
     
     // MARK: - Header Section
@@ -160,10 +167,7 @@ struct StreakView: View {
             // Weekly calendar grid
             weeklyCalendarGrid
         }
-        .padding(.vertical, 20)
-        .padding(.horizontal, 16)
-        .background(.surface)
-        .cornerRadius(16)
+        .padding(.vertical, 12)
     }
     
     private var progressTabsView: some View {
