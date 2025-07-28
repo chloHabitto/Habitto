@@ -48,26 +48,16 @@ struct HabitDetailView: View {
                 Spacer()
                 
                 // More options button
-                Menu {
-                    Button(action: {
-                        showingEditView = true
-                    }) {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                    
-                    Button(role: .destructive, action: {
-                        // TODO: Add delete action
-                    }) {
-                        Label("Delete", systemImage: "trash")
-                    }
-                } label: {
+                Button(action: {
+                    showingEditView = true
+                }) {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .background(Color.clear.opacity(0.001)) // Invisible background for better touch
                 }
-                .frame(width: 44, height: 44) // Increased touch target to 44x44
-                .contentShape(Rectangle())
-                .background(Color.clear) // Add background for better touch feedback
             }
             .padding(.horizontal, 4)
             .padding(.top, 8)
