@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var selectedDate = Date()
+    @State private var selectedDate = Calendar.current.startOfDay(for: Date())
     @State private var scrollPosition: Int? = 0
     @State private var isOnCurrentWeek = true
     @State private var selectedTab: Tab = .home

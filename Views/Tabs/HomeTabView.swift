@@ -26,7 +26,11 @@ struct HomeTabView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .roundedTopBackground()
         .onAppear {
-            print("🏠 HomeTabView appeared!")
+            // Ensure selectedDate is set to today when the view appears
+            let today = Calendar.current.startOfDay(for: Date())
+            if selectedDate != today {
+                selectedDate = today
+            }
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
@@ -328,8 +332,7 @@ struct HomeTabView: View {
                             .frame(width: UIScreen.main.bounds.width - 16)
                             .id(weekOffset)
                             .onAppear {
-                                // Debug: Print when each week appears
-                                print("📅 Week \(weekOffset) appeared")
+                                // Week appeared
                             }
                     }
                 }
@@ -338,20 +341,21 @@ struct HomeTabView: View {
             .scrollPosition(id: $scrollPosition)
             .onChange(of: scrollPosition) { oldValue, newValue in
                 if let newValue = newValue {
-                    print("📱 Scroll position changed from \(oldValue ?? -999) to \(newValue)")
                     currentWeekOffset = newValue
                 }
             }
             .onAppear {
-                print("📱 Weekly calendar appeared with currentWeekOffset: \(currentWeekOffset)")
+                // Ensure we're on the current week
+                scrollPosition = 0
+                currentWeekOffset = 0
             }
             .simultaneousGesture(
                 DragGesture()
-                    .onChanged { value in
-                        print("🖱️ Drag gesture detected: \(value.translation.width)")
+                    .onChanged { _ in
+                        // Handle drag gesture if needed
                     }
-                    .onEnded { value in
-                        print("🖱️ Drag gesture ended: \(value.translation.width)")
+                    .onEnded { _ in
+                        // Handle drag gesture end if needed
                     }
             )
         }
@@ -385,23 +389,12 @@ struct HomeTabView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .onAppear {
-                    // Debug: Print when each date appears
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "yyyy-MM-dd"
-                    print("📅 Date appeared: \(formatter.string(from: date))")
-                    
-                    // Test if this is today
-                    if Calendar.current.isDate(date, inSameDayAs: Date()) {
-                        print("🎯 This is today!")
-                    }
+                    // Optional: Add any specific logic for when dates appear
                 }
             }
         }
         .frame(width: width)
         .padding(.horizontal, 20)
-        .onAppear {
-            print("📅 Week \(weekOffset) appeared")
-        }
     }
     
     private func backgroundColor(for date: Date) -> Color {
@@ -413,22 +406,30 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        print("🎨 backgroundColor for date: \(date), selected: \(selectedDate), normalizedDate: \(normalizedDate), normalizedSelected: \(normalizedSelected)")
+
         
-        // Check if this is the selected date
+        // Check for today's date (highest priority)
+        if normalizedDate == normalizedToday {
+            print("🎯 Today's date found! Using green background")
+            print("🎯 Date: \(date)")
+            print("🎯 Normalized date: \(normalizedDate)")
+            print("🎯 Normalized today: \(normalizedToday)")
+            return .success // Use success color (green500) for maximum visibility
+        }
+        
+        // Debug: Print all dates being processed
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        print("📅 Processing date: \(formatter.string(from: date))")
+        print("📅 Is today? \(normalizedDate == normalizedToday)")
+        print("📅 Is selected? \(normalizedDate == normalizedSelected)")
+        
+        // Check if this is the selected date (but not today)
         if normalizedDate == normalizedSelected {
-            print("✅ Selected date - returning .secondary")
             return .secondary
         }
         
-        // Check for today's date (but not selected)
-        if normalizedDate == normalizedToday && normalizedDate != normalizedSelected {
-            print("📅 Today's date (not selected) - returning .surfaceDim")
-            return .surfaceDim
-        }
-        
         // Default - no background
-        print("⚪ Default - returning clear")
         return Color.clear
     }
     
@@ -441,9 +442,14 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        // If this is today or selected date, use the original color
-        if normalizedDate == normalizedToday || normalizedDate == normalizedSelected {
-            return Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
+        // If this is today, use white text for contrast against green background
+        if normalizedDate == normalizedToday {
+            return .white
+        }
+        
+        // If this is the selected date (but not today), use text01 for better contrast
+        if normalizedDate == normalizedSelected {
+            return .text01
         }
         
         // For all other dates, use text04
@@ -452,13 +458,15 @@ struct HomeTabView: View {
     
     private func dateFont(for date: Date) -> Font {
         let calendar = Calendar.current
+        let today = Date()
         
         // Normalize dates to start of day for comparison
         let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        // If this is the selected date, use emphasized font
-        if normalizedDate == normalizedSelected {
+        // If this is today or the selected date, use emphasized font
+        if normalizedDate == normalizedToday || normalizedDate == normalizedSelected {
             return .appLabelLargeEmphasised
         }
         
@@ -499,12 +507,9 @@ struct HomeTabView: View {
         // Debug: Print the dates for this week
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        print("📅 Week offset \(weekOffset): \(dates.map { formatter.string(from: $0) })")
-        
-        // Additional debug for past weeks
-        if weekOffset < 0 {
-            print("🔍 Past week \(weekOffset): First date = \(formatter.string(from: dates.first ?? Date())), Last date = \(formatter.string(from: dates.last ?? Date()))")
-        }
+        print("📅 Week \(weekOffset) dates: \(dates.map { formatter.string(from: $0) })")
+        print("📅 Today: \(formatter.string(from: Date()))")
+        print("📅 Selected date: \(formatter.string(from: selectedDate))")
         
         return dates
     }
