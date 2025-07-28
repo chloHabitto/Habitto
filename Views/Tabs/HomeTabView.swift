@@ -206,6 +206,7 @@ struct HomeTabView: View {
     private var habitsForSelectedDate: [Habit] {
         // Performance optimization: Use cached result if date hasn't changed
         if lastCalculatedDate != selectedDate {
+            // Calculate filtered habits without modifying state
             let filteredHabits = habits.filter { habit in
                 let selected = DateUtils.startOfDay(for: selectedDate)
                 let start = DateUtils.startOfDay(for: habit.startDate)
@@ -229,8 +230,11 @@ struct HomeTabView: View {
                 print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: \(habit.schedule)")
             }
             
-            cachedHabitsForDate = filteredHabits
-            lastCalculatedDate = selectedDate
+            // Update state in the next render cycle
+            DispatchQueue.main.async {
+                self.cachedHabitsForDate = filteredHabits
+                self.lastCalculatedDate = self.selectedDate
+            }
         }
         
         return cachedHabitsForDate

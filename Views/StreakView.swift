@@ -671,7 +671,7 @@ struct StreakView: View {
             // Generate 365 days of data based on actual completion history
             let calendar = Calendar.current
             let today = Calendar.current.startOfDay(for: Date())
-            let startOfYear = calendar.dateInterval(of: .year, for: today)?.start ?? today
+            let _ = calendar.dateInterval(of: .year, for: today)?.start ?? today
             
             for day in 0..<365 {
                 let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today

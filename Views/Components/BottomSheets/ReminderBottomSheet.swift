@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ReminderItem: Identifiable, Codable, Equatable {
-    let id = UUID()
+    var id = UUID()
     var time: Date
     var isActive: Bool
 }
