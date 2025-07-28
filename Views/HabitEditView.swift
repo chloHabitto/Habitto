@@ -198,10 +198,11 @@ struct HabitEditView: View {
                 .padding(.vertical, 16)
                 .background(.surface2)
                 
-                // Save Button
-                saveButton
             }
             .background(.surface2)
+            
+            // Fixed bottom button dock
+            saveButton
         }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
