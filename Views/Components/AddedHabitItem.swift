@@ -33,6 +33,11 @@ struct AddedHabitItem: View {
                         .resizable()
                         .frame(width: 14, height: 14)
                         .foregroundColor(habit.color)
+                } else if habit.icon == "None" {
+                    // No icon selected - show colored rounded rectangle
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(habit.color)
+                        .frame(width: 14, height: 14)
                 } else {
                     // Emoji or system icon
                     Text(habit.icon)

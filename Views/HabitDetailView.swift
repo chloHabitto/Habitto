@@ -117,6 +117,11 @@ struct HabitDetailView: View {
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.primary)
+                } else if habit.icon == "None" {
+                    // No icon selected - show colored rounded rectangle
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(habit.color)
+                        .frame(width: 24, height: 24)
                 } else {
                     Text(habit.icon)
                         .font(.system(size: 24))
