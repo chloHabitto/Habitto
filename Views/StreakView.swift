@@ -14,7 +14,7 @@ struct StreakView: View {
     @State private var isDataLoaded = false
     @State private var userHabits: [Habit] = []
     
-    private let progressTabs = ["Weekly", "Monthly", "Yearly"]
+    private let progressTabs = ["Weekly", "Monthly", "Yearly", "Dummy"]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -283,18 +283,31 @@ struct StreakView: View {
         HStack(spacing: 0) {
             ForEach(0..<progressTabs.count, id: \.self) { index in
                 VStack(spacing: 0) {
-                    Button(action: {
-                        selectedProgressTab = index
-                    }) {
+                    if index == 3 { // Dummy tab
+                        // Non-clickable dummy tab with zero opacity text
                         Text(progressTabs[index])
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(selectedProgressTab == index ? .text03 : .text04)
+                            .foregroundColor(.text04)
+                            .opacity(0) // Zero opacity
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
+                    } else {
+                        // Regular clickable tabs
+                        Button(action: {
+                            selectedProgressTab = index
+                        }) {
+                            Text(progressTabs[index])
+                                .font(.appTitleSmallEmphasised)
+                                .foregroundColor(selectedProgressTab == index ? .text03 : .text04)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
                     // Bottom stroke for each tab
                     Rectangle()
