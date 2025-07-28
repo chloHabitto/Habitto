@@ -14,6 +14,7 @@ struct HabitEditView: View {
     @State private var selectedGoal: String
     @State private var selectedReminder: String
     @State private var isReminderEnabled: Bool
+    @State private var reminders: [ReminderItem]
     @State private var startDate: Date
     @State private var endDate: Date?
     
@@ -35,6 +36,7 @@ struct HabitEditView: View {
                selectedSchedule != habit.schedule ||
                selectedGoal != habit.goal ||
                selectedReminder != habit.reminder ||
+               reminders != habit.reminders ||
                startDate != habit.startDate ||
                endDate != habit.endDate
     }
@@ -52,6 +54,7 @@ struct HabitEditView: View {
         self._selectedGoal = State(initialValue: habit.goal)
         self._selectedReminder = State(initialValue: habit.reminder)
         self._isReminderEnabled = State(initialValue: !habit.reminder.isEmpty)
+        self._reminders = State(initialValue: habit.reminders)
         self._startDate = State(initialValue: habit.startDate)
         self._endDate = State(initialValue: habit.endDate)
     }
@@ -374,7 +377,7 @@ struct HabitEditView: View {
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
                 Spacer()
-                Text(selectedReminder.isEmpty || selectedReminder == "No reminder" ? "Add" : selectedReminder)
+                Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
                     .font(.appBodyLarge)
                     .foregroundColor(.text04)
                 Image(systemName: "chevron.right")
@@ -386,29 +389,51 @@ struct HabitEditView: View {
                 showingReminderSheet = true
             }
             
-            if !selectedReminder.isEmpty && selectedReminder != "No reminder" {
+            if !reminders.isEmpty {
                 Divider()
                     .background(.outline)
                     .padding(.vertical, 4)
                 
                 VStack(spacing: 4) {
-                    HStack {
-                        Text(selectedReminder)
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        Text("Active")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.primary)
+                    ForEach(reminders.filter { $0.isActive }) { reminder in
+                        HStack {
+                            Text(formatTime(reminder.time))
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                            Spacer()
+                            Text("Active")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(.secondaryContainer)
+                        .cornerRadius(6)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(.secondaryContainer)
-                    .cornerRadius(6)
                 }
             }
         }
         .selectionRowStyle()
+        .sheet(isPresented: $showingReminderSheet) {
+            ReminderBottomSheet(
+                onClose: { showingReminderSheet = false },
+                onReminderSelected: { selectedReminder in
+                    // Keep for backward compatibility
+                    showingReminderSheet = false
+                },
+                initialReminders: reminders,
+                onRemindersUpdated: { updatedReminders in
+                    reminders = updatedReminders
+                    let activeReminders = updatedReminders.filter { $0.isActive }
+                    if !activeReminders.isEmpty {
+                        selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
+                    } else {
+                        selectedReminder = "No reminder"
+                    }
+                    showingReminderSheet = false
+                }
+            )
+        }
     }
     
     // MARK: - Period Section
@@ -483,9 +508,14 @@ struct HabitEditView: View {
             startDate: startDate,
             endDate: endDate,
             isCompleted: habit.isCompleted,
-            streak: habit.streak
+            streak: habit.streak,
+            reminders: reminders
         )
         updatedHabit.id = habit.id
+        
+        // Update notifications for the habit
+        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
+        
         onSave(updatedHabit)
         dismiss()
     }
@@ -531,6 +561,12 @@ struct HabitEditView: View {
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM dd yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 }

@@ -63,7 +63,8 @@ struct Habit: Identifiable, Codable {
     var habitType: HabitType
     var schedule: String
     var goal: String
-    var reminder: String
+    var reminder: String // Keep for backward compatibility
+    var reminders: [ReminderItem] = [] // New field for storing reminder items
     var startDate: Date
     var endDate: Date?
     var isCompleted: Bool = false
@@ -71,7 +72,7 @@ struct Habit: Identifiable, Codable {
     var createdAt: Date = Date()
     var completionHistory: [String: Bool] = [:] // Track daily completion: "yyyy-MM-dd" -> Bool
     
-    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0) {
+    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = []) {
         self.name = name
         self.description = description
         self.icon = icon
@@ -80,13 +81,14 @@ struct Habit: Identifiable, Codable {
         self.schedule = schedule
         self.goal = goal
         self.reminder = reminder
+        self.reminders = reminders
         self.startDate = startDate
         self.endDate = endDate
         self.isCompleted = isCompleted
         self.streak = streak
     }
     
-    init(from step1Data: (String, String, String, Color, HabitType), schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil) {
+    init(from step1Data: (String, String, String, Color, HabitType), schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, reminders: [ReminderItem] = []) {
         self.name = step1Data.0
         self.description = step1Data.1
         self.icon = step1Data.2
@@ -95,6 +97,7 @@ struct Habit: Identifiable, Codable {
         self.schedule = schedule
         self.goal = goal
         self.reminder = reminder
+        self.reminders = reminders
         self.startDate = startDate
         self.endDate = endDate
     }

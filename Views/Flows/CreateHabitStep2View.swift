@@ -295,8 +295,13 @@ struct CreateHabitStep2View: View {
                         goal: goal,
                         reminder: reminder,
                         startDate: startDate,
-                        endDate: endDate
+                        endDate: endDate,
+                        reminders: reminders
                     )
+                    
+                    // Schedule notifications for the new habit
+                    NotificationManager.shared.updateNotifications(for: newHabit, reminders: reminders)
+                    
                     onSave(newHabit)
                     dismiss()
                 }) {
@@ -320,6 +325,7 @@ struct CreateHabitStep2View: View {
                 schedule = habit.schedule
                 goal = habit.goal
                 reminder = habit.reminder
+                reminders = habit.reminders
                 startDate = habit.startDate
                 endDate = habit.endDate
             }
