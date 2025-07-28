@@ -194,7 +194,10 @@ struct HomeTabView: View {
             habit: habit,
             isCompleted: Binding(
                 get: { isCompletedToday },
-                set: { _ in onToggleHabit(habit) }
+                set: { _ in 
+                    onToggleHabit(habit)
+                    updateStats()
+                }
             )
         )
         .contentShape(Rectangle())
@@ -563,5 +566,19 @@ struct HomeTabView: View {
     
     private func isToday(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: Date())
+    }
+    
+    // MARK: - Stats Update Function
+    private func updateStats() {
+        let habitsForDate = habitsForSelectedDate
+        cachedStats = [
+            ("Total", habitsForDate.count),
+            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
+            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
+            ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
+        ]
+        lastCalculatedStatsDate = selectedDate
+        
+        print("🏠 HomeTabView: Updated stats - Total: \(cachedStats[0].1), Undone: \(cachedStats[1].1), Done: \(cachedStats[2].1), New: \(cachedStats[3].1)")
     }
 }
