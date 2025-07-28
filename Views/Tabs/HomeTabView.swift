@@ -19,12 +19,19 @@ struct HomeTabView: View {
     }()
     
     var body: some View {
-        VStack(spacing: 0) {
-            headerSection
+        WhiteSheetContainer(
+            headerContent: {
+                AnyView(
+                    VStack(spacing: 0) {
+                        dateSection
+                        weeklyCalendar
+                        statsRowSection
+                    }
+                )
+            }
+        ) {
             habitsListSection
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .roundedTopBackground()
         .onAppear {
             print("🏠 HomeTabView appeared!")
             // Ensure selectedDate is set to today when the view appears
@@ -36,19 +43,6 @@ struct HomeTabView: View {
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
         }
-    }
-    
-    @ViewBuilder
-    private var headerSection: some View {
-        VStack(spacing: 0) {
-            dateSection
-            weeklyCalendar
-            statsRowSection
-        }
-        .padding(.horizontal, 0)
-        .padding(.bottom, 0)
-        .frame(alignment: .top)
-        .roundedTopBackground()
     }
     
     @ViewBuilder

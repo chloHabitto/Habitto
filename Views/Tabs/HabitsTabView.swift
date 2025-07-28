@@ -28,30 +28,12 @@ struct HabitsTabView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Fixed header
-            VStack(spacing: 0) {
-                // First row - My Habits text
-                HStack {
-                                    Text("My Habits")
-                                                    .font(.appTitleLargeEmphasised)
-                    .foregroundColor(.primary)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-
-                
-                // Stats row
-                statsRow
+        WhiteSheetContainer(
+            title: "My Habits",
+            headerContent: {
+                AnyView(statsRow)
             }
-            .padding(.horizontal, 0)
-            .padding(.bottom, 0)
-            .frame(alignment: .top)
-            .roundedTopBackground()
-            
-            // Scrollable habits list fills the rest
+        ) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     if habits.isEmpty {
@@ -95,10 +77,7 @@ struct HabitsTabView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 20)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .roundedTopBackground()
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
         }

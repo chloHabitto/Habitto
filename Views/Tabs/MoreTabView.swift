@@ -2,38 +2,19 @@ import SwiftUI
 
 struct MoreTabView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            // Fixed header
-            VStack(spacing: 0) {
-                HStack {
-                    Text("More")
-                                                        .font(.appTitleLargeEmphasised)
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
-            }
-            .padding(.horizontal, 0)
-            .padding(.bottom, 0)
-            .frame(alignment: .top)
-            .roundedTopBackground()
-            
-            // Content area
+        WhiteSheetContainer(
+            title: "More",
+            subtitle: "Manage your app settings"
+        ) {
             VStack(spacing: 20) {
                 Text("Manage your app settings")
-                                                    .font(.appTitleMedium)
+                    .font(.appTitleMedium)
                     .foregroundColor(.secondary)
                 
                 Spacer()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .roundedTopBackground()
     }
 } 

@@ -33,18 +33,23 @@ struct StreakView: View {
                     streakSummaryCards
                     
                     // White sheet that expands to bottom
-                    VStack(spacing: 24) {
-                        // Progress Section
-                        progressSection
-                        
-                        // Summary Statistics
-                        summaryStatistics
+                    WhiteSheetContainer(
+                        title: "Habit Streak",
+                        headerContent: {
+                            AnyView(
+                                VStack(spacing: 0) {
+                                    // Progress Section
+                                    progressSection
+                                    
+                                    // Summary Statistics
+                                    summaryStatistics
+                                }
+                            )
+                        }
+                    ) {
+                        // Empty content since we're using custom header content
+                        Color.clear
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .roundedTopBackground()
                 }
             }
         }
@@ -235,15 +240,6 @@ struct StreakView: View {
     // MARK: - Progress Section
     private var progressSection: some View {
         VStack(spacing: 16) {
-            // Progress title
-            HStack {
-                Text("Progress")
-                    .font(.appHeadlineSmallEmphasised)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-            }
-            
             // Progress tabs
             progressTabsView
             
@@ -264,6 +260,7 @@ struct StreakView: View {
                 }
             }
         }
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
     
@@ -734,6 +731,8 @@ struct StreakView: View {
                 label: "Consistency"
             )
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
     
     private func statisticCard(value: String, label: String) -> some View {
