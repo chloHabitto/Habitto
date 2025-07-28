@@ -4,117 +4,30 @@ struct MoreTabView: View {
     @State private var isVacationModeEnabled = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Top Header Section
-            headerSection
-            
-            // Main Content Area (White Sheet)
-            WhiteSheetContainer(
-                headerContent: {
-                    AnyView(
-                        VStack(spacing: 0) {
-                            // Trial Banner
-                            trialBanner
-                            
-                            // Vacation Mode Section
-                            vacationModeSection
-                            
-                            // Settings Sections
-                            settingsSections
-                        }
-                    )
+        WhiteSheetContainer(
+            headerContent: {
+                AnyView(
+                    VStack(spacing: 0) {
+                        // Trial Banner
+                        trialBanner
+                        
+                        // Vacation Mode Section
+                        vacationModeSection
+                    }
+                )
+            }
+        ) {
+            // Settings content in main content area
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Settings Sections
+                    settingsSections
                 }
-            ) {
-                // Empty content since everything is in header
-                Color.clear
+                .padding(.horizontal, 0)
+                .padding(.top, 0)
+                .padding(.bottom, 20)
             }
         }
-        .background(Color.primary)
-        .ignoresSafeArea(.all)
-    }
-    
-    // MARK: - Header Section
-    private var headerSection: some View {
-        VStack(spacing: 0) {
-            // Status bar area
-            HStack {
-                Text("9:41")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "signal")
-                        .font(.system(size: 12))
-                    Image(systemName: "wifi")
-                        .font(.system(size: 12))
-                    Image(systemName: "battery.100")
-                        .font(.system(size: 12))
-                }
-                .foregroundColor(.white)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            
-            // User Profile Section
-            HStack(alignment: .top) {
-                // User Avatar
-                VStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 60, height: 60)
-                        
-                        Text("C")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Hi Chloe,")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-                        
-                        HStack(spacing: 4) {
-                            Text("View Profile")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.white)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                // Action Icons
-                HStack(spacing: 16) {
-                    Button(action: {
-                        // Notification action
-                    }) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                    }
-                    
-                    Button(action: {
-                        // Add action
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
-        }
-        .background(Color.primary)
     }
     
     // MARK: - Trial Banner
@@ -224,6 +137,8 @@ struct MoreTabView: View {
                     .padding(.bottom, 20)
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
     }
     
     // MARK: - Settings Group Helper
