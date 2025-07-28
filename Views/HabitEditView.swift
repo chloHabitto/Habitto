@@ -192,11 +192,18 @@ struct HabitEditView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
-                .background(.surface2)
+                .padding(.bottom, 100) // Add bottom padding to account for fixed button
+            }
+            .background(.surface2)
+            
+            // Fixed bottom button dock
+            VStack(spacing: 0) {
+                Divider()
+                    .background(.outline)
                 
-                // Fixed bottom button dock
                 saveButton
             }
+            .background(.surface2)
         }
         .background(.surface2)
         .sheet(isPresented: $showingIconSheet) {
