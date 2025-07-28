@@ -137,7 +137,6 @@ struct MoreTabView: View {
                     .padding(.bottom, 20)
             }
         }
-        .padding(.horizontal, 20)
         .padding(.top, 20)
     }
     
