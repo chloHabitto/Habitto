@@ -2,24 +2,28 @@ import SwiftUI
 
 struct HeaderView: View {
     let onCreateHabit: () -> Void
+    let onStreakTap: () -> Void
     
     var body: some View {
         HStack {
             // Streak pill
-            HStack(spacing: 6) {
-                Image("Icon-fire")
-                    .resizable()
-                    .frame(width: 32, height: 32)
-                Text("0 streak")
-                                                    .font(.appButtonText1)
-                    .foregroundColor(.black)
+            Button(action: onStreakTap) {
+                HStack(spacing: 6) {
+                    Image("Icon-fire")
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                    Text("0 streak")
+                        .font(.appButtonText1)
+                        .foregroundColor(.black)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                .padding(.leading, 12)
+                .padding(.trailing, 16)
+                .background(Color.white)
+                .clipShape(Capsule())
             }
-            .padding(.top, 8)
-            .padding(.bottom, 8)
-            .padding(.leading, 12)
-            .padding(.trailing, 16)
-            .background(Color.white)
-            .clipShape(Capsule())
+            .buttonStyle(PlainButtonStyle())
             
             Spacer()
             

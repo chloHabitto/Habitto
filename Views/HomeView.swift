@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var selectedStatsTab: Int = 0
     @State private var showingDeleteConfirmation = false
     @State private var habitToDelete: Habit?
+    @State private var showingStreakView = false
     
     enum Tab {
         case home, habits, progress, more
@@ -26,9 +27,14 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     // Header
-                    HeaderView(onCreateHabit: {
-                        showingCreateHabit = true
-                    })
+                    HeaderView(
+                        onCreateHabit: {
+                            showingCreateHabit = true
+                        },
+                        onStreakTap: {
+                            showingStreakView = true
+                        }
+                    )
                     
                     // Content based on selected tab
                     switch selectedTab {
@@ -128,6 +134,9 @@ struct HomeView: View {
             }
         } message: {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
+        }
+        .fullScreenCover(isPresented: $showingStreakView) {
+            StreakView()
         }
     }
     
