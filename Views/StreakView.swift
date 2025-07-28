@@ -304,19 +304,6 @@ struct StreakView: View {
                         .animation(.easeInOut(duration: 0.2), value: selectedProgressTab)
                 }
             }
-            
-            Spacer()
-            
-            Button(action: {
-                // More options action
-            }) {
-                Image(systemName: "ellipsis")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .frame(height: 44)
-            }
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
@@ -727,7 +714,7 @@ struct StreakView: View {
     
     // MARK: - Summary Statistics
     private var summaryStatistics: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             // Completion card
             statisticCard(
                 value: "\(completionRate)%",
@@ -746,6 +733,7 @@ struct StreakView: View {
                 label: "Consistency"
             )
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
@@ -765,6 +753,7 @@ struct StreakView: View {
         .padding(.horizontal, 12)
         .background(.surfaceContainer)
         .cornerRadius(12)
+        .frame(maxWidth: .infinity)
     }
 }
 
