@@ -44,10 +44,30 @@ struct HomeTabView: View {
         }
         .onAppear {
             print("🏠 HomeTabView appeared!")
+            print("🏠 HomeTabView: Total habits passed: \(habits.count)")
+            print("🏠 HomeTabView: Selected date: \(selectedDate)")
+            
             // Ensure selectedDate is set to today when the view appears
             let today = Calendar.current.startOfDay(for: Date())
             if selectedDate != today {
                 selectedDate = today
+            }
+            
+            // Pre-calculate stats to avoid state modification during view updates
+            let habitsForDate = habitsForSelectedDate
+            cachedStats = [
+                ("Total", habitsForDate.count),
+                ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
+                ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
+                ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
+            ]
+            lastCalculatedStatsDate = selectedDate
+            
+            print("🏠 HomeTabView: Pre-calculated stats - Total: \(cachedStats[0].1), Undone: \(cachedStats[1].1), Done: \(cachedStats[2].1), New: \(cachedStats[3].1)")
+            
+            // Debug: Print each habit's details
+            for (index, habit) in habits.enumerated() {
+                print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: \(habit.schedule)")
             }
         }
         .fullScreenCover(item: $selectedHabit) { habit in
@@ -79,19 +99,31 @@ struct HomeTabView: View {
     private func statsTabButton(for idx: Int) -> some View {
         VStack(spacing: 0) {
             Button(action: { 
-                if idx != 3 { // Only allow clicking for non-fourth tabs
+                if idx != 3 && idx < stats.count { // Only allow clicking for non-fourth tabs and ensure bounds
                     selectedStatsTab = idx 
                 }
             }) {
                 HStack(spacing: 4) {
-                    Text(stats[idx].0)
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                        .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
-                    Text("\(stats[idx].1)")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                        .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
+                    if idx < stats.count {
+                        Text(stats[idx].0)
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                            .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
+                        Text("\(stats[idx].1)")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
+                            .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
+                    } else {
+                        // Fallback for when stats array is not ready
+                        Text("--")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.text04)
+                            .opacity(idx == 3 ? 0 : 1)
+                        Text("0")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.text04)
+                            .opacity(idx == 3 ? 0 : 1)
+                    }
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
@@ -188,6 +220,15 @@ struct HomeTabView: View {
                 return shouldShowHabitOnDate(habit, date: selectedDate)
             }
             
+            print("🏠 HomeTabView: Total habits: \(habits.count)")
+            print("🏠 HomeTabView: Filtered habits for \(selectedDate): \(filteredHabits.count)")
+            print("🏠 HomeTabView: Selected date: \(selectedDate)")
+            
+            // Debug: Print each habit's details
+            for (index, habit) in habits.enumerated() {
+                print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: \(habit.schedule)")
+            }
+            
             cachedHabitsForDate = filteredHabits
             lastCalculatedDate = selectedDate
         }
@@ -260,16 +301,10 @@ struct HomeTabView: View {
     }
     
     private var stats: [(String, Int)] {
-        // Performance optimization: Use cached stats if date hasn't changed
-        if lastCalculatedStatsDate != selectedDate {
-            let habitsForDate = habitsForSelectedDate
-            cachedStats = [
-                ("Total", habitsForDate.count),
-                ("Undone", habitsForDate.filter { !$0.isCompleted }.count),
-                ("Done", habitsForDate.filter { $0.isCompleted }.count),
-                ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
-            ]
-            lastCalculatedStatsDate = selectedDate
+        // Ensure we always return exactly 4 elements to prevent index out of range
+        if cachedStats.count < 4 {
+            let defaultStats = [("Total", 0), ("Undone", 0), ("Done", 0), ("New", 0)]
+            return defaultStats
         }
         
         return cachedStats

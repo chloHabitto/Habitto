@@ -142,6 +142,7 @@ struct HomeView: View {
             })
         }
         .onAppear {
+            print("🚀 HomeView: onAppear called!")
             loadHabits()
         }
         .sheet(isPresented: $state.showingCreateHabit) {
@@ -176,7 +177,60 @@ struct HomeView: View {
     
     // MARK: - Lifecycle
     private func loadHabits() {
-        state.habits = Habit.loadHabits()
+        print("🏠 HomeView: Loading habits...")
+        var loadedHabits = Habit.loadHabits()
+        print("🏠 HomeView: Loaded \(loadedHabits.count) habits")
+        
+        // If no habits exist, create some test habits
+        if loadedHabits.isEmpty {
+            print("🏠 HomeView: No habits found, creating test habits...")
+            let testHabits = [
+                Habit(
+                    name: "Drink Water",
+                    description: "Stay hydrated throughout the day",
+                    icon: "💧",
+                    color: .blue,
+                    habitType: .formation,
+                    schedule: "daily",
+                    goal: "8 glasses per day",
+                    reminder: "Every 2 hours",
+                    startDate: Date(),
+                    endDate: nil
+                ),
+                Habit(
+                    name: "Exercise",
+                    description: "Stay active and healthy",
+                    icon: "🏃‍♂️",
+                    color: .green,
+                    habitType: .formation,
+                    schedule: "daily",
+                    goal: "30 minutes",
+                    reminder: "Morning",
+                    startDate: Date(),
+                    endDate: nil
+                ),
+                Habit(
+                    name: "Read",
+                    description: "Expand knowledge and vocabulary",
+                    icon: "📚",
+                    color: .orange,
+                    habitType: .formation,
+                    schedule: "daily",
+                    goal: "20 pages",
+                    reminder: "Evening",
+                    startDate: Date(),
+                    endDate: nil
+                )
+            ]
+            
+            // Save the test habits
+            Habit.saveHabits(testHabits)
+            loadedHabits = testHabits
+            print("🏠 HomeView: Created \(testHabits.count) test habits")
+        }
+        
+        state.habits = loadedHabits
+        print("🏠 HomeView: Habits assigned to state - total: \(state.habits.count)")
     }
 }
 
