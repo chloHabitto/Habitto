@@ -76,8 +76,10 @@ struct HabitEditView: View {
                         GeometryReader { geometry in
                             Color.clear
                                 .onChange(of: geometry.frame(in: .global).minY) { _, newValue in
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        scrollOffset = max(0, -newValue)
+                                    let newOffset = max(0, -newValue)
+                                    // Immediate scroll detection
+                                    withAnimation(.spring(response: 0.2, dampingFraction: 0.9)) {
+                                        scrollOffset = newOffset
                                     }
                                 }
                         }
@@ -274,7 +276,7 @@ struct HabitEditView: View {
     private var topNavigationBar: some View {
         VStack(spacing: 0) {
             if scrollOffset > 10 {
-                // Compact header - single row with title and cancel
+                // Compact header - title and cancel on same row
                 HStack {
                     Text("Edit habit")
                         .font(.appTitleMediumEmphasised)
@@ -290,13 +292,11 @@ struct HabitEditView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color.clear)
             } else {
-                // Full header
+                // Full header - cancel button on top, title and description below
                 HStack {
                     Spacer()
                     
-                    // Cancel button
                     Button("Cancel") {
                         dismiss()
                     }
@@ -324,7 +324,7 @@ struct HabitEditView: View {
         }
         .background(Color.clear) // Remove white background
         .padding(.top, 0) // Let the system handle safe area
-        .animation(.easeInOut(duration: 0.2), value: scrollOffset)
+        .animation(.spring(response: 0.2, dampingFraction: 0.9), value: scrollOffset)
     }
     
     // MARK: - Input Field Section
