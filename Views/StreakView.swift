@@ -42,6 +42,11 @@ struct StreakView: View {
             }
         }
         .background(Color.primary)
+        .ignoresSafeArea(.container, edges: .top)
+        .safeAreaInset(edge: .top) {
+            Color.clear
+                .frame(height: 0)
+        }
     }
     
     // MARK: - Header Section
@@ -52,14 +57,14 @@ struct StreakView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.appTitleMedium)
-                    .foregroundColor(.text01)
+                    .foregroundColor(.white)
             }
             
             Spacer()
             
             Text("My streak")
                 .font(.appHeadlineMediumEmphasised)
-                .foregroundColor(.text01)
+                .foregroundColor(.white)
             
             Spacer()
             
@@ -83,9 +88,11 @@ struct StreakView: View {
                     .frame(width: 120, height: 120)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
-                // Flame icon (using SF Symbol)
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 48, weight: .medium))
+                // Flame icon (using custom Icon-fire)
+                Image("Icon-fire")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 80, height: 80)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.warning, ColorPrimitives.yellow400],
@@ -98,37 +105,56 @@ struct StreakView: View {
             // Streak count
             Text("\(currentStreak) days")
                 .font(.appDisplaySmallEmphasised)
-                .foregroundColor(.text01)
+                .foregroundColor(.white)
         }
     }
     
     // MARK: - Streak Summary Cards
     private var streakSummaryCards: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             // Best streak card
             streakCard(
-                icon: "flame.fill",
+                icon: "Icon-starBadge",
                 iconColor: .warning,
                 value: "\(bestStreak) days",
                 label: "Best streak"
             )
             
+            // Divider
+            Rectangle()
+                .fill(.outline)
+                .frame(width: 1)
+                .frame(height: 60)
+            
             // Average streak card
             streakCard(
-                icon: "star.fill",
+                icon: "Icon-medalBadge",
                 iconColor: ColorPrimitives.yellow400,
                 value: "\(averageStreak) days",
                 label: "Average streak"
             )
         }
+        .background(.surfaceContainer)
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
     }
     
     private func streakCard(icon: String, iconColor: Color, value: String, label: String) -> some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.appTitleMedium)
-                    .foregroundColor(iconColor)
+                if icon.hasPrefix("Icon-") {
+                    // Custom image
+                    Image(icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(iconColor)
+                } else {
+                    // System icon
+                    Image(systemName: icon)
+                        .font(.appTitleMedium)
+                        .foregroundColor(iconColor)
+                }
                 
                 Text(value)
                     .font(.appTitleMediumEmphasised)
@@ -142,8 +168,6 @@ struct StreakView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .padding(.horizontal, 12)
-        .background(.surfaceContainer)
-        .cornerRadius(12)
     }
     
     // MARK: - Progress Section
@@ -164,8 +188,17 @@ struct StreakView: View {
             // Date range selector
             dateRangeSelector
             
-            // Weekly calendar grid
-            weeklyCalendarGrid
+            // Content based on selected tab
+            if selectedProgressTab == 0 {
+                // Weekly view
+                weeklyCalendarGrid
+            } else if selectedProgressTab == 1 {
+                // Monthly view
+                monthlyCalendarGrid
+            } else {
+                // Yearly view
+                yearlyCalendarGrid
+            }
         }
         .padding(.vertical, 12)
     }
@@ -173,24 +206,24 @@ struct StreakView: View {
     private var progressTabsView: some View {
         HStack(spacing: 0) {
             ForEach(0..<progressTabs.count, id: \.self) { index in
-                Button(action: {
-                    selectedProgressTab = index
-                }) {
-                    Text(progressTabs[index])
-                        .font(.appBodyMedium)
-                        .foregroundColor(selectedProgressTab == index ? .text01 : .text04)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-                        .background(
-                            VStack {
-                                Spacer()
-                                if selectedProgressTab == index {
-                                    Rectangle()
-                                        .fill(Color.primary)
-                                        .frame(height: 2)
-                                }
-                            }
-                        )
+                VStack(spacing: 0) {
+                    Button(action: {
+                        selectedProgressTab = index
+                    }) {
+                        Text(progressTabs[index])
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(selectedProgressTab == index ? .text03 : .text04)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Bottom stroke for each tab
+                    Rectangle()
+                        .fill(selectedProgressTab == index ? .text03 : .divider)
+                        .frame(height: 3)
+                        .frame(maxWidth: .infinity)
+                        .animation(.easeInOut(duration: 0.2), value: selectedProgressTab)
                 }
             }
             
@@ -205,6 +238,8 @@ struct StreakView: View {
                     .padding(.horizontal, 8)
             }
         }
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
     }
     
     private var dateRangeSelector: some View {
@@ -238,8 +273,8 @@ struct StreakView: View {
                 }
             }
             
-            // Habit rows
-            ForEach(0..<4, id: \.self) { habitIndex in
+            // Habit rows with heatmap
+            ForEach(0..<3, id: \.self) { habitIndex in
                 HStack(spacing: 0) {
                     // Habit name
                     HStack(spacing: 8) {
@@ -248,18 +283,15 @@ struct StreakView: View {
                             .frame(width: 8, height: 8)
                             .cornerRadius(2)
                         
-                        Text("Habit Name")
+                        Text(habitNames[habitIndex])
                             .font(.appBodyMedium)
                             .foregroundColor(.text01)
                     }
                     .frame(width: 80, alignment: .leading)
                     
-                    // Calendar cells
+                    // Heatmap cells
                     ForEach(0..<7, id: \.self) { dayIndex in
-                        Rectangle()
-                            .fill(.surfaceContainer)
-                            .frame(height: 24)
-                            .cornerRadius(4)
+                        heatmapCell(intensity: heatmapData[habitIndex][dayIndex])
                     }
                 }
             }
@@ -272,13 +304,167 @@ struct StreakView: View {
                     .frame(width: 80, alignment: .leading)
                 
                 ForEach(0..<7, id: \.self) { dayIndex in
-                    Rectangle()
-                        .fill(.surfaceContainer)
-                        .frame(height: 24)
-                        .cornerRadius(4)
+                    heatmapCell(intensity: totalHeatmapData[dayIndex])
                 }
             }
         }
+    }
+    
+    private func heatmapCell(intensity: Int) -> some View {
+        Rectangle()
+            .fill(heatmapColor(for: intensity))
+            .cornerRadius(2)
+    }
+    
+    private func heatmapColor(for intensity: Int) -> Color {
+        switch intensity {
+        case 0:
+            return .surfaceContainer
+        case 1:
+            return ColorPrimitives.green500.opacity(0.3)
+        case 2:
+            return ColorPrimitives.green500.opacity(0.6)
+        case 3:
+            return ColorPrimitives.green500
+        default:
+            return .surfaceContainer
+        }
+    }
+    
+    // Sample data for heatmap
+    private var habitNames: [String] {
+        ["Exercise", "Read", "Meditate"]
+    }
+    
+    private var heatmapData: [[Int]] {
+        [
+            [3, 2, 3, 1, 2, 3, 0], // Exercise
+            [2, 1, 2, 3, 2, 1, 2], // Read
+            [1, 3, 2, 2, 3, 2, 1]  // Meditate
+        ]
+    }
+    
+    private var totalHeatmapData: [Int] {
+        [6, 6, 7, 6, 7, 6, 3] // Sum of each day
+    }
+    
+    // MARK: - Monthly Calendar Grid
+    private var monthlyCalendarGrid: some View {
+        VStack(spacing: 12) {
+            // Days of week header
+            HStack(spacing: 0) {
+                // Empty space for habit names
+                Rectangle()
+                    .fill(.clear)
+                    .frame(width: 80)
+                
+                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+                    Text(day)
+                        .font(.appBodySmall)
+                        .foregroundColor(.text04)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Month weeks (4-5 weeks)
+            ForEach(0..<5, id: \.self) { weekIndex in
+                HStack(spacing: 0) {
+                    // Week label
+                    Text("Week \(weekIndex + 1)")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text04)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    // Week heatmap cells
+                    ForEach(0..<7, id: \.self) { dayIndex in
+                        heatmapCell(intensity: monthlyHeatmapData[weekIndex][dayIndex])
+                    }
+                }
+            }
+            
+            // Total row
+            HStack(spacing: 0) {
+                Text("Total")
+                    .font(.appBodyMediumEmphasised)
+                    .foregroundColor(.text01)
+                    .frame(width: 80, alignment: .leading)
+                
+                ForEach(0..<7, id: \.self) { dayIndex in
+                    heatmapCell(intensity: monthlyTotalHeatmapData[dayIndex])
+                }
+            }
+        }
+    }
+    
+    // Sample monthly data
+    private var monthlyHeatmapData: [[Int]] {
+        [
+            [3, 2, 3, 1, 2, 3, 0], // Week 1
+            [2, 1, 2, 3, 2, 1, 2], // Week 2
+            [1, 3, 2, 2, 3, 2, 1], // Week 3
+            [3, 2, 1, 3, 2, 3, 2], // Week 4
+            [2, 3, 2, 1, 2, 1, 3]  // Week 5
+        ]
+    }
+    
+    private var monthlyTotalHeatmapData: [Int] {
+        [11, 11, 10, 10, 11, 10, 8] // Sum of each day across weeks
+    }
+    
+    // MARK: - Yearly Calendar Grid
+    private var yearlyCalendarGrid: some View {
+        VStack(spacing: 12) {
+            // Habit rows with yearly heatmap (365 days)
+            ForEach(0..<3, id: \.self) { habitIndex in
+                VStack(spacing: 6) {
+                    // Habit name
+                    HStack(spacing: 8) {
+                        Rectangle()
+                            .fill(Color.primary)
+                            .frame(width: 8, height: 8)
+                            .cornerRadius(2)
+                        
+                        Text(yearlyHabitNames[habitIndex])
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Yearly heatmap (365 rectangles)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0.5), count: 30), spacing: 0.5) {
+                        ForEach(0..<365, id: \.self) { dayIndex in
+                            heatmapCell(intensity: yearlyHeatmapData[habitIndex][dayIndex])
+                                .frame(height: 4)
+                                .aspectRatio(1, contentMode: .fit)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+    
+    // Sample yearly data (365 days)
+    private var yearlyHabitNames: [String] {
+        ["Exercise", "Read", "Meditate"]
+    }
+    
+    private var yearlyHeatmapData: [[Int]] {
+        [
+            generateYearlyData(), // Exercise
+            generateYearlyData(), // Read
+            generateYearlyData()  // Meditate
+        ]
+    }
+    
+    private func generateYearlyData() -> [Int] {
+        var data: [Int] = []
+        for _ in 0..<365 {
+            data.append(Int.random(in: 0...3))
+        }
+        return data
     }
     
     // MARK: - Summary Statistics
@@ -324,4 +510,4 @@ struct StreakView: View {
 
 #Preview {
     StreakView()
-} 
+}
