@@ -13,6 +13,8 @@ struct StreakView: View {
     @State private var yearlyHeatmapData: [[Int]] = []
     @State private var isDataLoaded = false
     @State private var userHabits: [Habit] = []
+    @State private var isExpanded = false
+    @State private var dragOffset: CGFloat = 0
     
     private let progressTabs = ["Weekly", "Monthly", "Yearly", "Dummy"]
     
@@ -63,6 +65,38 @@ struct StreakView: View {
                                 .frame(maxHeight: .infinity)
                         }
                     }
+                    .offset(y: dragOffset)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let translation = value.translation.height
+                                if translation < 0 { // Dragging up
+                                    dragOffset = max(translation, -150) // Upward drag limit
+                                } else { // Dragging down
+                                    dragOffset = min(translation, 0) // Limit downward drag
+                                }
+                            }
+                            .onEnded { value in
+                                let translation = value.translation.height
+                                let velocity = value.velocity.height
+                                
+                                if translation < -75 || velocity < -300 { // Expand threshold
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isExpanded = true
+                                        dragOffset = -150
+                                    }
+                                } else if translation > 25 || velocity > 300 { // Collapse threshold
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        isExpanded = false
+                                        dragOffset = 0
+                                    }
+                                } else { // Return to current state
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        dragOffset = isExpanded ? -150 : 0
+                                    }
+                                }
+                            }
+                    )
                 }
             }
         }
