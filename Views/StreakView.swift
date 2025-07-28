@@ -12,6 +12,7 @@ struct StreakView: View {
     // Performance optimization: Cache expensive data
     @State private var yearlyHeatmapData: [[Int]] = []
     @State private var isDataLoaded = false
+    @State private var userHabits: [Habit] = []
     
     private let progressTabs = ["Weekly", "Monthly", "Yearly"]
     
@@ -62,19 +63,63 @@ struct StreakView: View {
     private func loadData() {
         guard !isDataLoaded else { return }
         
+        // Load user habits first
+        userHabits = Habit.loadHabits()
+        
+        // Calculate streak statistics from actual user data
+        calculateStreakStatistics()
+        
         // Load data on background thread to avoid blocking UI
         DispatchQueue.global(qos: .userInitiated).async {
-            let yearlyData = [
-                generateYearlyData(),
-                generateYearlyData(),
-                generateYearlyData()
-            ]
+            let yearlyData = generateYearlyDataFromUserHabits()
             
             DispatchQueue.main.async {
                 self.yearlyHeatmapData = yearlyData
                 self.isDataLoaded = true
             }
         }
+    }
+    
+    // MARK: - Streak Statistics Calculation
+    private func calculateStreakStatistics() {
+        guard !userHabits.isEmpty else {
+            currentStreak = 0
+            bestStreak = 0
+            averageStreak = 0
+            completionRate = 0
+            consistencyRate = 0
+            return
+        }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Calculate current streak (average of all habits)
+        let totalCurrentStreak = userHabits.reduce(0) { $0 + $1.streak }
+        currentStreak = userHabits.isEmpty ? 0 : totalCurrentStreak / userHabits.count
+        
+        // Calculate best streak (highest streak among all habits)
+        bestStreak = userHabits.map { $0.streak }.max() ?? 0
+        
+        // Calculate average streak
+        let totalStreak = userHabits.reduce(0) { $0 + $1.streak }
+        averageStreak = userHabits.isEmpty ? 0 : totalStreak / userHabits.count
+        
+        // Calculate completion rate (percentage of habits completed today)
+        let completedHabitsToday = userHabits.filter { $0.isCompleted(for: today) }.count
+        completionRate = userHabits.isEmpty ? 0 : (completedHabitsToday * 100) / userHabits.count
+        
+        // Calculate consistency rate (average completion rate over the last 7 days)
+        let last7Days = (0..<7).compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: -dayOffset, to: today)
+        }
+        
+        let totalCompletions = last7Days.reduce(0) { total, date in
+            total + userHabits.filter { $0.isCompleted(for: date) }.count
+        }
+        
+        let totalPossible = userHabits.count * 7
+        consistencyRate = totalPossible > 0 ? (totalCompletions * 100) / totalPossible : 0
     }
     
     // MARK: - Header Section
@@ -297,38 +342,55 @@ struct StreakView: View {
                 }
             }
             
-            // Habit rows with heatmap
-            ForEach(0..<3, id: \.self) { habitIndex in
-                HStack(spacing: 0) {
-                    // Habit name
-                    HStack(spacing: 8) {
-                        Rectangle()
-                            .fill(Color.primary)
-                            .frame(width: 8, height: 8)
-                            .cornerRadius(2)
+            if userHabits.isEmpty {
+                // Empty state for no habits
+                VStack(spacing: 12) {
+                    Image(systemName: "list.bullet.circle")
+                        .font(.appDisplaySmall)
+                        .foregroundColor(.secondary)
+                    Text("No habits yet")
+                        .font(.appButtonText2)
+                        .foregroundColor(.secondary)
+                    Text("Create habits to see your progress")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.vertical, 40)
+            } else {
+                // Habit rows with heatmap
+                ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
+                    HStack(spacing: 0) {
+                        // Habit name
+                        HStack(spacing: 8) {
+                            Rectangle()
+                                .fill(habit.color)
+                                .frame(width: 8, height: 8)
+                                .cornerRadius(2)
+                            
+                            Text(habit.name)
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                        }
+                        .frame(width: 80, alignment: .leading)
                         
-                        Text(habitNames[habitIndex])
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                    }
-                    .frame(width: 80, alignment: .leading)
-                    
-                    // Heatmap cells
-                    ForEach(0..<7, id: \.self) { dayIndex in
-                        heatmapCell(intensity: heatmapData[habitIndex][dayIndex])
+                        // Heatmap cells
+                        ForEach(0..<7, id: \.self) { dayIndex in
+                            heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
+                        }
                     }
                 }
-            }
-            
-            // Total row
-            HStack(spacing: 0) {
-                Text("Total")
-                    .font(.appBodyMediumEmphasised)
-                    .foregroundColor(.text01)
-                    .frame(width: 80, alignment: .leading)
                 
-                ForEach(0..<7, id: \.self) { dayIndex in
-                    heatmapCell(intensity: totalHeatmapData[dayIndex])
+                // Total row
+                HStack(spacing: 0) {
+                    Text("Total")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.text01)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    ForEach(0..<7, id: \.self) { dayIndex in
+                        heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
+                    }
                 }
             }
         }
@@ -352,31 +414,48 @@ struct StreakView: View {
                 }
             }
             
-            // Month weeks (4-5 weeks)
-            ForEach(0..<5, id: \.self) { weekIndex in
-                HStack(spacing: 0) {
-                    // Week label
-                    Text("Week \(weekIndex + 1)")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text04)
-                        .frame(width: 80, alignment: .leading)
-                    
-                    // Week heatmap cells
-                    ForEach(0..<7, id: \.self) { dayIndex in
-                        heatmapCell(intensity: monthlyHeatmapData[weekIndex][dayIndex])
+            if userHabits.isEmpty {
+                // Empty state for no habits
+                VStack(spacing: 12) {
+                    Image(systemName: "list.bullet.circle")
+                        .font(.appDisplaySmall)
+                        .foregroundColor(.secondary)
+                    Text("No habits yet")
+                        .font(.appButtonText2)
+                        .foregroundColor(.secondary)
+                    Text("Create habits to see your progress")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.vertical, 40)
+            } else {
+                // Month weeks (4-5 weeks)
+                ForEach(0..<5, id: \.self) { weekIndex in
+                    HStack(spacing: 0) {
+                        // Week label
+                        Text("Week \(weekIndex + 1)")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text04)
+                            .frame(width: 80, alignment: .leading)
+                        
+                        // Week heatmap cells
+                        ForEach(0..<7, id: \.self) { dayIndex in
+                            heatmapCell(intensity: getMonthlyHeatmapIntensity(weekIndex: weekIndex, dayIndex: dayIndex))
+                        }
                     }
                 }
-            }
-            
-            // Total row
-            HStack(spacing: 0) {
-                Text("Total")
-                    .font(.appBodyMediumEmphasised)
-                    .foregroundColor(.text01)
-                    .frame(width: 80, alignment: .leading)
                 
-                ForEach(0..<7, id: \.self) { dayIndex in
-                    heatmapCell(intensity: monthlyTotalHeatmapData[dayIndex])
+                // Total row
+                HStack(spacing: 0) {
+                    Text("Total")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.text01)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    ForEach(0..<7, id: \.self) { dayIndex in
+                        heatmapCell(intensity: getMonthlyTotalIntensity(dayIndex: dayIndex))
+                    }
                 }
             }
         }
@@ -385,18 +464,33 @@ struct StreakView: View {
     // MARK: - Yearly Calendar Grid (Optimized)
     private var yearlyCalendarGrid: some View {
         VStack(spacing: 12) {
-            if isDataLoaded {
+            if userHabits.isEmpty {
+                // Empty state for no habits
+                VStack(spacing: 12) {
+                    Image(systemName: "list.bullet.circle")
+                        .font(.appDisplaySmall)
+                        .foregroundColor(.secondary)
+                    Text("No habits yet")
+                        .font(.appButtonText2)
+                        .foregroundColor(.secondary)
+                    Text("Create habits to see your yearly progress")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.vertical, 40)
+            } else if isDataLoaded {
                 // Habit rows with yearly heatmap (365 days)
-                ForEach(0..<3, id: \.self) { habitIndex in
+                ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
                     VStack(spacing: 6) {
                         // Habit name
                         HStack(spacing: 8) {
                             Rectangle()
-                                .fill(Color.primary)
+                                .fill(habit.color)
                                 .frame(width: 8, height: 8)
                                 .cornerRadius(2)
                             
-                            Text(yearlyHabitNames[habitIndex])
+                            Text(habit.name)
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text01)
                         }
@@ -405,7 +499,7 @@ struct StreakView: View {
                         // Yearly heatmap (365 rectangles) - Optimized rendering
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
                             ForEach(0..<365, id: \.self) { dayIndex in
-                                heatmapCell(intensity: yearlyHeatmapData[habitIndex][dayIndex])
+                                heatmapCell(intensity: yearlyHeatmapData[index][dayIndex])
                                     .frame(height: 4)
                                     .aspectRatio(1, contentMode: .fit)
                             }
@@ -452,47 +546,171 @@ struct StreakView: View {
         }
     }
     
-    private func generateYearlyData() -> [Int] {
-        var data: [Int] = []
-        for _ in 0..<365 {
-            data.append(Int.random(in: 0...3))
+    // MARK: - Heatmap Data Generation from User Habits
+    private func getWeeklyHeatmapIntensity(for habit: Habit, dayIndex: Int) -> Int {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this day index (0 = Monday, 6 = Sunday)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7 // Convert to Monday-based (0 = Monday)
+        let daysToSubtract = daysFromMonday - dayIndex
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Check if habit was completed on this date
+        if habit.isCompleted(for: targetDate) {
+            return 3 // High intensity for completed days
         }
-        return data
+        
+        // Check if habit should have been scheduled on this date
+        if shouldShowHabitOnDate(habit, date: targetDate) {
+            return 1 // Low intensity for scheduled but not completed days
+        }
+        
+        return 0 // No intensity for non-scheduled days
     }
     
-    // MARK: - Static Data (Performance optimization)
-    private var habitNames: [String] {
-        ["Exercise", "Read", "Meditate"]
+    private func getWeeklyTotalIntensity(dayIndex: Int) -> Int {
+        // Calculate total intensity for the day across all habits
+        let totalIntensity = userHabits.reduce(0) { total, habit in
+            total + getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex)
+        }
+        return min(totalIntensity, 3)
     }
     
-    private var yearlyHabitNames: [String] {
-        ["Exercise", "Read", "Meditate"]
+    private func getMonthlyHeatmapIntensity(weekIndex: Int, dayIndex: Int) -> Int {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this week and day
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        let weeksToSubtract = weekIndex
+        let daysToSubtract = daysFromMonday - dayIndex + (weeksToSubtract * 7)
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Count completed habits for this date
+        let completedCount = userHabits.filter { $0.isCompleted(for: targetDate) }.count
+        return min(completedCount, 3)
     }
     
-    private var heatmapData: [[Int]] {
-        [
-            [3, 2, 3, 1, 2, 3, 0], // Exercise
-            [2, 1, 2, 3, 2, 1, 2], // Read
-            [1, 3, 2, 2, 3, 2, 1]  // Meditate
-        ]
+    private func getMonthlyTotalIntensity(dayIndex: Int) -> Int {
+        // Calculate monthly total intensity
+        let totalIntensity = userHabits.reduce(0) { total, habit in
+            total + getMonthlyHeatmapIntensity(weekIndex: 0, dayIndex: dayIndex)
+        }
+        return min(totalIntensity, 3)
     }
     
-    private var totalHeatmapData: [Int] {
-        [6, 6, 7, 6, 7, 6, 3] // Sum of each day
+    private func generateYearlyDataFromUserHabits() -> [[Int]] {
+        var yearlyData: [[Int]] = []
+        
+        for habit in userHabits {
+            var habitYearlyData: [Int] = []
+            
+            // Generate 365 days of data based on actual completion history
+            let calendar = Calendar.current
+            let today = Calendar.current.startOfDay(for: Date())
+            let startOfYear = calendar.dateInterval(of: .year, for: today)?.start ?? today
+            
+            for day in 0..<365 {
+                let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
+                let intensity = generateYearlyIntensity(for: habit, date: targetDate)
+                habitYearlyData.append(intensity)
+            }
+            
+            yearlyData.append(habitYearlyData)
+        }
+        
+        return yearlyData
     }
     
-    private var monthlyHeatmapData: [[Int]] {
-        [
-            [3, 2, 3, 1, 2, 3, 0], // Week 1
-            [2, 1, 2, 3, 2, 1, 2], // Week 2
-            [1, 3, 2, 2, 3, 2, 1], // Week 3
-            [3, 2, 1, 3, 2, 3, 2], // Week 4
-            [2, 3, 2, 1, 2, 1, 3]  // Week 5
-        ]
+    private func generateYearlyIntensity(for habit: Habit, date: Date) -> Int {
+        let calendar = Calendar.current
+        
+        // Check if habit was created before this date
+        if date < calendar.startOfDay(for: habit.startDate) {
+            return 0
+        }
+        
+        // Check if habit was completed on this date
+        if habit.isCompleted(for: date) {
+            return 3 // High intensity for completed days
+        }
+        
+        // Check if habit should have been scheduled on this date
+        if shouldShowHabitOnDate(habit, date: date) {
+            return 1 // Low intensity for scheduled but not completed days
+        }
+        
+        return 0 // No intensity for non-scheduled days
     }
     
-    private var monthlyTotalHeatmapData: [Int] {
-        [11, 11, 10, 10, 11, 10, 8] // Sum of each day across weeks
+    // Helper function to check if habit should be shown on a specific date
+    private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: date)
+        
+        // Check if the date is before the habit start date
+        if date < calendar.startOfDay(for: habit.startDate) {
+            return false
+        }
+        
+        // Check if the date is after the habit end date (if set)
+        if let endDate = habit.endDate, date > calendar.startOfDay(for: endDate) {
+            return false
+        }
+        
+        switch habit.schedule {
+        case "Everyday":
+            return true
+            
+        case let schedule where schedule.hasPrefix("Every "):
+            // Handle "Every X days" format
+            if let dayCount = extractDayCount(from: schedule) {
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let selectedDate = calendar.startOfDay(for: date)
+                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: selectedDate).day ?? 0
+                return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+            }
+            return false
+            
+        case let schedule where schedule.hasPrefix("Every "):
+            // Handle specific weekdays like "Every Monday, Wednesday"
+            let weekdays = extractWeekdays(from: schedule)
+            return weekdays.contains(weekday)
+            
+        default:
+            // For any other schedule, show the habit
+            return true
+        }
+    }
+    
+    private func extractDayCount(from schedule: String) -> Int? {
+        // Extract number from "Every X days" format
+        let pattern = "Every (\\d+) days?"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+           let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) {
+            let range = match.range(at: 1)
+            let numberString = (schedule as NSString).substring(with: range)
+            return Int(numberString)
+        }
+        return nil
+    }
+    
+    private func extractWeekdays(from schedule: String) -> Set<Int> {
+        // Extract weekdays from "Every Monday, Wednesday" format
+        var weekdays: Set<Int> = []
+        let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        
+        for (index, dayName) in weekdayNames.enumerated() {
+            if schedule.contains(dayName) {
+                // Calendar weekday is 1-based, where 1 = Sunday
+                weekdays.insert(index + 1)
+            }
+        }
+        
+        return weekdays
     }
     
     // MARK: - Summary Statistics
@@ -535,8 +753,6 @@ struct StreakView: View {
         .cornerRadius(12)
     }
 }
-
-
 
 #Preview {
     StreakView()

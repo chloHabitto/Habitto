@@ -151,10 +151,13 @@ struct HomeTabView: View {
     }
     
     private func habitRow(_ habit: Habit) -> some View {
-        ScheduledHabitItem(
+        let today = Calendar.current.startOfDay(for: Date())
+        let isCompletedToday = habit.isCompleted(for: today)
+        
+        return ScheduledHabitItem(
             habit: habit,
             isCompleted: Binding(
-                get: { habit.isCompleted },
+                get: { isCompletedToday },
                 set: { _ in onToggleHabit(habit) }
             )
         )

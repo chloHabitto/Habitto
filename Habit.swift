@@ -15,6 +15,7 @@ struct Habit: Identifiable, Codable {
     var isCompleted: Bool = false
     var streak: Int = 0
     var createdAt: Date = Date()
+    var completionHistory: [String: Bool] = [:] // Track daily completion: "yyyy-MM-dd" -> Bool
     
     init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0) {
         self.name = name
@@ -42,6 +43,35 @@ struct Habit: Identifiable, Codable {
         self.reminder = reminder
         self.startDate = startDate
         self.endDate = endDate
+    }
+    
+    // MARK: - Completion History Methods
+    mutating func markCompleted(for date: Date) {
+        let dateKey = Self.dateKey(for: date)
+        completionHistory[dateKey] = true
+        updateCurrentCompletionStatus()
+    }
+    
+    mutating func markIncomplete(for date: Date) {
+        let dateKey = Self.dateKey(for: date)
+        completionHistory[dateKey] = false
+        updateCurrentCompletionStatus()
+    }
+    
+    func isCompleted(for date: Date) -> Bool {
+        let dateKey = Self.dateKey(for: date)
+        return completionHistory[dateKey] ?? false
+    }
+    
+    private mutating func updateCurrentCompletionStatus() {
+        let today = Calendar.current.startOfDay(for: Date())
+        isCompleted = isCompleted(for: today)
+    }
+    
+    private static func dateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
     
     // MARK: - Persistence Methods

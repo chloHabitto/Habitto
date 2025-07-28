@@ -147,12 +147,19 @@ struct HomeView: View {
     
     private func toggleHabitCompletion(_ habit: Habit) {
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            habits[index].isCompleted.toggle()
-            if habits[index].isCompleted {
-                habits[index].streak += 1
-            } else {
+            let today = Calendar.current.startOfDay(for: Date())
+            let wasCompleted = habits[index].isCompleted(for: today)
+            
+            if wasCompleted {
+                // Mark as incomplete for today
+                habits[index].markIncomplete(for: today)
                 habits[index].streak = max(0, habits[index].streak - 1)
+            } else {
+                // Mark as completed for today
+                habits[index].markCompleted(for: today)
+                habits[index].streak += 1
             }
+            
             Habit.saveHabits(habits)
             // Force SwiftUI to recognize the array has changed by creating a new instance
             habits = Array(habits)
