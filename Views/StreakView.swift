@@ -13,9 +13,12 @@ struct StreakView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header Section
+            // Fixed Header Section
             headerSection
+                .background(Color.primary)
+                .zIndex(1)
             
+            // Scrollable Content
             ScrollView {
                 VStack(spacing: 24) {
                     // Main Streak Display
@@ -24,7 +27,7 @@ struct StreakView: View {
                     // Streak Summary Cards
                     streakSummaryCards
                     
-                    // Content in ZStack with white background
+                    // White sheet that expands to bottom
                     VStack(spacing: 24) {
                         // Progress Section
                         progressSection
@@ -38,11 +41,10 @@ struct StreakView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .roundedTopBackground()
                 }
-                .padding(.bottom, 24)
             }
         }
         .background(Color.primary)
-        .ignoresSafeArea(.container, edges: .top)
+        .ignoresSafeArea(.container, edges: .bottom)
         .safeAreaInset(edge: .top) {
             Color.clear
                 .frame(height: 0)
@@ -55,27 +57,16 @@ struct StreakView: View {
             Button(action: {
                 dismiss()
             }) {
-                Image(systemName: "chevron.left")
-                    .font(.appTitleMedium)
+                Image(systemName: "arrow.backward")
+                    .font(.system(size: 24))
                     .foregroundColor(.white)
+                    .frame(width: 48, height: 48)
             }
             
             Spacer()
-            
-            Text("My streak")
-                .font(.appHeadlineMediumEmphasised)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            // Invisible spacer to center the title
-            Image(systemName: "chevron.left")
-                .font(.appTitleMedium)
-                .foregroundColor(.clear)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Main Streak Display
@@ -213,8 +204,10 @@ struct StreakView: View {
                         Text(progressTabs[index])
                             .font(.appTitleSmallEmphasised)
                             .foregroundColor(selectedProgressTab == index ? .text03 : .text04)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -235,7 +228,9 @@ struct StreakView: View {
                 Image(systemName: "ellipsis")
                     .font(.appBodyMedium)
                     .foregroundColor(.text04)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(height: 44)
             }
         }
         .frame(maxWidth: .infinity)
