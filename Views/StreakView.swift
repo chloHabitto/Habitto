@@ -275,8 +275,8 @@ struct StreakView: View {
                     yearlyCalendarGrid
                 }
             }
+            .padding(.horizontal, 16)
         }
-        .padding(.vertical, 12)
     }
     
     private var progressTabsView: some View {
