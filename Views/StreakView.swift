@@ -35,17 +35,6 @@ struct StreakView: View {
                     // White sheet that expands to bottom
                     WhiteSheetContainer(
                         title: "Habit Streak",
-                        headerContent: {
-                            AnyView(
-                                VStack(spacing: 0) {
-                                    // Progress Section
-                                    progressSection
-                                    
-                                    // Summary Statistics
-                                    summaryStatistics
-                                }
-                            )
-                        },
                         rightButton: {
                             AnyView(
                                 Button(action: {
@@ -62,13 +51,27 @@ struct StreakView: View {
                             )
                         }
                     ) {
-                        // Empty content since we're using custom header content
-                        Color.clear
+                        VStack(spacing: 0) {
+                            // Progress Section
+                            progressSection
+                            
+                            // Summary Statistics
+                            summaryStatistics
+                            
+                            // Spacer to fill remaining space
+                            Spacer(minLength: 0)
+                                .frame(maxHeight: .infinity)
+                        }
                     }
                 }
             }
         }
-        .background(Color.primary)
+        .background(
+            VStack(spacing: 0) {
+                Color.primary
+                Color.white
+            }
+        )
         .ignoresSafeArea(.container, edges: .bottom)
         .safeAreaInset(edge: .top) {
             Color.clear
