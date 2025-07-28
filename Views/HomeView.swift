@@ -78,14 +78,15 @@ struct HomeView: View {
                     .ignoresSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Header
+                    // Header - show profile for More tab, streak for others
                     HeaderView(
                         onCreateHabit: {
                             state.showingCreateHabit = true
                         },
                         onStreakTap: {
                             state.showingStreakView = true
-                        }
+                        },
+                        showProfile: state.selectedTab == .more
                     )
                     
                     // Content based on selected tab

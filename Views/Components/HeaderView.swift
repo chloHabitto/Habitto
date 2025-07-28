@@ -3,27 +3,63 @@ import SwiftUI
 struct HeaderView: View {
     let onCreateHabit: () -> Void
     let onStreakTap: () -> Void
+    let showProfile: Bool
+    
+    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, showProfile: Bool = false) {
+        self.onCreateHabit = onCreateHabit
+        self.onStreakTap = onStreakTap
+        self.showProfile = showProfile
+    }
     
     var body: some View {
         HStack {
-            // Streak pill
-            Button(action: onStreakTap) {
-                HStack(spacing: 6) {
-                    Image("Icon-fire")
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                    Text("0 streak")
-                        .font(.appButtonText1)
-                        .foregroundColor(.black)
+            if showProfile {
+                // Profile section
+                ZStack {
+                    HStack(spacing: 12) {
+                        // Profile image
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 48, height: 48)
+                            .overlay(
+                                Text("C")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.black)
+                            )
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Hi Chloe,")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.white)
+                            
+                            Button("View Profile >") {
+                                // TODO: Handle profile view action
+                            }
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.white)
+                        }
+                    }
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-                .padding(.leading, 12)
-                .padding(.trailing, 16)
-                .background(Color.white)
-                .clipShape(Capsule())
+            } else {
+                // Streak pill
+                Button(action: onStreakTap) {
+                    HStack(spacing: 6) {
+                        Image("Icon-fire")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                        Text("0 streak")
+                            .font(.appButtonText1)
+                            .foregroundColor(.black)
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 16)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
             
             Spacer()
             
