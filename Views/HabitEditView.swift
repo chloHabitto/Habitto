@@ -26,6 +26,9 @@ struct HabitEditView: View {
     @State private var showingReminderSheet = false
     @State private var showingPeriodSheet = false
     
+    // Scroll state for compact header
+    @State private var scrollOffset: CGFloat = 0
+    
     // Computed property to check if any changes have been made
     private var hasChanges: Bool {
         return habitName != habit.name ||
@@ -66,9 +69,21 @@ struct HabitEditView: View {
             topNavigationBar
             
             // Main content
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Habit Name
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Scroll detection view
+                        GeometryReader { geometry in
+                            Color.clear
+                                .onChange(of: geometry.frame(in: .global).minY) { _, newValue in
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        scrollOffset = max(0, -newValue)
+                                    }
+                                }
+                        }
+                        .frame(height: 0)
+                        
+                        // Habit Name
                     inputFieldSection(
                         title: "Habit Name",
                         placeholder: "Enter habit name",
@@ -199,11 +214,19 @@ struct HabitEditView: View {
                 .background(.surface2)
                 
             }
-            .background(.surface2)
+            .onChange(of: scrollOffset) { _, newValue in
+                print("📱 Scroll offset changed to: \(newValue)")
+            }
+            .onAppear {
+                // Initialize scroll offset
+                scrollOffset = 0
+            }
+            }
             
             // Fixed bottom button dock
             saveButton
         }
+        .background(.surface2)
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
         }
@@ -250,35 +273,58 @@ struct HabitEditView: View {
     // MARK: - Top Navigation Bar
     private var topNavigationBar: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                
-                // Cancel button
-                Button("Cancel") {
-                    dismiss()
+            if scrollOffset > 10 {
+                // Compact header - single row with title and cancel
+                HStack {
+                    Text("Edit habit")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .font(.appBodyLarge)
+                    .foregroundColor(.primary)
                 }
-                .font(.appBodyLarge)
-                .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
-            
-            // Title and description
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Edit habit")
-                    .font(.appHeadlineMediumEmphasised)
-                    .foregroundColor(.text01)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.clear)
+            } else {
+                // Full header
+                HStack {
+                    Spacer()
+                    
+                    // Cancel button
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .font(.appBodyLarge)
+                    .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 16)
                 
-                Text("Update your habit details.")
-                    .font(.appTitleSmall)
-                    .foregroundColor(.text04)
+                // Title and description
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Edit habit")
+                        .font(.appHeadlineMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Text("Update your habit details.")
+                        .font(.appTitleSmall)
+                        .foregroundColor(.text04)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
         }
+        .background(Color.clear) // Remove white background
         .padding(.top, 0) // Let the system handle safe area
+        .animation(.easeInOut(duration: 0.2), value: scrollOffset)
     }
     
     // MARK: - Input Field Section
@@ -622,3 +668,11 @@ struct HabitEditView: View {
         streak: 5
     ), onSave: { _ in })
 } 
+
+// MARK: - Scroll Offset Preference Key
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
