@@ -10,9 +10,6 @@ struct MoreTabView: View {
                     VStack(spacing: 0) {
                         // Trial Banner
                         trialBanner
-                        
-                        // Vacation Mode Section
-                        vacationModeSection
                     }
                 )
             }
@@ -20,6 +17,14 @@ struct MoreTabView: View {
             // Settings content in main content area
             ScrollView {
                 VStack(spacing: 0) {
+                    // Vacation Mode Section
+                    vacationModeSection
+                    
+                    // Divider after vacation mode
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
+                    
                     // Settings Sections
                     settingsSections
                 }
@@ -97,11 +102,6 @@ struct MoreTabView: View {
                 ]
             )
             
-            // Divider
-            Divider()
-                .background(Color(.systemGray4))
-                .padding(.horizontal, 20)
-            
             // Account/Notifications Group
             settingsGroup(
                 title: "Account & Notifications",
@@ -110,11 +110,6 @@ struct MoreTabView: View {
                     SettingItem(title: "Notifications", value: nil, hasChevron: true)
                 ]
             )
-            
-            // Divider
-            Divider()
-                .background(Color(.systemGray4))
-                .padding(.horizontal, 20)
             
             // Support/Legal Group
             settingsGroup(
@@ -181,6 +176,20 @@ struct MoreTabView: View {
                     Divider()
                         .background(Color(.systemGray4))
                         .padding(.leading, 56)
+                }
+                
+                // Add divider after the last item if it's the General Settings group
+                if index == items.count - 1 && title == "General Settings" {
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
+                }
+                
+                // Add divider after the last item if it's the Account & Notifications group
+                if index == items.count - 1 && title == "Account & Notifications" {
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
                 }
             }
         }
