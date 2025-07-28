@@ -15,7 +15,7 @@ struct HomeTabView: View {
     @State private var cachedStats: [(String, Int)] = []
     @State private var lastCalculatedStatsDate: Date?
     let habits: [Habit]
-    let onToggleHabit: (Habit) -> Void
+    let onToggleHabit: (Habit, Date) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
     
     // Performance optimization: Cached regex patterns
@@ -187,23 +187,21 @@ struct HomeTabView: View {
     }
     
     private func habitRow(_ habit: Habit) -> some View {
-        let today = Calendar.current.startOfDay(for: Date())
-        let isCompletedToday = habit.isCompleted(for: today)
-        
         return ScheduledHabitItem(
             habit: habit,
             isCompleted: Binding(
-                get: { isCompletedToday },
-                set: { _ in 
-                    onToggleHabit(habit)
+                get: { habit.isCompleted(for: selectedDate) },
+                set: { newValue in 
+                    print("🔄 Toggling habit: \(habit.name) to \(newValue)")
+                    onToggleHabit(habit, selectedDate)
                     updateStats()
                 }
-            )
+            ),
+            onRowTap: {
+                print("📱 Row tapped for habit: \(habit.name)")
+                selectedHabit = habit
+            }
         )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            selectedHabit = habit
-        }
     }
     
     private var habitsForSelectedDate: [Habit] {

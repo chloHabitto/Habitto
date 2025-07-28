@@ -29,19 +29,25 @@ class HomeViewState: ObservableObject {
         lastHabitsUpdate = Date()
     }
     
-    func toggleHabitCompletion(_ habit: Habit) {
+    func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) {
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            let today = Calendar.current.startOfDay(for: Date())
-            let wasCompleted = habits[index].isCompleted(for: today)
+            let targetDate = date ?? Calendar.current.startOfDay(for: Date())
+            let wasCompleted = habits[index].isCompleted(for: targetDate)
             
             if wasCompleted {
-                // Mark as incomplete for today
-                habits[index].markIncomplete(for: today)
-                habits[index].streak = max(0, habits[index].streak - 1)
+                // Mark as incomplete for the target date
+                habits[index].markIncomplete(for: targetDate)
+                // Only decrease streak if it's today's date
+                if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
+                    habits[index].streak = max(0, habits[index].streak - 1)
+                }
             } else {
-                // Mark as completed for today
-                habits[index].markCompleted(for: today)
-                habits[index].streak += 1
+                // Mark as completed for the target date
+                habits[index].markCompleted(for: targetDate)
+                // Only increase streak if it's today's date
+                if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
+                    habits[index].streak += 1
+                }
             }
             
             Habit.saveHabits(habits)
@@ -96,8 +102,8 @@ struct HomeView: View {
                             selectedDate: $state.selectedDate,
                             selectedStatsTab: $state.selectedStatsTab,
                             habits: state.habits,
-                            onToggleHabit: { habit in
-                                state.toggleHabitCompletion(habit)
+                            onToggleHabit: { habit, date in
+                                state.toggleHabitCompletion(habit, for: date)
                             },
                             onUpdateHabit: { updatedHabit in
                                 print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
@@ -108,8 +114,8 @@ struct HomeView: View {
                     case .habits:
                         HabitsTabView(
                             habits: state.habits,
-                            onToggleHabit: { habit in
-                                state.toggleHabitCompletion(habit)
+                            onToggleHabit: { habit, date in
+                                state.toggleHabitCompletion(habit, for: date)
                             },
                             onDeleteHabit: { habit in
                                 state.habitToDelete = habit

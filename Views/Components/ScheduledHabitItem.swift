@@ -3,6 +3,7 @@ import SwiftUI
 struct ScheduledHabitItem: View {
     let habit: Habit
     @Binding var isCompleted: Bool
+    var onRowTap: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 12) {
@@ -57,7 +58,9 @@ struct ScheduledHabitItem: View {
             
             // CheckBox
             Button(action: {
+                print("🔘 Check button tapped! Current state: \(isCompleted)")
                 isCompleted.toggle()
+                print("🔘 Check button toggled! New state: \(isCompleted)")
             }) {
                 Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
                     .resizable()
@@ -68,6 +71,8 @@ struct ScheduledHabitItem: View {
             .contentShape(Rectangle())
             .padding(.leading, 16)
             .padding(.trailing, 8)
+            .buttonStyle(PlainButtonStyle())
+            .allowsHitTesting(true)
         }
         .padding(.trailing, 4)
         .background(.surface)
@@ -76,6 +81,10 @@ struct ScheduledHabitItem: View {
                 .stroke(.outline, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onRowTap?()
+        }
     }
 }
 
