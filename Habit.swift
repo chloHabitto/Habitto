@@ -1,5 +1,59 @@
 import SwiftUI
 
+// MARK: - Habit Storage Manager for Performance Optimization
+class HabitStorageManager {
+    static let shared = HabitStorageManager()
+    private let userDefaults = UserDefaults.standard
+    private let habitsKey = "SavedHabits"
+    
+    // Performance optimization: Cache loaded habits
+    private var cachedHabits: [Habit]?
+    private var lastSaveTime: Date = Date()
+    private let saveDebounceInterval: TimeInterval = 0.5
+    
+    private init() {}
+    
+    func saveHabits(_ habits: [Habit]) {
+        // Performance optimization: Debounce saves to avoid excessive writes
+        let now = Date()
+        if now.timeIntervalSince(lastSaveTime) < saveDebounceInterval {
+            // Schedule a delayed save
+            DispatchQueue.main.asyncAfter(deadline: .now() + saveDebounceInterval) {
+                self.performSave(habits)
+            }
+            return
+        }
+        
+        performSave(habits)
+    }
+    
+    private func performSave(_ habits: [Habit]) {
+        if let encoded = try? JSONEncoder().encode(habits) {
+            userDefaults.set(encoded, forKey: habitsKey)
+            cachedHabits = habits
+            lastSaveTime = Date()
+        }
+    }
+    
+    func loadHabits() -> [Habit] {
+        // Performance optimization: Return cached result if available
+        if let cached = cachedHabits {
+            return cached
+        }
+        
+        if let data = userDefaults.data(forKey: habitsKey),
+           let habits = try? JSONDecoder().decode([Habit].self, from: data) {
+            cachedHabits = habits
+            return habits
+        }
+        return []
+    }
+    
+    func clearCache() {
+        cachedHabits = nil
+    }
+}
+
 struct Habit: Identifiable, Codable {
     var id = UUID()
     var name: String
@@ -69,24 +123,20 @@ struct Habit: Identifiable, Codable {
     }
     
     private static func dateKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        return DateUtils.dateKey(for: date)
     }
     
-    // MARK: - Persistence Methods
+    // MARK: - Persistence Methods (Optimized)
     static func saveHabits(_ habits: [Habit]) {
-        if let encoded = try? JSONEncoder().encode(habits) {
-            UserDefaults.standard.set(encoded, forKey: "SavedHabits")
-        }
+        HabitStorageManager.shared.saveHabits(habits)
     }
     
     static func loadHabits() -> [Habit] {
-        if let data = UserDefaults.standard.data(forKey: "SavedHabits"),
-           let habits = try? JSONDecoder().decode([Habit].self, from: data) {
-            return habits
-        }
-        return []
+        return HabitStorageManager.shared.loadHabits()
+    }
+    
+    static func clearCache() {
+        HabitStorageManager.shared.clearCache()
     }
 }
 
@@ -97,6 +147,10 @@ enum HabitType: String, CaseIterable, Codable {
 
 // MARK: - Color Codable Extension
 extension Color: Codable {
+    // Performance optimization: Cache color hex values
+    private static var hexCache: [Color: String] = [:]
+    private static var colorCache: [String: Color] = [:]
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let hex = try container.decode(String.self)
@@ -109,6 +163,12 @@ extension Color: Codable {
     }
     
     init(hex: String) {
+        // Performance optimization: Use cached color if available
+        if let cachedColor = Self.colorCache[hex] {
+            self = cachedColor
+            return
+        }
+        
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
@@ -124,16 +184,25 @@ extension Color: Codable {
             (a, r, g, b) = (1, 1, 1, 0)
         }
         
-        self.init(
+        let color = Color(
             .sRGB,
             red: Double(r) / 255,
             green: Double(g) / 255,
             blue:  Double(b) / 255,
             opacity: Double(a) / 255
         )
+        
+        // Cache the color
+        Self.colorCache[hex] = color
+        self = color
     }
     
     func toHex() -> String {
+        // Performance optimization: Use cached hex value if available
+        if let cachedHex = Self.hexCache[self] {
+            return cachedHex
+        }
+        
         let uic = UIColor(self)
         guard let components = uic.cgColor.components, components.count >= 3 else {
             return "000000"
@@ -142,6 +211,9 @@ extension Color: Codable {
         let g = Float(components[1])
         let b = Float(components[2])
         let hex = String(format: "%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
+        
+        // Cache the hex value
+        Self.hexCache[self] = hex
         return hex
     }
 } 

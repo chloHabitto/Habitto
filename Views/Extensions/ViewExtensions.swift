@@ -5,6 +5,19 @@ class DateUtils {
     static let calendar = Calendar.current
     static let today = calendar.startOfDay(for: Date())
     
+    // Performance optimization: Cached date formatters
+    private static let dateKeyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+    
+    private static let debugFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+    
     static func isToday(_ date: Date) -> Bool {
         return calendar.startOfDay(for: date) == today
     }
@@ -31,6 +44,16 @@ class DateUtils {
     
     static func dateByAdding(weeks: Int, to date: Date) -> Date {
         return calendar.date(byAdding: .weekOfYear, value: weeks, to: date) ?? date
+    }
+    
+    // Performance optimization: Use cached formatter for date keys
+    static func dateKey(for date: Date) -> String {
+        return dateKeyFormatter.string(from: date)
+    }
+    
+    // Performance optimization: Use cached formatter for debug output
+    static func debugString(for date: Date) -> String {
+        return debugFormatter.string(from: date)
     }
 }
 

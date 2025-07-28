@@ -18,6 +18,10 @@ struct HomeTabView: View {
     let onToggleHabit: (Habit) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
     
+    // Performance optimization: Cached regex patterns
+    private static let dayCountRegex = try? NSRegularExpression(pattern: "Every (\\d+) days?", options: .caseInsensitive)
+    private static let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -230,23 +234,22 @@ struct HomeTabView: View {
     }
     
     private func extractDayCount(from schedule: String) -> Int? {
-        // Extract number from "Every X days" format
-        let pattern = "Every (\\d+) days?"
-        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-           let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) {
-            let range = match.range(at: 1)
-            let numberString = (schedule as NSString).substring(with: range)
-            return Int(numberString)
+        // Performance optimization: Use cached regex pattern
+        guard let regex = Self.dayCountRegex,
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
         }
-        return nil
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
     }
     
     private func extractWeekdays(from schedule: String) -> Set<Int> {
-        // Extract weekdays from "Every Monday, Wednesday" format
+        // Performance optimization: Use cached weekday names
         var weekdays: Set<Int> = []
-        let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         
-        for (index, dayName) in weekdayNames.enumerated() {
+        for (index, dayName) in Self.weekdayNames.enumerated() {
             if schedule.contains(dayName) {
                 // Calendar weekday is 1-based, where 1 = Sunday
                 weekdays.insert(index + 1)
@@ -405,12 +408,10 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        // Debug: Print all dates being processed
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        print("🔍 backgroundColor called for date: \(formatter.string(from: date))")
-        print("🔍 Normalized date: \(formatter.string(from: normalizedDate))")
-        print("🔍 Normalized today: \(formatter.string(from: normalizedToday))")
+        // Debug: Print all dates being processed (optimized)
+        print("🔍 backgroundColor called for date: \(DateUtils.debugString(for: date))")
+        print("🔍 Normalized date: \(DateUtils.debugString(for: normalizedDate))")
+        print("🔍 Normalized today: \(DateUtils.debugString(for: normalizedToday))")
         print("🔍 Is today? \(normalizedDate == normalizedToday)")
         print("🔍 Week offset: \(currentWeekOffset)")
         
@@ -419,8 +420,8 @@ struct HomeTabView: View {
                 return ColorPrimitives.navy500 // Use primary color for today's date
             }
         
-        // Debug: Print all dates being processed
-        print("📅 Processing date: \(formatter.string(from: date))")
+        // Debug: Print all dates being processed (optimized)
+        print("📅 Processing date: \(DateUtils.debugString(for: date))")
         print("📅 Is today? \(normalizedDate == normalizedToday)")
         print("📅 Is selected? \(normalizedDate == normalizedSelected)")
         
@@ -431,7 +432,7 @@ struct HomeTabView: View {
         }
         
         // Default - no background
-        print("🔍 Returning clear background for date: \(date)")
+        print("🔍 Returning clear background for date: \(DateUtils.debugString(for: date))")
         return Color.clear
     }
     
