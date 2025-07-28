@@ -8,6 +8,12 @@ struct HomeTabView: View {
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
+    
+    // Performance optimization: Cache expensive calculations
+    @State private var cachedHabitsForDate: [Habit] = []
+    @State private var lastCalculatedDate: Date?
+    @State private var cachedStats: [(String, Int)] = []
+    @State private var lastCalculatedStatsDate: Date?
     let habits: [Habit]
     let onToggleHabit: (Habit) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
@@ -162,35 +168,39 @@ struct HomeTabView: View {
     }
     
     private var habitsForSelectedDate: [Habit] {
-        let filteredHabits = habits.filter { habit in
-            let calendar = Calendar.current
-            let selected = calendar.startOfDay(for: selectedDate)
-            let start = calendar.startOfDay(for: habit.startDate)
-            let end = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-            
-            // First check if the date is within the habit period
-            guard selected >= start && selected <= end else {
-                return false
+        // Performance optimization: Use cached result if date hasn't changed
+        if lastCalculatedDate != selectedDate {
+            let filteredHabits = habits.filter { habit in
+                let selected = DateUtils.startOfDay(for: selectedDate)
+                let start = DateUtils.startOfDay(for: habit.startDate)
+                let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+                
+                // First check if the date is within the habit period
+                guard selected >= start && selected <= end else {
+                    return false
+                }
+                
+                // Then check if the habit should appear on this specific date based on schedule
+                return shouldShowHabitOnDate(habit, date: selectedDate)
             }
             
-            // Then check if the habit should appear on this specific date based on schedule
-            return shouldShowHabitOnDate(habit, date: selectedDate)
+            cachedHabitsForDate = filteredHabits
+            lastCalculatedDate = selectedDate
         }
         
-        return filteredHabits
+        return cachedHabitsForDate
     }
     
     private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
-        let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: date)
+        let weekday = DateUtils.weekday(for: date)
         
         // Check if the date is before the habit start date
-        if date < calendar.startOfDay(for: habit.startDate) {
+        if date < DateUtils.startOfDay(for: habit.startDate) {
             return false
         }
         
         // Check if the date is after the habit end date (if set)
-        if let endDate = habit.endDate, date > calendar.startOfDay(for: endDate) {
+        if let endDate = habit.endDate, date > DateUtils.startOfDay(for: endDate) {
             return false
         }
         
@@ -201,9 +211,9 @@ struct HomeTabView: View {
         case let schedule where schedule.hasPrefix("Every ") && schedule.contains("days"):
             // Handle "Every X days" format
             if let dayCount = extractDayCount(from: schedule) {
-                let startDate = calendar.startOfDay(for: habit.startDate)
-                let selectedDate = calendar.startOfDay(for: date)
-                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: selectedDate).day ?? 0
+                let startDate = DateUtils.startOfDay(for: habit.startDate)
+                let selectedDate = DateUtils.startOfDay(for: date)
+                let daysSinceStart = DateUtils.daysBetween(startDate, selectedDate)
                 return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
             }
             return false
@@ -247,13 +257,19 @@ struct HomeTabView: View {
     }
     
     private var stats: [(String, Int)] {
-        let habitsForDate = habitsForSelectedDate
-        return [
-            ("Total", habitsForDate.count),
-            ("Undone", habitsForDate.filter { !$0.isCompleted }.count),
-            ("Done", habitsForDate.filter { $0.isCompleted }.count),
-            ("New", habitsForDate.filter { Calendar.current.isDate($0.createdAt, inSameDayAs: selectedDate) }.count)
-        ]
+        // Performance optimization: Use cached stats if date hasn't changed
+        if lastCalculatedStatsDate != selectedDate {
+            let habitsForDate = habitsForSelectedDate
+            cachedStats = [
+                ("Total", habitsForDate.count),
+                ("Undone", habitsForDate.filter { !$0.isCompleted }.count),
+                ("Done", habitsForDate.filter { $0.isCompleted }.count),
+                ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
+            ]
+            lastCalculatedStatsDate = selectedDate
+        }
+        
+        return cachedStats
     }
     
 

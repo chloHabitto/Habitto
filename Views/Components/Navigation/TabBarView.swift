@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TabBarView: View {
-    @Binding var selectedTab: HomeView.Tab
+    @Binding var selectedTab: Tab
     let onCreateHabit: () -> Void
     
     var body: some View {
@@ -21,7 +21,7 @@ struct TabBarView: View {
         }
     }
     
-    private func tabBarItem(icon: String, title: String, tab: HomeView.Tab) -> some View {
+    private func tabBarItem(icon: String, title: String, tab: Tab) -> some View {
         let selectedColor = Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
         return Button(action: { selectedTab = tab }) {
             VStack(spacing: 4) {

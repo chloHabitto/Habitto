@@ -16,6 +16,10 @@ struct StreakView: View {
     @State private var isExpanded = false
     @State private var dragOffset: CGFloat = 0
     
+    // Performance optimization: Pagination for large datasets
+    @State private var currentYearlyPage = 0
+    private let yearlyItemsPerPage = 50
+    
     private let progressTabs = ["Weekly", "Monthly", "Yearly", "Dummy"]
     
     var body: some View {
@@ -656,7 +660,12 @@ struct StreakView: View {
     private func generateYearlyDataFromUserHabits() -> [[Int]] {
         var yearlyData: [[Int]] = []
         
-        for habit in userHabits {
+        // Performance optimization: Process habits in batches
+        let startIndex = currentYearlyPage * yearlyItemsPerPage
+        let endIndex = min(startIndex + yearlyItemsPerPage, userHabits.count)
+        let habitsToProcess = Array(userHabits[startIndex..<endIndex])
+        
+        for habit in habitsToProcess {
             var habitYearlyData: [Int] = []
             
             // Generate 365 days of data based on actual completion history
@@ -674,6 +683,10 @@ struct StreakView: View {
         }
         
         return yearlyData
+    }
+    
+    private var hasMoreYearlyData: Bool {
+        return (currentYearlyPage + 1) * yearlyItemsPerPage < userHabits.count
     }
     
     private func generateYearlyIntensity(for habit: Habit, date: Date) -> Int {
