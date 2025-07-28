@@ -4,7 +4,7 @@ struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
     @State private var currentWeekOffset: Int = 0
-    @State private var scrollPosition: Int? = 0
+
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
@@ -272,6 +272,8 @@ struct HomeTabView: View {
              Spacer()
              
              HStack(spacing: 4) {
+                 
+                 
                  // Today button (shown when not on current week or selected date is not today)
                  let calendar = Calendar.current
                  let today = Date()
@@ -284,6 +286,7 @@ struct HomeTabView: View {
                      Button(action: {
                          withAnimation(.easeInOut(duration: 0.08)) {
                              selectedDate = Date()
+                             currentWeekOffset = 0
                          }
                      }) {
                          HStack(spacing: 4) {
@@ -325,45 +328,21 @@ struct HomeTabView: View {
     
              // MARK: - Weekly Calendar
     private var weeklyCalendar: some View {
-        return ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 0) {
-                    ForEach(-100...100, id: \.self) { weekOffset in
-                        weekView(for: weekOffset, width: UIScreen.main.bounds.width - 16)
-                            .frame(width: UIScreen.main.bounds.width - 16)
-                            .id(weekOffset)
-                            .onAppear {
-                                // Week appeared
-                            }
-                    }
-                }
+        TabView(selection: $currentWeekOffset) {
+            ForEach(-100...100, id: \.self) { weekOffset in
+                weekView(for: weekOffset, width: UIScreen.main.bounds.width - 16)
+                    .frame(width: UIScreen.main.bounds.width - 16)
+                    .tag(weekOffset)
             }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $scrollPosition)
-            .onChange(of: scrollPosition) { oldValue, newValue in
-                if let newValue = newValue {
-                    currentWeekOffset = newValue
-                }
-            }
-            .onAppear {
-                // Ensure we're on the current week
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        proxy.scrollTo(0, anchor: .center)
-                    }
-                    scrollPosition = 0
-                    currentWeekOffset = 0
-                }
-            }
-            .simultaneousGesture(
-                DragGesture()
-                    .onChanged { _ in
-                        // Handle drag gesture if needed
-                    }
-                    .onEnded { _ in
-                        // Handle drag gesture end if needed
-                    }
-            )
+        }
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+        .onChange(of: currentWeekOffset) { oldValue, newValue in
+            print("📅 TabView selection changed from \(oldValue) to \(newValue)")
+        }
+        .onAppear {
+            print("📅 Calendar onAppear - setting currentWeekOffset to 0")
+            currentWeekOffset = 0
+            print("📅 Calendar onAppear - currentWeekOffset set to 0")
         }
         .frame(height: 72)
         .padding(.horizontal, 8)
