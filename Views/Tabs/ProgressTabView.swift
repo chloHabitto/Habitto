@@ -6,8 +6,7 @@ struct ProgressTabView: View {
     
     var body: some View {
         WhiteSheetContainer(
-            title: "Progress",
-            subtitle: "Track your habit progress"
+            title: "Progress"
         ) {
             VStack(spacing: 0) {
                 // Period Selector
@@ -38,25 +37,64 @@ struct ProgressTabView: View {
     
     // MARK: - Period Selector
     private var periodSelector: some View {
-        HStack(spacing: 12) {
-            ForEach(TimePeriod.allCases, id: \.self) { period in
-                Button(action: {
-                    selectedPeriod = period
-                }) {
-                    Text(period.displayName)
-                        .font(.appBodyMedium)
-                        .foregroundColor(selectedPeriod == period ? .white : .text03)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(selectedPeriod == period ? .primary : .surfaceContainer)
-                        )
-                }
+        periodTabBar
+            .padding(.horizontal, 0)
+            .padding(.top, 2)
+            .padding(.bottom, 0)
+    }
+    
+    @ViewBuilder
+    private var periodTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<periodStats.count, id: \.self) { idx in
+                periodTabButton(for: idx)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+    }
+    
+    private var periodStats: [(String, TimePeriod?)] {
+        return [
+            ("Week", .week),
+            ("Month", .month),
+            ("Custom", .custom),
+            ("", nil) // Dummy tab - exactly like Home screen
+        ]
+    }
+    
+    @ViewBuilder
+    private func periodTabButton(for idx: Int) -> some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                if let period = periodStats[idx].1 {
+                    selectedPeriod = period
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Text(periodStats[idx].0)
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedPeriod == periodStats[idx].1 ? .text03 : .text04)
+                        .opacity(idx == 3 ? 0 : 1) // Make dummy tab text invisible
+                    Text("0") // Add a number like the other screens
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(selectedPeriod == periodStats[idx].1 ? .text03 : .text04)
+                        .opacity(idx == 3 ? 0 : 1) // Make dummy tab text invisible
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: idx == 3 ? .infinity : nil) // Only expand the dummy tab (index 3)
+            .disabled(idx == 3) // Disable clicking for dummy tab
+            
+            // Bottom stroke for each tab
+            Rectangle()
+                .fill(selectedPeriod == periodStats[idx].1 ? .text03 : .divider)
+                .frame(height: 3)
+                .frame(maxWidth: .infinity)
+                .animation(.easeInOut(duration: 0.2), value: selectedPeriod)
+        }
     }
     
     // MARK: - Performance Overview
