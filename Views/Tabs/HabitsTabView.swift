@@ -4,7 +4,6 @@ struct HabitsTabView: View {
     @State private var selectedStatsTab: Int = 0
     @State private var selectedHabit: Habit? = nil
     let habits: [Habit]
-    let onToggleHabit: (Habit, Date) -> Void
     let onDeleteHabit: (Habit) -> Void
     let onEditHabit: (Habit) -> Void
     let onCreateHabit: () -> Void
@@ -13,14 +12,12 @@ struct HabitsTabView: View {
     // Custom initializer with default value for onUpdateHabit
     init(
         habits: [Habit],
-        onToggleHabit: @escaping (Habit, Date) -> Void,
         onDeleteHabit: @escaping (Habit) -> Void,
         onEditHabit: @escaping (Habit) -> Void,
         onCreateHabit: @escaping () -> Void,
         onUpdateHabit: ((Habit) -> Void)? = nil
     ) {
         self.habits = habits
-        self.onToggleHabit = onToggleHabit
         self.onDeleteHabit = onDeleteHabit
         self.onEditHabit = onEditHabit
         self.onCreateHabit = onCreateHabit

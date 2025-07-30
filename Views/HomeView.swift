@@ -102,7 +102,7 @@ struct HomeView: View {
                             selectedDate: $state.selectedDate,
                             selectedStatsTab: $state.selectedStatsTab,
                             habits: state.habits,
-                            onToggleHabit: { habit, date in
+                            onToggleHabit: { (habit: Habit, date: Date) in
                                 state.toggleHabitCompletion(habit, for: date)
                             },
                             onUpdateHabit: { updatedHabit in
@@ -114,9 +114,6 @@ struct HomeView: View {
                     case .habits:
                         HabitsTabView(
                             habits: state.habits,
-                            onToggleHabit: { habit, date in
-                                state.toggleHabitCompletion(habit, for: date)
-                            },
                             onDeleteHabit: { habit in
                                 state.habitToDelete = habit
                                 state.showingDeleteConfirmation = true
