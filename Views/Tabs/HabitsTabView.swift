@@ -28,7 +28,12 @@ struct HabitsTabView: View {
         WhiteSheetContainer(
             title: "My Habits",
             headerContent: {
-                AnyView(statsRow)
+                AnyView(
+                    statsRow
+                        .padding(.horizontal, 0)
+                        .padding(.top, 2)
+                        .padding(.bottom, 0)
+                )
             }
         ) {
             ScrollView {
