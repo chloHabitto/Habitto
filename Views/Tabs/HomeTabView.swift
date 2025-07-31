@@ -92,7 +92,7 @@ struct HomeTabView: View {
             lastCalculatedDate = nil
         }
         .fullScreenCover(item: $selectedHabit) { habit in
-            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
+            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate)
         }
     }
     

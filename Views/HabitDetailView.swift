@@ -3,6 +3,7 @@ import SwiftUI
 struct HabitDetailView: View {
     @State var habit: Habit
     let onUpdateHabit: ((Habit) -> Void)?
+    let selectedDate: Date
     @Environment(\.dismiss) private var dismiss
     @State private var todayProgress: Int = 0
     @State private var showingEditView = false
@@ -20,6 +21,14 @@ struct HabitDetailView: View {
             Spacer()
         }
         .background(Color(.systemGray6))
+        .onAppear {
+            // Initialize todayProgress with the actual habit progress for the selected date
+            todayProgress = habit.getProgress(for: selectedDate)
+        }
+        .onChange(of: habit.getProgress(for: selectedDate)) { oldProgress, newProgress in
+            // Update todayProgress when habit data changes
+            todayProgress = newProgress
+        }
         .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in
                 print("🔄 HabitDetailView: Habit updated - \(updatedHabit.name)")
@@ -199,13 +208,13 @@ struct HabitDetailView: View {
         VStack(spacing: 16) {
             // Progress header
             HStack {
-                Text("Today's progress")
+                Text("Progress for \(formattedSelectedDate)")
                     .font(.appBodyMedium)
                     .foregroundColor(.text05)
                 
                 Spacer()
                 
-                Text("\(todayProgress)/1")
+                Text("\(todayProgress)/\(habit.goal)")
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.primary)
             }
@@ -221,6 +230,7 @@ struct HabitDetailView: View {
                 Button(action: {
                     if todayProgress > 0 {
                         todayProgress -= 1
+                        updateHabitProgress(todayProgress)
                     }
                 }) {
                     Image(systemName: "minus")
@@ -240,6 +250,7 @@ struct HabitDetailView: View {
                 // Increment button
                 Button(action: {
                     todayProgress += 1
+                    updateHabitProgress(todayProgress)
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .medium))
@@ -268,7 +279,7 @@ struct HabitDetailView: View {
                     // Progress fill
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.primary)
-                        .frame(width: geometry.size.width * CGFloat(todayProgress) / 1.0, height: 4)
+                        .frame(width: geometry.size.width * min(CGFloat(todayProgress) / CGFloat(extractGoalNumber(from: habit.goal)), 1.0), height: 4)
                 }
             }
             .frame(height: 4)
@@ -281,7 +292,7 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                Text("1")
+                Text("\(extractGoalNumber(from: habit.goal))")
                     .font(.appLabelSmall)
                     .foregroundColor(.text05)
             }
@@ -293,6 +304,35 @@ struct HabitDetailView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE dd MMMM"
         return formatter.string(from: Date())
+    }
+    
+    private var formattedSelectedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE dd MMMM"
+        return formatter.string(from: selectedDate)
+    }
+    
+    // MARK: - Helper Functions
+    private func extractGoalNumber(from goalString: String) -> Int {
+        // Extract the number from goal strings like "5 times", "20 pages", etc.
+        let components = goalString.components(separatedBy: " ")
+        if let firstComponent = components.first, let number = Int(firstComponent) {
+            return number
+        }
+        return 1 // Default to 1 if parsing fails
+    }
+    
+    private func updateHabitProgress(_ progress: Int) {
+        // Update the habit's progress for the selected date
+        var updatedHabit = habit
+        let dateKey = DateUtils.dateKey(for: selectedDate)
+        updatedHabit.completionHistory[dateKey] = progress
+        
+        // Update the local habit state
+        habit = updatedHabit
+        
+        // Notify parent view of the change
+        onUpdateHabit?(updatedHabit)
     }
 }
 
@@ -310,5 +350,5 @@ struct HabitDetailView: View {
         endDate: nil,
         isCompleted: false,
         streak: 5
-    ), onUpdateHabit: nil)
+    ), onUpdateHabit: nil, selectedDate: Date())
 } 

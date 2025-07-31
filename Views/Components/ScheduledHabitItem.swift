@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ScheduledHabitItem: View {
     let habit: Habit
@@ -94,10 +95,18 @@ struct ScheduledHabitItem: View {
                         // Swipe right - increase progress
                         currentProgress += 1
                         onProgressChange?(habit, selectedDate, currentProgress)
+                        
+                        // Haptic feedback for increase
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
                     } else if translationX < -threshold {
                         // Swipe left - decrease progress
                         currentProgress = max(0, currentProgress - 1)
                         onProgressChange?(habit, selectedDate, currentProgress)
+                        
+                        // Haptic feedback for decrease
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
                     }
                     
                     // Reset drag offset with animation
@@ -111,6 +120,9 @@ struct ScheduledHabitItem: View {
         }
         .onAppear {
             currentProgress = habit.getProgress(for: selectedDate)
+        }
+        .onChange(of: habit.getProgress(for: selectedDate)) { oldProgress, newProgress in
+            currentProgress = newProgress
         }
     }
 }
