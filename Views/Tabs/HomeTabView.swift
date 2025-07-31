@@ -481,7 +481,7 @@ struct HomeTabView: View {
         
                     // Check for today's date (highest priority)
             if normalizedDate == normalizedToday {
-                return ColorPrimitives.navy500 // Use primary color for today's date
+                return .primary // Use primary color for today's date
             }
         
         // Debug: Print all dates being processed (optimized)

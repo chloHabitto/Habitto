@@ -215,7 +215,7 @@ struct StreakView: View {
                     .frame(width: 80, height: 80)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.warning, ColorPrimitives.yellow400],
+                            colors: [.warning, Color("yellow400")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -249,7 +249,7 @@ struct StreakView: View {
             // Average streak card
             streakCard(
                 icon: "Icon-medalBadge",
-                iconColor: ColorPrimitives.yellow400,
+                iconColor: Color("yellow400"),
                 value: "\(averageStreak) days",
                 label: "Average streak"
             )
@@ -588,11 +588,11 @@ struct StreakView: View {
         case 0:
             return .surfaceContainer
         case 1:
-            return ColorPrimitives.green500.opacity(0.3)
+            return Color("green500").opacity(0.3)
         case 2:
-            return ColorPrimitives.green500.opacity(0.6)
+            return Color("green500").opacity(0.6)
         case 3:
-            return ColorPrimitives.green500
+            return Color("green500")
         default:
             return .surfaceContainer
         }
