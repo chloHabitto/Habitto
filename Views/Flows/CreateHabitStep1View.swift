@@ -11,6 +11,7 @@ struct CreateHabitStep1View: View {
     
     @State private var showingIconSheet = false
     @State private var showingColorSheet = false
+    @FocusState private var isNameFieldFocused: Bool
     
     static let colorOptions: [(Color, String)] = [
         (Color(red: 0.11, green: 0.15, blue: 0.30), "Navy"),
@@ -55,9 +56,9 @@ struct CreateHabitStep1View: View {
                 
                 // Header
                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Create Habit")
-                    .font(.appHeadlineSmall)
-                    .foregroundColor(.text01)
+                    Text("Create Habit")
+                        .font(.appHeadlineMediumEmphasised)
+                        .foregroundColor(.text01)
                     Text("Let's get started!")
                         .font(.appTitleMedium)
                         .foregroundColor(.text04)
@@ -73,21 +74,24 @@ struct CreateHabitStep1View: View {
                             .font(.appBodyLarge)
                             .foregroundColor(.text01)
                             .accentColor(.text01)
-                            .inputFieldStyle()
-                            .contentShape(Rectangle())
+                            .focused($isNameFieldFocused)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(.outline, lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
                             .frame(minHeight: 48)
                             .submitLabel(.done)
+                            .onTapGesture {
+                                isNameFieldFocused = true
+                            }
                         
                         // Description field
-                        TextField("Description (Optional)", text: $description, axis: .vertical)
-                            .lineLimit(3...6)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                            .accentColor(.text01)
-                            .inputFieldStyle()
-                            .contentShape(Rectangle())
-                            .frame(minHeight: 48)
-                            .submitLabel(.done)
+                        MultilineTextField(text: $description, placeholder: "Description (Optional)")
+                            .frame(minHeight: 48, maxHeight: 120)
                         
                         // Icon selection
                         Button(action: {
@@ -241,6 +245,11 @@ struct CreateHabitStep1View: View {
             // Customize keyboard return button appearance globally
             UITextField.appearance().tintColor = UIColor(Color(hex: "1C274C"))
             UITextField.appearance().keyboardAppearance = .light
+            
+            // Auto-focus the name field when the view appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isNameFieldFocused = true
+            }
         }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(
@@ -283,9 +292,86 @@ struct CreateHabitStep1View: View {
         }
         return "Navy" // Default fallback
     }
+    
+
+    
+
 }
 
 #Preview {
     Text("Create Habit Step 1")
         .font(.appTitleMedium)
+}
+
+// Custom MultilineTextField to handle Done button properly
+struct MultilineTextField: UIViewRepresentable {
+    @Binding var text: String
+    var placeholder: String
+
+    class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: MultilineTextField
+
+        init(_ parent: MultilineTextField) {
+            self.parent = parent
+        }
+
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            parent.text = textField.text ?? ""
+        }
+
+        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+            print("Done button pressed - dismissing keyboard")
+            textField.resignFirstResponder()
+            return true
+        }
+        
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            if textField.text == parent.placeholder {
+                textField.text = ""
+                textField.textColor = UIColor(Color(hex: "1C274C"))
+            }
+        }
+        
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            if textField.text?.isEmpty == true {
+                textField.text = parent.placeholder
+                textField.textColor = UIColor.placeholderText
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIView(context: Context) -> UITextField {
+        let textField = UITextField()
+        textField.delegate = context.coordinator
+        textField.font = UIFont.systemFont(ofSize: 17)
+        textField.backgroundColor = UIColor.clear
+        textField.returnKeyType = .done
+        textField.text = placeholder
+        textField.textColor = UIColor.placeholderText
+        textField.placeholder = placeholder
+        
+        // Apply styling to match the app's design
+        textField.layer.cornerRadius = 12
+        textField.layer.borderWidth = 1.5
+        textField.layer.borderColor = UIColor(Color(hex: "E1E5E9")).cgColor
+        textField.backgroundColor = UIColor(Color(hex: "FFFFFF"))
+        textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
+        textField.leftViewMode = .always
+        textField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
+        textField.rightViewMode = .always
+        
+        return textField
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        if uiView.text != text && !text.isEmpty {
+            uiView.text = text
+            uiView.textColor = UIColor(Color(hex: "1C274C"))
+        }
+        uiView.returnKeyType = .done
+    }
 } 

@@ -25,13 +25,14 @@ struct CreateHabitStep2View: View {
         return calendar.isDateInToday(date)
     }
     @State private var schedule: String = "Everyday"
-    @State private var goal: String = "1 time"
+    @State private var goalNumber: String = "1"
+    @State private var goalUnit: String = "times"
     @State private var reminder: String = "No reminder"
     @State private var reminders: [ReminderItem] = []
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
-    @State private var showingGoalSheet = false
+    @State private var showingUnitSheet = false
     @State private var showingReminderSheet = false
     @State private var showingPeriodSheet = false
     @State private var isSelectingStartDate = true
@@ -108,30 +109,49 @@ struct CreateHabitStep2View: View {
                     }
                     
                     // Goal
-                    Button(action: {
-                        showingGoalSheet = true
-                    }) {
-                        HStack {
-                            Text("Goal")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            Spacer()
-                            Text(goal)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Goal")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        HStack(spacing: 12) {
+                            // Number input field
+                            TextField("1", text: $goalNumber)
                                 .font(.appBodyLarge)
                                 .foregroundColor(.text04)
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelMedium)
-                                .foregroundColor(.primaryDim)
-                        }
-                        .selectionRowStyle()
-                    }
-                    .sheet(isPresented: $showingGoalSheet) {
-                        GoalBottomSheet(
-                            onClose: { showingGoalSheet = false },
-                            onGoalSelected: { selectedGoal in
-                                goal = selectedGoal
-                                showingGoalSheet = false
+                                .accentColor(.text01)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                                .inputFieldStyle()
+                            
+                            // Unit selector button
+                            Button(action: {
+                                showingUnitSheet = true
+                            }) {
+                                HStack {
+                                    Text(goalUnit)
+                                        .font(.appBodyLarge)
+                                        .foregroundColor(.text04)
+                                    Image(systemName: "chevron.right")
+                                        .font(.appLabelSmall)
+                                        .foregroundColor(.primaryDim)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .inputFieldStyle()
                             }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .selectionRowStyle()
+                    .sheet(isPresented: $showingUnitSheet) {
+                        UnitBottomSheet(
+                            onClose: { showingUnitSheet = false },
+                            onUnitSelected: { selectedUnit in
+                                goalUnit = selectedUnit
+                                showingUnitSheet = false
+                            },
+                            currentUnit: goalUnit
                         )
                     }
                     
@@ -285,6 +305,7 @@ struct CreateHabitStep2View: View {
                 
                 // Save Button
                 Button(action: {
+                    let goalString = "\(goalNumber) \(goalUnit)"
                     let newHabit = Habit(
                         name: step1Data.0,
                         description: step1Data.1,
@@ -292,7 +313,7 @@ struct CreateHabitStep2View: View {
                         color: step1Data.3,
                         habitType: step1Data.4,
                         schedule: schedule,
-                        goal: goal,
+                        goal: goalString,
                         reminder: reminder,
                         startDate: startDate,
                         endDate: endDate,
@@ -323,7 +344,18 @@ struct CreateHabitStep2View: View {
             // Initialize values if editing
             if let habit = habitToEdit {
                 schedule = habit.schedule
-                goal = habit.goal
+                
+                // Parse existing goal into number and unit
+                let goalComponents = habit.goal.components(separatedBy: " ")
+                if goalComponents.count >= 2 {
+                    goalNumber = goalComponents[0]
+                    goalUnit = goalComponents[1]
+                } else {
+                    // Fallback for old format
+                    goalNumber = "1"
+                    goalUnit = "times"
+                }
+                
                 reminder = habit.reminder
                 reminders = habit.reminders
                 startDate = habit.startDate

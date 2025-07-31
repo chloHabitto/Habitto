@@ -27,12 +27,13 @@ struct TabBarView: View {
             VStack(spacing: 4) {
                 Image(icon)
                     .resizable()
+                    .renderingMode(.template)
                     .frame(width: 24, height: 24)
-                    .foregroundColor(selectedTab == tab ? selectedColor : Color(red: 0.29, green: 0.32, blue: 0.44))
+                    .foregroundColor(selectedTab == tab ? selectedColor : .text05)
                 Text(title)
                     .font(.appLabelSmallEmphasised)
                     .lineLimit(1)
-                    .foregroundColor(selectedTab == tab ? selectedColor : Color(red: 0.29, green: 0.32, blue: 0.44))
+                    .foregroundColor(selectedTab == tab ? selectedColor : .text05)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 10)

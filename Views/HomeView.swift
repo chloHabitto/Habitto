@@ -133,7 +133,7 @@ struct HomeView: View {
                             }
                         )
                     case .progress:
-                        ProgressTabView()
+                        ProgressTabView(habits: state.habits)
                     case .more:
                         MoreTabView()
                     }
@@ -152,7 +152,9 @@ struct HomeView: View {
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
                 state.habits.append(habit)
-                Habit.saveHabits(state.habits)
+                Habit.saveHabits(state.habits, immediate: true)
+                // Force SwiftUI to recognize the array has changed by creating a new instance
+                state.habits = Array(state.habits)
                 state.showingCreateHabit = false
             })
         }
@@ -175,7 +177,7 @@ struct HomeView: View {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
         .fullScreenCover(isPresented: $state.showingStreakView) {
-            StreakView()
+            StreakView(userHabits: state.habits)
         }
     }
     

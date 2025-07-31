@@ -70,6 +70,14 @@ struct HomeTabView: View {
                 print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: \(habit.schedule)")
             }
         }
+        .onChange(of: habits.count) { oldCount, newCount in
+            // Clear cache when habits array changes (new habit added/removed)
+            print("🏠 HomeTabView: Habits count changed from \(oldCount) to \(newCount), clearing cache")
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+        }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
         }

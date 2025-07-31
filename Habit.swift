@@ -13,8 +13,14 @@ class HabitStorageManager {
     
     private init() {}
     
-    func saveHabits(_ habits: [Habit]) {
+    func saveHabits(_ habits: [Habit], immediate: Bool = false) {
         // Performance optimization: Debounce saves to avoid excessive writes
+        // But allow immediate saves when needed (e.g., new habit creation)
+        if immediate {
+            performSave(habits)
+            return
+        }
+        
         let now = Date()
         if now.timeIntervalSince(lastSaveTime) < saveDebounceInterval {
             // Schedule a delayed save
@@ -130,8 +136,8 @@ struct Habit: Identifiable, Codable {
     }
     
     // MARK: - Persistence Methods (Optimized)
-    static func saveHabits(_ habits: [Habit]) {
-        HabitStorageManager.shared.saveHabits(habits)
+    static func saveHabits(_ habits: [Habit], immediate: Bool = false) {
+        HabitStorageManager.shared.saveHabits(habits, immediate: immediate)
     }
     
     static func loadHabits() -> [Habit] {

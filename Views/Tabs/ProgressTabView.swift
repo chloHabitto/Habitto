@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ProgressTabView: View {
     @State private var selectedPeriod: TimePeriod = .week
-    @State private var habits: [Habit] = []
+    let habits: [Habit]
     
     var body: some View {
         WhiteSheetContainer(
@@ -29,9 +29,6 @@ struct ProgressTabView: View {
                     .padding(.top, 16)
                 }
             }
-        }
-        .onAppear {
-            loadHabits()
         }
     }
     
@@ -218,10 +215,6 @@ struct ProgressTabView: View {
     }
     
     // MARK: - Helper Methods
-    private func loadHabits() {
-        habits = Habit.loadHabits()
-    }
-    
     private func calculateCompletionPercentage(for habit: Habit, period: TimePeriod) -> Double {
         let dates = period.dates
         let completedDays = dates.filter { habit.isCompleted(for: $0) }.count
@@ -440,5 +433,5 @@ enum InsightType {
 }
 
 #Preview {
-    ProgressTabView()
+    ProgressTabView(habits: [])
 } 
