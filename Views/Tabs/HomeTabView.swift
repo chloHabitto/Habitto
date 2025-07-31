@@ -17,6 +17,7 @@ struct HomeTabView: View {
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
+    let onDeleteHabit: ((Habit) -> Void)?
     
     // Performance optimization: Cached regex patterns
     private static let dayCountRegex = try? NSRegularExpression(pattern: "Every (\\d+) days?", options: .caseInsensitive)
@@ -92,7 +93,7 @@ struct HomeTabView: View {
             lastCalculatedDate = nil
         }
         .fullScreenCover(item: $selectedHabit) { habit in
-            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate)
+            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
         }
     }
     

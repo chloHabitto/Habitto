@@ -81,7 +81,7 @@ struct HabitsTabView: View {
             }
         }
         .fullScreenCover(item: $selectedHabit) { habit in
-            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date())
+            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date(), onDeleteHabit: onDeleteHabit)
         }
     }
     

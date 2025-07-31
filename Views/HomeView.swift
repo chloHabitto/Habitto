@@ -111,6 +111,10 @@ struct HomeView: View {
                                 print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
                                 state.updateHabit(updatedHabit)
                                 print("🔄 HomeView: Habit array updated and saved")
+                            },
+                            onDeleteHabit: { habit in
+                                state.habitToDelete = habit
+                                state.showingDeleteConfirmation = true
                             }
                         )
                     case .habits:

@@ -4,9 +4,11 @@ struct HabitDetailView: View {
     @State var habit: Habit
     let onUpdateHabit: ((Habit) -> Void)?
     let selectedDate: Date
+    let onDeleteHabit: ((Habit) -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var todayProgress: Int = 0
     @State private var showingEditView = false
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -37,6 +39,15 @@ struct HabitDetailView: View {
                 print("🔄 HabitDetailView: onUpdateHabit callback called")
             })
         }
+        .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                onDeleteHabit?(habit)
+                dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to delete this habit? This action cannot be undone.")
+        }
     }
     
     // MARK: - Top Navigation Bar
@@ -56,10 +67,20 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                // More options button
-                Button(action: {
-                    showingEditView = true
-                }) {
+                // More options button with menu
+                Menu {
+                    Button(action: {
+                        showingEditView = true
+                    }) {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    
+                    Button(role: .destructive, action: {
+                        showingDeleteConfirmation = true
+                    }) {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
@@ -350,5 +371,5 @@ struct HabitDetailView: View {
         endDate: nil,
         isCompleted: false,
         streak: 5
-    ), onUpdateHabit: nil, selectedDate: Date())
+    ), onUpdateHabit: nil, selectedDate: Date(), onDeleteHabit: nil)
 } 
