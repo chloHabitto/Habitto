@@ -27,6 +27,8 @@ class HomeViewState: ObservableObject {
     func updateHabits(_ newHabits: [Habit]) {
         habits = newHabits
         lastHabitsUpdate = Date()
+        // Force SwiftUI to recognize the array has changed by creating a new instance
+        habits = Array(habits)
     }
     
     func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) {
@@ -151,10 +153,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
-                state.habits.append(habit)
-                Habit.saveHabits(state.habits, immediate: true)
-                // Force SwiftUI to recognize the array has changed by creating a new instance
-                state.habits = Array(state.habits)
+                var updatedHabits = state.habits
+                updatedHabits.append(habit)
+                state.updateHabits(updatedHabits)
+                Habit.saveHabits(updatedHabits, immediate: true)
                 state.showingCreateHabit = false
             })
         }

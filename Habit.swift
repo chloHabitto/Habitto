@@ -76,7 +76,7 @@ struct Habit: Identifiable, Codable {
     var isCompleted: Bool = false
     var streak: Int = 0
     var createdAt: Date = Date()
-    var completionHistory: [String: Bool] = [:] // Track daily completion: "yyyy-MM-dd" -> Bool
+    var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
     
     init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = []) {
         self.name = name
@@ -111,19 +111,26 @@ struct Habit: Identifiable, Codable {
     // MARK: - Completion History Methods
     mutating func markCompleted(for date: Date) {
         let dateKey = Self.dateKey(for: date)
-        completionHistory[dateKey] = true
+        let currentProgress = completionHistory[dateKey] ?? 0
+        completionHistory[dateKey] = currentProgress + 1
         updateCurrentCompletionStatus()
     }
     
     mutating func markIncomplete(for date: Date) {
         let dateKey = Self.dateKey(for: date)
-        completionHistory[dateKey] = false
+        let currentProgress = completionHistory[dateKey] ?? 0
+        completionHistory[dateKey] = max(0, currentProgress - 1)
         updateCurrentCompletionStatus()
     }
     
     func isCompleted(for date: Date) -> Bool {
         let dateKey = Self.dateKey(for: date)
-        return completionHistory[dateKey] ?? false
+        return (completionHistory[dateKey] ?? 0) > 0
+    }
+    
+    func getProgress(for date: Date) -> Int {
+        let dateKey = Self.dateKey(for: date)
+        return completionHistory[dateKey] ?? 0
     }
     
     private mutating func updateCurrentCompletionStatus() {

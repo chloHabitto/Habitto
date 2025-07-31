@@ -2,8 +2,12 @@ import SwiftUI
 
 struct ScheduledHabitItem: View {
     let habit: Habit
-    @Binding var isCompleted: Bool
+    let selectedDate: Date
     var onRowTap: (() -> Void)? = nil
+    var onProgressChange: ((Habit, Date, Int) -> Void)? = nil
+    
+    @State private var currentProgress: Int = 0
+    @State private var dragOffset: CGFloat = 0
     
     var body: some View {
         HStack(spacing: 12) {
@@ -58,7 +62,7 @@ struct ScheduledHabitItem: View {
             
             // Goal Progress
             VStack(alignment: .trailing, spacing: 2) {
-                Text("0/\(habit.goal)")
+                Text("\(currentProgress)/\(habit.goal)")
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -76,8 +80,37 @@ struct ScheduledHabitItem: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
+        .offset(x: dragOffset)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    dragOffset = value.translation.width
+                }
+                .onEnded { value in
+                    let threshold: CGFloat = 50
+                    let translationX = value.translation.width
+                    
+                    if translationX > threshold {
+                        // Swipe right - increase progress
+                        currentProgress += 1
+                        onProgressChange?(habit, selectedDate, currentProgress)
+                    } else if translationX < -threshold {
+                        // Swipe left - decrease progress
+                        currentProgress = max(0, currentProgress - 1)
+                        onProgressChange?(habit, selectedDate, currentProgress)
+                    }
+                    
+                    // Reset drag offset with animation
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        dragOffset = 0
+                    }
+                }
+        )
         .onTapGesture {
             onRowTap?()
+        }
+        .onAppear {
+            currentProgress = habit.getProgress(for: selectedDate)
         }
     }
 }
@@ -92,14 +125,14 @@ struct ScheduledHabitItem: View {
                 color: .green,
                 habitType: .formation,
                 schedule: "Everyday",
-                goal: "30 minutes",
+                goal: "5 times",
                 reminder: "No reminder",
                 startDate: Date(),
                 endDate: nil,
                 isCompleted: false,
                 streak: 0
             ),
-            isCompleted: .constant(false)
+            selectedDate: Date()
         )
         
         ScheduledHabitItem(
@@ -117,7 +150,7 @@ struct ScheduledHabitItem: View {
                 isCompleted: true,
                 streak: 5
             ),
-            isCompleted: .constant(true)
+            selectedDate: Date()
         )
         
         ScheduledHabitItem(
@@ -135,7 +168,7 @@ struct ScheduledHabitItem: View {
                 isCompleted: false,
                 streak: 0
             ),
-            isCompleted: .constant(false)
+            selectedDate: Date()
         )
     }
     .padding()

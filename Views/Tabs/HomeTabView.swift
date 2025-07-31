@@ -67,6 +67,23 @@ struct HomeTabView: View {
             lastCalculatedDate = nil
             cachedStats = []
             lastCalculatedStatsDate = nil
+            
+            // Force recalculation of habits for the current date
+            let habitsForDate = habits.filter { habit in
+                let selected = DateUtils.startOfDay(for: selectedDate)
+                let start = DateUtils.startOfDay(for: habit.startDate)
+                let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+                
+                // First check if the date is within the habit period
+                guard selected >= start && selected <= end else {
+                    return false
+                }
+                
+                // Then check if the habit should appear on this specific date based on schedule
+                return shouldShowHabitOnDate(habit, date: selectedDate)
+            }
+            
+            print("🏠 HomeTabView: After cache clear - habits for date: \(habitsForDate.map { $0.name })")
         }
         .onChange(of: selectedDate) { oldDate, newDate in
             // Clear cache when selected date changes to force recalculation
@@ -193,17 +210,18 @@ struct HomeTabView: View {
     private func habitRow(_ habit: Habit) -> some View {
         return ScheduledHabitItem(
             habit: habit,
-            isCompleted: Binding(
-                get: { habit.isCompleted(for: selectedDate) },
-                set: { newValue in 
-                    print("🔄 Toggling habit: \(habit.name) to \(newValue)")
-                    onToggleHabit(habit, selectedDate)
-                    updateStats()
-                }
-            ),
+            selectedDate: selectedDate,
             onRowTap: {
                 print("📱 Row tapped for habit: \(habit.name)")
                 selectedHabit = habit
+            },
+            onProgressChange: { habit, date, progress in
+                print("🔄 Progress changed for habit: \(habit.name) to \(progress)")
+                // Update the habit's progress
+                var updatedHabit = habit
+                let dateKey = DateUtils.dateKey(for: date)
+                updatedHabit.completionHistory[dateKey] = progress
+                onUpdateHabit?(updatedHabit)
             }
         )
     }
@@ -314,8 +332,8 @@ struct HomeTabView: View {
         let habitsForDate = habitsForSelectedDate
         return [
             ("Total", habitsForDate.count),
-            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
-            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
+            ("Undone", habitsForDate.filter { $0.getProgress(for: selectedDate) == 0 }.count),
+            ("Done", habitsForDate.filter { $0.getProgress(for: selectedDate) > 0 }.count),
             ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
         ]
     }
