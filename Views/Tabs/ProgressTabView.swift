@@ -113,7 +113,7 @@ struct ProgressTabView: View {
     private var insightHighlights: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Insight Highlights")
-                .font(.appTitleMedium)
+                    .font(.appTitleMedium)
                 .foregroundColor(.text01)
             
             VStack(spacing: 12) {

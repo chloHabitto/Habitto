@@ -357,8 +357,8 @@ struct MultilineTextField: UIViewRepresentable {
         // Apply styling to match the app's design
         textField.layer.cornerRadius = 12
         textField.layer.borderWidth = 1.5
-        textField.layer.borderColor = UIColor(Color(hex: "E1E5E9")).cgColor
-        textField.backgroundColor = UIColor(Color(hex: "FFFFFF"))
+        textField.layer.borderColor = UIColor(Color.outline).cgColor
+        textField.backgroundColor = UIColor(Color.surface)
         textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
         textField.leftViewMode = .always
         textField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))

@@ -56,23 +56,17 @@ struct ScheduledHabitItem: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 16)
             
-            // CheckBox
-            Button(action: {
-                print("🔘 Check button tapped! Current state: \(isCompleted)")
-                isCompleted.toggle()
-                print("🔘 Check button toggled! New state: \(isCompleted)")
-            }) {
-                Image(systemName: isCompleted ? "checkmark.square.fill" : "square")
-                    .resizable()
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(.primaryDim)
+            // Goal Progress
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("0/\(habit.goal)")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.text05)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
+            .frame(width: 80, alignment: .trailing)
             .padding(.leading, 16)
             .padding(.trailing, 8)
-            .buttonStyle(PlainButtonStyle())
-            .allowsHitTesting(true)
         }
         .padding(.trailing, 4)
         .background(.surface)

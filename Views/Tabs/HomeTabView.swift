@@ -53,17 +53,7 @@ struct HomeTabView: View {
                 selectedDate = today
             }
             
-            // Pre-calculate stats to avoid state modification during view updates
-            let habitsForDate = habitsForSelectedDate
-            cachedStats = [
-                ("Total", habitsForDate.count),
-                ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
-                ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
-                ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
-            ]
-            lastCalculatedStatsDate = selectedDate
-            
-            print("🏠 HomeTabView: Pre-calculated stats - Total: \(cachedStats[0].1), Undone: \(cachedStats[1].1), Done: \(cachedStats[2].1), New: \(cachedStats[3].1)")
+            print("🏠 HomeTabView: Pre-calculated stats - Total: \(stats[0].1), Undone: \(stats[1].1), Done: \(stats[2].1), New: \(stats[3].1)")
             
             // Debug: Print each habit's details
             for (index, habit) in habits.enumerated() {
@@ -77,6 +67,12 @@ struct HomeTabView: View {
             lastCalculatedDate = nil
             cachedStats = []
             lastCalculatedStatsDate = nil
+        }
+        .onChange(of: selectedDate) { oldDate, newDate in
+            // Clear cache when selected date changes to force recalculation
+            print("🏠 HomeTabView: Selected date changed from \(oldDate) to \(newDate)")
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit)
@@ -314,13 +310,14 @@ struct HomeTabView: View {
     }
     
     private var stats: [(String, Int)] {
-        // Ensure we always return exactly 4 elements to prevent index out of range
-        if cachedStats.count < 4 {
-            let defaultStats = [("Total", 0), ("Undone", 0), ("Done", 0), ("New", 0)]
-            return defaultStats
-        }
-        
-        return cachedStats
+        // Calculate stats directly from habitsForSelectedDate to ensure they're always up to date
+        let habitsForDate = habitsForSelectedDate
+        return [
+            ("Total", habitsForDate.count),
+            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
+            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
+            ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
+        ]
     }
     
 
