@@ -70,28 +70,42 @@ struct CreateHabitStep1View: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         // Name field
-                        TextField("Name", text: $name)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                            .accentColor(.text01)
-                            .focused($isNameFieldFocused)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.outline, lineWidth: 1.5)
-                            )
-                            .cornerRadius(12)
-                            .frame(minHeight: 48)
-                            .submitLabel(.done)
-                            .onTapGesture {
-                                isNameFieldFocused = true
-                            }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Name")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            TextField("Enter habit name", text: $name)
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text01)
+                                .accentColor(.primary)
+                                .focused($isNameFieldFocused)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(isNameFieldFocused ? .primary : .outline, lineWidth: 1.5)
+                                )
+                                .cornerRadius(12)
+                                .frame(minHeight: 48)
+                                .submitLabel(.done)
+                                .onTapGesture {
+                                    isNameFieldFocused = true
+                                }
+                                .scaleEffect(isNameFieldFocused ? 1.02 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: isNameFieldFocused)
+                        }
                         
                         // Description field
-                        MultilineTextField(text: $description, placeholder: "Description (Optional)")
-                            .frame(minHeight: 48, maxHeight: 120)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Description")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            MultilineTextField(text: $description, placeholder: "Enter description (optional)")
+                                .frame(minHeight: 48, maxHeight: 120)
+                        }
                         
                         // Icon selection
                         Button(action: {
@@ -363,6 +377,10 @@ struct MultilineTextField: UIViewRepresentable {
         textField.leftViewMode = .always
         textField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
         textField.rightViewMode = .always
+        
+        // Improve tap responsiveness
+        textField.isUserInteractionEnabled = true
+        textField.isMultipleTouchEnabled = false
         
         return textField
     }
