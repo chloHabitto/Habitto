@@ -418,6 +418,12 @@ struct HomeTabView: View {
         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
         .onChange(of: currentWeekOffset) { oldValue, newValue in
             print("📅 TabView selection changed from \(oldValue) to \(newValue)")
+            
+            // Add haptic feedback when scrolling between weeks
+            if oldValue != newValue {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
         }
         .onAppear {
             print("📅 Calendar onAppear - setting currentWeekOffset to 0")
@@ -434,6 +440,10 @@ struct HomeTabView: View {
         return HStack(spacing: 2) {
             ForEach(daysOfWeek(for: weekOffset), id: \.self) { date in
                 Button(action: {
+                    // Add haptic feedback when selecting a date
+                    let selectionFeedback = UISelectionFeedbackGenerator()
+                    selectionFeedback.selectionChanged()
+                    
                     withAnimation(.easeInOut(duration: 0.08)) {
                         selectedDate = date
                     }
