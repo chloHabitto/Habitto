@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CreateHabitStep2View: View {
+    @FocusState private var isGoalNumberFocused: Bool
     let step1Data: (String, String, String, Color, HabitType)
     let habitToEdit: Habit?
     let goBack: () -> Void
@@ -122,6 +123,7 @@ struct CreateHabitStep2View: View {
                                     .foregroundColor(.text04)
                                     .accentColor(.text01)
                                     .keyboardType(.numberPad)
+                                    .focused($isGoalNumberFocused)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: .infinity)
                                     .inputFieldStyle()
@@ -342,8 +344,37 @@ struct CreateHabitStep2View: View {
                 .background(.surface2) // Add background to ensure buttons are visible
             }
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting button position
-            .background(.surface2)
-            .navigationBarHidden(true)
+        .background(.surface2)
+        .navigationBarHidden(true)
+        .onTapGesture {
+            // Dismiss keyboard when tapping outside text fields
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        .overlay(
+            // Done button overlay for number keyboard
+            VStack {
+                Spacer()
+                if isGoalNumberFocused {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            isGoalNumberFocused = false
+                        }) {
+                            Text("Done")
+                                .appButtonTextFont()
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(ColorTokens.primary)
+                                .clipShape(Capsule())
+                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                    }
+                }
+            }
+        )
             .onAppear {
                 // Initialize values if editing
                 if let habit = habitToEdit {

@@ -3,77 +3,77 @@ import SwiftUI
 // MARK: - Primitive Colors
 struct ColorPrimitives {
     // Yellow
-    static let yellow50 = Color(hex: "#FEF6E6")
-    static let yellow100 = Color(hex: "#FCE2B0")
-    static let yellow200 = Color(hex: "#FAD58A")
-    static let yellow300 = Color(hex: "#F8C154")
-    static let yellow400 = Color(hex: "#F7B533")
-    static let yellow500 = Color(hex: "#F5A300")
-    static let yellow600 = Color(hex: "#DF9400")
-    static let yellow700 = Color(hex: "#AE7400")
-    static let yellow800 = Color(hex: "#875A00")
-    static let yellow900 = Color(hex: "#674400")
+    static let yellow50 = Color("yellow50")
+    static let yellow100 = Color("yellow100")
+    static let yellow200 = Color("yellow200")
+    static let yellow300 = Color("yellow300")
+    static let yellow400 = Color("yellow400")
+    static let yellow500 = Color("yellow500")
+    static let yellow600 = Color("yellow600")
+    static let yellow700 = Color("yellow700")
+    static let yellow800 = Color("yellow800")
+    static let yellow900 = Color("yellow900")
     
     // Green
-    static let green50 = Color(hex: "#EBF9EE")
-    static let green100 = Color(hex: "#C0EECC")
-    static let green200 = Color(hex: "#A2E5B3")
-    static let green300 = Color(hex: "#77D990")
-    static let green400 = Color(hex: "#5DD27A")
-    static let green500 = Color(hex: "#34C759")
-    static let green600 = Color(hex: "#2FB551")
-    static let green700 = Color(hex: "#258D3F")
-    static let green800 = Color(hex: "#1D6D31")
-    static let green900 = Color(hex: "#165425")
+    static let green50 = Color("green50")
+    static let green100 = Color("green100")
+    static let green200 = Color("green200")
+    static let green300 = Color("green300")
+    static let green400 = Color("green400")
+    static let green500 = Color("green500")
+    static let green600 = Color("green600")
+    static let green700 = Color("green700")
+    static let green800 = Color("green800")
+    static let green900 = Color("green900")
     
     // Red
-    static let red50 = Color(hex: "#FCEBEE")
-    static let red100 = Color(hex: "#F7C0C9")
-    static let red200 = Color(hex: "#F3A2AF")
-    static let red300 = Color(hex: "#EE778A")
-    static let red400 = Color(hex: "#EA5D74")
-    static let red500 = Color(hex: "#E53451")
-    static let red600 = Color(hex: "#D02F4A")
-    static let red700 = Color(hex: "#A3253A")
-    static let red800 = Color(hex: "#7E1D2D")
-    static let red900 = Color(hex: "#601622")
+    static let red50 = Color("red50")
+    static let red100 = Color("red100")
+    static let red200 = Color("red200")
+    static let red300 = Color("red300")
+    static let red400 = Color("red400")
+    static let red500 = Color("red500")
+    static let red600 = Color("red600")
+    static let red700 = Color("red700")
+    static let red800 = Color("red800")
+    static let red900 = Color("red900")
     
     // Navy
-    static let navy50 = Color(hex: "#E8E9ED")
-    static let navy100 = Color(hex: "#B9BCC8")
-    static let navy200 = Color(hex: "#979CAD")
-    static let navy300 = Color(hex: "#676E87")
-    static let navy400 = Color(hex: "#495270")
-    static let navy500 = Color(hex: "#1C274C")
-    static let navy600 = Color(hex: "#192345")
-    static let navy700 = Color(hex: "#141C36")
-    static let navy800 = Color(hex: "#0F152A")
-    static let navy900 = Color(hex: "#0C1020")
+    static let navy50 = Color("navy50")
+    static let navy100 = Color("navy100")
+    static let navy200 = Color("navy200")
+    static let navy300 = Color("navy300")
+    static let navy400 = Color("navy400")
+    static let navy500 = Color("navy500")
+    static let navy600 = Color("navy600")
+    static let navy700 = Color("navy700")
+    static let navy800 = Color("navy800")
+    static let navy900 = Color("navy900")
     
     // Pastel Blue
-    static let pastelBlue50 = Color(hex: "#F4F6FF")
-    static let pastelBlue100 = Color(hex: "#EDF1FF")
-    static let pastelBlue300 = Color(hex: "#B3C4FF")
-    static let pastelBlue400 = Color(hex: "#A4B9FF")
-    static let pastelBlue500 = Color(hex: "#8DA7FF")
-    static let pastelBlue600 = Color(hex: "#8098E8")
-    static let pastelBlue700 = Color(hex: "#6477B5")
-    static let pastelBlue800 = Color(hex: "#4E5C8C")
-    static let pastelBlue900 = Color(hex: "#3B466B")
+    static let pastelBlue50 = Color("pastelBlue50")
+    static let pastelBlue100 = Color("pastelBlue100")
+    static let pastelBlue300 = Color("pastelBlue300")
+    static let pastelBlue400 = Color("pastelBlue400")
+    static let pastelBlue500 = Color("pastelBlue500")
+    static let pastelBlue600 = Color("pastelBlue600")
+    static let pastelBlue700 = Color("pastelBlue700")
+    static let pastelBlue800 = Color("pastelBlue800")
+    static let pastelBlue900 = Color("pastelBlue900")
     
     // Grey
-    static let grey50 = Color(hex: "#F9F9F9")
-    static let grey100 = Color(hex: "#ECECEF")
-    static let grey200 = Color(hex: "#E3E3E7")
-    static let grey300 = Color(hex: "#D7D7DC")
-    static let grey400 = Color(hex: "#CFCFD5")
-    static let grey500 = Color(hex: "#C3C3CB")
-    static let grey600 = Color(hex: "#B1B1B9")
-    static let grey700 = Color(hex: "#8A8A90")
-    static let grey800 = Color(hex: "#6B6B70")
-    static let grey900 = Color(hex: "#525255")
-    static let greyBlack = Color(hex: "#191919")
-    static let greyWhite = Color(hex: "#FFFFFF")
+    static let grey50 = Color("grey50")
+    static let grey100 = Color("grey100")
+    static let grey200 = Color("grey200")
+    static let grey300 = Color("grey300")
+    static let grey400 = Color("grey400")
+    static let grey500 = Color("grey500")
+    static let grey600 = Color("grey600")
+    static let grey700 = Color("grey700")
+    static let grey800 = Color("grey800")
+    static let grey900 = Color("grey900")
+    static let greyBlack = Color("greyBlack")
+    static let greyWhite = Color("greyWhite")
 }
 
 // MARK: - Semantic Color Tokens
@@ -134,33 +134,7 @@ struct ColorTokens {
     static let onDisabledBackground = ColorPrimitives.grey400
 }
 
-// MARK: - Color Extensions
-extension Color {
-    init(hex: String, alpha: Double = 1.0) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
-        
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: (Double(a) / 255) * alpha
-        )
-    }
-}
+
 
 // MARK: - Convenience Extensions for Easy Access
 extension Color {
