@@ -82,36 +82,47 @@ struct ScheduledHabitItem: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
         .offset(x: dragOffset)
-        .gesture(
+        .simultaneousGesture(
             DragGesture()
                 .onChanged { value in
-                    dragOffset = value.translation.width
+                    // Only respond to horizontal drags (ignore vertical scrolling)
+                    if abs(value.translation.width) > abs(value.translation.height) {
+                        dragOffset = value.translation.width
+                    }
                 }
                 .onEnded { value in
-                    let threshold: CGFloat = 50
-                    let translationX = value.translation.width
-                    
-                    if translationX > threshold {
-                        // Swipe right - increase progress
-                        currentProgress += 1
-                        onProgressChange?(habit, selectedDate, currentProgress)
+                    // Only process if it was primarily a horizontal gesture
+                    if abs(value.translation.width) > abs(value.translation.height) {
+                        let threshold: CGFloat = 50
+                        let translationX = value.translation.width
                         
-                        // Haptic feedback for increase
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
-                    } else if translationX < -threshold {
-                        // Swipe left - decrease progress
-                        currentProgress = max(0, currentProgress - 1)
-                        onProgressChange?(habit, selectedDate, currentProgress)
+                        if translationX > threshold {
+                            // Swipe right - increase progress
+                            currentProgress += 1
+                            onProgressChange?(habit, selectedDate, currentProgress)
+                            
+                            // Haptic feedback for increase
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                        } else if translationX < -threshold {
+                            // Swipe left - decrease progress
+                            currentProgress = max(0, currentProgress - 1)
+                            onProgressChange?(habit, selectedDate, currentProgress)
+                            
+                            // Haptic feedback for decrease
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                        }
                         
-                        // Haptic feedback for decrease
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                    }
-                    
-                    // Reset drag offset with animation
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        dragOffset = 0
+                        // Reset drag offset with animation
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            dragOffset = 0
+                        }
+                    } else {
+                        // Reset drag offset if it was a vertical gesture
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            dragOffset = 0
+                        }
                     }
                 }
         )

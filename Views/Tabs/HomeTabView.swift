@@ -179,7 +179,6 @@ struct HomeTabView: View {
             .padding(.top, 18)
             .padding(.bottom, 20)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     @ViewBuilder
