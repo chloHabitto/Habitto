@@ -9,8 +9,9 @@ struct PeriodBottomSheet: View {
     let onStartDateSelected: (Date) -> Void
     let onEndDateSelected: (Date) -> Void
     let onRemoveEndDate: (() -> Void)?
+    let onResetStartDate: (() -> Void)?
     
-    init(isSelectingStartDate: Bool, startDate: Date, initialDate: Date = Date(), onStartDateSelected: @escaping (Date) -> Void, onEndDateSelected: @escaping (Date) -> Void, onRemoveEndDate: (() -> Void)? = nil) {
+    init(isSelectingStartDate: Bool, startDate: Date, initialDate: Date = Date(), onStartDateSelected: @escaping (Date) -> Void, onEndDateSelected: @escaping (Date) -> Void, onRemoveEndDate: (() -> Void)? = nil, onResetStartDate: (() -> Void)? = nil) {
         self.isSelectingStartDate = isSelectingStartDate
         self.startDate = startDate
         self._selectedDate = State(initialValue: initialDate)
@@ -18,6 +19,7 @@ struct PeriodBottomSheet: View {
         self.onStartDateSelected = onStartDateSelected
         self.onEndDateSelected = onEndDateSelected
         self.onRemoveEndDate = onRemoveEndDate
+        self.onResetStartDate = onResetStartDate
     }
     
     var body: some View {
@@ -119,6 +121,27 @@ struct PeriodBottomSheet: View {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.text04)
                             Text("No end date")
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.surfaceContainer)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 24)
+                }
+                
+                // Reset button (only show when selecting start date)
+                if isSelectingStartDate {
+                    Button(action: {
+                        onResetStartDate?()
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.text04)
+                            Text("Reset")
                                 .font(.appBodyLarge)
                                 .foregroundColor(.text04)
                         }

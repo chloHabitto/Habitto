@@ -247,6 +247,11 @@ struct HabitEditView: View {
                 onEndDateSelected: { date in
                     endDate = date
                     showingPeriodSheet = false
+                },
+                onRemoveEndDate: nil,
+                onResetStartDate: {
+                    startDate = Date()
+                    showingPeriodSheet = false
                 }
             )
         }

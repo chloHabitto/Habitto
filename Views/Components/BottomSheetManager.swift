@@ -87,7 +87,9 @@ struct BottomSheetContainer: View {
                         },
                         onEndDateSelected: { endDate in
                             onPeriodSelected(startDate, endDate)
-                        }
+                        },
+                        onRemoveEndDate: nil,
+                        onResetStartDate: nil
                     ))
 
                 case .icon(let onIconSelected, let currentIcon):

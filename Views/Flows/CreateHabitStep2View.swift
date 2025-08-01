@@ -266,7 +266,11 @@ struct CreateHabitStep2View: View {
                 onEndDateSelected: { selectedDate in
                     // This should never be called for start date sheet
                 },
-                onRemoveEndDate: nil
+                onRemoveEndDate: nil,
+                onResetStartDate: {
+                    startDate = Date()
+                    showingStartDateSheet = false
+                }
             )
         }
         .sheet(isPresented: $showingEndDateSheet) {
@@ -284,7 +288,8 @@ struct CreateHabitStep2View: View {
                 onRemoveEndDate: {
                     endDate = nil
                     showingEndDateSheet = false
-                }
+                },
+                onResetStartDate: nil
             )
         }
         .sheet(isPresented: $showingBaselineUnitSheet) {

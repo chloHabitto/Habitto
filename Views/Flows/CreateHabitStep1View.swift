@@ -6,6 +6,7 @@ struct CreateHabitStep1View: View {
     @Binding var icon: String
     @Binding var color: Color
     @Binding var habitType: HabitType
+    @Binding var isInitialLoad: Bool
     let onNext: (String, String, String, Color, HabitType) -> Void
     let onCancel: () -> Void
     
@@ -70,48 +71,37 @@ struct CreateHabitStep1View: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         // Name field
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Name")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter habit name", text: $name)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .accentColor(.primary)
-                                .focused($isNameFieldFocused)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(isNameFieldFocused ? .primary : .outline, lineWidth: 1.5)
-                                )
-                                .cornerRadius(12)
-                                .frame(minHeight: 48)
-                                .submitLabel(.done)
-                                .scaleEffect(isNameFieldFocused ? 1.02 : 1.0)
-                                .animation(.easeInOut(duration: 0.2), value: isNameFieldFocused)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            isNameFieldFocused = true
-                        }
+                        TextField("Name", text: $name)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text05)
+                            .accentColor(.primary)
+                            .focused($isNameFieldFocused)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .padding(.horizontal, 16)
+                            .background(.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(.outline, lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
+                            .submitLabel(.done)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isNameFieldFocused = true
+                            }
                         
-                        // Description field
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Description")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            MultilineTextField(text: $description, placeholder: "Enter description (optional)")
-                                .frame(minHeight: 48, maxHeight: 120)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            // Focus the description field when tapping anywhere in the VStack
-                            // Note: MultilineTextField handles its own focus internally
-                        }
+                                // Description field
+        DescriptionTextField(text: $description, placeholder: "Description")
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .padding(.horizontal, 16)
+            .background(.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(.outline, lineWidth: 1.5)
+            )
+            .cornerRadius(12)
                         
                         // Icon selection
                         Button(action: {
@@ -262,9 +252,12 @@ struct CreateHabitStep1View: View {
         .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            // Auto-focus the name field when the view appears
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isNameFieldFocused = true
+            // Auto-focus the name field only on initial load
+            if isInitialLoad {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isNameFieldFocused = true
+                }
+                isInitialLoad = false
             }
         }
         .sheet(isPresented: $showingIconSheet) {
@@ -287,8 +280,9 @@ struct CreateHabitStep1View: View {
             .presentationDragIndicator(.visible)
         }
     }
-    
-    private func colorName(for color: Color) -> String {
+}
+
+private func colorName(for color: Color) -> String {
         // Match the colors from ColorBottomSheet
         let colorOptions: [(Color, String)] = [
             (Color(hex: "222222"), "Black"),
@@ -308,11 +302,6 @@ struct CreateHabitStep1View: View {
         }
         return "Navy" // Default fallback
     }
-    
-
-    
-
-}
 
 #Preview {
     CreateHabitStep1View(
@@ -321,20 +310,21 @@ struct CreateHabitStep1View: View {
         icon: .constant("None"),
         color: .constant(.primary),
         habitType: .constant(.formation),
+        isInitialLoad: .constant(true),
         onNext: { _, _, _, _, _ in },
         onCancel: {}
     )
 }
 
-// Custom MultilineTextField to handle Done button properly
-struct MultilineTextField: UIViewRepresentable {
+// Custom DescriptionTextField to handle Done button properly
+struct DescriptionTextField: UIViewRepresentable {
     @Binding var text: String
     var placeholder: String
 
     class Coordinator: NSObject, UITextFieldDelegate {
-        var parent: MultilineTextField
+        var parent: DescriptionTextField
 
-        init(_ parent: MultilineTextField) {
+        init(_ parent: DescriptionTextField) {
             self.parent = parent
         }
 
@@ -351,7 +341,7 @@ struct MultilineTextField: UIViewRepresentable {
         func textFieldDidBeginEditing(_ textField: UITextField) {
             if textField.text == parent.placeholder {
                 textField.text = ""
-                textField.textColor = UIColor(Color(hex: "1C274C"))
+                textField.textColor = UIColor(Color.text05)
             }
         }
         
@@ -370,22 +360,25 @@ struct MultilineTextField: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextField {
         let textField = UITextField()
         textField.delegate = context.coordinator
-        textField.font = UIFont.systemFont(ofSize: 17)
+        
+        // Use the same font as the name element
+        if let appBodyLargeFont = UIFont(name: "SF Pro Display", size: 17) {
+            textField.font = appBodyLargeFont
+        } else {
+            textField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        }
+        
         textField.backgroundColor = UIColor.clear
         textField.returnKeyType = .done
         textField.text = text.isEmpty ? placeholder : text
-        textField.textColor = text.isEmpty ? UIColor.placeholderText : UIColor(Color(hex: "1C274C"))
+        textField.textColor = text.isEmpty ? UIColor.placeholderText : UIColor(Color.text05)
         textField.placeholder = placeholder
         
-        // Apply styling to match the app's design
-        textField.layer.cornerRadius = 12
-        textField.layer.borderWidth = 1.5
-        textField.layer.borderColor = UIColor(Color.outline).cgColor
-        textField.backgroundColor = UIColor(Color.surface)
-        textField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
-        textField.leftViewMode = .always
-        textField.rightView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
-        textField.rightViewMode = .always
+        // Set accent color to match name element's cursor color
+        textField.tintColor = UIColor(Color.primary)
+        
+        // Remove UIKit border styling since we're using SwiftUI stroke
+        textField.backgroundColor = UIColor.clear
         
         // Improve tap responsiveness
         textField.isUserInteractionEnabled = true
@@ -397,8 +390,8 @@ struct MultilineTextField: UIViewRepresentable {
     func updateUIView(_ uiView: UITextField, context: Context) {
         if uiView.text != text && !text.isEmpty {
             uiView.text = text
-            uiView.textColor = UIColor(Color(hex: "1C274C"))
+            uiView.textColor = UIColor(Color.text05)
         }
         uiView.returnKeyType = .done
     }
-} 
+}

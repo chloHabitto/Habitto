@@ -8,6 +8,7 @@ struct CreateHabitFlowView: View {
     @State private var icon: String = "None"
     @State private var color: Color = Color(red: 0.11, green: 0.15, blue: 0.30)
     @State private var habitType: HabitType = .formation
+    @State private var isInitialLoad = true
     
     let onSave: (Habit) -> Void
     let habitToEdit: Habit?
@@ -26,6 +27,7 @@ struct CreateHabitFlowView: View {
                     icon: $icon,
                     color: $color,
                     habitType: $habitType,
+                    isInitialLoad: $isInitialLoad,
                     onNext: { name, description, icon, color, habitType in
                         currentStep = 2
                     },

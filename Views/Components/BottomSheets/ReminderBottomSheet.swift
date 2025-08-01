@@ -69,43 +69,51 @@ struct ReminderBottomSheet: View {
             description: "Choose when you want to be reminded about this habit",
             onClose: onClose,
             confirmButton: {
-                onRemindersUpdated(reminders)
+                if reminders.isEmpty {
+                    // When no reminders, open the add reminder sheet
+                    showingAddReminderSheet = true
+                } else {
+                    // When there are reminders, save and close
+                    onRemindersUpdated(reminders)
+                }
             },
-            confirmButtonTitle: "Confirm"
+            confirmButtonTitle: reminders.isEmpty ? "Add a reminder" : "Confirm"
         ) {
         VStack(spacing: 0) {
-            // Custom Buttons
-            HStack {
-                Button(isEditMode ? "Done" : "Edit") {
-                    isEditMode.toggle()
+            // Custom Buttons - only show when there are reminders
+            if !reminders.isEmpty {
+                HStack {
+                    Button(isEditMode ? "Done" : "Edit") {
+                        isEditMode.toggle()
+                    }
+                        .font(.appButtonText2)
+                    .foregroundColor(.text01)
+                    .frame(width: 62, height: 44)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                            showingAddReminderSheet = true
+                    }) {
+                        Image("Icon-plus")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.primary)
+                    }
+                    .frame(width: 48, height: 48)
                 }
-                    .font(.appButtonText2)
-                .foregroundColor(.text01)
-                .frame(width: 62, height: 44)
-                
-                Spacer()
-                
-                Button(action: {
-                        showingAddReminderSheet = true
-                }) {
-                    Image("Icon-plus")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.primary)
-                }
-                .frame(width: 48, height: 48)
+                .padding(.horizontal, 2)
             }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 16)
             
-            // Divider under header
-            Divider()
-                .background(.outline)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 20)
+            // Divider under header - only show when there are reminders
+            if !reminders.isEmpty {
+                Divider()
+                    .background(.outline)
+            }
             
+            // Content area
+            if !reminders.isEmpty {
                 // Reminders List
-                if !reminders.isEmpty {
                 ScrollView {
                     VStack(spacing: 12) {
                             ForEach(Array(reminders.enumerated()), id: \.element.id) { index, reminder in
@@ -172,7 +180,16 @@ struct ReminderBottomSheet: View {
                     .padding(.bottom, 16)
                 }
             } else {
-                Spacer()
+                // No reminders state
+                VStack {
+                    Spacer()
+                    
+                    Text("No reminder")
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text04)
+                    
+                    Spacer()
+                }
             }
             
                 Spacer()
