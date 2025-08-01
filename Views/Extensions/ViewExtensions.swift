@@ -30,6 +30,10 @@ class DateUtils {
         return calendar.startOfDay(for: date)
     }
     
+    static func endOfDay(for date: Date) -> Date {
+        return calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: date)) ?? date
+    }
+    
     static func daysBetween(_ startDate: Date, _ endDate: Date) -> Int {
         return calendar.dateComponents([.day], from: startDate, to: endDate).day ?? 0
     }

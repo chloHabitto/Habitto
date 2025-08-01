@@ -35,8 +35,8 @@ struct CreateHabitStep2View: View {
     @State private var showingScheduleSheet = false
     @State private var showingUnitSheet = false
     @State private var showingReminderSheet = false
-    @State private var showingPeriodSheet = false
-    @State private var isSelectingStartDate = true
+    @State private var showingStartDateSheet = false
+    @State private var showingEndDateSheet = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -231,8 +231,7 @@ struct CreateHabitStep2View: View {
                             HStack(spacing: 12) {
                                 // Start Date
                                 Button(action: {
-                                    isSelectingStartDate = true
-                                    showingPeriodSheet = true
+                                    showingStartDateSheet = true
                                 }) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Start Date")
@@ -249,8 +248,7 @@ struct CreateHabitStep2View: View {
                                 
                                 // End Date
                                 Button(action: {
-                                    isSelectingStartDate = false
-                                    showingPeriodSheet = true
+                                    showingEndDateSheet = true
                                 }) {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("End Date")
@@ -267,18 +265,38 @@ struct CreateHabitStep2View: View {
                             }
                         }
                         .selectionRowStyle()
-                        .sheet(isPresented: $showingPeriodSheet) {
+                        .sheet(isPresented: $showingStartDateSheet) {
                             PeriodBottomSheet(
-                                isSelectingStartDate: isSelectingStartDate,
+                                isSelectingStartDate: true,
                                 startDate: startDate,
-                                initialDate: isSelectingStartDate ? startDate : (endDate ?? Date()),
+                                initialDate: startDate,
                                 onStartDateSelected: { selectedDate in
                                     startDate = selectedDate
-                                    showingPeriodSheet = false
+                                    showingStartDateSheet = false
+                                },
+                                onEndDateSelected: { selectedDate in
+                                    // This should never be called for start date sheet
+                                },
+                                onRemoveEndDate: {
+                                    // This should never be called for start date sheet
+                                }
+                            )
+                        }
+                        .sheet(isPresented: $showingEndDateSheet) {
+                            PeriodBottomSheet(
+                                isSelectingStartDate: false,
+                                startDate: startDate,
+                                initialDate: endDate ?? Date(),
+                                onStartDateSelected: { selectedDate in
+                                    // This should never be called for end date sheet
                                 },
                                 onEndDateSelected: { selectedDate in
                                     endDate = selectedDate
-                                    showingPeriodSheet = false
+                                    showingEndDateSheet = false
+                                },
+                                onRemoveEndDate: {
+                                    endDate = nil
+                                    showingEndDateSheet = false
                                 }
                             )
                         }

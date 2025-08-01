@@ -718,7 +718,8 @@ struct StreakView: View {
         }
         
         // Check if the date is after the habit end date (if set)
-        if let endDate = habit.endDate, date > calendar.startOfDay(for: endDate) {
+        // Use endOfDay to be inclusive of the end date
+        if let endDate = habit.endDate, date > calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate {
             return false
         }
         

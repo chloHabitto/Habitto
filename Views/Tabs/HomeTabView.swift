@@ -273,7 +273,8 @@ struct HomeTabView: View {
         }
         
         // Check if the date is after the habit end date (if set)
-        if let endDate = habit.endDate, date > DateUtils.startOfDay(for: endDate) {
+        // Use >= to be inclusive of the end date
+        if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
             return false
         }
         

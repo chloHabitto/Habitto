@@ -8,14 +8,16 @@ struct PeriodBottomSheet: View {
     let startDate: Date
     let onStartDateSelected: (Date) -> Void
     let onEndDateSelected: (Date) -> Void
+    let onRemoveEndDate: (() -> Void)?
     
-    init(isSelectingStartDate: Bool, startDate: Date, initialDate: Date = Date(), onStartDateSelected: @escaping (Date) -> Void, onEndDateSelected: @escaping (Date) -> Void) {
+    init(isSelectingStartDate: Bool, startDate: Date, initialDate: Date = Date(), onStartDateSelected: @escaping (Date) -> Void, onEndDateSelected: @escaping (Date) -> Void, onRemoveEndDate: (() -> Void)? = nil) {
         self.isSelectingStartDate = isSelectingStartDate
         self.startDate = startDate
         self._selectedDate = State(initialValue: initialDate)
         self._currentMonth = State(initialValue: initialDate)
         self.onStartDateSelected = onStartDateSelected
         self.onEndDateSelected = onEndDateSelected
+        self.onRemoveEndDate = onRemoveEndDate
     }
     
     var body: some View {
@@ -106,6 +108,27 @@ struct PeriodBottomSheet: View {
                     }
                 }
                 .padding(.horizontal, 24)
+                
+                // No End Date button (only show when selecting end date)
+                if !isSelectingStartDate {
+                    Button(action: {
+                        onRemoveEndDate?()
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.text04)
+                            Text("No end date")
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.surfaceContainer)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 24)
+                }
             }
             .padding(.vertical, 20)
             
@@ -197,6 +220,7 @@ struct PeriodBottomSheet: View {
         isSelectingStartDate: true,
         startDate: Date(),
         onStartDateSelected: { _ in },
-        onEndDateSelected: { _ in }
+        onEndDateSelected: { _ in },
+        onRemoveEndDate: {}
     )
 } 

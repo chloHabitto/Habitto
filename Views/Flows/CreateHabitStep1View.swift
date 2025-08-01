@@ -90,11 +90,12 @@ struct CreateHabitStep1View: View {
                                 .cornerRadius(12)
                                 .frame(minHeight: 48)
                                 .submitLabel(.done)
-                                .onTapGesture {
-                                    isNameFieldFocused = true
-                                }
                                 .scaleEffect(isNameFieldFocused ? 1.02 : 1.0)
                                 .animation(.easeInOut(duration: 0.2), value: isNameFieldFocused)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            isNameFieldFocused = true
                         }
                         
                         // Description field
@@ -105,6 +106,11 @@ struct CreateHabitStep1View: View {
                             
                             MultilineTextField(text: $description, placeholder: "Enter description (optional)")
                                 .frame(minHeight: 48, maxHeight: 120)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            // Focus the description field when tapping anywhere in the VStack
+                            // Note: MultilineTextField handles its own focus internally
                         }
                         
                         // Icon selection
@@ -256,10 +262,6 @@ struct CreateHabitStep1View: View {
         .navigationBarHidden(true)
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            // Customize keyboard return button appearance globally
-            UITextField.appearance().tintColor = UIColor(Color(hex: "1C274C"))
-            UITextField.appearance().keyboardAppearance = .light
-            
             // Auto-focus the name field when the view appears
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 isNameFieldFocused = true
@@ -313,8 +315,15 @@ struct CreateHabitStep1View: View {
 }
 
 #Preview {
-    Text("Create Habit Step 1")
-        .font(.appTitleMedium)
+    CreateHabitStep1View(
+        name: .constant(""),
+        description: .constant(""),
+        icon: .constant("None"),
+        color: .constant(.primary),
+        habitType: .constant(.formation),
+        onNext: { _, _, _, _, _ in },
+        onCancel: {}
+    )
 }
 
 // Custom MultilineTextField to handle Done button properly
@@ -364,8 +373,8 @@ struct MultilineTextField: UIViewRepresentable {
         textField.font = UIFont.systemFont(ofSize: 17)
         textField.backgroundColor = UIColor.clear
         textField.returnKeyType = .done
-        textField.text = placeholder
-        textField.textColor = UIColor.placeholderText
+        textField.text = text.isEmpty ? placeholder : text
+        textField.textColor = text.isEmpty ? UIColor.placeholderText : UIColor(Color(hex: "1C274C"))
         textField.placeholder = placeholder
         
         // Apply styling to match the app's design
