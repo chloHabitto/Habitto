@@ -78,7 +78,12 @@ struct Habit: Identifiable, Codable {
     var createdAt: Date = Date()
     var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
     
-    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = []) {
+    // Habit Breaking specific properties
+    var baseline: Int = 0 // Current average usage
+    var target: Int = 0 // Target reduced amount
+    var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
+    
+    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
         self.name = name
         self.description = description
         self.icon = icon
@@ -92,9 +97,11 @@ struct Habit: Identifiable, Codable {
         self.endDate = endDate
         self.isCompleted = isCompleted
         self.streak = streak
+        self.baseline = baseline
+        self.target = target
     }
     
-    init(from step1Data: (String, String, String, Color, HabitType), schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, reminders: [ReminderItem] = []) {
+    init(from step1Data: (String, String, String, Color, HabitType), schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
         self.name = step1Data.0
         self.description = step1Data.1
         self.icon = step1Data.2
@@ -106,6 +113,8 @@ struct Habit: Identifiable, Codable {
         self.reminders = reminders
         self.startDate = startDate
         self.endDate = endDate
+        self.baseline = baseline
+        self.target = target
     }
     
     // MARK: - Completion History Methods
@@ -131,6 +140,35 @@ struct Habit: Identifiable, Codable {
     func getProgress(for date: Date) -> Int {
         let dateKey = Self.dateKey(for: date)
         return completionHistory[dateKey] ?? 0
+    }
+    
+    // MARK: - Habit Breaking Methods
+    mutating func logActualUsage(_ amount: Int, for date: Date) {
+        let dateKey = Self.dateKey(for: date)
+        actualUsage[dateKey] = amount
+    }
+    
+    func getActualUsage(for date: Date) -> Int {
+        let dateKey = Self.dateKey(for: date)
+        return actualUsage[dateKey] ?? 0
+    }
+    
+    func calculateSuccessRate(for date: Date) -> Double {
+        let actual = getActualUsage(for: date)
+        
+        if target == 0 {
+            // Complete elimination
+            return baseline > 0 ? Double(baseline - actual) / Double(baseline) * 100.0 : 0.0
+        } else {
+            // Partial reduction
+            let reductionRange = baseline - target
+            return reductionRange > 0 ? Double(baseline - actual) / Double(reductionRange) * 100.0 : 0.0
+        }
+    }
+    
+    func getProgressForHabitBreaking(for date: Date) -> Int {
+        let successRate = calculateSuccessRate(for: date)
+        return Int(successRate)
     }
     
     private mutating func updateCurrentCompletionStatus() {
