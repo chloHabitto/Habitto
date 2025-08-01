@@ -222,6 +222,14 @@ struct HomeTabView: View {
                 let dateKey = DateUtils.dateKey(for: date)
                 updatedHabit.completionHistory[dateKey] = progress
                 onUpdateHabit?(updatedHabit)
+            },
+            onEdit: {
+                print("✏️ Edit tapped for habit: \(habit.name)")
+                selectedHabit = habit
+            },
+            onDelete: {
+                print("🗑️ Delete tapped for habit: \(habit.name)")
+                onDeleteHabit?(habit)
             }
         )
     }

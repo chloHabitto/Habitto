@@ -6,9 +6,12 @@ struct ScheduledHabitItem: View {
     let selectedDate: Date
     var onRowTap: (() -> Void)? = nil
     var onProgressChange: ((Habit, Date, Int) -> Void)? = nil
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     
     @State private var currentProgress: Int = 0
     @State private var dragOffset: CGFloat = 0
+    @State private var showingActionSheet = false
     
     var body: some View {
         HStack(spacing: 12) {
@@ -128,6 +131,24 @@ struct ScheduledHabitItem: View {
         )
         .onTapGesture {
             onRowTap?()
+        }
+        .onLongPressGesture {
+            showingActionSheet = true
+        }
+        .actionSheet(isPresented: $showingActionSheet) {
+            ActionSheet(
+                title: Text(habit.name),
+                message: Text("Choose an action"),
+                buttons: [
+                    .default(Text("Edit")) {
+                        onEdit?()
+                    },
+                    .destructive(Text("Delete")) {
+                        onDelete?()
+                    },
+                    .cancel()
+                ]
+            )
         }
         .onAppear {
             currentProgress = habit.getProgress(for: selectedDate)
