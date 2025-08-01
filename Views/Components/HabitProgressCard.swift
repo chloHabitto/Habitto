@@ -42,7 +42,7 @@ struct HabitProgressCard: View {
                     
                     Spacer()
                     
-                    // Status Label
+                    // Status Label - Different for habit breaking
                     HStack(spacing: 4) {
                         Image(systemName: habitProgress.status.icon)
                             .font(.caption2)
@@ -76,6 +76,14 @@ struct HabitProgressCard: View {
         case .needsAttention:
             return .warning
         case .atRisk:
+            return .error
+        case .excellentReduction:
+            return .success
+        case .goodReduction:
+            return .success
+        case .moderateReduction:
+            return .warning
+        case .needsMoreReduction:
             return .error
         }
     }
