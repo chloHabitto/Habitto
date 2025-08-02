@@ -53,15 +53,26 @@ struct CreateHabitStep2View: View {
     // Computed properties for pluralized units to ensure proper SwiftUI updates
     private var pluralizedGoalUnit: String {
         let number = Int(goalNumber) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
         return pluralizedUnit(number, unit: goalUnit)
     }
     
     private var pluralizedBaselineUnit: String {
-        return pluralizedUnit(Int(baseline) ?? 1, unit: baselineUnit)
+        let number = Int(baseline) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
+        return pluralizedUnit(number, unit: baselineUnit)
     }
     
     private var pluralizedTargetUnit: String {
-        return pluralizedUnit(Int(target) ?? 1, unit: targetUnit)
+        let number = Int(target) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
+        return pluralizedUnit(number, unit: targetUnit)
     }
     
     @State private var schedule: String = "Everyday"
@@ -423,7 +434,7 @@ struct CreateHabitStep2View: View {
                                     HStack {
                                         Text(pluralizedGoalUnit)
                                             .font(.appBodyLarge)
-                                            .foregroundColor(.text04)
+                                            .foregroundColor(isGoalValid ? .text04 : .text06)
                                             .id(uiUpdateTrigger) // Force re-render when trigger changes
                                         Image(systemName: "chevron.right")
                                             .font(.appLabelSmall)
@@ -563,7 +574,7 @@ struct CreateHabitStep2View: View {
                         HStack {
                             Text(pluralizedBaselineUnit)
                                 .font(.appBodyLarge)
-                                .foregroundColor(.text04)
+                                .foregroundColor(isBaselineValid ? .text04 : .text06)
                             Image(systemName: "chevron.right")
                                 .font(.appLabelSmall)
                                 .foregroundColor(.primaryDim)
@@ -612,7 +623,7 @@ struct CreateHabitStep2View: View {
                         HStack {
                             Text(pluralizedTargetUnit)
                                 .font(.appBodyLarge)
-                                .foregroundColor(.text04)
+                                .foregroundColor(isTargetValid ? .text04 : .text06)
                             Image(systemName: "chevron.right")
                                 .font(.appLabelSmall)
                                 .foregroundColor(.primaryDim)
