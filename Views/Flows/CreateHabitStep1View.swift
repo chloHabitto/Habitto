@@ -204,6 +204,9 @@ struct CreateHabitStep1View: View {
                     .padding(.top, 24)
                     .padding(.bottom, 100) // Add padding to account for fixed button
                 }
+                .onTapGesture {
+                    // Fix for gesture recognition issues with ScrollView
+                }
             }
             .background(.surface2)
             

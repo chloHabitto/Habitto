@@ -73,6 +73,9 @@ struct CreateHabitStep2View: View {
                     .padding(.bottom, 100) // Add padding to account for fixed button
                 }
                 .frame(maxHeight: geometry.size.height - 120) // Reserve space for buttons
+                .onTapGesture {
+                    // Fix for gesture recognition issues with ScrollView
+                }
                 
                 Spacer()
                 
