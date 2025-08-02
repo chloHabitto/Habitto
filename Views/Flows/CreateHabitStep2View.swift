@@ -802,6 +802,7 @@ struct PopTipButton: UIViewRepresentable {
             popTip?.arrowSize = CGSize(width: 20, height: 10)
             popTip?.offset = 8
             popTip?.edgeMargin = 8
+            popTip?.padding = 20
             popTip?.shouldShowMask = false
             popTip?.entranceAnimation = .scale
             popTip?.exitAnimation = .scale
