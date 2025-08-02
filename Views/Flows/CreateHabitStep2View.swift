@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import AMPopTip
 
 struct CreateHabitStep2View: View {
     @FocusState private var isGoalNumberFocused: Bool
@@ -96,9 +98,13 @@ struct CreateHabitStep2View: View {
     @State private var showingBaselineUnitSheet = false
     @State private var showingTargetUnitSheet = false
     
-    // Tooltip state
+    // Tooltip state - only one can be shown at a time
     @State private var showingBaselineTooltip = false
     @State private var showingTargetTooltip = false
+    
+    // AMPopTip instances
+    @State private var baselinePopTip: PopTip?
+    @State private var targetPopTip: PopTip?
     
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
@@ -239,6 +245,7 @@ struct CreateHabitStep2View: View {
                 .background(.surface2) // Add background to ensure buttons are visible
             }
             .ignoresSafeArea(.keyboard) // Prevent keyboard from affecting button position
+
         }
         .background(.surface2)
         .navigationBarHidden(true)
@@ -590,13 +597,12 @@ struct CreateHabitStep2View: View {
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
                     
-                    Button(action: {
-                        showingBaselineTooltip.toggle()
-                    }) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 16))
-                            .foregroundColor(.text06)
-                    }
+                    PopTipButton(
+                        text: "On average, how often do you do this per day/week?",
+                        isPresented: showingBaselineTooltip,
+                        onDismiss: { showingBaselineTooltip = false }
+                    )
+                    .frame(width: 16, height: 16)
                 }
                 
                 HStack(spacing: 12) {
@@ -637,33 +643,6 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
-            .overlay(
-                // Baseline tooltip
-                VStack {
-                    if showingBaselineTooltip {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("On average, how often do you do this per day/week?")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .padding(12)
-                        .background(.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(.outline, lineWidth: 1)
-                        )
-                        .cornerRadius(8)
-                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                        .offset(y: 50)
-                        .zIndex(10)
-                        .transition(.opacity.combined(with: .scale))
-                        .animation(.easeInOut(duration: 0.2), value: showingBaselineTooltip)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                , alignment: .topLeading
-            )
             
             // Target
             VStack(alignment: .leading, spacing: 12) {
@@ -672,13 +651,12 @@ struct CreateHabitStep2View: View {
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
                     
-                    Button(action: {
-                        showingTargetTooltip.toggle()
-                    }) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 16))
-                            .foregroundColor(.text06)
-                    }
+                    PopTipButton(
+                        text: "What's your first goal?",
+                        isPresented: showingTargetTooltip,
+                        onDismiss: { showingTargetTooltip = false }
+                    )
+                    .frame(width: 16, height: 16)
                 }
                 
                 HStack(spacing: 12) {
@@ -719,33 +697,6 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
-            .overlay(
-                // Target tooltip
-                VStack {
-                    if showingTargetTooltip {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("What's your first goal?")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .padding(12)
-                        .background(.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(.outline, lineWidth: 1)
-                        )
-                        .cornerRadius(8)
-                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                        .offset(y: 50)
-                        .zIndex(10)
-                        .transition(.opacity.combined(with: .scale))
-                        .animation(.easeInOut(duration: 0.2), value: showingTargetTooltip)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                , alignment: .topLeading
-            )
             
             // Period
             VStack(alignment: .leading, spacing: 12) {
@@ -798,4 +749,75 @@ struct CreateHabitStep2View: View {
             .font(.appTitleMedium)
     }
 }
+
+// MARK: - SwiftUI Wrapper for AMPopTip
+struct PopTipButton: UIViewRepresentable {
+    let text: String
+    let isPresented: Bool
+    let onDismiss: () -> Void
+    
+    func makeUIView(context: Context) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "info.circle"), for: .normal)
+        button.tintColor = UIColor(Color.text06)
+        button.addTarget(context.coordinator, action: #selector(Coordinator.buttonTapped), for: .touchUpInside)
+        context.coordinator.button = button
+        return button
+    }
+    
+    func updateUIView(_ uiView: UIButton, context: Context) {
+        context.coordinator.parent = self
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject {
+        var parent: PopTipButton
+        var button: UIButton?
+        var popTip: PopTip?
+        
+        init(_ parent: PopTipButton) {
+            self.parent = parent
+        }
+        
+        @objc func buttonTapped() {
+            if let popTip = popTip, popTip.isVisible {
+                popTip.hide()
+            } else {
+                showPopTip()
+            }
+        }
+        
+        func showPopTip() {
+            guard let button = button else { return }
+            
+            popTip = PopTip()
+            popTip?.text = parent.text
+            popTip?.bubbleColor = UIColor.white
+            popTip?.textColor = UIColor(Color.text05)
+            popTip?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+            popTip?.cornerRadius = 16
+            popTip?.arrowSize = CGSize(width: 20, height: 10)
+            popTip?.offset = 8
+            popTip?.edgeMargin = 8
+            popTip?.shouldShowMask = false
+            popTip?.entranceAnimation = .scale
+            popTip?.exitAnimation = .scale
+            popTip?.actionAnimation = .none
+            
+            // Get the button's frame in the window
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                let buttonFrame = button.convert(button.bounds, to: window)
+                popTip?.show(text: parent.text, direction: .down, maxWidth: 300, in: window, from: buttonFrame)
+            }
+        }
+    }
+}
+
+
+
+
 
