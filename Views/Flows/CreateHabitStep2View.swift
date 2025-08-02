@@ -99,12 +99,8 @@ struct CreateHabitStep2View: View {
     @State private var showingTargetUnitSheet = false
     
     // Tooltip state - only one can be shown at a time
-    @State private var showingBaselineTooltip = false
-    @State private var showingTargetTooltip = false
-    
-    // AMPopTip instances
-    @State private var baselinePopTip: PopTip?
-    @State private var targetPopTip: PopTip?
+    @State private var activeTooltip: String? // "baseline" or "target" or nil
+    @State private var sharedPopTip: PopTip?
     
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
@@ -248,6 +244,28 @@ struct CreateHabitStep2View: View {
 
         }
         .background(.surface2)
+        .onAppear {
+            if sharedPopTip == nil {
+                sharedPopTip = PopTip()
+                // Configure the shared PopTip with default settings
+                           sharedPopTip?.bubbleColor = UIColor.systemBackground
+           sharedPopTip?.textColor = UIColor(Color.text05)
+           sharedPopTip?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+           sharedPopTip?.cornerRadius = 12
+           sharedPopTip?.arrowSize = CGSize(width: 12, height: 6)
+           sharedPopTip?.offset = 8
+           sharedPopTip?.edgeMargin = 8
+           sharedPopTip?.padding = 16
+           sharedPopTip?.shadowOpacity = 0.2
+           sharedPopTip?.shadowRadius = 10
+           sharedPopTip?.shadowOffset = CGSize(width: 0, height: 2)
+           sharedPopTip?.shadowColor = UIColor.black
+           sharedPopTip?.shouldShowMask = false
+           sharedPopTip?.entranceAnimation = .fadeIn
+           sharedPopTip?.exitAnimation = .fadeOut
+           sharedPopTip?.actionAnimation = .none
+            }
+        }
         .navigationBarHidden(true)
         .keyboardHandling(dismissOnTapOutside: true, showDoneButton: true)
         .onChange(of: goalNumber) { oldValue, newValue in
@@ -599,8 +617,12 @@ struct CreateHabitStep2View: View {
                     
                     PopTipButton(
                         text: "On average, how often do you do this per day/week?",
-                        isPresented: showingBaselineTooltip,
-                        onDismiss: { showingBaselineTooltip = false }
+                        tooltipId: "baseline",
+                        activeTooltip: activeTooltip,
+                        onTooltipChange: { newActiveTooltip in
+                            activeTooltip = newActiveTooltip
+                        },
+                        sharedPopTip: sharedPopTip
                     )
                     .frame(width: 16, height: 16)
                 }
@@ -653,8 +675,12 @@ struct CreateHabitStep2View: View {
                     
                     PopTipButton(
                         text: "What's your first goal?",
-                        isPresented: showingTargetTooltip,
-                        onDismiss: { showingTargetTooltip = false }
+                        tooltipId: "target",
+                        activeTooltip: activeTooltip,
+                        onTooltipChange: { newActiveTooltip in
+                            activeTooltip = newActiveTooltip
+                        },
+                        sharedPopTip: sharedPopTip
                     )
                     .frame(width: 16, height: 16)
                 }
@@ -753,8 +779,10 @@ struct CreateHabitStep2View: View {
 // MARK: - SwiftUI Wrapper for AMPopTip
 struct PopTipButton: UIViewRepresentable {
     let text: String
-    let isPresented: Bool
-    let onDismiss: () -> Void
+    let tooltipId: String
+    let activeTooltip: String?
+    let onTooltipChange: (String?) -> Void
+    let sharedPopTip: PopTip?
     
     func makeUIView(context: Context) -> UIButton {
         let button = UIButton(type: .system)
@@ -762,6 +790,7 @@ struct PopTipButton: UIViewRepresentable {
         button.tintColor = UIColor(Color.text06)
         button.addTarget(context.coordinator, action: #selector(Coordinator.buttonTapped), for: .touchUpInside)
         context.coordinator.button = button
+        context.coordinator.parent = self
         return button
     }
     
@@ -776,47 +805,63 @@ struct PopTipButton: UIViewRepresentable {
     class Coordinator: NSObject {
         var parent: PopTipButton
         var button: UIButton?
-        var popTip: PopTip?
         
         init(_ parent: PopTipButton) {
             self.parent = parent
         }
         
         @objc func buttonTapped() {
-            if let popTip = popTip, popTip.isVisible {
-                popTip.hide()
+            print("Button tapped for tooltip: \(parent.tooltipId)")
+            print("Active tooltip: \(parent.activeTooltip ?? "none")")
+            print("Shared PopTip exists: \(parent.sharedPopTip != nil)")
+            
+            if parent.activeTooltip == parent.tooltipId {
+                // This tooltip is currently active, hide it
+                print("Hiding tooltip: \(parent.tooltipId)")
+                parent.sharedPopTip?.hide()
+                parent.onTooltipChange(nil)
             } else {
+                // Show this tooltip and hide any other active tooltip
+                print("Showing tooltip: \(parent.tooltipId)")
+                parent.onTooltipChange(parent.tooltipId)
                 showPopTip()
             }
         }
         
         func showPopTip() {
-            guard let button = button else { return }
+            print("showPopTip called")
+            print("Button exists: \(button != nil)")
+            print("Shared PopTip exists: \(parent.sharedPopTip != nil)")
             
-            popTip = PopTip()
-            popTip?.text = parent.text
-            popTip?.bubbleColor = UIColor.white
-            popTip?.textColor = UIColor(Color.text05)
-            popTip?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
-            popTip?.cornerRadius = 16
-            popTip?.arrowSize = CGSize(width: 20, height: 10)
-            popTip?.offset = 8
-            popTip?.edgeMargin = 8
-            popTip?.padding = 20
-            popTip?.shadowOpacity = 0.15
-            popTip?.shadowRadius = 8
-            popTip?.shadowOffset = CGSize(width: 0, height: 4)
-            popTip?.shadowColor = UIColor.black
-            popTip?.shouldShowMask = false
-            popTip?.entranceAnimation = .scale
-            popTip?.exitAnimation = .scale
-            popTip?.actionAnimation = .none
+            guard let button = button, let popTip = parent.sharedPopTip else { 
+                print("Guard failed - button or popTip is nil")
+                return 
+            }
+            
+            print("About to show tooltip with text: \(parent.text)")
+            
+            // Hide any existing popTip before showing a new one
+            popTip.hide()
             
             // Get the button's frame in the window
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = windowScene.windows.first {
                 let buttonFrame = button.convert(button.bounds, to: window)
-                popTip?.show(text: parent.text, direction: .down, maxWidth: 300, in: window, from: buttonFrame)
+                print("Button frame: \(buttonFrame)")
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    guard let self = self else { return }
+                    popTip.show(text: self.parent.text, direction: .down, maxWidth: 300, in: window, from: buttonFrame)
+                    print("PopTip show called with delay")
+                    
+                    // Check if PopTip is visible after showing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        print("PopTip is visible: \(popTip.isVisible)")
+                        print("PopTip frame: \(popTip.frame)")
+                    }
+                }
+            } else {
+                print("Failed to get window or windowScene")
             }
         }
     }
