@@ -351,8 +351,8 @@ struct CreateHabitStep2View: View {
     private var habitBuildingForm: some View {
         VStack(spacing: 16) {
             // Schedule
-            Button(action: {
-                showingScheduleSheet = true
+                        Button(action: {
+                            showingScheduleSheet = true
                         }) {
                             HStack {
                                 Text("Schedule")

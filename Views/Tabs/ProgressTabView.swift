@@ -209,41 +209,16 @@ struct ProgressTabView: View {
                 
                 Spacer()
                 
-                Text("\(cachedHabitsWithProgress.count) habit\(cachedHabitsWithProgress.count == 1 ? "" : "s")")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text04)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.surface)
-                    )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(.outline, lineWidth: 1)
-                )
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16))
+                    .foregroundColor(.text06)
+                    .help("Shows your habit completion progress for this period")
             }
             
             if cachedHabitsWithProgress.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: selectedHabitType == .formation ? "plus.circle" : "minus.circle")
-                        .font(.system(size: 48))
-                        .foregroundColor(.text04)
-                    
-                    Text(emptyStateMessage)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 48)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.surface)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(.outline, lineWidth: 1)
+                EmptyStateView(
+                    icon: selectedHabitType == .formation ? "plus.circle" : "minus.circle",
+                    message: emptyStateMessage
                 )
             } else {
                 LazyVStack(spacing: 16) {
@@ -302,37 +277,45 @@ struct ProgressTabView: View {
                 
                 Spacer()
                 
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.warning)
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16))
+                    .foregroundColor(.text06)
+                    .help("Provides personalized insights and suggestions based on your progress")
             }
             
-            VStack(spacing: 16) {
-                // Context-aware insights based on selected habit type
-                        if selectedHabitType == .formation {
-            buildingInsights
-        } else {
-            breakingInsights
-        }
-                
-                // Overall progress insight
-                let improvingCount = cachedHabitsWithProgress.filter { $0.trend == .improving }.count
-                let needsAttentionCount = cachedHabitsWithProgress.filter { $0.trend == .declining }.count
-                
-                if improvingCount > 0 || needsAttentionCount > 0 {
-                    InsightCard(
-                        type: .info,
-                        title: "Overall Progress",
-                        description: "\(improvingCount) habits improving, \(needsAttentionCount) need attention"
-                    )
-                }
-                
-                if let suggestion = actionableSuggestion {
-                    InsightCard(
-                        type: .tip,
-                        title: "Suggestion",
-                        description: suggestion
-                    )
+            if cachedHabitsWithProgress.isEmpty {
+                EmptyStateView(
+                    icon: "lightbulb",
+                    message: insightEmptyStateMessage
+                )
+            } else {
+                VStack(spacing: 16) {
+                    // Context-aware insights based on selected habit type
+                    if selectedHabitType == .formation {
+                        buildingInsights
+                    } else {
+                        breakingInsights
+                    }
+                    
+                    // Overall progress insight
+                    let improvingCount = cachedHabitsWithProgress.filter { $0.trend == .improving }.count
+                    let needsAttentionCount = cachedHabitsWithProgress.filter { $0.trend == .declining }.count
+                    
+                    if improvingCount > 0 || needsAttentionCount > 0 {
+                        InsightCard(
+                            type: .info,
+                            title: "Overall Progress",
+                            description: "\(improvingCount) habits improving, \(needsAttentionCount) need attention"
+                        )
+                    }
+                    
+                    if let suggestion = actionableSuggestion {
+                        InsightCard(
+                            type: .tip,
+                            title: "Suggestion",
+                            description: suggestion
+                        )
+                    }
                 }
             }
         }
@@ -402,31 +385,16 @@ struct ProgressTabView: View {
                 
                 Spacer()
                 
-                Image(systemName: "target")
-                    .font(.system(size: 20))
-                    .foregroundColor(.primary)
+                Image(systemName: "info.circle")
+                    .font(.system(size: 16))
+                    .foregroundColor(.text06)
+                    .help("Analyzes how well you're meeting your habit goals and targets")
             }
             
             if cachedHabitsWithGoals.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "target")
-                        .font(.system(size: 48))
-                        .foregroundColor(.text04)
-                    
-                    Text(goalEmptyStateMessage)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 48)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.surface)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(.outline, lineWidth: 1)
+                EmptyStateView(
+                    icon: "target",
+                    message: goalEmptyStateMessage
                 )
             } else {
                 LazyVStack(spacing: 16) {
@@ -471,6 +439,15 @@ struct ProgressTabView: View {
             return "No goal data for this period"
         case .breaking:
             return "No reduction data for this period"
+        }
+    }
+    
+    private var insightEmptyStateMessage: String {
+        switch selectedHabitType {
+        case .formation:
+            return "No habit building data for this period"
+        case .breaking:
+            return "No habit breaking data for this period"
         }
     }
     
@@ -928,6 +905,35 @@ enum InsightType {
         case .info: return "info.circle.fill"
         case .tip: return "lightbulb.fill"
         }
+    }
+}
+
+// MARK: - EmptyStateView
+struct EmptyStateView: View {
+    let icon: String
+    let message: String
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(.primaryContainer)
+            
+            Text(message)
+                .font(.appBodyLarge)
+                .foregroundColor(.text05)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.outline, lineWidth: 1)
+        )
     }
 }
 
