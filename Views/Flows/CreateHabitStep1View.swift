@@ -149,13 +149,12 @@ struct CreateHabitStep1View: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 
-                // Name field - moved outside ScrollView for better performance
-                CustomTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused, showTapGesture: true)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                
                 ScrollView {
                     VStack(spacing: 16) {
+                        // Name field - moved inside ScrollView for better keyboard handling
+                        CustomTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused, showTapGesture: true)
+                            .zIndex(1)
+                        
                         // Description field
                         CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                             .zIndex(1)
@@ -235,7 +234,7 @@ struct CreateHabitStep1View: View {
                         .zIndex(1)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, 24)
                     .padding(.bottom, 100) // Add padding to account for fixed button
                 }
             }
