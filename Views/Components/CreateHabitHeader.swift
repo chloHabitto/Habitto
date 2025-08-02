@@ -56,8 +56,8 @@ struct CreateHabitHeader: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 20)
+            .padding(.top, 28)
+            .padding(.bottom, 28)
         }
 //        .background(.red)
     }

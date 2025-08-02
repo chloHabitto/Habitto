@@ -139,106 +139,103 @@ struct CreateHabitStep1View: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Main content
-            VStack(spacing: 0) {
-                // Header
-                CreateHabitHeader(
-                    stepNumber: 1,
-                    onCancel: onCancel
-                )
-                
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Name field - moved inside ScrollView for better keyboard handling
-                        CustomTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused, showTapGesture: true)
-                            .zIndex(1)
-                        
-                        // Description field
-                        CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
-                            .zIndex(1)
-                        
-                        // Color and Icon selection
-                        Group {
-                            VisualSelectionRow(
-                                title: "Colour",
-                                color: color,
-                                value: colorName(for: color),
-                                action: { showingColorSheet = true }
-                            )
-                            
-                            VisualSelectionRow(
-                                title: "Icon",
-                                color: color,
-                                icon: icon,
-                                value: iconDisplayValue(icon),
-                                action: { showingIconSheet = true }
-                            )
-                        }
-                        .zIndex(1)
-                        
-                        // Habit type selection
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Habit Type")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            HStack(spacing: 12) {
-                                // Habit Building button
-                                HabitTypeButton(title: "Habit Building", isSelected: isFormationSelected) {
-                                    habitType = .formation
-                                }
-                                
-                                // Habit Breaking button
-                                HabitTypeButton(title: "Habit Breaking", isSelected: isBreakingSelected) {
-                                    habitType = .breaking
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline, lineWidth: 1.5)
-                        )
-                        .cornerRadius(12)
-                        .zIndex(1)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .padding(.bottom, 100) // Add padding to account for fixed button
-                }
-                .onTapGesture {
-                    // Fix for gesture recognition issues with ScrollView
-                }
-            }
-            .background(.surface2)
+        VStack(spacing: 0) {
+            // Header
+            CreateHabitHeader(
+                stepNumber: 1,
+                onCancel: onCancel
+            )
             
-            // Fixed Continue button at bottom
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        onNext(name, description, icon, color, habitType)
-                    }) {
-                        Text("Continue")
-                            .font(.appButtonText1)
-                            .foregroundColor(name.isEmpty ? .text06 : .onPrimary)
-                            .frame(width: screenWidth * 0.5)
-                            .padding(.vertical, 16)
-                            .background(name.isEmpty ? .disabledBackground : .primary)
-                            .clipShape(Capsule())
+            // Main content with ScrollView
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Name field - moved inside ScrollView for better keyboard handling
+                    CustomTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused, showTapGesture: true)
+                        .zIndex(1)
+                    
+                    // Description field
+                    CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
+                        .zIndex(1)
+                    
+                    // Color and Icon selection
+                    Group {
+                        VisualSelectionRow(
+                            title: "Colour",
+                            color: color,
+                            value: colorName(for: color),
+                            action: { showingColorSheet = true }
+                        )
+                        
+                        VisualSelectionRow(
+                            title: "Icon",
+                            color: color,
+                            icon: icon,
+                            value: iconDisplayValue(icon),
+                            action: { showingIconSheet = true }
+                        )
                     }
-                    .disabled(name.isEmpty)
+                    .zIndex(1)
+                    
+                    // Habit type selection
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Habit Type")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        HStack(spacing: 12) {
+                            // Habit Building button
+                            HabitTypeButton(title: "Habit Building", isSelected: isFormationSelected) {
+                                habitType = .formation
+                            }
+                            
+                            // Habit Breaking button
+                            HabitTypeButton(title: "Habit Breaking", isSelected: isBreakingSelected) {
+                                habitType = .breaking
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
+                    .zIndex(1)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .background(.surface2)
-                .zIndex(2)
+                .padding(.top, 0)
+                .padding(.bottom, 20) // Reduced padding since we're using Spacer
             }
+            .onTapGesture {
+                // Fix for gesture recognition issues with ScrollView
+            }
+            
+            Spacer() // This pushes the button to the bottom
+            
+            // Fixed Continue button at bottom
+            HStack {
+                Spacer()
+                Button(action: {
+                    onNext(name, description, icon, color, habitType)
+                }) {
+                    Text("Continue")
+                        .font(.appButtonText1)
+                        .foregroundColor(name.isEmpty ? .text06 : .onPrimary)
+                        .frame(width: screenWidth * 0.5)
+                        .padding(.vertical, 16)
+                        .background(name.isEmpty ? .disabledBackground : .primary)
+                        .clipShape(Capsule())
+                }
+                .disabled(name.isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+            .background(.surface2)
         }
+        .background(.surface2)
         .navigationBarHidden(true)
         .background(
             Color.surface2
