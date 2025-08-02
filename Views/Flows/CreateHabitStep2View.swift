@@ -89,8 +89,8 @@ struct CreateHabitStep2View: View {
     @State private var showingEndDateSheet = false
     
     // Habit Breaking specific state
-    @State private var baseline: String = ""
-    @State private var target: String = ""
+    @State private var baseline: String = "1"
+    @State private var target: String = "1"
     @State private var baselineUnit: String = "time"
     @State private var targetUnit: String = "time"
     @State private var showingBaselineUnitSheet = false
@@ -245,9 +245,11 @@ struct CreateHabitStep2View: View {
         }
         .onChange(of: baseline) { _, _ in
             // Force UI update when baseline changes
+            uiUpdateTrigger.toggle()
         }
         .onChange(of: target) { _, _ in
             // Force UI update when target changes
+            uiUpdateTrigger.toggle()
         }
         .overlay(
             // Custom Done button overlay for number keyboard
@@ -555,7 +557,7 @@ struct CreateHabitStep2View: View {
                 
                 HStack(spacing: 12) {
                     // Number input field
-                    TextField("10", text: $baseline)
+                    TextField("1", text: $baseline)
                         .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
@@ -573,6 +575,7 @@ struct CreateHabitStep2View: View {
                             Text(pluralizedBaselineUnit)
                                 .font(.appBodyLarge)
                                 .foregroundColor(isBaselineValid ? .text04 : .text06)
+                                .id(uiUpdateTrigger) // Force re-render when trigger changes
                             Image(systemName: "chevron.right")
                                 .font(.appLabelSmall)
                                 .foregroundColor(.primaryDim)
@@ -602,7 +605,7 @@ struct CreateHabitStep2View: View {
                 
                 HStack(spacing: 12) {
                     // Number input field
-                    TextField("5", text: $target)
+                    TextField("1", text: $target)
                         .font(.appBodyLarge)
                         .foregroundColor(.text01)
                         .accentColor(.text01)
@@ -620,6 +623,7 @@ struct CreateHabitStep2View: View {
                             Text(pluralizedTargetUnit)
                                 .font(.appBodyLarge)
                                 .foregroundColor(isTargetValid ? .text04 : .text06)
+                                .id(uiUpdateTrigger) // Force re-render when trigger changes
                             Image(systemName: "chevron.right")
                                 .font(.appLabelSmall)
                                 .foregroundColor(.primaryDim)
