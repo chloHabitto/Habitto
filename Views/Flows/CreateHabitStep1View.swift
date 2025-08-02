@@ -75,6 +75,7 @@ struct CreateHabitStep1View: View {
     }
     
     // Helper function for selection rows with visual elements
+    @ViewBuilder
     private func VisualSelectionRow(
         title: String,
         color: Color,
@@ -83,23 +84,19 @@ struct CreateHabitStep1View: View {
         action: @escaping () -> Void
     ) -> some View {
         if let icon = icon {
-            return AnyView(
-                SelectionRowWithVisual(
-                    title: title,
-                    icon: icon,
-                    color: color,
-                    value: value,
-                    action: action
-                )
+            SelectionRowWithVisual(
+                title: title,
+                icon: icon,
+                color: color,
+                value: value,
+                action: action
             )
         } else {
-            return AnyView(
-                SelectionRowWithVisual(
-                    title: title,
-                    color: color,
-                    value: value,
-                    action: action
-                )
+            SelectionRowWithVisual(
+                title: title,
+                color: color,
+                value: value,
+                action: action
             )
         }
     }

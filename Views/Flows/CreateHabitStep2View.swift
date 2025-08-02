@@ -11,20 +11,34 @@ struct CreateHabitStep2View: View {
     
     @Environment(\.dismiss) private var dismiss
     
-    private func formatTime(_ date: Date) -> String {
+    // Cache screen width to avoid repeated UIScreen.main.bounds.width access
+    private let screenWidth = UIScreen.main.bounds.width
+    
+    // Cache DateFormatters for better performance
+    private let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
-        return formatter.string(from: date)
+        return formatter
+    }()
+    
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
+    
+    // Cache Calendar for better performance
+    private let calendar = Calendar.current
+    
+    private func formatTime(_ date: Date) -> String {
+        return timeFormatter.string(from: date)
     }
     
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+        return dateFormatter.string(from: date)
     }
     
     private func isToday(_ date: Date) -> Bool {
-        let calendar = Calendar.current
         return calendar.isDateInToday(date)
     }
     
@@ -144,7 +158,7 @@ struct CreateHabitStep2View: View {
                         Text("Save")
                             .font(.appButtonText1)
                             .foregroundColor(.white)
-                            .frame(width: UIScreen.main.bounds.width * 0.5)
+                            .frame(width: screenWidth * 0.5)
                             .padding(.vertical, 16)
                             .background(step1Data.3)
                             .clipShape(Capsule())
