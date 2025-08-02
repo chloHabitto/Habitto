@@ -60,9 +60,22 @@ struct UnifiedTabBarView: View {
             
             // Spacer for both styles to push tabs to the left
             Spacer()
+            
+            // Additional spacer on the right
+            Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(style == .underline ? Color.white : Color.clear)
+        .overlay(
+            // Bottom stroke for the entire tab bar - only for underline style
+            VStack {
+                Spacer()
+                Rectangle()
+                    .fill(Color.outline)
+                    .frame(height: 1)
+            }
+            .opacity(style == .underline ? 1 : 0)
+        )
     }
 }
 
@@ -73,7 +86,7 @@ struct UnderlineTabButton: View {
     let onTap: () -> Void
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 2) {
             Button(action: onTap) {
                 HStack(spacing: 4) {
                     Text(tab.title)
@@ -86,18 +99,22 @@ struct UnderlineTabButton: View {
                             .foregroundColor(isSelected ? .text03 : .text04)
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+//                .background(.red)
+                .overlay(
+                    // Bottom stroke - only show for selected tabs
+                    VStack {
+                        Spacer()
+                        Rectangle()
+                            .fill(.text03)
+                            .frame(height: 4)
+                    }
+                    .animation(.easeInOut(duration: 0.2), value: isSelected)
+                    .opacity(isSelected ? 1 : 0) // Only show stroke for selected tabs
+                )
             }
             .buttonStyle(PlainButtonStyle())
-            
-            // Bottom stroke - only show for selected tabs
-            Rectangle()
-                .fill(.text03)
-                .frame(height: 3)
-                .frame(maxWidth: .infinity)
-                .animation(.easeInOut(duration: 0.2), value: isSelected)
-                .opacity(isSelected ? 1 : 0) // Only show stroke for selected tabs
         }
     }
 }
@@ -114,8 +131,8 @@ struct PillTabButton: View {
                 .font(.appBodyMedium)
                 .fontWeight(.medium)
                 .foregroundColor(isSelected ? .onPrimary : .text04)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: 24)
                         .fill(isSelected ? .primary : .clear)
