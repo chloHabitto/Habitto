@@ -448,9 +448,7 @@ struct CreateHabitStep2View: View {
                             
                             // Warning message for invalid goal
                             if !isGoalValid {
-                                Text("Please enter a number greater than 0")
-                                    .font(.appBodyMedium)
-                                    .foregroundColor(.red)
+                                ErrorMessage(message: "Please enter a number greater than 0")
                                     .padding(.top, 4)
                             }
                         }
@@ -587,9 +585,7 @@ struct CreateHabitStep2View: View {
                 
                 // Warning message for invalid baseline
                 if !isBaselineValid {
-                    Text("Please enter a number greater than 0")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.red)
+                    ErrorMessage(message: "Please enter a number greater than 0")
                         .padding(.top, 4)
                 }
             }
@@ -636,9 +632,7 @@ struct CreateHabitStep2View: View {
                 
                 // Warning message for invalid target
                 if !isTargetValid {
-                    Text("Please enter a number greater than 0")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.red)
+                    ErrorMessage(message: "Please enter a number greater than 0")
                         .padding(.top, 4)
                 }
             }

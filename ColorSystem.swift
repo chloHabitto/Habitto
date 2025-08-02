@@ -132,6 +132,7 @@ struct ColorTokens {
     static let warning = Color("yellow500")
     static let successDim = Color("green700")
     static let error = Color("red500")
+    static let errorText = Color("red800")
     static let errorBackground = Color("red50")
     static let disabledBackground = Color("grey100")
     static let onDisabledBackground = Color("grey400")
@@ -185,6 +186,7 @@ extension Color {
     static let warning = ColorTokens.warning
     static let successDim = ColorTokens.successDim
     static let error = ColorTokens.error
+    static let errorText = ColorTokens.errorText
     static let errorBackground = ColorTokens.errorBackground
     static let disabledBackground = ColorTokens.disabledBackground
     static let onDisabledBackground = ColorTokens.onDisabledBackground
@@ -239,6 +241,7 @@ extension ShapeStyle where Self == Color {
     static var warning: Color { ColorTokens.warning }
     static var successDim: Color { ColorTokens.successDim }
     static var error: Color { ColorTokens.error }
+    static var errorText: Color { ColorTokens.errorText }
     static var errorBackground: Color { ColorTokens.errorBackground }
     static var disabledBackground: Color { ColorTokens.disabledBackground }
     static var onDisabledBackground: Color { ColorTokens.onDisabledBackground }
