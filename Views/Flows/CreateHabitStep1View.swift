@@ -126,26 +126,6 @@ struct CreateHabitStep1View: View {
                         CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                             .zIndex(1)
                         
-                        // Icon selection
-                        Button(action: {
-                            showingIconSheet = true
-                        }) {
-                            HStack {
-                                Text("Icon")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                Spacer()
-                                Text(icon == "None" ? "None" : icon)
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primaryDim)
-                            }
-                        }
-                        .selectionRowStyle()
-                        .zIndex(1)
-                        
                         // Color selection
                         Button(action: {
                             showingColorSheet = true
@@ -158,13 +138,59 @@ struct CreateHabitStep1View: View {
                                 HStack(spacing: 8) {
                                     Circle()
                                         .fill(color)
-                                        .frame(width: 16, height: 16)
+                                        .frame(width: 24, height: 24)
                                     Text(colorName(for: color))
                                         .font(.appBodyLarge)
                                         .foregroundColor(.text04)
                                 }
                                 Image(systemName: "chevron.right")
                                     .font(.appLabelMedium)
+                                    .foregroundColor(.primaryDim)
+                            }
+                        }
+                        .selectionRowStyle()
+                        .zIndex(1)
+                        
+                        // Icon selection
+                        Button(action: {
+                            showingIconSheet = true
+                        }) {
+                            HStack {
+                                Text("Icon")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                Spacer()
+                                HStack(spacing: 8) {
+                                    // SelectedIcon container
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(color)
+                                            .frame(width: 24, height: 24)
+                                        
+                                        if icon.hasPrefix("Icon-") {
+                                            // Asset icon
+                                            Image(icon)
+                                                .resizable()
+                                                .frame(width: 14, height: 14)
+                                                .foregroundColor(color)
+                                        } else if icon == "None" {
+                                            // No icon selected - show colored rounded rectangle
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(color)
+                                                .frame(width: 14, height: 14)
+                                        } else {
+                                            // Emoji or system icon
+                                            Text(icon)
+                                                .font(.system(size: 14))
+                                        }
+                                    }
+                                    
+                                    Text(icon == "None" ? "None" : icon)
+                                        .font(.appBodyLarge)
+                                        .foregroundColor(.text04)
+                                }
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelSmall)
                                     .foregroundColor(.primaryDim)
                             }
                         }
