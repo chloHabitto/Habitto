@@ -88,20 +88,27 @@ struct CreateHabitStep1View: View {
                             .submitLabel(.done)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                isNameFieldFocused = true
+                                DispatchQueue.main.async {
+                                    isNameFieldFocused = true
+                                }
                             }
                         
-                                // Description field
-        DescriptionTextField(text: $description, placeholder: "Description")
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .padding(.horizontal, 16)
-            .background(.surface)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
-            )
-            .cornerRadius(12)
+                        // Description field
+                        TextField("Description", text: $description)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text05)
+                            .accentColor(.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .padding(.horizontal, 16)
+                            .background(.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(.outline, lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
+                            .submitLabel(.done)
+                            .contentShape(Rectangle())
                         
                         // Icon selection
                         Button(action: {
@@ -250,11 +257,11 @@ struct CreateHabitStep1View: View {
             }
         }
         .navigationBarHidden(true)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
         .onAppear {
             // Auto-focus the name field only on initial load
             if isInitialLoad {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     isNameFieldFocused = true
                 }
                 isInitialLoad = false
@@ -316,82 +323,4 @@ private func colorName(for color: Color) -> String {
     )
 }
 
-// Custom DescriptionTextField to handle Done button properly
-struct DescriptionTextField: UIViewRepresentable {
-    @Binding var text: String
-    var placeholder: String
 
-    class Coordinator: NSObject, UITextFieldDelegate {
-        var parent: DescriptionTextField
-
-        init(_ parent: DescriptionTextField) {
-            self.parent = parent
-        }
-
-        func textFieldDidChangeSelection(_ textField: UITextField) {
-            parent.text = textField.text ?? ""
-        }
-
-        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            print("Done button pressed - dismissing keyboard")
-            textField.resignFirstResponder()
-            return true
-        }
-        
-        func textFieldDidBeginEditing(_ textField: UITextField) {
-            if textField.text == parent.placeholder {
-                textField.text = ""
-                textField.textColor = UIColor(Color.text05)
-            }
-        }
-        
-        func textFieldDidEndEditing(_ textField: UITextField) {
-            if textField.text?.isEmpty == true {
-                textField.text = parent.placeholder
-                textField.textColor = UIColor.placeholderText
-            }
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    func makeUIView(context: Context) -> UITextField {
-        let textField = UITextField()
-        textField.delegate = context.coordinator
-        
-        // Use the same font as the name element
-        if let appBodyLargeFont = UIFont(name: "SF Pro Display", size: 17) {
-            textField.font = appBodyLargeFont
-        } else {
-            textField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        }
-        
-        textField.backgroundColor = UIColor.clear
-        textField.returnKeyType = .done
-        textField.text = text.isEmpty ? placeholder : text
-        textField.textColor = text.isEmpty ? UIColor.placeholderText : UIColor(Color.text05)
-        textField.placeholder = placeholder
-        
-        // Set accent color to match name element's cursor color
-        textField.tintColor = UIColor(Color.primary)
-        
-        // Remove UIKit border styling since we're using SwiftUI stroke
-        textField.backgroundColor = UIColor.clear
-        
-        // Improve tap responsiveness
-        textField.isUserInteractionEnabled = true
-        textField.isMultipleTouchEnabled = false
-        
-        return textField
-    }
-
-    func updateUIView(_ uiView: UITextField, context: Context) {
-        if uiView.text != text && !text.isEmpty {
-            uiView.text = text
-            uiView.textColor = UIColor(Color.text05)
-        }
-        uiView.returnKeyType = .done
-    }
-}

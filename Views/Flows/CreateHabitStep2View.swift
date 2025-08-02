@@ -2,6 +2,8 @@ import SwiftUI
 
 struct CreateHabitStep2View: View {
     @FocusState private var isGoalNumberFocused: Bool
+    @FocusState private var isBaselineFieldFocused: Bool
+    @FocusState private var isTargetFieldFocused: Bool
     let step1Data: (String, String, String, Color, HabitType)
     let habitToEdit: Habit?
     let goBack: () -> Void
@@ -186,19 +188,18 @@ struct CreateHabitStep2View: View {
         }
         .background(.surface2)
         .navigationBarHidden(true)
-        .onTapGesture {
-            // Dismiss keyboard when tapping outside text fields
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
+        .keyboardHandling(dismissOnTapOutside: true, showDoneButton: true)
         .overlay(
-            // Done button overlay for number keyboard
+            // Custom Done button overlay for number keyboard
             VStack {
                 Spacer()
-                if isGoalNumberFocused {
+                if isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused {
                     HStack {
                         Spacer()
                         Button(action: {
                             isGoalNumberFocused = false
+                            isBaselineFieldFocused = false
+                            isTargetFieldFocused = false
                         }) {
                             Text("Done")
                                 .appButtonTextFont()
@@ -537,6 +538,7 @@ struct CreateHabitStep2View: View {
                         .foregroundColor(.text04)
                         .accentColor(.text01)
                         .keyboardType(.numberPad)
+                        .focused($isBaselineFieldFocused)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .inputFieldStyle()
@@ -577,6 +579,7 @@ struct CreateHabitStep2View: View {
                         .foregroundColor(.text04)
                         .accentColor(.text01)
                         .keyboardType(.numberPad)
+                        .focused($isTargetFieldFocused)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .inputFieldStyle()
