@@ -586,7 +586,7 @@ struct CreateHabitStep2View: View {
                 }
             }
             
-            // Baseline
+            // Current Baseline
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Current Baseline")
@@ -608,6 +608,7 @@ struct CreateHabitStep2View: View {
                 Text("On average, how often do you do this per day/week?")
                     .font(.appBodyMedium)
                     .foregroundColor(.text05)
+                    .padding(.bottom, 8)
                 
                 HStack(spacing: 12) {
                     // Number input field
@@ -648,7 +649,7 @@ struct CreateHabitStep2View: View {
             }
             .selectionRowStyle()
             
-            // Target
+            // Reduction Goal
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Reduction Goal")
@@ -670,6 +671,7 @@ struct CreateHabitStep2View: View {
                 Text("What's your first goal?")
                     .font(.appBodyMedium)
                     .foregroundColor(.text05)
+                    .padding(.bottom, 8)
                 
                 HStack(spacing: 12) {
                     // Number input field
@@ -709,6 +711,7 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
+           
             
             // Period
             VStack(alignment: .leading, spacing: 12) {
