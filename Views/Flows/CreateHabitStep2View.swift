@@ -96,6 +96,10 @@ struct CreateHabitStep2View: View {
     @State private var showingBaselineUnitSheet = false
     @State private var showingTargetUnitSheet = false
     
+    // Tooltip state
+    @State private var showingBaselineTooltip = false
+    @State private var showingTargetTooltip = false
+    
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
@@ -586,10 +590,13 @@ struct CreateHabitStep2View: View {
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
                     
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 16))
-                        .foregroundColor(.text06)
-                        .help("On average, how often do you do this per day/week?")
+                    Button(action: {
+                        showingBaselineTooltip.toggle()
+                    }) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 16))
+                            .foregroundColor(.text06)
+                    }
                 }
                 
                 HStack(spacing: 12) {
@@ -630,6 +637,33 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
+            .overlay(
+                // Baseline tooltip
+                VStack {
+                    if showingBaselineTooltip {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("On average, how often do you do this per day/week?")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(12)
+                        .background(.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(.outline, lineWidth: 1)
+                        )
+                        .cornerRadius(8)
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .offset(y: 50)
+                        .zIndex(10)
+                        .transition(.opacity.combined(with: .scale))
+                        .animation(.easeInOut(duration: 0.2), value: showingBaselineTooltip)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                , alignment: .topLeading
+            )
             
             // Target
             VStack(alignment: .leading, spacing: 12) {
@@ -638,10 +672,13 @@ struct CreateHabitStep2View: View {
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
                     
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 16))
-                        .foregroundColor(.text06)
-                        .help("What's your first goal?")
+                    Button(action: {
+                        showingTargetTooltip.toggle()
+                    }) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 16))
+                            .foregroundColor(.text06)
+                    }
                 }
                 
                 HStack(spacing: 12) {
@@ -682,6 +719,33 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
+            .overlay(
+                // Target tooltip
+                VStack {
+                    if showingTargetTooltip {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("What's your first goal?")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(12)
+                        .background(.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(.outline, lineWidth: 1)
+                        )
+                        .cornerRadius(8)
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .offset(y: 50)
+                        .zIndex(10)
+                        .transition(.opacity.combined(with: .scale))
+                        .animation(.easeInOut(duration: 0.2), value: showingTargetTooltip)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                , alignment: .topLeading
+            )
             
             // Period
             VStack(alignment: .leading, spacing: 12) {
