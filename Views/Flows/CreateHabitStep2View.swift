@@ -52,44 +52,11 @@ struct CreateHabitStep2View: View {
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Cancel button (same as Step 1)
-                HStack {
-                    Spacer()
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .font(.appButtonText2)
-                    .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                
-                // Progress indicator (both filled for Step 2)
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(.primaryDim)
-                        .frame(width: 32, height: 8)
-                    Rectangle()
-                        .fill(.primaryDim)
-                        .frame(width: 32, height: 8)
-                }
-                .frame(width: 64, height: 8)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                
-                // Header (same as Step 1)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Create Habit")
-                        .font(.appHeadlineMediumEmphasised)
-                        .foregroundColor(.text01)
-                    Text("Let's get started!")
-                        .font(.appTitleSmall)
-                        .foregroundColor(.text04)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                // Header
+                CreateHabitHeader(
+                    stepNumber: 2,
+                    onCancel: { dismiss() }
+                )
                 
                 ScrollView {
                     VStack(spacing: 16) {

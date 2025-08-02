@@ -110,44 +110,11 @@ struct CreateHabitStep1View: View {
         ZStack(alignment: .bottom) {
             // Main content
             VStack(spacing: 0) {
-                // Cancel button
-                HStack {
-                    Spacer()
-                    Button("Cancel") {
-                        onCancel()
-                    }
-                    .font(.appTitleMedium)
-                    .foregroundColor(Color(red: 0.15, green: 0.23, blue: 0.42))
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                
-                // Progress indicator
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(.primaryDim)
-                        .frame(width: 32, height: 8)
-                    Rectangle()
-                        .fill(.surfaceContainer)
-                        .frame(width: 32, height: 8)
-                }
-                .frame(width: 64, height: 8)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Create Habit")
-                        .font(.appHeadlineMediumEmphasised)
-                        .foregroundColor(.text01)
-                    Text("Let's get started!")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text04)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                CreateHabitHeader(
+                    stepNumber: 1,
+                    onCancel: onCancel
+                )
                 
                 ScrollView {
                     VStack(spacing: 16) {
