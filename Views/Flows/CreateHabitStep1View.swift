@@ -14,16 +14,17 @@ struct CreateHabitStep1View: View {
     @State private var showingColorSheet = false
     @FocusState private var isNameFieldFocused: Bool
     
-    static let colorOptions: [(Color, String)] = [
-        (Color(red: 0.11, green: 0.15, blue: 0.30), "Navy"),
-        (Color(red: 0.91, green: 0.30, blue: 0.30), "Red"),
-        (Color(red: 0.30, green: 0.91, blue: 0.30), "Green"),
-        (Color(red: 0.91, green: 0.91, blue: 0.30), "Yellow"),
-        (Color(red: 0.91, green: 0.30, blue: 0.91), "Purple"),
-        (Color(red: 0.30, green: 0.91, blue: 0.91), "Cyan"),
-        (Color(red: 0.91, green: 0.60, blue: 0.30), "Orange"),
-        (Color(red: 0.60, green: 0.30, blue: 0.91), "Violet")
-    ]
+    // Cache screen width to avoid repeated UIScreen.main.bounds.width access
+    private let screenWidth = UIScreen.main.bounds.width
+    
+    // Computed properties to optimize habit type button styling
+    private var isFormationSelected: Bool {
+        habitType == .formation
+    }
+    
+    private var isBreakingSelected: Bool {
+        habitType == .breaking
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -68,38 +69,39 @@ struct CreateHabitStep1View: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 
+                // Name field - moved outside ScrollView for better performance
+                VStack {
+                    TextField("Name", text: $name)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text05)
+                        .focused($isNameFieldFocused)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .submitLabel(.done)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .padding(.horizontal, 16)
+                        .background(.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.outline, lineWidth: 1.5)
+                        )
+                        .cornerRadius(12)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            isNameFieldFocused = true
+                        }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Name field
-                        TextField("Name", text: $name)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text05)
-                            .accentColor(.primary)
-                            .focused($isNameFieldFocused)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .padding(.horizontal, 16)
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.outline, lineWidth: 1.5)
-                            )
-                            .cornerRadius(12)
-                            .submitLabel(.done)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                DispatchQueue.main.async {
-                                    isNameFieldFocused = true
-                                }
-                            }
-                        
                         // Description field
                         TextField("Description", text: $description)
                             .font(.appBodyLarge)
                             .foregroundColor(.text05)
                             .accentColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .frame(maxWidth: .infinity, minHeight: 48)
                             .padding(.horizontal, 16)
                             .background(.surface)
                             .overlay(
@@ -109,6 +111,7 @@ struct CreateHabitStep1View: View {
                             .cornerRadius(12)
                             .submitLabel(.done)
                             .contentShape(Rectangle())
+                            .zIndex(1)
                         
                         // Icon selection
                         Button(action: {
@@ -128,6 +131,7 @@ struct CreateHabitStep1View: View {
                             }
                         }
                         .selectionRowStyle()
+                        .zIndex(1)
                         
                         // Color selection
                         Button(action: {
@@ -152,6 +156,7 @@ struct CreateHabitStep1View: View {
                             }
                         }
                         .selectionRowStyle()
+                        .zIndex(1)
                         
                         // Habit type selection
                         VStack(alignment: .leading, spacing: 12) {
@@ -165,21 +170,21 @@ struct CreateHabitStep1View: View {
                                     habitType = .formation
                                 }) {
                                     HStack(spacing: 8) {
-                                        if habitType == .formation {
+                                        if isFormationSelected {
                                             Image(systemName: "checkmark")
                                                 .font(.appLabelSmallEmphasised)
                                                 .foregroundColor(.onPrimary)
                                         }
                                         Text("Habit Building")
-                                            .font(habitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
-                                            .foregroundColor(habitType == .formation ? .onPrimary : .onPrimaryContainer)
+                                            .font(isFormationSelected ? .appLabelLargeEmphasised : .appLabelLarge)
+                                            .foregroundColor(isFormationSelected ? .onPrimary : .onPrimaryContainer)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
-                                    .background(habitType == .formation ? .primary : .primaryContainer)
+                                    .background(isFormationSelected ? .primary : .primaryContainer)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(.outline, lineWidth: 1.5)
@@ -193,21 +198,21 @@ struct CreateHabitStep1View: View {
                                     habitType = .breaking
                                 }) {
                                     HStack(spacing: 8) {
-                                        if habitType == .breaking {
+                                        if isBreakingSelected {
                                             Image(systemName: "checkmark")
                                                 .font(.appLabelSmallEmphasised)
                                                 .foregroundColor(.onPrimary)
                                         }
                                         Text("Habit Breaking")
-                                            .font(habitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
-                                            .foregroundColor(habitType == .breaking ? .onPrimary : .onPrimaryContainer)
+                                            .font(isBreakingSelected ? .appLabelLargeEmphasised : .appLabelLarge)
+                                            .foregroundColor(isBreakingSelected ? .onPrimary : .onPrimaryContainer)
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.8)
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
-                                    .background(habitType == .breaking ? .primary : .primaryContainer)
+                                    .background(isBreakingSelected ? .primary : .primaryContainer)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(.outline, lineWidth: 1.5)
@@ -226,6 +231,7 @@ struct CreateHabitStep1View: View {
                                 .stroke(.outline, lineWidth: 1.5)
                         )
                         .cornerRadius(12)
+                        .zIndex(1)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -244,7 +250,7 @@ struct CreateHabitStep1View: View {
                         Text("Continue")
                             .font(.appButtonText1)
                             .foregroundColor(name.isEmpty ? .text06 : .onPrimary)
-                            .frame(width: UIScreen.main.bounds.width * 0.5)
+                            .frame(width: screenWidth * 0.5)
                             .padding(.vertical, 16)
                             .background(name.isEmpty ? .disabledBackground : .primary)
                             .clipShape(Capsule())
@@ -254,16 +260,15 @@ struct CreateHabitStep1View: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
                 .background(.surface2)
+                .zIndex(2)
             }
         }
         .navigationBarHidden(true)
-        .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             // Auto-focus the name field only on initial load
             if isInitialLoad {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    isNameFieldFocused = true
-                }
+                isNameFieldFocused = true
                 isInitialLoad = false
             }
         }
@@ -290,22 +295,24 @@ struct CreateHabitStep1View: View {
 }
 
 private func colorName(for color: Color) -> String {
-        // Match the colors from ColorBottomSheet
-        let colorOptions: [(Color, String)] = [
-            (Color(hex: "222222"), "Black"),
-            (.primary, "Navy"),
-            (Color(hex: "6096FD"), "Blue"),
-            (Color(hex: "CB30E0"), "Purple"),
-            (Color(hex: "FF2D55"), "Red"),
-            (Color(hex: "FF7838"), "Orange"),
-            (Color(hex: "34C759"), "Green"),
-            (Color(hex: "21EAF1"), "Teal")
-        ]
-        
-        for (optionColor, name) in colorOptions {
-            if color == optionColor {
-                return name
-            }
+        // Use cached color comparisons to avoid expensive Color(hex:) initializations
+        // These colors should match the ones from ColorBottomSheet
+        if color == Color(red: 0.13, green: 0.13, blue: 0.13) { // #222222
+            return "Black"
+        } else if color == .primary {
+            return "Navy"
+        } else if color == Color(red: 0.38, green: 0.59, blue: 0.99) { // #6096FD
+            return "Blue"
+        } else if color == Color(red: 0.80, green: 0.18, blue: 0.88) { // #CB30E0
+            return "Purple"
+        } else if color == Color(red: 1.0, green: 0.18, blue: 0.33) { // #FF2D55
+            return "Red"
+        } else if color == Color(red: 1.0, green: 0.47, blue: 0.22) { // #FF7838
+            return "Orange"
+        } else if color == Color(red: 0.20, green: 0.78, blue: 0.35) { // #34C759
+            return "Green"
+        } else if color == Color(red: 0.13, green: 0.92, blue: 0.95) { // #21EAF1
+            return "Teal"
         }
         return "Navy" // Default fallback
     }

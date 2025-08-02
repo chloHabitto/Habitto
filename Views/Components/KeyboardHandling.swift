@@ -13,8 +13,10 @@ struct KeyboardHandlingModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .ignoresSafeArea(.keyboard, edges: .bottom)
+            .contentShape(Rectangle())
             .onTapGesture {
                 if dismissOnTapOutside {
+                    // Only dismiss if tapping outside of text fields
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
             }
