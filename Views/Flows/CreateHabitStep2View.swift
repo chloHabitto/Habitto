@@ -389,7 +389,6 @@ struct CreateHabitStep2View: View {
                                 }
                             }
                         }
-                        .selectionRowStyle()
                         
                         // Period
                         VStack(alignment: .leading, spacing: 12) {
@@ -545,11 +544,11 @@ struct CreateHabitStep2View: View {
                     
                     VStack(spacing: 4) {
                         ForEach(reminders.filter { $0.isActive }) { reminder in
-                    HStack {
+                            HStack {
                                 Text(formatTime(reminder.time))
                                     .font(.appBodyMedium)
                                     .foregroundColor(.text01)
-                        Spacer()
+                                Spacer()
                                 Text("Active")
                                     .font(.appLabelSmall)
                                     .foregroundColor(.primary)
@@ -562,7 +561,6 @@ struct CreateHabitStep2View: View {
                     }
                 }
             }
-            .selectionRowStyle()
             
             // Period
             VStack(alignment: .leading, spacing: 12) {
