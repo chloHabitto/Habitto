@@ -112,7 +112,7 @@ struct CreateHabitStep2View: View {
     
     private var isTargetValid: Bool {
         let number = Int(target) ?? 0
-        return number > 0
+        return number >= 0  // Allow 0 for reduction goal in habit breaking
     }
     
     // Overall form validation
@@ -636,7 +636,7 @@ struct CreateHabitStep2View: View {
                 
                 // Warning message for invalid target
                 if !isTargetValid {
-                    ErrorMessage(message: "Please enter a number greater than 0")
+                    ErrorMessage(message: "Please enter a number greater than or equal to 0")
                         .padding(.top, 4)
                 }
             }
