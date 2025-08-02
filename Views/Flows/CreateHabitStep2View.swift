@@ -88,6 +88,31 @@ struct CreateHabitStep2View: View {
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
+    // Computed properties for validation
+    private var isGoalValid: Bool {
+        let number = Int(goalNumber) ?? 0
+        return number > 0
+    }
+    
+    private var isBaselineValid: Bool {
+        let number = Int(baseline) ?? 0
+        return number > 0
+    }
+    
+    private var isTargetValid: Bool {
+        let number = Int(target) ?? 0
+        return number > 0
+    }
+    
+    // Overall form validation
+    private var isFormValid: Bool {
+        if step1Data.4 == .formation {
+            return isGoalValid
+        } else {
+            return isBaselineValid && isTargetValid
+        }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -186,12 +211,13 @@ struct CreateHabitStep2View: View {
                     }) {
                         Text("Save")
                             .font(.appButtonText1)
-                            .foregroundColor(.white)
+                            .foregroundColor(isFormValid ? .white : .text06)
                             .frame(width: screenWidth * 0.5)
                             .padding(.vertical, 16)
-                            .background(step1Data.3)
+                            .background(isFormValid ? step1Data.3 : .disabledBackground)
                             .clipShape(Capsule())
                     }
+                    .disabled(!isFormValid)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
@@ -408,6 +434,14 @@ struct CreateHabitStep2View: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
+                            
+                            // Warning message for invalid goal
+                            if !isGoalValid {
+                                Text("Please enter a number greater than 0")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.red)
+                                    .padding(.top, 4)
+                            }
                         }
                         .selectionRowStyle()
                         
@@ -539,6 +573,14 @@ struct CreateHabitStep2View: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
+                
+                // Warning message for invalid baseline
+                if !isBaselineValid {
+                    Text("Please enter a number greater than 0")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.red)
+                        .padding(.top, 4)
+                }
             }
             .selectionRowStyle()
             
@@ -579,6 +621,14 @@ struct CreateHabitStep2View: View {
                         .inputFieldStyle()
                     }
                     .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Warning message for invalid target
+                if !isTargetValid {
+                    Text("Please enter a number greater than 0")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.red)
+                        .padding(.top, 4)
                 }
             }
             .selectionRowStyle()
