@@ -403,11 +403,11 @@ struct CreateHabitStep2View: View {
     private var habitBuildingForm: some View {
         VStack(spacing: 16) {
             // Schedule
-                        SelectionRow(
-                            title: "Schedule",
-                            value: schedule,
-                            action: { showingScheduleSheet = true }
-                        )
+            SelectionRow(
+                title: "Schedule",
+                value: schedule,
+                action: { showingScheduleSheet = true }
+            )
                         
                         // Goal
                         VStack(alignment: .leading, spacing: 12) {
