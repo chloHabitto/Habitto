@@ -803,6 +803,10 @@ struct PopTipButton: UIViewRepresentable {
             popTip?.offset = 8
             popTip?.edgeMargin = 8
             popTip?.padding = 20
+            popTip?.shadowOpacity = 0.15
+            popTip?.shadowRadius = 8
+            popTip?.shadowOffset = CGSize(width: 0, height: 4)
+            popTip?.shadowColor = UIColor.black
             popTip?.shouldShowMask = false
             popTip?.entranceAnimation = .scale
             popTip?.exitAnimation = .scale
