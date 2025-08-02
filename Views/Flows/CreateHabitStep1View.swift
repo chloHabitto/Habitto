@@ -13,6 +13,7 @@ struct CreateHabitStep1View: View {
     @State private var showingIconSheet = false
     @State private var showingColorSheet = false
     @FocusState private var isNameFieldFocused: Bool
+    @FocusState private var isDescriptionFieldFocused: Bool
     
     // Cache screen width to avoid repeated UIScreen.main.bounds.width access
     private let screenWidth = UIScreen.main.bounds.width
@@ -24,6 +25,85 @@ struct CreateHabitStep1View: View {
     
     private var isBreakingSelected: Bool {
         habitType == .breaking
+    }
+    
+    // Custom reusable TextField component
+    private func CustomTextField(
+        placeholder: String,
+        text: Binding<String>,
+        isFocused: FocusState<Bool>.Binding? = nil,
+        showTapGesture: Bool = false
+    ) -> some View {
+        TextField(placeholder, text: text)
+            .font(.appBodyLarge)
+            .foregroundColor(.text05)
+            .textFieldStyle(PlainTextFieldStyle())
+            .submitLabel(.done)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 16)
+            .background(.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(.outline, lineWidth: 1.5)
+            )
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .allowsHitTesting(true)
+            .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
+    }
+    
+    // Custom modifier to handle focus and tap gesture
+    private struct FocusModifier: ViewModifier {
+        let isFocused: FocusState<Bool>.Binding?
+        let showTapGesture: Bool
+        
+        func body(content: Content) -> some View {
+            if let isFocused = isFocused {
+                content
+                    .focused(isFocused)
+                    .onTapGesture {
+                        isFocused.wrappedValue = true
+                    }
+            } else {
+                content
+                    .onTapGesture {
+                        // For fields without focus binding, just ensure they can be tapped
+                        // SwiftUI will handle focus automatically
+                    }
+            }
+        }
+    }
+    
+    // Custom reusable habit type button component
+    private func HabitTypeButton(
+        title: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.appLabelSmallEmphasised)
+                        .foregroundColor(.onPrimary)
+                }
+                Text(title)
+                    .font(isSelected ? .appLabelLargeEmphasised : .appLabelLarge)
+                    .foregroundColor(isSelected ? .onPrimary : .onPrimaryContainer)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(isSelected ? .primary : .primaryContainer)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(.outline, lineWidth: 1.5)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .frame(maxWidth: .infinity)
     }
     
     var body: some View {
@@ -70,47 +150,14 @@ struct CreateHabitStep1View: View {
                 .padding(.top, 20)
                 
                 // Name field - moved outside ScrollView for better performance
-                VStack {
-                    TextField("Name", text: $name)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text05)
-                        .focused($isNameFieldFocused)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .submitLabel(.done)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .padding(.horizontal, 16)
-                        .background(.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline, lineWidth: 1.5)
-                        )
-                        .cornerRadius(12)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            isNameFieldFocused = true
-                        }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                CustomTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused, showTapGesture: true)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 
                 ScrollView {
                     VStack(spacing: 16) {
                         // Description field
-                        TextField("Description", text: $description)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text05)
-                            .accentColor(.primary)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .padding(.horizontal, 16)
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.outline, lineWidth: 1.5)
-                            )
-                            .cornerRadius(12)
-                            .submitLabel(.done)
-                            .contentShape(Rectangle())
+                        CustomTextField(placeholder: "Description", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                             .zIndex(1)
                         
                         // Icon selection
@@ -166,60 +213,14 @@ struct CreateHabitStep1View: View {
                             
                             HStack(spacing: 12) {
                                 // Habit Building button
-                                Button(action: {
+                                HabitTypeButton(title: "Habit Building", isSelected: isFormationSelected) {
                                     habitType = .formation
-                                }) {
-                                    HStack(spacing: 8) {
-                                        if isFormationSelected {
-                                            Image(systemName: "checkmark")
-                                                .font(.appLabelSmallEmphasised)
-                                                .foregroundColor(.onPrimary)
-                                        }
-                                        Text("Habit Building")
-                                            .font(isFormationSelected ? .appLabelLargeEmphasised : .appLabelLarge)
-                                            .foregroundColor(isFormationSelected ? .onPrimary : .onPrimaryContainer)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.8)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(isFormationSelected ? .primary : .primaryContainer)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(.outline, lineWidth: 1.5)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                                .frame(maxWidth: .infinity)
                                 
                                 // Habit Breaking button
-                                Button(action: {
+                                HabitTypeButton(title: "Habit Breaking", isSelected: isBreakingSelected) {
                                     habitType = .breaking
-                                }) {
-                                    HStack(spacing: 8) {
-                                        if isBreakingSelected {
-                                            Image(systemName: "checkmark")
-                                                .font(.appLabelSmallEmphasised)
-                                                .foregroundColor(.onPrimary)
-                                        }
-                                        Text("Habit Breaking")
-                                            .font(isBreakingSelected ? .appLabelLargeEmphasised : .appLabelLarge)
-                                            .foregroundColor(isBreakingSelected ? .onPrimary : .onPrimaryContainer)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.8)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(isBreakingSelected ? .primary : .primaryContainer)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(.outline, lineWidth: 1.5)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                                .frame(maxWidth: .infinity)
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -264,6 +265,16 @@ struct CreateHabitStep1View: View {
             }
         }
         .navigationBarHidden(true)
+        .background(
+            Color.surface2
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Dismiss keyboard when tapping background
+                    isNameFieldFocused = false
+                    isDescriptionFieldFocused = false
+                }
+        )
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             // Auto-focus the name field only on initial load
