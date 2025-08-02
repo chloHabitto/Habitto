@@ -157,7 +157,7 @@ struct CreateHabitStep1View: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         // Description field
-                        CustomTextField(placeholder: "Description", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
+                        CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                             .zIndex(1)
                         
                         // Icon selection
