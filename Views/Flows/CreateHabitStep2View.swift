@@ -605,6 +605,10 @@ struct CreateHabitStep2View: View {
                     // .frame(width: 16, height: 16)
                 }
                 
+                Text("On average, how often do you do this per day/week?")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
+                
                 HStack(spacing: 12) {
                     // Number input field
                     TextField("1", text: $baseline)
@@ -662,6 +666,10 @@ struct CreateHabitStep2View: View {
                     // )
                     // .frame(width: 16, height: 16)
                 }
+                
+                Text("What's your first goal?")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
                 
                 HStack(spacing: 12) {
                     // Number input field
