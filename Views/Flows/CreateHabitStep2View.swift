@@ -144,8 +144,8 @@ struct CreateHabitStep2View: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 100) // Add padding to account for fixed button
+                    .padding(.top, 0)
+                    .padding(.bottom, 20) // Reduced padding since we're using Spacer
                 }
                 .frame(maxHeight: geometry.size.height - 120) // Reserve space for buttons
                 .onTapGesture {
