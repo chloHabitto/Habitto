@@ -410,84 +410,84 @@ struct CreateHabitStep2View: View {
                 value: schedule,
                 action: { showingScheduleSheet = true }
             )
-                        
-                        // Goal
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Goal")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            HStack(spacing: 12) {
-                                // Number input field
-                                TextField("1", text: $goalNumber)
-                                    .font(.appBodyLarge)
+            
+            // Reminder
+            VStack(alignment: .leading, spacing: 8) {
+                SelectionRow(
+                    title: "Reminder",
+                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
+                    action: { showingReminderSheet = true }
+                )
+                
+                if !reminders.isEmpty {
+                    Divider()
+                        .background(.outline)
+                        .padding(.vertical, 4)
+                    
+                    VStack(spacing: 4) {
+                        ForEach(reminders.filter { $0.isActive }) { reminder in
+                            HStack {
+                                Text(formatTime(reminder.time))
+                                    .font(.appBodyMedium)
                                     .foregroundColor(.text01)
-                                    .accentColor(.text01)
-                                    .keyboardType(.numberPad)
-                                    .focused($isGoalNumberFocused)
-                                    .multilineTextAlignment(.center)
-                                    .frame(maxWidth: .infinity)
-                                    .inputFieldStyle()
-                                
-                                // Unit selector button
-                                Button(action: {
-                                    showingUnitSheet = true
-                                }) {
-                                    HStack {
-                                        Text(pluralizedGoalUnit)
-                                            .font(.appBodyLarge)
-                                            .foregroundColor(isGoalValid ? .text04 : .text06)
-                                            .id(uiUpdateTrigger) // Force re-render when trigger changes
-                                        Image(systemName: "chevron.right")
-                                            .font(.appLabelSmall)
-                                            .foregroundColor(.primaryDim)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .inputFieldStyle()
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                Spacer()
+                                Text("Active")
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.primary)
                             }
-                            
-                            // Warning message for invalid goal
-                            if !isGoalValid {
-                                ErrorMessage(message: "Please enter a number greater than 0")
-                                    .padding(.top, 4)
-                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.secondaryContainer)
+                            .cornerRadius(6)
                         }
-                        .selectionRowStyle()
-                        
-                        // Reminder
-                        VStack(alignment: .leading, spacing: 8) {
-                            SelectionRow(
-                                title: "Reminder",
-                                value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
-                                action: { showingReminderSheet = true }
-                            )
-                            
-                            if !reminders.isEmpty {
-                                Divider()
-                                    .background(.outline)
-                                    .padding(.vertical, 4)
-                                
-                                VStack(spacing: 4) {
-                                    ForEach(reminders.filter { $0.isActive }) { reminder in
-                                        HStack {
-                                            Text(formatTime(reminder.time))
-                                                .font(.appBodyMedium)
-                                                .foregroundColor(.text01)
-                                            Spacer()
-                                            Text("Active")
-                                                .font(.appLabelSmall)
-                                                .foregroundColor(.primary)
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(.secondaryContainer)
-                                        .cornerRadius(6)
-                                    }
-                                }
-                            }
+                    }
+                }
+            }
+            
+            // Goal
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Goal")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                HStack(spacing: 12) {
+                    // Number input field
+                    TextField("1", text: $goalNumber)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text01)
+                        .accentColor(.text01)
+                        .keyboardType(.numberPad)
+                        .focused($isGoalNumberFocused)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    
+                    // Unit selector button
+                    Button(action: {
+                        showingUnitSheet = true
+                    }) {
+                        HStack {
+                            Text(pluralizedGoalUnit)
+                                .font(.appBodyLarge)
+                                .foregroundColor(isGoalValid ? .text04 : .text06)
+                                .id(uiUpdateTrigger) // Force re-render when trigger changes
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
                         }
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Warning message for invalid goal
+                if !isGoalValid {
+                    ErrorMessage(message: "Please enter a number greater than 0")
+                        .padding(.top, 4)
+                }
+            }
+            .selectionRowStyle()
                         
                         // Period
                         VStack(alignment: .leading, spacing: 12) {
@@ -545,6 +545,39 @@ struct CreateHabitStep2View: View {
                 value: schedule,
                 action: { showingScheduleSheet = true }
             )
+            
+            // Reminder
+            VStack(alignment: .leading, spacing: 8) {
+                SelectionRow(
+                    title: "Reminder",
+                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
+                    action: { showingReminderSheet = true }
+                )
+                
+                if !reminders.isEmpty {
+                    Divider()
+                        .background(.outline)
+                        .padding(.vertical, 4)
+                    
+                    VStack(spacing: 4) {
+                        ForEach(reminders.filter { $0.isActive }) { reminder in
+                            HStack {
+                                Text(formatTime(reminder.time))
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
+                                Spacer()
+                                Text("Active")
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.secondaryContainer)
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+            }
             
             // Baseline
             VStack(alignment: .leading, spacing: 12) {
@@ -641,39 +674,6 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
-            
-            // Reminder
-            VStack(alignment: .leading, spacing: 8) {
-                SelectionRow(
-                    title: "Reminder",
-                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
-                    action: { showingReminderSheet = true }
-                )
-                
-                if !reminders.isEmpty {
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 4)
-                    
-                    VStack(spacing: 4) {
-                        ForEach(reminders.filter { $0.isActive }) { reminder in
-                            HStack {
-                                Text(formatTime(reminder.time))
-                                    .font(.appBodyMedium)
-                                    .foregroundColor(.text01)
-                                Spacer()
-                                Text("Active")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.secondaryContainer)
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-            }
             
             // Period
             VStack(alignment: .leading, spacing: 12) {
