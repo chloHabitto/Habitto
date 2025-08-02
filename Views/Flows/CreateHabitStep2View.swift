@@ -546,6 +546,134 @@ struct CreateHabitStep2View: View {
     @ViewBuilder
     private var habitBreakingForm: some View {
         VStack(spacing: 16) {
+            // Current Baseline
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("Current Baseline")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    // PopTipButton(
+                    //     text: "On average, how often do you do this per day/week?",
+                    //     tooltipId: "baseline",
+                    //     activeTooltip: activeTooltip,
+                    //     onTooltipChange: { newActiveTooltip in
+                    //         activeTooltip = newActiveTooltip
+                    //     },
+                    //     sharedPopTip: sharedPopTip
+                    // )
+                    // .frame(width: 16, height: 16)
+                }
+                
+                Text("On average, how often do you do this per day/week?")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
+                    .padding(.bottom, 12)
+                
+                HStack(spacing: 12) {
+                    // Number input field
+                    TextField("1", text: $baseline)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text01)
+                        .accentColor(.text01)
+                        .keyboardType(.numberPad)
+                        .focused($isBaselineFieldFocused)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    
+                    // Unit selector button
+                    Button(action: {
+                        showingBaselineUnitSheet = true
+                    }) {
+                        HStack {
+                            Text(pluralizedBaselineUnit)
+                                .font(.appBodyLarge)
+                                .foregroundColor(isBaselineValid ? .text04 : .text06)
+                                .id(uiUpdateTrigger) // Force re-render when trigger changes
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.bottom, 4)
+                
+                // Warning message for invalid baseline
+                if !isBaselineValid {
+                    ErrorMessage(message: "Please enter a number greater than 0")
+                        .padding(.top, 4)
+                }
+            }
+            .selectionRowStyle()
+            
+            // Reduction Goal
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text("Reduction Goal")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    // PopTipButton(
+                    //     text: "What's your first goal?",
+                    //     tooltipId: "target",
+                    //     activeTooltip: activeTooltip,
+                    //     onTooltipChange: { newActiveTooltip in
+                    //         activeTooltip = newActiveTooltip
+                    //     },
+                    //     sharedPopTip: sharedPopTip
+                    // )
+                    // .frame(width: 16, height: 16)
+                }
+                
+                Text("What's your first goal?")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
+                    .padding(.bottom, 12)
+                
+                HStack(spacing: 12) {
+                    // Number input field
+                    TextField("1", text: $target)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text01)
+                        .accentColor(.text01)
+                        .keyboardType(.numberPad)
+                        .focused($isTargetFieldFocused)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    
+                    // Unit selector button
+                    Button(action: {
+                        showingTargetUnitSheet = true
+                    }) {
+                        HStack {
+                            Text(pluralizedTargetUnit)
+                                .font(.appBodyLarge)
+                                .foregroundColor(isTargetValid ? .text04 : .text06)
+                                .id(uiUpdateTrigger) // Force re-render when trigger changes
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .inputFieldStyle()
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.bottom, 4)
+                
+                // Warning message for invalid target
+                if !isTargetValid {
+                    ErrorMessage(message: "Please enter a number greater than or equal to 0")
+                        .padding(.top, 4)
+                }
+            }
+            .selectionRowStyle()
+            
             // Schedule
             SelectionRow(
                 title: "Schedule",
@@ -585,132 +713,6 @@ struct CreateHabitStep2View: View {
                     }
                 }
             }
-            
-            // Current Baseline
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Current Baseline")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    
-                    // PopTipButton(
-                    //     text: "On average, how often do you do this per day/week?",
-                    //     tooltipId: "baseline",
-                    //     activeTooltip: activeTooltip,
-                    //     onTooltipChange: { newActiveTooltip in
-                    //         activeTooltip = newActiveTooltip
-                    //     },
-                    //     sharedPopTip: sharedPopTip
-                    // )
-                    // .frame(width: 16, height: 16)
-                }
-                
-                Text("On average, how often do you do this per day/week?")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                    .padding(.bottom, 8)
-                
-                HStack(spacing: 12) {
-                    // Number input field
-                    TextField("1", text: $baseline)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text01)
-                        .accentColor(.text01)
-                        .keyboardType(.numberPad)
-                        .focused($isBaselineFieldFocused)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    
-                    // Unit selector button
-                    Button(action: {
-                        showingBaselineUnitSheet = true
-                    }) {
-                        HStack {
-                            Text(pluralizedBaselineUnit)
-                                .font(.appBodyLarge)
-                                .foregroundColor(isBaselineValid ? .text04 : .text06)
-                                .id(uiUpdateTrigger) // Force re-render when trigger changes
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                // Warning message for invalid baseline
-                if !isBaselineValid {
-                    ErrorMessage(message: "Please enter a number greater than 0")
-                        .padding(.top, 4)
-                }
-            }
-            .selectionRowStyle()
-            
-            // Reduction Goal
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Reduction Goal")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    
-                    // PopTipButton(
-                    //     text: "What's your first goal?",
-                    //     tooltipId: "target",
-                    //     activeTooltip: activeTooltip,
-                    //     onTooltipChange: { newActiveTooltip in
-                    //         activeTooltip = newActiveTooltip
-                    //     },
-                    //     sharedPopTip: sharedPopTip
-                    // )
-                    // .frame(width: 16, height: 16)
-                }
-                
-                Text("What's your first goal?")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                    .padding(.bottom, 8)
-                
-                HStack(spacing: 12) {
-                    // Number input field
-                    TextField("1", text: $target)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text01)
-                        .accentColor(.text01)
-                        .keyboardType(.numberPad)
-                        .focused($isTargetFieldFocused)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    
-                    // Unit selector button
-                    Button(action: {
-                        showingTargetUnitSheet = true
-                    }) {
-                        HStack {
-                            Text(pluralizedTargetUnit)
-                                .font(.appBodyLarge)
-                                .foregroundColor(isTargetValid ? .text04 : .text06)
-                                .id(uiUpdateTrigger) // Force re-render when trigger changes
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                // Warning message for invalid target
-                if !isTargetValid {
-                    ErrorMessage(message: "Please enter a number greater than or equal to 0")
-                        .padding(.top, 4)
-                }
-            }
-            .selectionRowStyle()
            
             
             // Period
