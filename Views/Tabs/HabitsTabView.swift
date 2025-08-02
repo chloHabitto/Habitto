@@ -165,53 +165,16 @@ struct HabitsTabView: View {
             return today < startDate || today > endDate
         }
         
-        let stats = [
-            ("Active", activeHabits.count),
-            ("Inactive", inactiveHabits.count),
-            ("", 0), // Dummy third tab
-            ("", 0) // Dummy fourth tab
-        ]
+        let tabs = TabItem.createStatsTabs(activeCount: activeHabits.count, inactiveCount: inactiveHabits.count)
         
-        return HStack(spacing: 0) {
-            ForEach(0..<stats.count, id: \.self) { idx in
-                statsTabButton(for: idx, stats: stats)
+        return UnifiedTabBarView(
+            tabs: tabs,
+            selectedIndex: selectedStatsTab,
+            style: .underline
+        ) { index in
+            if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
+                selectedStatsTab = index
             }
-        }
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-    }
-    
-    @ViewBuilder
-    private func statsTabButton(for idx: Int, stats: [(String, Int)]) -> some View {
-        VStack(spacing: 0) {
-            Button(action: { 
-                if idx < 2 { // Only allow clicking for first two tabs (Active, Inactive)
-                    selectedStatsTab = idx 
-                }
-            }) {
-                HStack(spacing: 4) {
-                    Text(stats[idx].0)
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                        .opacity(idx >= 2 ? 0 : 1) // Make third and fourth tab text invisible
-                    Text("\(stats[idx].1)")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                        .opacity(idx >= 2 ? 0 : 1) // Make third and fourth tab text invisible
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .frame(maxWidth: idx >= 2 ? .infinity : nil) // Expand third and fourth tabs
-            .disabled(idx >= 2) // Disable clicking for third and fourth tabs
-            
-            // Bottom stroke for each tab
-            Rectangle()
-                .fill(selectedStatsTab == idx ? .text03 : .divider)
-                .frame(height: 3)
-                .frame(maxWidth: .infinity)
-                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
         }
     }
 }

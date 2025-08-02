@@ -54,7 +54,7 @@ struct HomeTabView: View {
                 selectedDate = today
             }
             
-            print("🏠 HomeTabView: Pre-calculated stats - Total: \(stats[0].1), Undone: \(stats[1].1), Done: \(stats[2].1), New: \(stats[3].1)")
+            print("🏠 HomeTabView: Pre-calculated stats - Total: \(stats.indices.contains(0) ? stats[0].1 : 0), Undone: \(stats.indices.contains(1) ? stats[1].1 : 0), Done: \(stats.indices.contains(2) ? stats[2].1 : 0)")
             
             // Debug: Print each habit's details
             for (index, habit) in habits.enumerated() {
@@ -107,59 +107,18 @@ struct HomeTabView: View {
     
     @ViewBuilder
     private var statsTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<stats.count, id: \.self) { idx in
-                statsTabButton(for: idx)
-
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-    }
-    
-    @ViewBuilder
-    private func statsTabButton(for idx: Int) -> some View {
-        VStack(spacing: 0) {
-            Button(action: { 
-                if idx != 3 && idx < stats.count { // Only allow clicking for non-fourth tabs and ensure bounds
-                    selectedStatsTab = idx 
-                }
-            }) {
-                HStack(spacing: 4) {
-                    if idx < stats.count {
-                        Text(stats[idx].0)
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                            .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
-                        Text("\(stats[idx].1)")
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(selectedStatsTab == idx ? .text03 : .text04)
-                            .opacity(idx == 3 ? 0 : 1) // Make fourth tab text invisible
-                    } else {
-                        // Fallback for when stats array is not ready
-                        Text("--")
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.text04)
-                            .opacity(idx == 3 ? 0 : 1)
-                        Text("0")
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.text04)
-                            .opacity(idx == 3 ? 0 : 1)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 8)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .frame(maxWidth: idx == 3 ? .infinity : nil) // Only expand the fourth tab (index 3)
-            .disabled(idx == 3) // Disable clicking for fourth tab
-            
-            // Bottom stroke for each tab
-            Rectangle()
-                .fill(selectedStatsTab == idx ? .text03 : .divider)
-                .frame(height: 3)
-                .frame(maxWidth: .infinity)
-                .animation(.easeInOut(duration: 0.2), value: selectedStatsTab)
+        let tabs = TabItem.createHomeStatsTabs(
+            totalCount: stats.indices.contains(0) ? stats[0].1 : 0,
+            undoneCount: stats.indices.contains(1) ? stats[1].1 : 0,
+            doneCount: stats.indices.contains(2) ? stats[2].1 : 0
+        )
+        
+        UnifiedTabBarView(
+            tabs: tabs,
+            selectedIndex: selectedStatsTab,
+            style: .underline
+        ) { index in
+            selectedStatsTab = index // All tabs are now clickable
         }
     }
     
@@ -342,8 +301,7 @@ struct HomeTabView: View {
         return [
             ("Total", habitsForDate.count),
             ("Undone", habitsForDate.filter { $0.getProgress(for: selectedDate) == 0 }.count),
-            ("Done", habitsForDate.filter { $0.getProgress(for: selectedDate) > 0 }.count),
-            ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
+            ("Done", habitsForDate.filter { $0.getProgress(for: selectedDate) > 0 }.count)
         ]
     }
     
@@ -619,6 +577,6 @@ struct HomeTabView: View {
         ]
         lastCalculatedStatsDate = selectedDate
         
-        print("🏠 HomeTabView: Updated stats - Total: \(cachedStats[0].1), Undone: \(cachedStats[1].1), Done: \(cachedStats[2].1), New: \(cachedStats[3].1)")
+        print("🏠 HomeTabView: Updated stats - Total: \(cachedStats.indices.contains(0) ? cachedStats[0].1 : 0), Undone: \(cachedStats.indices.contains(1) ? cachedStats[1].1 : 0), Done: \(cachedStats.indices.contains(2) ? cachedStats[2].1 : 0)")
     }
 }

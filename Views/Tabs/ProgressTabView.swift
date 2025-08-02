@@ -96,45 +96,31 @@ struct ProgressTabView: View {
     
     // MARK: - Habit Type Selector
     private var habitTypeSelector: some View {
-        habitTypeTabBar
-            .padding(.top, 8)
-            .padding(.bottom, 8)
+        UnifiedTabBarView(
+            tabs: TabItem.createHabitTypeTabs(),
+            selectedIndex: selectedHabitType == .formation ? 0 : 1,
+            style: .underline
+        ) { index in
+            selectedHabitType = index == 0 ? .formation : .breaking
+        }
+        .padding(.top, 2)
+        .padding(.bottom, 8)
     }
     
     // MARK: - Period Selector
     private var periodSelector: some View {
-        periodTabBar
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
-            .padding(.bottom, 16)
-    }
-    
-    @ViewBuilder
-    private var habitTypeTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<habitTypeStats.count, id: \.self) { idx in
-                habitTypeTabButton(for: idx)
+        UnifiedTabBarView(
+            tabs: TabItem.createPeriodTabs(),
+            selectedIndex: periodStats.firstIndex { $0.1 == selectedPeriod } ?? 0,
+            style: .pill
+        ) { index in
+            if let period = periodStats[index].1 {
+                selectedPeriod = period
             }
         }
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-    }
-    
-    @ViewBuilder
-    private var periodTabBar: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<periodStats.count, id: \.self) { idx in
-                periodTabButton(for: idx)
-            }
-            Spacer()
-        }
-    }
-    
-    private var habitTypeStats: [(String, HabitType?)] {
-        return [
-            ("Building", .formation),
-            ("Breaking", .breaking)
-        ]
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+        .padding(.bottom, 16)
     }
     
     private var periodStats: [(String, TimePeriod?)] {
@@ -144,58 +130,6 @@ struct ProgressTabView: View {
             ("Year", .year),
             ("All", .all)
         ]
-    }
-    
-    @ViewBuilder
-    private func habitTypeTabButton(for idx: Int) -> some View {
-        VStack(spacing: 0) {
-            Button(action: {
-                if let habitType = habitTypeStats[idx].1 {
-                    selectedHabitType = habitType
-                }
-            }) {
-                Text(habitTypeStats[idx].0)
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(selectedHabitType == habitTypeStats[idx].1 ? .text03 : .text04)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .frame(maxWidth: .infinity)
-            
-            // Bottom stroke for each tab
-            Rectangle()
-                .fill(selectedHabitType == habitTypeStats[idx].1 ? .text03 : .divider)
-                .frame(height: 3)
-                .frame(maxWidth: .infinity)
-                .animation(.easeInOut(duration: 0.2), value: selectedHabitType)
-        }
-    }
-    
-    @ViewBuilder
-    private func periodTabButton(for idx: Int) -> some View {
-        Button(action: {
-            if let period = periodStats[idx].1 {
-                selectedPeriod = period
-            }
-        }) {
-            Text(periodStats[idx].0)
-                .font(.appBodyMedium)
-                .fontWeight(.medium)
-                .foregroundColor(selectedPeriod == periodStats[idx].1 ? .onPrimary : .text04)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(selectedPeriod == periodStats[idx].1 ? .primary : .clear)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(selectedPeriod == periodStats[idx].1 ? .clear : .outline, lineWidth: 1.5)
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .animation(.easeInOut(duration: 0.2), value: selectedPeriod)
     }
     
     // MARK: - Performance Overview
