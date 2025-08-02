@@ -74,6 +74,36 @@ struct CreateHabitStep1View: View {
         }
     }
     
+    // Helper function for selection rows with visual elements
+    private func VisualSelectionRow(
+        title: String,
+        color: Color,
+        icon: String? = nil,
+        value: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        if let icon = icon {
+            return AnyView(
+                SelectionRowWithVisual(
+                    title: title,
+                    icon: icon,
+                    color: color,
+                    value: value,
+                    action: action
+                )
+            )
+        } else {
+            return AnyView(
+                SelectionRowWithVisual(
+                    title: title,
+                    color: color,
+                    value: value,
+                    action: action
+                )
+            )
+        }
+    }
+    
     // Custom reusable habit type button component
     private func HabitTypeButton(
         title: String,
@@ -126,23 +156,23 @@ struct CreateHabitStep1View: View {
                         CustomTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                             .zIndex(1)
                         
-                        // Color selection
-                        SelectionRowWithVisual(
-                            title: "Colour",
-                            color: color,
-                            value: colorName(for: color),
-                            action: { showingColorSheet = true }
-                        )
-                        .zIndex(1)
-                        
-                        // Icon selection
-                        SelectionRowWithVisual(
-                            title: "Icon",
-                            icon: icon,
-                            color: color,
-                            value: icon == "None" ? "None" : icon,
-                            action: { showingIconSheet = true }
-                        )
+                        // Color and Icon selection
+                        Group {
+                            VisualSelectionRow(
+                                title: "Colour",
+                                color: color,
+                                value: colorName(for: color),
+                                action: { showingColorSheet = true }
+                            )
+                            
+                            VisualSelectionRow(
+                                title: "Icon",
+                                color: color,
+                                icon: icon,
+                                value: icon == "None" ? "None" : icon,
+                                action: { showingIconSheet = true }
+                            )
+                        }
                         .zIndex(1)
                         
                         // Habit type selection
