@@ -196,19 +196,10 @@ struct CreateHabitStep2View: View {
                 if isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused {
                     HStack {
                         Spacer()
-                        Button(action: {
+                        HabittoButton.mediumFillPrimaryHugging(text: "Done") {
                             isGoalNumberFocused = false
                             isBaselineFieldFocused = false
                             isTargetFieldFocused = false
-                        }) {
-                            Text("Done")
-                                .appButtonTextFont()
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(ColorTokens.primary)
-                                .clipShape(Capsule())
-                                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                         }
                         .padding(.trailing, 20)
                         .padding(.bottom, 20)
