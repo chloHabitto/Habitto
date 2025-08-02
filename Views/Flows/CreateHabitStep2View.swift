@@ -411,46 +411,6 @@ struct CreateHabitStep2View: View {
     @ViewBuilder
     private var habitBuildingForm: some View {
         VStack(spacing: 16) {
-            // Schedule
-            SelectionRow(
-                title: "Schedule",
-                value: schedule,
-                action: { showingScheduleSheet = true }
-            )
-            
-            // Reminder
-            VStack(alignment: .leading, spacing: 8) {
-                SelectionRow(
-                    title: "Reminder",
-                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
-                    action: { showingReminderSheet = true }
-                )
-                
-                if !reminders.isEmpty {
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 4)
-                    
-                    VStack(spacing: 4) {
-                        ForEach(reminders.filter { $0.isActive }) { reminder in
-                            HStack {
-                                Text(formatTime(reminder.time))
-                                    .font(.appBodyMedium)
-                                    .foregroundColor(.text01)
-                                Spacer()
-                                Text("Active")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.secondaryContainer)
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-            }
-            
             // Goal
             VStack(alignment: .leading, spacing: 12) {
                 Text("Goal")
@@ -495,6 +455,46 @@ struct CreateHabitStep2View: View {
                 }
             }
             .selectionRowStyle()
+            
+            // Schedule
+            SelectionRow(
+                title: "Schedule",
+                value: schedule,
+                action: { showingScheduleSheet = true }
+            )
+            
+            // Reminder
+            VStack(alignment: .leading, spacing: 8) {
+                SelectionRow(
+                    title: "Reminder",
+                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
+                    action: { showingReminderSheet = true }
+                )
+                
+                if !reminders.isEmpty {
+                    Divider()
+                        .background(.outline)
+                        .padding(.vertical, 4)
+                    
+                    VStack(spacing: 4) {
+                        ForEach(reminders.filter { $0.isActive }) { reminder in
+                            HStack {
+                                Text(formatTime(reminder.time))
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
+                                Spacer()
+                                Text("Active")
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.secondaryContainer)
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+            }
                         
                         // Period
                         VStack(alignment: .leading, spacing: 12) {
