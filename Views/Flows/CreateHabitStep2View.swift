@@ -91,9 +91,9 @@ struct CreateHabitStep2View: View {
                 
                 ScrollView {
                     VStack(spacing: 16) {
-                        if step1Data.4 == .formation {
-                            // Habit Formation Form
-                            habitFormationForm
+                                if step1Data.4 == .formation {
+            // Habit Building Form
+            habitBuildingForm
                         } else {
                             // Habit Breaking Form
                             habitBreakingForm
@@ -346,155 +346,155 @@ struct CreateHabitStep2View: View {
         }
     }
     
-    // MARK: - Habit Formation Form
+    // MARK: - Habit Building Form
     @ViewBuilder
-    private var habitFormationForm: some View {
+    private var habitBuildingForm: some View {
         VStack(spacing: 16) {
             // Schedule
             Button(action: {
                 showingScheduleSheet = true
-            }) {
-                HStack {
-                    Text("Schedule")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    Spacer()
-                    Text(schedule)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                    Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.primaryDim)
-                }
-                .selectionRowStyle()
-            }
-            
-            // Goal
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Goal")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                HStack(spacing: 12) {
-                    // Number input field
-                    TextField("1", text: $goalNumber)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                        .accentColor(.text01)
-                        .keyboardType(.numberPad)
-                        .focused($isGoalNumberFocused)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    
-                    // Unit selector button
-                    Button(action: {
-                        showingUnitSheet = true
-                    }) {
-                        HStack {
-                            Text(goalUnit)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .selectionRowStyle()
-            
-            // Reminder
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Reminder")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    Spacer()
-                    Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                    Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.primaryDim)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    showingReminderSheet = true
-                }
-                
-                if !reminders.isEmpty {
-                    Divider()
-                        .background(.outline)
-                        .padding(.vertical, 4)
-                    
-                    VStack(spacing: 4) {
-                        ForEach(reminders.filter { $0.isActive }) { reminder in
+                        }) {
                             HStack {
-                                Text(formatTime(reminder.time))
-                                    .font(.appBodyMedium)
+                                Text("Schedule")
+                                    .font(.appTitleMedium)
                                     .foregroundColor(.text01)
                                 Spacer()
-                                Text("Active")
-                                    .font(.appLabelSmall)
-                                    .foregroundColor(.primary)
+                                Text(schedule)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryDim)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(.secondaryContainer)
-                            .cornerRadius(6)
+                            .selectionRowStyle()
                         }
-                    }
-                }
-            }
-            .selectionRowStyle()
-            
-            // Period
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Period")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.primary)
+                        
+                        // Goal
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Goal")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            HStack(spacing: 12) {
+                                // Number input field
+                                TextField("1", text: $goalNumber)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                    .accentColor(.text01)
+                                    .keyboardType(.numberPad)
+                                    .focused($isGoalNumberFocused)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity)
+                                    .inputFieldStyle()
+                                
+                                // Unit selector button
+                                Button(action: {
+                                    showingUnitSheet = true
+                                }) {
+                                    HStack {
+                                        Text(goalUnit)
+                                            .font(.appBodyLarge)
+                                            .foregroundColor(.text04)
+                                        Image(systemName: "chevron.right")
+                                            .font(.appLabelSmall)
+                                            .foregroundColor(.primaryDim)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .inputFieldStyle()
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .selectionRowStyle()
+                        
+                        // Reminder
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Reminder")
+                                    .font(.appTitleMedium)
+                                    .foregroundColor(.text01)
+                                Spacer()
+                                Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text04)
+                                Image(systemName: "chevron.right")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryDim)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                showingReminderSheet = true
+                            }
+                            
+                            if !reminders.isEmpty {
+                                Divider()
+                                    .background(.outline)
+                                    .padding(.vertical, 4)
+                                
+                                VStack(spacing: 4) {
+                                    ForEach(reminders.filter { $0.isActive }) { reminder in
+                                        HStack {
+                                            Text(formatTime(reminder.time))
+                                                .font(.appBodyMedium)
+                                                .foregroundColor(.text01)
+                                            Spacer()
+                                            Text("Active")
+                                                .font(.appLabelSmall)
+                                                .foregroundColor(.primary)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(.secondaryContainer)
+                                        .cornerRadius(6)
+                                    }
+                                }
+                            }
+                        }
+                        .selectionRowStyle()
+                        
+                        // Period
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Period")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.primary)
                 
-                HStack(spacing: 12) {
-                    // Start Date
-                    Button(action: {
+                            HStack(spacing: 12) {
+                                // Start Date
+                                Button(action: {
                         showingStartDateSheet = true
-                    }) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Start Date")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text05)
-                            Text(isToday(startDate) ? "Today" : formatDate(startDate))
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .inputFieldStyle()
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    // End Date
-                    Button(action: {
+                                }) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Start Date")
+                                            .font(.appBodyMedium)
+                                            .foregroundColor(.text05)
+                                        Text(isToday(startDate) ? "Today" : formatDate(startDate))
+                                            .font(.appBodyLarge)
+                                            .foregroundColor(.text04)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .inputFieldStyle()
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                
+                                // End Date
+                                Button(action: {
                         showingEndDateSheet = true
-                    }) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("End Date")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text05)
-                            Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .inputFieldStyle()
+                                }) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("End Date")
+                                            .font(.appBodyMedium)
+                                            .foregroundColor(.text05)
+                                        Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
+                                            .font(.appBodyLarge)
+                                            .foregroundColor(.text04)
+                                            .frame(maxWidth: .infinity, alignment: .center)
+                                            .inputFieldStyle()
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
                         }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .selectionRowStyle()
+                        .selectionRowStyle()
         }
     }
     
@@ -616,7 +616,7 @@ struct CreateHabitStep2View: View {
                         .foregroundColor(.primaryDim)
                 }
                 .contentShape(Rectangle())
-                .onTapGesture {
+        .onTapGesture {
                     showingReminderSheet = true
                 }
                 
@@ -627,11 +627,11 @@ struct CreateHabitStep2View: View {
                     
                     VStack(spacing: 4) {
                         ForEach(reminders.filter { $0.isActive }) { reminder in
-                            HStack {
+                    HStack {
                                 Text(formatTime(reminder.time))
                                     .font(.appBodyMedium)
                                     .foregroundColor(.text01)
-                                Spacer()
+                        Spacer()
                                 Text("Active")
                                     .font(.appLabelSmall)
                                     .foregroundColor(.primary)

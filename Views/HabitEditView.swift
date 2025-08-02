@@ -306,7 +306,7 @@ struct HabitEditView: View {
                 .foregroundColor(.text01)
             
             HStack(spacing: 12) {
-                // Habit Formation button
+                // Habit Building button
                 Button(action: {
                     selectedHabitType = .formation
                 }) {
@@ -316,7 +316,7 @@ struct HabitEditView: View {
                                 .font(.appLabelSmallEmphasised)
                                 .foregroundColor(.onPrimary)
                         }
-                        Text("Habit Formation")
+                        Text("Habit Building")
                             .font(selectedHabitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
                             .foregroundColor(selectedHabitType == .formation ? .onPrimary : .onPrimaryContainer)
                             .lineLimit(1)

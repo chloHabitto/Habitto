@@ -153,7 +153,7 @@ struct CreateHabitStep1View: View {
                                 .foregroundColor(.text01)
                             
                             HStack(spacing: 12) {
-                                // Habit Formation button
+                                // Habit Building button
                                 Button(action: {
                                     habitType = .formation
                                 }) {
@@ -163,7 +163,7 @@ struct CreateHabitStep1View: View {
                                                 .font(.appLabelSmallEmphasised)
                                                 .foregroundColor(.onPrimary)
                                         }
-                                        Text("Habit Formation")
+                                        Text("Habit Building")
                                             .font(habitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
                                             .foregroundColor(habitType == .formation ? .onPrimary : .onPrimaryContainer)
                                             .lineLimit(1)

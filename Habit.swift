@@ -195,7 +195,7 @@ struct Habit: Identifiable, Codable {
 }
 
 enum HabitType: String, CaseIterable, Codable {
-    case formation = "Habit Formation"
+            case formation = "Habit Building"
     case breaking = "Habit Breaking"
 }
 

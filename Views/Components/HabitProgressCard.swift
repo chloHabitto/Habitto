@@ -36,9 +36,16 @@ struct HabitProgressCard: View {
                     .scaleEffect(x: 1, y: 2, anchor: .center)
                 
                 HStack {
-                    Text("\(Int(habitProgress.completionPercentage))%")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(.text03)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(Int(habitProgress.completionPercentage))%")
+                            .font(.appTitleMedium)
+                            .fontWeight(.bold)
+                            .foregroundColor(.text01)
+                        
+                        Text(metricLabel)
+                            .font(.appCaptionSmall)
+                            .foregroundColor(.text05)
+                    }
                     
                     Spacer()
                     
@@ -77,6 +84,8 @@ struct HabitProgressCard: View {
             return .warning
         case .atRisk:
             return .error
+        case .newHabit:
+            return .primary
         case .excellentReduction:
             return .success
         case .goodReduction:
@@ -85,6 +94,15 @@ struct HabitProgressCard: View {
             return .warning
         case .needsMoreReduction:
             return .error
+        }
+    }
+    
+    private var metricLabel: String {
+        switch habitProgress.habit.habitType {
+        case .formation:
+            return "completion"
+        case .breaking:
+            return "reduction"
         }
     }
 }

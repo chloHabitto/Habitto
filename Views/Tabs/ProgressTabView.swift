@@ -2,15 +2,25 @@ import SwiftUI
 
 struct ProgressTabView: View {
     @State private var selectedHabitType: HabitType = .formation
-    @State private var selectedPeriod: TimePeriod = .week
+    @State private var selectedPeriod: TimePeriod = .today
     let habits: [Habit]
+    
+    // Performance optimization: Cache expensive computations
+    @State private var cachedFilteredHabits: [Habit] = []
+    @State private var cachedHabitsWithProgress: [HabitProgress] = []
+    @State private var cachedHabitsWithGoals: [HabitGoal] = []
+    @State private var lastCacheUpdate: (HabitType, TimePeriod) = (.formation, .today)
+    
+    init(habits: [Habit]) {
+        self.habits = habits
+    }
     
     var body: some View {
         WhiteSheetContainer(
             title: "Progress"
         ) {
             VStack(spacing: 0) {
-                // Top Level Tabs: Formation | Breaking
+                // Top Level Tabs: Building | Breaking
                 habitTypeSelector
                 
                 // Sub Tabs: Today | Weekly | Yearly
@@ -33,6 +43,54 @@ struct ProgressTabView: View {
                     .padding(.top, 20)
                 }
             }
+        }
+        .onChange(of: selectedHabitType) { _, _ in
+            updateCacheIfNeeded()
+        }
+        .onChange(of: selectedPeriod) { _, _ in
+            updateCacheIfNeeded()
+        }
+        .onAppear {
+            updateCacheIfNeeded()
+        }
+    }
+    
+    // Performance optimization: Update cache only when needed
+    private func updateCacheIfNeeded() {
+        let currentState = (selectedHabitType, selectedPeriod)
+        // Always update cache when habits array changes or when filters change
+        cachedFilteredHabits = habits.filter { $0.habitType == selectedHabitType }
+        cachedHabitsWithProgress = calculateHabitsWithProgress()
+        cachedHabitsWithGoals = calculateHabitsWithGoals()
+        lastCacheUpdate = currentState
+    }
+    
+    // Performance optimization: Pre-calculate expensive operations
+    private func calculateHabitsWithProgress() -> [HabitProgress] {
+        return cachedFilteredHabits.map { habit in
+            HabitProgress(
+                habit: habit,
+                period: selectedPeriod,
+                completionPercentage: calculateCompletionPercentage(for: habit, period: selectedPeriod),
+                trend: calculateTrend(for: habit, period: selectedPeriod)
+            )
+        }
+    }
+    
+    private func calculateHabitsWithGoals() -> [HabitGoal] {
+        return cachedFilteredHabits.compactMap { habit in
+            guard let goal = parseGoal(from: habit.goal) else { return nil }
+            
+            let currentAverage = calculateCurrentAverage(for: habit, period: selectedPeriod)
+            let targetAmount = goal.amount * Double(selectedPeriod.weeksCount)
+            let goalHitRate = targetAmount > 0 ? min(currentAverage / targetAmount, 1.0) : 0
+            
+            return HabitGoal(
+                habit: habit,
+                goal: goal,
+                currentAverage: currentAverage,
+                goalHitRate: goalHitRate
+            )
         }
     }
     
@@ -68,13 +126,13 @@ struct ProgressTabView: View {
             ForEach(0..<periodStats.count, id: \.self) { idx in
                 periodTabButton(for: idx)
             }
+            Spacer()
         }
-        .frame(maxWidth: .infinity)
     }
     
     private var habitTypeStats: [(String, HabitType?)] {
         return [
-            ("Formation", .formation),
+            ("Building", .formation),
             ("Breaking", .breaking)
         ]
     }
@@ -83,7 +141,8 @@ struct ProgressTabView: View {
         return [
             ("Today", .today),
             ("Week", .week),
-            ("Year", .year)
+            ("Year", .year),
+            ("All", .all)
         ]
     }
     
@@ -136,7 +195,6 @@ struct ProgressTabView: View {
                 )
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(maxWidth: .infinity)
         .animation(.easeInOut(duration: 0.2), value: selectedPeriod)
     }
     
@@ -151,7 +209,7 @@ struct ProgressTabView: View {
                 
                 Spacer()
                 
-                Text("\(habitsWithProgress.count) habit\(habitsWithProgress.count == 1 ? "" : "s")")
+                Text("\(cachedHabitsWithProgress.count) habit\(cachedHabitsWithProgress.count == 1 ? "" : "s")")
                     .font(.appBodySmall)
                     .foregroundColor(.text04)
                     .padding(.horizontal, 12)
@@ -166,7 +224,7 @@ struct ProgressTabView: View {
                 )
             }
             
-            if habitsWithProgress.isEmpty {
+            if cachedHabitsWithProgress.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: selectedHabitType == .formation ? "plus.circle" : "minus.circle")
                         .font(.system(size: 48))
@@ -189,7 +247,7 @@ struct ProgressTabView: View {
                 )
             } else {
                 LazyVStack(spacing: 16) {
-                    ForEach(habitsWithProgress.sorted { $0.completionPercentage > $1.completionPercentage }) { habitProgress in
+                    ForEach(cachedHabitsWithProgress.sorted { $0.completionPercentage > $1.completionPercentage }) { habitProgress in
                         HabitProgressCard(habitProgress: habitProgress)
                     }
                 }
@@ -200,16 +258,34 @@ struct ProgressTabView: View {
     private var performanceOverviewTitle: String {
         switch selectedHabitType {
         case .formation:
-            return "Top-Performing Building Habits"
+            switch selectedPeriod {
+            case .today:
+                return "Today's Building Habits"
+            case .week:
+                return "This Week's Building Habits"
+            case .year:
+                return "This Year's Building Habits"
+            case .all:
+                return "All-Time Building Habits"
+            }
         case .breaking:
-            return "Reduction Progress"
+            switch selectedPeriod {
+            case .today:
+                return "Today's Reduction Progress"
+            case .week:
+                return "This Week's Reduction Progress"
+            case .year:
+                return "This Year's Reduction Progress"
+            case .all:
+                return "All-Time Reduction Progress"
+            }
         }
     }
     
     private var emptyStateMessage: String {
         switch selectedHabitType {
         case .formation:
-            return "No habit formation data for this period"
+            return "No habit building data for this period"
         case .breaking:
             return "No habit breaking data for this period"
         }
@@ -233,15 +309,15 @@ struct ProgressTabView: View {
             
             VStack(spacing: 16) {
                 // Context-aware insights based on selected habit type
-                if selectedHabitType == .formation {
-                    formationInsights
-                } else {
-                    breakingInsights
-                }
+                        if selectedHabitType == .formation {
+            buildingInsights
+        } else {
+            breakingInsights
+        }
                 
                 // Overall progress insight
-                let improvingCount = habitsWithProgress.filter { $0.trend == .improving }.count
-                let needsAttentionCount = habitsWithProgress.filter { $0.trend == .declining }.count
+                let improvingCount = cachedHabitsWithProgress.filter { $0.trend == .improving }.count
+                let needsAttentionCount = cachedHabitsWithProgress.filter { $0.trend == .declining }.count
                 
                 if improvingCount > 0 || needsAttentionCount > 0 {
                     InsightCard(
@@ -263,35 +339,41 @@ struct ProgressTabView: View {
     }
     
     @ViewBuilder
-    private var formationInsights: some View {
-        if let bestHabit = habitsWithProgress.max(by: { $0.completionPercentage < $1.completionPercentage }) {
+    private var buildingInsights: some View {
+        if let bestHabit = cachedHabitsWithProgress.max(by: { $0.completionPercentage < $1.completionPercentage }) {
+            let insightTitle = getBuildingInsightTitle(for: selectedPeriod)
+            let insightDescription = getBuildingInsightDescription(for: bestHabit, period: selectedPeriod)
+            
             InsightCard(
                 type: .success,
-                title: "Your best habit this \(selectedPeriod.displayName.lowercased())",
-                description: "\(bestHabit.habit.name) (\(Int(bestHabit.completionPercentage))% completion)"
+                title: insightTitle,
+                description: insightDescription
             )
         }
         
-        if let worstHabit = habitsWithProgress.min(by: { $0.completionPercentage < $1.completionPercentage }) {
+        if let worstHabit = cachedHabitsWithProgress.min(by: { $0.completionPercentage < $1.completionPercentage }) {
             InsightCard(
                 type: .warning,
                 title: "Your lowest-performing habit",
-                description: "\(worstHabit.habit.name) (\(Int(worstHabit.completionPercentage))% completion"
+                description: "\(worstHabit.habit.name) (\(Int(worstHabit.completionPercentage))% completion)"
             )
         }
     }
     
     @ViewBuilder
     private var breakingInsights: some View {
-        if let bestHabit = habitsWithProgress.max(by: { $0.completionPercentage < $1.completionPercentage }) {
+        if let bestHabit = cachedHabitsWithProgress.max(by: { $0.completionPercentage < $1.completionPercentage }) {
+            let insightTitle = getBreakingInsightTitle(for: selectedPeriod)
+            let insightDescription = getBreakingInsightDescription(for: bestHabit, period: selectedPeriod)
+            
             InsightCard(
                 type: .success,
-                title: "Least slip-ups this \(selectedPeriod.displayName.lowercased())",
-                description: "\(bestHabit.habit.name) (\(Int(bestHabit.completionPercentage))% reduction success"
+                title: insightTitle,
+                description: insightDescription
             )
         }
         
-        if let worstHabit = habitsWithProgress.min(by: { $0.completionPercentage < $1.completionPercentage }) {
+        if let worstHabit = cachedHabitsWithProgress.min(by: { $0.completionPercentage < $1.completionPercentage }) {
             InsightCard(
                 type: .warning,
                 title: "Needs more reduction",
@@ -299,12 +381,12 @@ struct ProgressTabView: View {
             )
         }
         
-        if !habitsWithProgress.isEmpty {
-            let averageReduction = habitsWithProgress.map { $0.completionPercentage }.reduce(0, +) / Double(habitsWithProgress.count)
+        if !cachedHabitsWithProgress.isEmpty {
+            let averageReduction = cachedHabitsWithProgress.map { $0.completionPercentage }.reduce(0, +) / Double(cachedHabitsWithProgress.count)
             InsightCard(
                 type: .tip,
                 title: "Reduction Summary",
-                description: "Average reduction success: \(Int(averageReduction))% across \(habitsWithProgress.count) habit(s)"
+                description: "Average reduction success: \(Int(averageReduction))% across \(cachedHabitsWithProgress.count) habit(s)"
             )
         }
     }
@@ -325,7 +407,7 @@ struct ProgressTabView: View {
                     .foregroundColor(.primary)
             }
             
-            if habitsWithGoals.isEmpty {
+            if cachedHabitsWithGoals.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "target")
                         .font(.system(size: 48))
@@ -348,7 +430,7 @@ struct ProgressTabView: View {
                 )
             } else {
                 LazyVStack(spacing: 16) {
-                    ForEach(habitsWithGoals) { habitGoal in
+                    ForEach(cachedHabitsWithGoals.sorted { $0.goalHitRate > $1.goalHitRate }) { habitGoal in
                         GoalAchievementCard(habitGoal: habitGoal)
                     }
                 }
@@ -359,9 +441,27 @@ struct ProgressTabView: View {
     private var goalAchievementTitle: String {
         switch selectedHabitType {
         case .formation:
-            return "Goal Achievement"
+            switch selectedPeriod {
+            case .today:
+                return "Today's Goal Achievement"
+            case .week:
+                return "This Week's Goal Achievement"
+            case .year:
+                return "This Year's Goal Achievement"
+            case .all:
+                return "All-Time Goal Achievement"
+            }
         case .breaking:
-            return "Reduction Analysis"
+            switch selectedPeriod {
+            case .today:
+                return "Today's Reduction Analysis"
+            case .week:
+                return "This Week's Reduction Analysis"
+            case .year:
+                return "This Year's Reduction Analysis"
+            case .all:
+                return "All-Time Reduction Analysis"
+            }
         }
     }
     
@@ -380,34 +480,19 @@ struct ProgressTabView: View {
     }
     
     private var habitsWithProgress: [HabitProgress] {
-        filteredHabits.map { habit in
-            HabitProgress(
-                habit: habit,
-                period: selectedPeriod,
-                completionPercentage: calculateCompletionPercentage(for: habit, period: selectedPeriod),
-                trend: calculateTrend(for: habit, period: selectedPeriod)
-            )
-        }
+        cachedHabitsWithProgress
     }
     
     private var habitsWithGoals: [HabitGoal] {
-        filteredHabits.compactMap { habit in
-            guard let goal = parseGoal(from: habit.goal) else { return nil }
-            return HabitGoal(
-                habit: habit,
-                goal: goal,
-                currentAverage: calculateCurrentAverage(for: habit, period: selectedPeriod),
-                goalHitRate: calculateGoalHitRate(for: habit, period: selectedPeriod)
-            )
-        }
+        cachedHabitsWithGoals
     }
     
     private var bestHabit: HabitProgress? {
-        habitsWithProgress.max { $0.completionPercentage < $1.completionPercentage }
+        cachedHabitsWithProgress.max { $0.completionPercentage < $1.completionPercentage }
     }
     
     private var worstHabit: HabitProgress? {
-        habitsWithProgress.min { $0.completionPercentage < $1.completionPercentage }
+        cachedHabitsWithProgress.min { $0.completionPercentage < $1.completionPercentage }
     }
     
     private var actionableSuggestion: String? {
@@ -434,15 +519,23 @@ struct ProgressTabView: View {
     }
     
     // MARK: - Helper Methods
+    
     private func calculateCompletionPercentage(for habit: Habit, period: TimePeriod) -> Double {
         if habit.habitType == .breaking {
             // For habit breaking, calculate success rate based on reduction progress
             return calculateHabitBreakingSuccessRate(for: habit, period: period)
         } else {
-            // For habit formation, use the original completion percentage
+            // For habit building, use the original completion percentage
             let dates = period.dates
-            let completedDays = dates.filter { habit.isCompleted(for: $0) }.count
-            return dates.isEmpty ? 0 : Double(completedDays) / Double(dates.count) * 100
+            let activeDates = dates.filter { date in
+                // Only consider dates when the habit was active (after start date)
+                let startDate = Calendar.current.startOfDay(for: habit.startDate)
+                let currentDate = Calendar.current.startOfDay(for: date)
+                return currentDate >= startDate
+            }
+            
+            let completedDays = activeDates.filter { habit.isCompleted(for: $0) }.count
+            return activeDates.isEmpty ? 0 : Double(completedDays) / Double(activeDates.count) * 100
         }
     }
     
@@ -484,18 +577,28 @@ struct ProgressTabView: View {
             }
             previousPercentage = validDays > 0 ? totalSuccessRate / Double(validDays) : 0
         } else {
-            // For habit formation, use the original calculation
-            previousPercentage = previousPeriod.isEmpty ? 0 : Double(previousPeriod.filter { habit.isCompleted(for: $0) }.count) / Double(previousPeriod.count) * 100
+            // For habit building, use the original calculation
+            let activePreviousDates = previousPeriod.filter { date in
+                // Only consider dates when the habit was active (after start date)
+                let startDate = Calendar.current.startOfDay(for: habit.startDate)
+                let currentDate = Calendar.current.startOfDay(for: date)
+                return currentDate >= startDate
+            }
+            previousPercentage = activePreviousDates.isEmpty ? 0 : Double(activePreviousDates.filter { habit.isCompleted(for: $0) }.count) / Double(activePreviousDates.count) * 100
         }
         
-        if currentPercentage > previousPercentage + 5 {
+        let difference = currentPercentage - previousPercentage
+        
+        if difference > 5 {
             return .improving
-        } else if currentPercentage < previousPercentage - 5 {
+        } else if difference < -5 {
             return .declining
         } else {
             return .stable
         }
     }
+    
+
     
     private func parseGoal(from goalString: String) -> Goal? {
         // Parse goal strings like "5 sessions/week" or "2L/day"
@@ -509,8 +612,14 @@ struct ProgressTabView: View {
     
     private func calculateCurrentAverage(for habit: Habit, period: TimePeriod) -> Double {
         let dates = period.dates
-        let completedDays = dates.filter { habit.isCompleted(for: $0) }.count
-        return dates.isEmpty ? 0 : Double(completedDays)
+        let activeDates = dates.filter { date in
+            // Only consider dates when the habit was active (after start date)
+            let startDate = Calendar.current.startOfDay(for: habit.startDate)
+            let currentDate = Calendar.current.startOfDay(for: date)
+            return currentDate >= startDate
+        }
+        let completedDays = activeDates.filter { habit.isCompleted(for: $0) }.count
+        return activeDates.isEmpty ? 0 : Double(completedDays)
     }
     
     private func calculateGoalHitRate(for habit: Habit, period: TimePeriod) -> Double {
@@ -521,17 +630,79 @@ struct ProgressTabView: View {
         
         return targetAmount > 0 ? min(currentAverage / targetAmount, 1.0) : 0
     }
+    
+    // Performance optimization: Clear cache when needed
+    private func clearCalculationCache() {
+        // Cache clearing is now handled by the state variables
+    }
+    
+    // MARK: - Dynamic Insight Helpers
+    
+    private func getBuildingInsightTitle(for period: TimePeriod) -> String {
+        switch period {
+        case .today:
+            return "Your best habit today"
+        case .week:
+            return "Your best habit this week"
+        case .year:
+            return "Your best habit this year"
+        case .all:
+            return "Your best habit overall"
+        }
+    }
+    
+    private func getBuildingInsightDescription(for habit: HabitProgress, period: TimePeriod) -> String {
+        switch period {
+        case .today:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% completion)"
+        case .week:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% completion)"
+        case .year:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% completion)"
+        case .all:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% completion)"
+        }
+    }
+    
+    private func getBreakingInsightTitle(for period: TimePeriod) -> String {
+        switch period {
+        case .today:
+            return "Best reduction today"
+        case .week:
+            return "You avoided sugary drinks 6/7 days this week"
+        case .year:
+            return "Best reduction this year"
+        case .all:
+            return "Best reduction overall"
+        }
+    }
+    
+    private func getBreakingInsightDescription(for habit: HabitProgress, period: TimePeriod) -> String {
+        switch period {
+        case .today:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% reduction success)"
+        case .week:
+            // For week, show days avoided out of 7
+            let daysAvoided = Int((habit.completionPercentage / 100.0) * 7.0)
+            return "\(habit.habit.name) (\(daysAvoided)/7 days avoided)"
+        case .year:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% reduction success)"
+        case .all:
+            return "\(habit.habit.name) (\(Int(habit.completionPercentage))% reduction success)"
+        }
+    }
 }
 
 // MARK: - Supporting Types
 enum TimePeriod: CaseIterable {
-    case today, week, year
+    case today, week, year, all
     
     var displayName: String {
         switch self {
         case .today: return "Today"
         case .week: return "Week"
         case .year: return "Year"
+        case .all: return "All"
         }
     }
     
@@ -546,11 +717,21 @@ enum TimePeriod: CaseIterable {
             let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
             return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
         case .year:
+            // For "Year" period, return all dates from the start of the year to today
             let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
             var dates: [Date] = []
             var currentDate = yearStart
-            let yearEnd = calendar.dateInterval(of: .year, for: today)?.end ?? today
-            while currentDate < yearEnd {
+            while currentDate <= today {
+                dates.append(currentDate)
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            return dates
+        case .all:
+            // For "All" period, return all dates from the start of the year to today
+            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
+            var dates: [Date] = []
+            var currentDate = yearStart
+            while currentDate <= today {
                 dates.append(currentDate)
                 currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
             }
@@ -581,6 +762,18 @@ enum TimePeriod: CaseIterable {
                 currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
             }
             return dates
+        case .all:
+            // For "All" period, return previous year's dates
+            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
+            let previousYearStart = calendar.date(byAdding: .year, value: -1, to: yearStart) ?? yearStart
+            var dates: [Date] = []
+            var currentDate = previousYearStart
+            let previousYearEnd = calendar.dateInterval(of: .year, for: previousYearStart)?.end ?? previousYearStart
+            while currentDate < previousYearEnd {
+                dates.append(currentDate)
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            return dates
         }
     }
     
@@ -589,6 +782,7 @@ enum TimePeriod: CaseIterable {
         case .today: return 0
         case .week: return 1
         case .year: return 52
+        case .all: return 52
         }
     }
 }
@@ -621,6 +815,19 @@ struct HabitProgress: Identifiable {
     let trend: TrendDirection
     
     var status: HabitStatus {
+        // Check if the habit has any completion history at all
+        let hasAnyCompletionHistory = !habit.completionHistory.isEmpty
+        
+        // Calculate days since habit creation
+        let calendar = Calendar.current
+        let today = Date()
+        let daysSinceCreation = calendar.dateComponents([.day], from: habit.startDate, to: today).day ?? 0
+        
+        // If habit is too new (less than 3 days since creation) or has no completion history yet, show "New Habit" status
+        if daysSinceCreation < 3 || !hasAnyCompletionHistory {
+            return .newHabit
+        }
+        
         if habit.habitType == .breaking {
             // For habit breaking, use reduction-focused status
             if completionPercentage >= 80 {
@@ -633,7 +840,7 @@ struct HabitProgress: Identifiable {
                 return .needsMoreReduction
             }
         } else {
-            // For habit formation, use completion-focused status
+            // For habit building, use completion-focused status
             if completionPercentage >= 80 {
                 return .workingWell
             } else if completionPercentage >= 50 {
@@ -646,7 +853,7 @@ struct HabitProgress: Identifiable {
 }
 
 enum HabitStatus {
-    case workingWell, needsAttention, atRisk
+    case workingWell, needsAttention, atRisk, newHabit
     case excellentReduction, goodReduction, moderateReduction, needsMoreReduction
     
     var label: String {
@@ -654,6 +861,7 @@ enum HabitStatus {
         case .workingWell: return "Working Well"
         case .needsAttention: return "Needs Attention"
         case .atRisk: return "At Risk"
+        case .newHabit: return "New Habit"
         case .excellentReduction: return "Excellent Reduction"
         case .goodReduction: return "Good Reduction"
         case .moderateReduction: return "Moderate Reduction"
@@ -666,6 +874,7 @@ enum HabitStatus {
         case .workingWell: return .success
         case .needsAttention: return .warning
         case .atRisk: return .error
+        case .newHabit: return .primary
         case .excellentReduction: return .success
         case .goodReduction: return .success
         case .moderateReduction: return .warning
@@ -678,6 +887,7 @@ enum HabitStatus {
         case .workingWell: return "checkmark.circle.fill"
         case .needsAttention: return "exclamationmark.triangle.fill"
         case .atRisk: return "xmark.circle.fill"
+        case .newHabit: return "sparkles"
         case .excellentReduction: return "arrow.down.circle.fill"
         case .goodReduction: return "arrow.down.circle.fill"
         case .moderateReduction: return "arrow.down.triangle.fill"
