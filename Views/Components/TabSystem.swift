@@ -100,7 +100,7 @@ struct UnderlineTabButton: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 12)
 //                .background(.red)
                 .overlay(
                     // Bottom stroke - only show for selected tabs
@@ -156,10 +156,10 @@ extension TabItem {
         ]
     }
     
-    static func createHabitTypeTabs() -> [TabItem] {
+    static func createHabitTypeTabs(buildingCount: Int, breakingCount: Int) -> [TabItem] {
         return [
-            TabItem(title: "Building", data: HabitType.formation),
-            TabItem(title: "Breaking", data: HabitType.breaking)
+            TabItem(title: "Building", value: "\(buildingCount)", data: HabitType.formation),
+            TabItem(title: "Breaking", value: "\(breakingCount)", data: HabitType.breaking)
         ]
     }
     

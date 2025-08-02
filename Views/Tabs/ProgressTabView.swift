@@ -97,7 +97,10 @@ struct ProgressTabView: View {
     // MARK: - Habit Type Selector
     private var habitTypeSelector: some View {
         UnifiedTabBarView(
-            tabs: TabItem.createHabitTypeTabs(),
+            tabs: TabItem.createHabitTypeTabs(
+                buildingCount: habits.filter { $0.habitType == .formation }.count,
+                breakingCount: habits.filter { $0.habitType == .breaking }.count
+            ),
             selectedIndex: selectedHabitType == .formation ? 0 : 1,
             style: .underline
         ) { index in
