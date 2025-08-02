@@ -2,14 +2,17 @@ import SwiftUI
 
 // MARK: - Button Sizes
 enum ButtonSize {
+    case xLarge
     case large
     case medium
     case small
     
     var horizontalPadding: CGFloat {
         switch self {
+        case .xLarge:
+            return 32
         case .large:
-            return 24
+            return 28
         case .medium:
             return 24
         case .small:
@@ -19,6 +22,8 @@ enum ButtonSize {
     
     var height: CGFloat {
         switch self {
+        case .xLarge:
+            return 64
         case .large:
             return 56
         case .medium:
@@ -30,6 +35,8 @@ enum ButtonSize {
     
     var iconSize: CGFloat {
         switch self {
+        case .xLarge:
+            return 32
         case .large:
             return 24
         case .medium:
@@ -41,6 +48,8 @@ enum ButtonSize {
     
     var containerSize: CGFloat {
         switch self {
+        case .xLarge:
+            return 64
         case .large:
             return 48
         case .medium:
@@ -52,6 +61,8 @@ enum ButtonSize {
     
     var font: Font {
         switch self {
+        case .xLarge:
+            return .appButtonText1
         case .large:
             return .appButtonText1
         case .medium:

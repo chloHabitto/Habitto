@@ -72,7 +72,7 @@ struct HabittoButton: View {
             .frame(maxWidth: hugging ? nil : .infinity)
             .frame(height: size.height)
             .background(style.backgroundColor(for: state))
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .clipShape(RoundedRectangle(cornerRadius: size.height / 2))
     }
     
     @ViewBuilder
@@ -83,7 +83,7 @@ struct HabittoButton: View {
             .foregroundColor(style.iconColor(for: state))
             .frame(width: size.containerSize, height: size.containerSize)
             .background(style.backgroundColor(for: state))
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .clipShape(RoundedRectangle(cornerRadius: size.containerSize / 2))
     }
     
     @ViewBuilder
@@ -102,7 +102,7 @@ struct HabittoButton: View {
         .frame(maxWidth: hugging ? nil : .infinity)
         .frame(height: size.height)
         .background(style.backgroundColor(for: state))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .clipShape(RoundedRectangle(cornerRadius: size.height / 2))
     }
 }
 
@@ -147,6 +147,21 @@ extension HabittoButton {
         HabittoButton(
             size: .large,
             style: .fillNeutral,
+            content: .icon(iconName),
+            state: state,
+            action: action
+        )
+    }
+    
+    // Large Fill Tertiary Icon Only Button
+    static func largeFillTertiaryIcon(
+        iconName: String,
+        state: ButtonState = .default,
+        action: @escaping () -> Void
+    ) -> HabittoButton {
+        HabittoButton(
+            size: .large,
+            style: .fillTertiary,
             content: .icon(iconName),
             state: state,
             action: action

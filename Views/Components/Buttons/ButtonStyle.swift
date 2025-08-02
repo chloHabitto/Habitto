@@ -6,6 +6,7 @@ enum ButtonStyle {
     case fillSecondary
     case outline
     case tertiary
+    case fillTertiary
     case fillNeutral
     
     func backgroundColor(for state: ButtonState) -> Color {
@@ -45,6 +46,15 @@ enum ButtonStyle {
                 return .disabledBackground
             case .loading:
                 return .clear // TODO: Update in the future
+            }
+        case .fillTertiary:
+            switch state {
+            case .default, .hover:
+                return .primaryContainer
+            case .disabled:
+                return .disabledBackground
+            case .loading:
+                return .primaryContainer // TODO: Update in the future
             }
         case .fillNeutral:
             switch state {
@@ -97,6 +107,15 @@ enum ButtonStyle {
                 return .text04
             case .loading:
                 return .primary // TODO: Update in the future
+            }
+        case .fillTertiary:
+            switch state {
+            case .default, .hover:
+                return .onPrimaryContainer
+            case .disabled:
+                return .text04
+            case .loading:
+                return .onPrimaryContainer // TODO: Update in the future
             }
         case .fillNeutral:
             switch state {
