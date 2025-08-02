@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Font System
+// MARK: - Font System. This is a custom font system to prevent ambiguity errors.
 // This extension provides a centralized font system to prevent ambiguity errors.
 // Always use the custom font names defined here instead of direct SwiftUI.Font usage.
 
