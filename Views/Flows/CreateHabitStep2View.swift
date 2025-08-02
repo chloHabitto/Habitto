@@ -42,9 +42,31 @@ struct CreateHabitStep2View: View {
         return calendar.isDateInToday(date)
     }
     
+    // Helper function to handle pluralization for units
+    private func pluralizedUnit(_ count: Int, unit: String) -> String {
+        if unit == "time" || unit == "times" {
+            return count == 1 ? "time" : "times"
+        }
+        return unit
+    }
+    
+    // Computed properties for pluralized units to ensure proper SwiftUI updates
+    private var pluralizedGoalUnit: String {
+        let number = Int(goalNumber) ?? 1
+        return pluralizedUnit(number, unit: goalUnit)
+    }
+    
+    private var pluralizedBaselineUnit: String {
+        return pluralizedUnit(Int(baseline) ?? 1, unit: baselineUnit)
+    }
+    
+    private var pluralizedTargetUnit: String {
+        return pluralizedUnit(Int(target) ?? 1, unit: targetUnit)
+    }
+    
     @State private var schedule: String = "Everyday"
     @State private var goalNumber: String = "1"
-    @State private var goalUnit: String = "times"
+    @State private var goalUnit: String = "time"
     @State private var reminder: String = "No reminder"
     @State private var reminders: [ReminderItem] = []
     @State private var startDate: Date = Date()
@@ -58,10 +80,13 @@ struct CreateHabitStep2View: View {
     // Habit Breaking specific state
     @State private var baseline: String = ""
     @State private var target: String = ""
-    @State private var baselineUnit: String = "times"
-    @State private var targetUnit: String = "times"
+    @State private var baselineUnit: String = "time"
+    @State private var targetUnit: String = "time"
     @State private var showingBaselineUnitSheet = false
     @State private var showingTargetUnitSheet = false
+    
+    // Force UI updates when number changes
+    @State private var uiUpdateTrigger = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -115,7 +140,9 @@ struct CreateHabitStep2View: View {
                         let newHabit: Habit
                         
                         if step1Data.4 == .formation {
-                            let goalString = "\(goalNumber) \(goalUnit)"
+                            let goalNumberInt = Int(goalNumber) ?? 1
+                            let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
+                            let goalString = "\(goalNumber) \(pluralizedUnit)"
                             newHabit = Habit(
                                 name: step1Data.0,
                                 description: step1Data.1,
@@ -131,7 +158,9 @@ struct CreateHabitStep2View: View {
                             )
                         } else {
                             // Habit Breaking
-                            let goalString = "\(target) \(targetUnit)"
+                            let targetInt = Int(target) ?? 1
+                            let pluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
+                            let goalString = "\(target) \(pluralizedUnit)"
                             newHabit = Habit(
                                 name: step1Data.0,
                                 description: step1Data.1,
@@ -173,6 +202,16 @@ struct CreateHabitStep2View: View {
         .background(.surface2)
         .navigationBarHidden(true)
         .keyboardHandling(dismissOnTapOutside: true, showDoneButton: true)
+        .onChange(of: goalNumber) { oldValue, newValue in
+            // Force UI update when goal number changes
+            uiUpdateTrigger.toggle()
+        }
+        .onChange(of: baseline) { _, _ in
+            // Force UI update when baseline changes
+        }
+        .onChange(of: target) { _, _ in
+            // Force UI update when target changes
+        }
         .overlay(
             // Custom Done button overlay for number keyboard
             VStack {
@@ -302,7 +341,7 @@ struct CreateHabitStep2View: View {
                     } else {
                         // Fallback for old format
                         goalNumber = "1"
-                        goalUnit = "times"
+                        goalUnit = "time"
                     }
                 } else {
                     // Habit Breaking
@@ -356,9 +395,10 @@ struct CreateHabitStep2View: View {
                                     showingUnitSheet = true
                                 }) {
                                     HStack {
-                                        Text(goalUnit)
+                                        Text(pluralizedGoalUnit)
                                             .font(.appBodyLarge)
                                             .foregroundColor(.text04)
+                                            .id(uiUpdateTrigger) // Force re-render when trigger changes
                                         Image(systemName: "chevron.right")
                                             .font(.appLabelSmall)
                                             .foregroundColor(.primaryDim)
@@ -487,7 +527,7 @@ struct CreateHabitStep2View: View {
                         showingBaselineUnitSheet = true
                     }) {
                         HStack {
-                            Text(baselineUnit)
+                            Text(pluralizedBaselineUnit)
                                 .font(.appBodyLarge)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
@@ -528,7 +568,7 @@ struct CreateHabitStep2View: View {
                         showingTargetUnitSheet = true
                     }) {
                         HStack {
-                            Text(targetUnit)
+                            Text(pluralizedTargetUnit)
                                 .font(.appBodyLarge)
                                 .foregroundColor(.text04)
                             Image(systemName: "chevron.right")
