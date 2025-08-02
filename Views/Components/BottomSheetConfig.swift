@@ -112,7 +112,7 @@ struct ConfigurableBottomSheet: View {
             ScrollView {
                 LazyVStack(spacing: 12) {
                     ForEach(config.options, id: \.id) { option in
-                        SelectionRow(
+                        BottomSheetSelectionRow(
                             title: option.title,
                             subtitle: option.subtitle,
                             isSelected: option.isSelected,

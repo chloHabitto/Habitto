@@ -1,8 +1,10 @@
 import SwiftUI
 
-// MARK: - Selection Components
+// MARK: - Reusable Selection Row Components
+// These components eliminate code duplication across Create Habit step views
 
-struct SelectionRow: View {
+// MARK: - Bottom Sheet Selection Row (for bottom sheet options)
+struct BottomSheetSelectionRow: View {
     let title: String
     let subtitle: String
     let isSelected: Bool
@@ -38,6 +40,114 @@ struct SelectionRow: View {
             .cornerRadius(12)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Create Habit Selection Row (for create habit flow)
+struct SelectionRow: View {
+    let title: String
+    let value: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+                Text(value)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text04)
+                Image(systemName: "chevron.right")
+                    .font(.appLabelMedium)
+                    .foregroundColor(.primaryDim)
+            }
+        }
+        .selectionRowStyle()
+    }
+}
+
+struct SelectionRowWithVisual: View {
+    let title: String
+    let visualElement: AnyView
+    let value: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+                HStack(spacing: 8) {
+                    visualElement
+                    Text(value)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text04)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.appLabelMedium)
+                    .foregroundColor(.primaryDim)
+            }
+        }
+        .selectionRowStyle()
+    }
+}
+
+// MARK: - Convenience Initializers for Common Visual Elements
+extension SelectionRowWithVisual {
+    init(
+        title: String,
+        color: Color,
+        value: String,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.visualElement = AnyView(
+            Circle()
+                .fill(color)
+                .frame(width: 24, height: 24)
+        )
+        self.value = value
+        self.action = action
+    }
+    
+    init(
+        title: String,
+        icon: String,
+        color: Color,
+        value: String,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.visualElement = AnyView(
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(color)
+                    .frame(width: 24, height: 24)
+                
+                if icon.hasPrefix("Icon-") {
+                    // Asset icon
+                    Image(icon)
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(color)
+                } else if icon == "None" {
+                    // No icon selected - show colored rounded rectangle
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(color)
+                        .frame(width: 14, height: 14)
+                } else {
+                    // Emoji or system icon
+                    Text(icon)
+                        .font(.system(size: 14))
+                }
+            }
+        )
+        self.value = value
+        self.action = action
     }
 }
 
@@ -233,16 +343,39 @@ struct TimePicker: View {
     VStack(spacing: 20) {
         SelectionRow(
             title: "Everyday",
-            subtitle: "Repeat every day",
-            isSelected: true,
-            onTap: {}
+            value: "Repeat every day",
+            action: {}
         )
         
-        PillSelectionRow(
+        SelectionRowWithVisual(
             title: "Custom Days",
-            pills: ["Monday", "Wednesday", "Friday"],
-            isSelected: false,
-            onTap: {}
+            color: .blue,
+            value: "Monday, Wednesday, Friday",
+            action: {}
+        )
+        
+        SelectionRowWithVisual(
+            title: "Custom Days",
+            icon: "Icon-calendar",
+            color: .purple,
+            value: "Monday, Wednesday, Friday",
+            action: {}
+        )
+        
+        SelectionRowWithVisual(
+            title: "Custom Days",
+            icon: "None",
+            color: .orange,
+            value: "Monday, Wednesday, Friday",
+            action: {}
+        )
+        
+        SelectionRowWithVisual(
+            title: "Custom Days",
+            icon: "🌟",
+            color: .green,
+            value: "Monday, Wednesday, Friday",
+            action: {}
         )
         
         NumberStepper(

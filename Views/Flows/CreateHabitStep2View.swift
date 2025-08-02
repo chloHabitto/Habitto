@@ -313,23 +313,11 @@ struct CreateHabitStep2View: View {
     private var habitBuildingForm: some View {
         VStack(spacing: 16) {
             // Schedule
-                        Button(action: {
-                            showingScheduleSheet = true
-                        }) {
-                            HStack {
-                                Text("Schedule")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                Spacer()
-                                Text(schedule)
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelMedium)
-                                    .foregroundColor(.primaryDim)
-                            }
-                            .selectionRowStyle()
-                        }
+                        SelectionRow(
+                            title: "Schedule",
+                            value: schedule,
+                            action: { showingScheduleSheet = true }
+                        )
                         
                         // Goal
                         VStack(alignment: .leading, spacing: 12) {
@@ -371,22 +359,11 @@ struct CreateHabitStep2View: View {
                         
                         // Reminder
                         VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Reminder")
-                                    .font(.appTitleMedium)
-                                    .foregroundColor(.text01)
-                                Spacer()
-                                Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                                Image(systemName: "chevron.right")
-                                    .font(.appLabelMedium)
-                                    .foregroundColor(.primaryDim)
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                showingReminderSheet = true
-                            }
+                            SelectionRow(
+                                title: "Reminder",
+                                value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
+                                action: { showingReminderSheet = true }
+                            )
                             
                             if !reminders.isEmpty {
                                 Divider()
@@ -465,23 +442,11 @@ struct CreateHabitStep2View: View {
     private var habitBreakingForm: some View {
         VStack(spacing: 16) {
             // Schedule
-            Button(action: {
-                showingScheduleSheet = true
-            }) {
-                HStack {
-                    Text("Schedule")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    Spacer()
-                    Text(schedule)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                    Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.primaryDim)
-                }
-                .selectionRowStyle()
-            }
+            SelectionRow(
+                title: "Schedule",
+                value: schedule,
+                action: { showingScheduleSheet = true }
+            )
             
             // Baseline
             VStack(alignment: .leading, spacing: 12) {
@@ -567,22 +532,11 @@ struct CreateHabitStep2View: View {
             
             // Reminder
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Reminder")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    Spacer()
-                    Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text04)
-                    Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.primaryDim)
-                }
-                .contentShape(Rectangle())
-        .onTapGesture {
-                    showingReminderSheet = true
-                }
+                SelectionRow(
+                    title: "Reminder",
+                    value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
+                    action: { showingReminderSheet = true }
+                )
                 
                 if !reminders.isEmpty {
                     Divider()
