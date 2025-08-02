@@ -288,8 +288,6 @@ struct CreateHabitStep1View: View {
                 selectedIcon: $icon,
                 onClose: { showingIconSheet = false }
             )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(

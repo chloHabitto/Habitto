@@ -68,7 +68,7 @@ struct EmojiKeyboardView: View {
             .padding(.top, 8)
             
             // Emoji grid with pagination
-            ScrollView {
+            ScrollView(showsIndicators: true) {
                 LazyVStack(spacing: 4) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 8), spacing: 4) {
                         ForEach(filteredEmojis, id: \.self) { emoji in
