@@ -36,7 +36,7 @@ struct CreateHabitStep1View: View {
     ) -> some View {
         TextField(placeholder, text: text)
             .font(.appBodyLarge)
-            .foregroundColor(.text05)
+            .foregroundColor(.text01)
             .textFieldStyle(PlainTextFieldStyle())
             .submitLabel(.done)
             .frame(maxWidth: .infinity, minHeight: 48)
@@ -104,6 +104,11 @@ struct CreateHabitStep1View: View {
         }
     }
     
+    // Helper function to get appropriate display value for icon
+    private func iconDisplayValue(_ icon: String) -> String {
+        return icon == "None" ? "None" : ""
+    }
+    
     // Custom reusable habit type button component
     private func HabitTypeButton(
         title: String,
@@ -169,7 +174,7 @@ struct CreateHabitStep1View: View {
                                 title: "Icon",
                                 color: color,
                                 icon: icon,
-                                value: icon == "None" ? "None" : icon,
+                                value: iconDisplayValue(icon),
                                 action: { showingIconSheet = true }
                             )
                         }

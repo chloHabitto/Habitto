@@ -329,7 +329,7 @@ struct CreateHabitStep2View: View {
                                 // Number input field
                                 TextField("1", text: $goalNumber)
                                     .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
+                                    .foregroundColor(.text01)
                                     .accentColor(.text01)
                                     .keyboardType(.numberPad)
                                     .focused($isGoalNumberFocused)
@@ -394,7 +394,7 @@ struct CreateHabitStep2View: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Period")
                                 .font(.appTitleMedium)
-                                .foregroundColor(.primary)
+                                .foregroundColor(.text01)
                 
                             HStack(spacing: 12) {
                                 // Start Date
@@ -460,7 +460,7 @@ struct CreateHabitStep2View: View {
                     // Number input field
                     TextField("10", text: $baseline)
                         .font(.appBodyLarge)
-                        .foregroundColor(.text04)
+                        .foregroundColor(.text01)
                         .accentColor(.text01)
                         .keyboardType(.numberPad)
                         .focused($isBaselineFieldFocused)
@@ -501,7 +501,7 @@ struct CreateHabitStep2View: View {
                     // Number input field
                     TextField("5", text: $target)
                         .font(.appBodyLarge)
-                        .foregroundColor(.text04)
+                        .foregroundColor(.text01)
                         .accentColor(.text01)
                         .keyboardType(.numberPad)
                         .focused($isTargetFieldFocused)
@@ -566,7 +566,7 @@ struct CreateHabitStep2View: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Period")
                     .font(.appTitleMedium)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.text01)
                 
                 HStack(spacing: 12) {
                     // Start Date

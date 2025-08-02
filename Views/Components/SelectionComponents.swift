@@ -108,9 +108,9 @@ extension SelectionRowWithVisual {
     ) {
         self.title = title
         self.visualElement = AnyView(
-            Circle()
+            RoundedRectangle(cornerRadius: 8)
                 .fill(color)
-                .frame(width: 24, height: 24)
+                .frame(width: 28, height: 28)
         )
         self.value = value
         self.action = action
@@ -128,7 +128,7 @@ extension SelectionRowWithVisual {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(color)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 28, height: 28)
                 
                 if icon.hasPrefix("Icon-") {
                     // Asset icon
