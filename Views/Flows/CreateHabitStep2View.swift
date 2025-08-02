@@ -581,12 +581,16 @@ struct CreateHabitStep2View: View {
             
             // Baseline
             VStack(alignment: .leading, spacing: 12) {
-                Text("Current Baseline")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                Text("On average, how often do you do this per day/week?")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
+                HStack {
+                    Text("Current Baseline")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 16))
+                        .foregroundColor(.text06)
+                        .help("On average, how often do you do this per day/week?")
+                }
                 
                 HStack(spacing: 12) {
                     // Number input field
@@ -629,12 +633,16 @@ struct CreateHabitStep2View: View {
             
             // Target
             VStack(alignment: .leading, spacing: 12) {
-                Text("Reduction Goal")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                Text("What's your first goal?")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
+                HStack {
+                    Text("Reduction Goal")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 16))
+                        .foregroundColor(.text06)
+                        .help("What's your first goal?")
+                }
                 
                 HStack(spacing: 12) {
                     // Number input field
