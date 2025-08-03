@@ -4,120 +4,110 @@ struct GoalAchievementCard: View {
     let habitGoal: HabitGoal
     
     var body: some View {
-        VStack(spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: habitGoal.habit.icon)
-                    .font(.title3)
-                    .foregroundColor(habitGoal.habit.color)
-                    .frame(width: 32, height: 32)
+        HStack(alignment: .top, spacing: 12) {
+            // ColorMark
+            Rectangle()
+                .fill(habitGoal.habit.color)
+                .frame(width: 8)
+                .frame(maxHeight: .infinity)
+            
+            // SelectedIcon
+            HabitIconView(habit: habitGoal.habit)
+            
+            // VStack with title, goal info, and progress
+            VStack(spacing: 8) {
+                // Top row: Text container and badge
+                HStack(alignment: .center, spacing: 12) {
+                    // Text container
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habitGoal.habit.name)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text02)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        
+                        Text("Goal: \(Int(habitGoal.goal.amount)) \(habitGoal.goal.unit)")
+                            .font(.appBodyExtraSmall)
+                            .foregroundColor(.text05)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
+                    
+                    // Goal Hit Rate Badge
+                    HStack(spacing: 4) {
+                        Image(systemName: goalHitRateIcon)
+                            .font(.caption2)
+                            .foregroundColor(goalHitRateColor)
+                        
+                        Text("\(Int(habitGoal.goalHitRate * 100))%")
+                            .font(.appCaptionMedium)
+                            .foregroundColor(goalHitRateColor)
+                            .fontWeight(.medium)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
                     .background(
-                        Circle()
-                            .fill(habitGoal.habit.color.opacity(0.1))
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(goalHitRateColor.opacity(0.1))
                     )
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(habitGoal.habit.name)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text01)
-                        .fontWeight(.medium)
-                    
-                    Text("Goal: \(Int(habitGoal.goal.amount)) \(habitGoal.goal.unit)")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(.text05)
                 }
-                
-                Spacer()
-                
-                // Goal Hit Rate Badge
-                HStack(spacing: 4) {
-                    Image(systemName: goalHitRateIcon)
-                        .font(.caption2)
-                        .foregroundColor(goalHitRateColor)
-                    
-                    Text("\(Int(habitGoal.goalHitRate * 100))%")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(goalHitRateColor)
-                        .fontWeight(.medium)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(goalHitRateColor.opacity(0.1))
-                )
-            }
             
-            // Progress Section
-            HStack(spacing: 16) {
-                // Current Average
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Current")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(.text05)
-                    
-                    HStack(alignment: .bottom, spacing: 2) {
+                // Progress Bar
+                ProgressView(value: habitGoal.goalHitRate, total: 1.0)
+                    .progressViewStyle(LinearProgressViewStyle(tint: goalHitRateColor))
+                    .scaleEffect(x: 1, y: 2, anchor: .center)
+                
+                // Bottom row: Current vs Target comparison
+                HStack {
+                    // Current Average
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("\(Int(habitGoal.currentAverage))")
-                            .font(.appTitleLarge)
+                            .font(.appBodyMedium)
                             .foregroundColor(.text01)
-                            .fontWeight(.bold)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         
-                        Text(habitGoal.goal.unit)
-                            .font(.appCaptionMedium)
+                        Text("Current")
+                            .font(.appBodyExtraSmall)
                             .foregroundColor(.text05)
                     }
-                }
-                
-                // Divider
-                Rectangle()
-                    .fill(.outline)
-                    .frame(width: 1, height: 40)
-                
-                // Target
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Target")
-                        .font(.appCaptionMedium)
-                        .foregroundColor(.text05)
                     
-                    HStack(alignment: .bottom, spacing: 2) {
+                    // Dot separator
+                    // Circle()
+                    //     .fill(.text06)
+                    //     .frame(width: 3, height: 3)
+                    //     .frame(width: 16, height: 16)
+                    
+                    // Target
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("\(Int(habitGoal.goal.amount))")
-                            .font(.appTitleLarge)
+                            .font(.appBodyMedium)
                             .foregroundColor(.text03)
-                            .fontWeight(.bold)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         
-                        Text(habitGoal.goal.unit)
-                            .font(.appCaptionMedium)
+                        Text("Target")
+                            .font(.appBodyExtraSmall)
                             .foregroundColor(.text05)
                     }
-                }
-                
-                Spacer()
-                
-                // Achievement Status
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(achievementStatus)
-                        .font(.appCaptionMedium)
-                        .foregroundColor(achievementStatusColor)
-                        .fontWeight(.medium)
                     
-                    Text(achievementMessage)
-                        .font(.appCaptionSmall)
-                        .foregroundColor(.text05)
-                        .multilineTextAlignment(.trailing)
+                    Spacer()
                 }
             }
-            
-            // Progress Bar
-            ProgressView(value: habitGoal.goalHitRate, total: 1.0)
-                .progressViewStyle(LinearProgressViewStyle(tint: goalHitRateColor))
-                .scaleEffect(x: 1, y: 2, anchor: .center)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 4)
+            .padding(.trailing, 16)
+            .padding(.top, 4)
+            .padding(.bottom, 14)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.surface)
-                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .background(.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(.outline, lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private var goalHitRateIcon: String {
