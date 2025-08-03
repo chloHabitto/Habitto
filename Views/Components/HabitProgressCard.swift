@@ -55,13 +55,13 @@ struct HabitProgressCard: View {
                     .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                     .scaleEffect(x: 1, y: 2, anchor: .center)
                 
-                // Bottom row: Progress percentage
+                // Bottom row: Progress percentage and streak
                 HStack {
                     // Progress percentage
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(Int(habitProgress.completionPercentage))%")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text05)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
                             .lineLimit(1)
                             .truncationMode(.tail)
                         
@@ -71,6 +71,19 @@ struct HabitProgressCard: View {
                     }
                     
                     Spacer()
+                    
+                    // Secondary metric (streak)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(habitProgress.habit.streak)")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text03)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        
+                        Text("day streak")
+                            .font(.appBodyExtraSmall)
+                            .foregroundColor(.text05)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
