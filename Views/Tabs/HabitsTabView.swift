@@ -26,7 +26,7 @@ struct HabitsTabView: View {
     
     var body: some View {
         WhiteSheetContainer(
-            title: "My Habits",
+            title: "Habits",
             headerContent: {
                 AnyView(
                     statsRow
