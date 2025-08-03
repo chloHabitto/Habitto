@@ -10,7 +10,7 @@ struct CreateHabitHeader: View {
         stepNumber: Int,
         onCancel: @escaping () -> Void,
         title: String = "Create Habit",
-        subtitle: String = "Let's get started!"
+        subtitle: String = "" // "Let's get started!"
     ) {
         self.stepNumber = stepNumber
         self.onCancel = onCancel
@@ -57,9 +57,9 @@ struct CreateHabitHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
             .padding(.top, 28)
-            .padding(.bottom, 28)
+//            .padding(.bottom, 28)
         }
-//        .background(.red)
+        .background(.red)
     }
 }
 
