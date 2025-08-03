@@ -34,6 +34,22 @@ struct HabitsTabView: View {
                         .padding(.top, 2)
                         .padding(.bottom, 0)
                 )
+            },
+            rightButton: {
+                AnyView(
+                    Button(action: {
+                        // View button action
+                    }) {
+                        Text("View")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.primaryContainer)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                )
             }
         ) {
             ScrollView {

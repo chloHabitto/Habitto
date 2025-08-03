@@ -72,6 +72,7 @@ struct WhiteSheetContainer<Content: View>: View {
         .padding(.bottom, 0)
         .frame(alignment: .top)
     }
+
 }
 
 // MARK: - Convenience Initializers
@@ -134,4 +135,4 @@ extension WhiteSheetContainer {
     }
     .background(Color.primary)
     .ignoresSafeArea()
-} 
+}
