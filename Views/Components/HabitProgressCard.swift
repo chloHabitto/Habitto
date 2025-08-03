@@ -4,30 +4,36 @@ struct HabitProgressCard: View {
     let habitProgress: HabitProgress
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Habit Icon
-            Image(systemName: habitProgress.habit.icon)
-                .font(.title2)
-                .foregroundColor(habitProgress.habit.color)
-                .frame(width: 40, height: 40)
-                .background(
-                    Circle()
-                        .fill(habitProgress.habit.color.opacity(0.1))
-                )
+        HStack(alignment: .top, spacing: 12) {
+            // ColorMark
+            Rectangle()
+                .fill(habitProgress.habit.color)
+                .frame(width: 8)
+                .frame(maxHeight: .infinity)
             
-            // Habit Info
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(habitProgress.habit.name)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text01)
-                    
-                    Spacer()
+            // SelectedIcon
+            HabitIconView(habit: habitProgress.habit)
+            
+            // VStack with title, description, and progress info
+            VStack(spacing: 8) {
+                // Top row: Text container and trend arrow
+                HStack(spacing: 4) {
+                    // Text container
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habitProgress.habit.name)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text02)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 8)
                     
                     // Trend Arrow
                     Image(systemName: habitProgress.trend.icon)
                         .font(.caption)
                         .foregroundColor(habitProgress.trend.color)
+                        .frame(width: 40, height: 40)
                 }
                 
                 // Progress Bar
@@ -35,15 +41,18 @@ struct HabitProgressCard: View {
                     .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                     .scaleEffect(x: 1, y: 2, anchor: .center)
                 
+                // Bottom row: Progress percentage and status
                 HStack {
+                    // Progress percentage
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(Int(habitProgress.completionPercentage))%")
-                            .font(.appTitleMedium)
-                            .fontWeight(.bold)
-                            .foregroundColor(.text01)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text05)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         
                         Text(metricLabel)
-                            .font(.appCaptionSmall)
+                            .font(.appBodyExtraSmall)
                             .foregroundColor(.text05)
                     }
                     
@@ -67,13 +76,16 @@ struct HabitProgressCard: View {
                     )
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
+            .padding(.bottom, 14)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.surface)
-                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .background(.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(.outline, lineWidth: 1)
         )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private var progressColor: Color {
