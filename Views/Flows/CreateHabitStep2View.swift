@@ -51,7 +51,8 @@ struct CreateHabitStep2View: View {
         return unit
     }
     
-    // Computed properties for pluralized units to ensure proper SwiftUI updates
+    // OLD Computed properties for pluralized units (Commented out for new unified approach)
+    /*
     private var pluralizedGoalUnit: String {
         let number = Int(goalNumber) ?? 1
         if number == 0 {
@@ -75,27 +76,71 @@ struct CreateHabitStep2View: View {
         }
         return pluralizedUnit(number, unit: targetUnit)
     }
+    */
+    
+    // NEW Unified computed properties
+    private var pluralizedGoalUnit: String {
+        let number = Int(goalNumber) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
+        return pluralizedUnit(number, unit: goalUnit)
+    }
+    
+    private var pluralizedBaselineUnit: String {
+        let number = Int(baselineNumber) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
+        return pluralizedUnit(number, unit: baselineUnit)
+    }
+    
+    private var pluralizedTargetUnit: String {
+        let number = Int(targetNumber) ?? 1
+        if number == 0 {
+            return "time" // Always show singular for 0
+        }
+        return pluralizedUnit(number, unit: targetUnit)
+    }
     
     @State private var schedule: String = "Everyday"
-    @State private var goalNumber: String = "1"
-    @State private var goalUnit: String = "time"
+    // OLD STATE VARIABLES - Commented out for new unified approach
+    // @State private var goalNumber: String = "1"
+    // @State private var goalUnit: String = "time"
     @State private var reminder: String = "No reminder"
     @State private var reminders: [ReminderItem] = []
     @State private var startDate: Date = Date()
     @State private var endDate: Date? = nil
     @State private var showingScheduleSheet = false
-    @State private var showingUnitSheet = false
+    // @State private var showingUnitSheet = false
     @State private var showingReminderSheet = false
     @State private var showingStartDateSheet = false
     @State private var showingEndDateSheet = false
     
-    // Habit Breaking specific state
-    @State private var baseline: String = "1"
-    @State private var target: String = "1"
+    // OLD Habit Breaking specific state - Commented out for new unified approach
+    // @State private var baseline: String = "1"
+    // @State private var target: String = "1"
+    // @State private var baselineUnit: String = "time"
+    // @State private var targetUnit: String = "time"
+    // @State private var showingBaselineUnitSheet = false
+    // @State private var showingTargetUnitSheet = false
+    
+    // NEW UNIFIED APPROACH - Unified state for both habit building and breaking
+    @State private var goalNumber: String = "1"
+    @State private var goalUnit: String = "time"
+    @State private var goalFrequency: String = "everyday"
+    @State private var baselineNumber: String = "1"
     @State private var baselineUnit: String = "time"
+    @State private var baselineFrequency: String = "everyday"
+    @State private var targetNumber: String = "1"
     @State private var targetUnit: String = "time"
+    @State private var targetFrequency: String = "everyday"
+    @State private var showingGoalUnitSheet = false
+    @State private var showingGoalFrequencySheet = false
     @State private var showingBaselineUnitSheet = false
+    @State private var showingBaselineFrequencySheet = false
     @State private var showingTargetUnitSheet = false
+    @State private var showingTargetFrequencySheet = false
     
     // Tooltip state - only one can be shown at a time
     @State private var activeTooltip: String? // "baseline" or "target" or nil
@@ -104,7 +149,8 @@ struct CreateHabitStep2View: View {
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
-    // Computed properties for validation
+    // OLD Computed properties for validation (Commented out for new unified approach)
+    /*
     private var isGoalValid: Bool {
         let number = Int(goalNumber) ?? 0
         return number > 0
@@ -128,8 +174,35 @@ struct CreateHabitStep2View: View {
             return isBaselineValid && isTargetValid
         }
     }
+    */
     
-    // MARK: - Reusable Number Input Element
+    // NEW Unified computed properties for validation
+    private var isGoalValid: Bool {
+        let number = Int(goalNumber) ?? 0
+        return number > 0
+    }
+    
+    private var isBaselineValid: Bool {
+        let number = Int(baselineNumber) ?? 0
+        return number > 0
+    }
+    
+    private var isTargetValid: Bool {
+        let number = Int(targetNumber) ?? 0
+        return number >= 0  // Allow 0 for reduction goal in habit breaking
+    }
+    
+    // Overall form validation
+    private var isFormValid: Bool {
+        if step1Data.4 == .formation {
+            return isGoalValid
+        } else {
+            return isBaselineValid && isTargetValid
+        }
+    }
+    
+    // MARK: - OLD Number Input Element (Commented out for new unified approach)
+    /*
     @ViewBuilder
     private func NumberInputElement(
         title: String,
@@ -140,6 +213,23 @@ struct CreateHabitStep2View: View {
         isValid: Bool,
         errorMessage: String,
         onUnitTap: @escaping () -> Void,
+        uiUpdateTrigger: Bool
+    ) -> some View {
+    */
+    
+    // MARK: - NEW Unified Input Element
+    @ViewBuilder
+    private func UnifiedInputElement(
+        title: String,
+        description: String,
+        numberText: Binding<String>,
+        unitText: String,
+        frequencyText: String,
+        isFocused: FocusState<Bool>.Binding,
+        isValid: Bool,
+        errorMessage: String,
+        onUnitTap: @escaping () -> Void,
+        onFrequencyTap: @escaping () -> Void,
         uiUpdateTrigger: Bool
     ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -154,7 +244,7 @@ struct CreateHabitStep2View: View {
                 .foregroundColor(.text05)
                 .padding(.bottom, 12)
             
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 // Number input field
                 TextField("1", text: numberText)
                     .font(.appBodyLarge)
@@ -181,6 +271,28 @@ struct CreateHabitStep2View: View {
                     .inputFieldStyle()
                 }
                 .buttonStyle(PlainButtonStyle())
+                
+                // "/" separator
+                Text("/")
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text04)
+                    .frame(width: 20)
+                
+                // Frequency selector button
+                Button(action: onFrequencyTap) {
+                    HStack {
+                        Text(frequencyText)
+                            .font(.appBodyLarge)
+                            .foregroundColor(isValid ? .text04 : .text06)
+                            .id(uiUpdateTrigger) // Force re-render when trigger changes
+                        Image(systemName: "chevron.right")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.primaryDim)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .inputFieldStyle()
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.bottom, 4)
             
@@ -193,7 +305,69 @@ struct CreateHabitStep2View: View {
         .selectionRowStyle()
     }
     
-
+    // MARK: - Helper Functions
+    private func createHabit() -> Habit {
+        if step1Data.4 == .formation {
+            // NEW UNIFIED APPROACH - Habit Building
+            let goalNumberInt = Int(goalNumber) ?? 1
+            let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
+            let goalString = "\(goalNumber) \(pluralizedUnit) per \(goalFrequency)"
+            return Habit(
+                name: step1Data.0,
+                description: step1Data.1,
+                icon: step1Data.2,
+                color: step1Data.3,
+                habitType: step1Data.4,
+                schedule: schedule,
+                goal: goalString,
+                reminder: reminder,
+                startDate: startDate,
+                endDate: endDate,
+                reminders: reminders
+            )
+        } else {
+            // NEW UNIFIED APPROACH - Habit Breaking
+            let targetInt = Int(targetNumber) ?? 1
+            let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
+            let goalString = "\(targetNumber) \(targetPluralizedUnit) per \(targetFrequency)"
+            return Habit(
+                name: step1Data.0,
+                description: step1Data.1,
+                icon: step1Data.2,
+                color: step1Data.3,
+                habitType: step1Data.4,
+                schedule: schedule,
+                goal: goalString,
+                reminder: reminder,
+                startDate: startDate,
+                endDate: endDate,
+                reminders: reminders,
+                baseline: Int(baselineNumber) ?? 0,
+                target: Int(targetNumber) ?? 0
+            )
+        }
+    }
+    
+    private func saveHabit() {
+        let newHabit = createHabit()
+        NotificationManager.shared.updateNotifications(for: newHabit, reminders: reminders)
+        onSave(newHabit)
+        dismiss()
+    }
+    
+    // MARK: - Computed Properties for UI
+    private var bottomGradient: LinearGradient {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color.surface2.opacity(0),
+                Color.surface2.opacity(0.3),
+                Color.surface2.opacity(0.7),
+                Color.surface2.opacity(1.0)
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -223,51 +397,7 @@ struct CreateHabitStep2View: View {
                 
                 Spacer()
                 
-                Button(action: { 
-                    let newHabit: Habit
-                    
-                    if step1Data.4 == .formation {
-                        let goalNumberInt = Int(goalNumber) ?? 1
-                        let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-                        let goalString = "\(goalNumber) \(pluralizedUnit)"
-                        newHabit = Habit(
-                            name: step1Data.0,
-                            description: step1Data.1,
-                            icon: step1Data.2,
-                            color: step1Data.3,
-                            habitType: step1Data.4,
-                            schedule: schedule,
-                            goal: goalString,
-                            reminder: reminder,
-                            startDate: startDate,
-                            endDate: endDate,
-                            reminders: reminders
-                        )
-                    } else {
-                        let targetInt = Int(target) ?? 1
-                        let pluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
-                        let goalString = "\(target) \(pluralizedUnit)"
-                        newHabit = Habit(
-                            name: step1Data.0,
-                            description: step1Data.1,
-                            icon: step1Data.2,
-                            color: step1Data.3,
-                            habitType: step1Data.4,
-                            schedule: schedule,
-                            goal: goalString,
-                            reminder: reminder,
-                            startDate: startDate,
-                            endDate: endDate,
-                            reminders: reminders,
-                            baseline: Int(baseline) ?? 0,
-                            target: Int(target) ?? 0
-                        )
-                    }
-                    
-                    NotificationManager.shared.updateNotifications(for: newHabit, reminders: reminders)
-                    onSave(newHabit)
-                    dismiss()
-                }) {
+                Button(action: saveHabit) {
                     Text("Save")
                         .font(.appButtonText1)
                         .foregroundColor(isFormValid ? .white : .text06)
@@ -280,18 +410,7 @@ struct CreateHabitStep2View: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.surface2.opacity(0),
-                        Color.surface2.opacity(0.3),
-                        Color.surface2.opacity(0.7),
-                        Color.surface2.opacity(1.0)
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            .background(bottomGradient)
         }
         .background(.surface2)
 
@@ -325,11 +444,11 @@ struct CreateHabitStep2View: View {
             // Force UI update when goal number changes
             uiUpdateTrigger.toggle()
         }
-        .onChange(of: baseline) { _, _ in
+        .onChange(of: baselineNumber) { _, _ in
             // Force UI update when baseline changes
             uiUpdateTrigger.toggle()
         }
-        .onChange(of: target) { _, _ in
+        .onChange(of: targetNumber) { _, _ in
             // Force UI update when target changes
             uiUpdateTrigger.toggle()
         }
@@ -360,16 +479,7 @@ struct CreateHabitStep2View: View {
                 }
             )
         }
-        .sheet(isPresented: $showingUnitSheet) {
-            UnitBottomSheet(
-                onClose: { showingUnitSheet = false },
-                onUnitSelected: { selectedUnit in
-                    goalUnit = selectedUnit
-                    showingUnitSheet = false
-                },
-                currentUnit: goalUnit
-            )
-        }
+
         .sheet(isPresented: $showingReminderSheet) {
             ReminderBottomSheet(
                 onClose: { showingReminderSheet = false },
@@ -428,6 +538,27 @@ struct CreateHabitStep2View: View {
                 onResetStartDate: nil
             )
         }
+
+        // NEW UNIFIED APPROACH - Frequency sheets
+        .sheet(isPresented: $showingGoalUnitSheet) {
+            UnitBottomSheet(
+                onClose: { showingGoalUnitSheet = false },
+                onUnitSelected: { selectedUnit in
+                    goalUnit = selectedUnit
+                    showingGoalUnitSheet = false
+                },
+                currentUnit: goalUnit
+            )
+        }
+        .sheet(isPresented: $showingGoalFrequencySheet) {
+            ScheduleBottomSheet(
+                onClose: { showingGoalFrequencySheet = false },
+                onScheduleSelected: { selectedSchedule in
+                    goalFrequency = selectedSchedule.lowercased()
+                    showingGoalFrequencySheet = false
+                }
+            )
+        }
         .sheet(isPresented: $showingBaselineUnitSheet) {
             UnitBottomSheet(
                 onClose: { showingBaselineUnitSheet = false },
@@ -436,6 +567,15 @@ struct CreateHabitStep2View: View {
                     showingBaselineUnitSheet = false
                 },
                 currentUnit: baselineUnit
+            )
+        }
+        .sheet(isPresented: $showingBaselineFrequencySheet) {
+            ScheduleBottomSheet(
+                onClose: { showingBaselineFrequencySheet = false },
+                onScheduleSelected: { selectedSchedule in
+                    baselineFrequency = selectedSchedule.lowercased()
+                    showingBaselineFrequencySheet = false
+                }
             )
         }
         .sheet(isPresented: $showingTargetUnitSheet) {
@@ -448,29 +588,61 @@ struct CreateHabitStep2View: View {
                 currentUnit: targetUnit
             )
         }
+        .sheet(isPresented: $showingTargetFrequencySheet) {
+            ScheduleBottomSheet(
+                onClose: { showingTargetFrequencySheet = false },
+                onScheduleSelected: { selectedSchedule in
+                    targetFrequency = selectedSchedule.lowercased()
+                    showingTargetFrequencySheet = false
+                }
+            )
+        }
         .onAppear {
             // Initialize values if editing
             if let habit = habitToEdit {
                 schedule = habit.schedule
                 
                 if habit.habitType == .formation {
-                    // Parse existing goal into number and unit
+                    // NEW UNIFIED APPROACH - Parse existing goal into number, unit, and frequency
                     let goalComponents = habit.goal.components(separatedBy: " ")
-                    if goalComponents.count >= 2 {
+                    if goalComponents.count >= 4 && goalComponents[2] == "per" {
                         goalNumber = goalComponents[0]
                         goalUnit = goalComponents[1]
-                    } else {
+                        goalFrequency = goalComponents[3]
+                    } else if goalComponents.count >= 2 {
                         // Fallback for old format
+                        goalNumber = goalComponents[0]
+                        goalUnit = goalComponents[1]
+                        goalFrequency = "everyday"
+                    } else {
+                        // Fallback for very old format
                         goalNumber = "1"
                         goalUnit = "time"
+                        goalFrequency = "everyday"
                     }
                 } else {
-                    // Habit Breaking
-                    baseline = String(habit.baseline)
-                    target = String(habit.target)
+                    // NEW UNIFIED APPROACH - Habit Breaking
+                    baselineNumber = String(habit.baseline)
+                    targetNumber = String(habit.target)
+                    
                     let goalComponents = habit.goal.components(separatedBy: " ")
-                    if goalComponents.count >= 2 {
+                    if goalComponents.count >= 4 && goalComponents[2] == "per" {
                         targetUnit = goalComponents[1]
+                        targetFrequency = goalComponents[3]
+                        baselineUnit = targetUnit // Assume same unit for baseline
+                        baselineFrequency = targetFrequency // Assume same frequency for baseline
+                    } else if goalComponents.count >= 2 {
+                        // Fallback for old format
+                        targetUnit = goalComponents[1]
+                        targetFrequency = "everyday"
+                        baselineUnit = targetUnit
+                        baselineFrequency = "everyday"
+                    } else {
+                        // Fallback for very old format
+                        targetUnit = "time"
+                        targetFrequency = "everyday"
+                        baselineUnit = "time"
+                        baselineFrequency = "everyday"
                     }
                 }
                 
@@ -486,50 +658,20 @@ struct CreateHabitStep2View: View {
     @ViewBuilder
     private var habitBuildingForm: some View {
         VStack(spacing: 16) {
-            // Goal
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Goal")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                HStack(spacing: 12) {
-                    // Number input field
-                    TextField("1", text: $goalNumber)
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text01)
-                        .accentColor(.text01)
-                        .keyboardType(.numberPad)
-                        .focused($isGoalNumberFocused)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    
-                    // Unit selector button
-                    Button(action: {
-                        showingUnitSheet = true
-                    }) {
-                        HStack {
-                            Text(pluralizedGoalUnit)
-                                .font(.appBodyLarge)
-                                .foregroundColor(isGoalValid ? .text04 : .text06)
-                                .id(uiUpdateTrigger) // Force re-render when trigger changes
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .inputFieldStyle()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-                
-                // Warning message for invalid goal
-                if !isGoalValid {
-                    ErrorMessage(message: "Please enter a number greater than 0")
-                        .padding(.top, 4)
-                }
-            }
-            .selectionRowStyle()
+            // Goal - NEW UNIFIED APPROACH
+            UnifiedInputElement(
+                title: "Goal",
+                description: "What do you want to achieve?",
+                numberText: $goalNumber,
+                unitText: pluralizedGoalUnit,
+                frequencyText: goalFrequency,
+                isFocused: $isGoalNumberFocused,
+                isValid: isGoalValid,
+                errorMessage: "Please enter a number greater than 0",
+                onUnitTap: { showingGoalUnitSheet = true },
+                onFrequencyTap: { showingGoalFrequencySheet = true },
+                uiUpdateTrigger: uiUpdateTrigger
+            )
             
             // Schedule
             SelectionRow(
@@ -621,29 +763,33 @@ struct CreateHabitStep2View: View {
     @ViewBuilder
     private var habitBreakingForm: some View {
         VStack(spacing: 16) {
-            // Current Baseline
-            NumberInputElement(
+            // Current Baseline - NEW UNIFIED APPROACH
+            UnifiedInputElement(
                 title: "Current Baseline",
-                description: "On average, how often do you do this per day/week?",
-                numberText: $baseline,
+                description: "On average, how often do you do this?",
+                numberText: $baselineNumber,
                 unitText: pluralizedBaselineUnit,
+                frequencyText: baselineFrequency,
                 isFocused: $isBaselineFieldFocused,
                 isValid: isBaselineValid,
                 errorMessage: "Please enter a number greater than 0",
                 onUnitTap: { showingBaselineUnitSheet = true },
+                onFrequencyTap: { showingBaselineFrequencySheet = true },
                 uiUpdateTrigger: uiUpdateTrigger
             )
             
-            // Reduction Goal
-            NumberInputElement(
+            // Reduction Goal - NEW UNIFIED APPROACH
+            UnifiedInputElement(
                 title: "Reduction Goal",
                 description: "What's your first goal?",
-                numberText: $target,
+                numberText: $targetNumber,
                 unitText: pluralizedTargetUnit,
+                frequencyText: targetFrequency,
                 isFocused: $isTargetFieldFocused,
                 isValid: isTargetValid,
                 errorMessage: "Please enter a number greater than or equal to 0",
                 onUnitTap: { showingTargetUnitSheet = true },
+                onFrequencyTap: { showingTargetFrequencySheet = true },
                 uiUpdateTrigger: uiUpdateTrigger
             )
             
