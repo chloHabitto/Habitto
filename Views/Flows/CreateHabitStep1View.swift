@@ -287,25 +287,25 @@ struct CreateHabitStep1View: View {
 }
 
 private func colorName(for color: Color) -> String {
-        // Use cached color comparisons to avoid expensive Color(hex:) initializations
-        // These colors should match the ones from ColorBottomSheet
-        if color == Color(red: 0.13, green: 0.13, blue: 0.13) { // #222222
-            return "Black"
-        } else if color == .primary {
-            return "Navy"
-        } else if color == Color(red: 0.38, green: 0.59, blue: 0.99) { // #6096FD
-            return "Blue"
-        } else if color == Color(red: 0.80, green: 0.18, blue: 0.88) { // #CB30E0
-            return "Purple"
-        } else if color == Color(red: 1.0, green: 0.18, blue: 0.33) { // #FF2D55
-            return "Red"
-        } else if color == Color(red: 1.0, green: 0.47, blue: 0.22) { // #FF7838
-            return "Orange"
-        } else if color == Color(red: 0.20, green: 0.78, blue: 0.35) { // #34C759
-            return "Green"
-        } else if color == Color(red: 0.13, green: 0.92, blue: 0.95) { // #21EAF1
-            return "Teal"
+        // Use the same color definitions as ColorBottomSheet for consistency
+        let colors: [(color: Color, name: String)] = [
+            (Color(hex: "222222"), "Black"),
+            (.primary, "Navy"),
+            (Color(hex: "6096FD"), "Blue"),
+            (Color(hex: "CB30E0"), "Purple"),
+            (Color(hex: "FF2D55"), "Red"),
+            (Color(hex: "FF7838"), "Orange"),
+            (Color(hex: "34C759"), "Green"),
+            (Color(hex: "21EAF1"), "Teal")
+        ]
+        
+        // Find the matching color and return its name
+        for (colorOption, name) in colors {
+            if color == colorOption {
+                return name
+            }
         }
+        
         return "Navy" // Default fallback
     }
 

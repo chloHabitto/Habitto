@@ -110,7 +110,7 @@ extension SelectionRowWithVisual {
         self.visualElement = AnyView(
             RoundedRectangle(cornerRadius: 8)
                 .fill(color)
-                .frame(width: 28, height: 28)
+                .frame(width: 24, height: 24)
         )
         self.value = value
         self.action = action
