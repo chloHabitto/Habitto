@@ -27,119 +27,9 @@ struct HabitsTabView: View {
         self.onUpdateHabit = onUpdateHabit
     }
     
-    // MARK: - Habit Insights
-    private var habitInsights: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Habit Insights")
-                    .font(.appTitleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-                
-                Image(systemName: "info.circle")
-                    .font(.system(size: 16))
-                    .foregroundColor(.text06)
-                    .help("Provides personalized insights about your habits")
-            }
-            
-            if filteredHabitsByType.isEmpty {
-                EmptyStateView(
-                    icon: "lightbulb",
-                    message: "No \(selectedHabitType == .formation ? "building" : "breaking") habits to analyze"
-                )
-            } else {
-                VStack(spacing: 16) {
-                    // Best performing habit
-                    if let bestHabit = getBestHabit() {
-                        InsightCard(
-                            type: .success,
-                            title: "Your best habit",
-                            description: "\(bestHabit.name) - Keep up the great work!"
-                        )
-                    }
-                    
-                    // Habit that needs attention
-                    if let needsAttentionHabit = getHabitNeedingAttention() {
-                        InsightCard(
-                            type: .warning,
-                            title: "Needs attention",
-                            description: "\(needsAttentionHabit.name) - Consider adjusting your approach"
-                        )
-                    }
-                    
-                    // Overall habit status
-                    let activeCount = getActiveHabitsCount()
-                    let totalCount = filteredHabitsByType.count
-                    
-                    if totalCount > 0 {
-                        InsightCard(
-                            type: .info,
-                            title: "Habit Status",
-                            description: "\(activeCount) of \(totalCount) habits are currently active"
-                        )
-                    }
-                }
-            }
-        }
-    }
+
     
-    // MARK: - Habit Statistics
-    private var habitStatistics: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Habit Statistics")
-                    .font(.appTitleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-                
-                Image(systemName: "info.circle")
-                    .font(.system(size: 16))
-                    .foregroundColor(.text06)
-                    .help("Overview of your habit statistics")
-            }
-            
-            if filteredHabitsByType.isEmpty {
-                EmptyStateView(
-                    icon: "chart.bar",
-                    message: "No \(selectedHabitType == .formation ? "building" : "breaking") habit data to display"
-                )
-            } else {
-                HStack(spacing: 16) {
-                    // Total Habits
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(filteredHabitsByType.count)")
-                            .font(.appTitleLargeEmphasised)
-                            .foregroundColor(.text01)
-                        Text("Total \(selectedHabitType == .formation ? "Building" : "Breaking") Habits")
-                            .font(.appBodyExtraSmall)
-                            .foregroundColor(.text05)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(.surface)
-                    .cornerRadius(12)
-                    
-                    // Active Habits
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(getActiveHabitsCount())")
-                            .font(.appTitleLargeEmphasised)
-                            .foregroundColor(.text01)
-                        Text("Active \(selectedHabitType == .formation ? "Building" : "Breaking") Habits")
-                            .font(.appBodyExtraSmall)
-                            .foregroundColor(.text05)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(.surface)
-                    .cornerRadius(12)
-                }
-            }
-        }
-    }
+
     
     // MARK: - Helper Methods
     private func getActiveHabitsCount() -> Int {
@@ -163,11 +53,11 @@ struct HabitsTabView: View {
         return filteredHabitsByType.count > 1 ? filteredHabitsByType[1] : nil
     }
     
-    // MARK: - Habit Progress Cards
-    private var habitProgressCards: some View {
+    // MARK: - Habit Management Section
+    private var habitManagementSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("Habit Progress")
+                Text("Habit Management")
                     .font(.appTitleLarge)
                     .fontWeight(.bold)
                     .foregroundColor(.text01)
@@ -177,17 +67,17 @@ struct HabitsTabView: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 16))
                     .foregroundColor(.text06)
-                    .help("Individual habit progress and goal achievement")
+                    .help("Manage and track your individual habits")
             }
             
             if filteredHabitsByType.isEmpty {
                 EmptyStateView(
-                    icon: "chart.line.uptrend.xyaxis",
-                    message: "No \(selectedHabitType == .formation ? "building" : "breaking") habits to show progress for"
+                    icon: "list.bullet.circle",
+                    message: "No \(selectedHabitType == .formation ? "building" : "breaking") habits to manage"
                 )
             } else {
                 VStack(spacing: 16) {
-                    // Show progress cards for each habit (filtered by selected type)
+                    // Individual Habit Cards
                     ForEach(filteredHabitsByType.prefix(3), id: \.id) { habit in
                         if let habitProgress = createHabitProgress(for: habit) {
                             HabitProgressCard(habitProgress: habitProgress)
@@ -201,6 +91,8 @@ struct HabitsTabView: View {
             }
         }
     }
+    
+
     
     // MARK: - Helper Methods for Progress Cards
     private func createHabitProgress(for habit: Habit) -> HabitProgress? {
@@ -220,7 +112,9 @@ struct HabitsTabView: View {
     private func createHabitGoal(for habit: Habit) -> HabitGoal? {
         // Create a simple HabitGoal for demonstration
         // In a real app, this would parse actual goal data
-        guard let goal = parseGoal(from: habit.goal) else { return nil }
+        print("🔍 Creating goal for habit: \(habit.name), goal string: '\(habit.goal)'")
+        let goal = parseGoal(from: habit.goal)
+        print("🔍 Parsed goal: \(goal.amount) \(goal.unit)")
         
         let currentAverage = Double.random(in: 1...10) // Placeholder
         let goalHitRate = Double.random(in: 0.3...1.0) // Placeholder
@@ -233,12 +127,21 @@ struct HabitsTabView: View {
         )
     }
     
-    private func parseGoal(from goalString: String) -> Goal? {
-        // Parse goal strings like "5 sessions/week" or "2L/day"
+    private func parseGoal(from goalString: String) -> Goal {
+        // More flexible goal parsing
         let components = goalString.lowercased().components(separatedBy: " ")
-        guard components.count >= 2,
-              let amount = Double(components[0]),
-              let unit = components.last else { return nil }
+        
+        // Try to extract amount from first component
+        var amount: Double = 1.0
+        if let firstComponent = components.first, let parsedAmount = Double(firstComponent) {
+            amount = parsedAmount
+        }
+        
+        // Try to extract unit from last component, or use default
+        var unit = "times"
+        if let lastComponent = components.last, !lastComponent.isEmpty {
+            unit = lastComponent
+        }
         
         return Goal(amount: amount, unit: unit)
     }
@@ -319,14 +222,8 @@ struct HabitsTabView: View {
                 
                 ScrollView {
                     VStack(spacing: 32) {
-                        // Habit Insights
-                        habitInsights
-                        
-                        // Habit Statistics
-                        habitStatistics
-                        
-                        // Individual Habit Progress
-                        habitProgressCards
+                        // Habit Management Section
+                        habitManagementSection
                         
                         Spacer(minLength: 20)
                     }
