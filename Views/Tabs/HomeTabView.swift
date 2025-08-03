@@ -194,77 +194,104 @@ struct HomeTabView: View {
     }
     
     private var habitsForSelectedDate: [Habit] {
-        // Performance optimization: Use cached result if date hasn't changed
+        print("🔍 INVESTIGATION: habitsForSelectedDate called for date: \(DateUtils.debugString(for: selectedDate))")
+        print("🔍 INVESTIGATION: Total habits available: \(habits.count)")
+        
+        // Print all habits and their schedules
+        for (index, habit) in habits.enumerated() {
+            print("🔍 INVESTIGATION: Habit \(index): '\(habit.name)' - Schedule: '\(habit.schedule)' - Start: \(DateUtils.debugString(for: habit.startDate))")
+        }
+        
+        // Calculate filtered habits for the selected date
+        let filteredHabits = habits.filter { habit in
+            let selected = DateUtils.startOfDay(for: selectedDate)
+            let start = DateUtils.startOfDay(for: habit.startDate)
+            let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            print("🔍 INVESTIGATION: Checking habit '\(habit.name)' for date \(DateUtils.debugString(for: selectedDate))")
+            print("🔍 INVESTIGATION: Habit schedule: '\(habit.schedule)'")
+            
+            // First check if the date is within the habit period
+            guard selected >= start && selected <= end else {
+                print("🔍 INVESTIGATION: Habit '\(habit.name)' NOT in date range")
+                return false
+            }
+            
+            print("🔍 INVESTIGATION: Habit '\(habit.name)' IS in date range, checking schedule...")
+            
+            // Then check if the habit should appear on this specific date based on schedule
+            let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
+            print("🔍 INVESTIGATION: Habit '\(habit.name)' should show: \(shouldShow)")
+            return shouldShow
+        }
+        
+        print("🔍 INVESTIGATION: Final filtered habits count: \(filteredHabits.count)")
+        for habit in filteredHabits {
+            print("🔍 INVESTIGATION: Will show habit: '\(habit.name)' with schedule '\(habit.schedule)'")
+        }
+        
+        // Update cache for future use
         if lastCalculatedDate != selectedDate {
-            // Calculate filtered habits without modifying state
-            let filteredHabits = habits.filter { habit in
-                let selected = DateUtils.startOfDay(for: selectedDate)
-                let start = DateUtils.startOfDay(for: habit.startDate)
-                let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
-                
-                // First check if the date is within the habit period
-                guard selected >= start && selected <= end else {
-                    return false
-                }
-                
-                // Then check if the habit should appear on this specific date based on schedule
-                return shouldShowHabitOnDate(habit, date: selectedDate)
-            }
-            
-            print("🏠 HomeTabView: Total habits: \(habits.count)")
-            print("🏠 HomeTabView: Filtered habits for \(selectedDate): \(filteredHabits.count)")
-            print("🏠 HomeTabView: Selected date: \(selectedDate)")
-            
-            // Debug: Print each habit's details
-            for (index, habit) in habits.enumerated() {
-                print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: \(habit.schedule)")
-            }
-            
-            // Update state in the next render cycle
             DispatchQueue.main.async {
                 self.cachedHabitsForDate = filteredHabits
                 self.lastCalculatedDate = self.selectedDate
             }
         }
         
-        return cachedHabitsForDate
+        return filteredHabits
     }
     
     private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
         let weekday = DateUtils.weekday(for: date)
         
+        print("🔍 INVESTIGATION: shouldShowHabitOnDate called for habit '\(habit.name)' on date \(DateUtils.debugString(for: date))")
+        print("🔍 INVESTIGATION: Habit schedule: '\(habit.schedule)'")
+        print("🔍 INVESTIGATION: Current weekday: \(weekday)")
+        
         // Check if the date is before the habit start date
         if date < DateUtils.startOfDay(for: habit.startDate) {
+            print("🔍 INVESTIGATION: Date is before habit start date")
             return false
         }
         
         // Check if the date is after the habit end date (if set)
         // Use >= to be inclusive of the end date
         if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
+            print("🔍 INVESTIGATION: Date is after habit end date")
             return false
         }
         
         switch habit.schedule {
         case "Everyday":
+            print("🔍 INVESTIGATION: Schedule is 'Everyday' - showing habit")
             return true
             
         case let schedule where schedule.hasPrefix("Every ") && schedule.contains("days"):
             // Handle "Every X days" format
+            print("🔍 INVESTIGATION: Processing 'Every X days' format: '\(schedule)'")
             if let dayCount = extractDayCount(from: schedule) {
                 let startDate = DateUtils.startOfDay(for: habit.startDate)
                 let selectedDate = DateUtils.startOfDay(for: date)
                 let daysSinceStart = DateUtils.daysBetween(startDate, selectedDate)
-                return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                let shouldShow = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                print("🔍 INVESTIGATION: dayCount: \(dayCount), daysSinceStart: \(daysSinceStart), shouldShow: \(shouldShow)")
+                return shouldShow
             }
+            // If we can't extract day count, don't show the habit
+            print("🔍 INVESTIGATION: Could not extract day count from schedule '\(schedule)'")
             return false
             
-        case let schedule where schedule.hasPrefix("Every "):
-            // Handle specific weekdays like "Every Monday, Wednesday"
+        case let schedule where schedule.hasPrefix("Every ") && !schedule.contains("days"):
+            // Handle specific weekdays like "Every Monday, Wednesday" (but not "Every X days")
+            print("🔍 INVESTIGATION: Processing weekday format: '\(schedule)'")
             let weekdays = extractWeekdays(from: schedule)
-            return weekdays.contains(weekday)
+            let shouldShow = weekdays.contains(weekday)
+            print("🔍 INVESTIGATION: weekdays: \(weekdays), current weekday: \(weekday), shouldShow: \(shouldShow)")
+            return shouldShow
             
         default:
             // For any other schedule, show the habit
+            print("🔍 INVESTIGATION: Default case - showing habit with schedule '\(habit.schedule)'")
             return true
         }
     }

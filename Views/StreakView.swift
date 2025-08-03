@@ -727,7 +727,7 @@ struct StreakView: View {
         case "Everyday":
             return true
             
-        case let schedule where schedule.hasPrefix("Every "):
+        case let schedule where schedule.hasPrefix("Every ") && schedule.contains("days"):
             // Handle "Every X days" format
             if let dayCount = extractDayCount(from: schedule) {
                 let startDate = calendar.startOfDay(for: habit.startDate)
@@ -735,10 +735,11 @@ struct StreakView: View {
                 let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: selectedDate).day ?? 0
                 return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
             }
+            // If we can't extract day count, don't show the habit
             return false
             
-        case let schedule where schedule.hasPrefix("Every "):
-            // Handle specific weekdays like "Every Monday, Wednesday"
+        case let schedule where schedule.hasPrefix("Every ") && !schedule.contains("days"):
+            // Handle specific weekdays like "Every Monday, Wednesday" (but not "Every X days")
             let weekdays = extractWeekdays(from: schedule)
             return weekdays.contains(weekday)
             

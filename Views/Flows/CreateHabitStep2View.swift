@@ -309,12 +309,15 @@ struct CreateHabitStep2View: View {
     
     // MARK: - Helper Functions
     private func createHabit() -> Habit {
+        print("🔍 INVESTIGATION: Creating habit with schedule: '\(schedule)'")
+        print("🔍 INVESTIGATION: Habit type: \(step1Data.4)")
+        
         if step1Data.4 == .formation {
             // NEW UNIFIED APPROACH - Habit Building
             let goalNumberInt = Int(goalNumber) ?? 1
             let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
             let goalString = "\(goalNumber) \(pluralizedUnit) per \(goalFrequency)"
-            return Habit(
+            let habit = Habit(
                 name: step1Data.0,
                 description: step1Data.1,
                 icon: step1Data.2,
@@ -327,12 +330,14 @@ struct CreateHabitStep2View: View {
                 endDate: endDate,
                 reminders: reminders
             )
+            print("🔍 INVESTIGATION: Created formation habit with schedule: '\(habit.schedule)'")
+            return habit
         } else {
             // NEW UNIFIED APPROACH - Habit Breaking
             let targetInt = Int(targetNumber) ?? 1
             let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
             let goalString = "\(targetNumber) \(targetPluralizedUnit) per \(targetFrequency)"
-            return Habit(
+            let habit = Habit(
                 name: step1Data.0,
                 description: step1Data.1,
                 icon: step1Data.2,
@@ -347,6 +352,8 @@ struct CreateHabitStep2View: View {
                 baseline: Int(baselineNumber) ?? 0,
                 target: Int(targetNumber) ?? 0
             )
+            print("🔍 INVESTIGATION: Created breaking habit with schedule: '\(habit.schedule)'")
+            return habit
         }
     }
     
@@ -476,9 +483,12 @@ struct CreateHabitStep2View: View {
             ScheduleBottomSheet(
                 onClose: { showingScheduleSheet = false },
                 onScheduleSelected: { selectedSchedule in
+                    print("🔍 INVESTIGATION: Schedule selected: '\(selectedSchedule)'")
                     schedule = selectedSchedule
+                    print("🔍 INVESTIGATION: Schedule variable updated to: '\(schedule)'")
                     showingScheduleSheet = false
-                }
+                },
+                initialSchedule: schedule
             )
         }
 
@@ -558,7 +568,8 @@ struct CreateHabitStep2View: View {
                 onScheduleSelected: { selectedSchedule in
                     goalFrequency = selectedSchedule.lowercased()
                     showingGoalFrequencySheet = false
-                }
+                },
+                initialSchedule: goalFrequency
             )
         }
         .sheet(isPresented: $showingBaselineUnitSheet) {
@@ -577,7 +588,8 @@ struct CreateHabitStep2View: View {
                 onScheduleSelected: { selectedSchedule in
                     baselineFrequency = selectedSchedule.lowercased()
                     showingBaselineFrequencySheet = false
-                }
+                },
+                initialSchedule: baselineFrequency
             )
         }
         .sheet(isPresented: $showingTargetUnitSheet) {
@@ -596,7 +608,8 @@ struct CreateHabitStep2View: View {
                 onScheduleSelected: { selectedSchedule in
                     targetFrequency = selectedSchedule.lowercased()
                     showingTargetFrequencySheet = false
-                }
+                },
+                initialSchedule: targetFrequency
             )
         }
         .onAppear {

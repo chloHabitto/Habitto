@@ -3,6 +3,7 @@ import SwiftUI
 struct ScheduleBottomSheet: View {
     let onClose: () -> Void
     let onScheduleSelected: (String) -> Void
+    let initialSchedule: String?
     
     @State private var selectedSchedule: String = "Daily"
     @State private var selectedTab = 0
@@ -15,6 +16,12 @@ struct ScheduleBottomSheet: View {
     @State private var selectedFrequencyWeekDays: Set<String> = []
     @State private var weeklyValue: Int = 1
     @State private var monthlyValue: Int = 1
+    
+    init(onClose: @escaping () -> Void, onScheduleSelected: @escaping (String) -> Void, initialSchedule: String? = nil) {
+        self.onClose = onClose
+        self.onScheduleSelected = onScheduleSelected
+        self.initialSchedule = initialSchedule
+    }
     
     private var pillTexts: [String] {
         let sortedDays = selectedWeekDays.sorted()
@@ -368,6 +375,12 @@ struct ScheduleBottomSheet: View {
             }
         }
         .presentationDetents([.large, .height(700)])
+        .onAppear {
+            // Initialize schedule if editing
+            if let initialSchedule = initialSchedule {
+                selectedDays = initialSchedule
+            }
+        }
     }
 }
 
