@@ -743,6 +743,17 @@ struct StreakView: View {
             let weekdays = extractWeekdays(from: schedule)
             return weekdays.contains(weekday)
             
+        case let schedule where schedule.contains("times a week"):
+            // Handle "X times a week" format (e.g., "1 times a week", "2 times a week")
+            if let timesPerWeek = extractTimesPerWeek(from: schedule) {
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let selectedDate = calendar.startOfDay(for: date)
+                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: selectedDate).weekOfYear ?? 0
+                return weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
+            }
+            // If we can't extract times per week, don't show the habit
+            return false
+            
         default:
             // For any other schedule, show the habit
             return true
@@ -751,7 +762,7 @@ struct StreakView: View {
     
     private func extractDayCount(from schedule: String) -> Int? {
         // Extract number from "Every X days" format
-        let pattern = "Every (\\d+) days?"
+        let pattern = #"Every (\d+) days?"#
         if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
            let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) {
             let range = match.range(at: 1)
@@ -774,6 +785,19 @@ struct StreakView: View {
         }
         
         return weekdays
+    }
+    
+    private func extractTimesPerWeek(from schedule: String) -> Int? {
+        // Extract number from "X times a week" format
+        let pattern = #"(\d+)\s+times\s+a\s+week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
     }
     
     // MARK: - Summary Statistics

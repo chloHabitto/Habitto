@@ -82,7 +82,7 @@ struct AddedHabitItem: View {
                                     .frame(width: 16, height: 16)
                                     .foregroundColor(.text05)
                                 
-                                Text(habit.schedule)
+                                Text(formatScheduleForDisplay(habit.schedule))
                                     .font(.appBodyExtraSmall)
                                     .foregroundColor(.text05)
                             }
@@ -118,6 +118,28 @@ struct AddedHabitItem: View {
                 .stroke(.outline, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+    
+    // Helper function to format schedule for display
+    private func formatScheduleForDisplay(_ schedule: String) -> String {
+        switch schedule {
+        case "Everyday":
+            return "Daily"
+        case "Weekdays":
+            return "Weekdays"
+        case "Weekends":
+            return "Weekends"
+        case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday":
+            return "Every \(schedule)"
+        case let s where s.contains("times a week"):
+            return s // Keep as is for now
+        case let s where s.contains("times a month"):
+            return s // Keep as is for now
+        case let s where s.hasPrefix("Every ") && s.contains("days"):
+            return s // Keep as is for now
+        default:
+            return schedule
+        }
     }
 }
 

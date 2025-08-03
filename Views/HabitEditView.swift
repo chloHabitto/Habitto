@@ -50,16 +50,34 @@ struct HabitEditView: View {
     
     // Computed property to check if any changes have been made
     private var hasChanges: Bool {
-        return habitName != habit.name ||
-               habitDescription != habit.description ||
-               selectedIcon != habit.icon ||
-               selectedColor != habit.color ||
-               selectedHabitType != habit.habitType ||
-               selectedSchedule != habit.schedule ||
-               selectedReminder != habit.reminder ||
-               reminders != habit.reminders ||
-               startDate != habit.startDate ||
-               endDate != habit.endDate
+        // Check basic fields
+        let basicChanges = habitName != habit.name ||
+                          habitDescription != habit.description ||
+                          selectedIcon != habit.icon ||
+                          selectedColor != habit.color ||
+                          selectedHabitType != habit.habitType ||
+                          selectedSchedule != habit.schedule ||
+                          selectedReminder != habit.reminder ||
+                          reminders != habit.reminders ||
+                          startDate != habit.startDate ||
+                          endDate != habit.endDate
+        
+        // Check unified approach fields
+        var unifiedChanges = false
+        
+        if selectedHabitType == .formation {
+            // For habit building, check goal fields
+            let currentGoal = "\(goalNumber) \(pluralizedGoalUnit) per \(goalFrequency)"
+            let originalGoal = habit.goal
+            unifiedChanges = currentGoal != originalGoal
+        } else {
+            // For habit breaking, check baseline and target fields
+            let currentBaseline = Int(baselineNumber) ?? 0
+            let currentTarget = Int(targetNumber) ?? 0
+            unifiedChanges = currentBaseline != habit.baseline || currentTarget != habit.target
+        }
+        
+        return basicChanges || unifiedChanges
     }
     
     init(habit: Habit, onSave: @escaping (Habit) -> Void) {

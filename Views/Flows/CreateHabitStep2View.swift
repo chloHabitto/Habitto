@@ -312,6 +312,10 @@ struct CreateHabitStep2View: View {
         print("🔍 INVESTIGATION: Creating habit with schedule: '\(schedule)'")
         print("🔍 INVESTIGATION: Habit type: \(step1Data.4)")
         
+        // Convert goal frequency to proper schedule format for calendar logic
+        let calendarSchedule = convertGoalFrequencyToSchedule(goalFrequency)
+        print("🔍 INVESTIGATION: Converted goal frequency '\(goalFrequency)' to schedule '\(calendarSchedule)'")
+        
         if step1Data.4 == .formation {
             // NEW UNIFIED APPROACH - Habit Building
             let goalNumberInt = Int(goalNumber) ?? 1
@@ -323,7 +327,7 @@ struct CreateHabitStep2View: View {
                 icon: step1Data.2,
                 color: step1Data.3,
                 habitType: step1Data.4,
-                schedule: schedule,
+                schedule: calendarSchedule,
                 goal: goalString,
                 reminder: reminder,
                 startDate: startDate,
@@ -343,7 +347,7 @@ struct CreateHabitStep2View: View {
                 icon: step1Data.2,
                 color: step1Data.3,
                 habitType: step1Data.4,
-                schedule: schedule,
+                schedule: calendarSchedule,
                 goal: goalString,
                 reminder: reminder,
                 startDate: startDate,
@@ -354,6 +358,49 @@ struct CreateHabitStep2View: View {
             )
             print("🔍 INVESTIGATION: Created breaking habit with schedule: '\(habit.schedule)'")
             return habit
+        }
+    }
+    
+    // Helper function to convert goal frequency to proper schedule format
+    private func convertGoalFrequencyToSchedule(_ frequency: String) -> String {
+        print("🔍 INVESTIGATION: Converting frequency: '\(frequency)'")
+        
+        switch frequency.lowercased() {
+        case "everyday":
+            return "Everyday"
+        case "weekdays":
+            return "Weekdays"
+        case "weekends":
+            return "Weekends"
+        case "monday":
+            return "Monday"
+        case "tuesday":
+            return "Tuesday"
+        case "wednesday":
+            return "Wednesday"
+        case "thursday":
+            return "Thursday"
+        case "friday":
+            return "Friday"
+        case "saturday":
+            return "Saturday"
+        case "sunday":
+            return "Sunday"
+        case let freq where freq.contains("times a week"):
+            // For "X times a week" format, return as is since calendar logic handles it
+            print("🔍 INVESTIGATION: Detected 'times a week' format: '\(freq)'")
+            return frequency // Keep original case
+        case let freq where freq.contains("times a month"):
+            // For "X times a month" format, return as is
+            print("🔍 INVESTIGATION: Detected 'times a month' format: '\(freq)'")
+            return frequency // Keep original case
+        case let freq where freq.hasPrefix("every ") && freq.contains("days"):
+            // For "Every X days" format, convert back to proper case for calendar logic
+            print("🔍 INVESTIGATION: Detected 'Every X days' format: '\(freq)'")
+            return freq.replacingOccurrences(of: "every ", with: "Every ")
+        default:
+            print("🔍 INVESTIGATION: Unknown frequency format: '\(frequency)', returning as is")
+            return frequency
         }
     }
     

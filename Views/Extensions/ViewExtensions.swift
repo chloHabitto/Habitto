@@ -70,7 +70,22 @@ struct DateUtils {
     
     static func daysBetween(_ startDate: Date, _ endDate: Date) -> Int {
         let components = calendar.dateComponents([.day], from: startOfDay(for: startDate), to: startOfDay(for: endDate))
-        return components.day ?? 0
+        let result = components.day ?? 0
+        print("🔍 INVESTIGATION: daysBetween - startDate: \(debugString(for: startDate)), endDate: \(debugString(for: endDate)), result: \(result)")
+        return result
+    }
+    
+    static func weeksBetween(_ startDate: Date, _ endDate: Date) -> Int {
+        // Calculate actual weeks between dates, not week number difference
+        let startOfStartWeek = calendar.dateInterval(of: .weekOfYear, for: startOfDay(for: startDate))?.start ?? startOfDay(for: startDate)
+        let startOfEndWeek = calendar.dateInterval(of: .weekOfYear, for: startOfDay(for: endDate))?.start ?? startOfDay(for: endDate)
+        
+        let components = calendar.dateComponents([.day], from: startOfStartWeek, to: startOfEndWeek)
+        let daysBetween = components.day ?? 0
+        let weeksBetween = daysBetween / 7
+        
+        print("🔍 INVESTIGATION: weeksBetween - startDate: \(debugString(for: startDate)), endDate: \(debugString(for: endDate)), weeksBetween: \(weeksBetween)")
+        return weeksBetween
     }
     
     static func isDateInPast(_ date: Date) -> Bool {

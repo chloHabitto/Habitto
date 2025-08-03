@@ -198,7 +198,7 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                Text(habit.schedule)
+                Text(formatScheduleForDisplay(habit.schedule))
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.primary)
             }
@@ -354,6 +354,28 @@ struct HabitDetailView: View {
         
         // Notify parent view of the change
         onUpdateHabit?(updatedHabit)
+    }
+    
+    // Helper function to format schedule for display
+    private func formatScheduleForDisplay(_ schedule: String) -> String {
+        switch schedule {
+        case "Everyday":
+            return "Daily"
+        case "Weekdays":
+            return "Weekdays"
+        case "Weekends":
+            return "Weekends"
+        case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday":
+            return "Every \(schedule)"
+        case let s where s.contains("times a week"):
+            return s // Keep as is for now
+        case let s where s.contains("times a month"):
+            return s // Keep as is for now
+        case let s where s.hasPrefix("Every ") && s.contains("days"):
+            return s // Keep as is for now
+        default:
+            return schedule
+        }
     }
 }
 
