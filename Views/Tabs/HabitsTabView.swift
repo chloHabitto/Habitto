@@ -49,6 +49,7 @@ struct HabitsTabView: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(PlainButtonStyle())
+
                 )
             }
         ) {

@@ -17,7 +17,23 @@ struct ProgressTabView: View {
     
     var body: some View {
         WhiteSheetContainer(
-            title: "Progress"
+            title: "Progress",
+            rightButton: {
+                AnyView(
+                    Button(action: {
+                        // View button action
+                    }) {
+                        Text("View")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.primaryContainer)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                )
+            }
         ) {
             VStack(spacing: 0) {
                 // Top Level Tabs: Building | Breaking

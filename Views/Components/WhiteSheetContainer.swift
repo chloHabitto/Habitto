@@ -49,7 +49,8 @@ struct WhiteSheetContainer<Content: View>: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 16)
+                .padding(.vertical, 12)
+//                .background(.red)
             }
             
             if let subtitle = subtitle {
