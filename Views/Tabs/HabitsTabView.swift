@@ -3,6 +3,7 @@ import SwiftUI
 struct HabitsTabView: View {
     @State private var selectedStatsTab: Int = 0
     @State private var selectedHabit: Habit? = nil
+    @State private var showingAllHabitsView = false
     let habits: [Habit]
     let onDeleteHabit: (Habit) -> Void
     let onEditHabit: (Habit) -> Void
@@ -27,18 +28,10 @@ struct HabitsTabView: View {
     var body: some View {
         WhiteSheetContainer(
             title: "Habits",
-            headerContent: {
-                AnyView(
-                    statsRow
-                        .padding(.horizontal, 0)
-                        .padding(.top, 2)
-                        .padding(.bottom, 0)
-                )
-            },
             rightButton: {
                 AnyView(
                     Button(action: {
-                        // View button action
+                        showingAllHabitsView = true
                     }) {
                         Text("View")
                             .font(.appBodyMedium)
@@ -53,52 +46,27 @@ struct HabitsTabView: View {
                 )
             }
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    if habits.isEmpty {
-                        // Empty state
-                        VStack(spacing: 12) {
-                            Image(systemName: "list.bullet.circle")
-                                .font(.appDisplaySmall)
-                                .foregroundColor(.secondary)
-                            
-                            Text("No habits yet")
-                                .font(.appButtonText2)
-                                .foregroundColor(.secondary)
-                            
-                            Text("Create your first habit to get started")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 40)
-                        .padding(.horizontal, 20)
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(filteredHabits) { habit in
-                                habitDetailRow(habit)
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                        Button("Edit") {
-                                            // TODO: Implement edit functionality
-                                        }
-                                        .tint(.blue)
-                                        
-                                        Button("Delete") {
-                                            onDeleteHabit(habit)
-                                        }
-                                        .tint(.red)
-                                    }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 20)
+            VStack {
+                Text("Click 'View' to see all your habits")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                
+                Spacer()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date(), onDeleteHabit: onDeleteHabit)
+        }
+        .sheet(isPresented: $showingAllHabitsView) {
+            AllHabitsView(
+                habits: habits,
+                onDeleteHabit: onDeleteHabit,
+                onEditHabit: onEditHabit,
+                onUpdateHabit: onUpdateHabit
+            )
         }
     }
     
@@ -196,4 +164,159 @@ struct HabitsTabView: View {
     }
 }
 
- 
+// MARK: - AllHabitsView
+struct AllHabitsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedStatsTab: Int = 0
+    @State private var selectedHabit: Habit? = nil
+    let habits: [Habit]
+    let onDeleteHabit: (Habit) -> Void
+    let onEditHabit: (Habit) -> Void
+    let onUpdateHabit: ((Habit) -> Void)?
+    
+    init(habits: [Habit], onDeleteHabit: @escaping (Habit) -> Void, onEditHabit: @escaping (Habit) -> Void, onUpdateHabit: ((Habit) -> Void)? = nil) {
+        self.habits = habits
+        self.onDeleteHabit = onDeleteHabit
+        self.onEditHabit = onEditHabit
+        self.onUpdateHabit = onUpdateHabit
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Stats Row (Active/Inactive tabs)
+                statsRow
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                
+                // Habit List
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if habits.isEmpty {
+                            // Empty state
+                            VStack(spacing: 12) {
+                                Image(systemName: "list.bullet.circle")
+                                    .font(.appDisplaySmall)
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No habits yet")
+                                    .font(.appButtonText2)
+                                    .foregroundColor(.secondary)
+                                
+                                Text("Create your first habit to get started")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 40)
+                            .padding(.horizontal, 20)
+                        } else {
+                            LazyVStack(spacing: 12) {
+                                ForEach(filteredHabits) { habit in
+                                    habitDetailRow(habit)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                            Button("Edit") {
+                                                onEditHabit(habit)
+                                            }
+                                            .tint(.blue)
+                                            
+                                            Button("Delete") {
+                                                onDeleteHabit(habit)
+                                            }
+                                            .tint(.red)
+                                        }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 20)
+                }
+            }
+            .background(.surface2)
+            .navigationTitle("All Habits")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .fullScreenCover(item: $selectedHabit) { habit in
+            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date(), onDeleteHabit: onDeleteHabit)
+        }
+    }
+    
+    private var filteredHabits: [Habit] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        switch selectedStatsTab {
+        case 0: // Active
+            return habits.filter { habit in
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+                return today >= startDate && today <= endDate
+            }
+        case 1: // Inactive
+            return habits.filter { habit in
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+                return today < startDate || today > endDate
+            }
+        case 2, 3: // Dummy tabs - show all habits
+            return habits
+        default:
+            return habits
+        }
+    }
+    
+    private func habitDetailRow(_ habit: Habit) -> some View {
+        AddedHabitItem(
+            habit: habit,
+            onEdit: {
+                onEditHabit(habit)
+            },
+            onDelete: {
+                onDeleteHabit(habit)
+            },
+            onTap: {
+                selectedHabit = habit
+            }
+        )
+    }
+    
+    // MARK: - Stats Row
+    private var statsRow: some View {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        let activeHabits = habits.filter { habit in
+            let startDate = calendar.startOfDay(for: habit.startDate)
+            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            return today >= startDate && today <= endDate
+        }
+        
+        let inactiveHabits = habits.filter { habit in
+            let startDate = calendar.startOfDay(for: habit.startDate)
+            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            return today < startDate || today > endDate
+        }
+        
+        let tabs = TabItem.createStatsTabs(activeCount: activeHabits.count, inactiveCount: inactiveHabits.count)
+        
+        return UnifiedTabBarView(
+            tabs: tabs,
+            selectedIndex: selectedStatsTab,
+            style: .underline
+        ) { index in
+            if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
+                selectedStatsTab = index
+            }
+        }
+    }
+}
