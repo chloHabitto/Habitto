@@ -6,7 +6,7 @@ import SwiftUI
 struct InputFieldModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
             .padding(.vertical, 12)
             .background(.surface)
             .overlay(

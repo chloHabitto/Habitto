@@ -244,8 +244,8 @@ struct CreateHabitStep2View: View {
                 .foregroundColor(.text05)
                 .padding(.bottom, 12)
             
-            HStack(spacing: 8) {
-                // Number input field
+            HStack(spacing: 4) {
+                // Number input field - smaller width
                 TextField("1", text: numberText)
                     .font(.appBodyLarge)
                     .foregroundColor(.text01)
@@ -253,10 +253,10 @@ struct CreateHabitStep2View: View {
                     .keyboardType(.numberPad)
                     .focused(isFocused)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                    .frame(width: 40)
                     .inputFieldStyle()
                 
-                // Unit selector button
+                // Unit selector button - smaller width
                 Button(action: onUnitTap) {
                     HStack {
                         Text(unitText)
@@ -267,7 +267,7 @@ struct CreateHabitStep2View: View {
                             .font(.appLabelSmall)
                             .foregroundColor(.primaryDim)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(width: 70)
                     .inputFieldStyle()
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -276,15 +276,17 @@ struct CreateHabitStep2View: View {
                 Text("/")
                     .font(.appBodyLarge)
                     .foregroundColor(.text04)
-                    .frame(width: 20)
+                    .frame(width: 12)
                 
-                // Frequency selector button
+                // Frequency selector button - larger width for one-line text
                 Button(action: onFrequencyTap) {
                     HStack {
                         Text(frequencyText)
                             .font(.appBodyLarge)
                             .foregroundColor(isValid ? .text04 : .text06)
                             .id(uiUpdateTrigger) // Force re-render when trigger changes
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                         Image(systemName: "chevron.right")
                             .font(.appLabelSmall)
                             .foregroundColor(.primaryDim)
