@@ -22,30 +22,7 @@ struct ScheduledHabitItem: View {
                 .frame(maxHeight: .infinity)
             
             // SelectedIcon
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(habit.color.opacity(0.15))
-                    .frame(width: 30, height: 30)
-                
-                if habit.icon.hasPrefix("Icon-") {
-                    // Asset icon
-                    Image(habit.icon)
-                        .resizable()
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(habit.color)
-                } else if habit.icon == "None" {
-                    // No icon selected - show colored rounded rectangle
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(habit.color)
-                        .frame(width: 14, height: 14)
-                } else {
-                    // Emoji or system icon
-                    Text(habit.icon)
-                        .font(.system(size: 14))
-                }
-            }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 12)
+            HabitIconView(habit: habit)
             
             // VStack with title and description
             VStack(alignment: .leading, spacing: 2) {
