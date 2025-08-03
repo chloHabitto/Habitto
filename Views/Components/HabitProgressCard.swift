@@ -16,8 +16,8 @@ struct HabitProgressCard: View {
             
             // VStack with title, description, and progress info
             VStack(spacing: 8) {
-                // Top row: Text container and trend arrow
-                HStack(spacing: 4) {
+                // Top row: Text container and badge
+                HStack(alignment: .center, spacing: 12) {
                     // Text container
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habitProgress.habit.name)
@@ -27,36 +27,8 @@ struct HabitProgressCard: View {
                             .truncationMode(.tail)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 8)
-                    
-                    // Trend Arrow
-                    Image(systemName: habitProgress.trend.icon)
-                        .font(.caption)
-                        .foregroundColor(habitProgress.trend.color)
-                        .frame(width: 40, height: 40)
-                }
-                
-                // Progress Bar
-                ProgressView(value: habitProgress.completionPercentage, total: 100)
-                    .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
-                    .scaleEffect(x: 1, y: 2, anchor: .center)
-                
-                // Bottom row: Progress percentage and status
-                HStack {
-                    // Progress percentage
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(Int(habitProgress.completionPercentage))%")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text05)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        
-                        Text(metricLabel)
-                            .font(.appBodyExtraSmall)
-                            .foregroundColor(.text05)
-                    }
-                    
-                    Spacer()
+//                    .background(.red)
+//                    .padding(.top, 16)
                     
                     // Status Label - Different for habit breaking
                     HStack(spacing: 4) {
@@ -75,9 +47,36 @@ struct HabitProgressCard: View {
                             .fill(habitProgress.status.color.opacity(0.1))
                     )
                 }
+//                .background(.red)
+                .padding(.bottom, 4)
+                
+                // Progress Bar
+                ProgressView(value: habitProgress.completionPercentage, total: 100)
+                    .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
+                    .scaleEffect(x: 1, y: 2, anchor: .center)
+                
+                // Bottom row: Progress percentage
+                HStack {
+                    // Progress percentage
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(Int(habitProgress.completionPercentage))%")
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text05)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        
+                        Text(metricLabel)
+                            .font(.appBodyExtraSmall)
+                            .foregroundColor(.text05)
+                    }
+                    
+                    Spacer()
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
+            .padding(.leading, 4)
+            .padding(.trailing, 16)
+            .padding(.top, 12)
             .padding(.bottom, 14)
         }
         .background(.surface)
@@ -85,7 +84,7 @@ struct HabitProgressCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(.outline, lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
     private var progressColor: Color {
