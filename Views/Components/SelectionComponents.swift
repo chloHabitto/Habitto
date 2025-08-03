@@ -127,7 +127,7 @@ extension SelectionRowWithVisual {
         self.visualElement = AnyView(
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(color)
+                    .fill(color.opacity(0.15))
                     .frame(width: 28, height: 28)
                 
                 if icon.hasPrefix("Icon-") {
