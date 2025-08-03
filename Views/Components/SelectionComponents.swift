@@ -72,9 +72,14 @@ struct SelectionRow: View {
 
 struct SelectionRowWithVisual: View {
     let title: String
-    let visualElement: AnyView
     let value: String
     let action: () -> Void
+    let visualType: VisualType
+    
+    enum VisualType {
+        case color(Color)
+        case icon(String, Color)
+    }
     
     var body: some View {
         Button(action: action) {
@@ -84,7 +89,7 @@ struct SelectionRowWithVisual: View {
                     .foregroundColor(.text01)
                 Spacer()
                 HStack(spacing: 8) {
-                    visualElement
+                    visualView
                     Text(value)
                         .font(.appBodyLarge)
                         .foregroundColor(.text04)
@@ -96,35 +101,15 @@ struct SelectionRowWithVisual: View {
         }
         .selectionRowStyle()
     }
-}
-
-// MARK: - Convenience Initializers for Common Visual Elements
-extension SelectionRowWithVisual {
-    init(
-        title: String,
-        color: Color,
-        value: String,
-        action: @escaping () -> Void
-    ) {
-        self.title = title
-        self.visualElement = AnyView(
+    
+    @ViewBuilder
+    private var visualView: some View {
+        switch visualType {
+        case .color(let color):
             RoundedRectangle(cornerRadius: 8)
                 .fill(color)
                 .frame(width: 24, height: 24)
-        )
-        self.value = value
-        self.action = action
-    }
-    
-    init(
-        title: String,
-        icon: String,
-        color: Color,
-        value: String,
-        action: @escaping () -> Void
-    ) {
-        self.title = title
-        self.visualElement = AnyView(
+        case .icon(let icon, let color):
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(color.opacity(0.15))
@@ -147,9 +132,35 @@ extension SelectionRowWithVisual {
                         .font(.system(size: 14))
                 }
             }
-        )
+        }
+    }
+}
+
+// MARK: - Convenience Initializers for Common Visual Elements
+extension SelectionRowWithVisual {
+    init(
+        title: String,
+        color: Color,
+        value: String,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
         self.value = value
         self.action = action
+        self.visualType = .color(color)
+    }
+    
+    init(
+        title: String,
+        icon: String,
+        color: Color,
+        value: String,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.value = value
+        self.action = action
+        self.visualType = .icon(icon, color)
     }
 }
 

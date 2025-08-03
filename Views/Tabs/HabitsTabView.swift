@@ -1,56 +1,29 @@
 import SwiftUI
 
 struct HabitsTabView: View {
-    @State private var selectedStatsTab: Int = 0
     @State private var selectedHabit: Habit? = nil
     @State private var showingAllHabitsView = false
     @State private var selectedHabitType: HabitType = .formation
     @State private var selectedPeriod: TimePeriod = .today
+    
     let habits: [Habit]
     let onDeleteHabit: (Habit) -> Void
     let onEditHabit: (Habit) -> Void
     let onCreateHabit: () -> Void
     let onUpdateHabit: ((Habit) -> Void)?
     
-    // Custom initializer with default value for onUpdateHabit
-    init(
-        habits: [Habit],
-        onDeleteHabit: @escaping (Habit) -> Void,
-        onEditHabit: @escaping (Habit) -> Void,
-        onCreateHabit: @escaping () -> Void,
-        onUpdateHabit: ((Habit) -> Void)? = nil
-    ) {
-        self.habits = habits
-        self.onDeleteHabit = onDeleteHabit
-        self.onEditHabit = onEditHabit
-        self.onCreateHabit = onCreateHabit
-        self.onUpdateHabit = onUpdateHabit
+    // MARK: - Computed Properties
+    private var filteredHabitsByType: [Habit] {
+        habits.filter { $0.habitType == selectedHabitType }
     }
     
-
-    
-
-    
-    // MARK: - Helper Methods
-    private func getActiveHabitsCount() -> Int {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        return filteredHabitsByType.filter { habit in
-            let startDate = calendar.startOfDay(for: habit.startDate)
-            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-            return today >= startDate && today <= endDate
-        }.count
-    }
-    
-    private func getBestHabit() -> Habit? {
-        // For now, return the first habit as "best" - this could be enhanced with actual performance data
-        return filteredHabitsByType.first
-    }
-    
-    private func getHabitNeedingAttention() -> Habit? {
-        // For now, return the second habit as needing attention - this could be enhanced with actual performance data
-        return filteredHabitsByType.count > 1 ? filteredHabitsByType[1] : nil
+    private var periodStats: [(String, TimePeriod?)] {
+        return [
+            ("Today", .today),
+            ("Week", .week),
+            ("Year", .year),
+            ("All", .all)
+        ]
     }
     
     // MARK: - Habit Management Section
@@ -77,7 +50,6 @@ struct HabitsTabView: View {
                 )
             } else {
                 VStack(spacing: 16) {
-                    // Individual Habit Cards
                     ForEach(filteredHabitsByType.prefix(3), id: \.id) { habit in
                         if let habitProgress = createHabitProgress(for: habit) {
                             HabitProgressCard(habitProgress: habitProgress)
@@ -92,13 +64,9 @@ struct HabitsTabView: View {
         }
     }
     
-
-    
     // MARK: - Helper Methods for Progress Cards
     private func createHabitProgress(for habit: Habit) -> HabitProgress? {
-        // Create a simple HabitProgress for demonstration
-        // In a real app, this would calculate actual progress data
-        let completionPercentage = Double.random(in: 20...90) // Placeholder
+        let completionPercentage = Double.random(in: 20...90)
         let trend: TrendDirection = [.improving, .stable, .declining].randomElement() ?? .stable
         
         return HabitProgress(
@@ -110,14 +78,9 @@ struct HabitsTabView: View {
     }
     
     private func createHabitGoal(for habit: Habit) -> HabitGoal? {
-        // Create a simple HabitGoal for demonstration
-        // In a real app, this would parse actual goal data
-        print("🔍 Creating goal for habit: \(habit.name), goal string: '\(habit.goal)'")
         let goal = parseGoal(from: habit.goal)
-        print("🔍 Parsed goal: \(goal.amount) \(goal.unit)")
-        
-        let currentAverage = Double.random(in: 1...10) // Placeholder
-        let goalHitRate = Double.random(in: 0.3...1.0) // Placeholder
+        let currentAverage = Double.random(in: 1...10)
+        let goalHitRate = Double.random(in: 0.3...1.0)
         
         return HabitGoal(
             habit: habit,
@@ -128,16 +91,13 @@ struct HabitsTabView: View {
     }
     
     private func parseGoal(from goalString: String) -> Goal {
-        // More flexible goal parsing
         let components = goalString.lowercased().components(separatedBy: " ")
         
-        // Try to extract amount from first component
         var amount: Double = 1.0
         if let firstComponent = components.first, let parsedAmount = Double(firstComponent) {
             amount = parsedAmount
         }
         
-        // Try to extract unit from last component, or use default
         var unit = "times"
         if let lastComponent = components.last, !lastComponent.isEmpty {
             unit = lastComponent
@@ -178,20 +138,6 @@ struct HabitsTabView: View {
         .padding(.bottom, 16)
     }
     
-    private var periodStats: [(String, TimePeriod?)] {
-        return [
-            ("Today", .today),
-            ("Week", .week),
-            ("Year", .year),
-            ("All", .all)
-        ]
-    }
-    
-    // MARK: - Computed Properties
-    private var filteredHabitsByType: [Habit] {
-        habits.filter { $0.habitType == selectedHabitType }
-    }
-    
     var body: some View {
         WhiteSheetContainer(
             title: "Habits",
@@ -209,22 +155,16 @@ struct HabitsTabView: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(PlainButtonStyle())
-
                 )
             }
         ) {
             VStack(spacing: 0) {
-                // Top Level Tabs: Building | Breaking
                 habitTypeSelector
-                
-                // Sub Tabs: Today | Weekly | Yearly
                 periodSelector
                 
                 ScrollView {
                     VStack(spacing: 32) {
-                        // Habit Management Section
                         habitManagementSection
-                        
                         Spacer(minLength: 20)
                     }
                     .padding(.horizontal, 20)
@@ -244,7 +184,20 @@ struct HabitsTabView: View {
             )
         }
     }
+}
+
+// MARK: - AllHabitsView
+struct AllHabitsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedStatsTab: Int = 0
+    @State private var selectedHabit: Habit? = nil
     
+    let habits: [Habit]
+    let onDeleteHabit: (Habit) -> Void
+    let onEditHabit: (Habit) -> Void
+    let onUpdateHabit: ((Habit) -> Void)?
+    
+    // MARK: - Computed Properties
     private var filteredHabits: [Habit] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -252,20 +205,14 @@ struct HabitsTabView: View {
         switch selectedStatsTab {
         case 0: // Active
             return habits.filter { habit in
-                // Check if habit is currently active (within its period)
                 let startDate = calendar.startOfDay(for: habit.startDate)
                 let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                
-                // Habit is active if today is within its period
                 return today >= startDate && today <= endDate
             }
         case 1: // Inactive
             return habits.filter { habit in
-                // Check if habit is currently inactive (outside its period)
                 let startDate = calendar.startOfDay(for: habit.startDate)
                 let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                
-                // Habit is inactive if today is outside its period
                 return today < startDate || today > endDate
             }
         case 2, 3: // Dummy tabs - show all habits
@@ -275,40 +222,6 @@ struct HabitsTabView: View {
         }
     }
     
-    private func habitDetailRow(_ habit: Habit) -> some View {
-        AddedHabitItem(
-            habit: habit,
-            onEdit: {
-                print("🔄 HabitsTabView: Edit button tapped for habit: \(habit.name)")
-                print("🔄 HabitsTabView: Calling onEditHabit callback")
-                onEditHabit(habit)
-                print("🔄 HabitsTabView: onEditHabit callback completed")
-            },
-            onDelete: {
-                print("🔄 HabitsTabView: Delete button tapped for habit: \(habit.name)")
-                onDeleteHabit(habit)
-            },
-            onTap: {
-                selectedHabit = habit
-            }
-        )
-    }
-    
-    private func detailItem(icon: String, text: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.appLabelSmallEmphasised)
-                .foregroundColor(.secondary)
-            
-            Text(text)
-                .font(.appLabelSmallEmphasised)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-
-    
-    // MARK: - Stats Row
     private var statsRow: some View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -332,49 +245,40 @@ struct HabitsTabView: View {
             selectedIndex: selectedStatsTab,
             style: .underline
         ) { index in
-            if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
+            if index < 2 {
                 selectedStatsTab = index
             }
         }
     }
     
-
-}
-
-// MARK: - AllHabitsView
-struct AllHabitsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedStatsTab: Int = 0
-    @State private var selectedHabit: Habit? = nil
-    let habits: [Habit]
-    let onDeleteHabit: (Habit) -> Void
-    let onEditHabit: (Habit) -> Void
-    let onUpdateHabit: ((Habit) -> Void)?
-    
-    init(habits: [Habit], onDeleteHabit: @escaping (Habit) -> Void, onEditHabit: @escaping (Habit) -> Void, onUpdateHabit: ((Habit) -> Void)? = nil) {
-        self.habits = habits
-        self.onDeleteHabit = onDeleteHabit
-        self.onEditHabit = onEditHabit
-        self.onUpdateHabit = onUpdateHabit
+    private func habitDetailRow(_ habit: Habit) -> some View {
+        AddedHabitItem(
+            habit: habit,
+            onEdit: {
+                onEditHabit(habit)
+            },
+            onDelete: {
+                onDeleteHabit(habit)
+            },
+            onTap: {
+                selectedHabit = habit
+            }
+        )
     }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Fixed Header with Tabs
                 VStack(spacing: 0) {
-                    // Stats Row (Active/Inactive tabs)
                     statsRow
                         .padding(.horizontal, 0)
                         .padding(.top, 16)
                         .background(.white)
                 }
                 
-                // Scrollable Habit List
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         if habits.isEmpty {
-                            // Empty state
                             VStack(spacing: 12) {
                                 Image(systemName: "list.bullet.circle")
                                     .font(.appDisplaySmall)
@@ -392,7 +296,6 @@ struct AllHabitsView: View {
                             .padding(.vertical, 40)
                             .padding(.horizontal, 20)
                         } else {
-                            // Habit List
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("All Habits")
                                     .font(.appTitleLarge)
@@ -401,7 +304,7 @@ struct AllHabitsView: View {
                                     .padding(.horizontal, 20)
                                 
                                 LazyVStack(spacing: 12) {
-                                    ForEach(habitsWithProgress) { habit in
+                                    ForEach(filteredHabits, id: \.id) { habit in
                                         habitDetailRow(habit)
                                             .padding(.horizontal, 20)
                                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -439,83 +342,4 @@ struct AllHabitsView: View {
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date(), onDeleteHabit: onDeleteHabit)
         }
     }
-    
-    private var filteredHabits: [Habit] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        switch selectedStatsTab {
-        case 0: // Active
-            return habits.filter { habit in
-                let startDate = calendar.startOfDay(for: habit.startDate)
-                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                return today >= startDate && today <= endDate
-            }
-        case 1: // Inactive
-            return habits.filter { habit in
-                let startDate = calendar.startOfDay(for: habit.startDate)
-                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                return today < startDate || today > endDate
-            }
-        case 2, 3: // Dummy tabs - show all habits
-            return habits
-        default:
-            return habits
-        }
-    }
-    
-    private var habitsWithProgress: [Habit] {
-        return filteredHabits
-    }
-    
-    private var habitsWithGoals: [Habit] {
-        return filteredHabits
-    }
-    
-    private func habitDetailRow(_ habit: Habit) -> some View {
-        AddedHabitItem(
-            habit: habit,
-            onEdit: {
-                onEditHabit(habit)
-            },
-            onDelete: {
-                onDeleteHabit(habit)
-            },
-            onTap: {
-                selectedHabit = habit
-            }
-        )
-    }
-    
-    // MARK: - Stats Row
-    private var statsRow: some View {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        let activeHabits = habits.filter { habit in
-            let startDate = calendar.startOfDay(for: habit.startDate)
-            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-            return today >= startDate && today <= endDate
-        }
-        
-        let inactiveHabits = habits.filter { habit in
-            let startDate = calendar.startOfDay(for: habit.startDate)
-            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-            return today < startDate || today > endDate
-        }
-        
-        let tabs = TabItem.createStatsTabs(activeCount: activeHabits.count, inactiveCount: inactiveHabits.count)
-        
-        return UnifiedTabBarView(
-            tabs: tabs,
-            selectedIndex: selectedStatsTab,
-            style: .underline
-        ) { index in
-            if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
-                selectedStatsTab = index
-            }
-        }
-    }
-    
-
 }
