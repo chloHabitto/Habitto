@@ -675,12 +675,12 @@ struct CreateHabitStep2View: View {
                 uiUpdateTrigger: uiUpdateTrigger
             )
             
-            // Schedule
-            SelectionRow(
-                title: "Schedule",
-                value: schedule,
-                action: { showingScheduleSheet = true }
-            )
+            // Schedule - COMMENTED OUT: Now embedded in Goal element as frequency selector
+            // SelectionRow(
+            //     title: "Schedule",
+            //     value: schedule,
+            //     action: { showingScheduleSheet = true }
+            // )
             
             // Reminder
             VStack(alignment: .leading, spacing: 8) {
@@ -795,12 +795,12 @@ struct CreateHabitStep2View: View {
                 uiUpdateTrigger: uiUpdateTrigger
             )
             
-            // Schedule
-            SelectionRow(
-                title: "Schedule",
-                value: schedule,
-                action: { showingScheduleSheet = true }
-            )
+            // Schedule - COMMENTED OUT: Now embedded in Current Baseline and Reduction Goal elements as frequency selectors
+            // SelectionRow(
+            //     title: "Schedule",
+            //     value: schedule,
+            //     action: { showingScheduleSheet = true }
+            // )
             
             // Reminder
             VStack(alignment: .leading, spacing: 8) {
