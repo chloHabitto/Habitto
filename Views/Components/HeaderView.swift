@@ -3,11 +3,13 @@ import SwiftUI
 struct HeaderView: View {
     let onCreateHabit: () -> Void
     let onStreakTap: () -> Void
+    let onNotificationTap: () -> Void
     let showProfile: Bool
     
-    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, showProfile: Bool = false) {
+    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, onNotificationTap: @escaping () -> Void, showProfile: Bool = false) {
         self.onCreateHabit = onCreateHabit
         self.onStreakTap = onStreakTap
+        self.onNotificationTap = onNotificationTap
         self.showProfile = showProfile
     }
     
@@ -65,7 +67,7 @@ struct HeaderView: View {
             
             HStack(spacing: 2) {
                 // Notification bell
-                Button(action: {}) {
+                Button(action: onNotificationTap) {
                     Image("Icon-notification")
                         .resizable()
                         .frame(width: 24, height: 24)

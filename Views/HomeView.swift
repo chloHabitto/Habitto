@@ -20,6 +20,7 @@ class HomeViewState: ObservableObject {
     @Published var showingDeleteConfirmation = false
     @Published var habitToDelete: Habit?
     @Published var showingStreakView = false
+    @Published var showingNotificationView = false
     
     // Performance optimization: Cache expensive operations
     private var lastHabitsUpdate: Date = Date()
@@ -93,6 +94,9 @@ struct HomeView: View {
                         },
                         onStreakTap: {
                             state.showingStreakView = true
+                        },
+                        onNotificationTap: {
+                            state.showingNotificationView = true
                         },
                         showProfile: state.selectedTab == .more
                     )
@@ -184,6 +188,9 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $state.showingStreakView) {
             StreakView(userHabits: state.habits)
+        }
+        .sheet(isPresented: $state.showingNotificationView) {
+            NotificationView()
         }
     }
     
