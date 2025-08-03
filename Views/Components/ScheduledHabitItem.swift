@@ -24,7 +24,7 @@ struct ScheduledHabitItem: View {
             // SelectedIcon
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.surfaceContainer)
+                    .fill(habit.color.opacity(0.15))
                     .frame(width: 30, height: 30)
                 
                 if habit.icon.hasPrefix("Icon-") {
