@@ -66,7 +66,7 @@ struct AddedHabitItem: View {
                         Image("Icon-more_vert")
                             .resizable()
                             .frame(width: 24, height: 24)
-                            .foregroundColor(.primaryDim)
+                            .foregroundColor(.text06)
                             .contentShape(Rectangle())
                     }
                     .frame(width: 40, height: 40)

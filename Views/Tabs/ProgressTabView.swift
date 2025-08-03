@@ -44,14 +44,14 @@ struct ProgressTabView: View {
                 
                 ScrollView {
                     VStack(spacing: 32) {
-                        // Performance Overview (adapts to filters)
-                        performanceOverview
+                        // Progress Overview Charts
+                        progressOverviewCharts
                         
                         // Insight Highlights (context-aware)
                         insightHighlights
                         
-                        // Goal Achievement Analysis
-                        goalAchievementAnalysis
+                        // Progress Analytics
+                        progressAnalytics
                         
                         Spacer(minLength: 20)
                     }
@@ -151,11 +151,58 @@ struct ProgressTabView: View {
         ]
     }
     
-    // MARK: - Performance Overview
-    private var performanceOverview: some View {
+    // MARK: - Chart Components
+    private var overallProgressChart: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Overall Progress")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            // Placeholder for progress chart
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.surface)
+                .frame(height: 200)
+                .overlay(
+                    VStack {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 40))
+                            .foregroundColor(.primary)
+                        Text("Progress Chart")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
+                    }
+                )
+        }
+    }
+    
+    private var successRateChart: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Success Rate")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            // Placeholder for success rate chart
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.surface)
+                .frame(height: 150)
+                .overlay(
+                    VStack {
+                        Image(systemName: "chart.pie")
+                            .font(.system(size: 40))
+                            .foregroundColor(.primary)
+                        Text("Success Rate Chart")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
+                    }
+                )
+        }
+    }
+    
+    // MARK: - Progress Overview Charts
+    private var progressOverviewCharts: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text(performanceOverviewTitle)
+                Text("Progress Overview")
                     .font(.appTitleLarge)
                     .fontWeight(.bold)
                     .foregroundColor(.text01)
@@ -165,19 +212,21 @@ struct ProgressTabView: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 16))
                     .foregroundColor(.text06)
-                    .help("Shows your habit completion progress for this period")
+                    .help("Shows your overall progress trends for this period")
             }
             
             if cachedHabitsWithProgress.isEmpty {
                 EmptyStateView(
-                    icon: selectedHabitType == .formation ? "plus.circle" : "minus.circle",
-                    message: emptyStateMessage
+                    icon: selectedHabitType == .formation ? "chart.line.uptrend.xyaxis" : "chart.line.downtrend.xyaxis",
+                    message: "No progress data for this period"
                 )
             } else {
-                LazyVStack(spacing: 16) {
-                    ForEach(cachedHabitsWithProgress.sorted { $0.completionPercentage > $1.completionPercentage }) { habitProgress in
-                        HabitProgressCard(habitProgress: habitProgress)
-                    }
+                VStack(spacing: 16) {
+                    // Overall Progress Chart
+                    overallProgressChart
+                    
+                    // Success Rate Chart
+                    successRateChart
                 }
             }
         }
@@ -327,11 +376,75 @@ struct ProgressTabView: View {
         }
     }
     
-    // MARK: - Goal Achievement Analysis
-    private var goalAchievementAnalysis: some View {
+    // MARK: - Progress Statistics
+    private var progressStatistics: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Statistics")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            HStack(spacing: 16) {
+                // Total Habits
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(cachedFilteredHabits.count)")
+                        .font(.appTitleLargeEmphasised)
+                        .foregroundColor(.text01)
+                    Text("Total Habits")
+                        .font(.appBodyExtraSmall)
+                        .foregroundColor(.text05)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(.surface)
+                .cornerRadius(12)
+                
+                // Average Success Rate
+                VStack(alignment: .leading, spacing: 4) {
+                    let avgSuccess = cachedHabitsWithProgress.isEmpty ? 0 : cachedHabitsWithProgress.map { $0.completionPercentage }.reduce(0, +) / Double(cachedHabitsWithProgress.count)
+                    Text("\(Int(avgSuccess))%")
+                        .font(.appTitleLargeEmphasised)
+                        .foregroundColor(.text01)
+                    Text("Avg Success")
+                        .font(.appBodyExtraSmall)
+                        .foregroundColor(.text05)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(.surface)
+                .cornerRadius(12)
+            }
+        }
+    }
+    
+    // MARK: - Trend Analysis
+    private var trendAnalysis: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Trend Analysis")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            // Placeholder for trend analysis
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.surface)
+                .frame(height: 120)
+                .overlay(
+                    VStack {
+                        Image(systemName: "chart.bar.xaxis")
+                            .font(.system(size: 40))
+                            .foregroundColor(.primary)
+                        Text("Trend Analysis Chart")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text05)
+                    }
+                )
+        }
+    }
+    
+    // MARK: - Progress Analytics
+    private var progressAnalytics: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text(goalAchievementTitle)
+                Text("Progress Analytics")
                     .font(.appTitleLarge)
                     .fontWeight(.bold)
                     .foregroundColor(.text01)
@@ -341,19 +454,21 @@ struct ProgressTabView: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 16))
                     .foregroundColor(.text06)
-                    .help("Analyzes how well you're meeting your habit goals and targets")
+                    .help("Analytics and insights about your overall progress")
             }
             
-            if cachedHabitsWithGoals.isEmpty {
+            if cachedHabitsWithProgress.isEmpty {
                 EmptyStateView(
-                    icon: "target",
-                    message: goalEmptyStateMessage
+                    icon: "chart.bar",
+                    message: "No analytics data for this period"
                 )
             } else {
-                LazyVStack(spacing: 16) {
-                    ForEach(cachedHabitsWithGoals.sorted { $0.goalHitRate > $1.goalHitRate }) { habitGoal in
-                        GoalAchievementCard(habitGoal: habitGoal)
-                    }
+                VStack(spacing: 16) {
+                    // Progress Statistics
+                    progressStatistics
+                    
+                    // Trend Analysis
+                    trendAnalysis
                 }
             }
         }
@@ -888,6 +1003,10 @@ struct EmptyStateView: View {
                 .stroke(.outline, lineWidth: 1)
         )
     }
+    
+
+    
+
 }
 
 #Preview {

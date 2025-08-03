@@ -132,7 +132,7 @@ struct MoreTabView: View {
                     .padding(.bottom, 20)
             }
         }
-        .padding(.top, 20)
+//        .padding(.top, 20)
     }
     
     // MARK: - Settings Group Helper

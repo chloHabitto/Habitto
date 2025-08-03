@@ -162,6 +162,8 @@ struct HabitsTabView: View {
             }
         }
     }
+    
+
 }
 
 // MARK: - AllHabitsView
@@ -184,15 +186,18 @@ struct AllHabitsView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Stats Row (Active/Inactive tabs)
-                statsRow
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
+                // Fixed Header with Tabs
+                VStack(spacing: 0) {
+                    // Stats Row (Active/Inactive tabs)
+                    statsRow
+                        .padding(.horizontal, 0)
+                        .padding(.top, 16)
+                        .background(.white)
+                }
                 
-                // Habit List
+                // Scrollable Habit List
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 24) {
                         if habits.isEmpty {
                             // Empty state
                             VStack(spacing: 12) {
@@ -212,30 +217,39 @@ struct AllHabitsView: View {
                             .padding(.vertical, 40)
                             .padding(.horizontal, 20)
                         } else {
-                            LazyVStack(spacing: 12) {
-                                ForEach(filteredHabits) { habit in
-                                    habitDetailRow(habit)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                            Button("Edit") {
-                                                onEditHabit(habit)
+                            // Habit List
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("All Habits")
+                                    .font(.appTitleLarge)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.text01)
+                                    .padding(.horizontal, 20)
+                                
+                                LazyVStack(spacing: 12) {
+                                    ForEach(habitsWithProgress) { habit in
+                                        habitDetailRow(habit)
+                                            .padding(.horizontal, 20)
+                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                                Button("Edit") {
+                                                    onEditHabit(habit)
+                                                }
+                                                .tint(.blue)
+                                                
+                                                Button("Delete") {
+                                                    onDeleteHabit(habit)
+                                                }
+                                                .tint(.red)
                                             }
-                                            .tint(.blue)
-                                            
-                                            Button("Delete") {
-                                                onDeleteHabit(habit)
-                                            }
-                                            .tint(.red)
-                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
                     .padding(.top, 18)
                     .padding(.bottom, 20)
                 }
+                .background(.surface2)
             }
-            .background(.surface2)
             .navigationTitle("All Habits")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -273,6 +287,14 @@ struct AllHabitsView: View {
         default:
             return habits
         }
+    }
+    
+    private var habitsWithProgress: [Habit] {
+        return filteredHabits
+    }
+    
+    private var habitsWithGoals: [Habit] {
+        return filteredHabits
     }
     
     private func habitDetailRow(_ habit: Habit) -> some View {
