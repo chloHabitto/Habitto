@@ -280,7 +280,18 @@ struct CreateHabitStep2View: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
-            .background(.surface2)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.surface2.opacity(0),
+                        Color.surface2.opacity(0.3),
+                        Color.surface2.opacity(0.7),
+                        Color.surface2.opacity(1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
         }
         .background(.surface2)
 

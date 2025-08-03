@@ -59,7 +59,7 @@ struct CreateHabitHeader: View {
             .padding(.top, 28)
 //            .padding(.bottom, 28)
         }
-        .background(.red)
+//        .background(.red)
     }
 }
 
