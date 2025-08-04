@@ -235,7 +235,7 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                Text("\(todayProgress)/\(habit.goal)")
+                Text("\(todayProgress)/\(extractGoalAmount(from: habit.goal))")
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.primary)
             }
@@ -335,9 +335,14 @@ struct HabitDetailView: View {
     
     // MARK: - Helper Functions
     private func extractGoalNumber(from goalString: String) -> Int {
-        // Extract the number from goal strings like "5 times", "20 pages", etc.
-        let components = goalString.components(separatedBy: " ")
-        if let firstComponent = components.first, let number = Int(firstComponent) {
+        // Extract the number from goal strings like "5 times per 1 times a week", "20 pages per everyday", etc.
+        // First, extract the goal amount part (before "per")
+        let components = goalString.components(separatedBy: " per ")
+        let goalAmount = components.first ?? goalString
+        
+        // Then extract the number from the goal amount
+        let amountComponents = goalAmount.components(separatedBy: " ")
+        if let firstComponent = amountComponents.first, let number = Int(firstComponent) {
             return number
         }
         return 1 // Default to 1 if parsing fails
@@ -376,6 +381,17 @@ struct HabitDetailView: View {
         default:
             return schedule
         }
+    }
+    
+    // Helper function to extract goal amount without schedule
+    private func extractGoalAmount(from goal: String) -> String {
+        // Goal format is typically "X unit per frequency" (e.g., "1 time per 1 times a week")
+        // We want to extract just "X unit" part
+        let components = goal.components(separatedBy: " per ")
+        if components.count >= 2 {
+            return components[0] // Return "X unit" part
+        }
+        return goal // Fallback to original goal if format is unexpected
     }
 }
 

@@ -43,7 +43,7 @@ struct ScheduledHabitItem: View {
             
             // Goal Progress
             VStack(alignment: .trailing, spacing: 2) {
-                Text("\(currentProgress)/\(habit.goal)")
+                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -133,6 +133,17 @@ struct ScheduledHabitItem: View {
         .onChange(of: habit.getProgress(for: selectedDate)) { oldProgress, newProgress in
             currentProgress = newProgress
         }
+    }
+    
+    // Helper function to extract goal amount without schedule
+    private func extractGoalAmount(from goal: String) -> String {
+        // Goal format is typically "X unit per frequency" (e.g., "1 time per 1 times a week")
+        // We want to extract just "X unit" part
+        let components = goal.components(separatedBy: " per ")
+        if components.count >= 2 {
+            return components[0] // Return "X unit" part
+        }
+        return goal // Fallback to original goal if format is unexpected
     }
 }
 
