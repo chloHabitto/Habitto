@@ -6,6 +6,8 @@ struct AddedHabitItem: View {
     let onDelete: (() -> Void)?
     let onTap: (() -> Void)?
     
+    @State private var showingActionSheet = false
+    
     init(habit: Habit, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil, onTap: (() -> Void)? = nil) {
         self.habit = habit
         self.onEdit = onEdit
@@ -118,6 +120,29 @@ struct AddedHabitItem: View {
                 .stroke(.outline, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .onLongPressGesture {
+            // Haptic feedback for long press
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+            
+            // Show action sheet with edit/delete options
+            showingActionSheet = true
+        }
+        .actionSheet(isPresented: $showingActionSheet) {
+            ActionSheet(
+                title: Text(habit.name),
+                message: Text("Choose an action"),
+                buttons: [
+                    .default(Text("Edit")) {
+                        onEdit?()
+                    },
+                    .destructive(Text("Delete")) {
+                        onDelete?()
+                    },
+                    .cancel()
+                ]
+            )
+        }
     }
     
     // Helper function to format schedule for display
