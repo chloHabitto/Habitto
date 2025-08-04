@@ -27,9 +27,15 @@ struct HabitDetailView: View {
             // Initialize todayProgress with the actual habit progress for the selected date
             todayProgress = habit.getProgress(for: selectedDate)
         }
-        .onChange(of: habit.getProgress(for: selectedDate)) { oldProgress, newProgress in
-            // Update todayProgress when habit data changes
-            todayProgress = newProgress
+        .onChange(of: selectedDate) { oldDate, newDate in
+            // Only update progress if the date actually changed
+            let calendar = Calendar.current
+            let oldDay = calendar.startOfDay(for: oldDate)
+            let newDay = calendar.startOfDay(for: newDate)
+            
+            if oldDay != newDay {
+                todayProgress = habit.getProgress(for: selectedDate)
+            }
         }
         .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in

@@ -68,11 +68,14 @@ struct ProgressTabView: View {
     // Performance optimization: Update cache only when needed
     private func updateCacheIfNeeded() {
         let currentState = (selectedHabitType, selectedPeriod)
-        // Always update cache when habits array changes or when filters change
-        cachedFilteredHabits = habits.filter { $0.habitType == selectedHabitType }
-        cachedHabitsWithProgress = calculateHabitsWithProgress()
-        cachedHabitsWithGoals = calculateHabitsWithGoals()
-        lastCacheUpdate = currentState
+        
+        // Only update cache if state actually changed
+        if lastCacheUpdate != currentState {
+            cachedFilteredHabits = habits.filter { $0.habitType == selectedHabitType }
+            cachedHabitsWithProgress = calculateHabitsWithProgress()
+            cachedHabitsWithGoals = calculateHabitsWithGoals()
+            lastCacheUpdate = currentState
+        }
     }
     
     // Performance optimization: Pre-calculate expensive operations

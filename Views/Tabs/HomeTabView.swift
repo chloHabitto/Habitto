@@ -63,35 +63,32 @@ struct HomeTabView: View {
             }
         }
         .onChange(of: habits.count) { oldCount, newCount in
-            // Clear cache when habits array changes (new habit added/removed)
-            print("🏠 HomeTabView: Habits count changed from \(oldCount) to \(newCount), clearing cache")
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
+            // Only clear cache if habits actually changed (not just count)
+            print("🏠 HomeTabView: Habits count changed from \(oldCount) to \(newCount)")
             
-            // Force recalculation of habits for the current date
-            let habitsForDate = habits.filter { habit in
-                let selected = DateUtils.startOfDay(for: selectedDate)
-                let start = DateUtils.startOfDay(for: habit.startDate)
-                let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
-                
-                // First check if the date is within the habit period
-                guard selected >= start && selected <= end else {
-                    return false
-                }
-                
-                // Then check if the habit should appear on this specific date based on schedule
-                return shouldShowHabitOnDate(habit, date: selectedDate)
+            // Check if habits array content actually changed by comparing IDs
+            let oldHabitIds = Set(habits.prefix(oldCount).map { $0.id })
+            let newHabitIds = Set(habits.prefix(newCount).map { $0.id })
+            
+            if oldHabitIds != newHabitIds {
+                print("🏠 HomeTabView: Habits content changed, clearing cache")
+                cachedHabitsForDate = []
+                lastCalculatedDate = nil
+                cachedStats = []
+                lastCalculatedStatsDate = nil
             }
-            
-            print("🏠 HomeTabView: After cache clear - habits for date: \(habitsForDate.map { $0.name })")
         }
         .onChange(of: selectedDate) { oldDate, newDate in
-            // Clear cache when selected date changes to force recalculation
-            print("🏠 HomeTabView: Selected date changed from \(oldDate) to \(newDate)")
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
+            // Only clear cache if date actually changed significantly
+            let calendar = Calendar.current
+            let oldDay = calendar.startOfDay(for: oldDate)
+            let newDay = calendar.startOfDay(for: newDate)
+            
+            if oldDay != newDay {
+                print("🏠 HomeTabView: Selected date changed from \(oldDate) to \(newDate), clearing cache")
+                cachedHabitsForDate = []
+                lastCalculatedDate = nil
+            }
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)

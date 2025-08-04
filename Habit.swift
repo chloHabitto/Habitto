@@ -34,6 +34,11 @@ class HabitStorageManager {
     }
     
     private func performSave(_ habits: [Habit]) {
+        // Performance optimization: Only save if habits actually changed
+        if let cached = cachedHabits, cached == habits {
+            return // No change, skip save
+        }
+        
         if let encoded = try? JSONEncoder().encode(habits) {
             userDefaults.set(encoded, forKey: habitsKey)
             cachedHabits = habits
@@ -60,7 +65,7 @@ class HabitStorageManager {
     }
 }
 
-struct Habit: Identifiable, Codable {
+struct Habit: Identifiable, Codable, Equatable {
     var id = UUID()
     var name: String
     var description: String

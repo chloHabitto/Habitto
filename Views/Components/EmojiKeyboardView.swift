@@ -4,6 +4,7 @@ import SwiftUI
 struct EmojiKeyboardView: View {
     let onEmojiSelected: (String) -> Void
     @State private var searchText = ""
+    @State private var debouncedSearchText = ""
     @State private var selectedCategory = 0
     
     // Performance optimization: Pagination for large emoji sets
@@ -14,19 +15,31 @@ struct EmojiKeyboardView: View {
     private let categoryNames = EmojiData.categoryNames
     private let emojis = EmojiData.emojis
     
+    // Performance optimization: Cache filtered results
+    @State private var cachedFilteredEmojis: [String] = []
+    @State private var lastFilterState: (Int, String) = (0, "")
+    
     var filteredEmojis: [String] {
-        let categoryEmojis = emojis[selectedCategory]
-        let filtered = searchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(searchText) }
+        let currentState = (selectedCategory, debouncedSearchText)
         
-        // Performance optimization: Return paginated results for large sets
-        let startIndex = currentPage * itemsPerPage
-        let endIndex = min(startIndex + itemsPerPage, filtered.count)
-        return Array(filtered[startIndex..<endIndex])
+        // Only recalculate if filter state changed
+        if lastFilterState != currentState {
+            let categoryEmojis = emojis[selectedCategory]
+            let filtered = debouncedSearchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(debouncedSearchText) }
+            
+            // Performance optimization: Return paginated results for large sets
+            let startIndex = currentPage * itemsPerPage
+            let endIndex = min(startIndex + itemsPerPage, filtered.count)
+            cachedFilteredEmojis = Array(filtered[startIndex..<endIndex])
+            lastFilterState = currentState
+        }
+        
+        return cachedFilteredEmojis
     }
     
     var hasMoreEmojis: Bool {
         let categoryEmojis = emojis[selectedCategory]
-        let filtered = searchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(searchText) }
+        let filtered = debouncedSearchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(debouncedSearchText) }
         return (currentPage + 1) * itemsPerPage < filtered.count
     }
     
@@ -98,6 +111,15 @@ struct EmojiKeyboardView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
+            }
+            .onChange(of: searchText) { oldValue, newValue in
+                // Debounce search input to avoid excessive filtering
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    if searchText == newValue { // Only update if search text hasn't changed
+                        debouncedSearchText = newValue
+                        currentPage = 0 // Reset pagination when search changes
+                    }
+                }
             }
         }
     }

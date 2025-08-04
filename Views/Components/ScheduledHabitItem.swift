@@ -130,8 +130,15 @@ struct ScheduledHabitItem: View {
         .onAppear {
             currentProgress = habit.getProgress(for: selectedDate)
         }
-        .onChange(of: habit.getProgress(for: selectedDate)) { oldProgress, newProgress in
-            currentProgress = newProgress
+        .onChange(of: selectedDate) { oldDate, newDate in
+            // Only update progress if the date actually changed
+            let calendar = Calendar.current
+            let oldDay = calendar.startOfDay(for: oldDate)
+            let newDay = calendar.startOfDay(for: newDate)
+            
+            if oldDay != newDay {
+                currentProgress = habit.getProgress(for: selectedDate)
+            }
         }
     }
     

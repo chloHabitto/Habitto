@@ -48,6 +48,10 @@ struct HabitEditView: View {
     @State private var showingReminderSheet = false
     @State private var showingPeriodSheet = false
     
+    // Focus states for text fields
+    @FocusState private var isNameFieldFocused: Bool
+    @FocusState private var isDescriptionFieldFocused: Bool
+    
     // Computed property to check if any changes have been made
     private var hasChanges: Bool {
         // Check basic fields
@@ -106,28 +110,10 @@ struct HabitEditView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Habit Name
-                    inputFieldSection(
-                        title: "Habit Name",
-                        placeholder: "Enter habit name",
-                        text: $habitName
-                    )
+                    CustomTextField(placeholder: "Name", text: $habitName, isFocused: $isNameFieldFocused, showTapGesture: true)
                     
                     // Description
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Description")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text05)
-                        
-                        TextField("Description (Optional)", text: $habitDescription, axis: .vertical)
-                            .lineLimit(3...6)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                            .accentColor(.text01)
-                            .inputFieldStyle()
-                            .contentShape(Rectangle())
-                            .frame(minHeight: 48)
-                            .submitLabel(.done)
-                    }
+                    CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                     
                     // Icon Selection
                     Button(action: {
@@ -644,23 +630,54 @@ struct HabitEditView: View {
         .selectionRowStyle()
     }
     
-    // MARK: - Input Field Section
-    private func inputFieldSection(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
-            
-            TextField(placeholder, text: text)
-                .font(.appBodyLarge)
-                .foregroundColor(.text01)
-                .accentColor(.text01)
-                .inputFieldStyle()
-                .contentShape(Rectangle())
-                .frame(minHeight: 48)
-                .submitLabel(.done)
+    // MARK: - Custom TextField Component (same as CreateHabitStep1View)
+    private func CustomTextField(
+        placeholder: String,
+        text: Binding<String>,
+        isFocused: FocusState<Bool>.Binding? = nil,
+        showTapGesture: Bool = false
+    ) -> some View {
+        TextField(placeholder, text: text)
+            .font(.appBodyLarge)
+            .foregroundColor(.text01)
+            .textFieldStyle(PlainTextFieldStyle())
+            .submitLabel(.done)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 16)
+            .background(.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(.outline, lineWidth: 1.5)
+            )
+            .cornerRadius(12)
+            .contentShape(Rectangle())
+            .allowsHitTesting(true)
+            .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
+    }
+    
+    // Custom modifier to handle focus and tap gesture (same as CreateHabitStep1View)
+    private struct FocusModifier: ViewModifier {
+        let isFocused: FocusState<Bool>.Binding?
+        let showTapGesture: Bool
+        
+        func body(content: Content) -> some View {
+            if let isFocused = isFocused {
+                content
+                    .focused(isFocused)
+                    .onTapGesture {
+                        isFocused.wrappedValue = true
+                    }
+            } else {
+                content
+                    .onTapGesture {
+                        // For fields without focus binding, just ensure they can be tapped
+                        // SwiftUI will handle focus automatically
+                    }
+            }
         }
     }
+    
+
     
     // MARK: - Habit Type Section
     private var habitTypeSection: some View {
