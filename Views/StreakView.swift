@@ -378,21 +378,32 @@ struct StreakView: View {
     
     // MARK: - Weekly Calendar Grid
     private var weeklyCalendarGrid: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 4) {
             // Days of week header
             HStack(spacing: 0) {
                 // Empty space for habit names
                 Rectangle()
-                    .fill(.clear)
-                    .frame(width: 80)
+                    .fill(.surfaceContainer)
+                    .frame(width: 150)
+                    .overlay(
+                        Rectangle()
+                            .stroke(.outline, lineWidth: 1)
+                    )
                 
                 ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
-                        .font(.appBodySmall)
+                        .font(.appBodyMedium)
                         .foregroundColor(.text04)
+                        .frame(width: 24, height: 24)
+                        .background(.surfaceContainer)
+                        .overlay(
+                            Rectangle()
+                                .stroke(.outline, lineWidth: 1)
+                        )
                         .frame(maxWidth: .infinity)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             if userHabits.isEmpty {
                 // Empty state for no habits
@@ -415,22 +426,57 @@ struct StreakView: View {
                     HStack(spacing: 0) {
                         // Habit name
                         HStack(spacing: 8) {
-                            Rectangle()
-                                .fill(habit.color)
-                                .frame(width: 8, height: 8)
-                                .cornerRadius(2)
+                            // Small habit icon for streak view
+                            ZStack {
+//                                RoundedRectangle(cornerRadius: 3)
+//                                    .fill(habit.color.opacity(0.15))
+//                                    .frame(width: 16, height: 16)
+                                
+                                if habit.icon.hasPrefix("Icon-") {
+                                    // Asset icon
+                                    Image(habit.icon)
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(habit.color)
+                                } else if habit.icon == "None" {
+                                    // No icon selected - show colored rounded rectangle
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .fill(habit.color)
+                                        .frame(width: 20, height: 20)
+                                } else {
+                                    // Emoji or system icon
+                                    Text(habit.icon)
+                                        .font(.system(size: 16))
+                                }
+                            }
                             
                             Text(habit.name)
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text01)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.trailing, 4)
                         }
-                        .frame(width: 80, alignment: .leading)
+                        .frame(width: 150, alignment: .leading)
+                        .frame(height: 24)
+                        .background(.surfaceContainer)
+                        .overlay(
+                            Rectangle()
+                                .stroke(.outline, lineWidth: 1)
+                        )
                         
                         // Heatmap cells
                         ForEach(0..<7, id: \.self) { dayIndex in
                             heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(.outline, lineWidth: 1)
+                                )
+                                .frame(maxWidth: .infinity)
                         }
                     }
+
                 }
                 
                 // Total row
@@ -438,14 +484,26 @@ struct StreakView: View {
                     Text("Total")
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text01)
-                        .frame(width: 80, alignment: .leading)
+                        .frame(width: 150, alignment: .leading)
+                        .frame(height: 24)
+                        .background(.surfaceContainer)
+                        .overlay(
+                            Rectangle()
+                                .stroke(.outline, lineWidth: 1)
+                        )
                     
                     ForEach(0..<7, id: \.self) { dayIndex in
                         heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.outline, lineWidth: 1)
+                            )
+                            .frame(maxWidth: .infinity)
                     }
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     // MARK: - Monthly Calendar Grid
@@ -484,7 +542,7 @@ struct StreakView: View {
             } else {
                 // Month weeks (4-5 weeks)
                 ForEach(0..<5, id: \.self) { weekIndex in
-                    HStack(spacing: 0) {
+                    HStack(spacing: 4) {
                         // Week label
                         Text("Week \(weekIndex + 1)")
                             .font(.appBodySmall)
@@ -499,7 +557,7 @@ struct StreakView: View {
                 }
                 
                 // Total row
-                HStack(spacing: 0) {
+                HStack(spacing: 4) {
                     Text("Total")
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text01)
@@ -580,7 +638,8 @@ struct StreakView: View {
     private func heatmapCell(intensity: Int) -> some View {
         Rectangle()
             .fill(heatmapColor(for: intensity))
-            .cornerRadius(2)
+            .frame(width: 24, height: 24)
+            .cornerRadius(6)
     }
     
     private func heatmapColor(for intensity: Int) -> Color {
@@ -802,7 +861,7 @@ struct StreakView: View {
     
     // MARK: - Summary Statistics
     private var summaryStatistics: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             // Completion card
             statisticCard(
                 value: "\(completionRate)%",
