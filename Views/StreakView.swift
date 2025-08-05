@@ -378,40 +378,7 @@ struct StreakView: View {
     
     // MARK: - Weekly Calendar Grid
     private var weeklyCalendarGrid: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(.outline)
-            
-            // Days of week header
-            HStack(spacing: 0) {
-                // Empty space for habit names
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width: 150)
-                
-                Divider()
-                    .background(.outline)
-                    .frame(height: 24)
-                
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
-                    Text(day)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text04)
-                        .frame(width: 24, height: 24)
-                        .frame(maxWidth: .infinity)
-                    
-                    if day != "S" { // Don't add divider after the last column
-                        Divider()
-                            .background(.outline)
-                            .frame(height: 24)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Divider()
-                .background(.outline)
-            
+        Group {
             if userHabits.isEmpty {
                 // Empty state for no habits
                 VStack(spacing: 12) {
@@ -428,97 +395,93 @@ struct StreakView: View {
                 }
                 .padding(.vertical, 40)
             } else {
-                // Habit rows with heatmap
-                ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
+                // Proper table structure using bordered container
+                VStack(spacing: 0) {
+                    // Header row
                     HStack(spacing: 0) {
-                        // Habit name
-                        HStack(spacing: 8) {
-                            // Small habit icon for streak view
-                            ZStack {
-//                                RoundedRectangle(cornerRadius: 3)
-//                                    .fill(habit.color.opacity(0.15))
-//                                    .frame(width: 16, height: 16)
-                                
-                                if habit.icon.hasPrefix("Icon-") {
-                                    // Asset icon
-                                    Image(habit.icon)
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
-                                        .foregroundColor(habit.color)
-                                } else if habit.icon == "None" {
-                                    // No icon selected - show colored rounded rectangle
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .fill(habit.color)
-                                        .frame(width: 20, height: 20)
-                                } else {
-                                    // Emoji or system icon
-                                    Text(habit.icon)
-                                        .font(.system(size: 16))
+                        // Empty space for habit names
+                        Rectangle()
+                            .fill(.clear)
+                            .frame(width: 150)
+                            .border(.outline, width: 1)
+                        
+                                            ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+                        Text(day)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text04)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 32)
+                            .border(.outline, width: 1)
+                    }
+                    }
+                    
+                    // Habit rows
+                    ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
+                        HStack(spacing: 0) {
+                            // Habit name cell
+                            HStack(spacing: 8) {
+                                // Small habit icon for streak view
+                                ZStack {
+                                    if habit.icon.hasPrefix("Icon-") {
+                                        // Asset icon
+                                        Image(habit.icon)
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(habit.color)
+                                    } else if habit.icon == "None" {
+                                        // No icon selected - show colored rounded rectangle
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .fill(habit.color)
+                                            .frame(width: 20, height: 20)
+                                    } else {
+                                        // Emoji or system icon
+                                        Text(habit.icon)
+                                            .font(.system(size: 16))
+                                    }
                                 }
+                                
+                                Text(habit.name)
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.trailing, 4)
                             }
+                            .frame(width: 150, alignment: .leading)
+                            .frame(height: 32)
+                            .border(.outline, width: 1)
                             
-                            Text(habit.name)
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.trailing, 4)
-                        }
-                        .frame(width: 150, alignment: .leading)
-                        .frame(height: 24)
-                        
-                        Divider()
-                            .background(.outline)
-                            .frame(height: 24)
-                        
-                        // Heatmap cells
-                        ForEach(0..<7, id: \.self) { dayIndex in
-                            heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
+                            // Heatmap cells
+                            ForEach(0..<7, id: \.self) { dayIndex in
+                                                            heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
                                 .frame(maxWidth: .infinity)
-                            
-                            if dayIndex < 6 { // Don't add divider after the last column
-                                Divider()
-                                    .background(.outline)
-                                    .frame(height: 24)
+                                .frame(height: 32)
+                                .border(.outline, width: 1)
                             }
                         }
                     }
-
-                }
-                
-                Divider()
-                    .background(.outline)
-                
-                // Total row
-                HStack(spacing: 0) {
-                    Text("Total")
+                    
+                    // Total row
+                    HStack(spacing: 0) {
+                                            Text("Total")
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text01)
                         .frame(width: 150, alignment: .leading)
-                        .frame(height: 24)
-                    
-                    Divider()
-                        .background(.outline)
-                        .frame(height: 24)
-                    
-                    ForEach(0..<7, id: \.self) { dayIndex in
-                        heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
-                            .frame(maxWidth: .infinity)
+                        .frame(height: 32)
+                        .border(.outline, width: 1)
                         
-                        if dayIndex < 6 { // Don't add divider after the last column
-                            Divider()
-                                .background(.outline)
-                                .frame(height: 24)
+                        ForEach(0..<7, id: \.self) { dayIndex in
+                                                    heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 32)
+                            .border(.outline, width: 1)
                         }
                     }
                 }
-                
-                Divider()
-                    .background(.outline)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     // MARK: - Monthly Calendar Grid
@@ -651,10 +614,16 @@ struct StreakView: View {
     
     // MARK: - Helper Functions
     private func heatmapCell(intensity: Int) -> some View {
+        // Transparent container with 4pt internal padding
         Rectangle()
-            .fill(heatmapColor(for: intensity))
-            .frame(width: 24, height: 24)
-            .cornerRadius(6)
+            .fill(.clear) // Transparent background
+            .frame(width: 32, height: 32) // 24 + 4 + 4 = 32 to accommodate padding
+            .overlay(
+                Rectangle()
+                    .fill(heatmapColor(for: intensity))
+                    .frame(width: 24, height: 24)
+                    .cornerRadius(6)
+            )
     }
     
     private func heatmapColor(for intensity: Int) -> Color {
@@ -922,3 +891,4 @@ struct StreakView: View {
 #Preview {
     StreakView(userHabits: [])
 }
+
