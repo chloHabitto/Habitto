@@ -152,15 +152,15 @@ struct StreakView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Calculate current streak (average of all habits)
-        let totalCurrentStreak = userHabits.reduce(0) { $0 + $1.streak }
+        // Calculate current streak using improved streak calculation
+        let totalCurrentStreak = userHabits.reduce(0) { $0 + $1.calculateTrueStreak() }
         currentStreak = userHabits.isEmpty ? 0 : totalCurrentStreak / userHabits.count
         
         // Calculate best streak (highest streak among all habits)
-        bestStreak = userHabits.map { $0.streak }.max() ?? 0
+        bestStreak = userHabits.map { $0.calculateTrueStreak() }.max() ?? 0
         
         // Calculate average streak
-        let totalStreak = userHabits.reduce(0) { $0 + $1.streak }
+        let totalStreak = userHabits.reduce(0) { $0 + $1.calculateTrueStreak() }
         averageStreak = userHabits.isEmpty ? 0 : totalStreak / userHabits.count
         
         // Calculate completion rate (percentage of habits completed today)
@@ -378,32 +378,39 @@ struct StreakView: View {
     
     // MARK: - Weekly Calendar Grid
     private var weeklyCalendarGrid: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
+            Divider()
+                .background(.outline)
+            
             // Days of week header
             HStack(spacing: 0) {
                 // Empty space for habit names
                 Rectangle()
-                    .fill(.surfaceContainer)
+                    .fill(.clear)
                     .frame(width: 150)
-                    .overlay(
-                        Rectangle()
-                            .stroke(.outline, lineWidth: 1)
-                    )
+                
+                Divider()
+                    .background(.outline)
+                    .frame(height: 24)
                 
                 ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
                         .font(.appBodyMedium)
                         .foregroundColor(.text04)
                         .frame(width: 24, height: 24)
-                        .background(.surfaceContainer)
-                        .overlay(
-                            Rectangle()
-                                .stroke(.outline, lineWidth: 1)
-                        )
                         .frame(maxWidth: .infinity)
+                    
+                    if day != "S" { // Don't add divider after the last column
+                        Divider()
+                            .background(.outline)
+                            .frame(height: 24)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            
+            Divider()
+                .background(.outline)
             
             if userHabits.isEmpty {
                 // Empty state for no habits
@@ -460,24 +467,28 @@ struct StreakView: View {
                         }
                         .frame(width: 150, alignment: .leading)
                         .frame(height: 24)
-                        .background(.surfaceContainer)
-                        .overlay(
-                            Rectangle()
-                                .stroke(.outline, lineWidth: 1)
-                        )
+                        
+                        Divider()
+                            .background(.outline)
+                            .frame(height: 24)
                         
                         // Heatmap cells
                         ForEach(0..<7, id: \.self) { dayIndex in
                             heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(.outline, lineWidth: 1)
-                                )
                                 .frame(maxWidth: .infinity)
+                            
+                            if dayIndex < 6 { // Don't add divider after the last column
+                                Divider()
+                                    .background(.outline)
+                                    .frame(height: 24)
+                            }
                         }
                     }
 
                 }
+                
+                Divider()
+                    .background(.outline)
                 
                 // Total row
                 HStack(spacing: 0) {
@@ -486,21 +497,25 @@ struct StreakView: View {
                         .foregroundColor(.text01)
                         .frame(width: 150, alignment: .leading)
                         .frame(height: 24)
-                        .background(.surfaceContainer)
-                        .overlay(
-                            Rectangle()
-                                .stroke(.outline, lineWidth: 1)
-                        )
+                    
+                    Divider()
+                        .background(.outline)
+                        .frame(height: 24)
                     
                     ForEach(0..<7, id: \.self) { dayIndex in
                         heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
-                            .overlay(
-                                Rectangle()
-                                    .stroke(.outline, lineWidth: 1)
-                            )
                             .frame(maxWidth: .infinity)
+                        
+                        if dayIndex < 6 { // Don't add divider after the last column
+                            Divider()
+                                .background(.outline)
+                                .frame(height: 24)
+                        }
                     }
                 }
+                
+                Divider()
+                    .background(.outline)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

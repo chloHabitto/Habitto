@@ -181,6 +181,61 @@ struct Habit: Identifiable, Codable, Equatable {
         isCompleted = isCompleted(for: today)
     }
     
+    // MARK: - Improved Streak Tracking Methods
+    /// Calculates the true consecutive day streak by checking actual completion history
+    func calculateTrueStreak() -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var streak = 0
+        var currentDate = today
+        
+        // Count consecutive completed days backwards from today
+        while isCompleted(for: currentDate) {
+            streak += 1
+            currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+        }
+        
+        return streak
+    }
+    
+    /// Updates streak with proper reset logic based on consecutive day completion
+    mutating func updateStreakWithReset() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        
+        if isCompleted(for: today) {
+            if isCompleted(for: yesterday) {
+                // Continue streak - increment
+                streak += 1
+            } else {
+                // Start new streak - reset to 1
+                streak = 1
+            }
+        } else {
+            // Reset streak if not completed today
+            streak = 0
+        }
+    }
+    
+    /// Validates if the current streak matches actual consecutive completions
+    func validateStreak() -> Bool {
+        let actualStreak = calculateTrueStreak()
+        return streak == actualStreak
+    }
+    
+    /// Corrects the streak to match actual consecutive completions
+    mutating func correctStreak() {
+        streak = calculateTrueStreak()
+    }
+    
+    /// Debug function to print streak information
+    func debugStreakInfo() {
+        let trueStreak = calculateTrueStreak()
+        let isValid = validateStreak()
+        print("🔍 Habit '\(name)': stored streak=\(streak), true streak=\(trueStreak), valid=\(isValid)")
+    }
+    
     private static func dateKey(for date: Date) -> String {
         return DateUtils.dateKey(for: date)
     }

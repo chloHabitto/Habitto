@@ -40,16 +40,16 @@ class HomeViewState: ObservableObject {
             if wasCompleted {
                 // Mark as incomplete for the target date
                 habits[index].markIncomplete(for: targetDate)
-                // Only decrease streak if it's today's date
+                // Update streak with proper reset logic if it's today's date
                 if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
-                    habits[index].streak = max(0, habits[index].streak - 1)
+                    habits[index].updateStreakWithReset()
                 }
             } else {
                 // Mark as completed for the target date
                 habits[index].markCompleted(for: targetDate)
-                // Only increase streak if it's today's date
+                // Update streak with proper reset logic if it's today's date
                 if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
-                    habits[index].streak += 1
+                    habits[index].updateStreakWithReset()
                 }
             }
             
@@ -70,6 +70,49 @@ class HomeViewState: ObservableObject {
             habits[index] = updatedHabit
             Habit.saveHabits(habits)
             // Force SwiftUI to recognize the array has changed by creating a new instance
+            habits = Array(habits)
+        }
+    }
+    
+    /// Validates and corrects all habit streaks to ensure accuracy
+    func validateAllStreaks() {
+        var needsSave = false
+        
+        for index in habits.indices {
+            if !habits[index].validateStreak() {
+                print("🔍 HomeView: Correcting streak for habit '\(habits[index].name)'")
+                habits[index].debugStreakInfo()
+                habits[index].correctStreak()
+                needsSave = true
+            }
+        }
+        
+        if needsSave {
+            Habit.saveHabits(habits)
+            // Force SwiftUI to recognize the array has changed
+            habits = Array(habits)
+            print("🔍 HomeView: Streaks corrected and saved")
+        } else {
+            print("🔍 HomeView: All streaks are valid")
+        }
+    }
+    
+    /// Updates all streaks to reflect current completion status
+    func updateAllStreaks() {
+        var needsSave = false
+        
+        for index in habits.indices {
+            let oldStreak = habits[index].streak
+            habits[index].updateStreakWithReset()
+            
+            if oldStreak != habits[index].streak {
+                needsSave = true
+            }
+        }
+        
+        if needsSave {
+            Habit.saveHabits(habits)
+            // Force SwiftUI to recognize the array has changed
             habits = Array(habits)
         }
     }
@@ -159,6 +202,10 @@ struct HomeView: View {
             print("🚀 HomeView: onAppear called!")
             loadHabits()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            print("🏠 HomeView: App became active, updating streaks...")
+            state.updateAllStreaks()
+        }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
                 var updatedHabits = state.habits
@@ -202,6 +249,11 @@ struct HomeView: View {
         
         state.habits = loadedHabits
         print("🏠 HomeView: Habits assigned to state - total: \(state.habits.count)")
+        
+        // Validate and correct streaks to ensure accuracy
+        print("🏠 HomeView: Validating streaks...")
+        state.validateAllStreaks()
+        print("🏠 HomeView: Streak validation completed")
     }
 }
 
