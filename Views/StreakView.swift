@@ -22,7 +22,8 @@ struct StreakView: View {
     
     // Date selection state
     @State private var selectedWeekStartDate: Date = {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let today = Date()
         // Get the start of the current week (Monday)
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
@@ -128,9 +129,17 @@ struct StreakView: View {
         .onAppear {
             loadData()
         }
-        .sheet(isPresented: $showingCalendar) {
-            WeekPickerSheet(selectedWeekStartDate: $selectedWeekStartDate)
-        }
+        .overlay(
+            // Pop-up Modal for week selection
+            showingCalendar ? AnyView(
+                WeekPickerModal(
+                    selectedWeekStartDate: $selectedWeekStartDate,
+                    isPresented: $showingCalendar
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingCalendar)
+            ) : AnyView(EmptyView())
+        )
     }
     
     // MARK: - Data Loading
@@ -921,7 +930,109 @@ struct StreakView: View {
     StreakView(userHabits: [])
 }
 
-// MARK: - Week Picker Sheet
+// MARK: - Week Picker Modal
+struct WeekPickerModal: View {
+    @Binding var selectedWeekStartDate: Date
+    @Binding var isPresented: Bool
+    @State private var tempSelectedWeekStartDate: Date
+    @State private var selectedDateRange: ClosedRange<Date>?
+    
+    init(selectedWeekStartDate: Binding<Date>, isPresented: Binding<Bool>) {
+        self._selectedWeekStartDate = selectedWeekStartDate
+        self._isPresented = isPresented
+        self._tempSelectedWeekStartDate = State(initialValue: selectedWeekStartDate.wrappedValue)
+        
+        // Initialize selected range
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate.wrappedValue)?.start ?? selectedWeekStartDate.wrappedValue
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        self._selectedDateRange = State(initialValue: weekStart...weekEnd)
+    }
+    
+    var body: some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
+            
+            // Modal content
+            VStack(spacing: 20) {
+                // Header
+                HStack {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                    .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("Select Week")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    Button("Done") {
+                        selectedWeekStartDate = tempSelectedWeekStartDate
+                        isPresented = false
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                
+                // Custom Calendar
+                CustomWeekSelectionCalendar(
+                    selectedWeekStartDate: $tempSelectedWeekStartDate,
+                    selectedDateRange: $selectedDateRange
+                )
+                .frame(height: 300)
+                .padding(.horizontal, 20)
+                
+                // Selected week display
+                if let range = selectedDateRange {
+                    VStack(spacing: 8) {
+                        Text("Selected Week")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text04)
+                        
+                        Text(weekRangeText(from: range))
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.surfaceContainer)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 20)
+                }
+                
+                Spacer()
+            }
+            .background(.surface)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+            .frame(width: 320)
+            .frame(maxHeight: 480)
+        }
+    }
+    
+    private func weekRangeText(from range: ClosedRange<Date>) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM dd"
+        
+        let startText = formatter.string(from: range.lowerBound)
+        let endText = formatter.string(from: range.upperBound)
+        
+        return "\(startText) - \(endText)"
+    }
+}
+
+// MARK: - Week Picker Sheet (Legacy)
 struct WeekPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedWeekStartDate: Date
@@ -933,7 +1044,8 @@ struct WeekPickerSheet: View {
         self._tempSelectedWeekStartDate = State(initialValue: selectedWeekStartDate.wrappedValue)
         
         // Initialize selected range based on the current week
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate.wrappedValue)?.start ?? selectedWeekStartDate.wrappedValue
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         let range = weekStart...weekEnd
@@ -1031,7 +1143,6 @@ struct CustomWeekSelectionCalendar: View {
                         .frame(width: 44, height: 44)
                 }
             }
-            .padding(.horizontal)
             
             // Calendar grid
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(32), spacing: 0), count: 7), spacing: 0) {
@@ -1062,8 +1173,13 @@ struct CustomWeekSelectionCalendar: View {
                     }
                 }
             }
-            .padding(.horizontal)
+            .id(monthYearString) // Force re-render when month changes
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
         }
+        .padding(.horizontal, 16)
         .onAppear {
             initializeCurrentWeek()
         }
@@ -1078,7 +1194,8 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private var calendarDays: [Date?] {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
         
         // Find Monday of the first week
@@ -1117,11 +1234,12 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private func selectWeek(for date: Date) {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start,
               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
         
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
             selectedWeekStartDate = weekStart
             selectedDateRange = weekStart...weekEnd
         }
@@ -1130,14 +1248,15 @@ struct CustomWeekSelectionCalendar: View {
     private func changeMonth(by value: Int) {
         let calendar = Calendar.current
         if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
-            withAnimation(.easeInOut(duration: 0.3)) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.1)) {
                 currentMonth = newMonth
             }
         }
     }
     
     private func initializeCurrentWeek() {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let today = Date()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
@@ -1196,6 +1315,7 @@ struct CalendarDayView: View {
                 )
         }
         .opacity(isCurrentMonth ? 1.0 : 0.3)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0), value: weekPosition)
     }
     
     private var textColor: Color {
