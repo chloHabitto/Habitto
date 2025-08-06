@@ -20,6 +20,16 @@ struct StreakView: View {
     @State private var currentYearlyPage = 0
     private let yearlyItemsPerPage = 50
     
+    // Date selection state
+    @State private var selectedWeekStartDate: Date = {
+        let calendar = Calendar.current
+        let today = Date()
+        // Get the start of the current week (Monday)
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        return weekStart
+    }()
+    @State private var showingCalendar = false
+    
     private let progressTabs = ["Weekly", "Monthly", "Yearly", "Dummy"]
     
     var body: some View {
@@ -117,6 +127,9 @@ struct StreakView: View {
         }
         .onAppear {
             loadData()
+        }
+        .sheet(isPresented: $showingCalendar) {
+            WeekPickerSheet(selectedWeekStartDate: $selectedWeekStartDate)
         }
     }
     
@@ -313,7 +326,6 @@ struct StreakView: View {
                     yearlyCalendarGrid
                 }
             }
-            .padding(.horizontal, 16)
         }
     }
     
@@ -363,17 +375,35 @@ struct StreakView: View {
     }
     
     private var dateRangeSelector: some View {
-        HStack {
-            Text("June 09 - June 15")
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
-            
-            Image(systemName: "chevron.down")
-                .font(.appBodySmall)
-                .foregroundColor(.text04)
-            
-            Spacer()
+        Button(action: {
+            showingCalendar = true
+        }) {
+            HStack {
+                Text(weekRangeText)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                
+                Image(systemName: "chevron.down")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+                
+                Spacer()
+            }
         }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var weekRangeText: String {
+        let calendar = Calendar.current
+        let weekEndDate = calendar.date(byAdding: .day, value: 6, to: selectedWeekStartDate) ?? selectedWeekStartDate
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM dd"
+        
+        let startText = formatter.string(from: selectedWeekStartDate)
+        let endText = formatter.string(from: weekEndDate)
+        
+        return "\(startText) - \(endText)"
     }
     
     // MARK: - Weekly Calendar Grid
@@ -402,14 +432,15 @@ struct StreakView: View {
                         // Empty space for habit names
                         Rectangle()
                             .fill(.clear)
-                            .frame(width: 150)
+                            .frame(maxWidth: .infinity)
+                            .padding(.leading, 8)
                             .border(.outline, width: 1)
                         
                                             ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                         Text(day)
                             .font(.appBodyMedium)
                             .foregroundColor(.text04)
-                            .frame(maxWidth: .infinity)
+                            .frame(width: 32)
                             .frame(height: 32)
                             .border(.outline, width: 1)
                     }
@@ -448,14 +479,14 @@ struct StreakView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.trailing, 4)
                             }
-                            .frame(width: 150, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .frame(height: 32)
+                            .padding(.leading, 8)
                             .border(.outline, width: 1)
                             
                             // Heatmap cells
                             ForEach(0..<7, id: \.self) { dayIndex in
                                                             heatmapCell(intensity: getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex))
-                                .frame(maxWidth: .infinity)
                                 .frame(height: 32)
                                 .border(.outline, width: 1)
                             }
@@ -467,19 +498,20 @@ struct StreakView: View {
                                             Text("Total")
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text01)
-                        .frame(width: 150, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .frame(height: 32)
+                        .padding(.leading, 8)
                         .border(.outline, width: 1)
                         
                         ForEach(0..<7, id: \.self) { dayIndex in
                                                     heatmapCell(intensity: getWeeklyTotalIntensity(dayIndex: dayIndex))
-                            .frame(maxWidth: .infinity)
                             .frame(height: 32)
                             .border(.outline, width: 1)
                         }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
             }
         }
     }
@@ -492,7 +524,7 @@ struct StreakView: View {
                 // Empty space for habit names
                 Rectangle()
                     .fill(.clear)
-                    .frame(width: 80)
+                    .frame(maxWidth: .infinity)
                 
                 ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
@@ -525,7 +557,7 @@ struct StreakView: View {
                         Text("Week \(weekIndex + 1)")
                             .font(.appBodySmall)
                             .foregroundColor(.text04)
-                            .frame(width: 80, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         // Week heatmap cells
                         ForEach(0..<7, id: \.self) { dayIndex in
@@ -539,7 +571,7 @@ struct StreakView: View {
                     Text("Total")
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text01)
-                        .frame(width: 80, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     
                     ForEach(0..<7, id: \.self) { dayIndex in
                         heatmapCell(intensity: getMonthlyTotalIntensity(dayIndex: dayIndex))
@@ -644,13 +676,10 @@ struct StreakView: View {
     // MARK: - Heatmap Data Generation from User Habits
     private func getWeeklyHeatmapIntensity(for habit: Habit, dayIndex: Int) -> Int {
         let calendar = Calendar.current
-        let today = Calendar.current.startOfDay(for: Date())
+        let weekStartDate = calendar.startOfDay(for: selectedWeekStartDate)
         
         // Calculate the date for this day index (0 = Monday, 6 = Sunday)
-        let weekday = calendar.component(.weekday, from: today)
-        let daysFromMonday = (weekday + 5) % 7 // Convert to Monday-based (0 = Monday)
-        let daysToSubtract = daysFromMonday - dayIndex
-        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStartDate) ?? weekStartDate
         
         // Check if habit was completed on this date
         if habit.isCompleted(for: targetDate) {
@@ -890,5 +919,322 @@ struct StreakView: View {
 
 #Preview {
     StreakView(userHabits: [])
+}
+
+// MARK: - Week Picker Sheet
+struct WeekPickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedWeekStartDate: Date
+    @State private var tempSelectedWeekStartDate: Date
+    @State private var selectedDateRange: ClosedRange<Date>?
+    
+    init(selectedWeekStartDate: Binding<Date>) {
+        self._selectedWeekStartDate = selectedWeekStartDate
+        self._tempSelectedWeekStartDate = State(initialValue: selectedWeekStartDate.wrappedValue)
+        
+        // Initialize selected range based on the current week
+        let calendar = Calendar.current
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate.wrappedValue)?.start ?? selectedWeekStartDate.wrappedValue
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        let range = weekStart...weekEnd
+        self._selectedDateRange = State(initialValue: range)
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Custom Calendar for week selection
+                CustomWeekSelectionCalendar(
+                    selectedWeekStartDate: $tempSelectedWeekStartDate,
+                    selectedDateRange: $selectedDateRange
+                )
+                .frame(height: 400)
+                
+                // Selected week display
+                if let range = selectedDateRange {
+                    VStack(spacing: 8) {
+                        Text("Selected Week")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text04)
+                        
+                        Text(weekRangeText(from: range))
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                    }
+                    .padding()
+                    .background(.surfaceContainer)
+                    .cornerRadius(12)
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Select Week")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        selectedWeekStartDate = tempSelectedWeekStartDate
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+
+    
+    private func weekRangeText(from range: ClosedRange<Date>) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM dd"
+        
+        let startText = formatter.string(from: range.lowerBound)
+        let endText = formatter.string(from: range.upperBound)
+        
+        return "\(startText) - \(endText)"
+    }
+}
+
+// MARK: - Custom Week Selection Calendar
+struct CustomWeekSelectionCalendar: View {
+    @Binding var selectedWeekStartDate: Date
+    @Binding var selectedDateRange: ClosedRange<Date>?
+    @State private var currentMonth: Date = Date()
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Month navigation
+            HStack {
+                Button(action: { changeMonth(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.text01)
+                        .frame(width: 44, height: 44)
+                }
+                
+                Spacer()
+                
+                Text(monthYearString)
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Button(action: { changeMonth(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.text01)
+                        .frame(width: 44, height: 44)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Calendar grid
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32), spacing: 0), count: 7), spacing: 0) {
+                // Day headers
+                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                    Text(day)
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text04)
+                        .frame(height: 32)
+                }
+                
+                // Calendar days
+                ForEach(calendarDays, id: \.self) { date in
+                    if let date = date {
+                        CalendarDayView(
+                            date: date,
+                            isSelected: isDateInSelectedWeek(date),
+                            isToday: Calendar.current.isDate(date, inSameDayAs: Date()),
+                            isCurrentMonth: Calendar.current.isDate(date, equalTo: currentMonth, toGranularity: .month),
+                            weekPosition: getWeekPosition(for: date)
+                        )
+                        .onTapGesture {
+                            selectWeek(for: date)
+                        }
+                    } else {
+                        Color.clear
+                            .frame(height: 32)
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+        .onAppear {
+            initializeCurrentWeek()
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: currentMonth)
+    }
+    
+    private var calendarDays: [Date?] {
+        let calendar = Calendar.current
+        let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
+        
+        // Find Monday of the first week
+        let firstWeekday = calendar.component(.weekday, from: startOfMonth)
+        let daysFromMonday = (firstWeekday == 1) ? 6 : firstWeekday - 2
+        let firstDisplayDate = calendar.date(byAdding: .day, value: -daysFromMonday, to: startOfMonth) ?? startOfMonth
+        
+        var days: [Date?] = []
+        var currentDate = firstDisplayDate
+        
+        // Generate 42 days (6 weeks)
+        for _ in 0..<42 {
+            days.append(currentDate)
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return days
+    }
+    
+    private func isDateInSelectedWeek(_ date: Date) -> Bool {
+        guard let range = selectedDateRange else { return false }
+        return range.contains(date)
+    }
+    
+    private func getWeekPosition(for date: Date) -> WeekPosition {
+        guard let range = selectedDateRange, range.contains(date) else { return .none }
+        
+        let calendar = Calendar.current
+        if calendar.isDate(date, inSameDayAs: range.lowerBound) {
+            return .start
+        } else if calendar.isDate(date, inSameDayAs: range.upperBound) {
+            return .end
+        } else {
+            return .middle
+        }
+    }
+    
+    private func selectWeek(for date: Date) {
+        let calendar = Calendar.current
+        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start,
+              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
+        
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedWeekStartDate = weekStart
+            selectedDateRange = weekStart...weekEnd
+        }
+    }
+    
+    private func changeMonth(by value: Int) {
+        let calendar = Calendar.current
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentMonth = newMonth
+            }
+        }
+    }
+    
+    private func initializeCurrentWeek() {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        
+        selectedWeekStartDate = weekStart
+        selectedDateRange = weekStart...weekEnd
+        currentMonth = today
+    }
+}
+
+// MARK: - Week Position Enum
+enum WeekPosition {
+    case none, start, middle, end
+}
+
+// MARK: - Calendar Day View
+struct CalendarDayView: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let isCurrentMonth: Bool
+    let weekPosition: WeekPosition
+    
+    var body: some View {
+        ZStack {
+            // Background extension for start date
+            if weekPosition == .start {
+                HStack(spacing: 0) {
+                    Spacer()
+                    Rectangle()
+                        .fill(.primaryContainer)
+                        .frame(width: 16, height: 32)
+                }
+            }
+            
+            // Background extension for end date
+            if weekPosition == .end {
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(.primaryContainer)
+                        .frame(width: 16, height: 32)
+                    Spacer()
+                }
+            }
+            
+            // Main day view
+            Text("\(Calendar.current.component(.day, from: date))")
+                .font(.appBodyMedium)
+                .foregroundColor(textColor)
+                .frame(width: 32, height: 32)
+                .background(backgroundColor)
+                .clipShape(backgroundShape)
+                .overlay(
+                    backgroundShape
+                        .stroke(isToday && !isSelected ? Color.primary : Color.clear, lineWidth: 1)
+                )
+        }
+        .opacity(isCurrentMonth ? 1.0 : 0.3)
+    }
+    
+    private var textColor: Color {
+        switch weekPosition {
+        case .start, .end:
+            return .onPrimary
+        case .middle:
+            return .onPrimaryContainer
+        case .none:
+            if isToday {
+                return .primary
+            } else {
+                return .text01
+            }
+        }
+    }
+    
+    private var backgroundColor: Color {
+        switch weekPosition {
+        case .start, .end:
+            return Color.primary
+        case .middle:
+            return .primaryContainer
+        case .none:
+            if isToday && !isSelected {
+                return Color.primary.opacity(0.1)
+            } else {
+                return .clear
+            }
+        }
+    }
+    
+    private var backgroundShape: some Shape {
+        switch weekPosition {
+        case .start, .end, .none:
+            return AnyShape(Circle())
+        case .middle:
+            return AnyShape(Rectangle())
+        }
+    }
 }
 
