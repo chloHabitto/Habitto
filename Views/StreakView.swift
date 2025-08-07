@@ -26,12 +26,12 @@ struct StreakView: View {
             StreakHeaderView(onDismiss: { dismiss() })
                 .zIndex(1)
             
-            // Fixed Primary Background Content (Non-scrollable)
+                        // Fixed Primary Background Content (Non-scrollable)
             VStack(spacing: 16) {
-                    // Main Streak Display
+                // Main Streak Display
                 MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
-                    
-                    // Streak Summary Cards
+                
+                // Streak Summary Cards
                 StreakSummaryCardsView(
                     bestStreak: streakStatistics.bestStreak,
                     averageStreak: streakStatistics.averageStreak
@@ -40,6 +40,7 @@ struct StreakView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
             .offset(y: -20)
+            .opacity(dragOffset < 0 ? max(0, 1.0 + (dragOffset / 100.0)) : 1.0)
             
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
