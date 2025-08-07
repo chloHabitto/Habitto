@@ -37,7 +37,7 @@ struct CustomWeekSelectionCalendar: View {
             }
             
             // Calendar grid
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32), spacing: 0), count: 7), spacing: 0) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 // Day headers
                 ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
                     Text(day)
@@ -65,13 +65,14 @@ struct CustomWeekSelectionCalendar: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
             .id(monthYearString) // Force re-render when month changes
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
             ))
         }
-        .padding(.horizontal, 16)
+        // .background(Color.green)
         .onAppear {
             initializeCurrentWeek()
         }
@@ -193,7 +194,8 @@ struct CalendarDayView: View {
             Text("\(Calendar.current.component(.day, from: date))")
                 .font(.appBodyMedium)
                 .foregroundColor(textColor)
-                .frame(width: 32, height: 32)
+                .frame(maxWidth: .infinity)
+                .frame(height: 32)
                 .background(backgroundColor)
                 .clipShape(backgroundShape)
                 .overlay(

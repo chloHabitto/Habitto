@@ -62,29 +62,36 @@ struct WeekPickerModal: View {
                 )
                 .frame(height: 300)
                 .padding(.horizontal, 20)
+                // .background(Color.red)
                 
                 // Selected week display
                 if let range = selectedDateRange {
-                    VStack(spacing: 8) {
-                        Text("Selected Week")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text04)
-                        
-                        Text(weekRangeText(from: range))
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text01)
+                    Button(action: {
+                        selectedWeekStartDate = tempSelectedWeekStartDate
+                        isPresented = false
+                    }) {
+                        VStack(spacing: 8) {
+                            Text("Selected Week")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.surface)
+                            
+                            Text(weekRangeText(from: range))
+                                .font(.appTitleMediumEmphasised)
+                                .foregroundColor(.surface)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.primary)
+                        .cornerRadius(12)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.surfaceContainer)
-                    .cornerRadius(12)
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
                 }
                 
                 Spacer()
             }
             .background(.surface)
-            .cornerRadius(16)
+            .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(width: 320)
             .frame(maxHeight: 480)
