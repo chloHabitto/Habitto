@@ -75,37 +75,37 @@ struct StreakView: View {
                         }
                     }
                     .offset(y: dragOffset)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                let translation = value.translation.height
-                                if translation < 0 { // Dragging up
-                                    dragOffset = max(translation, -300) // Increased upward drag limit
-                                } else { // Dragging down
-                                    dragOffset = min(translation, 0) // Limit downward drag
-                                }
-                            }
-                            .onEnded { value in
-                                let translation = value.translation.height
-                                let velocity = value.velocity.height
-                                
-                                if translation < -150 || velocity < -300 { // Increased expand threshold
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        isExpanded = true
-                                        dragOffset = -300
+                                                .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        let translation = value.translation.height
+                                        if translation < 0 { // Dragging up
+                                            dragOffset = max(translation, -300) // Increased upward drag limit
+                                        } else { // Dragging down
+                                            dragOffset = min(translation, 0) // Limit downward drag
+                                        }
                                     }
-                                } else if translation > 25 || velocity > 300 { // Collapse threshold
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        isExpanded = false
-                                        dragOffset = 0
+                                    .onEnded { value in
+                                        let translation = value.translation.height
+                                        let velocity = value.velocity.height
+                                        
+                                        if translation < -150 || velocity < -300 { // Increased expand threshold
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                isExpanded = true
+                                                dragOffset = -300
+                                            }
+                                        } else if translation > 25 || velocity > 300 { // Collapse threshold
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                isExpanded = false
+                                                dragOffset = 0
+                                            }
+                                        } else { // Return to current state
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                dragOffset = isExpanded ? -300 : 0
+                                            }
+                                        }
                                     }
-                                } else { // Return to current state
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        dragOffset = isExpanded ? -300 : 0
-                                    }
-                                }
-                            }
-                    )
+                            )
                 }
             }
         }
