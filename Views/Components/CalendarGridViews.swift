@@ -94,7 +94,8 @@ struct WeeklyCalendarGridView: View {
                                 )
                                 HeatmapCellView(
                                     intensity: heatmapData.intensity,
-                                    isScheduled: heatmapData.isScheduled
+                                    isScheduled: heatmapData.isScheduled,
+                                    completionPercentage: heatmapData.completionPercentage
                                 )
                                 .frame(height: 32)
                                 .overlay(
@@ -126,7 +127,8 @@ struct WeeklyCalendarGridView: View {
                             )
                             HeatmapCellView(
                                 intensity: totalHeatmapData.intensity,
-                                isScheduled: totalHeatmapData.isScheduled
+                                isScheduled: totalHeatmapData.isScheduled,
+                                completionPercentage: totalHeatmapData.completionPercentage
                             )
                             .frame(height: 32)
                             .overlay(
@@ -187,7 +189,8 @@ struct MonthlyCalendarGridView: View {
                             )
                             HeatmapCellView(
                                 intensity: heatmapData.intensity,
-                                isScheduled: heatmapData.isScheduled
+                                isScheduled: heatmapData.isScheduled,
+                                completionPercentage: heatmapData.completionPercentage
                             )
                         }
                     }
@@ -207,7 +210,8 @@ struct MonthlyCalendarGridView: View {
                         )
                         HeatmapCellView(
                             intensity: totalHeatmapData.intensity,
-                            isScheduled: totalHeatmapData.isScheduled
+                            isScheduled: totalHeatmapData.isScheduled,
+                            completionPercentage: totalHeatmapData.completionPercentage
                         )
                     }
                 }

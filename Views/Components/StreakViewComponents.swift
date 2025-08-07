@@ -219,10 +219,12 @@ struct CalendarEmptyStateView: View {
 struct HeatmapCellView: View {
     let intensity: Int
     let isScheduled: Bool
+    let completionPercentage: Double
     
-    init(intensity: Int, isScheduled: Bool = true) {
+    init(intensity: Int, isScheduled: Bool = true, completionPercentage: Double = 0.0) {
         self.intensity = intensity
         self.isScheduled = isScheduled
+        self.completionPercentage = completionPercentage
     }
     
     var body: some View {
@@ -234,7 +236,7 @@ struct HeatmapCellView: View {
                     if isScheduled {
                         // Show heatmap when scheduled
                         Rectangle()
-                            .fill(heatmapColor(for: intensity))
+                            .fill(heatmapColor(for: completionPercentage))
                             .frame(width: 24, height: 24)
                             .cornerRadius(6)
                     } else {
@@ -259,18 +261,35 @@ struct HeatmapCellView: View {
             )
     }
     
-    private func heatmapColor(for intensity: Int) -> Color {
-        switch intensity {
-        case 0:
-            return .surfaceContainer
-        case 1:
-            return Color("green500").opacity(0.3)
-        case 2:
-            return Color("green500").opacity(0.6)
-        case 3:
-            return Color("green500")
-        default:
-            return .surfaceContainer
+    private func heatmapColor(for completionPercentage: Double) -> Color {
+        // Clamp completion percentage between 0 and 100
+        let clampedPercentage = max(0.0, min(100.0, completionPercentage))
+        
+        // Map completion percentage to color intensity
+        // 0% = green50 (lightest)
+        // 100% = green600 (darkest)
+        
+        if clampedPercentage == 0.0 {
+            return Color("green50")
+        } else if clampedPercentage == 100.0 {
+            return Color("green600")
+        } else {
+            // Use a step-based approach for better visual distinction
+            // This creates a smooth gradient effect using predefined green shades
+            let greenShades = [
+                Color("green50"),   // 0-20%
+                Color("green100"),  // 20-40%
+                Color("green200"),  // 40-60%
+                Color("green300"),  // 60-80%
+                Color("green400"),  // 80-90%
+                Color("green500"),  // 90-95%
+                Color("green600")   // 95-100%
+            ]
+            
+            let step = clampedPercentage / 100.0
+            let index = min(Int(step * Double(greenShades.count - 1)), greenShades.count - 1)
+            
+            return greenShades[index]
         }
     }
 }
