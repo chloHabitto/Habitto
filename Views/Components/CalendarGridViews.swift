@@ -44,7 +44,10 @@ struct WeeklyCalendarGridView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 32)
                             .padding(.leading, 8)
-                            .border(.outline, width: 1)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.outline, lineWidth: 1)
+                            )
                         
                         ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                             Text(day)
@@ -52,7 +55,10 @@ struct WeeklyCalendarGridView: View {
                                 .foregroundColor(.text04)
                                 .frame(width: 32)
                                 .frame(height: 32)
-                                .border(.outline, width: 1)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(.outline, lineWidth: 1)
+                                )
                         }
                     }
                     
@@ -74,7 +80,10 @@ struct WeeklyCalendarGridView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .frame(height: 32)
                             .padding(.leading, 8)
-                            .border(.outline, width: 1)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.outline, lineWidth: 1)
+                            )
                             
                             // Heatmap cells
                             ForEach(0..<7, id: \.self) { dayIndex in
@@ -86,7 +95,10 @@ struct WeeklyCalendarGridView: View {
                                     )
                                 )
                                 .frame(height: 32)
-                                .border(.outline, width: 1)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(.outline, lineWidth: 1)
+                                )
                             }
                         }
                     }
@@ -99,7 +111,10 @@ struct WeeklyCalendarGridView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .frame(height: 32)
                             .padding(.leading, 8)
-                            .border(.outline, width: 1)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.outline, lineWidth: 1)
+                            )
                         
                         ForEach(0..<7, id: \.self) { dayIndex in
                             HeatmapCellView(
@@ -110,7 +125,10 @@ struct WeeklyCalendarGridView: View {
                                 )
                             )
                             .frame(height: 32)
-                            .border(.outline, width: 1)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(.outline, lineWidth: 1)
+                            )
                         }
                     }
                 }

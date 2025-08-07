@@ -44,22 +44,22 @@ struct StreakView: View {
             
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
-                                                    WhiteSheetContainer(
-                    title: "Habit Streak",
-                    rightButton: {
-                        AnyView(
-                            Button(action: {
-                                // More button action
-                            }) {
-                                Image("Icon-moreDots")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 20, height: 20)
-                                    .foregroundColor(.primary)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(PlainButtonStyle())
-                        )
+                    WhiteSheetContainer(
+                        title: "Habit Streak",
+                        rightButton: {
+                            AnyView(
+                                Button(action: {
+                                    // More button action
+                                }) {
+                                    Image("Icon-moreDots")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(PlainButtonStyle())
+                            )
                     },
                     showGrabber: true
                 ) {
@@ -134,7 +134,7 @@ struct StreakView: View {
                     width: geometry.size.width,
                     height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
                 )
-                .offset(y: dragOffset)
+                    .offset(y: dragOffset)
                 .ignoresSafeArea(.container, edges: .bottom)
             }
                                                 .gesture(
@@ -152,11 +152,11 @@ struct StreakView: View {
                                         let velocity = value.velocity.height
                                         
                                         if translation < -150 || velocity < -300 { // Increased expand threshold
-                                            isExpanded = true
+                                                isExpanded = true
                                             dragOffset = -234 // 16 points more header space (250 - 16)
                                         } else if translation > 25 || velocity > 300 { // Collapse threshold
-                                            isExpanded = false
-                                            dragOffset = 0
+                                                isExpanded = false
+                                                dragOffset = 0
                                         } else { // Return to current state
                                             dragOffset = isExpanded ? -234 : 0
                                         }
