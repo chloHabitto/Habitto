@@ -8,7 +8,6 @@ struct CreateHabitFlowView: View {
     @State private var icon: String = "None"
     @State private var color: Color = Color(red: 0.11, green: 0.15, blue: 0.30)
     @State private var habitType: HabitType = .formation
-    @State private var isInitialLoad = true
     
     // Step 2 state variables
     @State private var reminder: String = "No reminder"
@@ -42,7 +41,6 @@ struct CreateHabitFlowView: View {
                     icon: $icon,
                     color: $color,
                     habitType: $habitType,
-                    isInitialLoad: $isInitialLoad,
                     onNext: { name, description, icon, color, habitType in
                         currentStep = 2
                     },
