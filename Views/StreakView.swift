@@ -44,25 +44,26 @@ struct StreakView: View {
             
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
-                    WhiteSheetContainer(
-                        title: "Habit Streak",
-                        rightButton: {
-                            AnyView(
-                                Button(action: {
-                                    // More button action
-                                }) {
-                                    Image("Icon-moreDots")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 20, height: 20)
-                                        .foregroundColor(.primary)
-                                }
-                                .frame(width: 44, height: 44)
-                                .buttonStyle(PlainButtonStyle())
-                            )
-                        }
-                    ) {
-                        VStack(spacing: 0) {
+                                                    WhiteSheetContainer(
+                    title: "Habit Streak",
+                    rightButton: {
+                        AnyView(
+                            Button(action: {
+                                // More button action
+                            }) {
+                                Image("Icon-moreDots")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 20, height: 20)
+                                    .foregroundColor(.primary)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(PlainButtonStyle())
+                        )
+                    },
+                    showGrabber: true
+                ) {
+                    VStack(spacing: 0) {
                         // Fixed Header Section (Title + More Button + Tabs)
                         VStack(spacing: 16) {
                             // Progress tabs
@@ -128,7 +129,7 @@ struct StreakView: View {
                     width: geometry.size.width,
                     height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
                 )
-                    .offset(y: dragOffset)
+                .offset(y: dragOffset)
                 .ignoresSafeArea(.container, edges: .bottom)
             }
                                                 .gesture(

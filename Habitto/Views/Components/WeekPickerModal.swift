@@ -12,7 +12,7 @@ struct WeekPickerModal: View {
         self._isPresented = isPresented
         self._tempSelectedWeekStartDate = State(initialValue: selectedWeekStartDate.wrappedValue)
         
-        // Initialize selected range
+        // Initialize selected range based on the current selected week (not always current week)
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate.wrappedValue)?.start ?? selectedWeekStartDate.wrappedValue
@@ -112,6 +112,17 @@ struct WeekPickerModal: View {
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(width: 320)
             .frame(maxHeight: 480)
+            .onAppear {
+                // Update temporary state when modal appears to reflect current selection
+                tempSelectedWeekStartDate = selectedWeekStartDate
+                
+                // Update selected range
+                var calendar = Calendar.current
+                calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+                let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
+                let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+                selectedDateRange = weekStart...weekEnd
+            }
         }
     }
     
