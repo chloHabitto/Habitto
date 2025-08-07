@@ -29,13 +29,13 @@ struct MainStreakDisplayView: View {
             ZStack {
                 Circle()
                     .fill(.white)
-                    .frame(width: 120, height: 120)
+                    .frame(width: 80, height: 80)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
                 Image("Icon-fire")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 80, height: 80)
+                    .frame(width: 60, height: 60)
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.warning, Color("yellow400")],

@@ -24,100 +24,95 @@ struct StreakView: View {
         VStack(spacing: 0) {
             // Fixed Header Section
             StreakHeaderView(onDismiss: { dismiss() })
-                .background(Color.primary)
                 .zIndex(1)
             
-            // Scrollable Content
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Main Streak Display
-                    MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
+            // Fixed Primary Background Content (Non-scrollable)
+            VStack(spacing: 16) {
+                // Main Streak Display
+                MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
+                
+                // Streak Summary Cards
+                StreakSummaryCardsView(
+                    bestStreak: streakStatistics.bestStreak,
+                    averageStreak: streakStatistics.averageStreak
+                )
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
+            .offset(y: -20)
+            
+            // White sheet that expands to bottom (with its own internal scrolling)
+            WhiteSheetContainer(
+                title: "Habit Streak",
+                rightButton: {
+                    AnyView(
+                        Button(action: {
+                            // More button action
+                        }) {
+                            Image("Icon-moreDots")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.primary)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(PlainButtonStyle())
+                    )
+                }
+            ) {
+                VStack(spacing: 0) {
+                    // Progress Section
+                    progressSection
                     
-                    // Streak Summary Cards
-                    StreakSummaryCardsView(
+                    // Summary Statistics
+                    SummaryStatisticsView(
+                        completionRate: streakStatistics.completionRate,
                         bestStreak: streakStatistics.bestStreak,
-                        averageStreak: streakStatistics.averageStreak
+                        consistencyRate: streakStatistics.consistencyRate
                     )
                     
-                    // White sheet that expands to bottom
-                    WhiteSheetContainer(
-                        title: "Habit Streak",
-                        rightButton: {
-                            AnyView(
-                                Button(action: {
-                                    // More button action
-                                }) {
-                                    Image("Icon-moreDots")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 20, height: 20)
-                                        .foregroundColor(.primary)
-                                }
-                                .frame(width: 44, height: 44)
-                                .buttonStyle(PlainButtonStyle())
-                            )
-                        }
-                    ) {
-                        VStack(spacing: 0) {
-                            // Progress Section
-                            progressSection
-                            
-                            // Summary Statistics
-                            SummaryStatisticsView(
-                                completionRate: streakStatistics.completionRate,
-                                bestStreak: streakStatistics.bestStreak,
-                                consistencyRate: streakStatistics.consistencyRate
-                            )
-                            
-                            // Spacer to fill remaining space
-                            Spacer(minLength: 0)
-                                .frame(maxHeight: .infinity)
-                        }
-                    }
-                    .offset(y: dragOffset)
-                                                .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        let translation = value.translation.height
-                                        if translation < 0 { // Dragging up
-                                            dragOffset = max(translation, -300) // Increased upward drag limit
-                                        } else { // Dragging down
-                                            dragOffset = min(translation, 0) // Limit downward drag
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        let translation = value.translation.height
-                                        let velocity = value.velocity.height
-                                        
-                                        if translation < -150 || velocity < -300 { // Increased expand threshold
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isExpanded = true
-                                                dragOffset = -300
-                                            }
-                                        } else if translation > 25 || velocity > 300 { // Collapse threshold
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isExpanded = false
-                                                dragOffset = 0
-                                            }
-                                        } else { // Return to current state
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                dragOffset = isExpanded ? -300 : 0
-                                            }
-                                        }
-                                    }
-                            )
+                    // Spacer to fill remaining space
+                    Spacer(minLength: 0)
+                        .frame(maxHeight: .infinity)
                 }
             }
+            .offset(y: dragOffset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        let translation = value.translation.height
+                        if translation < 0 { // Dragging up
+                            dragOffset = max(translation, -300) // Increased upward drag limit
+                        } else { // Dragging down
+                            dragOffset = min(translation, 0) // Limit downward drag
+                        }
+                    }
+                    .onEnded { value in
+                        let translation = value.translation.height
+                        let velocity = value.velocity.height
+                        
+                        if translation < -150 || velocity < -300 { // Increased expand threshold
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isExpanded = true
+                                dragOffset = -300
+                            }
+                        } else if translation > 25 || velocity > 300 { // Collapse threshold
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isExpanded = false
+                                dragOffset = 0
+                            }
+                        } else { // Return to current state
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                dragOffset = isExpanded ? -300 : 0
+                            }
+                        }
+                    }
+            )
         }
-        .background(
-            VStack(spacing: 0) {
-                Color.primary
-                Color.white
-            }
-        )
+        .background(Color.primary)
         .ignoresSafeArea(.container, edges: .bottom)
-        .safeAreaInset(edge: .top) {
-            Color.clear
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.primary
                 .frame(height: 0)
         }
         .onAppear {
