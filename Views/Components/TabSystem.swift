@@ -76,6 +76,7 @@ struct UnifiedTabBarView: View {
             }
             .opacity(style == .underline ? 1 : 0)
         )
+        .animation(nil, value: selectedIndex)
     }
 }
 
@@ -115,6 +116,7 @@ struct UnderlineTabButton: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
+        .animation(nil, value: isSelected)
     }
 }
 

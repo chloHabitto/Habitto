@@ -66,20 +66,25 @@ struct StreakView: View {
                     VStack(spacing: 0) {
                         // Fixed Header Section (Title + More Button + Tabs)
                         VStack(spacing: 16) {
-                            // Progress tabs
-                            UnifiedTabBarView(
-                                tabs: [
-                                    TabItem(title: "Weekly"),
-                                    TabItem(title: "Monthly"),
-                                    TabItem(title: "Yearly")
-                                ],
-                                selectedIndex: selectedProgressTab,
-                                style: .underline
-                            ) { index in
-                                selectedProgressTab = index
+                            // Progress tabs - isolated from drag animations
+                            ZStack {
+                                UnifiedTabBarView(
+                                    tabs: [
+                                        TabItem(title: "Weekly"),
+                                        TabItem(title: "Monthly"),
+                                        TabItem(title: "Yearly")
+                                    ],
+                                    selectedIndex: selectedProgressTab,
+                                    style: .underline
+                                ) { index in
+                                    selectedProgressTab = index
+                                }
                             }
+                            .allowsHitTesting(true)
                             .animation(nil, value: selectedProgressTab)
+                            .animation(nil, value: dragOffset)
                         }
+                        .animation(nil, value: dragOffset)
                         
                         // Scrollable Content Section
                         ScrollView {
@@ -147,19 +152,13 @@ struct StreakView: View {
                                         let velocity = value.velocity.height
                                         
                                         if translation < -150 || velocity < -300 { // Increased expand threshold
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isExpanded = true
-                                dragOffset = -234 // 16 points more header space (250 - 16)
-                                            }
+                                            isExpanded = true
+                                            dragOffset = -234 // 16 points more header space (250 - 16)
                                         } else if translation > 25 || velocity > 300 { // Collapse threshold
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                isExpanded = false
-                                                dragOffset = 0
-                                            }
+                                            isExpanded = false
+                                            dragOffset = 0
                                         } else { // Return to current state
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                dragOffset = isExpanded ? -234 : 0
-                                            }
+                                            dragOffset = isExpanded ? -234 : 0
                                         }
                                     }
                             )
