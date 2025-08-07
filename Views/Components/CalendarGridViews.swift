@@ -87,12 +87,14 @@ struct WeeklyCalendarGridView: View {
                             
                             // Heatmap cells
                             ForEach(0..<7, id: \.self) { dayIndex in
+                                let heatmapData = StreakDataCalculator.getWeeklyHeatmapData(
+                                    for: habit,
+                                    dayIndex: dayIndex,
+                                    weekStartDate: selectedWeekStartDate
+                                )
                                 HeatmapCellView(
-                                    intensity: StreakDataCalculator.getWeeklyHeatmapIntensity(
-                                        for: habit,
-                                        dayIndex: dayIndex,
-                                        weekStartDate: selectedWeekStartDate
-                                    )
+                                    intensity: heatmapData.intensity,
+                                    isScheduled: heatmapData.isScheduled
                                 )
                                 .frame(height: 32)
                                 .overlay(
@@ -117,12 +119,14 @@ struct WeeklyCalendarGridView: View {
                             )
                         
                         ForEach(0..<7, id: \.self) { dayIndex in
+                            let totalHeatmapData = StreakDataCalculator.getWeeklyTotalHeatmapData(
+                                dayIndex: dayIndex,
+                                habits: userHabits,
+                                weekStartDate: selectedWeekStartDate
+                            )
                             HeatmapCellView(
-                                intensity: StreakDataCalculator.getWeeklyTotalIntensity(
-                                    dayIndex: dayIndex,
-                                    habits: userHabits,
-                                    weekStartDate: selectedWeekStartDate
-                                )
+                                intensity: totalHeatmapData.intensity,
+                                isScheduled: totalHeatmapData.isScheduled
                             )
                             .frame(height: 32)
                             .overlay(
@@ -176,12 +180,14 @@ struct MonthlyCalendarGridView: View {
                         
                         // Week heatmap cells
                         ForEach(0..<7, id: \.self) { dayIndex in
+                            let heatmapData = StreakDataCalculator.getMonthlyHeatmapData(
+                                weekIndex: weekIndex,
+                                dayIndex: dayIndex,
+                                habits: userHabits
+                            )
                             HeatmapCellView(
-                                intensity: StreakDataCalculator.getMonthlyHeatmapIntensity(
-                                    weekIndex: weekIndex,
-                                    dayIndex: dayIndex,
-                                    habits: userHabits
-                                )
+                                intensity: heatmapData.intensity,
+                                isScheduled: heatmapData.isScheduled
                             )
                         }
                     }
@@ -195,11 +201,13 @@ struct MonthlyCalendarGridView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     ForEach(0..<7, id: \.self) { dayIndex in
+                        let totalHeatmapData = StreakDataCalculator.getMonthlyTotalHeatmapData(
+                            dayIndex: dayIndex,
+                            habits: userHabits
+                        )
                         HeatmapCellView(
-                            intensity: StreakDataCalculator.getMonthlyTotalIntensity(
-                                dayIndex: dayIndex,
-                                habits: userHabits
-                            )
+                            intensity: totalHeatmapData.intensity,
+                            isScheduled: totalHeatmapData.isScheduled
                         )
                     }
                 }

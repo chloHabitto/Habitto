@@ -218,16 +218,44 @@ struct CalendarEmptyStateView: View {
 // MARK: - Heatmap Cell
 struct HeatmapCellView: View {
     let intensity: Int
+    let isScheduled: Bool
+    
+    init(intensity: Int, isScheduled: Bool = true) {
+        self.intensity = intensity
+        self.isScheduled = isScheduled
+    }
     
     var body: some View {
         Rectangle()
             .fill(.clear)
             .frame(width: 32, height: 32)
             .overlay(
-                Rectangle()
-                    .fill(heatmapColor(for: intensity))
-                    .frame(width: 24, height: 24)
-                    .cornerRadius(6)
+                Group {
+                    if isScheduled {
+                        // Show heatmap when scheduled
+                        Rectangle()
+                            .fill(heatmapColor(for: intensity))
+                            .frame(width: 24, height: 24)
+                            .cornerRadius(6)
+                    } else {
+                        // Show crossed-out appearance when not scheduled
+                        ZStack {
+                            // Diagonal line from top-left to bottom-right
+                            Rectangle()
+                                .fill(.outline)
+                                .frame(width: 1)
+                                .frame(height: 20)
+                                .rotationEffect(.degrees(45))
+                            
+                            // Diagonal line from top-right to bottom-left
+                            Rectangle()
+                                .fill(.outline)
+                                .frame(width: 1)
+                                .frame(height: 20)
+                                .rotationEffect(.degrees(-45))
+                        }
+                    }
+                }
             )
     }
     

@@ -125,11 +125,55 @@ class StreakDataCalculator {
         return 0 // No intensity for non-scheduled days
     }
     
+    static func getWeeklyHeatmapData(for habit: Habit, dayIndex: Int, weekStartDate: Date) -> (intensity: Int, isScheduled: Bool) {
+        let calendar = Calendar.current
+        let weekStart = calendar.startOfDay(for: weekStartDate)
+        
+        // Calculate the date for this day index (0 = Monday, 6 = Sunday)
+        let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+        
+        // Check if habit should be scheduled on this date
+        let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
+        
+        // If not scheduled, return 0 intensity
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false)
+        }
+        
+        // Check if habit was completed on this date
+        if habit.isCompleted(for: targetDate) {
+            return (intensity: 3, isScheduled: true) // High intensity for completed days
+        }
+        
+        return (intensity: 1, isScheduled: true) // Low intensity for scheduled but not completed days
+    }
+    
     static func getWeeklyTotalIntensity(dayIndex: Int, habits: [Habit], weekStartDate: Date) -> Int {
         let totalIntensity = habits.reduce(0) { total, habit in
             total + getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex, weekStartDate: weekStartDate)
         }
         return min(totalIntensity, 3)
+    }
+    
+    static func getWeeklyTotalHeatmapData(dayIndex: Int, habits: [Habit], weekStartDate: Date) -> (intensity: Int, isScheduled: Bool) {
+        let calendar = Calendar.current
+        let weekStart = calendar.startOfDay(for: weekStartDate)
+        let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+        
+        // Check if any habit is scheduled for this day
+        let scheduledHabits = habits.filter { shouldShowHabitOnDate($0, date: targetDate) }
+        let isScheduled = !scheduledHabits.isEmpty
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false)
+        }
+        
+        // Calculate total intensity from scheduled habits
+        let totalIntensity = scheduledHabits.reduce(0) { total, habit in
+            total + getWeeklyHeatmapIntensity(for: habit, dayIndex: dayIndex, weekStartDate: weekStartDate)
+        }
+        
+        return (intensity: min(totalIntensity, 3), isScheduled: true)
     }
     
     // MARK: - Monthly Heatmap Data
@@ -149,11 +193,61 @@ class StreakDataCalculator {
         return min(completedCount, 3)
     }
     
+    static func getMonthlyHeatmapData(weekIndex: Int, dayIndex: Int, habits: [Habit]) -> (intensity: Int, isScheduled: Bool) {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this week and day
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        let weeksToSubtract = weekIndex
+        let daysToSubtract = daysFromMonday - dayIndex + (weeksToSubtract * 7)
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Check if any habit is scheduled for this date
+        let scheduledHabits = habits.filter { shouldShowHabitOnDate($0, date: targetDate) }
+        let isScheduled = !scheduledHabits.isEmpty
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false)
+        }
+        
+        // Count completed habits for this date
+        let completedCount = scheduledHabits.filter { $0.isCompleted(for: targetDate) }.count
+        return (intensity: min(completedCount, 3), isScheduled: true)
+    }
+    
     static func getMonthlyTotalIntensity(dayIndex: Int, habits: [Habit]) -> Int {
         let totalIntensity = habits.reduce(0) { total, habit in
             total + getMonthlyHeatmapIntensity(weekIndex: 0, dayIndex: dayIndex, habits: habits)
         }
         return min(totalIntensity, 3)
+    }
+    
+    static func getMonthlyTotalHeatmapData(dayIndex: Int, habits: [Habit]) -> (intensity: Int, isScheduled: Bool) {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this day
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        let daysToSubtract = daysFromMonday - dayIndex
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Check if any habit is scheduled for this date
+        let scheduledHabits = habits.filter { shouldShowHabitOnDate($0, date: targetDate) }
+        let isScheduled = !scheduledHabits.isEmpty
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false)
+        }
+        
+        // Calculate total intensity from scheduled habits
+        let totalIntensity = scheduledHabits.reduce(0) { total, habit in
+            total + getMonthlyHeatmapIntensity(weekIndex: 0, dayIndex: dayIndex, habits: habits)
+        }
+        
+        return (intensity: min(totalIntensity, 3), isScheduled: true)
     }
     
     // MARK: - Schedule Helper Functions
