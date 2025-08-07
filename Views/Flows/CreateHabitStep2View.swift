@@ -125,11 +125,11 @@ struct CreateHabitStep2View: View {
             targetNumber: targetNumber,
             targetUnit: targetUnit,
             targetFrequency: targetFrequency,
-            reminder: reminder,
-            startDate: startDate,
-            endDate: endDate,
-            reminders: reminders
-        )
+                reminder: reminder,
+                startDate: startDate,
+                endDate: endDate,
+                reminders: reminders
+            )
     }
 
     
@@ -143,10 +143,10 @@ struct CreateHabitStep2View: View {
     // MARK: - Computed Properties for UI
     private var bottomGradientColors: [Color] {
         [
-            Color.surface2.opacity(0),
-            Color.surface2.opacity(0.3),
-            Color.surface2.opacity(0.7),
-            Color.surface2.opacity(1.0)
+                Color.surface2.opacity(0),
+                Color.surface2.opacity(0.3),
+                Color.surface2.opacity(0.7),
+                Color.surface2.opacity(1.0)
         ]
     }
     
@@ -189,17 +189,17 @@ struct CreateHabitStep2View: View {
     // MARK: - Focus State Modifiers
     private var focusStateModifiers: some View {
         mainContentView
-            .navigationBarHidden(true)
+        .navigationBarHidden(true)
             .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
-            .onChange(of: goalNumber) { oldValue, newValue in
-                uiUpdateTrigger.toggle()
-            }
-            .onChange(of: baselineNumber) { _, _ in
-                uiUpdateTrigger.toggle()
-            }
-            .onChange(of: targetNumber) { _, _ in
-                uiUpdateTrigger.toggle()
-            }
+        .onChange(of: goalNumber) { oldValue, newValue in
+            uiUpdateTrigger.toggle()
+        }
+        .onChange(of: baselineNumber) { _, _ in
+            uiUpdateTrigger.toggle()
+        }
+        .onChange(of: targetNumber) { _, _ in
+            uiUpdateTrigger.toggle()
+        }
             .onChange(of: isGoalNumberFocused) { _, newValue in
                 goalNumberFocused = newValue
             }
@@ -232,8 +232,8 @@ struct CreateHabitStep2View: View {
             
             // Done button positioned above keyboard
             if shouldShowDoneButton {
-                VStack {
-                    Spacer()
+            VStack {
+                Spacer()
                     HStack {
                         Spacer()
                         HabittoButton.mediumFillPrimaryHugging(text: "Done") {

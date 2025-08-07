@@ -28,10 +28,10 @@ struct StreakView: View {
             
             // Fixed Primary Background Content (Non-scrollable)
             VStack(spacing: 16) {
-                // Main Streak Display
+                    // Main Streak Display
                 MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
-                
-                // Streak Summary Cards
+                    
+                    // Streak Summary Cards
                 StreakSummaryCardsView(
                     bestStreak: streakStatistics.bestStreak,
                     averageStreak: streakStatistics.averageStreak
@@ -43,38 +43,74 @@ struct StreakView: View {
             
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
-                WhiteSheetContainer(
-                    title: "Habit Streak",
-                    rightButton: {
-                        AnyView(
-                            Button(action: {
-                                // More button action
-                            }) {
-                                Image("Icon-moreDots")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 20, height: 20)
-                                    .foregroundColor(.primary)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(PlainButtonStyle())
-                        )
-                    }
-                ) {
+                    WhiteSheetContainer(
+                        title: "Habit Streak",
+                        rightButton: {
+                            AnyView(
+                                Button(action: {
+                                    // More button action
+                                }) {
+                                    Image("Icon-moreDots")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(PlainButtonStyle())
+                            )
+                        }
+                                    ) {
                     VStack(spacing: 0) {
-                        // Progress Section
-                        progressSection
+                        // Fixed Header Section (Title + More Button + Tabs)
+                        VStack(spacing: 16) {
+                            // Progress tabs
+                            ProgressTabsView(selectedTab: selectedProgressTab) { index in
+                                selectedProgressTab = index
+                            }
+                        }
                         
-                        // Summary Statistics
-                        SummaryStatisticsView(
-                            completionRate: streakStatistics.completionRate,
-                            bestStreak: streakStatistics.bestStreak,
-                            consistencyRate: streakStatistics.consistencyRate
-                        )
-                        
-                        // Spacer to fill remaining space
-                        Spacer(minLength: 0)
-                            .frame(maxHeight: .infinity)
+                        // Scrollable Content Section
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                // Date range selector
+                                DateRangeSelectorView(
+                                    weekRangeText: selectedWeekStartDate.weekRangeText(),
+                                    onTap: { showingCalendar = true }
+                                )
+                                
+                                // Calendar content based on selected tab
+                                Group {
+                                    if selectedProgressTab == 0 {
+                                        // Weekly view
+                                        WeeklyCalendarGridView(
+                                            userHabits: userHabits,
+                                            selectedWeekStartDate: selectedWeekStartDate
+                                        )
+                                    } else if selectedProgressTab == 1 {
+                                        // Monthly view
+                                        MonthlyCalendarGridView(userHabits: userHabits)
+                                    } else {
+                                        // Yearly view
+                                        YearlyCalendarGridView(
+                                            userHabits: userHabits,
+                                            yearlyHeatmapData: yearlyHeatmapData,
+                                            isDataLoaded: isDataLoaded
+                                        )
+                                    }
+                                }
+                                
+                                // Summary Statistics
+                                SummaryStatisticsView(
+                                    completionRate: streakStatistics.completionRate,
+                                    bestStreak: streakStatistics.bestStreak,
+                                    consistencyRate: streakStatistics.consistencyRate
+                                )
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .padding(.bottom, 16)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -82,41 +118,41 @@ struct StreakView: View {
                     width: geometry.size.width,
                     height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
                 )
-                .offset(y: dragOffset)
+                    .offset(y: dragOffset)
                 .ignoresSafeArea(.container, edges: .bottom)
             }
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        let translation = value.translation.height
-                        if translation < 0 { // Dragging up
+                                                .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        let translation = value.translation.height
+                                        if translation < 0 { // Dragging up
                             dragOffset = max(translation, -250) // 12 points more header space (262 - 12)
-                        } else { // Dragging down
-                            dragOffset = min(translation, 0) // Limit downward drag
-                        }
-                    }
-                    .onEnded { value in
-                        let translation = value.translation.height
-                        let velocity = value.velocity.height
-                        
-                        if translation < -150 || velocity < -300 { // Increased expand threshold
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isExpanded = true
+                                        } else { // Dragging down
+                                            dragOffset = min(translation, 0) // Limit downward drag
+                                        }
+                                    }
+                                    .onEnded { value in
+                                        let translation = value.translation.height
+                                        let velocity = value.velocity.height
+                                        
+                                        if translation < -150 || velocity < -300 { // Increased expand threshold
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                isExpanded = true
                                 dragOffset = -250 // 12 points more header space (262 - 12)
-                            }
-                        } else if translation > 25 || velocity > 300 { // Collapse threshold
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isExpanded = false
-                                dragOffset = 0
-                            }
-                        } else { // Return to current state
-                            withAnimation(.easeInOut(duration: 0.3)) {
+                                            }
+                                        } else if translation > 25 || velocity > 300 { // Collapse threshold
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                isExpanded = false
+                                                dragOffset = 0
+                                            }
+                                        } else { // Return to current state
+                                            withAnimation(.easeInOut(duration: 0.3)) {
                                 dragOffset = isExpanded ? -250 : 0
-                            }
-                        }
-                    }
-            )
-        }
+                                            }
+                                        }
+                                    }
+                            )
+                }
         .background(Color.primary)
         .ignoresSafeArea(.container, edges: .bottom)
         .safeAreaInset(edge: .top, spacing: 0) {
