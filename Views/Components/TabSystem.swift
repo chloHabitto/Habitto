@@ -110,7 +110,6 @@ struct UnderlineTabButton: View {
                             .fill(.text03)
                             .frame(height: 4)
                     }
-                    .animation(.easeInOut(duration: 0.2), value: isSelected)
                     .opacity(isSelected ? 1 : 0) // Only show stroke for selected tabs
                 )
             }

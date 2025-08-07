@@ -77,6 +77,7 @@ struct StreakView: View {
                             ) { index in
                                 selectedProgressTab = index
                             }
+                            .animation(nil, value: selectedProgressTab)
                         }
                         
                         // Scrollable Content Section
