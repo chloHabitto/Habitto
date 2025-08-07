@@ -64,6 +64,23 @@ struct WeekPickerModal: View {
                 .padding(.horizontal, 20)
                 // .background(Color.red)
                 
+                // Reset button - only show if week is different from current week
+                if !isCurrentWeekSelected {
+                    Button(action: {
+                        resetToCurrentWeek()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.appBodyMedium)
+                            Text("Reset to current week")
+                                .font(.appBodyMedium)
+                        }
+                        .foregroundColor(.text02)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 20)
+                }
+                
                 // Selected week display
                 if let range = selectedDateRange {
                     Button(action: {
@@ -106,5 +123,29 @@ struct WeekPickerModal: View {
         let endText = formatter.string(from: range.upperBound)
         
         return "\(startText) - \(endText)"
+    }
+    
+    // MARK: - Helper Properties and Functions
+    
+    private var isCurrentWeekSelected: Bool {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        
+        let today = Date()
+        let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        
+        return calendar.isDate(tempSelectedWeekStartDate, inSameDayAs: currentWeekStart)
+    }
+    
+    private func resetToCurrentWeek() {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        
+        let today = Date()
+        let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let currentWeekEnd = calendar.date(byAdding: .day, value: 6, to: currentWeekStart) ?? currentWeekStart
+        
+        tempSelectedWeekStartDate = currentWeekStart
+        selectedDateRange = currentWeekStart...currentWeekEnd
     }
 }
