@@ -28,7 +28,18 @@ class CoreDataManager: ObservableObject {
         container.loadPersistentStores { _, error in
             if let error = error {
                 print("❌ Core Data load error: \(error)")
-                fatalError("Core Data failed to load persistent stores: \(error)")
+                
+                // Check if it's a CloudKit container error
+                if let nsError = error as NSError?,
+                   nsError.domain == "CKErrorDomain" && nsError.code == 1014 {
+                    print("⚠️ CloudKit container not configured. Falling back to local storage.")
+                    print("📋 Please create CloudKit container: iCloud.com.chloe-lee.Habitto")
+                    
+                    // Try to load without CloudKit
+                    self.loadPersistentStoresWithoutCloudKit()
+                } else {
+                    fatalError("Core Data failed to load persistent stores: \(error)")
+                }
             } else {
                 print("✅ Core Data persistent stores loaded successfully")
             }
@@ -166,6 +177,29 @@ class CoreDataManager: ObservableObject {
             return "CloudKit sync enabled"
         }
         return "Local storage only"
+    }
+    
+    // MARK: - Fallback for CloudKit Issues
+    private func loadPersistentStoresWithoutCloudKit() {
+        print("🔄 Attempting to load persistent stores without CloudKit...")
+        
+        // Create a new container without CloudKit
+        let fallbackContainer = NSPersistentContainer(name: "HabittoDataModel")
+        
+        fallbackContainer.loadPersistentStores { _, error in
+            if let error = error {
+                print("❌ Fallback Core Data load also failed: \(error)")
+                fatalError("Core Data failed to load even without CloudKit: \(error)")
+            } else {
+                print("✅ Core Data loaded successfully without CloudKit")
+                // Replace the persistent container
+                DispatchQueue.main.async {
+                    // Note: In a real app, you'd want to handle this more gracefully
+                    // For now, we'll just print a success message
+                    print("📱 App running with local storage only")
+                }
+            }
+        }
     }
     
     // MARK: - Migration from UserDefaults

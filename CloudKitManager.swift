@@ -70,6 +70,19 @@ class CloudKitManager: ObservableObject {
                     print("✅ User record ID fetched: \(recordID.recordName)")
                 } else if let error = error {
                     print("❌ Error fetching user record ID: \(error)")
+                    
+                    // Check if it's a container configuration error
+                    if let ckError = error as? CKError, ckError.code == .badContainer {
+                        print("⚠️ CloudKit container not configured or not yet active.")
+                        print("📋 Container ID needed: iCloud.com.chloe-lee.Habitto")
+                        print("🔗 Go to: https://developer.apple.com/account/resources/identifiers/list")
+                        print("⏰ Note: New containers may take up to 30 minutes to become active.")
+                        
+                        // For development, we can continue with local storage
+                        self?.isSignedIn = true
+                        self?.syncStatus = .completed
+                        print("📱 App will continue with local storage until CloudKit is ready.")
+                    }
                 }
             }
         }

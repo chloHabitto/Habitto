@@ -201,7 +201,7 @@ extension NoteEntity {
             id: self.id ?? UUID(),
             title: self.title ?? "",
             content: self.content ?? "",
-            tags: self.tags ?? [],
+            tags: (self.tags as? [String]) ?? [],
             createdAt: self.createdAt ?? Date(),
             updatedAt: self.updatedAt ?? Date()
         )
