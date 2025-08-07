@@ -2,7 +2,24 @@ import SwiftUI
 import UIKit
 
 struct CreateHabitStep2View: View {
-    let step1Data: (String, String, String, Color, HabitType)
+    @Binding var name: String
+    @Binding var description: String
+    @Binding var icon: String
+    @Binding var color: Color
+    @Binding var habitType: HabitType
+    @Binding var reminder: String
+    @Binding var reminders: [ReminderItem]
+    @Binding var startDate: Date
+    @Binding var endDate: Date?
+    @Binding var goalNumber: String
+    @Binding var goalUnit: String
+    @Binding var goalFrequency: String
+    @Binding var baselineNumber: String
+    @Binding var baselineUnit: String
+    @Binding var baselineFrequency: String
+    @Binding var targetNumber: String
+    @Binding var targetUnit: String
+    @Binding var targetFrequency: String
     let habitToEdit: Habit?
     let goBack: () -> Void
     let onSave: (Habit) -> Void
@@ -34,32 +51,11 @@ struct CreateHabitStep2View: View {
         return HabitFormLogic.pluralizedUnit(number, unit: targetUnit)
     }
     
-    @State private var reminder: String = "No reminder"
-    @State private var reminders: [ReminderItem] = []
-    @State private var startDate: Date = Date()
-    @State private var endDate: Date? = nil
     @State private var showingReminderSheet = false
     @State private var showingStartDateSheet = false
     @State private var showingEndDateSheet = false
     
-    // OLD Habit Breaking specific state - Commented out for new unified approach
-    // @State private var baseline: String = "1"
-    // @State private var target: String = "1"
-    // @State private var baselineUnit: String = "time"
-    // @State private var targetUnit: String = "time"
-    // @State private var showingBaselineUnitSheet = false
-    // @State private var showingTargetUnitSheet = false
-    
-    // NEW UNIFIED APPROACH - Unified state for both habit building and breaking
-    @State private var goalNumber: String = "1"
-    @State private var goalUnit: String = "time"
-    @State private var goalFrequency: String = "everyday"
-    @State private var baselineNumber: String = "1"
-    @State private var baselineUnit: String = "time"
-    @State private var baselineFrequency: String = "everyday"
-    @State private var targetNumber: String = "1"
-    @State private var targetUnit: String = "time"
-    @State private var targetFrequency: String = "everyday"
+    // Sheet state variables for UI management
     @State private var showingGoalUnitSheet = false
     @State private var showingGoalFrequencySheet = false
     @State private var showingBaselineUnitSheet = false
@@ -100,7 +96,7 @@ struct CreateHabitStep2View: View {
     // Overall form validation
     private var isFormValid: Bool {
         return HabitFormLogic.isFormValid(
-            habitType: step1Data.4,
+            habitType: habitType,
             goalNumber: goalNumber,
             baselineNumber: baselineNumber,
             targetNumber: targetNumber
@@ -117,7 +113,7 @@ struct CreateHabitStep2View: View {
     // MARK: - Helper Functions
     private func createHabit() -> Habit {
         return HabitFormLogic.createHabit(
-            step1Data: step1Data,
+            step1Data: (name, description, icon, color, habitType),
             goalNumber: goalNumber,
             goalUnit: goalUnit,
             goalFrequency: goalFrequency,
@@ -164,7 +160,7 @@ struct CreateHabitStep2View: View {
             CreateHabitHeader(stepNumber: 2, onCancel: { dismiss() })
             
             ScrollView {
-                if step1Data.4 == .formation {
+                if habitType == .formation {
                     habitBuildingForm
                 } else {
                     habitBreakingForm
@@ -176,7 +172,7 @@ struct CreateHabitStep2View: View {
             
             FormActionButtons(
                 isFormValid: isFormValid,
-                primaryColor: step1Data.3,
+                primaryColor: color,
                 onBack: goBack,
                 onSave: saveHabit
             )
