@@ -14,6 +14,7 @@ struct HomeTabView: View {
     @State private var lastCalculatedDate: Date?
     @State private var cachedStats: [(String, Int)] = []
     @State private var lastCalculatedStatsDate: Date?
+    @State private var forceRefresh: Bool = false // Simple boolean to force refresh
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
@@ -44,50 +45,88 @@ struct HomeTabView: View {
             habitsListSection
         }
         .onAppear {
-            print("🏠 HomeTabView appeared!")
-            print("🏠 HomeTabView: Total habits passed: \(habits.count)")
-            print("🏠 HomeTabView: Selected date: \(selectedDate)")
+            // Clear cache to ensure fresh data is loaded
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+            forceRefresh = true // Force refresh on appear
             
             // Ensure selectedDate is set to today when the view appears
             let today = Calendar.current.startOfDay(for: Date())
             if selectedDate != today {
                 selectedDate = today
             }
-            
-            print("🏠 HomeTabView: Pre-calculated stats - Total: \(stats.indices.contains(0) ? stats[0].1 : 0), Undone: \(stats.indices.contains(1) ? stats[1].1 : 0), Done: \(stats.indices.contains(2) ? stats[2].1 : 0)")
-            
-            // Debug: Print each habit's details
-            for (index, habit) in habits.enumerated() {
-                print("🏠 HomeTabView: Habit \(index): \(habit.name), startDate: \(habit.startDate), schedule: '\(habit.schedule)'")
-                print("🏠 HomeTabView: Habit \(index): goal: '\(habit.goal)', habitType: \(habit.habitType)")
-            }
         }
         .onChange(of: habits.count) { oldCount, newCount in
-            // Only clear cache if habits actually changed (not just count)
-            print("🏠 HomeTabView: Habits count changed from \(oldCount) to \(newCount)")
+            // Always clear cache when habits count changes to ensure new habits are shown
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+            forceRefresh = true // Force refresh on habits count change
+        }
+        .onChange(of: habits) { oldHabits, newHabits in
+            // Clear cache when habits array content changes
             
-            // Check if habits array content actually changed by comparing IDs
-            let oldHabitIds = Set(habits.prefix(oldCount).map { $0.id })
-            let newHabitIds = Set(habits.prefix(newCount).map { $0.id })
+            // Check if any habits were added
+            let newHabitIds = Set(newHabits.map { $0.id })
+            let oldHabitIds = Set(oldHabits.map { $0.id })
+            let addedHabits = newHabitIds.subtracting(oldHabitIds)
             
-            if oldHabitIds != newHabitIds {
-                print("🏠 HomeTabView: Habits content changed, clearing cache")
-                cachedHabitsForDate = []
-                lastCalculatedDate = nil
-                cachedStats = []
-                lastCalculatedStatsDate = nil
+            if !addedHabits.isEmpty {
+                for habitId in addedHabits {
+                    if newHabits.first(where: { $0.id == habitId }) != nil {
+                        // Habit found, cache invalidation will handle the rest
+                    }
+                }
             }
+            
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+            forceRefresh = true // Force refresh on habits array content change
         }
         .onChange(of: selectedDate) { oldDate, newDate in
-            // Only clear cache if date actually changed significantly
-            let calendar = Calendar.current
-            let oldDay = calendar.startOfDay(for: oldDate)
-            let newDay = calendar.startOfDay(for: newDate)
-            
-            if oldDay != newDay {
-                print("🏠 HomeTabView: Selected date changed from \(oldDate) to \(newDate), clearing cache")
-                cachedHabitsForDate = []
-                lastCalculatedDate = nil
+            // Clear cache when date changes
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+            forceRefresh = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            cachedHabitsForDate = []
+            lastCalculatedDate = nil
+            cachedStats = []
+            lastCalculatedStatsDate = nil
+            forceRefresh = true
+        }
+        .onChange(of: forceRefresh) { _, newValue in
+            // When forceRefresh becomes true, immediately update the cache
+            if newValue {
+                
+                // Update cache immediately
+                let filteredHabits = habits.filter { habit in
+                    let selected = DateUtils.startOfDay(for: selectedDate)
+                    let start = DateUtils.startOfDay(for: habit.startDate)
+                    let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+                    
+                    guard selected >= start && selected <= end else {
+                        return false
+                    }
+                    
+                    return shouldShowHabitOnDate(habit, date: selectedDate)
+                }
+                
+                cachedHabitsForDate = filteredHabits
+                lastCalculatedDate = selectedDate
+                
+                // Reset forceRefresh after updating cache
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    forceRefresh = false
+                }
             }
         }
         .fullScreenCover(item: $selectedHabit) { habit in
@@ -169,11 +208,9 @@ struct HomeTabView: View {
             habit: habit,
             selectedDate: selectedDate,
             onRowTap: {
-                print("📱 Row tapped for habit: \(habit.name)")
                 selectedHabit = habit
             },
             onProgressChange: { habit, date, progress in
-                print("🔄 Progress changed for habit: \(habit.name) to \(progress)")
                 // Update the habit's progress
                 var updatedHabit = habit
                 let dateKey = DateUtils.dateKey(for: date)
@@ -181,19 +218,17 @@ struct HomeTabView: View {
                 onUpdateHabit?(updatedHabit)
             },
             onEdit: {
-                print("✏️ Edit tapped for habit: \(habit.name)")
                 selectedHabit = habit
             },
             onDelete: {
-                print("🗑️ Delete tapped for habit: \(habit.name)")
                 onDeleteHabit?(habit)
             }
         )
     }
     
     private var habitsForSelectedDate: [Habit] {
-        // Use cached result if available and date hasn't changed
-        if let lastDate = lastCalculatedDate, lastDate == selectedDate {
+        // Use cached result if available and date hasn't changed and cache hasn't been invalidated
+        if let lastDate = lastCalculatedDate, lastDate == selectedDate, !forceRefresh {
             return cachedHabitsForDate
         }
         
@@ -203,25 +238,28 @@ struct HomeTabView: View {
             let start = DateUtils.startOfDay(for: habit.startDate)
             let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
             
-            // First check if the date is within the habit period
             guard selected >= start && selected <= end else {
                 return false
             }
             
-            // Then check if the habit should appear on this specific date based on schedule
-            let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-            return shouldShow
+            return shouldShowHabitOnDate(habit, date: selectedDate)
         }
         
-        // Update cache for future use
-        if lastCalculatedDate != selectedDate {
-            DispatchQueue.main.async {
-                self.cachedHabitsForDate = filteredHabits
-                self.lastCalculatedDate = self.selectedDate
-            }
-        }
-        
+        // Return the filtered habits without modifying state
         return filteredHabits
+    }
+    
+    private func getWeekdayName(_ weekday: Int) -> String {
+        switch weekday {
+        case 1: return "Sunday"
+        case 2: return "Monday"
+        case 3: return "Tuesday"
+        case 4: return "Wednesday"
+        case 5: return "Thursday"
+        case 6: return "Friday"
+        case 7: return "Saturday"
+        default: return "Unknown"
+        }
     }
     
     private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
@@ -242,27 +280,50 @@ struct HomeTabView: View {
         case "Everyday":
             return true
         case "Weekdays":
-            return weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+            let shouldShow = weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+            return shouldShow
         case "Weekends":
-            return weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
+            let shouldShow = weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
+            return shouldShow
+        case "Monday":
+            let shouldShow = weekday == 2
+            return shouldShow
+        case "Tuesday":
+            let shouldShow = weekday == 3
+            return shouldShow
+        case "Wednesday":
+            let shouldShow = weekday == 4
+            return shouldShow
+        case "Thursday":
+            let shouldShow = weekday == 5
+            return shouldShow
+        case "Friday":
+            let shouldShow = weekday == 6
+            return shouldShow
+        case "Saturday":
+            let shouldShow = weekday == 7
+            return shouldShow
+        case "Sunday":
+            let shouldShow = weekday == 1
+            return shouldShow
         default:
             // Handle custom schedules like "Every Monday, Wednesday, Friday"
             if habit.schedule.contains("Every") && habit.schedule.contains("day") {
-                // Extract weekdays from schedule
-                let weekdays = extractWeekdays(from: habit.schedule)
-                return weekdays.contains(weekday)
-            } else if habit.schedule.contains("Every") && habit.schedule.contains("days") {
-                // Handle "Every X days" schedules
-                guard let dayCount = extractDayCount(from: habit.schedule) else {
-                    return false
+                // First check if it's an "Every X days" schedule
+                if let dayCount = extractDayCount(from: habit.schedule) {
+                    // Handle "Every X days" schedules
+                    let startDate = DateUtils.startOfDay(for: habit.startDate)
+                    let targetDate = DateUtils.startOfDay(for: date)
+                    let daysSinceStart = DateUtils.daysBetween(startDate, targetDate)
+                    
+                    // Check if the target date falls on the schedule
+                    let shouldShow = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                    return shouldShow
+                } else {
+                    // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
+                    let weekdays = extractWeekdays(from: habit.schedule)
+                    return weekdays.contains(weekday)
                 }
-                
-                let startDate = DateUtils.startOfDay(for: habit.startDate)
-                let targetDate = DateUtils.startOfDay(for: date)
-                let daysSinceStart = DateUtils.daysBetween(startDate, targetDate)
-                
-                // Check if the target date falls on the schedule
-                return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
             } else if habit.schedule.contains("times per week") {
                 // Handle "X times per week" schedules
                 let schedule = habit.schedule.lowercased()
@@ -409,7 +470,6 @@ struct HomeTabView: View {
         }
         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
         .onChange(of: currentWeekOffset) { oldValue, newValue in
-            print("📅 TabView selection changed from \(oldValue) to \(newValue)")
             
             // Add haptic feedback when scrolling between weeks
             if oldValue != newValue {
@@ -418,9 +478,7 @@ struct HomeTabView: View {
             }
         }
         .onAppear {
-            print("📅 Calendar onAppear - setting currentWeekOffset to 0")
             currentWeekOffset = 0
-            print("📅 Calendar onAppear - currentWeekOffset set to 0")
         }
         .frame(height: 72)
         .padding(.horizontal, 8)
@@ -586,6 +644,5 @@ struct HomeTabView: View {
         ]
         lastCalculatedStatsDate = selectedDate
         
-        print("🏠 HomeTabView: Updated stats - Total: \(cachedStats.indices.contains(0) ? cachedStats[0].1 : 0), Undone: \(cachedStats.indices.contains(1) ? cachedStats[1].1 : 0), Done: \(cachedStats.indices.contains(2) ? cachedStats[2].1 : 0)")
     }
 }
