@@ -12,8 +12,9 @@ struct UnifiedInputElement: View {
     let onUnitTap: () -> Void
     let onFrequencyTap: () -> Void
     let uiUpdateTrigger: Bool
+    @Binding var isFocused: Bool
     
-    @FocusState private var isFocused: Bool
+    @FocusState private var internalIsFocused: Bool
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -35,10 +36,16 @@ struct UnifiedInputElement: View {
                     .foregroundColor(.text01)
                     .accentColor(.text01)
                     .keyboardType(.numberPad)
-                    .focused($isFocused)
+                    .focused($internalIsFocused)
                     .multilineTextAlignment(.center)
                     .frame(width: 40)
                     .inputFieldStyle()
+                    .onChange(of: internalIsFocused) { _, newValue in
+                        isFocused = newValue
+                    }
+                    .onChange(of: isFocused) { _, newValue in
+                        internalIsFocused = newValue
+                    }
                 
                 // Unit selector button - smaller width
                 Button(action: onUnitTap) {
@@ -217,6 +224,7 @@ struct HabitBuildingForm: View {
     let onGoalFrequencyTap: () -> Void
     let reminderSection: ReminderSection
     let periodSection: PeriodSection
+    @Binding var isGoalNumberFocused: Bool
     
     var body: some View {
         VStack(spacing: 16) {
@@ -231,7 +239,8 @@ struct HabitBuildingForm: View {
                 errorMessage: "Please enter a number greater than 0",
                 onUnitTap: onGoalUnitTap,
                 onFrequencyTap: onGoalFrequencyTap,
-                uiUpdateTrigger: uiUpdateTrigger
+                uiUpdateTrigger: uiUpdateTrigger,
+                isFocused: $isGoalNumberFocused
             )
             
             // Reminder
@@ -261,6 +270,8 @@ struct HabitBreakingForm: View {
     let onTargetFrequencyTap: () -> Void
     let reminderSection: ReminderSection
     let periodSection: PeriodSection
+    @Binding var isBaselineFieldFocused: Bool
+    @Binding var isTargetFieldFocused: Bool
     
     var body: some View {
         VStack(spacing: 16) {
@@ -275,7 +286,8 @@ struct HabitBreakingForm: View {
                 errorMessage: "Please enter a number greater than 0",
                 onUnitTap: onBaselineUnitTap,
                 onFrequencyTap: onBaselineFrequencyTap,
-                uiUpdateTrigger: uiUpdateTrigger
+                uiUpdateTrigger: uiUpdateTrigger,
+                isFocused: $isBaselineFieldFocused
             )
             
             // Target
@@ -289,7 +301,8 @@ struct HabitBreakingForm: View {
                 errorMessage: "Please enter a number greater than or equal to 0",
                 onUnitTap: onTargetUnitTap,
                 onFrequencyTap: onTargetFrequencyTap,
-                uiUpdateTrigger: uiUpdateTrigger
+                uiUpdateTrigger: uiUpdateTrigger,
+                isFocused: $isTargetFieldFocused
             )
             
             // Reminder
