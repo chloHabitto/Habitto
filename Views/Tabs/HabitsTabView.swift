@@ -119,13 +119,9 @@ struct HabitsTabView: View {
         AddedHabitItem(
             habit: habit,
             onEdit: {
-                print("🔄 HabitsTabView: Edit button tapped for habit: \(habit.name)")
-                print("🔄 HabitsTabView: Calling onEditHabit callback")
                 onEditHabit(habit)
-                print("🔄 HabitsTabView: onEditHabit callback completed")
             },
             onDelete: {
-                print("🔄 HabitsTabView: Delete button tapped for habit: \(habit.name)")
                 onDeleteHabit(habit)
             },
             onTap: {

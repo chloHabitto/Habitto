@@ -112,9 +112,9 @@ struct EmojiKeyboardView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
             }
-            .onChange(of: searchText) { oldValue, newValue in
-                // Debounce search input to avoid excessive filtering
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            .onChange(of: searchText) { _, newValue in
+                // Improved debouncing with better performance
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     if searchText == newValue { // Only update if search text hasn't changed
                         debouncedSearchText = newValue
                         currentPage = 0 // Reset pagination when search changes

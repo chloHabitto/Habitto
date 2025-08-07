@@ -70,9 +70,7 @@ struct DateUtils {
     
     static func daysBetween(_ startDate: Date, _ endDate: Date) -> Int {
         let components = calendar.dateComponents([.day], from: startOfDay(for: startDate), to: startOfDay(for: endDate))
-        let result = components.day ?? 0
-        print("🔍 INVESTIGATION: daysBetween - startDate: \(debugString(for: startDate)), endDate: \(debugString(for: endDate)), result: \(result)")
-        return result
+        return components.day ?? 0
     }
     
     static func weeksBetween(_ startDate: Date, _ endDate: Date) -> Int {
@@ -82,10 +80,7 @@ struct DateUtils {
         
         let components = calendar.dateComponents([.day], from: startOfStartWeek, to: startOfEndWeek)
         let daysBetween = components.day ?? 0
-        let weeksBetween = daysBetween / 7
-        
-        print("🔍 INVESTIGATION: weeksBetween - startDate: \(debugString(for: startDate)), endDate: \(debugString(for: endDate)), weeksBetween: \(weeksBetween)")
-        return weeksBetween
+        return daysBetween / 7
     }
     
     static func isDateInPast(_ date: Date) -> Bool {
@@ -114,6 +109,16 @@ struct DateUtils {
         return calendar.component(.weekday, from: date)
     }
     
+    static func startOfWeek(for date: Date) -> Date {
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        return calendar.date(from: components) ?? date
+    }
+    
+    static func endOfWeek(for date: Date) -> Date {
+        let startOfWeek = startOfWeek(for: date)
+        return calendar.date(byAdding: .day, value: 6, to: startOfWeek) ?? date
+    }
+    
     // Performance optimization: Use cached formatter for debug output
     private static let debugFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -122,7 +127,9 @@ struct DateUtils {
     }()
     
     static func debugString(for date: Date) -> String {
-        return debugFormatter.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
     
     static func cachedStartOfDay(for date: Date) -> Date {

@@ -192,12 +192,9 @@ struct HomeTabView: View {
     }
     
     private var habitsForSelectedDate: [Habit] {
-        print("🔍 INVESTIGATION: habitsForSelectedDate called for date: \(DateUtils.debugString(for: selectedDate))")
-        print("🔍 INVESTIGATION: Total habits available: \(habits.count)")
-        
-        // Print all habits and their schedules
-        for (index, habit) in habits.enumerated() {
-            print("🔍 INVESTIGATION: Habit \(index): '\(habit.name)' - Schedule: '\(habit.schedule)' - Start: \(DateUtils.debugString(for: habit.startDate))")
+        // Use cached result if available and date hasn't changed
+        if let lastDate = lastCalculatedDate, lastDate == selectedDate {
+            return cachedHabitsForDate
         }
         
         // Calculate filtered habits for the selected date
@@ -206,26 +203,14 @@ struct HomeTabView: View {
             let start = DateUtils.startOfDay(for: habit.startDate)
             let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
             
-            print("🔍 INVESTIGATION: Checking habit '\(habit.name)' for date \(DateUtils.debugString(for: selectedDate))")
-            print("🔍 INVESTIGATION: Habit schedule: '\(habit.schedule)'")
-            
             // First check if the date is within the habit period
             guard selected >= start && selected <= end else {
-                print("🔍 INVESTIGATION: Habit '\(habit.name)' NOT in date range")
                 return false
             }
             
-            print("🔍 INVESTIGATION: Habit '\(habit.name)' IS in date range, checking schedule...")
-            
             // Then check if the habit should appear on this specific date based on schedule
             let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-            print("🔍 INVESTIGATION: Habit '\(habit.name)' should show: \(shouldShow)")
             return shouldShow
-        }
-        
-        print("🔍 INVESTIGATION: Final filtered habits count: \(filteredHabits.count)")
-        for habit in filteredHabits {
-            print("🔍 INVESTIGATION: Will show habit: '\(habit.name)' with schedule '\(habit.schedule)'")
         }
         
         // Update cache for future use
@@ -242,96 +227,72 @@ struct HomeTabView: View {
     private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
         let weekday = DateUtils.weekday(for: date)
         
-        print("🔍 INVESTIGATION: shouldShowHabitOnDate called for habit '\(habit.name)' on date \(DateUtils.debugString(for: date))")
-        print("🔍 INVESTIGATION: Habit schedule: '\(habit.schedule)'")
-        print("🔍 INVESTIGATION: Schedule length: \(habit.schedule.count)")
-        print("🔍 INVESTIGATION: Schedule characters: \(Array(habit.schedule).map { String($0) })")
-        print("🔍 INVESTIGATION: Current weekday: \(weekday)")
-        
         // Check if the date is before the habit start date
         if date < DateUtils.startOfDay(for: habit.startDate) {
-            print("🔍 INVESTIGATION: Date is before habit start date")
             return false
         }
         
         // Check if the date is after the habit end date (if set)
         // Use >= to be inclusive of the end date
         if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
-            print("🔍 INVESTIGATION: Date is after habit end date")
             return false
         }
         
         switch habit.schedule {
         case "Everyday":
-            print("🔍 INVESTIGATION: Schedule is 'Everyday' - showing habit")
             return true
-            
-        case let schedule where schedule.hasPrefix("Every ") && schedule.contains("days"):
-            print("🔍 INVESTIGATION: Matched 'Every X days' case for schedule: '\(schedule)'")
-            // Handle "Every X days" format
-            print("🔍 INVESTIGATION: Processing 'Every X days' format: '\(schedule)'")
-            if let dayCount = extractDayCount(from: schedule) {
-                let startDate = DateUtils.startOfDay(for: habit.startDate)
-                let selectedDate = DateUtils.startOfDay(for: date)
-                let daysSinceStart = DateUtils.daysBetween(startDate, selectedDate)
-                let shouldShow = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
-                print("🔍 INVESTIGATION: dayCount: \(dayCount), daysSinceStart: \(daysSinceStart), shouldShow: \(shouldShow)")
-                print("🔍 INVESTIGATION: startDate: \(DateUtils.debugString(for: startDate)), selectedDate: \(DateUtils.debugString(for: selectedDate))")
-                return shouldShow
-            }
-            // If we can't extract day count, don't show the habit
-            print("🔍 INVESTIGATION: Could not extract day count from schedule '\(schedule)'")
-            return false
-            
-        case let schedule where schedule.hasPrefix("Every ") && !schedule.contains("days"):
-            // Handle specific weekdays like "Every Monday, Wednesday" (but not "Every X days")
-            print("🔍 INVESTIGATION: Matched weekday case for schedule: '\(schedule)'")
-            print("🔍 INVESTIGATION: Processing weekday format: '\(schedule)'")
-            let weekdays = extractWeekdays(from: schedule)
-            let shouldShow = weekdays.contains(weekday)
-            print("🔍 INVESTIGATION: weekdays: \(weekdays), current weekday: \(weekday), shouldShow: \(shouldShow)")
-            return shouldShow
-            
-        case let schedule where schedule.contains("times a week"):
-            // Handle "X times a week" format (e.g., "1 times a week", "2 times a week")
-            print("🔍 INVESTIGATION: Matched 'times a week' case for schedule: '\(schedule)'")
-            print("🔍 INVESTIGATION: Processing 'X times a week' format: '\(schedule)'")
-            if let timesPerWeek = extractTimesPerWeek(from: schedule) {
-                let startDate = DateUtils.startOfDay(for: habit.startDate)
-                let selectedDate = DateUtils.startOfDay(for: date)
-                let weeksSinceStart = DateUtils.weeksBetween(startDate, selectedDate)
-                let shouldShow = weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
-                print("🔍 INVESTIGATION: timesPerWeek: \(timesPerWeek), weeksSinceStart: \(weeksSinceStart), shouldShow: \(shouldShow)")
-                print("🔍 INVESTIGATION: startDate: \(DateUtils.debugString(for: startDate)), selectedDate: \(DateUtils.debugString(for: selectedDate))")
-                return shouldShow
-            }
-            // If we can't extract times per week, don't show the habit
-            print("🔍 INVESTIGATION: Could not extract times per week from schedule '\(schedule)'")
-            return false
-            
+        case "Weekdays":
+            return weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+        case "Weekends":
+            return weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
         default:
+            // Handle custom schedules like "Every Monday, Wednesday, Friday"
+            if habit.schedule.contains("Every") && habit.schedule.contains("day") {
+                // Extract weekdays from schedule
+                let weekdays = extractWeekdays(from: habit.schedule)
+                return weekdays.contains(weekday)
+            } else if habit.schedule.contains("Every") && habit.schedule.contains("days") {
+                // Handle "Every X days" schedules
+                guard let dayCount = extractDayCount(from: habit.schedule) else {
+                    return false
+                }
+                
+                let startDate = DateUtils.startOfDay(for: habit.startDate)
+                let targetDate = DateUtils.startOfDay(for: date)
+                let daysSinceStart = DateUtils.daysBetween(startDate, targetDate)
+                
+                // Check if the target date falls on the schedule
+                return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+            } else if habit.schedule.contains("times per week") {
+                // Handle "X times per week" schedules
+                let schedule = habit.schedule.lowercased()
+                let timesPerWeek = extractTimesPerWeek(from: schedule)
+                
+                if timesPerWeek != nil {
+                    // For now, show the habit if it's within the week
+                    // This is a simplified implementation
+                    let weekStart = DateUtils.startOfWeek(for: date)
+                    let weekEnd = DateUtils.endOfWeek(for: date)
+                    let isInWeek = date >= weekStart && date <= weekEnd
+                    return isInWeek
+                }
+                return false
+            }
             // For any other schedule, show the habit
-            print("🔍 INVESTIGATION: Default case - showing habit with schedule '\(habit.schedule)'")
-            print("🔍 INVESTIGATION: WARNING: This should not happen for 'Every X days' schedules!")
             return true
         }
     }
     
     private func extractDayCount(from schedule: String) -> Int? {
-        // Create a new regex to test if cached one has issues
-        print("🔍 INVESTIGATION: extractDayCount called with schedule: '\(schedule)'")
         let pattern = #"Every (\d+) days?"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
               let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
-            print("🔍 INVESTIGATION: No regex match found for day count in schedule: '\(schedule)'")
             return nil
         }
         
         let range = match.range(at: 1)
         let numberString = (schedule as NSString).substring(with: range)
-        let result = Int(numberString)
-        print("🔍 INVESTIGATION: Extracted day count: \(result ?? -1)")
-        return result
+        return Int(numberString)
     }
     
     private func extractWeekdays(from schedule: String) -> Set<Int> {
@@ -349,20 +310,15 @@ struct HomeTabView: View {
     }
     
     private func extractTimesPerWeek(from schedule: String) -> Int? {
-        // Extract number from "X times a week" format
-        let pattern = #"(\d+)\s+times\s+a\s+week"#
-        print("🔍 INVESTIGATION: extractTimesPerWeek called with schedule: '\(schedule)'")
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+        let pattern = #"(\d+) times per week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
               let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
-            print("🔍 INVESTIGATION: No regex match found for schedule: '\(schedule)'")
             return nil
         }
         
         let range = match.range(at: 1)
         let numberString = (schedule as NSString).substring(with: range)
-        let result = Int(numberString)
-        print("🔍 INVESTIGATION: Extracted times per week: \(result ?? -1)")
-        return result
+        return Int(numberString)
     }
     
     private var stats: [(String, Int)] {
@@ -474,7 +430,7 @@ struct HomeTabView: View {
     
     private func weekView(for weekOffset: Int, width: CGFloat) -> some View {
         return HStack(spacing: 2) {
-            ForEach(daysOfWeek(for: weekOffset), id: \.self) { date in
+            ForEach(daysOfWeek(for: weekOffset), id: \.timeIntervalSince1970) { date in
                 Button(action: {
                     // Add haptic feedback when selecting a date
                     let selectionFeedback = UISelectionFeedbackGenerator()
@@ -500,9 +456,6 @@ struct HomeTabView: View {
 
                 }
                 .buttonStyle(PlainButtonStyle())
-                .onAppear {
-                    // Optional: Add any specific logic for when dates appear
-                }
             }
         }
         .frame(width: width)
@@ -518,31 +471,17 @@ struct HomeTabView: View {
         let normalizedToday = calendar.startOfDay(for: today)
         let normalizedSelected = calendar.startOfDay(for: selectedDate)
         
-        // Debug: Print all dates being processed (optimized)
-        print("🔍 backgroundColor called for date: \(DateUtils.debugString(for: date))")
-        print("🔍 Normalized date: \(DateUtils.debugString(for: normalizedDate))")
-        print("🔍 Normalized today: \(DateUtils.debugString(for: normalizedToday))")
-        print("🔍 Is today? \(normalizedDate == normalizedToday)")
-        print("🔍 Week offset: \(currentWeekOffset)")
-        
-                    // Check for today's date (highest priority)
-            if normalizedDate == normalizedToday {
-                return .primary // Use primary color for today's date
-            }
-        
-        // Debug: Print all dates being processed (optimized)
-        print("📅 Processing date: \(DateUtils.debugString(for: date))")
-        print("📅 Is today? \(normalizedDate == normalizedToday)")
-        print("📅 Is selected? \(normalizedDate == normalizedSelected)")
+        // Check for today's date (highest priority)
+        if normalizedDate == normalizedToday {
+            return .primary // Use primary color for today's date
+        }
         
         // Check if this is the selected date (but not today)
         if normalizedDate == normalizedSelected {
-            print("🔍 Selected date found: \(date)")
             return .secondary
         }
         
         // Default - no background
-        print("🔍 Returning clear background for date: \(DateUtils.debugString(for: date))")
         return Color.clear
     }
     
