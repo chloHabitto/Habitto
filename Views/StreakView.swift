@@ -42,41 +42,49 @@ struct StreakView: View {
             .offset(y: -20)
             
             // White sheet that expands to bottom (with its own internal scrolling)
-            WhiteSheetContainer(
-                title: "Habit Streak",
-                rightButton: {
-                    AnyView(
-                        Button(action: {
-                            // More button action
-                        }) {
-                            Image("Icon-moreDots")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 20, height: 20)
-                                .foregroundColor(.primary)
-                        }
-                        .frame(width: 44, height: 44)
-                        .buttonStyle(PlainButtonStyle())
-                    )
+            GeometryReader { geometry in
+                WhiteSheetContainer(
+                    title: "Habit Streak",
+                    rightButton: {
+                        AnyView(
+                            Button(action: {
+                                // More button action
+                            }) {
+                                Image("Icon-moreDots")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 20, height: 20)
+                                    .foregroundColor(.primary)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(PlainButtonStyle())
+                        )
+                    }
+                ) {
+                    VStack(spacing: 0) {
+                        // Progress Section
+                        progressSection
+                        
+                        // Summary Statistics
+                        SummaryStatisticsView(
+                            completionRate: streakStatistics.completionRate,
+                            bestStreak: streakStatistics.bestStreak,
+                            consistencyRate: streakStatistics.consistencyRate
+                        )
+                        
+                        // Spacer to fill remaining space
+                        Spacer(minLength: 0)
+                            .frame(maxHeight: .infinity)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-            ) {
-                VStack(spacing: 0) {
-                    // Progress Section
-                    progressSection
-                    
-                    // Summary Statistics
-                    SummaryStatisticsView(
-                        completionRate: streakStatistics.completionRate,
-                        bestStreak: streakStatistics.bestStreak,
-                        consistencyRate: streakStatistics.consistencyRate
-                    )
-                    
-                    // Spacer to fill remaining space
-                    Spacer(minLength: 0)
-                        .frame(maxHeight: .infinity)
-                }
+                .frame(
+                    width: geometry.size.width,
+                    height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
+                )
+                .offset(y: dragOffset)
+                .ignoresSafeArea(.container, edges: .bottom)
             }
-            .offset(y: dragOffset)
             .gesture(
                 DragGesture()
                     .onChanged { value in
@@ -190,6 +198,7 @@ struct StreakView: View {
                 }
             }
         }
+        .padding(.bottom, 16)
     }
     
 

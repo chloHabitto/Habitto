@@ -255,14 +255,26 @@ struct SummaryStatisticsView: View {
     let consistencyRate: Int
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 0) {
             StatisticCardView(value: "\(completionRate)%", label: "Completion")
+            
+            Rectangle()
+                .fill(.outline)
+                .frame(width: 1)
+                .frame(height: 60)
+            
             StatisticCardView(value: "\(bestStreak) days", label: "Best streak")
+            
+            Rectangle()
+                .fill(.outline)
+                .frame(width: 1)
+                .frame(height: 60)
+            
             StatisticCardView(value: "\(consistencyRate)%", label: "Consistency")
         }
-        .frame(maxWidth: .infinity)
+        .background(.surfaceContainer)
+        .cornerRadius(12)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
     }
 }
 
@@ -283,8 +295,5 @@ struct StatisticCardView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .padding(.horizontal, 12)
-        .background(.surfaceContainer)
-        .cornerRadius(12)
-        .frame(maxWidth: .infinity)
     }
 } 

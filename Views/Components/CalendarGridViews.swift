@@ -42,6 +42,7 @@ struct WeeklyCalendarGridView: View {
                         Rectangle()
                             .fill(.clear)
                             .frame(maxWidth: .infinity)
+                            .frame(height: 32)
                             .padding(.leading, 8)
                             .border(.outline, width: 1)
                         
