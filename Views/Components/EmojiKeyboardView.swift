@@ -30,8 +30,10 @@ struct EmojiKeyboardView: View {
             // Performance optimization: Return paginated results for large sets
             let startIndex = currentPage * itemsPerPage
             let endIndex = min(startIndex + itemsPerPage, filtered.count)
-            cachedFilteredEmojis = Array(filtered[startIndex..<endIndex])
-            lastFilterState = currentState
+            let newCachedEmojis = Array(filtered[startIndex..<endIndex])
+            
+            // Don't modify state in computed property - just return the calculated result
+            return newCachedEmojis
         }
         
         return cachedFilteredEmojis
@@ -113,13 +115,36 @@ struct EmojiKeyboardView: View {
                 .padding(.bottom, 12)
             }
             .onChange(of: searchText) { _, newValue in
-                // Improved debouncing with better performance
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    if searchText == newValue { // Only update if search text hasn't changed
-                        debouncedSearchText = newValue
-                        currentPage = 0 // Reset pagination when search changes
+                // Use a more appropriate debouncing approach
+                Task {
+                    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+                    await MainActor.run {
+                        if searchText == newValue { // Only update if search text hasn't changed
+                            debouncedSearchText = newValue
+                            currentPage = 0 // Reset pagination when search changes
+                        }
                     }
                 }
+            }
+            .onChange(of: selectedCategory) { _, _ in
+                // Update cached state when category changes
+                let currentState = (selectedCategory, debouncedSearchText)
+                let categoryEmojis = emojis[selectedCategory]
+                let filtered = debouncedSearchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(debouncedSearchText) }
+                let startIndex = currentPage * itemsPerPage
+                let endIndex = min(startIndex + itemsPerPage, filtered.count)
+                cachedFilteredEmojis = Array(filtered[startIndex..<endIndex])
+                lastFilterState = currentState
+            }
+            .onChange(of: debouncedSearchText) { _, _ in
+                // Update cached state when debounced search text changes
+                let currentState = (selectedCategory, debouncedSearchText)
+                let categoryEmojis = emojis[selectedCategory]
+                let filtered = debouncedSearchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(debouncedSearchText) }
+                let startIndex = currentPage * itemsPerPage
+                let endIndex = min(startIndex + itemsPerPage, filtered.count)
+                cachedFilteredEmojis = Array(filtered[startIndex..<endIndex])
+                lastFilterState = currentState
             }
         }
     }

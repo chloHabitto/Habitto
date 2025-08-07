@@ -60,11 +60,20 @@ struct HabitEditView: View {
                           selectedIcon != habit.icon ||
                           selectedColor != habit.color ||
                           selectedHabitType != habit.habitType ||
-                          selectedSchedule != habit.schedule ||
                           selectedReminder != habit.reminder ||
                           reminders != habit.reminders ||
                           startDate != habit.startDate ||
                           endDate != habit.endDate
+        
+        // Check schedule changes (different logic for habit building vs breaking)
+        let scheduleChanges: Bool
+        if selectedHabitType == .formation {
+            // For habit building, schedule is derived from goal frequency
+            scheduleChanges = goalFrequency != habit.schedule
+        } else {
+            // For habit breaking, schedule is derived from baseline frequency
+            scheduleChanges = baselineFrequency != habit.schedule
+        }
         
         // Check unified approach fields
         var unifiedChanges = false
@@ -81,7 +90,7 @@ struct HabitEditView: View {
             unifiedChanges = currentBaseline != habit.baseline || currentTarget != habit.target
         }
         
-        return basicChanges || unifiedChanges
+        return basicChanges || scheduleChanges || unifiedChanges
     }
     
     init(habit: Habit, onSave: @escaping (Habit) -> Void) {
@@ -166,28 +175,6 @@ struct HabitEditView: View {
                     
                     // Habit Type
                     habitTypeSection
-                    
-                    // Schedule
-                    Button(action: {
-                        showingScheduleSheet = true
-                    }) {
-                        HStack {
-                            Text("Schedule")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            Spacer()
-                            
-                            Text(selectedSchedule)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                    }
-                    .selectionRowStyle()
                     
                     // Goal - NEW UNIFIED APPROACH
                     if selectedHabitType == .formation {
@@ -889,13 +876,17 @@ struct HabitEditView: View {
             let goalNumberInt = Int(goalNumber) ?? 1
             let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
             let goalString = "\(goalNumber) \(pluralizedUnit) per \(goalFrequency)"
+            
+            // For habit building, schedule is derived from goal frequency
+            let scheduleString = goalFrequency
+            
             updatedHabit = Habit(
                 name: habitName,
                 description: habitDescription,
                 icon: selectedIcon,
                 color: selectedColor,
                 habitType: selectedHabitType,
-                schedule: selectedSchedule,
+                schedule: scheduleString,
                 goal: goalString,
                 reminder: isReminderEnabled ? selectedReminder : "",
                 startDate: startDate,
@@ -909,13 +900,17 @@ struct HabitEditView: View {
             let targetInt = Int(targetNumber) ?? 1
             let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
             let goalString = "\(targetNumber) \(targetPluralizedUnit) per \(targetFrequency)"
+            
+            // For habit breaking, schedule is derived from baseline frequency
+            let scheduleString = baselineFrequency
+            
             updatedHabit = Habit(
                 name: habitName,
                 description: habitDescription,
                 icon: selectedIcon,
                 color: selectedColor,
                 habitType: selectedHabitType,
-                schedule: selectedSchedule,
+                schedule: scheduleString,
                 goal: goalString,
                 reminder: isReminderEnabled ? selectedReminder : "",
                 startDate: startDate,
