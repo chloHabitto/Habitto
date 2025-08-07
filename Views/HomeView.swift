@@ -25,96 +25,61 @@ class HomeViewState: ObservableObject {
     // Performance optimization: Cache expensive operations
     private var lastHabitsUpdate: Date = Date()
     
+    // Core Data adapter
+    private let coreDataAdapter = CoreDataAdapter.shared
+    
+    init() {
+        // Subscribe to Core Data changes
+        coreDataAdapter.$habits
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$habits)
+    }
+    
     func updateHabits(_ newHabits: [Habit]) {
-        habits = newHabits
+        coreDataAdapter.saveHabits(newHabits)
         lastHabitsUpdate = Date()
-        // Force SwiftUI to recognize the array has changed by creating a new instance
-        habits = Array(habits)
     }
     
     func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) {
-        if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            let targetDate = date ?? Calendar.current.startOfDay(for: Date())
-            let wasCompleted = habits[index].isCompleted(for: targetDate)
-            
-            if wasCompleted {
-                // Mark as incomplete for the target date
-                habits[index].markIncomplete(for: targetDate)
-                // Update streak with proper reset logic if it's today's date
-                if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
-                    habits[index].updateStreakWithReset()
-                }
-            } else {
-                // Mark as completed for the target date
-                habits[index].markCompleted(for: targetDate)
-                // Update streak with proper reset logic if it's today's date
-                if Calendar.current.isDate(targetDate, inSameDayAs: Date()) {
-                    habits[index].updateStreakWithReset()
-                }
-            }
-            
-            Habit.saveHabits(habits)
-            // Force SwiftUI to recognize the array has changed by creating a new instance
-            habits = Array(habits)
-        }
+        let targetDate = date ?? Calendar.current.startOfDay(for: Date())
+        coreDataAdapter.toggleHabitCompletion(habit, for: targetDate)
     }
     
     func deleteHabit(_ habit: Habit) {
-        habits.removeAll { $0.id == habit.id }
-        Habit.saveHabits(habits)
+        coreDataAdapter.deleteHabit(habit)
         habitToDelete = nil
     }
     
     func updateHabit(_ updatedHabit: Habit) {
-        if let index = habits.firstIndex(where: { $0.id == updatedHabit.id }) {
-            habits[index] = updatedHabit
-            Habit.saveHabits(habits)
-            // Force SwiftUI to recognize the array has changed by creating a new instance
-            habits = Array(habits)
-        }
+        coreDataAdapter.updateHabit(updatedHabit)
     }
     
-    /// Validates and corrects all habit streaks to ensure accuracy
-    func validateAllStreaks() {
-        var needsSave = false
-        
-        for index in habits.indices {
-            if !habits[index].validateStreak() {
-                print("🔍 HomeView: Correcting streak for habit '\(habits[index].name)'")
-                habits[index].debugStreakInfo()
-                habits[index].correctStreak()
-                needsSave = true
-            }
-        }
-        
-        if needsSave {
-            Habit.saveHabits(habits)
-            // Force SwiftUI to recognize the array has changed
-            habits = Array(habits)
-            print("🔍 HomeView: Streaks corrected and saved")
-        } else {
-            print("🔍 HomeView: All streaks are valid")
-        }
+    func loadHabits() {
+        // Core Data adapter automatically loads habits
+        print("🔄 HomeView: Habits loaded from Core Data")
     }
     
-    /// Updates all streaks to reflect current completion status
     func updateAllStreaks() {
-        var needsSave = false
-        
-        for index in habits.indices {
-            let oldStreak = habits[index].streak
-            habits[index].updateStreakWithReset()
-            
-            if oldStreak != habits[index].streak {
-                needsSave = true
+        print("🔄 HomeView: Updating all streaks...")
+        for i in 0..<habits.count {
+            habits[i].updateStreakWithReset()
+        }
+        // Save the updated habits
+        updateHabits(habits)
+        print("🔄 HomeView: All streaks updated")
+    }
+    
+    func validateAllStreaks() {
+        print("🔄 HomeView: Validating all streaks...")
+        for i in 0..<habits.count {
+            if !habits[i].validateStreak() {
+                print("🔄 HomeView: Correcting streak for habit: \(habits[i].name)")
+                habits[i].correctStreak()
             }
         }
-        
-        if needsSave {
-            Habit.saveHabits(habits)
-            // Force SwiftUI to recognize the array has changed
-            habits = Array(habits)
-        }
+        // Save the corrected habits
+        updateHabits(habits)
+        print("🔄 HomeView: All streaks validated")
     }
 }
 
