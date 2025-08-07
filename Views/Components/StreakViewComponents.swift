@@ -46,7 +46,7 @@ struct MainStreakDisplayView: View {
             }
             
             Text("\(currentStreak) days")
-                .font(.appDisplaySmallEmphasised)
+                .font(.appHeadlineMediumEmphasised)
                 .foregroundColor(.white)
         }
     }
@@ -79,7 +79,7 @@ struct StreakSummaryCardsView: View {
             )
         }
         .background(.surfaceContainer)
-        .cornerRadius(12)
+        .cornerRadius(16)
         .padding(.horizontal, 16)
     }
 }
@@ -115,7 +115,8 @@ struct StreakCardView: View {
                 .foregroundColor(.text01)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
         .padding(.horizontal, 12)
     }
 }

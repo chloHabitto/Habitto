@@ -28,10 +28,10 @@ struct StreakView: View {
             
                         // Fixed Primary Background Content (Non-scrollable)
             VStack(spacing: 16) {
-                // Main Streak Display
+                    // Main Streak Display
                 MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
-                
-                // Streak Summary Cards
+                    
+                    // Streak Summary Cards
                 StreakSummaryCardsView(
                     bestStreak: streakStatistics.bestStreak,
                     averageStreak: streakStatistics.averageStreak
@@ -61,12 +61,20 @@ struct StreakView: View {
                                 .buttonStyle(PlainButtonStyle())
                             )
                         }
-                                    ) {
-                    VStack(spacing: 0) {
+                    ) {
+                        VStack(spacing: 0) {
                         // Fixed Header Section (Title + More Button + Tabs)
                         VStack(spacing: 16) {
                             // Progress tabs
-                            ProgressTabsView(selectedTab: selectedProgressTab) { index in
+                            UnifiedTabBarView(
+                                tabs: [
+                                    TabItem(title: "Weekly"),
+                                    TabItem(title: "Monthly"),
+                                    TabItem(title: "Yearly")
+                                ],
+                                selectedIndex: selectedProgressTab,
+                                style: .underline
+                            ) { index in
                                 selectedProgressTab = index
                             }
                         }
@@ -100,8 +108,8 @@ struct StreakView: View {
                                         )
                                     }
                                 }
-                                
-                                // Summary Statistics
+                            
+                            // Summary Statistics
                                 SummaryStatisticsView(
                                     completionRate: streakStatistics.completionRate,
                                     bestStreak: streakStatistics.bestStreak,
@@ -127,7 +135,7 @@ struct StreakView: View {
                                     .onChanged { value in
                                         let translation = value.translation.height
                                         if translation < 0 { // Dragging up
-                            dragOffset = max(translation, -250) // 12 points more header space (262 - 12)
+                            dragOffset = max(translation, -234) // 16 points more header space (250 - 16)
                                         } else { // Dragging down
                                             dragOffset = min(translation, 0) // Limit downward drag
                                         }
@@ -139,7 +147,7 @@ struct StreakView: View {
                                         if translation < -150 || velocity < -300 { // Increased expand threshold
                                             withAnimation(.easeInOut(duration: 0.3)) {
                                                 isExpanded = true
-                                dragOffset = -250 // 12 points more header space (262 - 12)
+                                dragOffset = -234 // 16 points more header space (250 - 16)
                                             }
                                         } else if translation > 25 || velocity > 300 { // Collapse threshold
                                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -148,7 +156,7 @@ struct StreakView: View {
                                             }
                                         } else { // Return to current state
                                             withAnimation(.easeInOut(duration: 0.3)) {
-                                dragOffset = isExpanded ? -250 : 0
+                                dragOffset = isExpanded ? -234 : 0
                                             }
                                         }
                                     }
