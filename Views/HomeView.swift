@@ -36,6 +36,8 @@ class HomeViewState: ObservableObject {
     }
     
     func updateHabits(_ newHabits: [Habit]) {
+        // This method is used for bulk updates like streak validation
+        // For individual habit operations, use createHabit, updateHabit, or deleteHabit
         coreDataAdapter.saveHabits(newHabits)
         lastHabitsUpdate = Date()
     }
@@ -52,6 +54,10 @@ class HomeViewState: ObservableObject {
     
     func updateHabit(_ updatedHabit: Habit) {
         coreDataAdapter.updateHabit(updatedHabit)
+    }
+    
+    func createHabit(_ habit: Habit) {
+        coreDataAdapter.createHabit(habit)
     }
     
     func loadHabits() {
@@ -173,10 +179,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
-                var updatedHabits = state.habits
-                updatedHabits.append(habit)
-                state.updateHabits(updatedHabits)
-                Habit.saveHabits(updatedHabits, immediate: true)
+                state.createHabit(habit)
                 state.showingCreateHabit = false
             })
         }

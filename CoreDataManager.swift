@@ -123,6 +123,8 @@ class CoreDataManager: ObservableObject {
                 print("❌ Core Data save error: \(error)")
                 handleSaveError(error)
             }
+        } else {
+            print("ℹ️ Core Data context has no changes to save")
         }
     }
     
@@ -263,7 +265,9 @@ class CoreDataManager: ObservableObject {
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         
         do {
-            return try context.fetch(request)
+            let habits = try context.fetch(request)
+            print("🔄 CoreDataManager: Fetched \(habits.count) habit entities")
+            return habits
         } catch {
             print("❌ Fetch habits error: \(error)")
             return []

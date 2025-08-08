@@ -33,8 +33,11 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Load Habits
     func loadHabits() {
+        print("🔄 CoreDataAdapter: Loading habits from Core Data...")
         let habitEntities = coreDataManager.fetchHabits()
+        print("🔄 CoreDataAdapter: Found \(habitEntities.count) habit entities")
         habits = habitEntities.map { $0.toHabit() }
+        print("🔄 CoreDataAdapter: Converted to \(habits.count) habits")
     }
     
     // MARK: - Save Habits
@@ -55,8 +58,11 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Create Habit
     func createHabit(_ habit: Habit) {
+        print("🔄 CoreDataAdapter: Creating habit: \(habit.name)")
         _ = coreDataManager.createHabit(from: habit)
+        print("🔄 CoreDataAdapter: Habit created, loading habits...")
         loadHabits()
+        print("🔄 CoreDataAdapter: Habits loaded, total: \(habits.count)")
     }
     
     // MARK: - Update Habit
