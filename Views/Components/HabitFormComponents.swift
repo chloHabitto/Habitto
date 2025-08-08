@@ -94,6 +94,27 @@ struct UnifiedInputElement: View {
                 ErrorMessage(message: errorMessage)
                     .padding(.top, 4)
             }
+            
+            // Descriptive text showing what the user has selected (for Goal and Current)
+            if title == "Goal" {
+                Text("I want to do this habit \(numberText) \(unitText) on \(frequencyText)")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text04)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(hex: "1C274C").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.top, 8)
+            } else if title == "Current" {
+                Text("I do this habit \(numberText) \(unitText) on \(frequencyText)")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text04)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(hex: "1C274C").opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(.top, 8)
+            }
         }
         .selectionRowStyle()
     }
@@ -275,9 +296,9 @@ struct HabitBreakingForm: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Baseline
+            // Current
             UnifiedInputElement(
-                title: "Baseline",
+                title: "Current",
                 description: "How much do you currently do?",
                 numberText: $baselineNumber,
                 unitText: pluralizedBaselineUnit,
@@ -290,9 +311,9 @@ struct HabitBreakingForm: View {
                 isFocused: $isBaselineFieldFocused
             )
             
-            // Target
+            // Goal
             UnifiedInputElement(
-                title: "Target",
+                title: "Goal",
                 description: "How much do you want to reduce to?",
                 numberText: $targetNumber,
                 unitText: pluralizedTargetUnit,

@@ -341,6 +341,10 @@ struct CreateHabitStep1View: View {
                 isComplexElementsLoaded = true
             }
         }
+        .onChange(of: icon) { _, newIcon in
+            // Update processed icon display value when icon changes
+            processedIconDisplayValue = getIconDisplayValue(newIcon)
+        }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(
                 selectedIcon: $icon,

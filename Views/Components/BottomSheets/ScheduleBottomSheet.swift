@@ -215,7 +215,7 @@ struct ScheduleBottomSheet: View {
                             
                             HStack {
                                 if selectedFrequency == "Monthly" {
-                                    Text(monthlyValue == 1 ? "1 time a month" : "\(monthlyValue) times a month")
+                                    Text(monthlyValue == 1 ? "1 day a month" : "\(monthlyValue) days a month")
                                         .font(.appBodyLarge)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
@@ -223,7 +223,7 @@ struct ScheduleBottomSheet: View {
                                         .background(Color(hex: "1C274C"))
                                         .clipShape(Capsule())
                                 } else {
-                                    Text(weeklyValue == 1 ? "1 time a week" : "\(weeklyValue) times a week")
+                                    Text(weeklyValue == 1 ? "1 day a week" : "\(weeklyValue) days a week")
                                         .font(.appBodyLarge)
                                         .foregroundColor(.onPrimary)
                                         .padding(.horizontal, 16)
