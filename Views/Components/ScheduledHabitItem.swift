@@ -144,9 +144,9 @@ struct ScheduledHabitItem: View {
     
     // Helper function to extract goal amount without schedule
     private func extractGoalAmount(from goal: String) -> String {
-        // Goal format is typically "X unit per frequency" (e.g., "1 time per 1 times a week")
+        // Goal format is typically "X unit on frequency" (e.g., "1 time on 1 times a week")
         // We want to extract just "X unit" part
-        let components = goal.components(separatedBy: " per ")
+        let components = goal.components(separatedBy: " on ")
         if components.count >= 2 {
             return components[0] // Return "X unit" part
         }

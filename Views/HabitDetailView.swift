@@ -192,22 +192,22 @@ struct HabitDetailView: View {
     // MARK: - Habit Details Section
     private var habitDetailsSection: some View {
         VStack(spacing: 16) {
-            // Schedule
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 16))
-                    .foregroundColor(.text05)
-                
-                Text("Schedule")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                
-                Spacer()
-                
-                Text(formatScheduleForDisplay(habit.schedule))
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.primary)
-            }
+//            // Schedule
+//            HStack {
+//                Image(systemName: "calendar")
+//                    .font(.system(size: 16))
+//                    .foregroundColor(.text05)
+//                
+//                Text("Schedule")
+//                    .font(.appBodyMedium)
+//                    .foregroundColor(.text05)
+//                
+//                Spacer()
+//                
+//                Text(formatScheduleForDisplay(habit.schedule))
+//                    .font(.appTitleSmallEmphasised)
+//                    .foregroundColor(.primary)
+//            }
             
             // Goal
             HStack {
@@ -241,9 +241,9 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                Text("\(todayProgress)/\(extractGoalAmount(from: habit.goal))")
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.primary)
+//                Text("\(todayProgress)/\(extractGoalAmount(from: habit.goal))")
+//                    .font(.appTitleSmallEmphasised)
+//                    .foregroundColor(.primary)
             }
             
             // Progress bar

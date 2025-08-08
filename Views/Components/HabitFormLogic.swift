@@ -92,7 +92,7 @@ class HabitFormLogic {
             // Habit Building
             let goalNumberInt = Int(goalNumber) ?? 1
             let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-            let goalString = "\(goalNumber) \(pluralizedUnit) per \(goalFrequency)"
+            let goalString = "\(goalNumber) \(pluralizedUnit) on \(goalFrequency)"
             
             return Habit(
                 name: step1Data.0,
