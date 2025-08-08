@@ -60,6 +60,10 @@ class HomeViewState: ObservableObject {
         coreDataAdapter.createHabit(habit)
     }
     
+    func backupHabits() {
+        coreDataAdapter.backupToUserDefaults()
+    }
+    
     func loadHabits() {
         // Core Data adapter automatically loads habits
         print("🔄 HomeView: Habits loaded from Core Data")
@@ -176,6 +180,10 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             print("🏠 HomeView: App became active, updating streaks...")
             state.updateAllStreaks()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            print("🏠 HomeView: App going to background, backing up habits...")
+            state.backupHabits()
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in

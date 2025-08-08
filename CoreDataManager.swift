@@ -54,9 +54,11 @@ class CoreDataManager: ObservableObject {
     }
     
     // MARK: - Background Context
-    var backgroundContext: NSManagedObjectContext {
-        persistentContainer.newBackgroundContext()
-    }
+    lazy var backgroundContext: NSManagedObjectContext = {
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        return context
+    }()
     
     private init() {
         setupNotifications()
@@ -112,7 +114,7 @@ class CoreDataManager: ObservableObject {
     }
     
     // MARK: - Save Context
-    func save() {
+    func save() throws {
         let context = persistentContainer.viewContext
         
         if context.hasChanges {
@@ -122,6 +124,7 @@ class CoreDataManager: ObservableObject {
             } catch {
                 print("❌ Core Data save error: \(error)")
                 handleSaveError(error)
+                throw error
             }
         } else {
             print("ℹ️ Core Data context has no changes to save")
@@ -181,6 +184,21 @@ class CoreDataManager: ObservableObject {
         return "Local storage only"
     }
     
+    // MARK: - Core Data Health Check
+    func checkCoreDataHealth() -> Bool {
+        do {
+            let context = persistentContainer.viewContext
+            let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+            request.fetchLimit = 1
+            _ = try context.fetch(request)
+            print("✅ Core Data health check passed")
+            return true
+        } catch {
+            print("❌ Core Data health check failed: \(error)")
+            return false
+        }
+    }
+    
     // MARK: - Fallback for CloudKit Issues
     private func loadPersistentStoresWithoutCloudKit() {
         print("🔄 Attempting to load persistent stores without CloudKit...")
@@ -208,9 +226,10 @@ class CoreDataManager: ObservableObject {
     func migrateFromUserDefaults() {
         let oldHabits = HabitStorageManager.shared.loadHabits()
         
-        backgroundContext.perform {
+        let migrationContext = persistentContainer.newBackgroundContext()
+        migrationContext.perform {
             for oldHabit in oldHabits {
-                let newHabit = HabitEntity(context: self.backgroundContext)
+                let newHabit = HabitEntity(context: migrationContext)
                 newHabit.id = oldHabit.id
                 newHabit.name = oldHabit.name
                 newHabit.habitDescription = oldHabit.description
@@ -230,7 +249,7 @@ class CoreDataManager: ObservableObject {
                 
                 // Migrate completion history
                 for (dateKey, progress) in oldHabit.completionHistory {
-                    let completionRecord = CompletionRecordEntity(context: self.backgroundContext)
+                    let completionRecord = CompletionRecordEntity(context: migrationContext)
                     completionRecord.dateKey = dateKey
                     completionRecord.progress = Int32(progress)
                     completionRecord.habit = newHabit
@@ -238,7 +257,7 @@ class CoreDataManager: ObservableObject {
                 
                 // Migrate actual usage for habit breaking
                 for (dateKey, usage) in oldHabit.actualUsage {
-                    let usageRecord = UsageRecordEntity(context: self.backgroundContext)
+                    let usageRecord = UsageRecordEntity(context: migrationContext)
                     usageRecord.dateKey = dateKey
                     usageRecord.amount = Int32(usage)
                     usageRecord.habit = newHabit
@@ -246,7 +265,7 @@ class CoreDataManager: ObservableObject {
             }
             
             do {
-                try self.backgroundContext.save()
+                try migrationContext.save()
                 print("✅ Migration from UserDefaults completed successfully")
                 
                 // Clear old data after successful migration
@@ -275,7 +294,7 @@ class CoreDataManager: ObservableObject {
     }
     
     // MARK: - Create Habit
-    func createHabit(from habit: Habit) -> HabitEntity {
+    func createHabit(from habit: Habit) throws -> HabitEntity {
         let habitEntity = HabitEntity(context: context)
         habitEntity.id = habit.id
         habitEntity.name = habit.name
@@ -294,12 +313,12 @@ class CoreDataManager: ObservableObject {
         habitEntity.baseline = Int32(habit.baseline)
         habitEntity.target = Int32(habit.target)
         
-        save()
+        try save()
         return habitEntity
     }
     
     // MARK: - Update Habit
-    func updateHabit(_ habitEntity: HabitEntity, with habit: Habit) {
+    func updateHabit(_ habitEntity: HabitEntity, with habit: Habit) throws {
         habitEntity.name = habit.name
         habitEntity.habitDescription = habit.description
         habitEntity.icon = habit.icon
@@ -315,20 +334,20 @@ class CoreDataManager: ObservableObject {
         habitEntity.baseline = Int32(habit.baseline)
         habitEntity.target = Int32(habit.target)
         
-        save()
+        try save()
     }
     
     // MARK: - Delete Habit
-    func deleteHabit(_ habitEntity: HabitEntity) {
+    func deleteHabit(_ habitEntity: HabitEntity) throws {
         print("🗑️ CoreDataManager: Deleting habit entity: \(habitEntity.name ?? "Unknown")")
         context.delete(habitEntity)
         print("🗑️ CoreDataManager: Entity marked for deletion, saving...")
-        save()
+        try save()
         print("🗑️ CoreDataManager: Save completed")
     }
     
     // MARK: - Mark Completion
-    func markCompletion(for habitEntity: HabitEntity, date: Date, progress: Int) {
+    func markCompletion(for habitEntity: HabitEntity, date: Date, progress: Int) throws {
         let dateKey = Self.dateKey(for: date)
         
         // Find existing record or create new one
@@ -350,9 +369,10 @@ class CoreDataManager: ObservableObject {
             record.progress = Int32(progress)
             record.timestamp = Date()
             
-            save()
+            try save()
         } catch {
             print("❌ Mark completion error: \(error)")
+            throw error
         }
     }
     

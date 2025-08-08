@@ -280,24 +280,35 @@ extension Color {
     // Performance optimization: Cache color hex values
     private static var hexCache: [Color: String] = [:]
     private static var colorCache: [String: Color] = [:]
+    private static let cacheQueue = DispatchQueue(label: "color.cache.queue", attributes: .concurrent)
     
     func toHex() -> String {
         // Performance optimization: Use cached hex value if available
-        if let cachedHex = Self.hexCache[self] {
+        let cachedHex = Self.cacheQueue.sync {
+            Self.hexCache[self]
+        }
+        if let cachedHex = cachedHex {
             return cachedHex
         }
         
+        // Safely convert to UIColor and extract components
+        let hex: String
         let uic = UIColor(self)
-        guard let components = uic.cgColor.components, components.count >= 3 else {
-            return "000000"
+        let cgColor = uic.cgColor
+        if let components = cgColor.components,
+           components.count >= 3 {
+            let r = Float(components[0])
+            let g = Float(components[1])
+            let b = Float(components[2])
+            hex = String(format: "%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
+        } else {
+            hex = "000000"
         }
-        let r = Float(components[0])
-        let g = Float(components[1])
-        let b = Float(components[2])
-        let hex = String(format: "%02lX%02lX%02lX", lroundf(r * 255), lroundf(g * 255), lroundf(b * 255))
         
-        // Cache the hex value
-        Self.hexCache[self] = hex
+        // Cache the hex value thread-safely
+        Self.cacheQueue.async(flags: .barrier) {
+            Self.hexCache[self] = hex
+        }
         return hex
     }
     
@@ -307,7 +318,10 @@ extension Color {
     
     init(hex: String) {
         // Performance optimization: Use cached color if available
-        if let cachedColor = Self.colorCache[hex] {
+        let cachedColor = Self.cacheQueue.sync {
+            Self.colorCache[hex]
+        }
+        if let cachedColor = cachedColor {
             self = cachedColor
             return
         }
@@ -335,8 +349,10 @@ extension Color {
             opacity: Double(a) / 255
         )
         
-        // Cache the color
-        Self.colorCache[hex] = color
+        // Cache the color thread-safely
+        Self.cacheQueue.async(flags: .barrier) {
+            Self.colorCache[hex] = color
+        }
         self = color
     }
     
