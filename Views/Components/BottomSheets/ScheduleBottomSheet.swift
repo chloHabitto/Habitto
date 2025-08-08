@@ -79,7 +79,7 @@ struct ScheduleBottomSheet: View {
                 // Tab Menu
                 TabMenu(
                     selectedTab: $selectedTab,
-                    tabs: ["Repeat", "Frequency"]
+                    tabs: ["Interval", "Frequency"]
                 )
                 
                 // Content based on selected tab
