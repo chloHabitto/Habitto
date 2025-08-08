@@ -316,8 +316,11 @@ class CoreDataManager: ObservableObject {
     
     // MARK: - Delete Habit
     func deleteHabit(_ habitEntity: HabitEntity) {
+        print("🗑️ CoreDataManager: Deleting habit entity: \(habitEntity.name ?? "Unknown")")
         context.delete(habitEntity)
+        print("🗑️ CoreDataManager: Entity marked for deletion, saving...")
         save()
+        print("🗑️ CoreDataManager: Save completed")
     }
     
     // MARK: - Mark Completion

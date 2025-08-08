@@ -324,6 +324,12 @@ struct HomeTabView: View {
                     let weekdays = extractWeekdays(from: habit.schedule)
                     return weekdays.contains(weekday)
                 }
+            } else if habit.schedule.contains("days a week") {
+                // Handle frequency schedules like "2 days a week"
+                return shouldShowHabitWithFrequency(habit: habit, date: date)
+            } else if habit.schedule.contains("days a month") {
+                // Handle monthly frequency schedules like "3 days a month"
+                return shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
             } else if habit.schedule.contains("times per week") {
                 // Handle "X times per week" schedules
                 let schedule = habit.schedule.lowercased()
@@ -380,6 +386,153 @@ struct HomeTabView: View {
         let range = match.range(at: 1)
         let numberString = (schedule as NSString).substring(with: range)
         return Int(numberString)
+    }
+    
+    private func extractDaysPerWeek(from schedule: String) -> Int? {
+        let pattern = #"(\d+) days a week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
+    // MARK: - Frequency-based Habit Logic
+    
+    private func shouldShowHabitWithFrequency(habit: Habit, date: Date) -> Bool {
+        guard let daysPerWeek = extractDaysPerWeek(from: habit.schedule) else {
+            return false
+        }
+        
+        let today = Date()
+        let targetDate = DateUtils.startOfDay(for: date)
+        let todayStart = DateUtils.startOfDay(for: today)
+        
+        // If the target date is in the past, don't show the habit
+        if targetDate < todayStart {
+            return false
+        }
+        
+        // For frequency-based habits, show the habit on the first N days starting from today
+        let daysFromToday = DateUtils.daysBetween(todayStart, targetDate)
+        return daysFromToday >= 0 && daysFromToday < daysPerWeek
+    }
+    
+    private func calculateHabitInstances(habit: Habit, daysPerWeek: Int, targetDate: Date) -> [HabitInstance] {
+        let calendar = Calendar.current
+        
+        // For frequency-based habits, we need to create instances that include today
+        // Start from today and work backwards to find the appropriate instances
+        let today = Date()
+        let todayStart = DateUtils.startOfDay(for: today)
+        
+        // Initialize habit instances for this week
+        var habitInstances: [HabitInstance] = []
+        
+        // Create initial habit instances starting from today
+        print("🔍 Creating \(daysPerWeek) habit instances starting from today: \(todayStart)")
+        for i in 0..<daysPerWeek {
+            if let instanceDate = calendar.date(byAdding: .day, value: i, to: todayStart) {
+                let instance = HabitInstance(
+                    id: "\(habit.id)_\(i)",
+                    originalDate: instanceDate,
+                    currentDate: instanceDate,
+                    isCompleted: false
+                )
+                habitInstances.append(instance)
+                print("🔍 Created instance \(i): \(instanceDate)")
+            }
+        }
+        
+        // Apply sliding logic based on completion history
+        for i in 0..<habitInstances.count {
+            var instance = habitInstances[i]
+            
+            // Check if this instance was completed on its original date
+            let originalDateKey = DateUtils.dateKey(for: instance.originalDate)
+            let originalProgress = habit.completionHistory[originalDateKey] ?? 0
+            
+            if originalProgress > 0 {
+                // Instance was completed on its original date
+                instance.isCompleted = true
+                habitInstances[i] = instance
+                continue
+            }
+            
+            // Instance was not completed, so it slides forward
+            var currentDate = instance.originalDate
+            var isCompleted = false
+            
+            // Slide the instance forward until it's completed or reaches the end of the week
+            while currentDate <= DateUtils.endOfWeek(for: targetDate) {
+                let dateKey = DateUtils.dateKey(for: currentDate)
+                let progress = habit.completionHistory[dateKey] ?? 0
+                
+                if progress > 0 {
+                    // Instance was completed on this date
+                    isCompleted = true
+                    instance.currentDate = currentDate
+                    break
+                }
+                
+                // Move to next day
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            
+            // Update instance
+            instance.currentDate = currentDate
+            instance.isCompleted = isCompleted
+            habitInstances[i] = instance
+        }
+        
+        // Return instances that should appear on the target date
+        return habitInstances.filter { instance in
+            let instanceDate = DateUtils.startOfDay(for: instance.currentDate)
+            let targetDateStart = DateUtils.startOfDay(for: targetDate)
+            return instanceDate == targetDateStart && !instance.isCompleted
+        }
+    }
+    
+    // Helper struct to track habit instances
+    private struct HabitInstance {
+        let id: String
+        let originalDate: Date
+        var currentDate: Date
+        var isCompleted: Bool
+    }
+    
+    private func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
+        // For now, implement a simple monthly frequency
+        // This can be enhanced later with more sophisticated logic
+        let calendar = Calendar.current
+        let today = Date()
+        let targetDate = DateUtils.startOfDay(for: date)
+        let todayStart = DateUtils.startOfDay(for: today)
+        
+        // If the target date is in the past, don't show the habit
+        if targetDate < todayStart {
+            return false
+        }
+        
+        // Extract days per month from schedule
+        let pattern = #"(\d+) days a month"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: habit.schedule, options: [], range: NSRange(location: 0, length: habit.schedule.count)) else {
+            return false
+        }
+        
+        let range = match.range(at: 1)
+        let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
+        guard let daysPerMonth = Int(daysPerMonthString) else {
+            return false
+        }
+        
+        // For monthly frequency, show the habit on the first N days of each month
+        let dayOfMonth = calendar.component(.day, from: targetDate)
+        return dayOfMonth <= daysPerMonth
     }
     
     private var stats: [(String, Int)] {

@@ -70,10 +70,18 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
+        print("🗑️ CoreDataAdapter: Starting delete for habit: \(habit.name)")
         let habitEntities = coreDataManager.fetchHabits()
+        print("🗑️ CoreDataAdapter: Found \(habitEntities.count) habit entities")
+        
         if let entity = habitEntities.first(where: { $0.id == habit.id }) {
+            print("🗑️ CoreDataAdapter: Found matching entity, deleting...")
             coreDataManager.deleteHabit(entity)
+            print("🗑️ CoreDataAdapter: Entity deleted, reloading habits...")
             loadHabits()
+            print("🗑️ CoreDataAdapter: Habits reloaded, total: \(habits.count)")
+        } else {
+            print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
         }
     }
     

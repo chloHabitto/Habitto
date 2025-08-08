@@ -371,6 +371,11 @@ struct HabitEditView: View {
                     goalUnit = "time"
                     goalFrequency = "everyday"
                 }
+                
+                // IMPORTANT: Initialize goalFrequency from the habit's schedule if it's a frequency-based schedule
+                if habit.schedule.contains("days a week") || habit.schedule.contains("days a month") {
+                    goalFrequency = habit.schedule
+                }
             } else {
                 // NEW UNIFIED APPROACH - Habit Breaking
                 baselineNumber = String(habit.baseline)

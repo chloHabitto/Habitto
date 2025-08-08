@@ -52,9 +52,9 @@ struct ScheduleBottomSheet: View {
         } else {
             // Frequency tab
             if selectedFrequency == "Weekly" {
-                return "\(weeklyValue) times a week"
+                return "\(weeklyValue) day\(weeklyValue == 1 ? "" : "s") a week"
             } else if selectedFrequency == "Monthly" {
-                return "\(monthlyValue) times a month"
+                return "\(monthlyValue) day\(monthlyValue == 1 ? "" : "s") a month"
             }
         }
         return "Not Selected"
@@ -284,10 +284,10 @@ struct ScheduleBottomSheet: View {
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 24)
+                                            RoundedRectangle(cornerRadius: 8)
                                                 .stroke(.outline, lineWidth: 1)
                                         )
-                                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
                                     
                                     // Plus button
                                     Button(action: {
@@ -341,26 +341,26 @@ struct ScheduleBottomSheet: View {
                                         .frame(width: 52, height: 52)
                                         .background(.surface)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 24)
+                                            RoundedRectangle(cornerRadius: 8)
                                                 .stroke(.outline, lineWidth: 1)
                                         )
-                                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
                                     
                                     // Plus button
                                     Button(action: {
-                                        if weeklyValue < 30 {
+                                        if weeklyValue < 7 {
                                             weeklyValue += 1
                                         }
                                     }) {
                                         Image(systemName: "plus")
                                             .font(.appTitleMedium)
-                                            .foregroundColor(weeklyValue < 30 ? Color.white : .onDisabledBackground)
+                                            .foregroundColor(weeklyValue < 7 ? Color.white : .onDisabledBackground)
                                             .frame(width: 44, height: 44)
-                                            .background(weeklyValue < 30 ? .primary : .disabledBackground)
+                                            .background(weeklyValue < 7 ? .primary : .disabledBackground)
                                             .clipShape(Circle())
                                     }
                                     .frame(width: 48, height: 48)
-                                    .disabled(weeklyValue >= 30)
+                                    .disabled(weeklyValue >= 7)
                                 }
                                 .frame(maxWidth: .infinity)
                             }

@@ -189,10 +189,16 @@ struct HomeView: View {
             })
         }
         .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) { 
+                print("❌ Delete cancelled")
+            }
             Button("Delete", role: .destructive) {
                 if let habit = state.habitToDelete {
+                    print("🗑️ Deleting habit: \(habit.name)")
                     state.deleteHabit(habit)
+                    print("🗑️ Delete completed")
+                } else {
+                    print("❌ No habit to delete")
                 }
             }
         } message: {
@@ -208,12 +214,10 @@ struct HomeView: View {
     
     // MARK: - Lifecycle
     private func loadHabits() {
-        print("🏠 HomeView: Loading habits...")
-        let loadedHabits = Habit.loadHabits()
-        print("🏠 HomeView: Loaded \(loadedHabits.count) habits")
-        
-        state.habits = loadedHabits
-        print("🏠 HomeView: Habits assigned to state - total: \(state.habits.count)")
+        print("🏠 HomeView: Loading habits from CoreDataAdapter...")
+        // Use CoreDataAdapter instead of direct Habit.loadHabits()
+        // The CoreDataAdapter already loads habits in its init()
+        print("🏠 HomeView: Habits loaded from CoreDataAdapter - total: \(state.habits.count)")
         
         // Validate and correct streaks to ensure accuracy
         print("🏠 HomeView: Validating streaks...")
