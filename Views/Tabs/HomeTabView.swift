@@ -307,8 +307,9 @@ struct HomeTabView: View {
             let shouldShow = weekday == 1
             return shouldShow
         default:
+            print("🔍 Checking schedule: \(habit.schedule)")
             // Handle custom schedules like "Every Monday, Wednesday, Friday"
-            if habit.schedule.contains("Every") && habit.schedule.contains("day") {
+            if habit.schedule.lowercased().contains("every") && habit.schedule.lowercased().contains("day") {
                 // First check if it's an "Every X days" schedule
                 if let dayCount = extractDayCount(from: habit.schedule) {
                     // Handle "Every X days" schedules
@@ -322,6 +323,7 @@ struct HomeTabView: View {
                 } else {
                     // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
                     let weekdays = extractWeekdays(from: habit.schedule)
+                    print("🔍 Schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)")
                     return weekdays.contains(weekday)
                 }
             } else if habit.schedule.contains("days a week") {
@@ -346,12 +348,13 @@ struct HomeTabView: View {
                 return false
             }
             // For any other schedule, show the habit
+            print("🔍 Schedule didn't match any patterns, showing habit: \(habit.schedule)")
             return true
         }
     }
     
     private func extractDayCount(from schedule: String) -> Int? {
-        let pattern = #"Every (\d+) days?"#
+        let pattern = #"every (\d+) days?"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
               let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
             return nil
@@ -365,9 +368,10 @@ struct HomeTabView: View {
     private func extractWeekdays(from schedule: String) -> Set<Int> {
         // Performance optimization: Use cached weekday names
         var weekdays: Set<Int> = []
+        let lowercasedSchedule = schedule.lowercased()
         
         for (index, dayName) in Self.weekdayNames.enumerated() {
-            if schedule.contains(dayName) {
+            if lowercasedSchedule.contains(dayName.lowercased()) {
                 // Calendar weekday is 1-based, where 1 = Sunday
                 weekdays.insert(index + 1)
             }

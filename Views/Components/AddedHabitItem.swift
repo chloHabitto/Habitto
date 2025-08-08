@@ -74,27 +74,8 @@ struct AddedHabitItem: View {
                     .frame(width: 40, height: 40)
                 }
                 
-                                        // Bottom row: Schedule and goal
+                                        // Bottom row: Goal only
                         HStack(spacing: 4) {
-                            // Schedule
-                            HStack(spacing: 4) {
-                                Image("Icon-calendarMarked-filled")
-                                    .resizable()
-                                    .renderingMode(.template)
-                                    .frame(width: 16, height: 16)
-                                    .foregroundColor(.text05)
-                                
-                                Text(formatScheduleForDisplay(habit.schedule))
-                                    .font(.appBodyExtraSmall)
-                                    .foregroundColor(.text05)
-                            }
-                            
-                            // Dot separator
-                            Circle()
-                                .fill(.text06)
-                                .frame(width: 3, height: 3)
-                                .frame(width: 16, height: 16)
-                            
                             // Goal
                             HStack(spacing: 4) {
                                 Image("Icon-flag-filled")
