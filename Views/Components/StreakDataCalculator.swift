@@ -368,13 +368,24 @@ class StreakDataCalculator {
     private static func extractWeekdays(from schedule: String) -> Set<Int> {
         var weekdays: Set<Int> = []
         let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        let lowercasedSchedule = schedule.lowercased()
+        
+        print("🔍 STREAK WEEKDAY EXTRACTION - Input schedule: '\(schedule)'")
+        print("🔍 STREAK WEEKDAY EXTRACTION - Lowercased: '\(lowercasedSchedule)'")
         
         for (index, dayName) in weekdayNames.enumerated() {
-            if schedule.contains(dayName) {
-                weekdays.insert(index + 1)
+            let dayNameLower = dayName.lowercased()
+            let contains = lowercasedSchedule.contains(dayNameLower)
+            if contains {
+                let weekdayNumber = index + 1
+                weekdays.insert(weekdayNumber)
+                print("🔍 STREAK WEEKDAY EXTRACTION - Found '\(dayName)' (index \(index)) → weekday \(weekdayNumber)")
+            } else {
+                print("🔍 STREAK WEEKDAY EXTRACTION - '\(dayName)' not found in schedule")
             }
         }
         
+        print("🔍 STREAK WEEKDAY EXTRACTION - Final weekdays: \(weekdays)")
         return weekdays
     }
     

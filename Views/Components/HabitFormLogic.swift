@@ -86,7 +86,9 @@ class HabitFormLogic {
         reminders: [ReminderItem]
     ) -> Habit {
         
-        let calendarSchedule = convertGoalFrequencyToSchedule(goalFrequency)
+        // For habit building, use goal frequency; for habit breaking, use target frequency
+        let scheduleFrequency = step1Data.4 == .formation ? goalFrequency : targetFrequency
+        let calendarSchedule = convertGoalFrequencyToSchedule(scheduleFrequency)
         
         if step1Data.4 == .formation {
             // Habit Building

@@ -385,13 +385,23 @@ struct HomeTabView: View {
         var weekdays: Set<Int> = []
         let lowercasedSchedule = schedule.lowercased()
         
+        print("🔍 WEEKDAY EXTRACTION - Input schedule: '\(schedule)'")
+        print("🔍 WEEKDAY EXTRACTION - Lowercased: '\(lowercasedSchedule)'")
+        
         for (index, dayName) in Self.weekdayNames.enumerated() {
-            if lowercasedSchedule.contains(dayName.lowercased()) {
+            let dayNameLower = dayName.lowercased()
+            let contains = lowercasedSchedule.contains(dayNameLower)
+            if contains {
                 // Calendar weekday is 1-based, where 1 = Sunday
-                weekdays.insert(index + 1)
+                let weekdayNumber = index + 1
+                weekdays.insert(weekdayNumber)
+                print("🔍 WEEKDAY EXTRACTION - Found '\(dayName)' (index \(index)) → weekday \(weekdayNumber)")
+            } else {
+                print("🔍 WEEKDAY EXTRACTION - '\(dayName)' not found in schedule")
             }
         }
         
+        print("🔍 WEEKDAY EXTRACTION - Final weekdays: \(weekdays)")
         return weekdays
     }
     

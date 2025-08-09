@@ -113,6 +113,44 @@ struct HabitEditView: View {
         self._reminders = State(initialValue: habit.reminders)
         self._startDate = State(initialValue: habit.startDate)
         self._endDate = State(initialValue: habit.endDate)
+        
+        // Initialize goal/baseline/target data from saved habit
+        if habit.habitType == .formation {
+            // Parse habit building goal data from habit.goal string
+            let parsedGoal = Self.parseGoalString(habit.goal)
+            print("🔍 EDIT INIT - Habit Building: \(habit.goal) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
+            self._goalNumber = State(initialValue: parsedGoal.number)
+            self._goalUnit = State(initialValue: parsedGoal.unit)
+            self._goalFrequency = State(initialValue: parsedGoal.frequency)
+            
+            // Set defaults for unused fields
+            self._baselineNumber = State(initialValue: "1")
+            self._baselineUnit = State(initialValue: "time")
+            self._baselineFrequency = State(initialValue: "everyday")
+            self._targetNumber = State(initialValue: "1")
+            self._targetUnit = State(initialValue: "time")
+            self._targetFrequency = State(initialValue: "everyday")
+        } else {
+            // Parse habit breaking data from habit.goal string and habit properties
+            let parsedGoal = Self.parseGoalString(habit.goal)
+            print("🔍 EDIT INIT - Habit Breaking: \(habit.goal) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
+            print("🔍 EDIT INIT - Schedule: \(habit.schedule), Baseline: \(habit.baseline)")
+            
+            // For habit breaking, goal string contains target info
+            self._targetNumber = State(initialValue: parsedGoal.number)
+            self._targetUnit = State(initialValue: parsedGoal.unit)
+            self._targetFrequency = State(initialValue: parsedGoal.frequency) // Frequency from goal string
+            
+            // Use baseline from habit properties
+            self._baselineNumber = State(initialValue: String(habit.baseline))
+            self._baselineUnit = State(initialValue: parsedGoal.unit) // Assume same unit
+            self._baselineFrequency = State(initialValue: "everyday") // Default, not used for schedule
+            
+            // Set defaults for unused goal fields
+            self._goalNumber = State(initialValue: "1")
+            self._goalUnit = State(initialValue: "time")
+            self._goalFrequency = State(initialValue: "everyday")
+        }
     }
     
     // MARK: - Main Content Views
@@ -921,7 +959,7 @@ struct HabitEditView: View {
             // NEW UNIFIED APPROACH - Habit Building
             let goalNumberInt = Int(goalNumber) ?? 1
             let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-            let goalString = "\(goalNumber) \(pluralizedUnit) per \(goalFrequency)"
+            let goalString = "\(goalNumber) \(pluralizedUnit) on \(goalFrequency)"
             
             // For habit building, schedule is derived from goal frequency
             let scheduleString = goalFrequency
@@ -947,8 +985,11 @@ struct HabitEditView: View {
             let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
             let goalString = "\(targetNumber) \(targetPluralizedUnit) per \(targetFrequency)"
             
-            // For habit breaking, schedule is derived from baseline frequency
-            let scheduleString = baselineFrequency
+            // For habit breaking, schedule is derived from target frequency
+            let scheduleString = targetFrequency
+            
+            print("🔍 EDIT SAVE - Habit Breaking: goalString: \(goalString), scheduleString: \(scheduleString)")
+            print("🔍 EDIT SAVE - Target: \(targetNumber) \(targetUnit) \(targetFrequency), Baseline: \(baselineNumber) \(baselineUnit)")
             
             updatedHabit = Habit(
                 name: habitName,
@@ -976,6 +1017,45 @@ struct HabitEditView: View {
         
         onSave(updatedHabit)
         dismiss()
+    }
+    
+    // MARK: - Static Helper Functions
+    static func parseGoalString(_ goalString: String) -> (number: String, unit: String, frequency: String) {
+        // Goal strings are in format:
+        // Habit Building: "3 times on everyday" or "1 time on monday"
+        // Habit Breaking: "1 time per everyday" or "2 times per monday"
+        
+        // Extract number (first part)
+        let components = goalString.components(separatedBy: " ")
+        let number = components.first ?? "1"
+        
+        // Extract unit and frequency
+        if goalString.contains(" on ") {
+            // Habit building format: "3 times on everyday"
+            let parts = goalString.components(separatedBy: " on ")
+            let beforeOn = parts[0] // "3 times"
+            let frequency = parts.count > 1 ? parts[1] : "everyday"
+            
+            // Extract unit from "3 times"
+            let unitComponents = beforeOn.components(separatedBy: " ")
+            let unit = unitComponents.count > 1 ? unitComponents[1] : "time"
+            
+            return (number: number, unit: unit, frequency: frequency)
+        } else if goalString.contains(" per ") {
+            // Habit breaking format: "1 time per everyday"
+            let parts = goalString.components(separatedBy: " per ")
+            let beforePer = parts[0] // "1 time"
+            let frequency = parts.count > 1 ? parts[1] : "everyday"
+            
+            // Extract unit from "1 time"
+            let unitComponents = beforePer.components(separatedBy: " ")
+            let unit = unitComponents.count > 1 ? unitComponents[1] : "time"
+            
+            return (number: number, unit: unit, frequency: frequency)
+        } else {
+            // Fallback for unknown format
+            return (number: "1", unit: "time", frequency: "everyday")
+        }
     }
     
     // MARK: - Helper Functions
