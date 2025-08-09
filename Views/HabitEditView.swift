@@ -41,9 +41,10 @@ struct HabitEditView: View {
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
-    // Swipe to dismiss animation state
-    @State private var dragOffset: CGFloat = 0
-    @State private var isDismissing = false
+    // State variables to bind to FocusState (for UnifiedInputElement compatibility)
+    @State private var goalNumberFocused: Bool = false
+    @State private var baselineFieldFocused: Bool = false
+    @State private var targetFieldFocused: Bool = false
     
     // Sheet states
     @State private var showingIconSheet = false
@@ -114,144 +115,270 @@ struct HabitEditView: View {
         self._endDate = State(initialValue: habit.endDate)
     }
     
-    var body: some View {
+    // MARK: - Main Content Views
+    @ViewBuilder
+    private var mainContent: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                basicInfoSection
+                goalSection
+                reminderAndPeriodSection
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .padding(.bottom, 100) // Add bottom padding to account for fixed button
+        }
+        .background(.surface2)
+    }
+    
+    @ViewBuilder
+    private var basicInfoSection: some View {
+        VStack(spacing: 16) {
+            // Habit Name
+            CustomTextField(placeholder: "Name", text: $habitName, isFocused: $isNameFieldFocused, showTapGesture: true)
+            
+            // Description
+            CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
+            
+            // Color Selection (moved before Icon to match creation flow)
+            VisualSelectionRow(
+                title: "Colour",
+                color: selectedColor,
+                value: getColorDisplayName(selectedColor),
+                action: { showingColorSheet = true }
+            )
+            
+            // Icon Selection (moved after Color to match creation flow)
+            VisualSelectionRow(
+                title: "Icon",
+                color: selectedColor,
+                icon: selectedIcon,
+                value: getIconDisplayName(selectedIcon),
+                action: { showingIconSheet = true }
+            )
+            
+            // Habit Type
+            habitTypeSection
+        }
+    }
+    
+    @ViewBuilder
+    private var goalSection: some View {
+        // Goal - NEW UNIFIED APPROACH
+        if selectedHabitType == .formation {
+            UnifiedInputElement(
+                title: "Goal",
+                description: "What do you want to achieve?",
+                numberText: $goalNumber,
+                unitText: pluralizedGoalUnit,
+                frequencyText: goalFrequency,
+                isValid: isGoalValid,
+                errorMessage: "Please enter a number greater than 0",
+                onUnitTap: { showingGoalUnitSheet = true },
+                onFrequencyTap: { showingGoalFrequencySheet = true },
+                uiUpdateTrigger: uiUpdateTrigger,
+                isFocused: $goalNumberFocused
+            )
+        } else {
+            // Habit Breaking Form
+            VStack(spacing: 16) {
+                // Baseline - NEW UNIFIED APPROACH
+                UnifiedInputElement(
+                    title: "Current",
+                    description: "How much do you currently do?",
+                    numberText: $baselineNumber,
+                    unitText: pluralizedBaselineUnit,
+                    frequencyText: baselineFrequency,
+                    isValid: isBaselineValid,
+                    errorMessage: "Please enter a number greater than 0",
+                    onUnitTap: { showingBaselineUnitSheet = true },
+                    onFrequencyTap: { showingBaselineFrequencySheet = true },
+                    uiUpdateTrigger: uiUpdateTrigger,
+                    isFocused: $baselineFieldFocused
+                )
+                
+                // Target - NEW UNIFIED APPROACH
+                UnifiedInputElement(
+                    title: "Goal",
+                    description: "How much do you want to reduce to?",
+                    numberText: $targetNumber,
+                    unitText: pluralizedTargetUnit,
+                    frequencyText: targetFrequency,
+                    isValid: isTargetValid,
+                    errorMessage: "Please enter a number greater than or equal to 0",
+                    onUnitTap: { showingTargetUnitSheet = true },
+                    onFrequencyTap: { showingTargetFrequencySheet = true },
+                    uiUpdateTrigger: uiUpdateTrigger,
+                    isFocused: $targetFieldFocused
+                )
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var reminderAndPeriodSection: some View {
+        VStack(spacing: 16) {
+            // Reminder Section
+            reminderSection
+            
+            // Period Section
+            periodSection
+        }
+    }
+    
+    @ViewBuilder
+    private var bottomButtonDock: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .background(.outline)
+            
+            saveButton
+        }
+        .background(.surface2)
+    }
+    
+    @ViewBuilder
+    private var mainViewContent: some View {
         VStack(spacing: 0) {
             // Top navigation bar
             topNavigationBar
             
             // Main content
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Habit Name
-                    CustomTextField(placeholder: "Name", text: $habitName, isFocused: $isNameFieldFocused, showTapGesture: true)
-                    
-                    // Description
-                    CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
-                    
-                    // Color Selection (moved before Icon to match creation flow)
-                    Button(action: {
-                        showingColorSheet = true
-                    }) {
-                        HStack {
-                            Text("Colour")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(selectedColor)
-                                    .frame(width: 16, height: 16)
-                                Text(getColorDisplayName(selectedColor))
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text04)
-                            }
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                    }
-                    .selectionRowStyle()
-                    
-                    // Icon Selection (moved after Color to match creation flow)
-                    Button(action: {
-                        showingIconSheet = true
-                    }) {
-                        HStack {
-                            Text("Icon")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            Spacer()
-                            
-                            Text(getIconDisplayName(selectedIcon))
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                    }
-                    .selectionRowStyle()
-                    
-                    // Habit Type
-                    habitTypeSection
-                    
-                    // Goal - NEW UNIFIED APPROACH
-                    if selectedHabitType == .formation {
-                        UnifiedInputElement(
-                            title: "Goal",
-                            description: "What do you want to achieve?",
-                            numberText: $goalNumber,
-                            unitText: pluralizedGoalUnit,
-                            frequencyText: goalFrequency,
-                            isFocused: $isGoalNumberFocused,
-                            isValid: isGoalValid,
-                            errorMessage: "Please enter a number greater than 0",
-                            onUnitTap: { showingGoalUnitSheet = true },
-                            onFrequencyTap: { showingGoalFrequencySheet = true },
-                            uiUpdateTrigger: uiUpdateTrigger
-                        )
-                    } else {
-                        // Habit Breaking Form
-                        VStack(spacing: 16) {
-                            // Baseline - NEW UNIFIED APPROACH
-                            UnifiedInputElement(
-                                title: "Baseline",
-                                description: "How much do you currently use?",
-                                numberText: $baselineNumber,
-                                unitText: pluralizedBaselineUnit,
-                                frequencyText: baselineFrequency,
-                                isFocused: $isBaselineFieldFocused,
-                                isValid: isBaselineValid,
-                                errorMessage: "Please enter a number greater than 0",
-                                onUnitTap: { showingBaselineUnitSheet = true },
-                                onFrequencyTap: { showingBaselineFrequencySheet = true },
-                                uiUpdateTrigger: uiUpdateTrigger
-                            )
-                            
-                            // Target - NEW UNIFIED APPROACH
-                            UnifiedInputElement(
-                                title: "Target",
-                                description: "How much do you want to reduce to?",
-                                numberText: $targetNumber,
-                                unitText: pluralizedTargetUnit,
-                                frequencyText: targetFrequency,
-                                isFocused: $isTargetFieldFocused,
-                                isValid: isTargetValid,
-                                errorMessage: "Please enter a number greater than or equal to 0",
-                                onUnitTap: { showingTargetUnitSheet = true },
-                                onFrequencyTap: { showingTargetFrequencySheet = true },
-                                uiUpdateTrigger: uiUpdateTrigger
-                            )
-                        }
-                    }
-                    
-                    // Reminder Section
-                    reminderSection
-                    
-                    // Period Section
-                    periodSection
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-                .padding(.bottom, 100) // Add bottom padding to account for fixed button
-            }
-            .background(.surface2)
+            mainContent
             
             // Fixed bottom button dock
-            VStack(spacing: 0) {
-                Divider()
-                    .background(.outline)
-                
-                saveButton
-            }
-            .background(.surface2)
+            bottomButtonDock
         }
-        .background(.surface2)
+    }
+    
+    var body: some View {
+        mainViewWithSheets
+    }
+    
+    // MARK: - Main View with All Sheets
+    @ViewBuilder
+    private var mainViewWithSheets: some View {
+        mainViewContent
+            .background(.surface2)
+            .onChange(of: isGoalNumberFocused) { _, newValue in
+                goalNumberFocused = newValue
+            }
+            .onChange(of: goalNumberFocused) { _, newValue in
+                isGoalNumberFocused = newValue
+            }
+            .onChange(of: isBaselineFieldFocused) { _, newValue in
+                baselineFieldFocused = newValue
+            }
+            .onChange(of: baselineFieldFocused) { _, newValue in
+                isBaselineFieldFocused = newValue
+            }
+            .onChange(of: isTargetFieldFocused) { _, newValue in
+                targetFieldFocused = newValue
+            }
+            .onChange(of: targetFieldFocused) { _, newValue in
+                isTargetFieldFocused = newValue
+            }
+            .sheet(isPresented: $showingIconSheet) {
+                IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
+            }
+            .sheet(isPresented: $showingColorSheet) {
+                ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
+                    selectedColor = color
+                    showingColorSheet = false
+                })
+            }
+            .sheet(isPresented: $showingScheduleSheet) {
+                ScheduleBottomSheet(onClose: { showingScheduleSheet = false }, onScheduleSelected: { schedule in
+                    selectedSchedule = schedule
+                    showingScheduleSheet = false
+                }, initialSchedule: selectedSchedule)
+            }
+            .sheet(isPresented: $showingReminderSheet) {
+                ReminderBottomSheet(onClose: { showingReminderSheet = false }, onReminderSelected: { reminder in
+                    selectedReminder = reminder
+                    showingReminderSheet = false
+                }, onRemindersUpdated: { _ in })
+            }
+            .sheet(isPresented: $showingPeriodSheet) {
+                PeriodBottomSheet(
+                    isSelectingStartDate: true,
+                    startDate: startDate,
+                    onStartDateSelected: { date in
+                        startDate = date
+                        showingPeriodSheet = false
+                    },
+                    onEndDateSelected: { date in
+                        endDate = date
+                        showingPeriodSheet = false
+                    },
+                    onRemoveEndDate: nil
+                )
+            }
+            .sheet(isPresented: $showingGoalUnitSheet) {
+                UnitBottomSheet(
+                    onClose: { showingGoalUnitSheet = false },
+                    onUnitSelected: { selectedUnit in
+                        goalUnit = selectedUnit
+                        showingGoalUnitSheet = false
+                    },
+                    currentUnit: goalUnit
+                )
+            }
+            .sheet(isPresented: $showingGoalFrequencySheet) {
+                ScheduleBottomSheet(
+                    onClose: { showingGoalFrequencySheet = false },
+                    onScheduleSelected: { selectedSchedule in
+                        goalFrequency = selectedSchedule.lowercased()
+                        showingGoalFrequencySheet = false
+                    },
+                    initialSchedule: goalFrequency
+                )
+            }
+            .sheet(isPresented: $showingBaselineUnitSheet) {
+                UnitBottomSheet(
+                    onClose: { showingBaselineUnitSheet = false },
+                    onUnitSelected: { selectedUnit in
+                        baselineUnit = selectedUnit
+                        showingBaselineUnitSheet = false
+                    },
+                    currentUnit: baselineUnit
+                )
+            }
+            .sheet(isPresented: $showingBaselineFrequencySheet) {
+                ScheduleBottomSheet(
+                    onClose: { showingBaselineFrequencySheet = false },
+                    onScheduleSelected: { selectedSchedule in
+                        baselineFrequency = selectedSchedule.lowercased()
+                        showingBaselineFrequencySheet = false
+                    },
+                    initialSchedule: baselineFrequency
+                )
+            }
+            .sheet(isPresented: $showingTargetUnitSheet) {
+                UnitBottomSheet(
+                    onClose: { showingTargetUnitSheet = false },
+                    onUnitSelected: { selectedUnit in
+                        targetUnit = selectedUnit
+                        showingTargetUnitSheet = false
+                    },
+                    currentUnit: targetUnit
+                )
+            }
+            .sheet(isPresented: $showingTargetFrequencySheet) {
+                ScheduleBottomSheet(
+                    onClose: { showingTargetFrequencySheet = false },
+                    onScheduleSelected: { selectedSchedule in
+                        targetFrequency = selectedSchedule.lowercased()
+                        showingTargetFrequencySheet = false
+                    },
+                    initialSchedule: targetFrequency
+                )
+            }
+    }
+    
+    @ViewBuilder
+    private var allSheets: some View {
+        self
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
         }
@@ -436,43 +563,6 @@ struct HabitEditView: View {
                 }
             }
         )
-        .background(
-            // Extended background that covers the revealed area during swipe
-            Color(.surface2)
-                .frame(width: UIScreen.main.bounds.width + abs(dragOffset), height: UIScreen.main.bounds.height)
-                .offset(x: dragOffset < 0 ? dragOffset : 0)
-        )
-        .offset(x: dragOffset)
-        .opacity(isDismissing ? 0 : 1)
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    // Only allow rightward swipes (positive translation)
-                    if value.translation.width > 0 {
-                        dragOffset = value.translation.width
-                    }
-                }
-                .onEnded { value in
-                    // Swipe right to dismiss (like back button)
-                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
-                        // Animate the dismiss
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            dragOffset = UIScreen.main.bounds.width
-                            isDismissing = true
-                        }
-                        // Dismiss immediately without animation after our animation completes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                            // Dismiss without any animation
-                            dismiss()
-                        }
-                    } else {
-                        // Snap back if swipe wasn't far enough
-                        withAnimation(.spring()) {
-                            dragOffset = 0
-                        }
-                    }
-                }
-        )
     }
     
     // MARK: - Top Navigation Bar
@@ -571,96 +661,6 @@ struct HabitEditView: View {
         } else {
             return isBaselineValid && isTargetValid
         }
-    }
-    
-    // MARK: - NEW Unified Input Element
-    @ViewBuilder
-    private func UnifiedInputElement(
-        title: String,
-        description: String,
-        numberText: Binding<String>,
-        unitText: String,
-        frequencyText: String,
-        isFocused: FocusState<Bool>.Binding,
-        isValid: Bool,
-        errorMessage: String,
-        onUnitTap: @escaping () -> Void,
-        onFrequencyTap: @escaping () -> Void,
-        uiUpdateTrigger: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(title)
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-            }
-            
-            Text(description)
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
-                .padding(.bottom, 12)
-            
-            HStack(spacing: 4) {
-                // Number input field - smaller width
-                TextField("1", text: numberText)
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text01)
-                    .accentColor(.text01)
-                    .keyboardType(.numberPad)
-                    .focused(isFocused)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 40)
-                    .inputFieldStyle()
-                
-                // Unit selector button - smaller width
-                Button(action: onUnitTap) {
-                    HStack {
-                        Text(unitText)
-                            .font(.appBodyLarge)
-                            .foregroundColor(isValid ? .text04 : .text06)
-                            .id(uiUpdateTrigger) // Force re-render when trigger changes
-                        Image(systemName: "chevron.right")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.primaryDim)
-                    }
-                    .frame(width: 70)
-                    .inputFieldStyle()
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // "/" separator
-                Text("/")
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text04)
-                    .frame(width: 12)
-                
-                // Frequency selector button - larger width for one-line text
-                Button(action: onFrequencyTap) {
-                    HStack {
-                        Text(frequencyText)
-                            .font(.appBodyLarge)
-                            .foregroundColor(isValid ? .text04 : .text06)
-                            .id(uiUpdateTrigger) // Force re-render when trigger changes
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                        Image(systemName: "chevron.right")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.primaryDim)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .inputFieldStyle()
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .padding(.bottom, 4)
-            
-            // Warning message for invalid input
-            if !isValid {
-                ErrorMessage(message: errorMessage)
-                    .padding(.top, 4)
-            }
-        }
-        .selectionRowStyle()
     }
     
     // MARK: - Custom TextField Component (same as CreateHabitStep1View)
@@ -980,10 +980,7 @@ struct HabitEditView: View {
     
     // MARK: - Helper Functions
     private func getIconDisplayName(_ icon: String) -> String {
-        if icon.hasPrefix("Icon-") {
-            return icon.replacingOccurrences(of: "Icon-", with: "")
-        }
-        return icon
+        return icon == "None" ? "None" : ""
     }
     
     private func getColorDisplayName(_ color: Color) -> String {
@@ -1009,6 +1006,32 @@ struct HabitEditView: View {
         return "Navy" // Default fallback to match CreateHabitStep1View
     }
     
+    // Helper function for selection rows with visual elements (matching create habit step 1)
+    @ViewBuilder
+    private func VisualSelectionRow(
+        title: String,
+        color: Color,
+        icon: String? = nil,
+        value: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        if let icon = icon {
+            SelectionRowWithVisual(
+                title: title,
+                icon: icon,
+                color: color,
+                value: value,
+                action: action
+            )
+        } else {
+            SelectionRowWithVisual(
+                title: title,
+                color: color,
+                value: value,
+                action: action
+            )
+        }
+    }
 
 }
 
