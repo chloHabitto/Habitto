@@ -131,6 +131,15 @@ struct HomeTabView: View {
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            // Swipe right to dismiss (like back button)
+                            if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                                selectedHabit = nil
+                            }
+                        }
+                )
         }
     }
     
@@ -347,9 +356,15 @@ struct HomeTabView: View {
                 }
                 return false
             }
-            // For any other schedule, show the habit
-            print("🔍 Schedule didn't match any patterns, showing habit: \(habit.schedule)")
-            return true
+            // Check if schedule contains multiple weekdays separated by commas
+            if habit.schedule.contains(",") {
+                let weekdays = extractWeekdays(from: habit.schedule)
+                print("🔍 Comma-separated schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)")
+                return weekdays.contains(weekday)
+            }
+            // For any unrecognized schedule format, don't show the habit (safer default)
+            print("🔍 Schedule didn't match any patterns, NOT showing habit: \(habit.schedule)")
+            return false
         }
     }
     

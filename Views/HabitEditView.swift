@@ -41,6 +41,10 @@ struct HabitEditView: View {
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
+    // Swipe to dismiss animation state
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDismissing = false
+    
     // Sheet states
     @State private var showingIconSheet = false
     @State private var showingColorSheet = false
@@ -124,29 +128,7 @@ struct HabitEditView: View {
                     // Description
                     CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
                     
-                    // Icon Selection
-                    Button(action: {
-                        showingIconSheet = true
-                    }) {
-                        HStack {
-                            Text("Icon")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            Spacer()
-                            
-                            Text(getIconDisplayName(selectedIcon))
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text04)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.primaryDim)
-                        }
-                    }
-                    .selectionRowStyle()
-                    
-                    // Color Selection
+                    // Color Selection (moved before Icon to match creation flow)
                     Button(action: {
                         showingColorSheet = true
                     }) {
@@ -165,6 +147,28 @@ struct HabitEditView: View {
                                     .font(.appBodyLarge)
                                     .foregroundColor(.text04)
                             }
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.primaryDim)
+                        }
+                    }
+                    .selectionRowStyle()
+                    
+                    // Icon Selection (moved after Color to match creation flow)
+                    Button(action: {
+                        showingIconSheet = true
+                    }) {
+                        HStack {
+                            Text("Icon")
+                                .font(.appTitleMedium)
+                                .foregroundColor(.text01)
+                            
+                            Spacer()
+                            
+                            Text(getIconDisplayName(selectedIcon))
+                                .font(.appBodyLarge)
+                                .foregroundColor(.text04)
                             
                             Image(systemName: "chevron.right")
                                 .font(.appLabelSmall)
@@ -431,6 +435,43 @@ struct HabitEditView: View {
                     }
                 }
             }
+        )
+        .background(
+            // Extended background that covers the revealed area during swipe
+            Color(.surface2)
+                .frame(width: UIScreen.main.bounds.width + abs(dragOffset), height: UIScreen.main.bounds.height)
+                .offset(x: dragOffset < 0 ? dragOffset : 0)
+        )
+        .offset(x: dragOffset)
+        .opacity(isDismissing ? 0 : 1)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    // Only allow rightward swipes (positive translation)
+                    if value.translation.width > 0 {
+                        dragOffset = value.translation.width
+                    }
+                }
+                .onEnded { value in
+                    // Swipe right to dismiss (like back button)
+                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                        // Animate the dismiss
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            dragOffset = UIScreen.main.bounds.width
+                            isDismissing = true
+                        }
+                        // Dismiss immediately without animation after our animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            // Dismiss without any animation
+                            dismiss()
+                        }
+                    } else {
+                        // Snap back if swipe wasn't far enough
+                        withAnimation(.spring()) {
+                            dragOffset = 0
+                        }
+                    }
+                }
         )
     }
     
@@ -830,7 +871,7 @@ struct HabitEditView: View {
                         Text("Start Date")
                             .font(.appBodyMedium)
                             .foregroundColor(.text05)
-                        Text(formatDate(startDate))
+                        Text(isToday(startDate) ? "Today" : formatDate(startDate))
                             .font(.appBodyLarge)
                             .foregroundColor(.text04)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -847,7 +888,7 @@ struct HabitEditView: View {
                         Text("End Date")
                             .font(.appBodyMedium)
                             .foregroundColor(.text05)
-                        Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
+                        Text(endDate == nil ? "Not Selected" : (isToday(endDate!) ? "Today" : formatDate(endDate!)))
                             .font(.appBodyLarge)
                             .foregroundColor(.text04)
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -946,33 +987,26 @@ struct HabitEditView: View {
     }
     
     private func getColorDisplayName(_ color: Color) -> String {
-        // Map colors to display names
-        switch color {
-        case .blue:
-            return "Blue"
-        case .green:
-            return "Green"
-        case .orange:
-            return "Orange"
-        case .red:
-            return "Red"
-        case .purple:
-            return "Purple"
-        case .pink:
-            return "Pink"
-        case .yellow:
-            return "Yellow"
-        case .mint:
-            return "Mint"
-        case .teal:
-            return "Teal"
-        case .indigo:
-            return "Indigo"
-        case .brown:
-            return "Brown"
-        default:
-            return "Custom"
+        // Use the same color definitions as ColorBottomSheet for consistency
+        let colors: [(color: Color, name: String)] = [
+            (Color(hex: "222222"), "Black"),
+            (.primary, "Navy"),
+            (Color(hex: "6096FD"), "Blue"),
+            (Color(hex: "CB30E0"), "Purple"),
+            (Color(hex: "FF2D55"), "Red"),
+            (Color(hex: "FF7838"), "Orange"),
+            (Color(hex: "34C759"), "Green"),
+            (Color(hex: "21EAF1"), "Teal")
+        ]
+        
+        // Find the matching color and return its name
+        for (colorOption, name) in colors {
+            if color == colorOption {
+                return name
+            }
         }
+        
+        return "Navy" // Default fallback to match CreateHabitStep1View
     }
     
 

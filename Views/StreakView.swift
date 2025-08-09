@@ -12,6 +12,10 @@ struct StreakView: View {
     @State private var isExpanded = false
     @State private var dragOffset: CGFloat = 0
     
+    // Swipe to dismiss animation state
+    @State private var dismissOffset: CGFloat = 0
+    @State private var isDismissing = false
+    
     // Performance optimization: Pagination for large datasets
     @State private var currentYearlyPage = 0
     private let yearlyItemsPerPage = 50
@@ -245,6 +249,43 @@ struct StreakView: View {
             }
         }
         .padding(.bottom, 16)
+        .background(
+            // Extended background that covers the revealed area during swipe
+            Color(.systemBackground)
+                .frame(width: UIScreen.main.bounds.width + abs(dismissOffset), height: UIScreen.main.bounds.height)
+                .offset(x: dismissOffset < 0 ? dismissOffset : 0)
+        )
+        .offset(x: dismissOffset)
+        .opacity(isDismissing ? 0 : 1)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    // Only allow rightward swipes (positive translation)
+                    if value.translation.width > 0 {
+                        dismissOffset = value.translation.width
+                    }
+                }
+                .onEnded { value in
+                    // Swipe right to dismiss (like back button)
+                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                        // Animate the dismiss
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            dismissOffset = UIScreen.main.bounds.width
+                            isDismissing = true
+                        }
+                        // Dismiss immediately without animation after our animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            // Dismiss without any animation
+                            dismiss()
+                        }
+                    } else {
+                        // Snap back if swipe wasn't far enough
+                        withAnimation(.spring()) {
+                            dismissOffset = 0
+                        }
+                    }
+                }
+        )
     }
     
 

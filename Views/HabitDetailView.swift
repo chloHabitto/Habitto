@@ -22,6 +22,7 @@ struct HabitDetailView: View {
             
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGray6))
         .onAppear {
             // Initialize todayProgress with the actual habit progress for the selected date

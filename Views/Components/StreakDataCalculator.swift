@@ -344,7 +344,13 @@ class StreakDataCalculator {
             return false
             
         default:
-            return true
+            // Check if schedule contains multiple weekdays separated by commas (like "Every Monday, Every Friday")
+            if habit.schedule.contains(",") {
+                let weekdays = extractWeekdays(from: habit.schedule)
+                return weekdays.contains(weekday)
+            }
+            // For any unrecognized schedule format, don't show the habit (safer default)
+            return false
         }
     }
     

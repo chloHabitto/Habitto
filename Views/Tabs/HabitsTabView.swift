@@ -82,6 +82,15 @@ struct HabitsTabView: View {
         }
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: Date(), onDeleteHabit: onDeleteHabit)
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            // Swipe right to dismiss (like back button)
+                            if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                                selectedHabit = nil
+                            }
+                        }
+                )
         }
     }
     
