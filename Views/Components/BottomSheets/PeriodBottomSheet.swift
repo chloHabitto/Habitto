@@ -1,5 +1,10 @@
 import SwiftUI
 
+struct CalendarDay: Identifiable {
+    let id: String
+    let date: Date?
+}
+
 struct PeriodBottomSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedDate: Date
@@ -84,13 +89,15 @@ struct PeriodBottomSheet: View {
                     }
                     
                     // Calendar days
-                    ForEach(daysInMonth(), id: \.self) { date in
-                        if let date = date {
+                    ForEach(daysInMonth()) { calendarDay in
+                        if let date = calendarDay.date {
                             Button(action: {
-                                if isSelectingStartDate && !isDateInPast(date) {
-                                    selectedDate = date
-                                } else if !isSelectingStartDate && !isDateBeforeOrEqualToStartDate(date) {
-                                    selectedDate = date
+                                withAnimation(.easeInOut(duration: 0.1)) {
+                                    if isSelectingStartDate && !isDateInPast(date) {
+                                        selectedDate = date
+                                    } else if !isSelectingStartDate && !isDateBeforeOrEqualToStartDate(date) {
+                                        selectedDate = date
+                                    }
                                 }
                             }) {
                                 Text("\(Calendar.current.component(.day, from: date))")
@@ -166,29 +173,33 @@ struct PeriodBottomSheet: View {
         return formatter.string(from: date)
     }
     
-    private func daysInMonth() -> [Date?] {
+    private func daysInMonth() -> [CalendarDay] {
         let calendar = Calendar.current
         let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
         let firstWeekday = calendar.component(.weekday, from: startOfMonth)
         let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 0
         
-        var days: [Date?] = []
+        var days: [CalendarDay] = []
+        var dayIndex = 0
         
         // Add empty cells for days before the first day of the month
         for _ in 1..<firstWeekday {
-            days.append(nil)
+            days.append(CalendarDay(id: "empty_\(dayIndex)", date: nil))
+            dayIndex += 1
         }
         
         // Add all days in the month
         for day in 1...daysInMonth {
             if let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) {
-                days.append(date)
+                days.append(CalendarDay(id: "day_\(day)", date: date))
             }
+            dayIndex += 1
         }
         
         // Add empty cells to complete the grid (6 rows * 7 columns = 42 cells)
         while days.count < 42 {
-            days.append(nil)
+            days.append(CalendarDay(id: "empty_\(dayIndex)", date: nil))
+            dayIndex += 1
         }
         
         return days
