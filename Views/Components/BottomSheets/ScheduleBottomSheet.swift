@@ -64,6 +64,86 @@ struct ScheduleBottomSheet: View {
     private let dayOptions = ScheduleOptions.dayOptions
     private let frequencyOptions = ScheduleOptions.frequencyOptions
     
+    private func parseAndSetInitialSchedule(_ schedule: String) {
+        print("🔍 SCHEDULE SHEET INIT - Parsing schedule: '\(schedule)'")
+        
+        let lowercasedSchedule = schedule.lowercased()
+        
+        // Check if it's a specific weekday selection (e.g., "every monday, every friday")
+        if lowercasedSchedule.contains("every") && (lowercasedSchedule.contains("monday") || 
+           lowercasedSchedule.contains("tuesday") || lowercasedSchedule.contains("wednesday") || 
+           lowercasedSchedule.contains("thursday") || lowercasedSchedule.contains("friday") || 
+           lowercasedSchedule.contains("saturday") || lowercasedSchedule.contains("sunday")) {
+            
+            // Set to Interval tab, Weekly option
+            selectedTab = 0
+            selectedSchedule = "Weekly"
+            
+            // Parse the days
+            var parsedDays: Set<String> = []
+            let dayMappingReverse: [String: String] = [
+                "monday": "MON",
+                "tuesday": "TUE", 
+                "wednesday": "WED",
+                "thursday": "THU",
+                "friday": "FRI",
+                "saturday": "SAT",
+                "sunday": "SUN"
+            ]
+            
+            for (fullDay, shortDay) in dayMappingReverse {
+                if lowercasedSchedule.contains(fullDay) {
+                    parsedDays.insert(shortDay)
+                    print("🔍 SCHEDULE SHEET INIT - Found \(fullDay) → \(shortDay)")
+                }
+            }
+            
+            selectedWeekDays = parsedDays
+            print("🔍 SCHEDULE SHEET INIT - Set selectedWeekDays: \(selectedWeekDays)")
+            
+        } else if lowercasedSchedule.contains("days a week") {
+            // Handle frequency-based schedules like "2 days a week"
+            selectedTab = 1 // Frequency tab
+            selectedFrequency = "Weekly"
+            
+            // Extract the number
+            if let number = extractNumber(from: schedule) {
+                weeklyValue = number
+                print("🔍 SCHEDULE SHEET INIT - Set weeklyValue: \(weeklyValue)")
+            }
+            
+        } else if lowercasedSchedule.contains("days a month") {
+            // Handle monthly frequency schedules like "3 days a month"
+            selectedTab = 1 // Frequency tab
+            selectedFrequency = "Monthly"
+            
+            // Extract the number
+            if let number = extractNumber(from: schedule) {
+                monthlyValue = number
+                print("🔍 SCHEDULE SHEET INIT - Set monthlyValue: \(monthlyValue)")
+            }
+            
+        } else {
+            // Handle basic daily schedules like "Everyday", "Weekdays", "Weekends"
+            selectedTab = 0 // Interval tab
+            selectedSchedule = "Daily"
+            selectedDays = schedule
+            print("🔍 SCHEDULE SHEET INIT - Set daily schedule: \(schedule)")
+        }
+    }
+    
+    private func extractNumber(from schedule: String) -> Int? {
+        let pattern = #"(\d+)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
     var body: some View {
         BaseBottomSheet(
             title: "Schedule",
@@ -378,7 +458,7 @@ struct ScheduleBottomSheet: View {
         .onAppear {
             // Initialize schedule if editing
             if let initialSchedule = initialSchedule {
-                selectedDays = initialSchedule
+                parseAndSetInitialSchedule(initialSchedule)
             }
         }
     }
