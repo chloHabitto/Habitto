@@ -675,11 +675,11 @@ struct HomeTabView: View {
                     VStack(spacing: 4) {
                         Text(dayAbbreviation(for: date))
                             .font(.appLabelSmall)
-                            .foregroundColor(textColor(for: date))
+                            .foregroundColor(dayLabelColor(for: date))
                         
                         Text("\(Calendar.current.component(.day, from: date))")
                             .font(dateFont(for: date))
-                            .foregroundColor(textColor(for: date))
+                            .foregroundColor(dayNumberColor(for: date))
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
@@ -717,7 +717,7 @@ struct HomeTabView: View {
         return Color.clear
     }
     
-    private func textColor(for date: Date) -> Color {
+    private func dayLabelColor(for date: Date) -> Color {
         let calendar = Calendar.current
         let today = Date()
         
@@ -736,7 +736,35 @@ struct HomeTabView: View {
             return .text01
         }
         
-        // For all other dates, use text04
+        // For all other dates (past and future), use text04 for day labels
+        return .text04
+    }
+    
+    private func dayNumberColor(for date: Date) -> Color {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Normalize dates to start of day for comparison
+        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedToday = calendar.startOfDay(for: today)
+        let normalizedSelected = calendar.startOfDay(for: selectedDate)
+        
+        // If this is today, use white text for contrast against primary background
+        if normalizedDate == normalizedToday {
+            return .white
+        }
+        
+        // If this is the selected date (but not today), use text01 for better contrast
+        if normalizedDate == normalizedSelected {
+            return .text01
+        }
+        
+        // If this is a past date, use text06
+        if normalizedDate < normalizedToday {
+            return .text06
+        }
+        
+        // For future dates, use text04
         return .text04
     }
     
