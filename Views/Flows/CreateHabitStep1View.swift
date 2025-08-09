@@ -30,14 +30,8 @@ struct CreateHabitStep1View: View {
     @FocusState private var isNameFieldFocused: Bool
     @FocusState private var isDescriptionFieldFocused: Bool
     
-    // Performance optimization: Ultra-minimal initial loading
-    @State private var isViewFullyLoaded = false
-    @State private var isHeaderLoaded = false
-    @State private var isComplexElementsLoaded = false
-    
-    // Performance optimization: Background processing
-    @State private var processedColorName: String = "Navy"
-    @State private var processedIconDisplayValue: String = ""
+    // Simplified state management to prevent hangs
+    @State private var isViewLoaded = false
     
     // Cache screen width to avoid repeated UIScreen.main.bounds.width access
     private let screenWidth = UIScreen.main.bounds.width
@@ -197,32 +191,28 @@ struct CreateHabitStep1View: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header - load immediately
-            if isHeaderLoaded {
-                CreateHabitHeader(
-                    stepNumber: 1,
-                    onCancel: onCancel
-                )
-            }
+            // Header - always show
+            CreateHabitHeader(
+                stepNumber: 1,
+                onCancel: onCancel
+            )
             
-                        // Main content with LazyVStack for maximum performance
+            // Main content with simplified structure
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 16) {
-                    // Name field - always visible for immediate keyboard response
+                VStack(spacing: 16) {
+                    // Name field - immediate keyboard response
                     OptimizedTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused)
-                        .id("nameField")
                     
-                    // Description field - always visible
+                    // Description field
                     OptimizedTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused)
-                        .id("descriptionField")
                     
-                    // Color and Icon selection - lazy loaded for performance
-                    if isComplexElementsLoaded {
-                        LazyVStack(spacing: 16) {
+                    // Color and Icon selection
+                    if isViewLoaded {
+                        VStack(spacing: 16) {
                             VisualSelectionRow(
                                 title: "Colour",
                                 color: color,
-                                value: processedColorName,
+                                value: getColorName(for: color),
                                 action: { showingColorSheet = true }
                             )
                             
@@ -230,13 +220,13 @@ struct CreateHabitStep1View: View {
                                 title: "Icon",
                                 color: color,
                                 icon: icon,
-                                value: processedIconDisplayValue,
+                                value: getIconDisplayValue(icon),
                                 action: { showingIconSheet = true }
                             )
                         }
                         
-                        // Habit type selection - lazy loaded
-                        LazyVStack(alignment: .leading, spacing: 12) {
+                        // Habit type selection
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Habit Type")
                                 .font(.appTitleMedium)
                                 .foregroundColor(.text01)
@@ -244,16 +234,12 @@ struct CreateHabitStep1View: View {
                             HStack(spacing: 12) {
                                 // Habit Building button
                                 HabitTypeButton(title: "Habit Building", isSelected: isFormationSelected) {
-                                    withAnimation(.easeInOut(duration: 0.1)) {
-                                        habitType = .formation
-                                    }
+                                    habitType = .formation
                                 }
                                 
                                 // Habit Breaking button
                                 HabitTypeButton(title: "Habit Breaking", isSelected: isBreakingSelected) {
-                                    withAnimation(.easeInOut(duration: 0.1)) {
-                                        habitType = .breaking
-                                    }
+                                    habitType = .breaking
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -266,19 +252,6 @@ struct CreateHabitStep1View: View {
                                 .stroke(.outline, lineWidth: 1.5)
                         )
                         .cornerRadius(12)
-                    } else if isViewFullyLoaded {
-                        // Loading placeholder for non-essential elements
-                        VStack(spacing: 16) {
-                            ForEach(0..<3, id: \.self) { _ in
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(.surface)
-                                    .frame(height: 48)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(.outline, lineWidth: 1.5)
-                                    )
-                            }
-                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -318,32 +291,10 @@ struct CreateHabitStep1View: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            // Load header immediately
-            isHeaderLoaded = true
-            
-            // Process expensive operations in background
-            DispatchQueue.global(qos: .background).async {
-                let colorName = self.getColorName(for: color)
-                let iconDisplayValue = self.getIconDisplayValue(icon)
-                
-                DispatchQueue.main.async {
-                    self.processedColorName = colorName
-                    self.processedIconDisplayValue = iconDisplayValue
-                }
+            // Simple loading - no complex progressive loading to prevent hangs
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isViewLoaded = true
             }
-            
-            // Load remaining elements progressively with reduced delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
-                isViewFullyLoaded = true
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
-                isComplexElementsLoaded = true
-            }
-        }
-        .onChange(of: icon) { _, newIcon in
-            // Update processed icon display value when icon changes
-            processedIconDisplayValue = getIconDisplayValue(newIcon)
         }
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(

@@ -19,10 +19,15 @@ class CoreDataManager: ObservableObject {
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         
-        // Enable CloudKit sync
-        description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
-            containerIdentifier: "iCloud.com.chloe-lee.Habitto"
-        )
+        // Enable CloudKit sync (but not in previews)
+        let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        if !isPreview {
+            description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+                containerIdentifier: "iCloud.com.chloe-lee.Habitto"
+            )
+        } else {
+            print("ℹ️ Running in SwiftUI Preview - CloudKit sync disabled")
+        }
         
         // Load the persistent stores
         container.loadPersistentStores { _, error in

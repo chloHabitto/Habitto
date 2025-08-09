@@ -23,7 +23,7 @@ struct KeyboardHandlingModifier: ViewModifier {
     }
 }
 
-// MARK: - Focus State Manager
+// MARK: - Simple Focus State Manager
 class FocusStateManager: ObservableObject {
     @Published var isNameFieldFocused: Bool = false
     @Published var isGoalNumberFocused: Bool = false
@@ -31,44 +31,40 @@ class FocusStateManager: ObservableObject {
     @Published var isBaselineFieldFocused: Bool = false
     @Published var isTargetFieldFocused: Bool = false
     
+    // Simplified focus methods to prevent UI hangs
     func focusNameField() {
-        isNameFieldFocused = true
-        isGoalNumberFocused = false
-        isDescriptionFieldFocused = false
-        isBaselineFieldFocused = false
-        isTargetFieldFocused = false
+        DispatchQueue.main.async {
+            self.dismissAll()
+            self.isNameFieldFocused = true
+        }
     }
     
     func focusGoalNumberField() {
-        isNameFieldFocused = false
-        isGoalNumberFocused = true
-        isDescriptionFieldFocused = false
-        isBaselineFieldFocused = false
-        isTargetFieldFocused = false
+        DispatchQueue.main.async {
+            self.dismissAll()
+            self.isGoalNumberFocused = true
+        }
     }
     
     func focusDescriptionField() {
-        isNameFieldFocused = false
-        isGoalNumberFocused = false
-        isDescriptionFieldFocused = true
-        isBaselineFieldFocused = false
-        isTargetFieldFocused = false
+        DispatchQueue.main.async {
+            self.dismissAll()
+            self.isDescriptionFieldFocused = true
+        }
     }
     
     func focusBaselineField() {
-        isNameFieldFocused = false
-        isGoalNumberFocused = false
-        isDescriptionFieldFocused = false
-        isBaselineFieldFocused = true
-        isTargetFieldFocused = false
+        DispatchQueue.main.async {
+            self.dismissAll()
+            self.isBaselineFieldFocused = true
+        }
     }
     
     func focusTargetField() {
-        isNameFieldFocused = false
-        isGoalNumberFocused = false
-        isDescriptionFieldFocused = false
-        isBaselineFieldFocused = false
-        isTargetFieldFocused = true
+        DispatchQueue.main.async {
+            self.dismissAll()
+            self.isTargetFieldFocused = true
+        }
     }
     
     func dismissAll() {

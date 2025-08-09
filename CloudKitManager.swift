@@ -5,9 +5,9 @@ import SwiftUI
 class CloudKitManager: ObservableObject {
     static let shared = CloudKitManager()
     
-    private let container = CKContainer(identifier: "iCloud.com.chloe-lee.Habitto")
-    private let privateDatabase: CKDatabase
-    private let publicDatabase: CKDatabase
+    private let container: CKContainer?
+    private let privateDatabase: CKDatabase?
+    private let publicDatabase: CKDatabase?
     
     @Published var isSignedIn = false
     @Published var syncStatus: SyncStatus = .idle
@@ -21,13 +21,32 @@ class CloudKitManager: ObservableObject {
     }
     
     private init() {
-        self.privateDatabase = container.privateCloudDatabase
-        self.publicDatabase = container.publicCloudDatabase
-        checkAuthenticationStatus()
+        // Don't initialize CloudKit in SwiftUI Previews
+        let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+        
+        if isPreview {
+            print("ℹ️ Running in SwiftUI Preview - CloudKit disabled")
+            self.container = nil
+            self.privateDatabase = nil
+            self.publicDatabase = nil
+            self.isSignedIn = false
+            self.syncStatus = .idle
+        } else {
+            let ckContainer = CKContainer(identifier: "iCloud.com.chloe-lee.Habitto")
+            self.container = ckContainer
+            self.privateDatabase = ckContainer.privateCloudDatabase
+            self.publicDatabase = ckContainer.publicCloudDatabase
+            checkAuthenticationStatus()
+        }
     }
     
     // MARK: - Authentication
     func checkAuthenticationStatus() {
+        guard let container = container else {
+            print("ℹ️ CloudKit container not available (likely in preview)")
+            return
+        }
+        
         container.accountStatus { [weak self] status, error in
             DispatchQueue.main.async {
                 switch status {
@@ -63,6 +82,11 @@ class CloudKitManager: ObservableObject {
     }
     
     private func fetchUserRecordID() {
+        guard let container = container else {
+            print("ℹ️ CloudKit container not available (likely in preview)")
+            return
+        }
+        
         container.fetchUserRecordID { [weak self] recordID, error in
             DispatchQueue.main.async {
                 if let recordID = recordID {
@@ -132,21 +156,35 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Custom Record Operations (for future features)
     func saveCustomRecord(_ record: CKRecord) async throws -> CKRecord {
+        guard let privateDatabase = privateDatabase else {
+            throw CKError(.notAuthenticated)
+        }
         return try await privateDatabase.save(record)
     }
     
     func fetchCustomRecords(ofType type: String) async throws -> [CKRecord] {
+        guard let privateDatabase = privateDatabase else {
+            throw CKError(.notAuthenticated)
+        }
         let query = CKQuery(recordType: type, predicate: NSPredicate(value: true))
         let result = try await privateDatabase.records(matching: query)
         return result.matchResults.compactMap { try? $0.1.get() }
     }
     
     func deleteCustomRecord(_ recordID: CKRecord.ID) async throws {
+        guard let privateDatabase = privateDatabase else {
+            throw CKError(.notAuthenticated)
+        }
         try await privateDatabase.deleteRecord(withID: recordID)
     }
     
     // MARK: - Subscription Management (for real-time updates)
     func subscribeToChanges() async {
+        guard let privateDatabase = privateDatabase else {
+            print("ℹ️ CloudKit not available for subscriptions (likely in preview)")
+            return
+        }
+        
         let subscription = CKDatabaseSubscription(subscriptionID: "habitto-changes")
         let notificationInfo = CKSubscription.NotificationInfo()
         notificationInfo.shouldSendContentAvailable = true

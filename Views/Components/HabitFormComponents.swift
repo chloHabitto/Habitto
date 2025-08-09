@@ -30,7 +30,7 @@ struct UnifiedInputElement: View {
                 .padding(.bottom, 12)
             
             HStack(spacing: 4) {
-                // Number input field - smaller width
+                // Number input field - smaller width with optimized focus handling
                 TextField("1", text: $numberText)
                     .font(.appBodyLarge)
                     .foregroundColor(.text01)
@@ -41,10 +41,16 @@ struct UnifiedInputElement: View {
                     .frame(width: 40)
                     .inputFieldStyle()
                     .onChange(of: internalIsFocused) { _, newValue in
-                        isFocused = newValue
+                        // Debounce focus changes to prevent UI hangs
+                        DispatchQueue.main.async {
+                            isFocused = newValue
+                        }
                     }
                     .onChange(of: isFocused) { _, newValue in
-                        internalIsFocused = newValue
+                        // Debounce focus changes to prevent UI hangs
+                        DispatchQueue.main.async {
+                            internalIsFocused = newValue
+                        }
                     }
                 
                 // Unit selector button - smaller width

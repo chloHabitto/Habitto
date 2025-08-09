@@ -175,11 +175,14 @@ struct HomeView: View {
         }
         .onAppear {
             print("🚀 HomeView: onAppear called!")
-            loadHabits()
+            loadHabitsOptimized()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             print("🏠 HomeView: App became active, updating streaks...")
-            state.updateAllStreaks()
+            // Debounce to prevent excessive updates
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                state.updateAllStreaks()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             print("🏠 HomeView: App going to background, backing up habits...")
@@ -199,9 +202,10 @@ struct HomeView: View {
                 state.habitToEdit = nil
             })
         }
-        .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
+        .confirmationDialog("Delete Habit", isPresented: $state.showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Cancel", role: .cancel) { 
                 print("❌ Delete cancelled")
+                state.habitToDelete = nil
             }
             Button("Delete", role: .destructive) {
                 if let habit = state.habitToDelete {
@@ -215,6 +219,7 @@ struct HomeView: View {
         } message: {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
+
         .fullScreenCover(isPresented: $state.showingStreakView) {
             StreakView(userHabits: state.habits)
         }
@@ -234,6 +239,33 @@ struct HomeView: View {
         print("🏠 HomeView: Validating streaks...")
         state.validateAllStreaks()
         print("🏠 HomeView: Streak validation completed")
+    }
+    
+    private func loadHabitsOptimized() {
+        print("🏠 HomeView: Loading habits from CoreDataAdapter...")
+        // The CoreDataAdapter already loads habits in its init()
+        print("🏠 HomeView: Habits loaded from CoreDataAdapter - total: \(state.habits.count)")
+        
+        // Only validate streaks if we have habits and haven't validated recently
+        if !state.habits.isEmpty {
+            print("🏠 HomeView: Validating streaks...")
+            // Use async to prevent UI blocking
+            DispatchQueue.global(qos: .background).async {
+                var updatedHabits = state.habits
+                for i in 0..<updatedHabits.count {
+                    if !updatedHabits[i].validateStreak() {
+                        print("🔄 HomeView: Correcting streak for habit: \(updatedHabits[i].name)")
+                        updatedHabits[i].correctStreak()
+                    }
+                }
+                
+                // Update on main thread
+                DispatchQueue.main.async {
+                    state.updateHabits(updatedHabits)
+                    print("🏠 HomeView: Streak validation completed")
+                }
+            }
+        }
     }
 }
 

@@ -10,6 +10,9 @@ class CoreDataAdapter: ObservableObject {
     @Published var habits: [Habit] = []
     @Published var syncStatus: String = "Initializing..."
     
+    // Performance optimization: Debounce frequent loadHabits calls
+    private var lastLoadTime: Date = Date.distantPast
+    
     private init() {
         initializeSync()
         
@@ -17,6 +20,16 @@ class CoreDataAdapter: ObservableObject {
         if coreDataManager.checkCoreDataHealth() {
             print("✅ CoreDataAdapter: Core Data is healthy, loading habits...")
             loadHabits()
+            
+            // Only migrate from UserDefaults if Core Data is empty and this is the first load
+            if habits.isEmpty {
+                print("⚠️ CoreDataAdapter: No habits found in Core Data, checking UserDefaults for migration...")
+                let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
+                if !userDefaultsHabits.isEmpty {
+                    print("🔄 CoreDataAdapter: Found \(userDefaultsHabits.count) habits in UserDefaults, migrating...")
+                    migrateFromUserDefaults()
+                }
+            }
         } else {
             print("⚠️ CoreDataAdapter: Core Data health check failed, falling back to UserDefaults...")
             let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
@@ -43,21 +56,19 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Load Habits
     func loadHabits() {
+        // Debounce frequent calls to prevent performance issues
+        let now = Date()
+        if now.timeIntervalSince(lastLoadTime) < 1.0 {
+            print("🔄 CoreDataAdapter: Skipping load (debounced)")
+            return
+        }
+        lastLoadTime = now
+        
         print("🔄 CoreDataAdapter: Loading habits from Core Data...")
         let habitEntities = coreDataManager.fetchHabits()
         print("🔄 CoreDataAdapter: Found \(habitEntities.count) habit entities")
         habits = habitEntities.map { $0.toHabit() }
         print("🔄 CoreDataAdapter: Converted to \(habits.count) habits")
-        
-        // If no habits found in Core Data, try to migrate from UserDefaults
-        if habits.isEmpty {
-            print("⚠️ CoreDataAdapter: No habits found in Core Data, checking UserDefaults...")
-            let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
-            if !userDefaultsHabits.isEmpty {
-                print("🔄 CoreDataAdapter: Found \(userDefaultsHabits.count) habits in UserDefaults, migrating...")
-                migrateFromUserDefaults()
-            }
-        }
     }
     
     // MARK: - Save Habits
@@ -89,11 +100,12 @@ class CoreDataAdapter: ObservableObject {
     // MARK: - Create Habit
     func createHabit(_ habit: Habit) {
         print("🔄 CoreDataAdapter: Creating habit: \(habit.name)")
+        print("🔄 CoreDataAdapter: Original habit ID: \(habit.id)")
         
         // Try to create in Core Data first
         do {
-            _ = try coreDataManager.createHabit(from: habit)
-            print("🔄 CoreDataAdapter: Habit created in Core Data, loading habits...")
+            let createdEntity = try coreDataManager.createHabit(from: habit)
+            print("🔄 CoreDataAdapter: Habit created in Core Data with ID: \(createdEntity.id?.uuidString ?? "nil")")
             loadHabits()
             print("🔄 CoreDataAdapter: Habits loaded, total: \(habits.count)")
         } catch {
@@ -137,8 +149,14 @@ class CoreDataAdapter: ObservableObject {
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
         print("🗑️ CoreDataAdapter: Starting delete for habit: \(habit.name)")
+        print("🗑️ CoreDataAdapter: Habit ID: \(habit.id)")
         let habitEntities = coreDataManager.fetchHabits()
         print("🗑️ CoreDataAdapter: Found \(habitEntities.count) habit entities")
+        
+        // Debug: Print entity details for first few entities
+        for (index, entity) in habitEntities.prefix(3).enumerated() {
+            print("🗑️ CoreDataAdapter: Entity [\(index)]: ID=\(entity.id?.uuidString ?? "nil"), Name=\(entity.name ?? "nil")")
+        }
         
         if let entity = habitEntities.first(where: { $0.id == habit.id }) {
             print("🗑️ CoreDataAdapter: Found matching entity, deleting...")
@@ -147,6 +165,12 @@ class CoreDataAdapter: ObservableObject {
                 print("🗑️ CoreDataAdapter: Entity deleted, reloading habits...")
                 loadHabits()
                 print("🗑️ CoreDataAdapter: Habits reloaded, total: \(habits.count)")
+                
+                // Also remove from UserDefaults backup to prevent restoration
+                var currentHabits = HabitStorageManager.shared.loadHabits()
+                currentHabits.removeAll { $0.id == habit.id }
+                HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+                print("🗑️ CoreDataAdapter: Habit also removed from UserDefaults backup")
             } catch {
                 print("❌ CoreDataAdapter: Failed to delete habit in Core Data: \(error)")
                 print("🔄 CoreDataAdapter: Falling back to UserDefaults...")
@@ -160,6 +184,28 @@ class CoreDataAdapter: ObservableObject {
             }
         } else {
             print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
+            print("❌ CoreDataAdapter: Trying to find by name instead...")
+            
+            // Try to find by name as a fallback
+            if let entity = habitEntities.first(where: { $0.name == habit.name }) {
+                print("🗑️ CoreDataAdapter: Found entity by name, deleting...")
+                do {
+                    try coreDataManager.deleteHabit(entity)
+                    print("🗑️ CoreDataAdapter: Entity deleted by name, reloading habits...")
+                    loadHabits()
+                    print("🗑️ CoreDataAdapter: Habits reloaded, total: \(habits.count)")
+                    
+                    // Also remove from UserDefaults backup to prevent restoration
+                    var currentHabits = HabitStorageManager.shared.loadHabits()
+                    currentHabits.removeAll { $0.name == habit.name }
+                    HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+                    print("🗑️ CoreDataAdapter: Habit also removed from UserDefaults backup by name")
+                } catch {
+                    print("❌ CoreDataAdapter: Failed to delete habit by name in Core Data: \(error)")
+                }
+            } else {
+                print("❌ CoreDataAdapter: No entity found by name either for habit: \(habit.name)")
+            }
         }
     }
     
