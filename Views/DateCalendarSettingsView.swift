@@ -2,26 +2,53 @@ import SwiftUI
 
 struct DateCalendarSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedDateFormat: DateFormatOption = .dayMonthYear
-    @State private var selectedFirstDay: FirstDayOption = .monday
+    @StateObject private var datePreferences = DatePreferences.shared
+    
+    // Track original values to detect changes
+    @State private var originalDateFormat: DateFormatOption
+    @State private var originalFirstDay: FirstDayOption
+    
+    // Track current selections
+    @State private var selectedDateFormat: DateFormatOption
+    @State private var selectedFirstDay: FirstDayOption
+    
+    init() {
+        let currentDateFormat = DatePreferences.shared.dateFormat
+        let currentFirstDay = DatePreferences.shared.firstDayOfWeek
+        
+        self._originalDateFormat = State(initialValue: currentDateFormat)
+        self._originalFirstDay = State(initialValue: currentFirstDay)
+        self._selectedDateFormat = State(initialValue: currentDateFormat)
+        self._selectedFirstDay = State(initialValue: currentFirstDay)
+    }
+    
+    // Check if any changes were made
+    private var hasChanges: Bool {
+        return selectedDateFormat != originalDateFormat || selectedFirstDay != originalFirstDay
+    }
     
     var body: some View {
         VStack(spacing: 0) {
             // Top navigation bar
             topNavigationBar
             
-            // Main content
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Date Format Section
-                    dateFormatSection
-                    
-                    // First Day of Week Section
-                    firstDaySection
+            // Main content with save button
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Date Format Section
+                        dateFormatSection
+                        
+                        // First Day of Week Section
+                        firstDaySection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 100) // Extra bottom padding for save button
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
-                .padding(.bottom, 40)
+                
+                // Save button at bottom
+                saveButton
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -197,40 +224,45 @@ struct DateCalendarSettingsView: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
-}
-
-// MARK: - Data Models
-enum DateFormatOption: CaseIterable {
-    case dayMonthYear
-    case monthDayYear
-    case yearMonthDay
     
-    var example: String {
-        switch self {
-        case .dayMonthYear:
-            return "31/12/2025"
-        case .monthDayYear:
-            return "12/31/2025"
-        case .yearMonthDay:
-            return "2025-12-31"
+    // MARK: - Save Button
+    private var saveButton: some View {
+        VStack(spacing: 0) {
+            // Gradient overlay to fade content behind button
+            LinearGradient(
+                gradient: Gradient(colors: [Color(.systemGray6).opacity(0), Color(.systemGray6)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 20)
+            
+            // Button container
+            HStack {
+                HabittoButton.largeFillPrimary(
+                    text: "Save",
+                    state: hasChanges ? .default : .disabled,
+                    action: saveChanges
+                )
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+            .background(Color(.systemGray6))
         }
     }
     
-    var description: String {
-        switch self {
-        case .dayMonthYear:
-            return "Day/Month/Year"
-        case .monthDayYear:
-            return "Month/Day/Year"
-        case .yearMonthDay:
-            return "Year/Month/Day"
-        }
+    // MARK: - Save Action
+    private func saveChanges() {
+        // Update the preferences with selected values
+        datePreferences.dateFormat = selectedDateFormat
+        datePreferences.firstDayOfWeek = selectedFirstDay
+        
+        // Update original values to reflect the new saved state
+        originalDateFormat = selectedDateFormat
+        originalFirstDay = selectedFirstDay
+        
+        // Dismiss the view
+        dismiss()
     }
-}
-
-enum FirstDayOption: String, CaseIterable {
-    case monday = "Monday"
-    case sunday = "Sunday"
 }
 
 #Preview {

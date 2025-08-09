@@ -768,14 +768,11 @@ struct HomeTabView: View {
     
     // MARK: - Helper Functions
     private var formattedCurrentDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE dd MMMM"
-        return formatter.string(from: selectedDate)
+        return AppDateFormatter.shared.formatDisplayDate(selectedDate)
     }
     
     private func daysOfWeek(for weekOffset: Int) -> [Date] {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
         
         // For weekOffset 0, we want the current week that contains today
