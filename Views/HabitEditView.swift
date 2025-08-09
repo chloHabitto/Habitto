@@ -51,7 +51,8 @@ struct HabitEditView: View {
     @State private var showingColorSheet = false
     @State private var showingScheduleSheet = false
     @State private var showingReminderSheet = false
-    @State private var showingPeriodSheet = false
+    @State private var showingStartDateSheet = false
+    @State private var showingEndDateSheet = false
     
     // Focus states for text fields
     @FocusState private var isNameFieldFocused: Bool
@@ -337,19 +338,33 @@ struct HabitEditView: View {
                     showingReminderSheet = false
                 }, onRemindersUpdated: { _ in })
             }
-            .sheet(isPresented: $showingPeriodSheet) {
+            .sheet(isPresented: $showingStartDateSheet) {
                 PeriodBottomSheet(
                     isSelectingStartDate: true,
                     startDate: startDate,
+                    initialDate: startDate,
                     onStartDateSelected: { date in
                         startDate = date
-                        showingPeriodSheet = false
+                        showingStartDateSheet = false
                     },
+                    onEndDateSelected: { _ in }, // Not used for start date
+                    onRemoveEndDate: nil
+                )
+            }
+            .sheet(isPresented: $showingEndDateSheet) {
+                PeriodBottomSheet(
+                    isSelectingStartDate: false,
+                    startDate: startDate,
+                    initialDate: endDate ?? Date(),
+                    onStartDateSelected: { _ in }, // Not used for end date
                     onEndDateSelected: { date in
                         endDate = date
-                        showingPeriodSheet = false
+                        showingEndDateSheet = false
                     },
-                    onRemoveEndDate: nil
+                    onRemoveEndDate: {
+                        endDate = nil
+                        showingEndDateSheet = false
+                    }
                 )
             }
             .sheet(isPresented: $showingGoalUnitSheet) {
@@ -501,25 +516,7 @@ struct HabitEditView: View {
                 showingReminderSheet = false
             }, onRemindersUpdated: { _ in })
         }
-        .sheet(isPresented: $showingPeriodSheet) {
-            PeriodBottomSheet(
-                isSelectingStartDate: true,
-                startDate: startDate,
-                onStartDateSelected: { date in
-                    startDate = date
-                    showingPeriodSheet = false
-                },
-                onEndDateSelected: { date in
-                    endDate = date
-                    showingPeriodSheet = false
-                },
-                onRemoveEndDate: nil,
-                onResetStartDate: {
-                    startDate = Date()
-                    showingPeriodSheet = false
-                }
-            )
-        }
+
         .onAppear {
             // Initialize values for the new unified approach
             if selectedHabitType == .formation {
@@ -903,7 +900,7 @@ struct HabitEditView: View {
             HStack(spacing: 12) {
                 // Start Date
                 Button(action: {
-                    showingPeriodSheet = true
+                    showingStartDateSheet = true
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Start Date")
@@ -920,7 +917,7 @@ struct HabitEditView: View {
                 
                 // End Date
                 Button(action: {
-                    showingPeriodSheet = true
+                    showingEndDateSheet = true
                 }) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("End Date")
