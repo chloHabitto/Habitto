@@ -24,14 +24,26 @@ struct ScheduleBottomSheet: View {
     }
     
     private var pillTexts: [String] {
-        let sortedDays = selectedWeekDays.sorted()
+        // Sort days in chronological order (Mon -> Sun), not alphabetically
+        let weekdayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+        let sortedDays = selectedWeekDays.sorted { day1, day2 in
+            let index1 = weekdayOrder.firstIndex(of: day1) ?? 0
+            let index2 = weekdayOrder.firstIndex(of: day2) ?? 0
+            return index1 < index2
+        }
         return sortedDays.compactMap { day in
             ScheduleOptions.dayMapping[day]
         }
     }
     
     private var frequencyPillTexts: [String] {
-        let sortedDays = selectedFrequencyWeekDays.sorted()
+        // Sort days in chronological order (Mon -> Sun), not alphabetically
+        let weekdayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+        let sortedDays = selectedFrequencyWeekDays.sorted { day1, day2 in
+            let index1 = weekdayOrder.firstIndex(of: day1) ?? 0
+            let index2 = weekdayOrder.firstIndex(of: day2) ?? 0
+            return index1 < index2
+        }
         return sortedDays.compactMap { day in
             ScheduleOptions.dayMapping[day]
         }

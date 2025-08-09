@@ -193,23 +193,6 @@ struct HabitDetailView: View {
     // MARK: - Habit Details Section
     private var habitDetailsSection: some View {
         VStack(spacing: 16) {
-//            // Schedule
-//            HStack {
-//                Image(systemName: "calendar")
-//                    .font(.system(size: 16))
-//                    .foregroundColor(.text05)
-//                
-//                Text("Schedule")
-//                    .font(.appBodyMedium)
-//                    .foregroundColor(.text05)
-//                
-//                Spacer()
-//                
-//                Text(formatScheduleForDisplay(habit.schedule))
-//                    .font(.appTitleSmallEmphasised)
-//                    .foregroundColor(.primary)
-//            }
-            
             // Goal
             HStack {
                 Image(systemName: "flag")
@@ -222,9 +205,13 @@ struct HabitDetailView: View {
                 
                 Spacer()
                 
-                Text(habit.goal)
+                Text(sortGoalChronologically(habit.goal))
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.primary)
+                    .onAppear {
+                        print("🔍 HABIT DETAIL - Raw goal: '\(habit.goal)'")
+                        print("🔍 HABIT DETAIL - Sorted goal: '\(sortGoalChronologically(habit.goal))'")
+                    }
             }
         }
         .padding(.horizontal, 16)
@@ -368,26 +355,99 @@ struct HabitDetailView: View {
         onUpdateHabit?(updatedHabit)
     }
     
-    // Helper function to format schedule for display
-    private func formatScheduleForDisplay(_ schedule: String) -> String {
-        switch schedule {
-        case "Everyday":
-            return "Daily"
-        case "Weekdays":
-            return "Weekdays"
-        case "Weekends":
-            return "Weekends"
-        case "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday":
-            return "Every \(schedule)"
-        case let s where s.contains("times a week"):
-            return s // Keep as is for now
-        case let s where s.contains("times a month"):
-            return s // Keep as is for now
-        case let s where s.hasPrefix("Every ") && s.contains("days"):
-            return s // Keep as is for now
-        default:
-            return schedule
+    // Helper function to sort goal text chronologically 
+    private func sortGoalChronologically(_ goal: String) -> String {
+        // Goal strings are like "1 time on every friday, every monday" (both habit types now use "on")
+        // Legacy: "1 time per every friday, every monday" (old habit breaking format)
+        // We need to extract and sort the frequency part
+        
+        print("🔍 HABIT DETAIL GOAL SORT - Input: '\(goal)'")
+        
+        if goal.contains(" on ") {
+            // Both habit building and new habit breaking format: "1 time on every friday, every monday"  
+            let parts = goal.components(separatedBy: " on ")
+            if parts.count >= 2 {
+                let beforeOn = parts[0] // "1 time"
+                let frequency = parts[1] // "every friday, every monday"
+                
+                let sortedFrequency = sortScheduleChronologically(frequency)
+                let result = "\(beforeOn) on \(sortedFrequency)"
+                print("🔍 HABIT DETAIL GOAL SORT - Result: '\(result)'")
+                return result
+            }
+        } else if goal.contains(" per ") {
+            // Legacy habit breaking format: "1 time per every friday, every monday"
+            // Convert to "on" format for consistent display
+            let parts = goal.components(separatedBy: " per ")
+            if parts.count >= 2 {
+                let beforePer = parts[0] // "1 time"
+                let frequency = parts[1] // "every friday, every monday"
+                
+                let sortedFrequency = sortScheduleChronologically(frequency)
+                let result = "\(beforePer) on \(sortedFrequency)" // Changed "per" to "on"
+                print("🔍 HABIT DETAIL GOAL SORT - Converted legacy 'per' to 'on': '\(result)'")
+                return result
+            }
         }
+        
+        print("🔍 HABIT DETAIL GOAL SORT - No sorting needed, returning as-is")
+        return goal
+    }
+    
+    // Helper function to sort schedule text chronologically 
+    private func sortScheduleChronologically(_ schedule: String) -> String {
+        // Sort weekdays in chronological order for display
+        // e.g., "every friday, every monday" → "every monday, every friday"
+        
+        print("🔍 HABIT DETAIL SORT - Input: '\(schedule)'")
+        let lowercasedSchedule = schedule.lowercased()
+        
+        // Check if it contains multiple weekdays (be flexible with separators)
+        if (lowercasedSchedule.contains("every") || lowercasedSchedule.contains("monday") || 
+            lowercasedSchedule.contains("tuesday") || lowercasedSchedule.contains("wednesday") || 
+            lowercasedSchedule.contains("thursday") || lowercasedSchedule.contains("friday") || 
+            lowercasedSchedule.contains("saturday") || lowercasedSchedule.contains("sunday")) && 
+           (lowercasedSchedule.contains(",") || lowercasedSchedule.contains(" and ")) {
+            
+            print("🔍 HABIT DETAIL SORT - Detected multi-day schedule")
+            
+            // Handle different separators: ", " or " and " or ", and"
+            let dayPhrases: [String]
+            if schedule.contains(", and ") {
+                dayPhrases = schedule.components(separatedBy: ", and ")
+            } else if schedule.contains(" and ") {
+                dayPhrases = schedule.components(separatedBy: " and ")
+            } else {
+                dayPhrases = schedule.components(separatedBy: ", ")
+            }
+            
+            print("🔍 HABIT DETAIL SORT - Day phrases: \(dayPhrases)")
+            
+            // Sort by weekday order
+            let weekdayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+            
+            let sortedPhrases = dayPhrases.sorted { phrase1, phrase2 in
+                let lowercased1 = phrase1.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                let lowercased2 = phrase2.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Find which weekday each phrase contains
+                let day1Index = weekdayOrder.firstIndex { lowercased1.contains($0) } ?? 99
+                let day2Index = weekdayOrder.firstIndex { lowercased2.contains($0) } ?? 99
+                
+                print("🔍 HABIT DETAIL SORT - '\(phrase1.trimmingCharacters(in: .whitespacesAndNewlines))' (index \(day1Index)) vs '\(phrase2.trimmingCharacters(in: .whitespacesAndNewlines))' (index \(day2Index))")
+                return day1Index < day2Index
+            }
+            
+            // Clean up whitespace and rejoin
+            let cleanedPhrases = sortedPhrases.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            let result = cleanedPhrases.joined(separator: ", ")
+            print("🔍 HABIT DETAIL SORT - Sorted result: '\(result)'")
+            return result
+        }
+        
+        print("🔍 HABIT DETAIL SORT - Not a multi-day schedule, returning as-is")
+        // Return as-is if it's not a multi-day weekday schedule
+        return schedule
     }
     
     // Helper function to extract goal amount without schedule

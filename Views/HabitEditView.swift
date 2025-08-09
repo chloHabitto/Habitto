@@ -983,7 +983,7 @@ struct HabitEditView: View {
             // NEW UNIFIED APPROACH - Habit Breaking
             let targetInt = Int(targetNumber) ?? 1
             let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
-            let goalString = "\(targetNumber) \(targetPluralizedUnit) per \(targetFrequency)"
+            let goalString = "\(targetNumber) \(targetPluralizedUnit) on \(targetFrequency)"
             
             // For habit breaking, schedule is derived from target frequency
             let scheduleString = targetFrequency
@@ -1020,10 +1020,43 @@ struct HabitEditView: View {
     }
     
     // MARK: - Static Helper Functions
+    static func sortFrequencyChronologically(_ frequency: String) -> String {
+        // Sort weekdays in chronological order for display
+        // e.g., "every friday, every monday" → "every monday, every friday"
+        
+        let lowercasedFrequency = frequency.lowercased()
+        
+        // Check if it contains multiple weekdays
+        if lowercasedFrequency.contains("every") && lowercasedFrequency.contains(",") {
+            // Extract individual day phrases
+            let dayPhrases = frequency.components(separatedBy: ", ")
+            
+            // Sort by weekday order
+            let weekdayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+            
+            let sortedPhrases = dayPhrases.sorted { phrase1, phrase2 in
+                let lowercased1 = phrase1.lowercased()
+                let lowercased2 = phrase2.lowercased()
+                
+                // Find which weekday each phrase contains
+                let day1Index = weekdayOrder.firstIndex { lowercased1.contains($0) } ?? 99
+                let day2Index = weekdayOrder.firstIndex { lowercased2.contains($0) } ?? 99
+                
+                return day1Index < day2Index
+            }
+            
+            return sortedPhrases.joined(separator: ", ")
+        }
+        
+        // Return as-is if it's not a multi-day weekday frequency
+        return frequency
+    }
+    
     static func parseGoalString(_ goalString: String) -> (number: String, unit: String, frequency: String) {
         // Goal strings are in format:
         // Habit Building: "3 times on everyday" or "1 time on monday"
-        // Habit Breaking: "1 time per everyday" or "2 times per monday"
+        // Habit Breaking: "1 time on everyday" or "2 times on monday" (changed from "per" to "on")
+        // Legacy Habit Breaking: "1 time per everyday" (support old format)
         
         // Extract number (first part)
         let components = goalString.components(separatedBy: " ")
@@ -1031,10 +1064,13 @@ struct HabitEditView: View {
         
         // Extract unit and frequency
         if goalString.contains(" on ") {
-            // Habit building format: "3 times on everyday"
+            // Both habit building and new habit breaking format: "3 times on everyday"
             let parts = goalString.components(separatedBy: " on ")
             let beforeOn = parts[0] // "3 times"
-            let frequency = parts.count > 1 ? parts[1] : "everyday"
+            let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
+            
+            // Sort frequency chronologically before returning
+            let frequency = sortFrequencyChronologically(rawFrequency)
             
             // Extract unit from "3 times"
             let unitComponents = beforeOn.components(separatedBy: " ")
@@ -1042,10 +1078,13 @@ struct HabitEditView: View {
             
             return (number: number, unit: unit, frequency: frequency)
         } else if goalString.contains(" per ") {
-            // Habit breaking format: "1 time per everyday"
+            // Legacy habit breaking format: "1 time per everyday" (for backward compatibility)
             let parts = goalString.components(separatedBy: " per ")
             let beforePer = parts[0] // "1 time"
-            let frequency = parts.count > 1 ? parts[1] : "everyday"
+            let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
+            
+            // Sort frequency chronologically before returning
+            let frequency = sortFrequencyChronologically(rawFrequency)
             
             // Extract unit from "1 time"
             let unitComponents = beforePer.components(separatedBy: " ")
