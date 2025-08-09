@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoreTabView: View {
     @State private var isVacationModeEnabled = false
+    @State private var showingDateCalendarSettings = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -32,6 +33,9 @@ struct MoreTabView: View {
                 .padding(.top, 0)
                 .padding(.bottom, 20)
             }
+        }
+        .fullScreenCover(isPresented: $showingDateCalendarSettings) {
+            DateCalendarSettingsView()
         }
     }
     
@@ -97,7 +101,7 @@ struct MoreTabView: View {
                 title: "General Settings",
                 items: [
                     SettingItem(title: "Language", value: "English", hasChevron: true),
-                    SettingItem(title: "Region", value: "Netherlands", hasChevron: true),
+                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true),
                     SettingItem(title: "Appearance", value: "Light", hasChevron: true)
                 ]
             )
@@ -171,6 +175,11 @@ struct MoreTabView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
                 .background(Color.white)
+                .onTapGesture {
+                    if item.title == "Date & Calendar" {
+                        showingDateCalendarSettings = true
+                    }
+                }
                 
                 if index < items.count - 1 {
                     Divider()
