@@ -94,6 +94,7 @@ struct HomeTabView: View {
             LazyVStack(alignment: .leading, spacing: 12) {
                 if habitsForSelectedDate.isEmpty {
                     emptyStateView
+                        .frame(maxWidth: .infinity, alignment: .center)
                 } else {
                     ForEach(Array(habitsForSelectedDate.enumerated()), id: \.element.id) { index, habit in
                         habitRow(habit)

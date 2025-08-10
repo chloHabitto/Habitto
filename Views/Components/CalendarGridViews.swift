@@ -35,6 +35,7 @@ struct WeeklyCalendarGridView: View {
                     title: "No habits yet",
                     subtitle: "Create habits to see your progress"
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 VStack(spacing: 0) {
                     // Header row
@@ -173,6 +174,7 @@ struct MonthlyCalendarGridView: View {
                     title: "No habits yet",
                     subtitle: "Create habits to see your progress"
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 // Month weeks (4-5 weeks) - Performance optimization: Lazy loading
                 LazyVStack(spacing: 4) {
@@ -240,6 +242,7 @@ struct YearlyCalendarGridView: View {
                     title: "No habits yet",
                     subtitle: "Create habits to see your yearly progress"
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
             } else if isDataLoaded {
                 // Habit rows with yearly heatmap (365 days) - Performance optimization: Lazy loading
                 LazyVStack(spacing: 12) {
