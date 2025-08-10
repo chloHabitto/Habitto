@@ -425,6 +425,7 @@ struct MonthlyCalendarGridView: View {
 // MARK: - Yearly Calendar Grid
 struct YearlyCalendarGridView: View {
     let userHabits: [Habit]
+    let selectedWeekStartDate: Date
     let yearlyHeatmapData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]]
     let isDataLoaded: Bool
     let isLoadingProgress: Double
@@ -438,41 +439,38 @@ struct YearlyCalendarGridView: View {
                 )
                 .frame(maxWidth: .infinity, alignment: .center)
             } else if isDataLoaded {
-                // Habit rows with yearly heatmap (365 days) - Performance optimization: Lazy loading
-                LazyVStack(spacing: 12) {
+                // Individual habit tables with yearly heatmaps and statistics
+                LazyVStack(spacing: 16) {
                     ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
-                        VStack(spacing: 6) {
-                            // Habit name
+                        VStack(spacing: 0) {
+                            // Habit header
                             HStack(spacing: 8) {
-                                Rectangle()
-                                    .fill(habit.color)
-                                    .frame(width: 8, height: 8)
-                                    .cornerRadius(2)
+                                HabitIconInlineView(habit: habit)
                                 
                                 Text(habit.name)
                                     .font(.appBodyMedium)
                                     .foregroundColor(.text01)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .padding(.bottom, 12)
                             
-                            // Yearly heatmap (365 rectangles) - Optimized rendering
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
-                                ForEach(0..<365, id: \.self) { dayIndex in
-                                    let heatmapData = yearlyHeatmapData[index][dayIndex]
-                                    HeatmapCellView(
-                                        intensity: heatmapData.intensity,
-                                        isScheduled: heatmapData.isScheduled,
-                                        completionPercentage: heatmapData.completionPercentage
-                                    )
-                                    .frame(height: 4)
-                                    .aspectRatio(1, contentMode: .fit)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .clipped()
+                            // Yearly heatmap table for this habit (365 days)
+                            yearlyHeatmapTable(for: habit, index: index)
+                            
+                            // Summary statistics row
+                            summaryStatisticsView(for: habit)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 12)
+                                .padding(.bottom, 16)
                         }
-                        .padding(.vertical, 6)
-                        .id("\(habit.id)-\(index)") // Performance optimization: Stable ID for better SwiftUI performance
+                        .background(Color.grey50)
+                        .cornerRadius(16)
+                        .id("year-habit-\(habit.id)-\(index)")
                     }
                 }
             } else {
@@ -495,5 +493,165 @@ struct YearlyCalendarGridView: View {
                 .padding(.vertical, 40)
             }
         }
+    }
+    
+    // MARK: - Yearly Heatmap Table
+    @ViewBuilder
+    private func yearlyHeatmapTable(for habit: Habit, index: Int) -> some View {
+        VStack(spacing: 0) {
+            // Yearly heatmap (365 rectangles) - Optimized rendering
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
+                ForEach(0..<365, id: \.self) { dayIndex in
+                    let heatmapData = yearlyHeatmapData[index][dayIndex]
+                    HeatmapCellView(
+                        intensity: heatmapData.intensity,
+                        isScheduled: heatmapData.isScheduled,
+                        completionPercentage: heatmapData.completionPercentage
+                    )
+                    .frame(height: 4)
+                    .aspectRatio(1, contentMode: .fit)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .clipped()
+        }
+        .padding(.horizontal, 16)
+    }
+    
+    // MARK: - Helper View Methods
+    @ViewBuilder
+    private func summaryStatisticsView(for habit: Habit) -> some View {
+        HStack(spacing: 0) {
+            // Completion percentage
+            VStack(spacing: 4) {
+                Text("\(Int(calculateHabitCompletionPercentage(for: habit)))%")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Completion")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Vertical divider
+            Rectangle()
+                .fill(.outline)
+                .frame(width: 1, height: 40)
+            
+            // Completed days
+            VStack(spacing: 4) {
+                Text("\(calculateHabitCompletedDays(for: habit)) days")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Completed")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Vertical divider
+            Rectangle()
+                .fill(.outline)
+                .frame(width: 1, height: 40)
+            
+            // Consistency percentage
+            VStack(spacing: 4) {
+                Text("\(Int(calculateHabitConsistency(for: habit)))%")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Consistency")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 16)
+        .background(.surfaceContainer)
+        .cornerRadius(16)
+    }
+    
+    // MARK: - Helper Functions for Summary Statistics
+    private func calculateHabitCompletionPercentage(for habit: Habit) -> Double {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Calculate for the entire year based on selected week start date
+        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
+        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        
+        var totalGoal = 0
+        var totalCompleted = 0
+        
+        // Calculate for the entire year
+        var currentDate = startOfYear
+        while currentDate <= endOfYear && currentDate <= today {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                let goalAmount = parseGoalAmount(from: habit.goal)
+                let progress = habit.getProgress(for: currentDate)
+                totalGoal += goalAmount
+                totalCompleted += progress
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        if totalGoal == 0 {
+            return habit.isCompleted(for: today) ? 100.0 : 0.0
+        }
+        
+        return min(100.0, (Double(totalCompleted) / Double(totalGoal)) * 100.0)
+    }
+    
+    private func calculateHabitCompletedDays(for habit: Habit) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Calculate for the entire year based on selected week start date
+        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
+        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        
+        var completedDays = 0
+        var currentDate = startOfYear
+        
+        while currentDate <= endOfYear && currentDate <= today {
+            if habit.isCompleted(for: currentDate) {
+                completedDays += 1
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return completedDays
+    }
+    
+    private func calculateHabitConsistency(for habit: Habit) -> Double {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Calculate for the entire year based on selected week start date
+        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
+        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        
+        var scheduledDays = 0
+        var completedDays = 0
+        var currentDate = startOfYear
+        
+        while currentDate <= endOfYear && currentDate <= today {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                scheduledDays += 1
+                if habit.isCompleted(for: currentDate) {
+                    completedDays += 1
+                }
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        if scheduledDays == 0 {
+            return 0.0
+        }
+        
+        return (Double(completedDays) / Double(scheduledDays)) * 100.0
+    }
+    
+    private func parseGoalAmount(from goalString: String) -> Int {
+        return StreakDataCalculator.parseGoalAmount(from: goalString)
     }
 } 

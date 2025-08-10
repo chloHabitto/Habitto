@@ -130,6 +130,7 @@ struct StreakView: View {
                                         // Yearly view
                                         YearlyCalendarGridView(
                                             userHabits: userHabits,
+                                            selectedWeekStartDate: selectedWeekStartDate,
                                             yearlyHeatmapData: yearlyHeatmapData,
                                             isDataLoaded: isDataLoaded,
                                             isLoadingProgress: isLoadingProgress
@@ -137,8 +138,8 @@ struct StreakView: View {
                                     }
                                 }
                             
-                            // Summary Statistics - Only show for Weekly and Yearly tabs, not Monthly
-                            if selectedProgressTab != 1 {
+                            // Summary Statistics - Only show for Weekly tab, not Monthly or Yearly
+                            if selectedProgressTab == 0 {
                                 SummaryStatisticsView(
                                     completionRate: streakStatistics.completionRate,
                                     bestStreak: streakStatistics.bestStreak,
@@ -320,6 +321,7 @@ struct StreakView: View {
                     // Yearly view
                     YearlyCalendarGridView(
                         userHabits: userHabits,
+                        selectedWeekStartDate: selectedWeekStartDate,
                         yearlyHeatmapData: yearlyHeatmapData,
                         isDataLoaded: isDataLoaded,
                         isLoadingProgress: isLoadingProgress
