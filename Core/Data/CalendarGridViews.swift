@@ -557,7 +557,7 @@ struct YearlyCalendarGridView: View {
             let daysInYear = calendar.isLeapYear(selectedYear) ? 366 : 365
             
             // Main heatmap grid - flexible grid that fills available horizontal space
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 4, maximum: 8), spacing: 1), count: 40), spacing: 1) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 8, maximum: 12), spacing: 1), count: 40), spacing: 1) {
                 ForEach(0..<daysInYear, id: \.self) { dayIndex in
                     // Safely access the heatmap data
                     if index < yearlyHeatmapData.count && dayIndex < yearlyHeatmapData[index].count {
@@ -565,7 +565,8 @@ struct YearlyCalendarGridView: View {
                         HeatmapCellView(
                             intensity: heatmapData.intensity,
                             isScheduled: heatmapData.isScheduled,
-                            completionPercentage: heatmapData.completionPercentage
+                            completionPercentage: heatmapData.completionPercentage,
+                            rectangleSizePercentage: 0.8
                         )
                         .aspectRatio(1, contentMode: .fit)
                         .cornerRadius(2)

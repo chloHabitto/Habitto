@@ -103,7 +103,7 @@ struct StreakView: View {
                             VStack(spacing: 16) {
                                                         // Date range selector - show week for weekly, month for monthly, year for yearly
                         DateRangeSelectorView(
-                            displayText: selectedProgressTab == 2 ? "Year \(selectedYear)" : (selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText()),
+                            displayText: selectedProgressTab == 2 ? "\(selectedYear)" : (selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText()),
                             onTap: { 
                                 if selectedProgressTab == 2 {
                                     showingYearPicker = true

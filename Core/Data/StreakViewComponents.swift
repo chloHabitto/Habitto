@@ -237,17 +237,19 @@ struct HeatmapCellView: View {
     let intensity: Int
     let isScheduled: Bool
     let completionPercentage: Double
+    let rectangleSizePercentage: Double
     
-    init(intensity: Int, isScheduled: Bool = true, completionPercentage: Double = 0.0) {
+    init(intensity: Int, isScheduled: Bool, completionPercentage: Double, rectangleSizePercentage: Double = 0.6) {
         self.intensity = intensity
         self.isScheduled = isScheduled
         self.completionPercentage = completionPercentage
+        self.rectangleSizePercentage = rectangleSizePercentage
     }
     
     var body: some View {
         GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
-            let cellSize = size * 0.8 // Use 80% of available space for better spacing
+            let cellSize = size * rectangleSizePercentage // Use custom percentage for rectangle size
             
             ZStack {
                 // Background
@@ -264,7 +266,7 @@ struct HeatmapCellView: View {
                 } else {
                     // Show subtle indicator when not scheduled
                     Rectangle()
-                        .fill(.outline.opacity(0.3))
+                        .fill(.primaryContainer)
                         .frame(width: cellSize, height: cellSize)
                         .cornerRadius(max(2, cellSize * 0.2))
                 }
@@ -278,12 +280,12 @@ struct HeatmapCellView: View {
         let clampedPercentage = max(0.0, min(100.0, completionPercentage))
         
         // Map completion percentage to color intensity
-        // 0% = green50 (lightest)
+        // 0% = primaryContainer (lightest)
         // 100% = green600 (darkest)
         
         let selectedColor: Color
         if clampedPercentage == 0.0 {
-            selectedColor = Color("green50")
+            selectedColor = .primaryContainer
         } else if clampedPercentage >= 100.0 {
             selectedColor = Color("green600")
         } else if clampedPercentage >= 90.0 {
@@ -297,7 +299,7 @@ struct HeatmapCellView: View {
         } else if clampedPercentage >= 20.0 {
             selectedColor = Color("green100")
         } else {
-            selectedColor = Color("green50")
+            selectedColor = .primaryContainer
         }
         
         // Debug: Print color selection for troubleshooting
