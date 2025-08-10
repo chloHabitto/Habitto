@@ -97,18 +97,25 @@ struct ScheduledHabitItem: View {
             .opacity(abs(dragOffset) > 30 ? 1 : 0)
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
-        .highPriorityGesture(
-            DragGesture()
+        .gesture(
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
                 .onChanged { value in
-                    // Only respond to horizontal drags (ignore vertical scrolling)
-                    if abs(value.translation.width) > abs(value.translation.height) {
+                    // Only respond to horizontal drags with a clear horizontal preference
+                    let horizontalDistance = abs(value.translation.width)
+                    let verticalDistance = abs(value.translation.height)
+                    
+                    // Require significantly more horizontal movement than vertical
+                    if horizontalDistance > verticalDistance * 1.5 && horizontalDistance > 10 {
                         dragOffset = value.translation.width
                     }
                 }
                 .onEnded { value in
-                    // Only process if it was primarily a horizontal gesture
-                    if abs(value.translation.width) > abs(value.translation.height) {
-                        let threshold: CGFloat = 30 // Reduced threshold for easier swiping
+                    let horizontalDistance = abs(value.translation.width)
+                    let verticalDistance = abs(value.translation.height)
+                    
+                    // Only process if it was clearly a horizontal gesture
+                    if horizontalDistance > verticalDistance * 1.5 && horizontalDistance > 30 {
+                        let threshold: CGFloat = 30
                         let translationX = value.translation.width
                         
                         if translationX > threshold {
@@ -123,11 +130,6 @@ struct ScheduledHabitItem: View {
                             // Haptic feedback for increase
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                             impactFeedback.impactOccurred()
-                            
-                            // Visual feedback - briefly show green background
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                // This will be handled by the parent view if needed
-                            }
                         } else if translationX < -threshold {
                             // Swipe left - decrease progress by 1 (minimum 0)
                             let newProgress = max(0, currentProgress - 1)
@@ -141,16 +143,11 @@ struct ScheduledHabitItem: View {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
                         }
-                        
-                        // Reset drag offset with animation
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            dragOffset = 0
-                        }
-                    } else {
-                        // Reset drag offset if it was a vertical gesture
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            dragOffset = 0
-                        }
+                    }
+                    
+                    // Always reset drag offset
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        dragOffset = 0
                     }
                 }
         )

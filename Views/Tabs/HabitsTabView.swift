@@ -198,16 +198,20 @@ struct HabitsTabView: View {
                         // Reorder instructions when in edit mode
                         if isEditMode {
                             HStack {
-                                Image(systemName: "hand.draw.fill")
-                                    .foregroundColor(.accentColor)
-                                Text("Drag habits to reorder")
-                                    .font(.appBodySmall)
-                                    .foregroundColor(.text04)
+                                Spacer()
+                                HStack {
+                                    Image(systemName: "hand.draw.fill")
+                                        .foregroundColor(.accentColor)
+                                    Text("Drag habits to reorder")
+                                        .font(.appBodySmall)
+                                        .foregroundColor(.text04)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color.accentColor.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                Spacer()
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.accentColor.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
                             .padding(.horizontal, 16)
                         }
                         
@@ -296,6 +300,10 @@ struct HabitsTabView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 18)
                 .padding(.bottom, 20)
+            }
+            .refreshable {
+                // Refresh habits data when user pulls down
+                await refreshHabits()
             }
 
 
@@ -509,6 +517,23 @@ struct HabitsTabView: View {
                 dragOverItem = dragOver
                 insertionIndex = insertion
             }
+        }
+    }
+    
+    // Refresh habits data when user pulls down
+    private func refreshHabits() async {
+        // Refresh habits data from Core Data
+        await MainActor.run {
+            // Force reload habits from Core Data
+            CoreDataAdapter.shared.loadHabits(force: true)
+            
+            // Update the local habits order to match the refreshed data
+            let refreshedHabits = CoreDataAdapter.shared.habits
+            habitsOrder = refreshedHabits
+            
+            // Provide haptic feedback for successful refresh
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
         }
     }
     

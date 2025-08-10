@@ -161,6 +161,8 @@ class CoreDataManager: ObservableObject {
     func save() throws {
         let context = persistentContainer.viewContext
         
+        print("🔍 CoreDataManager: save() called, context.hasChanges = \(context.hasChanges)")
+        
         if context.hasChanges {
             try context.save()
             print("✅ CoreDataManager: Context saved successfully")
@@ -174,8 +176,12 @@ class CoreDataManager: ObservableObject {
         let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: false)]
         
+        // FIX: Explicitly fetch the completionHistory relationship to ensure it's loaded
+        request.relationshipKeyPathsForPrefetching = ["completionHistory"]
+        
         do {
             let habits = try context.fetch(request)
+            print("🔍 CoreDataManager: Fetched \(habits.count) habits with prefetched relationships")
             return habits
         } catch {
             print("❌ Fetch habits error: \(error)")
@@ -236,27 +242,44 @@ class CoreDataManager: ObservableObject {
     
     // MARK: - Mark Completion
     func markCompletion(for habitEntity: HabitEntity, date: Date, progress: Int) throws {
-        let dateKey = DateUtils.dateKey(for: date)
+        let dateKey = Self.dateKey(for: date)
+        print("🔍 CoreDataManager: markCompletion called for habit '\(habitEntity.name ?? "Unknown")' on \(dateKey) with progress \(progress)")
         
         // Check if a completion record already exists for this date
         if let existingRecords = habitEntity.completionHistory as? Set<CompletionRecordEntity>,
            let existingRecord = existingRecords.first(where: { $0.dateKey == dateKey }) {
             // Update existing record
+            print("🔄 CoreDataManager: Updating existing completion record")
             existingRecord.progress = Int32(progress)
         } else {
             // Create new completion record
+            print("🆕 CoreDataManager: Creating new completion record")
             let completionRecord = CompletionRecordEntity(context: context)
             completionRecord.dateKey = dateKey
             completionRecord.progress = Int32(progress)
             completionRecord.habit = habitEntity
+            
+            // FIX: Properly set up the bidirectional relationship
+            // This ensures Core Data recognizes the change to habitEntity
+            if let currentHistory = habitEntity.completionHistory as? Set<CompletionRecordEntity> {
+                var updatedHistory = currentHistory
+                updatedHistory.insert(completionRecord)
+                habitEntity.completionHistory = updatedHistory as NSSet
+                print("🔗 CoreDataManager: Updated existing completionHistory relationship with \(updatedHistory.count) records")
+            } else {
+                habitEntity.completionHistory = NSSet(array: [completionRecord])
+                print("🔗 CoreDataManager: Created new completionHistory relationship with 1 record")
+            }
         }
         
+        print("💾 CoreDataManager: About to save context...")
         try save()
+        print("✅ CoreDataManager: markCompletion completed successfully")
     }
     
     // MARK: - Get Progress
     func getProgress(for habitEntity: HabitEntity, date: Date) -> Int {
-        let dateKey = DateUtils.dateKey(for: date)
+        let dateKey = Self.dateKey(for: date)
         
         if let completionRecords = habitEntity.completionHistory as? Set<CompletionRecordEntity>,
            let record = completionRecords.first(where: { $0.dateKey == dateKey }) {

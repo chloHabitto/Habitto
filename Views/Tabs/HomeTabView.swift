@@ -91,17 +91,24 @@ struct HomeTabView: View {
     @ViewBuilder
     private var habitsListSection: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
+            LazyVStack(alignment: .leading, spacing: 12) {
                 if habitsForSelectedDate.isEmpty {
                     emptyStateView
                 } else {
-                    habitsListView
+                    ForEach(habitsForSelectedDate) { habit in
+                        habitRow(habit)
+                    }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)
-            .padding(.bottom, 20)
+            .padding(.bottom, 100)
         }
+        .refreshable {
+            // Refresh habits data when user pulls down
+            await refreshHabits()
+        }
+        .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
     }
     
     @ViewBuilder
@@ -121,14 +128,7 @@ struct HomeTabView: View {
         .padding(.vertical, 40)
     }
     
-    @ViewBuilder
-    private var habitsListView: some View {
-        VStack(spacing: 12) {
-            ForEach(habitsForSelectedDate) { habit in
-                habitRow(habit)
-            }
-        }
-    }
+
     
     private func habitRow(_ habit: Habit) -> some View {
         return ScheduledHabitItem(
@@ -406,7 +406,7 @@ struct HomeTabView: View {
             var instance = habitInstances[i]
             
             // Check if this instance was completed on its original date
-            let originalDateKey = DateUtils.dateKey(for: instance.originalDate)
+                            let originalDateKey = Habit.dateKey(for: instance.originalDate)
             let originalProgress = habit.completionHistory[originalDateKey] ?? 0
             
             if originalProgress > 0 {
@@ -422,7 +422,7 @@ struct HomeTabView: View {
             
             // Slide the instance forward until it's completed or reaches the end of the week
             while currentDate <= DateUtils.endOfWeek(for: targetDate) {
-                let dateKey = DateUtils.dateKey(for: currentDate)
+                let dateKey = Habit.dateKey(for: currentDate)
                 let progress = habit.completionHistory[dateKey] ?? 0
                 
                 if progress > 0 {
@@ -763,5 +763,25 @@ struct HomeTabView: View {
     
     private func isToday(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: Date())
+    }
+    
+    // Refresh habits data when user pulls down
+    private func refreshHabits() async {
+        // Add a small delay to make the refresh feel more responsive
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        // Refresh habits data from Core Data
+        await MainActor.run {
+            // Force reload habits from Core Data
+            CoreDataAdapter.shared.loadHabits(force: true)
+            
+            // Provide haptic feedback for successful refresh
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+            
+            // Additional success feedback
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
+        }
     }
 }

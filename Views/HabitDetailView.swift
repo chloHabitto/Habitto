@@ -350,7 +350,7 @@ struct HabitDetailView: View {
     private func updateHabitProgress(_ progress: Int) {
         // Update the habit's progress for the selected date
         var updatedHabit = habit
-        let dateKey = DateUtils.dateKey(for: selectedDate)
+        let dateKey = Habit.dateKey(for: selectedDate)
         updatedHabit.completionHistory[dateKey] = progress
         
         // Update the local habit state

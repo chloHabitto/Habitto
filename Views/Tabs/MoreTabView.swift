@@ -2,162 +2,204 @@ import SwiftUI
 
 struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
+    @State private var isVacationModeEnabled = false
+    @State private var showingDateCalendarSettings = false
     
     var body: some View {
-        WhiteSheetContainer(title: "More") {
+        WhiteSheetContainer(
+            headerContent: {
+                AnyView(
+                    VStack(spacing: 0) {
+                        // Trial Banner
+                        trialBanner
+                    }
+                )
+            }
+        ) {
+            // Settings content in main content area
             ScrollView {
-                VStack(spacing: 16) {
-                    // Settings Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Settings")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text02)
-                        
-                        VStack(spacing: 8) {
-                            Button(action: {
-                                state.showingStreakView = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "flame.fill")
-                                        .foregroundColor(.orange)
-                                    Text("View Streaks")
-                                        .foregroundColor(.text02)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.text05)
-                                }
-                                .padding()
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                            
-                            Button(action: {
-                                state.showingNotificationView = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "bell.fill")
-                                        .foregroundColor(.blue)
-                                    Text("Notifications")
-                                        .foregroundColor(.text02)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.text05)
-                                }
-                                .padding()
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                            
-                            Button(action: {
-                                state.cleanupDuplicateHabits()
-                            }) {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.yellow)
-                                    Text("Clean Up Duplicates")
-                                        .foregroundColor(.text02)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.text05)
-                                }
-                                .padding()
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
+                VStack(spacing: 0) {
+                    // Vacation Mode Section
+                    vacationModeSection
+                    
+                    // Divider after vacation mode
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
+                    
+                    // Settings Sections
+                    settingsSections
+                }
+                .padding(.horizontal, 0)
+                .padding(.top, 0)
+                .padding(.bottom, 20)
+            }
+        }
+        .fullScreenCover(isPresented: $showingDateCalendarSettings) {
+            DateCalendarSettingsView()
+        }
+    }
+    
+    // MARK: - Trial Banner
+    private var trialBanner: some View {
+        HStack {
+            Text("Start your 7-day Free Trial!")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.text01)
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.text01)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemGray5))
+        .cornerRadius(8)
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 16)
+    }
+    
+    // MARK: - Vacation Mode Section
+    private var vacationModeSection: some View {
+        HStack(spacing: 12) {
+            // Vacation Icon
+            Image("Icon-vacation")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .foregroundColor(.text01)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Vacation Mode")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.text01)
+                
+                Text("Pause all habit schedules & reminders")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(.text04)
+            }
+            
+            Spacer()
+            
+            // Toggle Switch
+            Toggle("", isOn: $isVacationModeEnabled)
+                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                .labelsHidden()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color.white)
+    }
+    
+    // MARK: - Settings Sections
+    private var settingsSections: some View {
+        VStack(spacing: 0) {
+            // General Settings Group
+            settingsGroup(
+                title: "General Settings",
+                items: [
+                    SettingItem(title: "Language", value: "English", hasChevron: true),
+                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true),
+                    SettingItem(title: "Appearance", value: "Light", hasChevron: true)
+                ]
+            )
+            
+            // Account/Notifications Group
+            settingsGroup(
+                title: "Account & Notifications",
+                items: [
+                    SettingItem(title: "Account", value: nil, hasChevron: true),
+                    SettingItem(title: "Notifications", value: nil, hasChevron: true)
+                ]
+            )
+            
+            // Support/Legal Group
+            settingsGroup(
+                title: "Support & Legal",
+                items: [
+                    SettingItem(title: "FAQ", value: nil, hasChevron: true),
+                    SettingItem(title: "Contact us", value: nil, hasChevron: true),
+                    SettingItem(title: "Send Feedback", value: nil, hasChevron: true),
+                    SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true)
+                ]
+            )
+            
+            // Version Information
+            VStack(spacing: 0) {
+                Spacer()
+                
+                Text("Habitto v1")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.text04)
+                    .padding(.bottom, 20)
+            }
+        }
+    }
+    
+    // MARK: - Settings Group Helper
+    private func settingsGroup(title: String, items: [SettingItem]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                HStack(spacing: 12) {
+                    // Heart Icon
+                    Image(systemName: "heart")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.text01)
+                        .frame(width: 24, height: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.text01)
                     }
                     
-                    // Data Management Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Data Management")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text02)
-                        
-                        VStack(spacing: 8) {
-                            Button(action: {
-                                state.updateAllStreaks()
-                            }) {
-                                HStack {
-                                    Image(systemName: "arrow.clockwise")
-                                        .foregroundColor(.green)
-                                    Text("Update All Streaks")
-                                        .foregroundColor(.text02)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.text05)
-                                }
-                                .padding()
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                            
-                            Button(action: {
-                                state.validateAllStreaks()
-                            }) {
-                                HStack {
-                                    Image(systemName: "checkmark.shield.fill")
-                                        .foregroundColor(.blue)
-                                    Text("Validate All Streaks")
-                                        .foregroundColor(.text02)
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.text05)
-                                }
-                                .padding()
-                                .background(.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(.outline, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                        }
-                    }
+                    Spacer()
                     
-                    // App Info Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("App Info")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text02)
+                    HStack(spacing: 4) {
+                        if let value = item.value {
+                            Text(value)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.text04)
+                        }
                         
-                        VStack(spacing: 8) {
-                            HStack {
-                                Image(systemName: "info.circle.fill")
-                                    .foregroundColor(.blue)
-                                Text("Version")
-                                    .foregroundColor(.text02)
-                                Spacer()
-                                Text("1.0.0")
-                                    .foregroundColor(.text05)
-                            }
-                            .padding()
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(.outline, lineWidth: 1)
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        if item.hasChevron {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.text04)
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color.white)
+                .onTapGesture {
+                    if item.title == "Date & Calendar" {
+                        showingDateCalendarSettings = true
+                    }
+                }
+                
+                if index < items.count - 1 {
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 56)
+                }
+                
+                // Add divider after the last item if it's the General Settings group
+                if index == items.count - 1 && title == "General Settings" {
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
+                }
+                
+                // Add divider after the last item if it's the Account & Notifications group
+                if index == items.count - 1 && title == "Account & Notifications" {
+                    Rectangle()
+                        .fill(Color(hex: "F0F0F6"))
+                        .frame(height: 8)
+                }
             }
         }
     }

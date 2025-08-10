@@ -267,7 +267,7 @@ struct Habit: Identifiable, Codable, Equatable {
         print("🔍 Habit '\(name)': stored streak=\(streak), true streak=\(trueStreak), valid=\(isValid)")
     }
     
-    private static func dateKey(for date: Date) -> String {
+    static func dateKey(for date: Date) -> String {
         return DateUtils.dateKey(for: date)
     }
     

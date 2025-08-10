@@ -91,18 +91,33 @@ class CoreDataAdapter: ObservableObject {
     // MARK: - Save Habits
     func saveHabits(_ habits: [Habit]) {
         do {
-            // Clear existing habits
+            print("🔄 CoreDataAdapter: saveHabits called with \(habits.count) habits")
+            
+            // FIX: Instead of deleting all habits, update existing ones to preserve completion records
             let existingEntities = coreDataManager.fetchHabits()
-            for entity in existingEntities {
-                try coreDataManager.deleteHabit(entity)
+            
+            for habit in habits {
+                if let existingEntity = existingEntities.first(where: { $0.id == habit.id }) {
+                    // Update existing habit (preserves completion records)
+                    try coreDataManager.updateHabit(existingEntity, with: habit)
+                    print("🔄 CoreDataAdapter: Updated existing habit: \(habit.name)")
+                } else {
+                    // Create new habit if it doesn't exist
+                    _ = try coreDataManager.createHabit(from: habit)
+                    print("🆕 CoreDataAdapter: Created new habit: \(habit.name)")
+                }
             }
             
-            // Create new habits
-            for habit in habits {
-                _ = try coreDataManager.createHabit(from: habit)
+            // Remove habits that no longer exist
+            for entity in existingEntities {
+                if !habits.contains(where: { $0.id == entity.id }) {
+                    try coreDataManager.deleteHabit(entity)
+                    print("🗑️ CoreDataAdapter: Deleted habit: \(entity.name ?? "Unknown")")
+                }
             }
             
             loadHabits(force: true)
+            print("✅ CoreDataAdapter: Habits saved/updated successfully")
         } catch {
             print("❌ CoreDataAdapter: Failed to save habits in Core Data: \(error)")
             print("🔄 CoreDataAdapter: Falling back to UserDefaults...")
@@ -277,14 +292,15 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Set Progress
     func setProgress(for habit: Habit, date: Date, progress: Int) {
-        print("🔄 CoreDataAdapter: Setting progress to \(progress) for habit '\(habit.name)' on \(DateUtils.dateKey(for: date))")
+        let dateKey = CoreDataManager.dateKey(for: date)
+        print("🔄 CoreDataAdapter: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
         
         let habitEntities = coreDataManager.fetchHabits()
         if let entity = habitEntities.first(where: { $0.id == habit.id }) {
             do {
                 // First, update the completion record
                 try coreDataManager.markCompletion(for: entity, date: date, progress: progress)
-                print("✅ CoreDataAdapter: Progress set to \(progress) for habit '\(habit.name)' on \(DateUtils.dateKey(for: date))")
+                print("✅ CoreDataAdapter: Progress set to \(progress) for habit '\(habit.name)' on \(dateKey)")
                 
                 // Save the context
                 try coreDataManager.save()
@@ -292,14 +308,13 @@ class CoreDataAdapter: ObservableObject {
                 
                 // Update the local habits array to reflect the change immediately
                 if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index].completionHistory[DateUtils.dateKey(for: date)] = progress
+                    habits[index].completionHistory[dateKey] = progress
                     print("✅ CoreDataAdapter: Local habits array updated")
                 }
                 
                 // Also backup to UserDefaults as a safety measure
                 var currentHabits = HabitStorageManager.shared.loadHabits()
                 if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-                    let dateKey = DateUtils.dateKey(for: date)
                     currentHabits[index].completionHistory[dateKey] = progress
                     HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
                     print("✅ CoreDataAdapter: Progress also backed up to UserDefaults")
@@ -319,7 +334,6 @@ class CoreDataAdapter: ObservableObject {
                 // Fallback to UserDefaults
                 var currentHabits = HabitStorageManager.shared.loadHabits()
                 if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-                    let dateKey = DateUtils.dateKey(for: date)
                     currentHabits[index].completionHistory[dateKey] = progress
                     HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
                     habits = currentHabits
@@ -333,7 +347,6 @@ class CoreDataAdapter: ObservableObject {
             // Fallback to UserDefaults
             var currentHabits = HabitStorageManager.shared.loadHabits()
             if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-                let dateKey = DateUtils.dateKey(for: date)
                 currentHabits[index].completionHistory[dateKey] = progress
                 HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
                 habits = currentHabits
@@ -441,6 +454,8 @@ extension HabitEntity {
         
         // Convert completion history
         var completionHistory: [String: Int] = [:]
+        print("🔍 CoreDataAdapter: Raw completionHistory property: \(String(describing: self.completionHistory))")
+        
         if let completionRecords = self.completionHistory as? Set<CompletionRecordEntity> {
             print("🔍 CoreDataAdapter: Converting \(completionRecords.count) completion records for habit '\(self.name ?? "Unknown")'")
             for record in completionRecords {
@@ -452,6 +467,8 @@ extension HabitEntity {
             }
         } else {
             print("🔍 CoreDataAdapter: No completion records found for habit '\(self.name ?? "Unknown")'")
+            print("🔍 CoreDataAdapter: completionHistory type: \(type(of: self.completionHistory))")
+            print("🔍 CoreDataAdapter: completionHistory is NSSet: \(self.completionHistory is NSSet)")
         }
         
         // Convert actual usage
