@@ -27,11 +27,13 @@ struct DropViewDelegate: DropDelegate {
     @Binding var dragOverItem: Habit?
     @Binding var insertionIndex: Int?
     
+    // Reference to parent view for debounced updates
+    let onDragStateUpdate: (Habit?, Int?) -> Void
+    
     func performDrop(info: DropInfo) -> Bool {
         guard let draggedHabit = draggedHabit else { return false }
         
         let fromIndex = habitsOrder.firstIndex(of: draggedHabit)
-        
         guard let fromIndex = fromIndex else { return false }
         
         // Use the insertion index if available, otherwise fall back to the item's current position
@@ -44,14 +46,20 @@ struct DropViewDelegate: DropDelegate {
         
         guard fromIndex != toIndex else { return false }
         
-        // Reorder the habits
-        var newOrder = habitsOrder
-        newOrder.remove(at: fromIndex)
+        // Haptic feedback for successful drop
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
         
-        // Adjust insertion index if we're moving an item from before the insertion point
-        let adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
-        newOrder.insert(draggedHabit, at: adjustedToIndex)
-        habitsOrder = newOrder
+        // Reorder the habits with animation
+        withAnimation(.easeInOut(duration: 0.3)) {
+            var newOrder = habitsOrder
+            newOrder.remove(at: fromIndex)
+            
+            // Adjust insertion index if we're moving an item from before the insertion point
+            let adjustedToIndex = fromIndex < toIndex ? toIndex - 1 : toIndex
+            newOrder.insert(draggedHabit, at: adjustedToIndex)
+            habitsOrder = newOrder
+        }
         
         // Clear the dragged habit and drag over state
         self.draggedHabit = nil
@@ -62,8 +70,8 @@ struct DropViewDelegate: DropDelegate {
     }
     
     func dropEntered(info: DropInfo) {
-        // Set the item being dragged over for visual feedback
-        dragOverItem = item
+        // Prevent rapid state changes that could cause blinking
+        guard dragOverItem != item else { return }
         
         // Calculate insertion index based on drop position
         if let _ = draggedHabit,
@@ -71,26 +79,33 @@ struct DropViewDelegate: DropDelegate {
             
             // Determine if we should insert before or after the current item
             // based on the drop position relative to the item's center
-            // For a typical habit item height of ~80-100 points, use 40-50 as the threshold
-            let itemHeight: CGFloat = 80
+            let itemHeight: CGFloat = 90
             let threshold = itemHeight / 2
             
+            let newInsertionIndex: Int
             if info.location.y > threshold {
                 // If drop is in lower half of item, insert after
-                insertionIndex = currentIndex + 1
+                newInsertionIndex = currentIndex + 1
             } else {
                 // If drop is in upper half of item, insert before
-                insertionIndex = currentIndex
+                newInsertionIndex = currentIndex
             }
+            
+            // Use debounced update to prevent rapid changes
+            onDragStateUpdate(item, newInsertionIndex)
         }
     }
     
     func dropExited(info: DropInfo) {
         // Clear the drag over state when leaving an item
         if dragOverItem == item {
-            dragOverItem = nil
-            insertionIndex = nil
+            onDragStateUpdate(nil, nil)
         }
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        // Provide real-time feedback during drag
+        return DropProposal(operation: .move)
     }
 }
 
@@ -102,6 +117,9 @@ struct HabitsTabView: View {
     @State private var habitsOrder: [Habit]
     @State private var dragOverItem: Habit? = nil
     @State private var insertionIndex: Int? = nil
+    
+    // Debounce timer for drag state updates
+    @State private var dragUpdateTimer: Timer?
 
     let habits: [Habit]
     let onDeleteHabit: (Habit) -> Void
@@ -177,43 +195,98 @@ struct HabitsTabView: View {
                         .padding(.vertical, 40)
                         .padding(.horizontal, 20)
                     } else {
+                        // Reorder instructions when in edit mode
+                        if isEditMode {
+                            HStack {
+                                Image(systemName: "hand.draw.fill")
+                                    .foregroundColor(.accentColor)
+                                Text("Drag habits to reorder")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text04)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.accentColor.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(.horizontal, 16)
+                        }
+                        
                         VStack(spacing: 12) {
-                            // Single insertion line - show only at the exact position
+                            // Enhanced insertion lines for better visual feedback
                             if isEditMode && insertionIndex != nil && draggedHabit != nil {
                                 if insertionIndex == 0 {
                                     // Top insertion line for dragging to the very beginning
-                                    Rectangle()
-                                        .fill(Color.accentColor)
-                                        .frame(height: 3)
-                                        .frame(maxWidth: .infinity)
-                                        .shadow(color: .accentColor.opacity(0.5), radius: 2)
-                                        .animation(.easeInOut(duration: 0.2), value: insertionIndex)
+                                    HStack {
+                                        Rectangle()
+                                            .fill(Color.accentColor)
+                                            .frame(height: 4)
+                                            .frame(maxWidth: .infinity)
+                                            .shadow(color: .accentColor.opacity(0.6), radius: 3)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 2)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .animation(.easeInOut(duration: 0.15), value: insertionIndex)
                                 } else if insertionIndex == habitsOrder.count {
                                     // Bottom insertion line for dragging to the very end
-                                    Rectangle()
-                                        .fill(Color.accentColor)
-                                        .frame(height: 3)
-                                        .frame(maxWidth: .infinity)
-                                        .shadow(color: .accentColor.opacity(0.5), radius: 2)
-                                        .animation(.easeInOut(duration: 0.2), value: insertionIndex)
+                                    HStack {
+                                        Rectangle()
+                                            .fill(Color.accentColor)
+                                            .frame(height: 4)
+                                            .frame(maxWidth: .infinity)
+                                            .shadow(color: .accentColor.opacity(0.6), radius: 3)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 2)
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .animation(.easeInOut(duration: 0.15), value: insertionIndex)
                                 }
                             }
                             
-                            ForEach(filteredHabits, id: \.id) { habit in
-                                habitDetailRow(habit)
-                                    .onDrag {
-                                        if isEditMode {
-                                            draggedHabit = habit
-                                            return NSItemProvider(object: habit.id.uuidString as NSString)
+                            ForEach(Array(filteredHabits.enumerated()), id: \.element.id) { index, habit in
+                                VStack(spacing: 0) {
+                                    // Insertion line between items when dragging
+                                    if isEditMode && insertionIndex != nil && draggedHabit != nil && insertionIndex == index {
+                                        HStack {
+                                            Rectangle()
+                                                .fill(Color.accentColor)
+                                                .frame(height: 4)
+                                                .frame(maxWidth: .infinity)
+                                                .shadow(color: .accentColor.opacity(0.6), radius: 3)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 2)
+                                                        .stroke(Color.white, lineWidth: 1)
+                                                )
                                         }
-                                        return NSItemProvider()
-                                    } preview: {
-                                        habitDetailRow(habit)
-                                            .scaleEffect(0.8)
-                                            .opacity(0.9)
-                                            .shadow(radius: 8)
+                                        .padding(.horizontal, 16)
+                                        .animation(.easeInOut(duration: 0.15), value: insertionIndex)
                                     }
-                                    .onDrop(of: [.text], delegate: createDropDelegate(for: habit))
+                                    
+                                    habitDetailRow(habit)
+                                        .onDrag {
+                                            if isEditMode {
+                                                // Haptic feedback when starting drag
+                                                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                                impactFeedback.impactOccurred()
+                                                
+                                                draggedHabit = habit
+                                                return NSItemProvider(object: habit.id.uuidString as NSString)
+                                            }
+                                            return NSItemProvider()
+                                        } preview: {
+                                            habitDetailRow(habit)
+                                                .scaleEffect(0.85)
+                                                .opacity(0.95)
+                                                .shadow(radius: 12, x: 0, y: 4)
+                                                .background(Color.white)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        }
+                                        .onDrop(of: [.text], delegate: createDropDelegate(for: habit))
+                                }
                             }
                         }
                         .padding(.top, isEditMode ? 8 : 0) // Add top padding when in edit mode
@@ -242,6 +315,11 @@ struct HabitsTabView: View {
         .onAppear {
             // Debug: Check for duplicate habits
             debugCheckForDuplicates()
+        }
+        .onDisappear {
+            // Clean up timer to prevent memory leaks
+            dragUpdateTimer?.invalidate()
+            dragUpdateTimer = nil
         }
 
     }
@@ -314,7 +392,7 @@ struct HabitsTabView: View {
                             .frame(width: 48, height: 48)
                     )
                     
-                    // Main habit item with jiggle animation
+                    // Main habit item with jiggle animation and drag feedback
                     AddedHabitItem(
                         habit: habit,
                         isEditMode: isEditMode,
@@ -353,8 +431,15 @@ struct HabitsTabView: View {
                     )
                     .modifier(JiggleAnimationModifier(isEditMode: isEditMode))
                     .animation(.easeInOut(duration: 0.3), value: isEditMode)
-                    
-                    Spacer()
+                    .overlay(
+                        // Visual feedback when item is being dragged over - only show when not being dragged
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(dragOverItem == habit && draggedHabit != habit ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: 2)
+                            .animation(.easeInOut(duration: 0.15), value: dragOverItem == habit && draggedHabit != habit)
+                    )
+                    .scaleEffect(draggedHabit == habit ? 0.98 : 1.0)
+                    .opacity(draggedHabit == habit ? 0.8 : 1.0)
+                    .animation(.easeInOut(duration: 0.1), value: draggedHabit == habit)
                 }
             } else {
                 // Normal mode: Just the habit item
@@ -394,27 +479,11 @@ struct HabitsTabView: View {
                         }
                     }
                 )
-                .modifier(JiggleAnimationModifier(isEditMode: isEditMode))
-                .animation(.easeInOut(duration: 0.3), value: isEditMode)
-            }
-            
-            // Individual item insertion line - show only when this specific item should display it
-            if isEditMode && insertionIndex != nil && draggedHabit != habit {
-                let currentIndex = habitsOrder.firstIndex(of: habit) ?? 0
-                
-                // Show line only when this item should display the insertion indicator
-                if insertionIndex == currentIndex {
-                    // Show line above this item (inserting before)
-                    Rectangle()
-                        .fill(Color.accentColor)
-                        .frame(height: 3)
-                        .frame(maxWidth: .infinity)
-                        .shadow(color: .accentColor.opacity(0.5), radius: 2)
-                        .animation(.easeInOut(duration: 0.2), value: insertionIndex)
-                }
             }
         }
     }
+    
+    // MARK: - Helper Methods
     
     // Helper function to create drop delegate
     private func createDropDelegate(for habit: Habit) -> DropViewDelegate {
@@ -424,8 +493,23 @@ struct HabitsTabView: View {
             draggedHabit: $draggedHabit,
             habitsOrder: $habitsOrder,
             dragOverItem: $dragOverItem,
-            insertionIndex: $insertionIndex
+            insertionIndex: $insertionIndex,
+            onDragStateUpdate: updateDragState
         )
+    }
+    
+    // Debounced drag state update to prevent blinking
+    private func updateDragState(dragOver: Habit?, insertion: Int?) {
+        // Cancel existing timer
+        dragUpdateTimer?.invalidate()
+        
+        // Set new timer for debounced update
+        dragUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { _ in
+            withAnimation(.easeInOut(duration: 0.1)) {
+                dragOverItem = dragOver
+                insertionIndex = insertion
+            }
+        }
     }
     
     // Debug method to check for duplicate habits
