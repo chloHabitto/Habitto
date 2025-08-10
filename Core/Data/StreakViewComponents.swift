@@ -322,7 +322,7 @@ struct SummaryStatisticsView: View {
             StatisticCardView(value: "\(consistencyRate)%", label: "Consistency")
         }
         .background(.surfaceContainer)
-        .cornerRadius(12)
+        .cornerRadius(16)
 //        .padding(.horizontal, 16)
     }
 }

@@ -186,8 +186,8 @@ struct MonthlyCalendarGridView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(.red)
+                            .padding(.top, 16)
+                            .padding(.bottom, 12)
                             
                             // Monthly heatmap table for this habit
                             monthlyHeatmapTable(for: habit)
@@ -195,16 +195,17 @@ struct MonthlyCalendarGridView: View {
                             // Summary statistics row
                             summaryStatisticsView(for: habit)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.top, 12)
+                                .padding(.bottom, 16)
                         }
                         .background(Color.grey50)
-                        .cornerRadius(8)
+                        .cornerRadius(16)
                         .id("month-habit-\(habit.id)-\(index)")
                     }
                 }
             }
         }
-        .padding(.horizontal, 16)
+//        .padding(.horizontal, 16)
     }
     
     // MARK: - Monthly Heatmap Table
@@ -216,24 +217,28 @@ struct MonthlyCalendarGridView: View {
                 // Empty cell for top-left corner - must match week label cell exactly
                 Rectangle()
                     .fill(.clear)
-                    .frame(width: 80, height: 32)
+                    .frame(minWidth: 0, maxWidth: .infinity)
+                    .frame(height: 32)
+                    .background(Color.white)
                     .overlay(
                         Rectangle()
                             .stroke(.outline, lineWidth: 1)
                     )
                 
                 // Day headers - must match heatmap cells exactly
-                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
                         .font(.appBodyMedium)
                         .foregroundColor(.text04)
                         .frame(width: 32, height: 32)
+                        .background(Color.white)
                         .overlay(
                             Rectangle()
                                 .stroke(.outline, lineWidth: 1)
                         )
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // Week rows with heatmap cells
             ForEach(0..<4, id: \.self) { weekIndex in
@@ -242,7 +247,9 @@ struct MonthlyCalendarGridView: View {
                     Text("Week \(weekIndex + 1)")
                         .font(.appBodyMedium)
                         .foregroundColor(.text04)
-                        .frame(width: 80, height: 32, alignment: .center)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+                        .frame(height: 32)
+                        .background(Color.white)
                         .overlay(
                             Rectangle()
                                 .stroke(.outline, lineWidth: 1)
@@ -261,14 +268,17 @@ struct MonthlyCalendarGridView: View {
                             completionPercentage: heatmapData.completionPercentage
                         )
                         .frame(width: 32, height: 32)
+                        .background(Color.white)
                         .overlay(
                             Rectangle()
                                 .stroke(.outline, lineWidth: 1)
                         )
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .padding(.horizontal, 16)
     }
     
     // MARK: - Helper View Methods
@@ -318,6 +328,9 @@ struct MonthlyCalendarGridView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .padding(.vertical, 16)
+        .background(.surfaceContainer)
+        .cornerRadius(16)
     }
     
     // MARK: - Helper Functions for Summary Statistics

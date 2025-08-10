@@ -134,12 +134,14 @@ struct StreakView: View {
                                     }
                                 }
                             
-                            // Summary Statistics
+                            // Summary Statistics - Only show for Weekly and Yearly tabs, not Monthly
+                            if selectedProgressTab != 1 {
                                 SummaryStatisticsView(
                                     completionRate: streakStatistics.completionRate,
                                     bestStreak: streakStatistics.bestStreak,
                                     consistencyRate: streakStatistics.consistencyRate
                                 )
+                            }
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, 16)
