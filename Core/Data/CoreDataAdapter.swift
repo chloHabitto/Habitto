@@ -489,7 +489,7 @@ extension HabitEntity {
         } else {
             print("🔍 CoreDataAdapter: No completion records found for habit '\(self.name ?? "Unknown")'")
             print("🔍 CoreDataAdapter: completionHistory type: \(type(of: self.completionHistory))")
-            print("🔍 CoreDataAdapter: completionHistory is NSSet: \(self.completionHistory is NSSet)")
+            print("🔍 CoreDataAdapter: completionHistory is NSSet: \(self.completionHistory != nil)")
         }
         
         // Convert actual usage

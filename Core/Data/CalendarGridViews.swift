@@ -521,6 +521,7 @@ struct YearlyCalendarGridView: View {
                                 .padding(.top, 12)
                                 .padding(.bottom, 16)
                         }
+                        .frame(maxWidth: .infinity)
                         .background(Color.grey50)
                         .cornerRadius(16)
                         .id("year-habit-\(habit.id)-\(index)")
@@ -546,6 +547,7 @@ struct YearlyCalendarGridView: View {
                 .padding(.vertical, 40)
             }
         }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Yearly Heatmap Table
@@ -556,8 +558,8 @@ struct YearlyCalendarGridView: View {
             let calendar = Calendar.current
             let daysInYear = calendar.isLeapYear(selectedYear) ? 366 : 365
             
-            // Main heatmap grid - flexible grid that fills available horizontal space
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 8, maximum: 12), spacing: 1), count: 40), spacing: 1) {
+            // Main heatmap grid - compact grid that respects container padding
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 8, maximum: 12), spacing: 1), count: 30), spacing: 1) {
                 ForEach(0..<daysInYear, id: \.self) { dayIndex in
                     // Safely access the heatmap data
                     if index < yearlyHeatmapData.count && dayIndex < yearlyHeatmapData[index].count {
@@ -579,9 +581,8 @@ struct YearlyCalendarGridView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
         }
+        .padding(.horizontal, 16)
     }
     
     // MARK: - Helper View Methods
