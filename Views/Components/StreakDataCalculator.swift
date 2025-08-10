@@ -3,6 +3,9 @@ import Foundation
 // MARK: - Streak Data Calculator
 class StreakDataCalculator {
     
+    // MARK: - Performance Optimization: Caching
+    private static let cacheManager = CacheManager<UUID, [Int]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
+    
     // MARK: - Streak Statistics
     static func calculateStreakStatistics(from habits: [Habit]) -> StreakStatistics {
         guard !habits.isEmpty else {
@@ -60,8 +63,19 @@ class StreakDataCalculator {
     
     // MARK: - Heatmap Data Generation
     static func generateYearlyDataFromHabits(_ habits: [Habit], startIndex: Int, itemsPerPage: Int) -> [[Int]] {
-        var yearlyData: [[Int]] = []
+        // Performance optimization: Check cache first
+        let cachedData = habits.compactMap { habit in
+            cacheManager.get(forKey: habit.id)
+        }
         
+        if !cachedData.isEmpty && cachedData.count == habits.count {
+            // Return cached data for the requested range
+            let endIndex = min(startIndex + itemsPerPage, cachedData.count)
+            return Array(cachedData[startIndex..<endIndex])
+        }
+        
+        // Cache miss or expired - calculate new data
+        var yearlyData: [[Int]] = []
         let endIndex = min(startIndex + itemsPerPage, habits.count)
         let habitsToProcess = Array(habits[startIndex..<endIndex])
         
@@ -78,6 +92,9 @@ class StreakDataCalculator {
             }
             
             yearlyData.append(habitYearlyData)
+            
+            // Cache this habit's data for future use
+            cacheManager.set(habitYearlyData, forKey: habit.id)
         }
         
         return yearlyData
@@ -399,6 +416,146 @@ class StreakDataCalculator {
         let range = match.range(at: 1)
         let numberString = (schedule as NSString).substring(with: range)
         return Int(numberString)
+    }
+    
+    // MARK: - Cache Management
+    static func clearCache() {
+        cacheManager.clear()
+    }
+    
+    static func invalidateCacheForHabit(_ habitId: UUID) {
+        cacheManager.remove(forKey: habitId)
+    }
+    
+    // MARK: - Async Background Processing
+    
+    /// Async version of generateYearlyDataFromHabits for background processing
+    static func generateYearlyDataFromHabitsAsync(
+        _ habits: [Habit], 
+        startIndex: Int, 
+        itemsPerPage: Int,
+        progress: @escaping (Double) -> Void = { _ in }
+    ) async -> [[Int]] {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                // Performance optimization: Check cache first
+                let cachedData = habits.compactMap { habit in
+                    cacheManager.get(forKey: habit.id)
+                }
+                
+                if !cachedData.isEmpty && cachedData.count == habits.count {
+                    // Return cached data for the requested range
+                    let endIndex = min(startIndex + itemsPerPage, cachedData.count)
+                    let result = Array(cachedData[startIndex..<endIndex])
+                    continuation.resume(returning: result)
+                    return
+                }
+                
+                // Cache miss or expired - calculate new data
+                var yearlyData: [[Int]] = []
+                let endIndex = min(startIndex + itemsPerPage, habits.count)
+                let habitsToProcess = Array(habits[startIndex..<endIndex])
+                
+                for (index, habit) in habitsToProcess.enumerated() {
+                    var habitYearlyData: [Int] = []
+                    
+                    let calendar = Calendar.current
+                    let today = Calendar.current.startOfDay(for: Date())
+                    
+                    for day in 0..<365 {
+                        let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
+                        let intensity = generateYearlyIntensity(for: habit, date: targetDate)
+                        habitYearlyData.append(intensity)
+                    }
+                    
+                    yearlyData.append(habitYearlyData)
+                    
+                    // Cache this habit's data for future use
+                    cacheManager.set(habitYearlyData, forKey: habit.id)
+                    
+                    // Report progress
+                    let progressValue = Double(index + 1) / Double(habitsToProcess.count)
+                    DispatchQueue.main.async {
+                        progress(progressValue)
+                    }
+                }
+                
+                continuation.resume(returning: yearlyData)
+            }
+        }
+    }
+    
+    /// Async version of calculateStreakStatistics for background processing
+    static func calculateStreakStatisticsAsync(
+        from habits: [Habit],
+        progress: @escaping (Double) -> Void = { _ in }
+    ) async -> StreakStatistics {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                guard !habits.isEmpty else {
+                    let result = StreakStatistics(
+                        currentStreak: 0,
+                        bestStreak: 0,
+                        averageStreak: 0,
+                        completionRate: 0,
+                        consistencyRate: 0
+                    )
+                    continuation.resume(returning: result)
+                    return
+                }
+                
+                let calendar = Calendar.current
+                let today = calendar.startOfDay(for: Date())
+                
+                // Calculate current streak
+                let totalCurrentStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
+                let currentStreak = totalCurrentStreak / habits.count
+                
+                DispatchQueue.main.async {
+                    progress(0.2)
+                }
+                
+                // Calculate best streak
+                let bestStreak = habits.map { $0.calculateTrueStreak() }.max() ?? 0
+                
+                DispatchQueue.main.async {
+                    progress(0.4)
+                }
+                
+                // Calculate average streak
+                let totalStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
+                let averageStreak = totalStreak / habits.count
+                
+                DispatchQueue.main.async {
+                    progress(0.6)
+                }
+                
+                // Calculate completion rate
+                let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
+                let completionRate = (completedHabitsToday * 100) / habits.count
+                
+                DispatchQueue.main.async {
+                    progress(0.8)
+                }
+                
+                // Calculate consistency rate
+                let consistencyRate = calculateConsistencyRate(for: habits, calendar: calendar, today: today)
+                
+                DispatchQueue.main.async {
+                    progress(1.0)
+                }
+                
+                let result = StreakStatistics(
+                    currentStreak: currentStreak,
+                    bestStreak: bestStreak,
+                    averageStreak: averageStreak,
+                    completionRate: completionRate,
+                    consistencyRate: consistencyRate
+                )
+                
+                continuation.resume(returning: result)
+            }
+        }
     }
 }
 

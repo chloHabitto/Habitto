@@ -7,7 +7,9 @@ struct StreakView: View {
     
     // Performance optimization: Cache expensive data
     @State private var yearlyHeatmapData: [[Int]] = []
-    @State private var isDataLoaded = false
+    @State private var isDataLoaded: Bool = false
+    @State private var isLoadingProgress: Double = 0.0
+    @State private var isCalculating: Bool = false
     let userHabits: [Habit]
     @State private var isExpanded = false
     @State private var dragOffset: CGFloat = 0
@@ -115,7 +117,8 @@ struct StreakView: View {
                                         YearlyCalendarGridView(
                                             userHabits: userHabits,
                                             yearlyHeatmapData: yearlyHeatmapData,
-                                            isDataLoaded: isDataLoaded
+                                            isDataLoaded: isDataLoaded,
+                                            isLoadingProgress: isLoadingProgress
                                         )
                                     }
                                 }
@@ -197,16 +200,32 @@ struct StreakView: View {
         streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: userHabits)
         
         // Load data on background thread to avoid blocking UI
-        DispatchQueue.global(qos: .userInitiated).async {
-            let yearlyData = StreakDataCalculator.generateYearlyDataFromHabits(
+        loadYearlyData()
+    }
+    
+    private func loadYearlyData() {
+        // Performance optimization: Use async background processing
+        isCalculating = true
+        isLoadingProgress = 0.0
+        
+        Task {
+            let yearlyData = await StreakDataCalculator.generateYearlyDataFromHabitsAsync(
                 self.userHabits,
                 startIndex: self.currentYearlyPage * self.yearlyItemsPerPage,
                 itemsPerPage: self.yearlyItemsPerPage
-            )
+            ) { progress in
+                // Update UI on main thread
+                DispatchQueue.main.async {
+                    self.isLoadingProgress = progress
+                }
+            }
             
-            DispatchQueue.main.async {
+            // Update UI on main thread
+            await MainActor.run {
                 self.yearlyHeatmapData = yearlyData
                 self.isDataLoaded = true
+                self.isCalculating = false
+                self.isLoadingProgress = 0.0
             }
         }
     }
@@ -243,7 +262,8 @@ struct StreakView: View {
                     YearlyCalendarGridView(
                         userHabits: userHabits,
                         yearlyHeatmapData: yearlyHeatmapData,
-                        isDataLoaded: isDataLoaded
+                        isDataLoaded: isDataLoaded,
+                        isLoadingProgress: isLoadingProgress
                     )
                 }
             }

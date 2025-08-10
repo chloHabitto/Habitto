@@ -215,7 +215,7 @@ struct HabitsTabView: View {
                             .padding(.horizontal, 16)
                         }
                         
-                        VStack(spacing: 12) {
+                        LazyVStack(spacing: 12) {
                             // Enhanced insertion lines for better visual feedback
                             if isEditMode && insertionIndex != nil && draggedHabit != nil {
                                 if insertionIndex == 0 {
@@ -290,6 +290,7 @@ struct HabitsTabView: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                         }
                                         .onDrop(of: [.text], delegate: createDropDelegate(for: habit))
+                                        .id("habit-\(habit.id)-\(index)") // Performance optimization: Stable ID
                                 }
                             }
                         }

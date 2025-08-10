@@ -95,8 +95,9 @@ struct HomeTabView: View {
                 if habitsForSelectedDate.isEmpty {
                     emptyStateView
                 } else {
-                    ForEach(habitsForSelectedDate) { habit in
+                    ForEach(Array(habitsForSelectedDate.enumerated()), id: \.element.id) { index, habit in
                         habitRow(habit)
+                            .id("home-habit-\(habit.id)-\(index)") // Performance optimization: Stable ID
                     }
                 }
             }
