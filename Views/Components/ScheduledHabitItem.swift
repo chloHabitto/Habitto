@@ -151,6 +151,10 @@ struct ScheduledHabitItem: View {
                     }
                 }
         )
+        .onTapGesture {
+            // Trigger the row tap callback when the habit item is tapped
+            onRowTap?()
+        }
 
         .onLongPressGesture {
             showingActionSheet = true
