@@ -18,6 +18,9 @@ class CoreDataAdapter: ObservableObject {
             print("✅ CoreDataAdapter: Core Data is healthy, loading habits...")
             loadHabits(force: true)
             
+            // Clean up any existing duplicate habits
+            cleanupDuplicateHabits()
+            
             // Only migrate from UserDefaults if Core Data is empty and this is the first load
             if habits.isEmpty {
                 print("⚠️ CoreDataAdapter: No habits found in Core Data, checking UserDefaults for migration...")
@@ -66,8 +69,23 @@ class CoreDataAdapter: ObservableObject {
         }
         
         let entities = coreDataManager.fetchHabits()
-        habits = entities.map { $0.toHabit() }
-        print("✅ CoreDataAdapter: Loaded \(habits.count) habits from Core Data")
+        let loadedHabits = entities.map { $0.toHabit() }
+        
+        // Deduplicate habits by ID to prevent duplicates
+        var uniqueHabits: [Habit] = []
+        var seenIds: Set<UUID> = []
+        
+        for habit in loadedHabits {
+            if !seenIds.contains(habit.id) {
+                uniqueHabits.append(habit)
+                seenIds.insert(habit.id)
+            } else {
+                print("⚠️ CoreDataAdapter: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+            }
+        }
+        
+        habits = uniqueHabits
+        print("✅ CoreDataAdapter: Loaded \(habits.count) unique habits from Core Data (filtered from \(loadedHabits.count) total)")
     }
     
     // MARK: - Save Habits
@@ -333,6 +351,45 @@ class CoreDataAdapter: ObservableObject {
         return 0
     }
     
+    // MARK: - Clean Up Duplicates
+    func cleanupDuplicateHabits() {
+        print("🔄 CoreDataAdapter: Starting duplicate cleanup...")
+        
+        let entities = coreDataManager.fetchHabits()
+        var seenIds: Set<UUID> = []
+        var duplicatesToRemove: [HabitEntity] = []
+        
+        for entity in entities {
+            if let id = entity.id {
+                if seenIds.contains(id) {
+                    duplicatesToRemove.append(entity)
+                    print("⚠️ CoreDataAdapter: Found duplicate habit entity with ID: \(id), name: \(entity.name ?? "Unknown") - will be removed")
+                } else {
+                    seenIds.insert(id)
+                }
+            }
+        }
+        
+        if !duplicatesToRemove.isEmpty {
+            print("🔄 CoreDataAdapter: Removing \(duplicatesToRemove.count) duplicate habits...")
+            
+            for duplicate in duplicatesToRemove {
+                do {
+                    try coreDataManager.deleteHabit(duplicate)
+                    print("✅ CoreDataAdapter: Removed duplicate habit: \(duplicate.name ?? "Unknown")")
+                } catch {
+                    print("❌ CoreDataAdapter: Failed to remove duplicate habit: \(error)")
+                }
+            }
+            
+            // Reload habits after cleanup
+            loadHabits(force: true)
+            print("✅ CoreDataAdapter: Duplicate cleanup completed, total habits: \(habits.count)")
+        } else {
+            print("✅ CoreDataAdapter: No duplicate habits found")
+        }
+    }
+    
     // MARK: - Migrate from UserDefaults
     func migrateFromUserDefaults() {
         print("🔄 CoreDataAdapter: Starting migration from UserDefaults...")
@@ -340,10 +397,25 @@ class CoreDataAdapter: ObservableObject {
         let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
         print("🔄 CoreDataAdapter: Found \(userDefaultsHabits.count) habits in UserDefaults")
         
+        // Check for existing habits in Core Data to avoid duplicates
+        let existingEntities = coreDataManager.fetchHabits()
+        let existingIds = Set(existingEntities.compactMap { $0.id })
+        
+        var migratedCount = 0
+        var skippedCount = 0
+        
         for habit in userDefaultsHabits {
+            // Skip if habit already exists in Core Data
+            if existingIds.contains(habit.id) {
+                print("⚠️ CoreDataAdapter: Habit '\(habit.name)' already exists in Core Data, skipping migration")
+                skippedCount += 1
+                continue
+            }
+            
             do {
                 _ = try coreDataManager.createHabit(from: habit)
                 print("✅ CoreDataAdapter: Migrated habit: \(habit.name)")
+                migratedCount += 1
             } catch {
                 print("❌ CoreDataAdapter: Failed to migrate habit '\(habit.name)': \(error)")
             }
@@ -351,7 +423,7 @@ class CoreDataAdapter: ObservableObject {
         
         // Reload habits after migration
         loadHabits(force: true)
-        print("✅ CoreDataAdapter: Migration completed, total habits: \(habits.count)")
+        print("✅ CoreDataAdapter: Migration completed - \(migratedCount) habits migrated, \(skippedCount) skipped, total habits: \(habits.count)")
     }
     
     // MARK: - Backup to UserDefaults

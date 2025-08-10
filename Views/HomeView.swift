@@ -73,6 +73,11 @@ class HomeViewState: ObservableObject {
         print("🔄 HomeView: Habits loaded from Core Data")
     }
     
+    func cleanupDuplicateHabits() {
+        print("🔄 HomeView: Cleaning up duplicate habits...")
+        coreDataAdapter.cleanupDuplicateHabits()
+    }
+    
     func updateAllStreaks() {
         print("🔄 HomeView: Updating all streaks...")
         for i in 0..<habits.count {
@@ -181,7 +186,7 @@ struct HomeView: View {
                     case .progress:
                         ProgressTabView(habits: state.habits)
                     case .more:
-                        MoreTabView()
+                        MoreTabView(state: state)
                     }
                 }
             }

@@ -2,17 +2,21 @@ import SwiftUI
 
 struct AddedHabitItem: View {
     let habit: Habit
+    let isEditMode: Bool
     let onEdit: (() -> Void)?
     let onDelete: (() -> Void)?
     let onTap: (() -> Void)?
+    let onLongPress: (() -> Void)?
     
-    @State private var showingActionSheet = false
+
     
-    init(habit: Habit, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil, onTap: (() -> Void)? = nil) {
+    init(habit: Habit, isEditMode: Bool = false, onEdit: (() -> Void)? = nil, onDelete: (() -> Void)? = nil, onTap: (() -> Void)? = nil, onLongPress: (() -> Void)? = nil) {
         self.habit = habit
+        self.isEditMode = isEditMode
         self.onEdit = onEdit
         self.onDelete = onDelete
         self.onTap = onTap
+        self.onLongPress = onLongPress
     }
     
     var body: some View {
@@ -47,31 +51,58 @@ struct AddedHabitItem: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 8)
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        onTap?()
+                    .simultaneousGesture(
+                        TapGesture(count: 1)
+                            .onEnded {
+                                onTap?()
+                            }
+                    )
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.5)
+                            .onEnded { _ in
+                                print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
+                                onLongPress?()
+                            }
+                    )
+                    
+                    // More button or reorder handle based on edit mode
+                    ZStack {
+                        // More button (always present, but hidden when in edit mode)
+                        Menu {
+                            Button(action: {
+                                onEdit?()
+                            }) {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive, action: {
+                                onDelete?()
+                            }) {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        } label: {
+                            Image("Icon-more_vert")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.text06)
+                                .contentShape(Rectangle())
+                        }
+                        .frame(width: 40, height: 40)
+                        .opacity(isEditMode ? 0 : 1)
+                        .allowsHitTesting(!isEditMode)
+                        
+                        // Reorder handle (only visible in edit mode)
+                        if isEditMode {
+                            Image(systemName: "line.3.horizontal")
+                                .font(.title2)
+                                .foregroundColor(.text06)
+                                .frame(width: 40, height: 40)
+                                .contentShape(Rectangle())
+                                .opacity(1)
+                                .allowsHitTesting(true)
+                        }
                     }
                     
-                    // More button with menu - separate from tap gesture
-                    Menu {
-                        Button(action: {
-                            onEdit?()
-                        }) {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive, action: {
-                            onDelete?()
-                        }) {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    } label: {
-                        Image("Icon-more_vert")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(.text06)
-                            .contentShape(Rectangle())
-                    }
-                    .frame(width: 40, height: 40)
                 }
                 
                                         // Bottom row: Goal only
@@ -101,29 +132,7 @@ struct AddedHabitItem: View {
                 .stroke(.outline, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .onLongPressGesture {
-            // Haptic feedback for long press
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            
-            // Show action sheet with edit/delete options
-            showingActionSheet = true
-        }
-        .actionSheet(isPresented: $showingActionSheet) {
-            ActionSheet(
-                title: Text(habit.name),
-                message: Text("Choose an action"),
-                buttons: [
-                    .default(Text("Edit")) {
-                        onEdit?()
-                    },
-                    .destructive(Text("Delete")) {
-                        onDelete?()
-                    },
-                    .cancel()
-                ]
-            )
-        }
+        .contentShape(Rectangle())
     }
     
     // Helper function to format schedule for display
@@ -171,6 +180,9 @@ struct AddedHabitItem: View {
             },
             onDelete: {
                 print("Delete tapped")
+            },
+            onLongPress: {
+                print("Long press detected")
             }
         )
         
@@ -194,6 +206,9 @@ struct AddedHabitItem: View {
             },
             onDelete: {
                 print("Delete tapped")
+            },
+            onLongPress: {
+                print("Long press detected")
             }
         )
     }
