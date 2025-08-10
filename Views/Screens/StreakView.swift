@@ -122,7 +122,10 @@ struct StreakView: View {
                                         )
                                     } else if selectedProgressTab == 1 {
                                         // Monthly view
-                                        MonthlyCalendarGridView(userHabits: userHabits)
+                                        MonthlyCalendarGridView(
+                                            userHabits: userHabits,
+                                            selectedWeekStartDate: selectedWeekStartDate
+                                        )
                                     } else {
                                         // Yearly view
                                         YearlyCalendarGridView(
@@ -309,7 +312,10 @@ struct StreakView: View {
                     )
                 } else if selectedProgressTab == 1 {
                     // Monthly view
-                    MonthlyCalendarGridView(userHabits: userHabits)
+                    MonthlyCalendarGridView(
+                        userHabits: userHabits,
+                        selectedWeekStartDate: selectedWeekStartDate
+                    )
                 } else {
                     // Yearly view
                     YearlyCalendarGridView(

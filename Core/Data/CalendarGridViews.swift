@@ -156,16 +156,19 @@ struct WeeklyCalendarGridView: View {
     }
 }
 
-// MARK: - Monthly Calendar Grid
+// MARK: - Weekly Calendar Grid (formerly Monthly)
 struct MonthlyCalendarGridView: View {
     let userHabits: [Habit]
+    let selectedWeekStartDate: Date
     
     var body: some View {
         VStack(spacing: 12) {
+
+            
             if userHabits.isEmpty {
                 CalendarEmptyStateView(
                     title: "No habits yet",
-                    subtitle: "Create habits to see your monthly progress"
+                    subtitle: "Create habits to see your weekly progress"
                 )
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
@@ -189,7 +192,7 @@ struct MonthlyCalendarGridView: View {
                             .padding(.top, 16)
                             .padding(.bottom, 12)
                             
-                            // Monthly heatmap table for this habit
+                            // Weekly heatmap table for this habit
                             monthlyHeatmapTable(for: habit)
                             
                             // Summary statistics row
@@ -208,7 +211,7 @@ struct MonthlyCalendarGridView: View {
 //        .padding(.horizontal, 16)
     }
     
-    // MARK: - Monthly Heatmap Table
+    // MARK: - Weekly Heatmap Table
     @ViewBuilder
     private func monthlyHeatmapTable(for habit: Habit) -> some View {
         VStack(spacing: 0) {
@@ -257,10 +260,11 @@ struct MonthlyCalendarGridView: View {
                     
                     // Week heatmap cells - must match day headers exactly
                     ForEach(0..<7, id: \.self) { dayIndex in
-                        let heatmapData = StreakDataCalculator.getMonthlyHeatmapDataForHabit(
+                        let heatmapData = StreakDataCalculator.getWeeklyHeatmapDataForHabit(
                             habit: habit,
                             weekIndex: weekIndex,
-                            dayIndex: dayIndex
+                            dayIndex: dayIndex,
+                            selectedWeekStartDate: selectedWeekStartDate
                         )
                         HeatmapCellView(
                             intensity: heatmapData.intensity,
@@ -337,18 +341,22 @@ struct MonthlyCalendarGridView: View {
     private func calculateHabitCompletionPercentage(for habit: Habit) -> Double {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startOfMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
+        
+        // Use selected week start date instead of current month
+        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
+        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
         
         var totalGoal = 0
         var totalCompleted = 0
         
-        // Calculate for the current month
-        var currentDate = startOfMonth
-        while currentDate <= today {
+        // Calculate for the selected week range
+        var currentDate = startDate
+        while currentDate <= endDate && currentDate <= today {
             if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
                 let goalAmount = parseGoalAmount(from: habit.goal)
+                let progress = habit.getProgress(for: currentDate)
                 totalGoal += goalAmount
-                totalCompleted += habit.getProgress(for: currentDate)
+                totalCompleted += progress
             }
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
         }
@@ -363,31 +371,36 @@ struct MonthlyCalendarGridView: View {
     private func calculateHabitCompletedDays(for habit: Habit) -> Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startOfMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
+        
+        // Use selected week start date instead of current month
+        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
+        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
         
         var completedDays = 0
-        var currentDate = startOfMonth
+        var currentDate = startDate
         
-        while currentDate <= today {
+        while currentDate <= endDate && currentDate <= today {
             if habit.isCompleted(for: currentDate) {
                 completedDays += 1
             }
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
         }
-        
         return completedDays
     }
     
     private func calculateHabitConsistency(for habit: Habit) -> Double {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startOfMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
+        
+        // Use selected week start date instead of current month
+        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
+        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
         
         var scheduledDays = 0
         var completedDays = 0
-        var currentDate = startOfMonth
+        var currentDate = startDate
         
-        while currentDate <= today {
+        while currentDate <= endDate && currentDate <= today {
             if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
                 scheduledDays += 1
                 if habit.isCompleted(for: currentDate) {

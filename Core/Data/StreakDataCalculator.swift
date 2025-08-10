@@ -324,6 +324,38 @@ class StreakDataCalculator {
         return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
     }
     
+    // MARK: - Individual Habit Weekly Heatmap Data (for selected week)
+    static func getWeeklyHeatmapDataForHabit(habit: Habit, weekIndex: Int, dayIndex: Int, selectedWeekStartDate: Date) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
+        let calendar = Calendar.current
+        
+        // Calculate the date for this week and day based on selected week start
+        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: selectedWeekStartDate) ?? selectedWeekStartDate
+        
+        // Check if this specific habit is scheduled for this date
+        let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+        }
+        
+        // Get completion percentage for this specific habit on this date
+        let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
+        
+        // Map completion percentage to intensity for backward compatibility
+        let intensity: Int
+        if completionPercentage == 0 {
+            intensity = 0
+        } else if completionPercentage < 25 {
+            intensity = 1
+        } else if completionPercentage < 50 {
+            intensity = 2
+        } else {
+            intensity = 3
+        }
+        
+        return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+    }
+    
     static func getMonthlyTotalIntensity(dayIndex: Int, habits: [Habit]) -> Int {
         let totalIntensity = habits.reduce(0) { total, habit in
             total + getMonthlyHeatmapIntensity(weekIndex: 0, dayIndex: dayIndex, habits: habits)
