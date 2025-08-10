@@ -110,7 +110,8 @@ struct WeekPickerModal: View {
             .background(.surface)
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-            .frame(width: 320)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
             .frame(maxHeight: 480)
             .onAppear {
                 // Update temporary state when modal appears to reflect current selection

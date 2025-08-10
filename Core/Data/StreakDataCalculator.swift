@@ -65,16 +65,30 @@ class StreakDataCalculator {
     
     /// Generate yearly heatmap data for habits using the new completion percentage system
     static func generateYearlyDataFromHabits(_ habits: [Habit]) -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        return generateYearlyDataFromHabits(habits, forYear: currentYear)
+    }
+    
+    /// Generate yearly heatmap data for habits for a specific year
+    static func generateYearlyDataFromHabits(_ habits: [Habit], forYear year: Int) -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
         
         for habit in habits {
             var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
             
             let calendar = Calendar.current
-            let today = Calendar.current.startOfDay(for: Date())
+            
+            // Create date components for January 1st of the specified year
+            var components = DateComponents()
+            components.year = year
+            components.month = 1
+            components.day = 1
+            
+            guard let yearStartDate = calendar.date(from: components) else { continue }
             
             for day in 0..<365 {
-                let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
+                let targetDate = calendar.date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
                 let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
                 habitYearlyData.append(heatmapData)
             }
@@ -609,6 +623,7 @@ class StreakDataCalculator {
         _ habits: [Habit], 
         startIndex: Int, 
         itemsPerPage: Int,
+        forYear year: Int = Calendar.current.component(.year, from: Date()),
         progress: @escaping (Double) -> Void = { _ in }
     ) async -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         return await withCheckedContinuation { continuation in
@@ -635,10 +650,17 @@ class StreakDataCalculator {
                     var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
                     
                     let calendar = Calendar.current
-                    let today = Calendar.current.startOfDay(for: Date())
+                    
+                    // Create date components for January 1st of the specified year
+                    var components = DateComponents()
+                    components.year = year
+                    components.month = 1
+                    components.day = 1
+                    
+                    guard let yearStartDate = calendar.date(from: components) else { continue }
                     
                     for day in 0..<365 {
-                        let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
+                        let targetDate = calendar.date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
                         let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
                         habitYearlyData.append(heatmapData)
                     }

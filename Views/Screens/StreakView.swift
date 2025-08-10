@@ -31,8 +31,10 @@ struct StreakView: View {
     // Date selection state
     @State private var selectedWeekStartDate: Date = Date.currentWeekStartDate()
     @State private var selectedMonth: Date = Date.currentMonthStartDate()
+    @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
     @State private var showingCalendar = false
     @State private var showingMonthPicker = false
+    @State private var showingYearPicker = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -103,16 +105,19 @@ struct StreakView: View {
                         // Scrollable Content Section
                         ScrollView {
                             VStack(spacing: 16) {
-                                                        // Date range selector - show week for weekly, month for monthly
+                                                        // Date range selector - show week for weekly, month for monthly, year for yearly
                         DateRangeSelectorView(
-                            displayText: selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText(),
+                            displayText: selectedProgressTab == 2 ? "Year \(selectedYear)" : (selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText()),
                             onTap: { 
-                                if selectedProgressTab == 1 {
+                                if selectedProgressTab == 2 {
+                                    showingYearPicker = true
+                                } else if selectedProgressTab == 1 {
                                     showingMonthPicker = true
                                 } else {
                                     showingCalendar = true
                                 }
-                            }
+                            },
+                            showDownChevron: true
                         )
                         
                         // Debug: Print current week info
@@ -220,6 +225,14 @@ struct StreakView: View {
             isDataLoaded = false
             loadData()
         }
+        .onChange(of: selectedYear) { oldYear, newYear in
+            print("🔍 STREAK VIEW DEBUG - selectedYear changed - Old year: \(oldYear), New year: \(newYear)")
+            // Force refresh yearly data when year changes
+            if selectedProgressTab == 2 {
+                isDataLoaded = false
+                loadData()
+            }
+        }
         .overlay(
             // Pop-up Modal for week selection
             showingCalendar ? AnyView(
@@ -240,6 +253,17 @@ struct StreakView: View {
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Pop-up Modal for year selection
+            showingYearPicker ? AnyView(
+                YearPickerModal(
+                    selectedYear: $selectedYear,
+                    isPresented: $showingYearPicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingYearPicker)
             ) : AnyView(EmptyView())
         )
     }
@@ -288,7 +312,8 @@ struct StreakView: View {
             let yearlyData = await StreakDataCalculator.generateYearlyDataFromHabitsAsync(
                 self.userHabits,
                 startIndex: self.currentYearlyPage * self.yearlyItemsPerPage,
-                itemsPerPage: self.yearlyItemsPerPage
+                itemsPerPage: self.yearlyItemsPerPage,
+                forYear: self.selectedYear
             ) { progress in
                 // Update UI on main thread
                 DispatchQueue.main.async {
@@ -319,7 +344,8 @@ struct StreakView: View {
             // Date range selector
             DateRangeSelectorView(
                 displayText: selectedWeekStartDate.weekRangeText(),
-                onTap: { showingCalendar = true }
+                onTap: { showingCalendar = true },
+                showDownChevron: true
             )
             
             // Content based on selected tab

@@ -173,6 +173,13 @@ struct ProgressTabsView: View {
 struct DateRangeSelectorView: View {
     let displayText: String
     let onTap: () -> Void
+    let showDownChevron: Bool
+    
+    init(displayText: String, onTap: @escaping () -> Void, showDownChevron: Bool = false) {
+        self.displayText = displayText
+        self.onTap = onTap
+        self.showDownChevron = showDownChevron
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -181,9 +188,19 @@ struct DateRangeSelectorView: View {
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
                 
-                Image(systemName: "chevron.down")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text04)
+                if showDownChevron {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(.text04)
+                } else {
+                    Image("Icon-leftArrow")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.text04)
+                        .rotationEffect(.degrees(90))
+                }
                 
                 Spacer()
             }
