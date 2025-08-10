@@ -56,6 +56,10 @@ class HomeViewState: ObservableObject {
         coreDataAdapter.updateHabit(updatedHabit)
     }
     
+    func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) {
+        coreDataAdapter.setProgress(for: habit, date: date, progress: progress)
+    }
+    
     func createHabit(_ habit: Habit) {
         coreDataAdapter.createHabit(habit)
     }
@@ -134,6 +138,20 @@ struct HomeView: View {
                                 state.updateHabit(updatedHabit)
                                 print("🔄 HomeView: Habit array updated and saved")
                             },
+                            onSetProgress: { habit, date, progress in
+                                print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
+                                
+                                // Find the habit by ID from the current state to ensure we have the latest Core Data-synced version
+                                if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
+                                    print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
+                                    state.setHabitProgress(syncedHabit, for: date, progress: progress)
+                                    print("🔄 HomeView: Progress saved to Core Data using synced habit")
+                                } else {
+                                    print("❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
+                                    state.setHabitProgress(habit, for: date, progress: progress)
+                                    print("🔄 HomeView: Progress saved to Core Data using original habit")
+                                }
+                            },
                             onDeleteHabit: { habit in
                                 state.habitToDelete = habit
                                 state.showingDeleteConfirmation = true
@@ -177,16 +195,16 @@ struct HomeView: View {
             print("🚀 HomeView: onAppear called!")
             loadHabitsOptimized()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            print("🏠 HomeView: App going to background, backing up habits...")
+            state.backupHabits()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             print("🏠 HomeView: App became active, updating streaks...")
             // Debounce to prevent excessive updates
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 state.updateAllStreaks()
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            print("🏠 HomeView: App going to background, backing up habits...")
-            state.backupHabits()
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
@@ -243,7 +261,8 @@ struct HomeView: View {
     
     private func loadHabitsOptimized() {
         print("🏠 HomeView: Loading habits from CoreDataAdapter...")
-        // The CoreDataAdapter already loads habits in its init()
+        // Force reload from Core Data to ensure we have the latest state
+        CoreDataAdapter.shared.loadHabits(force: true)
         print("🏠 HomeView: Habits loaded from CoreDataAdapter - total: \(state.habits.count)")
         
         // Only validate streaks if we have habits and haven't validated recently

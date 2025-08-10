@@ -66,21 +66,21 @@ class HabitStorageManager {
 }
 
 struct Habit: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var name: String
-    var description: String
-    var icon: String // System icon name
-    var color: Color
-    var habitType: HabitType
-    var schedule: String
-    var goal: String
-    var reminder: String // Keep for backward compatibility
-    var reminders: [ReminderItem] = [] // New field for storing reminder items
-    var startDate: Date
-    var endDate: Date?
+    let id: UUID
+    let name: String
+    let description: String
+    let icon: String // System icon name
+    let color: Color
+    let habitType: HabitType
+    let schedule: String
+    let goal: String
+    let reminder: String // Keep for backward compatibility
+    let reminders: [ReminderItem] // New field for storing reminder items
+    let startDate: Date
+    let endDate: Date?
     var isCompleted: Bool = false
     var streak: Int = 0
-    var createdAt: Date = Date()
+    let createdAt: Date
     var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
     
     // Habit Breaking specific properties
@@ -88,7 +88,9 @@ struct Habit: Identifiable, Codable, Equatable {
     var target: Int = 0 // Target reduced amount
     var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
     
-    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
+    // MARK: - Designated Initializer
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+        self.id = id
         self.name = name
         self.description = description
         self.icon = icon
@@ -102,24 +104,53 @@ struct Habit: Identifiable, Codable, Equatable {
         self.endDate = endDate
         self.isCompleted = isCompleted
         self.streak = streak
+        self.createdAt = createdAt
         self.baseline = baseline
         self.target = target
+        self.completionHistory = completionHistory
+        self.actualUsage = actualUsage
+    }
+    
+    // MARK: - Convenience Initializers
+    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
+        self.init(
+            id: UUID(),
+            name: name,
+            description: description,
+            icon: icon,
+            color: color,
+            habitType: habitType,
+            schedule: schedule,
+            goal: goal,
+            reminder: reminder,
+            startDate: startDate,
+            endDate: endDate,
+            isCompleted: isCompleted,
+            streak: streak,
+            createdAt: Date(),
+            reminders: reminders,
+            baseline: baseline,
+            target: target
+        )
     }
     
     init(from step1Data: (String, String, String, Color, HabitType), schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
-        self.name = step1Data.0
-        self.description = step1Data.1
-        self.icon = step1Data.2
-        self.color = step1Data.3
-        self.habitType = step1Data.4
-        self.schedule = schedule
-        self.goal = goal
-        self.reminder = reminder
-        self.reminders = reminders
-        self.startDate = startDate
-        self.endDate = endDate
-        self.baseline = baseline
-        self.target = target
+        self.init(
+            id: UUID(),
+            name: step1Data.0,
+            description: step1Data.1,
+            icon: step1Data.2,
+            color: step1Data.3,
+            habitType: step1Data.4,
+            schedule: schedule,
+            goal: goal,
+            reminder: reminder,
+            startDate: startDate,
+            endDate: endDate,
+            reminders: reminders,
+            baseline: baseline,
+            target: target
+        )
     }
     
     // MARK: - Completion History Methods
@@ -255,7 +286,7 @@ struct Habit: Identifiable, Codable, Equatable {
 }
 
 enum HabitType: String, CaseIterable, Codable {
-            case formation = "Habit Building"
+    case formation = "Habit Building"
     case breaking = "Habit Breaking"
 }
 

@@ -39,8 +39,28 @@ struct HabitEditTest {
             streak: originalHabit.streak
         )
         
-        // Preserve the original ID
-        editedHabit.id = originalHabit.id
+        // Create a new habit with the original ID
+        editedHabit = Habit(
+            id: originalHabit.id,
+            name: editedHabit.name,
+            description: editedHabit.description,
+            icon: editedHabit.icon,
+            color: editedHabit.color,
+            habitType: editedHabit.habitType,
+            schedule: editedHabit.schedule,
+            goal: editedHabit.goal,
+            reminder: editedHabit.reminder,
+            startDate: editedHabit.startDate,
+            endDate: editedHabit.endDate,
+            isCompleted: editedHabit.isCompleted,
+            streak: editedHabit.streak,
+            createdAt: editedHabit.createdAt,
+            reminders: editedHabit.reminders,
+            baseline: editedHabit.baseline,
+            target: editedHabit.target,
+            completionHistory: editedHabit.completionHistory,
+            actualUsage: editedHabit.actualUsage
+        )
         
         print("Edited habit: \(editedHabit.name), Icon: \(editedHabit.icon), Color: \(editedHabit.color), ID: \(editedHabit.id)")
         
@@ -93,8 +113,28 @@ struct HabitEditTest {
             streak: originalHabit.streak
         )
         
-        // Preserve the original ID
-        updatedHabit.id = originalHabit.id
+        // Create a new habit with the original ID
+        updatedHabit = Habit(
+            id: originalHabit.id,
+            name: updatedHabit.name,
+            description: updatedHabit.description,
+            icon: updatedHabit.icon,
+            color: updatedHabit.color,
+            habitType: updatedHabit.habitType,
+            schedule: updatedHabit.schedule,
+            goal: updatedHabit.goal,
+            reminder: updatedHabit.reminder,
+            startDate: updatedHabit.startDate,
+            endDate: updatedHabit.endDate,
+            isCompleted: updatedHabit.isCompleted,
+            streak: updatedHabit.streak,
+            createdAt: updatedHabit.createdAt,
+            reminders: updatedHabit.reminders,
+            baseline: updatedHabit.baseline,
+            target: updatedHabit.target,
+            completionHistory: updatedHabit.completionHistory,
+            actualUsage: updatedHabit.actualUsage
+        )
         
         print("Updated habit ID: \(updatedHabit.id)")
         assert(updatedHabit.id == originalId, "ID should be preserved during editing")

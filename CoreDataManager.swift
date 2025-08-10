@@ -19,10 +19,10 @@ class CoreDataManager: ObservableObject {
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         
-        // Enable CloudKit sync
-        description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
-            containerIdentifier: "iCloud.com.chloe-lee.Habitto"
-        )
+        // Temporarily disable CloudKit sync to test local persistence
+        // description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+        //     containerIdentifier: "iCloud.com.chloe-lee.Habitto"
+        // )
         
         // Load the persistent stores
         container.loadPersistentStores { _, error in
@@ -48,17 +48,14 @@ class CoreDataManager: ObservableObject {
         return container
     }()
     
-    // MARK: - Context
+    // MARK: - Properties
     var context: NSManagedObjectContext {
-        persistentContainer.viewContext
+        return persistentContainer.viewContext
     }
     
-    // MARK: - Background Context
-    lazy var backgroundContext: NSManagedObjectContext = {
-        let context = persistentContainer.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        return context
-    }()
+    var backgroundContext: NSManagedObjectContext {
+        return persistentContainer.newBackgroundContext()
+    }
     
     private init() {
         setupNotifications()
@@ -113,168 +110,62 @@ class CoreDataManager: ObservableObject {
         }
     }
     
-    // MARK: - Save Context
-    func save() throws {
-        let context = persistentContainer.viewContext
-        
-        if context.hasChanges {
-            do {
-                try context.save()
-                print("✅ Core Data context saved successfully")
-            } catch {
-                print("❌ Core Data save error: \(error)")
-                handleSaveError(error)
-                throw error
-            }
-        } else {
-            print("ℹ️ Core Data context has no changes to save")
-        }
-    }
-    
-    // MARK: - Error Handling
-    private func handleSaveError(_ error: Error) {
-        if let cloudKitError = error as? CKError {
-            switch cloudKitError.code {
-            case .networkUnavailable:
-                print("❌ CloudKit: Network unavailable")
-            case .networkFailure:
-                print("❌ CloudKit: Network failure")
-            case .quotaExceeded:
-                print("❌ CloudKit: Quota exceeded")
-            case .zoneNotFound:
-                print("❌ CloudKit: Zone not found")
-            case .notAuthenticated:
-                print("❌ CloudKit: User not authenticated")
-            case .serverResponseLost:
-                print("❌ CloudKit: Server response lost")
-            case .serviceUnavailable:
-                print("❌ CloudKit: Service unavailable")
-            default:
-                print("❌ CloudKit error: \(cloudKitError.localizedDescription)")
-            }
-        } else {
-            print("❌ Core Data error: \(error.localizedDescription)")
-        }
-    }
-    
-    // MARK: - Background Save
-    func saveInBackground() {
-        let context = backgroundContext
-        
-        context.perform {
-            if context.hasChanges {
-                do {
-                    try context.save()
-                    print("✅ Core Data background context saved successfully")
-                } catch {
-                    print("❌ Core Data background save error: \(error)")
-                    self.handleSaveError(error)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Sync Status
-    func checkSyncStatus() -> String {
-        // Check if CloudKit is available
-        let container = persistentContainer
-        if container is NSPersistentCloudKitContainer {
-            return "CloudKit sync enabled"
-        }
-        return "Local storage only"
-    }
-    
     // MARK: - Core Data Health Check
     func checkCoreDataHealth() -> Bool {
         do {
-            let context = persistentContainer.viewContext
+            // Try to perform a simple fetch to test Core Data
             let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
             request.fetchLimit = 1
             _ = try context.fetch(request)
-            print("✅ Core Data health check passed")
             return true
         } catch {
-            print("❌ Core Data health check failed: \(error)")
+            print("❌ CoreDataManager: Core Data health check failed: \(error)")
             return false
         }
     }
     
-    // MARK: - Fallback for CloudKit Issues
+    // MARK: - Load Persistent Stores Without CloudKit
     private func loadPersistentStoresWithoutCloudKit() {
-        print("🔄 Attempting to load persistent stores without CloudKit...")
+        print("🔄 CoreDataManager: Loading persistent stores without CloudKit...")
         
         // Create a new container without CloudKit
-        let fallbackContainer = NSPersistentContainer(name: "HabittoDataModel")
+        let container = NSPersistentContainer(name: "HabittoDataModel")
         
-        fallbackContainer.loadPersistentStores { _, error in
+        container.loadPersistentStores { _, error in
             if let error = error {
-                print("❌ Fallback Core Data load also failed: \(error)")
-                fatalError("Core Data failed to load even without CloudKit: \(error)")
+                print("❌ CoreDataManager: Failed to load persistent stores without CloudKit: \(error)")
+                fatalError("Core Data failed to load persistent stores: \(error)")
             } else {
-                print("✅ Core Data loaded successfully without CloudKit")
-                // Replace the persistent container
-                DispatchQueue.main.async {
-                    // Note: In a real app, you'd want to handle this more gracefully
-                    // For now, we'll just print a success message
-                    print("📱 App running with local storage only")
-                }
+                print("✅ CoreDataManager: Persistent stores loaded without CloudKit")
+                // Update the persistent container reference
+                self.persistentContainer = container
             }
         }
     }
-    
-    // MARK: - Migration from UserDefaults
-    func migrateFromUserDefaults() {
-        let oldHabits = HabitStorageManager.shared.loadHabits()
+
+    // MARK: - Force Save All Changes
+    func forceSaveAllChanges() {
+        print("🔄 CoreDataManager: Force saving all changes...")
         
-        let migrationContext = persistentContainer.newBackgroundContext()
-        migrationContext.perform {
-            for oldHabit in oldHabits {
-                let newHabit = HabitEntity(context: migrationContext)
-                newHabit.id = oldHabit.id
-                newHabit.name = oldHabit.name
-                newHabit.habitDescription = oldHabit.description
-                newHabit.icon = oldHabit.icon
-                newHabit.colorHex = oldHabit.color.toHex()
-                newHabit.habitType = oldHabit.habitType.rawValue
-                newHabit.schedule = oldHabit.schedule
-                newHabit.goal = oldHabit.goal
-                newHabit.reminder = oldHabit.reminder
-                newHabit.startDate = oldHabit.startDate
-                newHabit.endDate = oldHabit.endDate
-                newHabit.isCompleted = oldHabit.isCompleted
-                newHabit.streak = Int32(oldHabit.streak)
-                newHabit.createdAt = oldHabit.createdAt
-                newHabit.baseline = Int32(oldHabit.baseline)
-                newHabit.target = Int32(oldHabit.target)
-                
-                // Migrate completion history
-                for (dateKey, progress) in oldHabit.completionHistory {
-                    let completionRecord = CompletionRecordEntity(context: migrationContext)
-                    completionRecord.dateKey = dateKey
-                    completionRecord.progress = Int32(progress)
-                    completionRecord.habit = newHabit
-                }
-                
-                // Migrate actual usage for habit breaking
-                for (dateKey, usage) in oldHabit.actualUsage {
-                    let usageRecord = UsageRecordEntity(context: migrationContext)
-                    usageRecord.dateKey = dateKey
-                    usageRecord.amount = Int32(usage)
-                    usageRecord.habit = newHabit
-                }
-            }
-            
-            do {
-                try migrationContext.save()
-                print("✅ Migration from UserDefaults completed successfully")
-                
-                // Clear old data after successful migration
-                DispatchQueue.main.async {
-                    UserDefaults.standard.removeObject(forKey: "SavedHabits")
-                }
-            } catch {
-                print("❌ Migration error: \(error)")
-            }
+        do {
+            try context.save()
+            print("✅ CoreDataManager: View context saved")
+        } catch {
+            print("❌ CoreDataManager: Failed to save view context: \(error)")
+        }
+        
+        print("✅ CoreDataManager: All changes saved")
+    }
+    
+    // MARK: - Save
+    func save() throws {
+        let context = persistentContainer.viewContext
+        
+        if context.hasChanges {
+            try context.save()
+            print("✅ CoreDataManager: Context saved successfully")
+        } else {
+            print("ℹ️ CoreDataManager: No pending changes to save")
         }
     }
     
@@ -285,7 +176,6 @@ class CoreDataManager: ObservableObject {
         
         do {
             let habits = try context.fetch(request)
-            print("🔄 CoreDataManager: Fetched \(habits.count) habit entities")
             return habits
         } catch {
             print("❌ Fetch habits error: \(error)")
@@ -317,6 +207,12 @@ class CoreDataManager: ObservableObject {
         return habitEntity
     }
     
+    // MARK: - Delete Habit
+    func deleteHabit(_ habitEntity: HabitEntity) throws {
+        context.delete(habitEntity)
+        try save()
+    }
+    
     // MARK: - Update Habit
     func updateHabit(_ habitEntity: HabitEntity, with habit: Habit) throws {
         habitEntity.name = habit.name
@@ -331,65 +227,43 @@ class CoreDataManager: ObservableObject {
         habitEntity.endDate = habit.endDate
         habitEntity.isCompleted = habit.isCompleted
         habitEntity.streak = Int32(habit.streak)
+        habitEntity.createdAt = habit.createdAt
         habitEntity.baseline = Int32(habit.baseline)
         habitEntity.target = Int32(habit.target)
         
         try save()
     }
     
-    // MARK: - Delete Habit
-    func deleteHabit(_ habitEntity: HabitEntity) throws {
-        print("🗑️ CoreDataManager: Deleting habit entity: \(habitEntity.name ?? "Unknown")")
-        context.delete(habitEntity)
-        print("🗑️ CoreDataManager: Entity marked for deletion, saving...")
-        try save()
-        print("🗑️ CoreDataManager: Save completed")
-    }
-    
     // MARK: - Mark Completion
     func markCompletion(for habitEntity: HabitEntity, date: Date, progress: Int) throws {
-        let dateKey = Self.dateKey(for: date)
+        let dateKey = DateUtils.dateKey(for: date)
         
-        // Find existing record or create new one
-        let request: NSFetchRequest<CompletionRecordEntity> = CompletionRecordEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "habit == %@ AND dateKey == %@", habitEntity, dateKey)
-        
-        do {
-            let existingRecords = try context.fetch(request)
-            let record: CompletionRecordEntity
-            
-            if let existingRecord = existingRecords.first {
-                record = existingRecord
-            } else {
-                record = CompletionRecordEntity(context: context)
-                record.habit = habitEntity
-                record.dateKey = dateKey
-            }
-            
-            record.progress = Int32(progress)
-            record.timestamp = Date()
-            
-            try save()
-        } catch {
-            print("❌ Mark completion error: \(error)")
-            throw error
+        // Check if a completion record already exists for this date
+        if let existingRecords = habitEntity.completionHistory as? Set<CompletionRecordEntity>,
+           let existingRecord = existingRecords.first(where: { $0.dateKey == dateKey }) {
+            // Update existing record
+            existingRecord.progress = Int32(progress)
+        } else {
+            // Create new completion record
+            let completionRecord = CompletionRecordEntity(context: context)
+            completionRecord.dateKey = dateKey
+            completionRecord.progress = Int32(progress)
+            completionRecord.habit = habitEntity
         }
+        
+        try save()
     }
     
     // MARK: - Get Progress
     func getProgress(for habitEntity: HabitEntity, date: Date) -> Int {
-        let dateKey = Self.dateKey(for: date)
+        let dateKey = DateUtils.dateKey(for: date)
         
-        let request: NSFetchRequest<CompletionRecordEntity> = CompletionRecordEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "habit == %@ AND dateKey == %@", habitEntity, dateKey)
-        
-        do {
-            let records = try context.fetch(request)
-            return Int(records.first?.progress ?? 0)
-        } catch {
-            print("❌ Get progress error: \(error)")
-            return 0
+        if let completionRecords = habitEntity.completionHistory as? Set<CompletionRecordEntity>,
+           let record = completionRecords.first(where: { $0.dateKey == dateKey }) {
+            return Int(record.progress)
         }
+        
+        return 0
     }
     
     // MARK: - Helper Methods
@@ -399,5 +273,7 @@ class CoreDataManager: ObservableObject {
         return formatter.string(from: date)
     }
 }
+
+
 
 

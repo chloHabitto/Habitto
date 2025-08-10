@@ -329,9 +329,14 @@ struct HabitDetailView: View {
     
     // MARK: - Helper Functions
     private func extractGoalNumber(from goalString: String) -> Int {
-        // Extract the number from goal strings like "5 times per 1 times a week", "20 pages per everyday", etc.
-        // First, extract the goal amount part (before "per")
-        let components = goalString.components(separatedBy: " per ")
+        // Extract the number from goal strings like "5 times on 1 times a week", "20 pages on everyday", etc.
+        // For legacy habits, it might still be "per"
+        // First, extract the goal amount part (before "on" or "per")
+        var components = goalString.components(separatedBy: " on ")
+        if components.count < 2 {
+            // Try with " per " for legacy habits
+            components = goalString.components(separatedBy: " per ")
+        }
         let goalAmount = components.first ?? goalString
         
         // Then extract the number from the goal amount
@@ -452,12 +457,22 @@ struct HabitDetailView: View {
     
     // Helper function to extract goal amount without schedule
     private func extractGoalAmount(from goal: String) -> String {
-        // Goal format is typically "X unit per frequency" (e.g., "1 time per 1 times a week")
+        // Goal format is typically "X unit on frequency" (e.g., "1 time on 1 times a week")
+        // For legacy habits, it might still be "X unit per frequency"
         // We want to extract just "X unit" part
-        let components = goal.components(separatedBy: " per ")
+        
+        // Try splitting by " on " first (current format)
+        var components = goal.components(separatedBy: " on ")
         if components.count >= 2 {
             return components[0] // Return "X unit" part
         }
+        
+        // Try splitting by " per " for legacy habits
+        components = goal.components(separatedBy: " per ")
+        if components.count >= 2 {
+            return components[0] // Return "X unit" part
+        }
+        
         return goal // Fallback to original goal if format is unexpected
     }
 }

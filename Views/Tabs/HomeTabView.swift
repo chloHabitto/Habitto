@@ -9,15 +9,10 @@ struct HomeTabView: View {
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
     
-    // Performance optimization: Cache expensive calculations
-    @State private var cachedHabitsForDate: [Habit] = []
-    @State private var lastCalculatedDate: Date?
-    @State private var cachedStats: [(String, Int)] = []
-    @State private var lastCalculatedStatsDate: Date?
-    @State private var forceRefresh: Bool = false // Simple boolean to force refresh
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
+    let onSetProgress: ((Habit, Date, Int) -> Void)?
     let onDeleteHabit: ((Habit) -> Void)?
     
     // Performance optimization: Cached regex patterns
@@ -45,90 +40,13 @@ struct HomeTabView: View {
             habitsListSection
         }
         .onAppear {
-            // Clear cache to ensure fresh data is loaded
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
-            forceRefresh = true // Force refresh on appear
-            
             // Ensure selectedDate is set to today when the view appears
             let today = Calendar.current.startOfDay(for: Date())
             if selectedDate != today {
                 selectedDate = today
             }
         }
-        .onChange(of: habits.count) { oldCount, newCount in
-            // Always clear cache when habits count changes to ensure new habits are shown
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
-            forceRefresh = true // Force refresh on habits count change
-        }
-        .onChange(of: habits) { oldHabits, newHabits in
-            // Clear cache when habits array content changes
-            
-            // Check if any habits were added
-            let newHabitIds = Set(newHabits.map { $0.id })
-            let oldHabitIds = Set(oldHabits.map { $0.id })
-            let addedHabits = newHabitIds.subtracting(oldHabitIds)
-            
-            if !addedHabits.isEmpty {
-                for habitId in addedHabits {
-                    if newHabits.first(where: { $0.id == habitId }) != nil {
-                        // Habit found, cache invalidation will handle the rest
-                    }
-                }
-            }
-            
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
-            forceRefresh = true // Force refresh on habits array content change
-        }
-        .onChange(of: selectedDate) { oldDate, newDate in
-            // Clear cache when date changes
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
-            forceRefresh = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            cachedHabitsForDate = []
-            lastCalculatedDate = nil
-            cachedStats = []
-            lastCalculatedStatsDate = nil
-            forceRefresh = true
-        }
-        .onChange(of: forceRefresh) { _, newValue in
-            // When forceRefresh becomes true, immediately update the cache
-            if newValue {
-                
-                // Update cache immediately
-                let filteredHabits = habits.filter { habit in
-                    let selected = DateUtils.startOfDay(for: selectedDate)
-                    let start = DateUtils.startOfDay(for: habit.startDate)
-                    let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
-                    
-                    guard selected >= start && selected <= end else {
-                        return false
-                    }
-                    
-                    return shouldShowHabitOnDate(habit, date: selectedDate)
-                }
-                
-                cachedHabitsForDate = filteredHabits
-                lastCalculatedDate = selectedDate
-                
-                // Reset forceRefresh after updating cache
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    forceRefresh = false
-                }
-            }
-        }
+
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
                 .gesture(
@@ -205,7 +123,7 @@ struct HomeTabView: View {
     
     @ViewBuilder
     private var habitsListView: some View {
-        LazyVStack(spacing: 12) {
+        VStack(spacing: 12) {
             ForEach(habitsForSelectedDate) { habit in
                 habitRow(habit)
             }
@@ -220,11 +138,8 @@ struct HomeTabView: View {
                 selectedHabit = habit
             },
             onProgressChange: { habit, date, progress in
-                // Update the habit's progress
-                var updatedHabit = habit
-                let dateKey = DateUtils.dateKey(for: date)
-                updatedHabit.completionHistory[dateKey] = progress
-                onUpdateHabit?(updatedHabit)
+                // Use the new progress setting method that properly saves to Core Data
+                onSetProgress?(habit, date, progress)
             },
             onEdit: {
                 selectedHabit = habit
@@ -236,11 +151,6 @@ struct HomeTabView: View {
     }
     
     private var habitsForSelectedDate: [Habit] {
-        // Use cached result if available and date hasn't changed and cache hasn't been invalidated
-        if let lastDate = lastCalculatedDate, lastDate == selectedDate, !forceRefresh {
-            return cachedHabitsForDate
-        }
-        
         // Calculate filtered habits for the selected date
         let filteredHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
@@ -254,8 +164,31 @@ struct HomeTabView: View {
             return shouldShowHabitOnDate(habit, date: selectedDate)
         }
         
-        // Return the filtered habits without modifying state
-        return filteredHabits
+        // Filter by completion status based on selected tab
+        let finalFilteredHabits = filteredHabits.filter { habit in
+            let progress = habit.getProgress(for: selectedDate)
+            
+            // Debug logging for progress values
+            // print("🔍 HomeTabView: Habit '\(habit.name)' has progress \(progress) for \(DateUtils.dateKey(for: selectedDate))") // Removed as per edit hint
+            
+            switch selectedStatsTab {
+            case 0: // Total tab - show all habits
+                return true
+            case 1: // Undone tab - show only habits with 0 progress
+                let shouldShow = progress == 0
+                // print("🔍 HomeTabView: Undone tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
+                return shouldShow
+            case 2: // Done tab - show only habits with progress > 0
+                let shouldShow = progress > 0
+                // print("🔍 HomeTabView: Done tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
+                return shouldShow
+            default:
+                return true
+            }
+        }
+        
+        // print("🔍 HomeTabView: Final filtered habits count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)") // Removed as per edit hint
+        return finalFilteredHabits
     }
     
     private func getWeekdayName(_ weekday: Int) -> String {
@@ -316,7 +249,7 @@ struct HomeTabView: View {
             let shouldShow = weekday == 1
             return shouldShow
         default:
-            print("🔍 Checking schedule: \(habit.schedule)")
+            // print("🔍 Checking schedule: \(habit.schedule)") // Removed as per edit hint
             // Handle custom schedules like "Every Monday, Wednesday, Friday"
             if habit.schedule.lowercased().contains("every") && habit.schedule.lowercased().contains("day") {
                 // First check if it's an "Every X days" schedule
@@ -332,7 +265,7 @@ struct HomeTabView: View {
                 } else {
                     // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
                     let weekdays = extractWeekdays(from: habit.schedule)
-                    print("🔍 Schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)")
+                    // print("🔍 Schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)") // Removed as per edit hint
                     return weekdays.contains(weekday)
                 }
             } else if habit.schedule.contains("days a week") {
@@ -359,11 +292,11 @@ struct HomeTabView: View {
             // Check if schedule contains multiple weekdays separated by commas
             if habit.schedule.contains(",") {
                 let weekdays = extractWeekdays(from: habit.schedule)
-                print("🔍 Comma-separated schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)")
+                // print("🔍 Comma-separated schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)") // Removed as per edit hint
                 return weekdays.contains(weekday)
             }
             // For any unrecognized schedule format, don't show the habit (safer default)
-            print("🔍 Schedule didn't match any patterns, NOT showing habit: \(habit.schedule)")
+            // print("🔍 Schedule didn't match any patterns, NOT showing habit: \(habit.schedule)") // Removed as per edit hint
             return false
         }
     }
@@ -454,7 +387,7 @@ struct HomeTabView: View {
         var habitInstances: [HabitInstance] = []
         
         // Create initial habit instances starting from today
-        print("🔍 Creating \(daysPerWeek) habit instances starting from today: \(todayStart)")
+        // print("🔍 Creating \(daysPerWeek) habit instances starting from today: \(todayStart)") // Removed as per edit hint
         for i in 0..<daysPerWeek {
             if let instanceDate = calendar.date(byAdding: .day, value: i, to: todayStart) {
                 let instance = HabitInstance(
@@ -464,7 +397,7 @@ struct HomeTabView: View {
                     isCompleted: false
                 )
                 habitInstances.append(instance)
-                print("🔍 Created instance \(i): \(instanceDate)")
+                // print("🔍 Created instance \(i): \(instanceDate)") // Removed as per edit hint
             }
         }
         
@@ -830,18 +763,5 @@ struct HomeTabView: View {
     
     private func isToday(_ date: Date) -> Bool {
         Calendar.current.isDate(date, inSameDayAs: Date())
-    }
-    
-    // MARK: - Stats Update Function
-    private func updateStats() {
-        let habitsForDate = habitsForSelectedDate
-        cachedStats = [
-            ("Total", habitsForDate.count),
-            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
-            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count),
-            ("New", habitsForDate.filter { DateUtils.isSameDay($0.createdAt, selectedDate) }.count)
-        ]
-        lastCalculatedStatsDate = selectedDate
-        
     }
 }

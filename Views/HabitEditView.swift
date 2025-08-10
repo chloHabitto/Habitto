@@ -86,7 +86,7 @@ struct HabitEditView: View {
         
         if selectedHabitType == .formation {
             // For habit building, check goal fields
-            let currentGoal = "\(goalNumber) \(pluralizedGoalUnit) per \(goalFrequency)"
+            let currentGoal = "\(goalNumber) \(pluralizedGoalUnit) on \(goalFrequency)"
             let originalGoal = habit.goal
             unifiedChanges = currentGoal != originalGoal
         } else {
@@ -1007,7 +1007,28 @@ struct HabitEditView: View {
             )
         }
         
-        updatedHabit.id = habit.id
+        // Create a new habit with the original ID
+        updatedHabit = Habit(
+            id: habit.id,
+            name: updatedHabit.name,
+            description: updatedHabit.description,
+            icon: updatedHabit.icon,
+            color: updatedHabit.color,
+            habitType: updatedHabit.habitType,
+            schedule: updatedHabit.schedule,
+            goal: updatedHabit.goal,
+            reminder: updatedHabit.reminder,
+            startDate: updatedHabit.startDate,
+            endDate: updatedHabit.endDate,
+            isCompleted: updatedHabit.isCompleted,
+            streak: updatedHabit.streak,
+            createdAt: updatedHabit.createdAt,
+            reminders: updatedHabit.reminders,
+            baseline: updatedHabit.baseline,
+            target: updatedHabit.target,
+            completionHistory: updatedHabit.completionHistory,
+            actualUsage: updatedHabit.actualUsage
+        )
         
         // Update notifications for the habit
         NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)

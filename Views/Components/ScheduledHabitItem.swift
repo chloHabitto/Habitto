@@ -48,13 +48,22 @@ struct ScheduledHabitItem: View {
                     .foregroundColor(.text05)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                
+
             }
             .frame(width: 80, alignment: .trailing)
             .padding(.leading, 16)
             .padding(.trailing, 8)
         }
         .padding(.trailing, 4)
-        .background(.surface)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(
+                    dragOffset > 30 ? Color.green.opacity(0.2) :
+                    dragOffset < -30 ? Color.red.opacity(0.2) :
+                    .surface
+                )
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(.outline, lineWidth: 1)
@@ -62,7 +71,33 @@ struct ScheduledHabitItem: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
         .offset(x: dragOffset)
-        .simultaneousGesture(
+        .overlay(
+            // Progress indicator during swipe
+            HStack {
+                if dragOffset > 30 {
+                    Text("+1")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                } else if dragOffset < -30 {
+                    Text("-1")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                Spacer()
+            }
+            .padding(.leading, 16)
+            .opacity(abs(dragOffset) > 30 ? 1 : 0)
+            .animation(.easeInOut(duration: 0.2), value: dragOffset)
+        )
+        .highPriorityGesture(
             DragGesture()
                 .onChanged { value in
                     // Only respond to horizontal drags (ignore vertical scrolling)
@@ -73,21 +108,34 @@ struct ScheduledHabitItem: View {
                 .onEnded { value in
                     // Only process if it was primarily a horizontal gesture
                     if abs(value.translation.width) > abs(value.translation.height) {
-                        let threshold: CGFloat = 50
+                        let threshold: CGFloat = 30 // Reduced threshold for easier swiping
                         let translationX = value.translation.width
                         
                         if translationX > threshold {
-                            // Swipe right - increase progress
-                            currentProgress += 1
-                            onProgressChange?(habit, selectedDate, currentProgress)
+                            // Swipe right - increase progress by 1
+                            let newProgress = currentProgress + 1
+                            print("🔄 ScheduledHabitItem: Swipe right detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+                            currentProgress = newProgress
+                            
+                            // Call the callback to save the progress
+                            onProgressChange?(habit, selectedDate, newProgress)
                             
                             // Haptic feedback for increase
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                             impactFeedback.impactOccurred()
+                            
+                            // Visual feedback - briefly show green background
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                // This will be handled by the parent view if needed
+                            }
                         } else if translationX < -threshold {
-                            // Swipe left - decrease progress
-                            currentProgress = max(0, currentProgress - 1)
-                            onProgressChange?(habit, selectedDate, currentProgress)
+                            // Swipe left - decrease progress by 1 (minimum 0)
+                            let newProgress = max(0, currentProgress - 1)
+                            print("🔄 ScheduledHabitItem: Swipe left detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+                            currentProgress = newProgress
+                            
+                            // Call the callback to save the progress
+                            onProgressChange?(habit, selectedDate, newProgress)
                             
                             // Haptic feedback for decrease
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -106,9 +154,7 @@ struct ScheduledHabitItem: View {
                     }
                 }
         )
-        .onTapGesture {
-            onRowTap?()
-        }
+
         .onLongPressGesture {
             showingActionSheet = true
         }
@@ -128,7 +174,10 @@ struct ScheduledHabitItem: View {
             )
         }
         .onAppear {
-            currentProgress = habit.getProgress(for: selectedDate)
+            // Initialize currentProgress with the actual saved progress from the habit
+            let initialProgress = habit.getProgress(for: selectedDate)
+            print("🔄 ScheduledHabitItem: onAppear for \(habit.name), initializing progress to \(initialProgress)")
+            currentProgress = initialProgress
         }
         .onChange(of: selectedDate) { oldDate, newDate in
             // Only update progress if the date actually changed
@@ -137,7 +186,38 @@ struct ScheduledHabitItem: View {
             let newDay = calendar.startOfDay(for: newDate)
             
             if oldDay != newDay {
-                currentProgress = habit.getProgress(for: selectedDate)
+                let newProgress = habit.getProgress(for: selectedDate)
+                currentProgress = newProgress
+            }
+        }
+        .onChange(of: habit.completionHistory) { oldHistory, newHistory in
+            // Update local progress when the habit's completion history changes
+            let newProgress = habit.getProgress(for: selectedDate)
+            print("🔄 ScheduledHabitItem: completionHistory changed for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+            currentProgress = newProgress
+        }
+        .onChange(of: habit) { oldHabit, newHabit in
+            // Update local progress when the habit object itself changes
+            let newProgress = newHabit.getProgress(for: selectedDate)
+            print("🔄 ScheduledHabitItem: habit object changed for \(newHabit.name), updating progress from \(currentProgress) to \(newProgress)")
+            currentProgress = newProgress
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("HabitProgressUpdated"))) { notification in
+            // Listen for progress update notifications to ensure UI stays in sync
+            if let habitId = notification.userInfo?["habitId"] as? UUID,
+               habitId == habit.id,
+               let date = notification.userInfo?["date"] as? Date,
+               let progress = notification.userInfo?["progress"] as? Int {
+                
+                // Only update if it's for the same date
+                let calendar = Calendar.current
+                let notificationDay = calendar.startOfDay(for: date)
+                let selectedDay = calendar.startOfDay(for: selectedDate)
+                
+                if notificationDay == selectedDay {
+                    print("🔄 ScheduledHabitItem: Progress update notification received for \(habit.name), updating from \(currentProgress) to \(progress)")
+                    currentProgress = progress
+                }
             }
         }
     }
@@ -145,11 +225,21 @@ struct ScheduledHabitItem: View {
     // Helper function to extract goal amount without schedule
     private func extractGoalAmount(from goal: String) -> String {
         // Goal format is typically "X unit on frequency" (e.g., "1 time on 1 times a week")
+        // For legacy habits, it might still be "X unit per frequency"
         // We want to extract just "X unit" part
-        let components = goal.components(separatedBy: " on ")
+        
+        // Try splitting by " on " first (current format)
+        var components = goal.components(separatedBy: " on ")
         if components.count >= 2 {
             return components[0] // Return "X unit" part
         }
+        
+        // Try splitting by " per " for legacy habits
+        components = goal.components(separatedBy: " per ")
+        if components.count >= 2 {
+            return components[0] // Return "X unit" part
+        }
+        
         return goal // Fallback to original goal if format is unexpected
     }
 }

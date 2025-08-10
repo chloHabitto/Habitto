@@ -57,7 +57,7 @@ struct HabitsTabView: View {
                         .padding(.vertical, 40)
                         .padding(.horizontal, 20)
                     } else {
-                        LazyVStack(spacing: 12) {
+                        VStack(spacing: 12) {
                             ForEach(filteredHabits) { habit in
                                 habitDetailRow(habit)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
