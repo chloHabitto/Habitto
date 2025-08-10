@@ -171,13 +171,13 @@ struct ProgressTabsView: View {
 
 // MARK: - Date Range Selector
 struct DateRangeSelectorView: View {
-    let weekRangeText: String
+    let displayText: String
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
             HStack {
-                Text(weekRangeText)
+                Text(displayText)
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
                 

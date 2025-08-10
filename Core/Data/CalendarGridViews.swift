@@ -156,10 +156,63 @@ struct WeeklyCalendarGridView: View {
     }
 }
 
-// MARK: - Weekly Calendar Grid (formerly Monthly)
+// MARK: - Monthly Calendar Grid
 struct MonthlyCalendarGridView: View {
     let userHabits: [Habit]
-    let selectedWeekStartDate: Date
+    let selectedMonth: Date
+    
+    // Calculate the number of weeks in the selected month
+    private var numberOfWeeksInMonth: Int {
+        let calendar = Calendar.current
+        let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth)
+        let startDate = monthInterval?.start ?? selectedMonth
+        let endDate = monthInterval?.end ?? selectedMonth
+        
+        // Calculate weeks from start of month to end of month
+        var currentDate = startDate
+        var weekCount = 0
+        
+        while currentDate < endDate {
+            weekCount += 1
+            currentDate = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return max(1, weekCount) // At least 1 week
+    }
+    
+    // Calculate heatmap data for a specific habit, week, and day in the selected month
+    private func getMonthlyHeatmapDataForHabit(habit: Habit, weekIndex: Int, dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
+        let calendar = Calendar.current
+        let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        
+        // Calculate the target date based on week and day indices
+        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: monthStart) ?? monthStart
+        
+        // Check if the target date is within the selected month
+        let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+        if targetDate >= monthEnd {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+        }
+        
+        let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: targetDate)
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+        }
+        
+        let completionPercentage = StreakDataCalculator.calculateCompletionPercentage(for: habit, date: targetDate)
+        let intensity: Int
+        if completionPercentage == 0 {
+            intensity = 0
+        } else if completionPercentage < 25 {
+            intensity = 1
+        } else if completionPercentage < 50 {
+            intensity = 2
+        } else {
+            intensity = 3
+        }
+        
+        return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -168,7 +221,7 @@ struct MonthlyCalendarGridView: View {
             if userHabits.isEmpty {
                 CalendarEmptyStateView(
                     title: "No habits yet",
-                    subtitle: "Create habits to see your weekly progress"
+                    subtitle: "Create habits to see your monthly progress"
                 )
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
@@ -243,8 +296,8 @@ struct MonthlyCalendarGridView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            // Week rows with heatmap cells
-            ForEach(0..<4, id: \.self) { weekIndex in
+            // Week rows with heatmap cells - calculate actual weeks in the selected month
+            ForEach(0..<numberOfWeeksInMonth, id: \.self) { weekIndex in
                 HStack(spacing: 0) {
                     // Week label cell - must match empty corner cell exactly
                     Text("Week \(weekIndex + 1)")
@@ -260,11 +313,10 @@ struct MonthlyCalendarGridView: View {
                     
                     // Week heatmap cells - must match day headers exactly
                     ForEach(0..<7, id: \.self) { dayIndex in
-                        let heatmapData = StreakDataCalculator.getWeeklyHeatmapDataForHabit(
+                        let heatmapData = getMonthlyHeatmapDataForHabit(
                             habit: habit,
                             weekIndex: weekIndex,
-                            dayIndex: dayIndex,
-                            selectedWeekStartDate: selectedWeekStartDate
+                            dayIndex: dayIndex
                         )
                         HeatmapCellView(
                             intensity: heatmapData.intensity,
@@ -342,14 +394,14 @@ struct MonthlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Use selected week start date instead of current month
-        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
-        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
+        // Use selected month range
+        let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
         
         var totalGoal = 0
         var totalCompleted = 0
         
-        // Calculate for the selected week range
+        // Calculate for the selected month range
         var currentDate = startDate
         while currentDate <= endDate && currentDate <= today {
             if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
@@ -372,9 +424,9 @@ struct MonthlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Use selected week start date instead of current month
-        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
-        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
+        // Use selected month range
+        let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
         
         var completedDays = 0
         var currentDate = startDate
@@ -392,9 +444,9 @@ struct MonthlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Use selected week start date instead of current month
-        let startDate = calendar.startOfDay(for: selectedWeekStartDate)
-        let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) ?? startDate // 7 days from start
+        // Use selected month range
+        let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
         
         var scheduledDays = 0
         var completedDays = 0

@@ -30,7 +30,9 @@ struct StreakView: View {
     
     // Date selection state
     @State private var selectedWeekStartDate: Date = Date.currentWeekStartDate()
+    @State private var selectedMonth: Date = Date.currentMonthStartDate()
     @State private var showingCalendar = false
+    @State private var showingMonthPicker = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -101,10 +103,16 @@ struct StreakView: View {
                         // Scrollable Content Section
                         ScrollView {
                             VStack(spacing: 16) {
-                                                        // Date range selector
+                                                        // Date range selector - show week for weekly, month for monthly
                         DateRangeSelectorView(
-                            weekRangeText: selectedWeekStartDate.weekRangeText(),
-                            onTap: { showingCalendar = true }
+                            displayText: selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText(),
+                            onTap: { 
+                                if selectedProgressTab == 1 {
+                                    showingMonthPicker = true
+                                } else {
+                                    showingCalendar = true
+                                }
+                            }
                         )
                         
                         // Debug: Print current week info
@@ -124,7 +132,7 @@ struct StreakView: View {
                                         // Monthly view
                                         MonthlyCalendarGridView(
                                             userHabits: userHabits,
-                                            selectedWeekStartDate: selectedWeekStartDate
+                                            selectedMonth: selectedMonth
                                         )
                                     } else {
                                         // Yearly view
@@ -223,6 +231,17 @@ struct StreakView: View {
                 .animation(.easeInOut(duration: 0.3), value: showingCalendar)
             ) : AnyView(EmptyView())
         )
+        .overlay(
+            // Pop-up Modal for month selection
+            showingMonthPicker ? AnyView(
+                MonthPickerModal(
+                    selectedMonth: $selectedMonth,
+                    isPresented: $showingMonthPicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
+            ) : AnyView(EmptyView())
+        )
     }
     
     // MARK: - Data Loading
@@ -299,34 +318,32 @@ struct StreakView: View {
             
             // Date range selector
             DateRangeSelectorView(
-                weekRangeText: selectedWeekStartDate.weekRangeText(),
+                displayText: selectedWeekStartDate.weekRangeText(),
                 onTap: { showingCalendar = true }
             )
             
             // Content based on selected tab
-            Group {
-                if selectedProgressTab == 0 {
-                    // Weekly view
-                    WeeklyCalendarGridView(
-                        userHabits: userHabits,
-                        selectedWeekStartDate: selectedWeekStartDate
-                    )
-                } else if selectedProgressTab == 1 {
+            if selectedProgressTab == 0 {
+                // Weekly view
+                WeeklyCalendarGridView(
+                    userHabits: userHabits,
+                    selectedWeekStartDate: selectedWeekStartDate
+                )
+                            } else if selectedProgressTab == 1 {
                     // Monthly view
                     MonthlyCalendarGridView(
                         userHabits: userHabits,
-                        selectedWeekStartDate: selectedWeekStartDate
+                        selectedMonth: selectedMonth
                     )
-                } else {
-                    // Yearly view
-                    YearlyCalendarGridView(
-                        userHabits: userHabits,
-                        selectedWeekStartDate: selectedWeekStartDate,
-                        yearlyHeatmapData: yearlyHeatmapData,
-                        isDataLoaded: isDataLoaded,
-                        isLoadingProgress: isLoadingProgress
-                    )
-                }
+            } else {
+                // Yearly view
+                YearlyCalendarGridView(
+                    userHabits: userHabits,
+                    selectedWeekStartDate: selectedWeekStartDate,
+                    yearlyHeatmapData: yearlyHeatmapData,
+                    isDataLoaded: isDataLoaded,
+                    isLoadingProgress: isLoadingProgress
+                )
             }
         }
         .padding(.bottom, 16)

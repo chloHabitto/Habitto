@@ -472,7 +472,7 @@ class StreakDataCalculator {
     }
     
     // MARK: - Completion Percentage Calculation
-    private static func calculateCompletionPercentage(for habit: Habit, date: Date) -> Double {
+    static func calculateCompletionPercentage(for habit: Habit, date: Date) -> Double {
         let actualProgress = habit.getProgress(for: date)
         let goalAmount = parseGoalAmount(from: habit.goal)
         

@@ -22,4 +22,18 @@ extension Date {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         return weekStart
     }
+    
+    static func currentMonthStartDate() -> Date {
+        let calendar = Calendar.current
+        let today = Date()
+        // Get the start of the current month
+        let monthStart = calendar.dateInterval(of: .month, for: today)?.start ?? today
+        return monthStart
+    }
+    
+    func monthText() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: self)
+    }
 } 
