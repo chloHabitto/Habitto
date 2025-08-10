@@ -1,5 +1,6 @@
 import CoreData
 import SwiftUI
+import UserNotifications
 
 // MARK: - Core Data Adapter
 class CoreDataAdapter: ObservableObject {
@@ -198,15 +199,25 @@ class CoreDataAdapter: ObservableObject {
     func deleteHabit(_ habit: Habit) {
         print("🗑️ CoreDataAdapter: Starting delete for habit: \(habit.name)")
         
+        // Remove all notifications for this habit first
+        NotificationManager.shared.removeAllNotifications(for: habit)
+        print("🗑️ CoreDataAdapter: Removed all notifications for habit: \(habit.name)")
+        
+        // Immediately remove from published habits for instant UI update
+        DispatchQueue.main.async {
+            var updatedHabits = self.habits
+            updatedHabits.removeAll { $0.id == habit.id }
+            self.habits = updatedHabits
+            print("🗑️ CoreDataAdapter: Habit immediately removed from published habits, new count: \(self.habits.count)")
+        }
+        
         let habitEntities = coreDataManager.fetchHabits()
         
         if let entity = habitEntities.first(where: { $0.id == habit.id }) {
             print("🗑️ CoreDataAdapter: Found matching entity, deleting...")
             do {
                 try coreDataManager.deleteHabit(entity)
-                print("🗑️ CoreDataAdapter: Entity deleted, reloading habits...")
-                loadHabits(force: true)
-                print("🗑️ CoreDataAdapter: Habits reloaded, total: \(habits.count)")
+                print("🗑️ CoreDataAdapter: Entity deleted from Core Data")
                 
                 // Also remove from UserDefaults backup to prevent restoration
                 var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -221,8 +232,7 @@ class CoreDataAdapter: ObservableObject {
                 var currentHabits = HabitStorageManager.shared.loadHabits()
                 currentHabits.removeAll { $0.id == habit.id }
                 HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-                habits = currentHabits
-                print("✅ CoreDataAdapter: Habit deleted from UserDefaults, total: \(habits.count)")
+                print("✅ CoreDataAdapter: Habit deleted from UserDefaults")
             }
         } else {
             print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
@@ -233,9 +243,7 @@ class CoreDataAdapter: ObservableObject {
                 print("🗑️ CoreDataAdapter: Found entity by name, deleting...")
                 do {
                     try coreDataManager.deleteHabit(entity)
-                    print("🗑️ CoreDataAdapter: Entity deleted by name, reloading habits...")
-                    loadHabits(force: true)
-                    print("🗑️ CoreDataAdapter: Habits reloaded, total: \(habits.count)")
+                    print("🗑️ CoreDataAdapter: Entity deleted by name from Core Data")
                     
                     // Also remove from UserDefaults backup to prevent restoration
                     var currentHabits = HabitStorageManager.shared.loadHabits()

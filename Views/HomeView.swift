@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Tab Enum
 enum Tab {
@@ -28,11 +29,19 @@ class HomeViewState: ObservableObject {
     // Core Data adapter
     private let coreDataAdapter = CoreDataAdapter.shared
     
+    // Store cancellables for proper memory management
+    private var cancellables = Set<AnyCancellable>()
+    
     init() {
-        // Subscribe to Core Data changes
+        // Subscribe to Core Data changes with proper state management
         coreDataAdapter.$habits
             .receive(on: DispatchQueue.main)
-            .assign(to: &$habits)
+            .sink { [weak self] newHabits in
+                DispatchQueue.main.async {
+                    self?.habits = newHabits
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func updateHabits(_ newHabits: [Habit]) {
@@ -48,8 +57,21 @@ class HomeViewState: ObservableObject {
     }
     
     func deleteHabit(_ habit: Habit) {
+        print("🗑️ HomeViewState: Starting delete for habit: \(habit.name)")
+        print("🗑️ HomeViewState: Current habits count: \(habits.count)")
+        
+        // Immediately remove from local state for instant UI update
+        DispatchQueue.main.async {
+            var updatedHabits = self.habits
+            updatedHabits.removeAll { $0.id == habit.id }
+            self.habits = updatedHabits
+            print("🗑️ HomeViewState: Immediately removed habit, new count: \(self.habits.count)")
+        }
+        
+        // Then delete from Core Data
         coreDataAdapter.deleteHabit(habit)
         habitToDelete = nil
+        print("🗑️ HomeViewState: Delete completed")
     }
     
     func updateHabit(_ updatedHabit: Habit) {

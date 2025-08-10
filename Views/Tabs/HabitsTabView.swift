@@ -325,6 +325,12 @@ struct HabitsTabView: View {
             // Debug: Check for duplicate habits
             debugCheckForDuplicates()
         }
+        .onChange(of: habits) { oldHabits, newHabits in
+            // Sync local habitsOrder with incoming habits to handle deletions
+            print("🔄 HabitsTabView: habits parameter changed from \(oldHabits.count) to \(newHabits.count)")
+            habitsOrder = newHabits
+            print("🔄 HabitsTabView: habitsOrder updated to \(habitsOrder.count)")
+        }
         .onDisappear {
             // Clean up timer to prevent memory leaks
             dragUpdateTimer?.invalidate()
@@ -339,11 +345,14 @@ struct HabitsTabView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
+        // Use the habits parameter directly for immediate updates, habitsOrder only for reordering
+        let habitsToFilter = habits
+        
         // First, deduplicate habits by ID to prevent UI duplicates
         var uniqueHabits: [Habit] = []
         var seenIds: Set<UUID> = []
         
-        for habit in habitsOrder {
+        for habit in habitsToFilter {
             if !seenIds.contains(habit.id) {
                 uniqueHabits.append(habit)
                 seenIds.insert(habit.id)
@@ -578,13 +587,14 @@ struct HabitsTabView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        let activeHabits = habitsOrder.filter { habit in
+        // Use habits parameter for immediate updates, not habitsOrder
+        let activeHabits = habits.filter { habit in
             let startDate = calendar.startOfDay(for: habit.startDate)
             let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
             return today >= startDate && today <= endDate
         }
         
-        let inactiveHabits = habitsOrder.filter { habit in
+        let inactiveHabits = habits.filter { habit in
             let startDate = calendar.startOfDay(for: habit.startDate)
             let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
             return today < startDate || today > endDate
