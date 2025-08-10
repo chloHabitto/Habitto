@@ -245,37 +245,32 @@ struct HeatmapCellView: View {
     }
     
     var body: some View {
-        Rectangle()
-            .fill(.clear)
-            .frame(width: 32, height: 32)
-            .overlay(
-                Group {
-                    if isScheduled {
-                        // Show heatmap when scheduled
-                        Rectangle()
-                            .fill(heatmapColor(for: completionPercentage))
-                            .frame(width: 24, height: 24)
-                            .cornerRadius(6)
-                    } else {
-                        // Show crossed-out appearance when not scheduled
-                        ZStack {
-                            // Diagonal line from top-left to bottom-right
-                            Rectangle()
-                                .fill(.outline)
-                                .frame(width: 1)
-                                .frame(height: 20)
-                                .rotationEffect(.degrees(45))
-                            
-                            // Diagonal line from top-right to bottom-left
-                            Rectangle()
-                                .fill(.outline)
-                                .frame(width: 1)
-                                .frame(height: 20)
-                                .rotationEffect(.degrees(-45))
-                        }
-                    }
+        GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+            let cellSize = size * 0.8 // Use 80% of available space for better spacing
+            
+            ZStack {
+                // Background
+                Rectangle()
+                    .fill(.clear)
+                    .frame(width: size, height: size)
+                
+                if isScheduled {
+                    // Show heatmap when scheduled
+                    Rectangle()
+                        .fill(heatmapColor(for: completionPercentage))
+                        .frame(width: cellSize, height: cellSize)
+                        .cornerRadius(max(2, cellSize * 0.2))
+                } else {
+                    // Show subtle indicator when not scheduled
+                    Rectangle()
+                        .fill(.outline.opacity(0.3))
+                        .frame(width: cellSize, height: cellSize)
+                        .cornerRadius(max(2, cellSize * 0.2))
                 }
-            )
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
     }
     
     private func heatmapColor(for completionPercentage: Double) -> Color {

@@ -481,6 +481,7 @@ struct YearlyCalendarGridView: View {
     let yearlyHeatmapData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]]
     let isDataLoaded: Bool
     let isLoadingProgress: Double
+    let selectedYear: Int
     
     var body: some View {
         VStack(spacing: 12) {
@@ -511,7 +512,7 @@ struct YearlyCalendarGridView: View {
                             .padding(.top, 16)
                             .padding(.bottom, 12)
                             
-                            // Yearly heatmap table for this habit (365 days)
+                            // Yearly heatmap for this habit
                             yearlyHeatmapTable(for: habit, index: index)
                             
                             // Summary statistics row
@@ -550,24 +551,36 @@ struct YearlyCalendarGridView: View {
     // MARK: - Yearly Heatmap Table
     @ViewBuilder
     private func yearlyHeatmapTable(for habit: Habit, index: Int) -> some View {
-        VStack(spacing: 0) {
-            // Yearly heatmap (365 rectangles) - Optimized rendering
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 30), spacing: 0) {
-                ForEach(0..<365, id: \.self) { dayIndex in
-                    let heatmapData = yearlyHeatmapData[index][dayIndex]
-                    HeatmapCellView(
-                        intensity: heatmapData.intensity,
-                        isScheduled: heatmapData.isScheduled,
-                        completionPercentage: heatmapData.completionPercentage
-                    )
-                    .frame(height: 4)
-                    .aspectRatio(1, contentMode: .fit)
+        VStack(spacing: 8) {
+            // Calculate date components outside of @ViewBuilder
+            let calendar = Calendar.current
+            let daysInYear = calendar.isLeapYear(selectedYear) ? 366 : 365
+            
+            // Main heatmap grid - flexible grid that fills available horizontal space
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 4, maximum: 8), spacing: 1), count: 40), spacing: 1) {
+                ForEach(0..<daysInYear, id: \.self) { dayIndex in
+                    // Safely access the heatmap data
+                    if index < yearlyHeatmapData.count && dayIndex < yearlyHeatmapData[index].count {
+                        let heatmapData = yearlyHeatmapData[index][dayIndex]
+                        HeatmapCellView(
+                            intensity: heatmapData.intensity,
+                            isScheduled: heatmapData.isScheduled,
+                            completionPercentage: heatmapData.completionPercentage
+                        )
+                        .aspectRatio(1, contentMode: .fit)
+                        .cornerRadius(2)
+                    } else {
+                        // Fallback for missing data
+                        Rectangle()
+                            .fill(.clear)
+                            .aspectRatio(1, contentMode: .fit)
+                            .cornerRadius(2)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
-            .clipped()
+            .padding(.horizontal, 16)
         }
-        .padding(.horizontal, 16)
     }
     
     // MARK: - Helper View Methods
@@ -627,9 +640,13 @@ struct YearlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Calculate for the entire year based on selected week start date
-        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
-        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        // Calculate for the entire year based on selectedYear parameter
+        var components = DateComponents()
+        components.year = selectedYear
+        components.month = 1
+        components.day = 1
+        let startOfYear = calendar.date(from: components) ?? Date()
+        let endOfYear = calendar.dateInterval(of: .year, for: startOfYear)?.end ?? startOfYear
         
         var totalGoal = 0
         var totalCompleted = 0
@@ -657,9 +674,13 @@ struct YearlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Calculate for the entire year based on selected week start date
-        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
-        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        // Calculate for the entire year based on selectedYear parameter
+        var components = DateComponents()
+        components.year = selectedYear
+        components.month = 1
+        components.day = 1
+        let startOfYear = calendar.date(from: components) ?? Date()
+        let endOfYear = calendar.dateInterval(of: .year, for: startOfYear)?.end ?? startOfYear
         
         var completedDays = 0
         var currentDate = startOfYear
@@ -678,9 +699,13 @@ struct YearlyCalendarGridView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Calculate for the entire year based on selected week start date
-        let startOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
-        let endOfYear = calendar.dateInterval(of: .year, for: selectedWeekStartDate)?.end ?? selectedWeekStartDate
+        // Calculate for the entire year based on selectedYear parameter
+        var components = DateComponents()
+        components.year = selectedYear
+        components.month = 1
+        components.day = 1
+        let startOfYear = calendar.date(from: components) ?? Date()
+        let endOfYear = calendar.dateInterval(of: .year, for: startOfYear)?.end ?? startOfYear
         
         var scheduledDays = 0
         var completedDays = 0

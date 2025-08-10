@@ -24,10 +24,6 @@ struct StreakView: View {
     @State private var dismissOffset: CGFloat = 0
     @State private var isDismissing = false
     
-    // Performance optimization: Pagination for large datasets
-    @State private var currentYearlyPage = 0
-    private let yearlyItemsPerPage = 50
-    
     // Date selection state
     @State private var selectedWeekStartDate: Date = Date.currentWeekStartDate()
     @State private var selectedMonth: Date = Date.currentMonthStartDate()
@@ -146,7 +142,8 @@ struct StreakView: View {
                                             selectedWeekStartDate: selectedWeekStartDate,
                                             yearlyHeatmapData: yearlyHeatmapData,
                                             isDataLoaded: isDataLoaded,
-                                            isLoadingProgress: isLoadingProgress
+                                            isLoadingProgress: isLoadingProgress,
+                                            selectedYear: selectedYear
                                         )
                                     }
                                 }
@@ -311,8 +308,8 @@ struct StreakView: View {
         Task {
             let yearlyData = await StreakDataCalculator.generateYearlyDataFromHabitsAsync(
                 self.userHabits,
-                startIndex: self.currentYearlyPage * self.yearlyItemsPerPage,
-                itemsPerPage: self.yearlyItemsPerPage,
+                startIndex: 0, // Always start from beginning for yearly view
+                itemsPerPage: self.userHabits.count, // Load all habits at once
                 forYear: self.selectedYear
             ) { progress in
                 // Update UI on main thread
@@ -327,6 +324,12 @@ struct StreakView: View {
                 self.isDataLoaded = true
                 self.isCalculating = false
                 self.isLoadingProgress = 0.0
+                
+                // Debug: Print data structure
+                print("🔍 YEARLY DATA LOADED - Habits: \(self.userHabits.count), Data arrays: \(yearlyData.count)")
+                for (index, habitData) in yearlyData.enumerated() {
+                    print("🔍 YEARLY DATA DEBUG - Habit \(index): \(habitData.count) days")
+                }
             }
         }
     }
@@ -368,7 +371,8 @@ struct StreakView: View {
                     selectedWeekStartDate: selectedWeekStartDate,
                     yearlyHeatmapData: yearlyHeatmapData,
                     isDataLoaded: isDataLoaded,
-                    isLoadingProgress: isLoadingProgress
+                    isLoadingProgress: isLoadingProgress,
+                    selectedYear: selectedYear
                 )
             }
         }

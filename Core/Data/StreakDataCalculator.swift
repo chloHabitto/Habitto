@@ -1,5 +1,14 @@
 import Foundation
 
+// MARK: - Calendar Extension for Leap Year
+extension Calendar {
+    func isLeapYear(_ year: Int) -> Bool {
+        let date = self.date(from: DateComponents(year: year, month: 1, day: 1)) ?? Date()
+        let daysInYear = self.range(of: .day, in: .year, for: date)?.count ?? 365
+        return daysInYear == 366
+    }
+}
+
 // MARK: - Streak Data Calculator
 class StreakDataCalculator {
     
@@ -74,7 +83,9 @@ class StreakDataCalculator {
     static func generateYearlyDataFromHabits(_ habits: [Habit], forYear year: Int) -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
         
-        for habit in habits {
+        print("🔍 YEARLY DATA GENERATION - Starting for \(habits.count) habits, year \(year)")
+        
+        for (habitIndex, habit) in habits.enumerated() {
             var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
             
             let calendar = Calendar.current
@@ -85,17 +96,29 @@ class StreakDataCalculator {
             components.month = 1
             components.day = 1
             
-            guard let yearStartDate = calendar.date(from: components) else { continue }
+            guard let yearStartDate = calendar.date(from: components) else { 
+                print("🔍 YEARLY DATA ERROR - Could not create start date for year \(year)")
+                continue 
+            }
             
-            for day in 0..<365 {
+            // Handle leap years - use 366 days for leap years, 365 for regular years
+            let isLeapYear = calendar.isLeapYear(year)
+            let daysInYear = isLeapYear ? 366 : 365
+            
+            print("🔍 YEARLY DATA DEBUG - Habit \(habitIndex): '\(habit.name)', \(daysInYear) days, leap year: \(isLeapYear)")
+            
+            // Generate data for each day of the year
+            for day in 0..<daysInYear {
                 let targetDate = calendar.date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
                 let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
                 habitYearlyData.append(heatmapData)
             }
             
             yearlyData.append(habitYearlyData)
+            print("🔍 YEARLY DATA DEBUG - Habit \(habitIndex): Generated \(habitYearlyData.count) days of data")
         }
         
+        print("🔍 YEARLY DATA GENERATION - Completed: \(yearlyData.count) habits, \(yearlyData.first?.count ?? 0) days per habit")
         return yearlyData
     }
     
@@ -646,6 +669,8 @@ class StreakDataCalculator {
                 let endIndex = min(startIndex + itemsPerPage, habits.count)
                 let habitsToProcess = Array(habits[startIndex..<endIndex])
                 
+                print("🔍 ASYNC YEARLY DATA GENERATION - Processing \(habitsToProcess.count) habits (start: \(startIndex), end: \(endIndex))")
+                
                 for (index, habit) in habitsToProcess.enumerated() {
                     var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
                     
@@ -657,9 +682,19 @@ class StreakDataCalculator {
                     components.month = 1
                     components.day = 1
                     
-                    guard let yearStartDate = calendar.date(from: components) else { continue }
+                    guard let yearStartDate = calendar.date(from: components) else { 
+                        print("🔍 ASYNC YEARLY DATA ERROR - Could not create start date for year \(year)")
+                        continue 
+                    }
                     
-                    for day in 0..<365 {
+                    // Handle leap years - use 366 days for leap years, 365 for regular years
+                    let isLeapYear = calendar.isLeapYear(year)
+                    let daysInYear = isLeapYear ? 366 : 365
+                    
+                    print("🔍 ASYNC YEARLY DATA DEBUG - Habit \(index): '\(habit.name)', \(daysInYear) days, leap year: \(isLeapYear)")
+                    
+                    // Generate data for each day of the year
+                    for day in 0..<daysInYear {
                         let targetDate = calendar.date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
                         let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
                         habitYearlyData.append(heatmapData)
@@ -670,6 +705,8 @@ class StreakDataCalculator {
                     // Cache this habit's data for future use
                     cacheManager.set(habitYearlyData, forKey: habit.id)
                     
+                    print("🔍 ASYNC YEARLY DATA DEBUG - Habit \(index): Generated \(habitYearlyData.count) days of data")
+                    
                     // Report progress
                     let progressValue = Double(index + 1) / Double(habitsToProcess.count)
                     DispatchQueue.main.async {
@@ -677,6 +714,7 @@ class StreakDataCalculator {
                     }
                 }
                 
+                print("🔍 ASYNC YEARLY DATA GENERATION - Completed: \(yearlyData.count) habits, \(yearlyData.first?.count ?? 0) days per habit")
                 continuation.resume(returning: yearlyData)
             }
         }
