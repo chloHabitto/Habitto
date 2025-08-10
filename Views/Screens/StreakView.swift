@@ -6,7 +6,7 @@ struct StreakView: View {
     @State private var streakStatistics = StreakStatistics(currentStreak: 0, bestStreak: 0, averageStreak: 0, completionRate: 0, consistencyRate: 0)
     
     // Performance optimization: Cache expensive data
-    @State private var yearlyHeatmapData: [[Int]] = []
+    @State private var yearlyHeatmapData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
     @State private var isDataLoaded: Bool = false
     @State private var isLoadingProgress: Double = 0.0
     @State private var isCalculating: Bool = false

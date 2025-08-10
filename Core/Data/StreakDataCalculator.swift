@@ -4,7 +4,7 @@ import Foundation
 class StreakDataCalculator {
     
     // MARK: - Performance Optimization: Caching
-    private static let cacheManager = CacheManager<UUID, [Int]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
+    private static let cacheManager = CacheManager<UUID, [(intensity: Int, isScheduled: Bool, completionPercentage: Double)]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
     
     // MARK: - Streak Statistics
     static func calculateStreakStatistics(from habits: [Habit]) -> StreakStatistics {
@@ -61,64 +61,68 @@ class StreakDataCalculator {
         return totalPossible > 0 ? (totalCompletions * 100) / totalPossible : 0
     }
     
-    // MARK: - Heatmap Data Generation
-    static func generateYearlyDataFromHabits(_ habits: [Habit], startIndex: Int, itemsPerPage: Int) -> [[Int]] {
-        // Performance optimization: Check cache first
-        let cachedData = habits.compactMap { habit in
-            cacheManager.get(forKey: habit.id)
-        }
+    // MARK: - Yearly Heatmap Data
+    
+    /// Generate yearly heatmap data for habits using the new completion percentage system
+    static func generateYearlyDataFromHabits(_ habits: [Habit]) -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
+        var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
         
-        if !cachedData.isEmpty && cachedData.count == habits.count {
-            // Return cached data for the requested range
-            let endIndex = min(startIndex + itemsPerPage, cachedData.count)
-            return Array(cachedData[startIndex..<endIndex])
-        }
-        
-        // Cache miss or expired - calculate new data
-        var yearlyData: [[Int]] = []
-        let endIndex = min(startIndex + itemsPerPage, habits.count)
-        let habitsToProcess = Array(habits[startIndex..<endIndex])
-        
-        for habit in habitsToProcess {
-            var habitYearlyData: [Int] = []
+        for habit in habits {
+            var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
             
             let calendar = Calendar.current
             let today = Calendar.current.startOfDay(for: Date())
             
             for day in 0..<365 {
                 let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
-                let intensity = generateYearlyIntensity(for: habit, date: targetDate)
-                habitYearlyData.append(intensity)
+                let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
+                habitYearlyData.append(heatmapData)
             }
             
             yearlyData.append(habitYearlyData)
-            
-            // Cache this habit's data for future use
-            cacheManager.set(habitYearlyData, forKey: habit.id)
         }
         
         return yearlyData
     }
     
-    private static func generateYearlyIntensity(for habit: Habit, date: Date) -> Int {
+    /// Get yearly heatmap data for a specific habit and day
+    static func getYearlyHeatmapData(for habit: Habit, dayIndex: Int, targetDate: Date) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
         let calendar = Calendar.current
         
         // Check if habit was created before this date
-        if date < calendar.startOfDay(for: habit.startDate) {
-            return 0
+        if targetDate < calendar.startOfDay(for: habit.startDate) {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
         }
         
-        // Check if habit was completed on this date
-        if habit.isCompleted(for: date) {
-            return 3 // High intensity for completed days
+        // Check if habit should be scheduled on this date
+        let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
+        
+        // Get completion percentage for this date
+        let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
+        
+        // Debug: Print heatmap data for troubleshooting
+        let dateKey = DateUtils.dateKey(for: targetDate)
+        let actualProgress = habit.getProgress(for: targetDate)
+        print("🔍 YEARLY HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress)")
+        
+        // If not scheduled, return 0 intensity and 0% completion
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
         }
         
-        // Check if habit should have been scheduled on this date
-        if shouldShowHabitOnDate(habit, date: date) {
-            return 1 // Low intensity for scheduled but not completed days
+        // Map completion percentage to intensity for backward compatibility
+        let intensity: Int
+        if completionPercentage == 0 {
+            intensity = 0
+        } else if completionPercentage < 25 {
+            intensity = 1
+        } else if completionPercentage < 50 {
+            intensity = 2
+        } else {
+            intensity = 3
         }
         
-        return 0 // No intensity for non-scheduled days
+        return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
     }
     
     // MARK: - Weekly Heatmap Data
@@ -283,6 +287,43 @@ class StreakDataCalculator {
         return (intensity: intensity, isScheduled: true, completionPercentage: averageCompletion)
     }
     
+    // MARK: - Individual Habit Monthly Heatmap Data
+    static func getMonthlyHeatmapDataForHabit(habit: Habit, weekIndex: Int, dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this week and day
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        let weeksToSubtract = weekIndex
+        let daysToSubtract = daysFromMonday - dayIndex + (weeksToSubtract * 7)
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Check if this specific habit is scheduled for this date
+        let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+        }
+        
+        // Get completion percentage for this specific habit on this date
+        let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
+        
+        // Map completion percentage to intensity for backward compatibility
+        let intensity: Int
+        if completionPercentage == 0 {
+            intensity = 0
+        } else if completionPercentage < 25 {
+            intensity = 1
+        } else if completionPercentage < 50 {
+            intensity = 2
+        } else {
+            intensity = 3
+        }
+        
+        return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+    }
+    
     static func getMonthlyTotalIntensity(dayIndex: Int, habits: [Habit]) -> Int {
         let totalIntensity = habits.reduce(0) { total, habit in
             total + getMonthlyHeatmapIntensity(weekIndex: 0, dayIndex: dayIndex, habits: habits)
@@ -329,8 +370,49 @@ class StreakDataCalculator {
         return (intensity: intensity, isScheduled: true, completionPercentage: averageCompletion)
     }
     
+    // MARK: - Monthly Total Heatmap Data (Updated for Weekly Structure)
+    static func getMonthlyTotalHeatmapDataForWeek(weekIndex: Int, dayIndex: Int, habits: [Habit]) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
+        let calendar = Calendar.current
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // Calculate the date for this week and day
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        let weeksToSubtract = weekIndex
+        let daysToSubtract = daysFromMonday - dayIndex + (weeksToSubtract * 7)
+        let targetDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
+        
+        // Check if any habit is scheduled for this date
+        let scheduledHabits = habits.filter { shouldShowHabitOnDate($0, date: targetDate) }
+        let isScheduled = !scheduledHabits.isEmpty
+        
+        if !isScheduled {
+            return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+        }
+        
+        // Calculate average completion percentage from scheduled habits
+        let totalCompletion = scheduledHabits.reduce(0.0) { total, habit in
+            total + calculateCompletionPercentage(for: habit, date: targetDate)
+        }
+        let averageCompletion = scheduledHabits.isEmpty ? 0.0 : totalCompletion / Double(scheduledHabits.count)
+        
+        // Map completion percentage to intensity for backward compatibility
+        let intensity: Int
+        if averageCompletion == 0 {
+            intensity = 0
+        } else if averageCompletion < 25 {
+            intensity = 1
+        } else if averageCompletion < 50 {
+            intensity = 2
+        } else {
+            intensity = 3
+        }
+        
+        return (intensity: intensity, isScheduled: true, completionPercentage: averageCompletion)
+    }
+    
     // MARK: - Schedule Helper Functions
-    private static func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
+    static func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: date)
         let dateKey = DateUtils.dateKey(for: date)
@@ -376,7 +458,7 @@ class StreakDataCalculator {
         return clampedPercentage
     }
     
-    private static func parseGoalAmount(from goalString: String) -> Int {
+    static func parseGoalAmount(from goalString: String) -> Int {
         // Parse goal strings like "1 time on everyday", "5 sessions per week", etc.
         let components = goalString.lowercased().components(separatedBy: " ")
         guard let firstComponent = components.first else { return 0 }
@@ -490,15 +572,13 @@ class StreakDataCalculator {
         cacheManager.remove(forKey: habitId)
     }
     
-    // MARK: - Async Background Processing
-    
     /// Async version of generateYearlyDataFromHabits for background processing
     static func generateYearlyDataFromHabitsAsync(
         _ habits: [Habit], 
         startIndex: Int, 
         itemsPerPage: Int,
         progress: @escaping (Double) -> Void = { _ in }
-    ) async -> [[Int]] {
+    ) async -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 // Performance optimization: Check cache first
@@ -515,20 +595,20 @@ class StreakDataCalculator {
                 }
                 
                 // Cache miss or expired - calculate new data
-                var yearlyData: [[Int]] = []
+                var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
                 let endIndex = min(startIndex + itemsPerPage, habits.count)
                 let habitsToProcess = Array(habits[startIndex..<endIndex])
                 
                 for (index, habit) in habitsToProcess.enumerated() {
-                    var habitYearlyData: [Int] = []
+                    var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] = []
                     
                     let calendar = Calendar.current
                     let today = Calendar.current.startOfDay(for: Date())
                     
                     for day in 0..<365 {
                         let targetDate = calendar.date(byAdding: .day, value: day - 364, to: today) ?? today
-                        let intensity = generateYearlyIntensity(for: habit, date: targetDate)
-                        habitYearlyData.append(intensity)
+                        let heatmapData = getYearlyHeatmapData(for: habit, dayIndex: day, targetDate: targetDate)
+                        habitYearlyData.append(heatmapData)
                     }
                     
                     yearlyData.append(habitYearlyData)

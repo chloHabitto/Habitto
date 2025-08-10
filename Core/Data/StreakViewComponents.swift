@@ -189,7 +189,7 @@ struct DateRangeSelectorView: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 16)
+
     }
 }
 
@@ -323,7 +323,7 @@ struct SummaryStatisticsView: View {
         }
         .background(.surfaceContainer)
         .cornerRadius(12)
-        .padding(.horizontal, 16)
+//        .padding(.horizontal, 16)
     }
 }
 
