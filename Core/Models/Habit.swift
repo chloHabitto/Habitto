@@ -159,6 +159,9 @@ struct Habit: Identifiable, Codable, Equatable {
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = currentProgress + 1
         updateCurrentCompletionStatus()
+        
+        // Debug: Print completion tracking
+        print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
     }
     
     mutating func markIncomplete(for date: Date) {
@@ -175,7 +178,12 @@ struct Habit: Identifiable, Codable, Equatable {
     
     func getProgress(for date: Date) -> Int {
         let dateKey = Self.dateKey(for: date)
-        return completionHistory[dateKey] ?? 0
+        let progress = completionHistory[dateKey] ?? 0
+        
+        // Debug: Print progress retrieval
+        print("🔍 PROGRESS DEBUG - Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | CompletionHistory keys: \(completionHistory.keys.sorted())")
+        
+        return progress
     }
     
     // MARK: - Habit Breaking Methods

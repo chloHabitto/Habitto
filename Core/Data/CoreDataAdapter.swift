@@ -316,8 +316,15 @@ class CoreDataAdapter: ObservableObject {
                 
                 // Update the local habits array to reflect the change immediately
                 if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index].completionHistory[dateKey] = progress
-                    print("✅ CoreDataAdapter: Local habits array updated")
+                    var updatedHabits = habits
+                    updatedHabits[index].completionHistory[dateKey] = progress
+                    print("🔍 CoreDataAdapter: Before update - habits[\(index)].completionHistory[\(dateKey)] = \(habits[index].completionHistory[dateKey] ?? 0)")
+                    habits = updatedHabits
+                    print("🔍 CoreDataAdapter: After update - habits[\(index)].completionHistory[\(dateKey)] = \(habits[index].completionHistory[dateKey] ?? 0)")
+                    
+                    // Explicitly notify subscribers that the object will change
+                    objectWillChange.send()
+                    print("✅ CoreDataAdapter: Local habits array updated and objectWillChange sent")
                 }
                 
                 // Also backup to UserDefaults as a safety measure
@@ -345,7 +352,10 @@ class CoreDataAdapter: ObservableObject {
                     currentHabits[index].completionHistory[dateKey] = progress
                     HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
                     habits = currentHabits
-                    print("✅ CoreDataAdapter: Progress saved to UserDefaults")
+                    
+                    // Explicitly notify subscribers that the object will change
+                    objectWillChange.send()
+                    print("✅ CoreDataAdapter: Progress saved to UserDefaults and objectWillChange sent")
                 }
             }
         } else {
@@ -358,7 +368,10 @@ class CoreDataAdapter: ObservableObject {
                 currentHabits[index].completionHistory[dateKey] = progress
                 HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
                 habits = currentHabits
-                print("✅ CoreDataAdapter: Progress saved to UserDefaults")
+                
+                // Explicitly notify subscribers that the object will change
+                objectWillChange.send()
+                print("✅ CoreDataAdapter: Progress saved to UserDefaults and objectWillChange sent")
             }
         }
     }

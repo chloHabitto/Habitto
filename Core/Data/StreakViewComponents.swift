@@ -269,28 +269,29 @@ struct HeatmapCellView: View {
         // 0% = green50 (lightest)
         // 100% = green600 (darkest)
         
+        let selectedColor: Color
         if clampedPercentage == 0.0 {
-            return Color("green50")
-        } else if clampedPercentage == 100.0 {
-            return Color("green600")
+            selectedColor = Color("green50")
+        } else if clampedPercentage >= 100.0 {
+            selectedColor = Color("green600")
+        } else if clampedPercentage >= 90.0 {
+            selectedColor = Color("green500")
+        } else if clampedPercentage >= 75.0 {
+            selectedColor = Color("green400")
+        } else if clampedPercentage >= 60.0 {
+            selectedColor = Color("green300")
+        } else if clampedPercentage >= 40.0 {
+            selectedColor = Color("green200")
+        } else if clampedPercentage >= 20.0 {
+            selectedColor = Color("green100")
         } else {
-            // Use a step-based approach for better visual distinction
-            // This creates a smooth gradient effect using predefined green shades
-            let greenShades = [
-                Color("green50"),   // 0-20%
-                Color("green100"),  // 20-40%
-                Color("green200"),  // 40-60%
-                Color("green300"),  // 60-80%
-                Color("green400"),  // 80-90%
-                Color("green500"),  // 90-95%
-                Color("green600")   // 95-100%
-            ]
-            
-            let step = clampedPercentage / 100.0
-            let index = min(Int(step * Double(greenShades.count - 1)), greenShades.count - 1)
-            
-            return greenShades[index]
+            selectedColor = Color("green50")
         }
+        
+        // Debug: Print color selection for troubleshooting
+        print("🔍 HEATMAP COLOR DEBUG - Completion: \(completionPercentage)% | Clamped: \(clampedPercentage)% | Selected Color: \(selectedColor)")
+        
+        return selectedColor
     }
 }
 

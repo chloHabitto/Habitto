@@ -152,13 +152,23 @@ class StreakDataCalculator {
         // Check if habit should be scheduled on this date
         let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
         
+        // Get completion percentage for this date
+        let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
+        
+        // Debug: Print heatmap data for troubleshooting
+        let dateKey = DateUtils.dateKey(for: targetDate)
+        let actualProgress = habit.getProgress(for: targetDate)
+        print("🔍 HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress) | CompletionHistory: \(habit.completionHistory[dateKey] ?? 0)")
+        
+        // Additional debug for color mapping
+        if isScheduled && completionPercentage > 0 {
+            print("🔍 COLOR MAPPING DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | Completion: \(completionPercentage)% | Will show color for: \(completionPercentage >= 100.0 ? "100% (green600)" : "\(completionPercentage)% (gradient)")")
+        }
+        
         // If not scheduled, return 0 intensity and 0% completion
         if !isScheduled {
             return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
         }
-        
-        // Get completion percentage for this date
-        let completionPercentage = Double(habit.getProgress(for: targetDate))
         
         // Map completion percentage to intensity for backward compatibility
         let intensity: Int
@@ -197,7 +207,7 @@ class StreakDataCalculator {
         
         // Calculate average completion percentage from scheduled habits
         let totalCompletion = scheduledHabits.reduce(0.0) { total, habit in
-            total + Double(habit.getProgress(for: targetDate))
+            total + calculateCompletionPercentage(for: habit, date: targetDate)
         }
         let averageCompletion = scheduledHabits.isEmpty ? 0.0 : totalCompletion / Double(scheduledHabits.count)
         
@@ -254,7 +264,7 @@ class StreakDataCalculator {
         
         // Calculate average completion percentage from scheduled habits
         let totalCompletion = scheduledHabits.reduce(0.0) { total, habit in
-            total + Double(habit.getProgress(for: targetDate))
+            total + calculateCompletionPercentage(for: habit, date: targetDate)
         }
         let averageCompletion = scheduledHabits.isEmpty ? 0.0 : totalCompletion / Double(scheduledHabits.count)
         
@@ -300,7 +310,7 @@ class StreakDataCalculator {
         
         // Calculate average completion percentage from scheduled habits
         let totalCompletion = scheduledHabits.reduce(0.0) { total, habit in
-            total + Double(habit.getProgress(for: targetDate))
+            total + calculateCompletionPercentage(for: habit, date: targetDate)
         }
         let averageCompletion = scheduledHabits.isEmpty ? 0.0 : totalCompletion / Double(scheduledHabits.count)
         
@@ -323,49 +333,102 @@ class StreakDataCalculator {
     private static func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: date)
+        let dateKey = DateUtils.dateKey(for: date)
         
         // Check if the date is before the habit start date
         if date < calendar.startOfDay(for: habit.startDate) {
+            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Date before start date")
             return false
         }
         
         // Check if the date is after the habit end date (if set)
-        if let endDate = habit.endDate, date > calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate {
+        if let endDate = habit.endDate, date > calendar.startOfDay(for: endDate) {
+            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Date after end date")
             return false
         }
         
-        switch habit.schedule {
-        case "Everyday":
+        // Check if the habit is scheduled for this weekday
+        let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
+        
+        if !isScheduledForWeekday {
+            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Not scheduled for weekday \(weekday)")
+        }
+        
+        return isScheduledForWeekday
+    }
+    
+    // MARK: - Completion Percentage Calculation
+    private static func calculateCompletionPercentage(for habit: Habit, date: Date) -> Double {
+        let actualProgress = habit.getProgress(for: date)
+        let goalAmount = parseGoalAmount(from: habit.goal)
+        
+        // If no goal amount specified, treat as binary completion (0% or 100%)
+        if goalAmount <= 0 {
+            return actualProgress > 0 ? 100.0 : 0.0
+        }
+        
+        // Calculate percentage based on actual progress vs goal
+        let percentage = (Double(actualProgress) / Double(goalAmount)) * 100.0
+        let clampedPercentage = max(0.0, min(100.0, percentage))
+        
+        print("🔍 COMPLETION PERCENTAGE DEBUG - Habit '\(habit.name)' | Date: \(DateUtils.dateKey(for: date)) | Actual: \(actualProgress) | Goal: \(goalAmount) | Percentage: \(percentage)% | Clamped: \(clampedPercentage)%")
+        
+        return clampedPercentage
+    }
+    
+    private static func parseGoalAmount(from goalString: String) -> Int {
+        // Parse goal strings like "1 time on everyday", "5 sessions per week", etc.
+        let components = goalString.lowercased().components(separatedBy: " ")
+        guard let firstComponent = components.first else { return 0 }
+        
+        // Try to extract the number from the first component
+        if let amount = Int(firstComponent) {
+            return amount
+        }
+        
+        // If no number found, default to 1 (binary completion)
+        return 1
+    }
+    
+    private static func isHabitScheduledForWeekday(_ habit: Habit, weekday: Int) -> Bool {
+        let schedule = habit.schedule.lowercased()
+        
+        // Check if schedule contains multiple weekdays separated by commas
+        if schedule.contains(",") {
+            let weekdays = extractWeekdays(from: habit.schedule)
+            return weekdays.contains(weekday)
+        }
+        
+        // Check specific schedule patterns
+        switch schedule {
+        case "everyday", "every day":
             return true
             
-        case let schedule where schedule.hasPrefix("Every ") && schedule.contains("days"):
-            if let dayCount = extractDayCount(from: schedule) {
+        case let s where s.hasPrefix("every ") && s.contains("days"):
+            if let dayCount = extractDayCount(from: s) {
+                let calendar = Calendar.current
                 let startDate = calendar.startOfDay(for: habit.startDate)
-                let selectedDate = calendar.startOfDay(for: date)
-                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: selectedDate).day ?? 0
+                let today = calendar.startOfDay(for: Date())
+                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
                 return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
             }
             return false
             
-        case let schedule where schedule.hasPrefix("Every ") && !schedule.contains("days"):
-            let weekdays = extractWeekdays(from: schedule)
+        case let s where s.hasPrefix("every ") && !s.contains("days"):
+            let weekdays = extractWeekdays(from: s)
             return weekdays.contains(weekday)
             
-        case let schedule where schedule.contains("times a week"):
-            if let timesPerWeek = extractTimesPerWeek(from: schedule) {
+        case let s where s.contains("times a week"):
+            if let timesPerWeek = extractTimesPerWeek(from: s) {
+                let calendar = Calendar.current
                 let startDate = calendar.startOfDay(for: habit.startDate)
-                let selectedDate = calendar.startOfDay(for: date)
-                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: selectedDate).weekOfYear ?? 0
+                let today = calendar.startOfDay(for: Date())
+                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: today).weekOfYear ?? 0
                 return weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
             }
             return false
             
         default:
-            // Check if schedule contains multiple weekdays separated by commas (like "Every Monday, Every Friday")
-            if habit.schedule.contains(",") {
-                let weekdays = extractWeekdays(from: habit.schedule)
-                return weekdays.contains(weekday)
-            }
             // For any unrecognized schedule format, don't show the habit (safer default)
             return false
         }

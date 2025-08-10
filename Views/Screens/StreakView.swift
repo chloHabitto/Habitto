@@ -10,7 +10,13 @@ struct StreakView: View {
     @State private var isDataLoaded: Bool = false
     @State private var isLoadingProgress: Double = 0.0
     @State private var isCalculating: Bool = false
-    let userHabits: [Habit]
+    @EnvironmentObject var homeViewState: HomeViewState
+    
+    private var userHabits: [Habit] {
+        let habits = homeViewState.habits
+        print("🔍 STREAK VIEW: userHabits computed property called - count: \(habits.count)")
+        return habits
+    }
     @State private var isExpanded = false
     @State private var dragOffset: CGFloat = 0
     
@@ -95,11 +101,16 @@ struct StreakView: View {
                         // Scrollable Content Section
                         ScrollView {
                             VStack(spacing: 16) {
-                                // Date range selector
-                                DateRangeSelectorView(
-                                    weekRangeText: selectedWeekStartDate.weekRangeText(),
-                                    onTap: { showingCalendar = true }
-                                )
+                                                        // Date range selector
+                        DateRangeSelectorView(
+                            weekRangeText: selectedWeekStartDate.weekRangeText(),
+                            onTap: { showingCalendar = true }
+                        )
+                        
+                        // Debug: Print current week info
+                        .onAppear {
+                            print("🔍 STREAK VIEW DEBUG - Current week start: \(DateUtils.dateKey(for: selectedWeekStartDate)) | Week range: \(selectedWeekStartDate.weekRangeText())")
+                        }
                                 
                                 // Calendar content based on selected tab
                                 Group {
@@ -177,6 +188,22 @@ struct StreakView: View {
                 .frame(height: 0)
         }
         .onAppear {
+            setupNotificationObserver()
+            loadData()
+        }
+        .onDisappear {
+            NotificationCenter.default.removeObserver(self)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("HabitProgressUpdated"))) { _ in
+            print("🔍 STREAK VIEW DEBUG - Received HabitProgressUpdated notification via onReceive, refreshing data...")
+            // Force refresh the data when habit progress changes
+            isDataLoaded = false
+            loadData()
+        }
+        .onChange(of: userHabits) { oldHabits, newHabits in
+            print("🔍 STREAK VIEW DEBUG - userHabits changed - Old count: \(oldHabits.count), New count: \(newHabits.count)")
+            // Force refresh when habits change
+            isDataLoaded = false
             loadData()
         }
         .overlay(
@@ -196,11 +223,35 @@ struct StreakView: View {
     private func loadData() {
         guard !isDataLoaded else { return }
         
+        print("🔍 STREAK VIEW DEBUG - loadData() called with isDataLoaded: \(isDataLoaded)")
+        
+        // Debug: Print current habit data for troubleshooting
+        print("🔍 STREAK VIEW DEBUG - Loading data for \(userHabits.count) habits")
+        for habit in userHabits {
+            let todayKey = DateUtils.dateKey(for: Date())
+            let todayProgress = habit.getProgress(for: Date())
+            print("🔍 STREAK VIEW DEBUG - Habit: '\(habit.name)' | Schedule: '\(habit.schedule)' | StartDate: \(DateUtils.dateKey(for: habit.startDate)) | Today(\(todayKey)) Progress: \(todayProgress) | CompletionHistory keys: \(habit.completionHistory.keys.sorted())")
+        }
+        
         // Calculate streak statistics from actual user data
         streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: userHabits)
         
         // Load data on background thread to avoid blocking UI
         loadYearlyData()
+    }
+    
+    // MARK: - Notification Handling
+    private func setupNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("HabitProgressUpdated"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🔍 STREAK VIEW DEBUG - Received HabitProgressUpdated notification, refreshing data...")
+            // Force refresh the data when habit progress changes
+            isDataLoaded = false
+            loadData()
+        }
     }
     
     private func loadYearlyData() {
@@ -312,6 +363,7 @@ struct StreakView: View {
 }
 
 #Preview {
-    StreakView(userHabits: [])
+    StreakView()
+        .environmentObject(HomeViewState())
 }
 

@@ -38,7 +38,12 @@ class HomeViewState: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newHabits in
                 DispatchQueue.main.async {
-                    self?.habits = newHabits
+                    print("🔍 HomeViewState: Received habits update from CoreDataAdapter - count: \(newHabits.count)")
+                    if let self = self {
+                        print("🔍 HomeViewState: Previous habits count: \(self.habits.count)")
+                        self.habits = newHabits
+                        print("🔍 HomeViewState: Updated habits count: \(self.habits.count)")
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -266,7 +271,8 @@ struct HomeView: View {
         }
 
         .fullScreenCover(isPresented: $state.showingStreakView) {
-            StreakView(userHabits: state.habits)
+            StreakView()
+                .environmentObject(state)
         }
         .sheet(isPresented: $state.showingNotificationView) {
             NotificationView()
