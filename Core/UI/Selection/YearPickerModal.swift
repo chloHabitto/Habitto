@@ -79,7 +79,7 @@ struct YearPickerModal: View {
                             .font(.appBodyMedium)
                             .foregroundColor(.surface)
                         
-                        Text("\(tempSelectedYear)")
+                        Text(String(tempSelectedYear))
                             .font(.appTitleMediumEmphasised)
                             .foregroundColor(.surface)
                     }
@@ -91,7 +91,7 @@ struct YearPickerModal: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .background(.surfaceContainer)
+            .background(.surface)
             .cornerRadius(20)
             .padding(.horizontal, 20)
         }
