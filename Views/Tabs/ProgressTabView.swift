@@ -15,6 +15,29 @@ struct ProgressTabView: View {
         self.habits = habits
     }
     
+    // MARK: - Today's Progress Computed Properties
+    private var todaysActualCompletionPercentage: Double {
+        guard !habits.isEmpty else { return 0.0 }
+        
+        let today = Date()
+        let totalProgress = habits.reduce(0.0) { sum, habit in
+            // Get today's progress count
+            let todayProgress = habit.getProgress(for: today)
+            
+            // Parse the goal to get target amount
+            if let goal = parseGoal(from: habit.goal) {
+                // Calculate completion percentage for this habit (capped at 100%)
+                let habitCompletion = min(Double(todayProgress) / goal.amount, 1.0)
+                return sum + habitCompletion
+            } else {
+                // Fallback: if no goal, treat as binary completion
+                return sum + (todayProgress > 0 ? 1.0 : 0.0)
+            }
+        }
+        
+        return totalProgress / Double(habits.count)
+    }
+    
     // MARK: - Independent Today's Progress Container
     private var independentTodaysProgressContainer: some View {
         Group {
@@ -41,20 +64,20 @@ struct ProgressTabView: View {
                                 .stroke(Color.primaryContainer, lineWidth: 8)
                                 .frame(width: 52, height: 52)
                             
-                            // Progress circle (filled part) - showing 75% as example
+                            // Progress circle (filled part) - showing actual completion percentage
                             Circle()
-                                .trim(from: 0, to: 0.75)
+                                .trim(from: 0, to: todaysActualCompletionPercentage)
                                 .stroke(
                                     Color.primary,
                                     style: StrokeStyle(lineWidth: 8, lineCap: .round)
                                 )
                                 .frame(width: 52, height: 52)
                                 .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 0.5), value: 0.75)
+                                .animation(.easeInOut(duration: 0.5), value: todaysActualCompletionPercentage)
                             
                             // Percentage text
                             VStack(spacing: 2) {
-                                Text("75%")
+                                Text("\(Int(todaysActualCompletionPercentage * 100))%")
                                     .font(.appLabelMediumEmphasised)
                                     .foregroundColor(.primaryFocus)
                             }
