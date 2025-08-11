@@ -1,6 +1,9 @@
 import SwiftUI
 import Combine
 
+// Import for streak calculations
+import Foundation
+
 // MARK: - Tab Enum
 enum Tab {
     case home, habits, progress, more
@@ -25,6 +28,13 @@ class HomeViewState: ObservableObject {
     
     // Performance optimization: Cache expensive operations
     private var lastHabitsUpdate: Date = Date()
+    
+    // Computed property for current streak
+    var currentStreak: Int {
+        guard !habits.isEmpty else { return 0 }
+        let streakStats = StreakDataCalculator.calculateStreakStatistics(from: habits)
+        return streakStats.currentStreak
+    }
     
     // Core Data adapter
     private let coreDataAdapter = CoreDataAdapter.shared
@@ -152,7 +162,8 @@ struct HomeView: View {
                         onNotificationTap: {
                             state.showingNotificationView = true
                         },
-                        showProfile: state.selectedTab == .more
+                        showProfile: state.selectedTab == .more,
+                        currentStreak: state.currentStreak
                     )
                     
                     // Content based on selected tab

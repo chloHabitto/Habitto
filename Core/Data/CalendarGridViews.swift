@@ -1,5 +1,16 @@
 import SwiftUI
 
+// MARK: - Helper Functions
+private func pluralizeDay(_ count: Int) -> String {
+    if count == 0 {
+        return "0 day"
+    } else if count == 1 {
+        return "1 day"
+    } else {
+        return "\(count) days"
+    }
+}
+
 // MARK: - Simple Habit Icon for Calendar Grid
 struct HabitIconInlineView: View {
     let habit: Habit
@@ -97,6 +108,10 @@ struct WeeklyCalendarGridView: View {
                                         dayIndex: dayIndex,
                                         weekStartDate: selectedWeekStartDate
                                     )
+                                    
+                                    // Debug: Print heatmap data for each cell
+                                    let _ = print("🔍 WEEKLY GRID DEBUG - Habit '\(habit.name)' | Day \(dayIndex) | Data: \(heatmapData)")
+                                    
                                     HeatmapCellView(
                                         intensity: heatmapData.intensity,
                                         isScheduled: heatmapData.isScheduled,
@@ -134,6 +149,10 @@ struct WeeklyCalendarGridView: View {
                                 habits: userHabits,
                                 weekStartDate: selectedWeekStartDate
                             )
+                            
+                            // Debug: Print total heatmap data for each day
+                            let _ = print("🔍 WEEKLY TOTAL DEBUG - Day \(dayIndex) | Total Data: \(totalHeatmapData)")
+                            
                             HeatmapCellView(
                                 intensity: totalHeatmapData.intensity,
                                 isScheduled: totalHeatmapData.isScheduled,
@@ -185,8 +204,20 @@ struct MonthlyCalendarGridView: View {
         let calendar = Calendar.current
         let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
         
-        // Calculate the target date based on week and day indices
-        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: monthStart) ?? monthStart
+        // Calculate the first Monday of the month (or Monday of the week containing month start)
+        // This ensures consistent Monday-Sunday alignment with the weekly view
+        let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+        let daysFromMonday = (monthStartWeekday + 5) % 7 // Convert Sunday=1 to Monday=0
+        let firstMondayOfMonth = calendar.date(byAdding: .day, value: -daysFromMonday, to: monthStart) ?? monthStart
+        
+        // Calculate the target date based on week and day indices, starting from the first Monday
+        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstMondayOfMonth) ?? monthStart
+        
+        // Debug: Print monthly heatmap calculation details
+        let dateKey = DateUtils.dateKey(for: targetDate)
+        let weekday = calendar.component(.weekday, from: targetDate)
+        let weekdayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][weekday - 1]
+        print("🔍 MONTHLY HEATMAP DEBUG - Habit: '\(habit.name)' | Week: \(weekIndex) | Day: \(dayIndex) | Date: \(dateKey) | Weekday: \(weekdayName) | MonthStart: \(DateUtils.dateKey(for: monthStart)) | FirstMonday: \(DateUtils.dateKey(for: firstMondayOfMonth))")
         
         // Check if the target date is within the selected month
         let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
@@ -359,7 +390,7 @@ struct MonthlyCalendarGridView: View {
             
             // Completed days
             VStack(spacing: 4) {
-                Text("\(calculateHabitCompletedDays(for: habit)) days")
+                Text(pluralizeDay(calculateHabitCompletedDays(for: habit)))
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
                 Text("Completed")
@@ -607,7 +638,7 @@ struct YearlyCalendarGridView: View {
             
             // Completed days
             VStack(spacing: 4) {
-                Text("\(calculateHabitCompletedDays(for: habit)) days")
+                Text(pluralizeDay(calculateHabitCompletedDays(for: habit)))
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
                 Text("Completed")

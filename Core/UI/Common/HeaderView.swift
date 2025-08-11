@@ -1,16 +1,29 @@
 import SwiftUI
 
+// MARK: - Helper Functions
+private func pluralizeStreak(_ count: Int) -> String {
+    if count == 0 {
+        return "0 streak"
+    } else if count == 1 {
+        return "1 streak"
+    } else {
+        return "\(count) streaks"
+    }
+}
+
 struct HeaderView: View {
     let onCreateHabit: () -> Void
     let onStreakTap: () -> Void
     let onNotificationTap: () -> Void
     let showProfile: Bool
+    let currentStreak: Int
     
-    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, onNotificationTap: @escaping () -> Void, showProfile: Bool = false) {
+    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, onNotificationTap: @escaping () -> Void, showProfile: Bool = false, currentStreak: Int = 0) {
         self.onCreateHabit = onCreateHabit
         self.onStreakTap = onStreakTap
         self.onNotificationTap = onNotificationTap
         self.showProfile = showProfile
+        self.currentStreak = currentStreak
     }
     
     var body: some View {
@@ -49,7 +62,7 @@ struct HeaderView: View {
                         Image("Icon-fire")
                             .resizable()
                             .frame(width: 32, height: 32)
-                        Text("0 streak")
+                        Text(pluralizeStreak(currentStreak))
                             .font(.appButtonText1)
                             .foregroundColor(.black)
                     }

@@ -188,6 +188,7 @@ class StreakDataCalculator {
         let weekStart = calendar.startOfDay(for: weekStartDate)
         
         // Calculate the date for this day index (0 = Monday, 6 = Sunday)
+        // Since weekStartDate is already Monday, we can directly add the dayIndex
         let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
         
         // Check if habit should be scheduled on this date
@@ -199,7 +200,8 @@ class StreakDataCalculator {
         // Debug: Print heatmap data for troubleshooting
         let dateKey = DateUtils.dateKey(for: targetDate)
         let actualProgress = habit.getProgress(for: targetDate)
-        print("🔍 HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress) | CompletionHistory: \(habit.completionHistory[dateKey] ?? 0)")
+        let weekday = calendar.component(.weekday, from: targetDate)
+        print("🔍 HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Weekday: \(weekday) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress) | CompletionHistory: \(habit.completionHistory[dateKey] ?? 0)")
         
         // Additional debug for color mapping
         if isScheduled && completionPercentage > 0 {
@@ -251,6 +253,11 @@ class StreakDataCalculator {
             total + calculateCompletionPercentage(for: habit, date: targetDate)
         }
         let averageCompletion = scheduledHabits.isEmpty ? 0.0 : totalCompletion / Double(scheduledHabits.count)
+        
+        // Debug: Print total heatmap data
+        let dateKey = DateUtils.dateKey(for: targetDate)
+        let weekday = calendar.component(.weekday, from: targetDate)
+        print("🔍 TOTAL HEATMAP DEBUG - Date: \(dateKey) | DayIndex: \(dayIndex) | Weekday: \(weekday) | Scheduled Habits: \(scheduledHabits.count) | Average Completion: \(averageCompletion)%")
         
         // Map completion percentage to intensity for backward compatibility
         let intensity: Int
@@ -501,6 +508,8 @@ class StreakDataCalculator {
         // Check if the habit is scheduled for this weekday
         let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
         
+        print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' | Date: \(dateKey) | Weekday: \(weekday) | Schedule: '\(habit.schedule)' | Scheduled for weekday: \(isScheduledForWeekday)")
+        
         if !isScheduledForWeekday {
             print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Not scheduled for weekday \(weekday)")
         }
@@ -544,15 +553,20 @@ class StreakDataCalculator {
     private static func isHabitScheduledForWeekday(_ habit: Habit, weekday: Int) -> Bool {
         let schedule = habit.schedule.lowercased()
         
+        print("🔍 WEEKDAY SCHEDULE DEBUG - Habit '\(habit.name)' | Weekday: \(weekday) | Schedule: '\(schedule)'")
+        
         // Check if schedule contains multiple weekdays separated by commas
         if schedule.contains(",") {
             let weekdays = extractWeekdays(from: habit.schedule)
-            return weekdays.contains(weekday)
+            let isScheduled = weekdays.contains(weekday)
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Multiple weekdays detected: \(weekdays) | Contains \(weekday): \(isScheduled)")
+            return isScheduled
         }
         
         // Check specific schedule patterns
         switch schedule {
         case "everyday", "every day":
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Everyday schedule detected")
             return true
             
         case let s where s.hasPrefix("every ") && s.contains("days"):
@@ -561,13 +575,18 @@ class StreakDataCalculator {
                 let startDate = calendar.startOfDay(for: habit.startDate)
                 let today = calendar.startOfDay(for: Date())
                 let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
-                return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                let isScheduled = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                print("🔍 WEEKDAY SCHEDULE DEBUG - Every \(dayCount) days schedule | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
+                return isScheduled
             }
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'every X days' schedule")
             return false
             
         case let s where s.hasPrefix("every ") && !s.contains("days"):
-            let weekdays = extractWeekdays(from: s)
-            return weekdays.contains(weekday)
+            let weekdays = extractWeekdays(from: habit.schedule)
+            let isScheduled = weekdays.contains(weekday)
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Specific weekdays: \(weekdays) | Contains \(weekday): \(isScheduled)")
+            return isScheduled
             
         case let s where s.contains("times a week"):
             if let timesPerWeek = extractTimesPerWeek(from: s) {
@@ -575,12 +594,16 @@ class StreakDataCalculator {
                 let startDate = calendar.startOfDay(for: habit.startDate)
                 let today = calendar.startOfDay(for: Date())
                 let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: today).weekOfYear ?? 0
-                return weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
+                let isScheduled = weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
+                print("🔍 WEEKDAY SCHEDULE DEBUG - \(timesPerWeek) times per week | Weeks since start: \(weeksSinceStart) | Scheduled: \(isScheduled)")
+                return isScheduled
             }
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X times a week' schedule")
             return false
             
         default:
             // For any unrecognized schedule format, don't show the habit (safer default)
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Unrecognized schedule format: '\(schedule)'")
             return false
         }
     }
@@ -598,17 +621,18 @@ class StreakDataCalculator {
     
     private static func extractWeekdays(from schedule: String) -> Set<Int> {
         var weekdays: Set<Int> = []
-        let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        // Use weekday names that match the schedule strings
+        let weekdayNames = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
         let lowercasedSchedule = schedule.lowercased()
         
         print("🔍 STREAK WEEKDAY EXTRACTION - Input schedule: '\(schedule)'")
         print("🔍 STREAK WEEKDAY EXTRACTION - Lowercased: '\(lowercasedSchedule)'")
         
         for (index, dayName) in weekdayNames.enumerated() {
-            let dayNameLower = dayName.lowercased()
-            let contains = lowercasedSchedule.contains(dayNameLower)
+            let contains = lowercasedSchedule.contains(dayName)
             if contains {
-                let weekdayNumber = index + 1
+                // Map to Calendar.current weekday numbers (Monday = 2, Sunday = 1)
+                let weekdayNumber = index == 6 ? 1 : index + 2 // Sunday = 1, Monday = 2, etc.
                 weekdays.insert(weekdayNumber)
                 print("🔍 STREAK WEEKDAY EXTRACTION - Found '\(dayName)' (index \(index)) → weekday \(weekdayNumber)")
             } else {

@@ -119,6 +119,16 @@ struct StreakView: View {
                         // Debug: Print current week info
                         .onAppear {
                             print("🔍 STREAK VIEW DEBUG - Current week start: \(DateUtils.dateKey(for: selectedWeekStartDate)) | Week range: \(selectedWeekStartDate.weekRangeText())")
+                            print("🔍 STREAK VIEW DEBUG - Selected week start date: \(selectedWeekStartDate)")
+                            print("🔍 STREAK VIEW DEBUG - Calendar first weekday: \(Calendar.current.firstWeekday)")
+                            
+                            // Debug: Print the week dates
+                            let calendar = Calendar.current
+                            for i in 0..<7 {
+                                let date = calendar.date(byAdding: .day, value: i, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                let weekday = calendar.component(.weekday, from: date)
+                                print("🔍 STREAK VIEW DEBUG - Day \(i): \(DateUtils.dateKey(for: date)) | Weekday: \(weekday)")
+                            }
                         }
                                 
                                 // Calendar content based on selected tab

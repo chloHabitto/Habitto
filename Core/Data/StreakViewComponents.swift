@@ -1,5 +1,16 @@
 import SwiftUI
 
+// MARK: - Helper Functions
+private func pluralizeDay(_ count: Int) -> String {
+    if count == 0 {
+        return "0 day"
+    } else if count == 1 {
+        return "1 day"
+    } else {
+        return "\(count) days"
+    }
+}
+
 // MARK: - Streak Header Components
 struct StreakHeaderView: View {
     let onDismiss: () -> Void
@@ -45,7 +56,7 @@ struct MainStreakDisplayView: View {
                     )
             }
             
-            Text("\(currentStreak) days")
+            Text(pluralizeDay(currentStreak))
                 .font(.appHeadlineMediumEmphasised)
                 .foregroundColor(.white)
         }
@@ -62,7 +73,7 @@ struct StreakSummaryCardsView: View {
             StreakCardView(
                 icon: "Icon-starBadge",
                 iconColor: .warning,
-                value: "\(bestStreak) days",
+                value: pluralizeDay(bestStreak),
                 label: "Best streak"
             )
             
@@ -74,7 +85,7 @@ struct StreakSummaryCardsView: View {
             StreakCardView(
                 icon: "Icon-medalBadge",
                 iconColor: Color("yellow400"),
-                value: "\(averageStreak) days",
+                value: pluralizeDay(averageStreak),
                 label: "Average streak"
             )
         }
@@ -273,6 +284,10 @@ struct HeatmapCellView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        .onAppear {
+            // Debug: Print cell information for troubleshooting
+            print("🔍 HEATMAP CELL DEBUG - Intensity: \(intensity) | Scheduled: \(isScheduled) | Completion: \(completionPercentage)%")
+        }
     }
     
     private func heatmapColor(for completionPercentage: Double) -> Color {
@@ -326,7 +341,7 @@ struct SummaryStatisticsView: View {
                 .frame(width: 1)
                 .frame(height: 60)
             
-            StatisticCardView(value: "\(bestStreak) days", label: "Best streak")
+            StatisticCardView(value: pluralizeDay(bestStreak), label: "Best streak")
             
             Rectangle()
                 .fill(.outline)
@@ -346,14 +361,14 @@ struct StatisticCardView: View {
     let label: String
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             Text(value)
-                .font(.appTitleMediumEmphasised)
+                .font(.appTitleMedium)
                 .foregroundColor(.text01)
             
             Text(label)
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
+                .font(.appBodySmall)
+                .foregroundColor(.text04)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
