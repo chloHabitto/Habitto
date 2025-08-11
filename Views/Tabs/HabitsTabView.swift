@@ -7,11 +7,11 @@ struct JiggleAnimationModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .offset(y: isEditMode ? -2 : 0)
-            .rotationEffect(.degrees(isEditMode ? 0.3 : 0))
+            .offset(y: isEditMode ? -1 : 0) // Reduced from -2 to -1 for subtler movement
+            .rotationEffect(.degrees(isEditMode ? 0.2 : 0)) // Reduced from 0.3 to 0.2 for subtler rotation
             .animation(
                 isEditMode ? 
-                    .easeInOut(duration: 0.3) : 
+                    .easeInOut(duration: 0.25) : // Reduced from 0.3 to 0.25
                     .easeInOut(duration: 0.2),
                 value: isEditMode
             )
@@ -33,25 +33,25 @@ struct DropViewDelegate: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         guard let draggedHabit = draggedHabit else { return false }
         
+        // Find the actual indices in the full habitsOrder array
         let fromIndex = habitsOrder.firstIndex(of: draggedHabit)
-        guard let fromIndex = fromIndex else { return false }
+        let toIndex = insertionIndex
         
-        // Use the insertion index if available, otherwise fall back to the item's current position
-        let toIndex: Int
-        if let insertionIndex = insertionIndex {
-            toIndex = insertionIndex
-        } else {
-            toIndex = habitsOrder.firstIndex(of: item) ?? fromIndex
+        guard let fromIndex = fromIndex,
+              let toIndex = toIndex,
+              fromIndex != toIndex else { 
+            print("❌ Drop failed: fromIndex=\(fromIndex?.description ?? "nil"), toIndex=\(toIndex?.description ?? "nil")")
+            return false 
         }
         
-        guard fromIndex != toIndex else { return false }
+        print("✅ Dropping habit '\(draggedHabit.name)' from index \(fromIndex) to index \(toIndex)")
         
         // Haptic feedback for successful drop
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.impactOccurred()
         
         // Reorder the habits with animation
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.easeOut(duration: 0.25)) {
             var newOrder = habitsOrder
             newOrder.remove(at: fromIndex)
             
@@ -60,6 +60,8 @@ struct DropViewDelegate: DropDelegate {
             newOrder.insert(draggedHabit, at: adjustedToIndex)
             habitsOrder = newOrder
         }
+        
+        print("✅ Habits reordered successfully. New order: \(habitsOrder.map { $0.name })")
         
         // Clear the dragged habit and drag over state
         self.draggedHabit = nil
@@ -75,7 +77,7 @@ struct DropViewDelegate: DropDelegate {
         
         // Calculate insertion index based on drop position
         if let _ = draggedHabit,
-           let currentIndex = habitsOrder.firstIndex(of: item) {
+           let currentIndex = items.firstIndex(of: item) {
             
             // Determine if we should insert before or after the current item
             // based on the drop position relative to the item's center
@@ -148,27 +150,32 @@ struct HabitsTabView: View {
             title: "Habits",
             headerContent: {
                 AnyView(
-                    HStack {
+                    VStack(spacing: 0) {
+                        // Stats row with tabs - now can expand to full width
                         statsRow
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 0)
                             .padding(.top, 2)
                             .padding(.bottom, 0)
                         
-                        Spacer()
-                        
+                        // Done button in its own row when in edit mode
                         if isEditMode {
-                            Button("Done") {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isEditMode = false
-                                    // Clear drag states when exiting edit mode
-                                    draggedHabit = nil
-                                    dragOverItem = nil
-                                    insertionIndex = nil
+                            HStack {
+                                Spacer()
+                                Button("Done") {
+                                    withAnimation(.easeOut(duration: 0.25)) {
+                                        isEditMode = false
+                                        // Clear drag states when exiting edit mode
+                                        draggedHabit = nil
+                                        dragOverItem = nil
+                                        insertionIndex = nil
+                                    }
                                 }
+                                .font(.appButtonText2)
+                                .foregroundColor(.accentColor)
+                                .padding(.trailing, 20)
                             }
-                            .font(.appButtonText2)
-                            .foregroundColor(.accentColor)
-                            .padding(.trailing, 20)
+                            .padding(.top, 8)
                         }
                     }
                 )
@@ -195,79 +202,25 @@ struct HabitsTabView: View {
                         .padding(.vertical, 40)
                         .padding(.horizontal, 20)
                     } else {
-                        // Reorder instructions when in edit mode
-                        if isEditMode {
-                            HStack {
-                                Spacer()
-                                HStack {
-                                    Image(systemName: "hand.draw.fill")
-                                        .foregroundColor(.accentColor)
-                                    Text("Drag habits to reorder")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.text04)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.accentColor.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                        }
-                        
                         LazyVStack(spacing: 12) {
-                            // Enhanced insertion lines for better visual feedback
-                            if isEditMode && insertionIndex != nil && draggedHabit != nil {
-                                if insertionIndex == 0 {
-                                    // Top insertion line for dragging to the very beginning
-                                    HStack {
-                                        Rectangle()
-                                            .fill(Color.accentColor)
-                                            .frame(height: 4)
-                                            .frame(maxWidth: .infinity)
-                                            .shadow(color: .accentColor.opacity(0.6), radius: 3)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 2)
-                                                    .stroke(Color.white, lineWidth: 1)
-                                            )
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .animation(.easeInOut(duration: 0.15), value: insertionIndex)
-                                } else if insertionIndex == habitsOrder.count {
-                                    // Bottom insertion line for dragging to the very end
-                                    HStack {
-                                        Rectangle()
-                                            .fill(Color.accentColor)
-                                            .frame(height: 4)
-                                            .frame(maxWidth: .infinity)
-                                            .shadow(color: .accentColor.opacity(0.6), radius: 3)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 2)
-                                                    .stroke(Color.white, lineWidth: 1)
-                                            )
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .animation(.easeInOut(duration: 0.15), value: insertionIndex)
-                                }
-                            }
-                            
                             ForEach(Array(filteredHabits.enumerated()), id: \.element.id) { index, habit in
                                 VStack(spacing: 0) {
-                                    // Insertion line between items when dragging
+                                    // Show insertion line above the item where it will be placed
                                     if isEditMode && insertionIndex != nil && draggedHabit != nil && insertionIndex == index {
                                         HStack {
                                             Rectangle()
                                                 .fill(Color.accentColor)
                                                 .frame(height: 4)
                                                 .frame(maxWidth: .infinity)
-                                                .shadow(color: .accentColor.opacity(0.6), radius: 3)
+                                                .shadow(color: .accentColor.opacity(0.4), radius: 2)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 2)
                                                         .stroke(Color.white, lineWidth: 1)
                                                 )
                                         }
                                         .padding(.horizontal, 16)
-                                        .animation(.easeInOut(duration: 0.15), value: insertionIndex)
+                                        .padding(.vertical, 4) // Add the requested 4pt vertical padding
+                                        .animation(.easeOut(duration: 0.2), value: insertionIndex)
                                     }
                                     
                                     habitDetailRow(habit)
@@ -293,9 +246,43 @@ struct HabitsTabView: View {
                                         .id("habit-\(habit.id)-\(index)") // Performance optimization: Stable ID
                                 }
                             }
+                            
+                            // Show insertion line at the very end if dragging to the bottom
+                            if isEditMode && insertionIndex != nil && draggedHabit != nil && insertionIndex == filteredHabits.count {
+                                HStack {
+                                    Rectangle()
+                                        .fill(Color.accentColor)
+                                        .frame(height: 4)
+                                        .frame(maxWidth: .infinity)
+                                        .shadow(color: .accentColor.opacity(0.4), radius: 2)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .stroke(Color.white, lineWidth: 1)
+                                        )
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 4) // Add the requested 4pt vertical padding
+                                .animation(.easeOut(duration: 0.2), value: insertionIndex)
+                            }
+                            
+                            // Add a drop zone at the bottom for easier reordering to the end
+                            if isEditMode {
+                                Rectangle()
+                                    .fill(Color.clear)
+                                    .frame(height: 40) // Reduced height to be less intrusive
+                                    .frame(maxWidth: .infinity)
+                                    .onDrop(of: [.text], delegate: createBottomDropDelegate())
+                                    .overlay(
+                                        // Visual feedback when dragging over the bottom drop zone
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(dragOverItem == nil && draggedHabit != nil && insertionIndex == filteredHabits.count ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1)
+                                            .animation(.easeOut(duration: 0.15), value: dragOverItem == nil && draggedHabit != nil && insertionIndex == filteredHabits.count)
+                                    )
+                            }
                         }
                         .padding(.top, isEditMode ? 8 : 0) // Add top padding when in edit mode
-                        .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                        .padding(.bottom, 40) // Add bottom padding to the habits list
+                        .animation(.easeOut(duration: 0.25), value: isEditMode)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -331,6 +318,16 @@ struct HabitsTabView: View {
             habitsOrder = newHabits
             print("🔄 HabitsTabView: habitsOrder updated to \(habitsOrder.count)")
         }
+        .onChange(of: habitsOrder) { oldOrder, newOrder in
+            // Notify parent when habits are reordered
+            if oldOrder != newOrder && onUpdateHabit != nil {
+                print("🔄 HabitsTabView: Habits reordered, notifying parent")
+                // Update each habit in the new order to trigger parent updates
+                for habit in newOrder {
+                    onUpdateHabit?(habit)
+                }
+            }
+        }
         .onDisappear {
             // Clean up timer to prevent memory leaks
             dragUpdateTimer?.invalidate()
@@ -345,8 +342,9 @@ struct HabitsTabView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Use the habits parameter directly for immediate updates, habitsOrder only for reordering
-        let habitsToFilter = habits
+        // Use habitsOrder when in edit mode to show reordering changes immediately
+        // Use the habits parameter for immediate updates when not in edit mode
+        let habitsToFilter = isEditMode ? habitsOrder : habits
         
         // First, deduplicate habits by ID to prevent UI duplicates
         var uniqueHabits: [Habit] = []
@@ -403,7 +401,7 @@ struct HabitsTabView: View {
                     .frame(width: 24, height: 24) // Ensure consistent touch target
                     .scaleEffect(isEditMode ? 1.0 : 0.0) // Scale animation
                     .opacity(isEditMode ? 1.0 : 0.0) // Fade animation
-                    .animation(.easeInOut(duration: 0.3).delay(0.15), value: isEditMode) // Increased delay and duration
+                    .animation(.easeOut(duration: 0.25).delay(0.1), value: isEditMode) // Improved timing and reduced delay
                     .background(
                         Circle()
                             .fill(Color.clear)
@@ -435,7 +433,7 @@ struct HabitsTabView: View {
                                 impactFeedback.impactOccurred()
                                 
                                 // Enter edit mode with animation
-                                withAnimation(.easeInOut(duration: 0.3)) {
+                                withAnimation(.easeOut(duration: 0.25)) {
                                     isEditMode = true
                                     // Clear any existing drag states
                                     draggedHabit = nil
@@ -448,16 +446,16 @@ struct HabitsTabView: View {
                         }
                     )
                     .modifier(JiggleAnimationModifier(isEditMode: isEditMode))
-                    .animation(.easeInOut(duration: 0.3), value: isEditMode)
+                    .animation(.easeOut(duration: 0.25), value: isEditMode)
                     .overlay(
                         // Visual feedback when item is being dragged over - only show when not being dragged
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(dragOverItem == habit && draggedHabit != habit ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: 2)
-                            .animation(.easeInOut(duration: 0.15), value: dragOverItem == habit && draggedHabit != habit)
+                            .animation(.easeOut(duration: 0.15), value: dragOverItem == habit && draggedHabit != habit)
                     )
                     .scaleEffect(draggedHabit == habit ? 0.98 : 1.0)
                     .opacity(draggedHabit == habit ? 0.8 : 1.0)
-                    .animation(.easeInOut(duration: 0.1), value: draggedHabit == habit)
+                    .animation(.easeOut(duration: 0.15), value: draggedHabit == habit)
                 }
             } else {
                 // Normal mode: Just the habit item
@@ -507,7 +505,7 @@ struct HabitsTabView: View {
     private func createDropDelegate(for habit: Habit) -> DropViewDelegate {
         DropViewDelegate(
             item: habit,
-            items: habitsOrder,
+            items: filteredHabits, // Use filteredHabits instead of habitsOrder for consistency
             draggedHabit: $draggedHabit,
             habitsOrder: $habitsOrder,
             dragOverItem: $dragOverItem,
@@ -516,17 +514,86 @@ struct HabitsTabView: View {
         )
     }
     
+    // Helper function to create drop delegate for the bottom drop zone
+    private func createBottomDropDelegate() -> BottomDropDelegate {
+        BottomDropDelegate(
+            items: filteredHabits,
+            draggedHabit: $draggedHabit,
+            habitsOrder: $habitsOrder,
+            dragOverItem: $dragOverItem,
+            insertionIndex: $insertionIndex,
+            onDragStateUpdate: updateDragState
+        )
+    }
+    
+    // MARK: - Bottom Drop Delegate
+    struct BottomDropDelegate: DropDelegate {
+        let items: [Habit]
+        @Binding var draggedHabit: Habit?
+        @Binding var habitsOrder: [Habit]
+        @Binding var dragOverItem: Habit?
+        @Binding var insertionIndex: Int?
+        let onDragStateUpdate: (Habit?, Int?) -> Void
+        
+        func performDrop(info: DropInfo) -> Bool {
+            guard let draggedHabit = draggedHabit else { return false }
+            
+            // Find the actual index in the full habitsOrder array
+            let fromIndex = habitsOrder.firstIndex(of: draggedHabit)
+            let toIndex = items.count // Always insert at the end
+            
+            guard let fromIndex = fromIndex,
+                  fromIndex != toIndex else { return false }
+            
+            // Haptic feedback for successful drop
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+            
+            // Reorder the habits with animation
+            withAnimation(.easeOut(duration: 0.25)) {
+                var newOrder = habitsOrder
+                newOrder.remove(at: fromIndex)
+                newOrder.append(draggedHabit) // Append to the end
+                habitsOrder = newOrder
+            }
+            
+            // Clear the dragged habit and drag over state
+            self.draggedHabit = nil
+            self.dragOverItem = nil
+            self.insertionIndex = nil
+            
+            return true
+        }
+        
+        func dropEntered(info: DropInfo) {
+            // Set insertion index to the end of the list
+            onDragStateUpdate(nil, items.count)
+        }
+        
+        func dropExited(info: DropInfo) {
+            // Clear the drag over state
+            onDragStateUpdate(nil, nil)
+        }
+        
+        func dropUpdated(info: DropInfo) -> DropProposal? {
+            return DropProposal(operation: .move)
+        }
+    }
+    
     // Debounced drag state update to prevent blinking
     private func updateDragState(dragOver: Habit?, insertion: Int?) {
         // Cancel existing timer
         dragUpdateTimer?.invalidate()
         
-        // Set new timer for debounced update
-        dragUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { _ in
-            withAnimation(.easeInOut(duration: 0.1)) {
+        print("🔄 Drag state update: dragOver=\(dragOver?.name ?? "nil"), insertion=\(insertion?.description ?? "nil")")
+        
+        // Set new timer for debounced update - reduced from 0.05 to 0.03 for more responsiveness
+        dragUpdateTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: false) { _ in
+            withAnimation(.easeOut(duration: 0.15)) {
                 dragOverItem = dragOver
                 insertionIndex = insertion
             }
+            print("✅ Drag state updated: dragOverItem=\(dragOver?.name ?? "nil"), insertionIndex=\(insertion?.description ?? "nil")")
         }
     }
     

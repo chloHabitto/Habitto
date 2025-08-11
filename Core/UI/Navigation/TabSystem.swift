@@ -159,8 +159,8 @@ extension TabItem {
     
     static func createHabitTypeTabs(buildingCount: Int, breakingCount: Int) -> [TabItem] {
         return [
-            TabItem(title: "Building", value: "\(buildingCount)", data: HabitType.formation),
-            TabItem(title: "Breaking", value: "\(breakingCount)", data: HabitType.breaking)
+            TabItem(title: "Habit Building", value: "\(buildingCount)", data: HabitType.formation),
+            TabItem(title: "Habit Breaking", value: "\(breakingCount)", data: HabitType.breaking)
         ]
     }
     
