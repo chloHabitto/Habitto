@@ -15,23 +15,84 @@ struct ProgressTabView: View {
         self.habits = habits
     }
     
+    // MARK: - Independent Today's Progress Container
+    private var independentTodaysProgressContainer: some View {
+        Group {
+            if !habits.isEmpty {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(spacing: 20) {
+                        // Left side: Text content
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Today's Goal Progress")
+                                .font(.appTitleMediumEmphasised)
+                                .foregroundColor(.onPrimaryContainer)
+                            
+                            Text("Great progress! Keep building your habits!")
+                                .font(.appBodySmall)
+                                .foregroundColor(.primaryFocus)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // Right side: Circular progress ring
+                        ZStack {
+                            // Background circle (unfilled part)
+                            Circle()
+                                .stroke(Color.primaryContainer, lineWidth: 8)
+                                .frame(width: 52, height: 52)
+                            
+                            // Progress circle (filled part) - showing 75% as example
+                            Circle()
+                                .trim(from: 0, to: 0.75)
+                                .stroke(
+                                    Color.primary,
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                )
+                                .frame(width: 52, height: 52)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.5), value: 0.75)
+                            
+                            // Percentage text
+                            VStack(spacing: 2) {
+                                Text("75%")
+                                    .font(.appLabelMediumEmphasised)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.surfaceDim)
+                    .cornerRadius(16)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+    
     var body: some View {
         WhiteSheetContainer(
             title: "Progress"
         ) {
             VStack(spacing: 0) {
                 // Top Level Tabs: Building | Breaking
-                habitTypeSelector
+                // habitTypeSelector
                 
                 // Sub Tabs: Today | Weekly | Yearly
-                periodSelector
+                // periodSelector
+                
+                // Independent Today's Progress Container
+                independentTodaysProgressContainer
                 
                 ScrollView {
                     VStack(spacing: 32) {
-                        // Progress Overview Charts
-                        progressOverviewCharts
+                        // Today's Progress Section (only shown when Today is selected)
+                        // todaysProgressSection
                         
-                        Spacer(minLength: 20)
+                        // Progress Overview Charts
+                        // progressOverviewCharts
+                        
+                        // Spacer(minLength: 20)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -210,6 +271,86 @@ struct ProgressTabView: View {
                     successRateChart
                 }
             }
+        }
+    }
+    
+    // MARK: - Today's Progress Component
+    private var todaysProgressSection: some View {
+        Group {
+            if !cachedHabitsWithProgress.isEmpty {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(spacing: 20) {
+                        // Left side: Text content
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Today's Goal Progress")
+                                .font(.appTitleMediumEmphasised)
+                                .foregroundColor(.onPrimaryContainer)
+                            
+                            Text(encouragingText)
+                                .font(.appBodySmall)
+                                .foregroundColor(.primaryFocus)
+                                .multilineTextAlignment(.leading)
+                        }
+                        
+                        Spacer()
+                        
+                        // Right side: Circular progress ring
+                        ZStack {
+                            // Background circle (unfilled part)
+                            Circle()
+                                .stroke(Color.primaryContainer, lineWidth: 8)
+                                .frame(width: 40, height: 40)
+                            
+                            // Progress circle (filled part)
+                            Circle()
+                                .trim(from: 0, to: todaysProgressPercentage / 100)
+                                .stroke(
+                                    Color.primary,
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                )
+                                .frame(width: 40, height: 40)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.5), value: todaysProgressPercentage)
+                            
+                            // Percentage text
+                            VStack(spacing: 2) {
+                                Text("\(Int(todaysProgressPercentage))%")
+                                    .font(.appLabelMediumEmphasised)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.surfaceDim)
+                    .cornerRadius(16)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Today's Progress Computed Properties
+    private var todaysProgressPercentage: Double {
+        guard !cachedHabitsWithProgress.isEmpty else { return 0 }
+        
+        let totalProgress = cachedHabitsWithProgress.reduce(0.0) { sum, habitProgress in
+            sum + habitProgress.completionPercentage
+        }
+        
+        return totalProgress / Double(cachedHabitsWithProgress.count)
+    }
+    
+    private var encouragingText: String {
+        let percentage = todaysProgressPercentage
+        
+        if percentage >= 80 {
+            return "Excellent progress! Keep it up!"
+        } else if percentage >= 50 {
+            return "Good progress! You're on track!"
+        } else if percentage >= 20 {
+            return "Getting started! Every step counts!"
+        } else {
+            return "New day, new opportunities!"
         }
     }
     
@@ -784,10 +925,6 @@ struct EmptyStateView: View {
                 .stroke(.outline, lineWidth: 1)
         )
     }
-    
-
-    
-
 }
 
 #Preview {
