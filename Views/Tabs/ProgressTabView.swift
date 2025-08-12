@@ -97,9 +97,16 @@ struct ProgressTabView: View {
         let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
         let dayDateComponents = calendar.dateComponents([.year, .month, .day], from: dateForDay)
         
-        return todayComponents.year == dayDateComponents.year && 
+        let isTodayResult = todayComponents.year == dayDateComponents.year && 
                todayComponents.month == dayDateComponents.month && 
                todayComponents.day == dayDateComponents.day
+        
+        // Debug: Print today check
+        if isTodayResult {
+            print("🔍 TODAY CHECK DEBUG - Day \(day) is today!")
+        }
+        
+        return isTodayResult
     }
     
     // MARK: - Progress Ring Helper Functions
@@ -129,26 +136,11 @@ struct ProgressTabView: View {
             }
         }
         
-        if totalGoal == 0 {
-            return 0.0
-        }
-        
-        return min(totalProgress / totalGoal, 1.0)
+        let finalProgress = totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+        return finalProgress
     }
     
-    private func getDayProgressColor(progress: Double) -> Color {
-        if progress == 0 {
-            return .clear
-        } else if progress < 0.25 {
-            return .red500
-        } else if progress < 0.5 {
-            return .yellow500
-        } else if progress < 0.75 {
-            return .pastelBlue500
-        } else {
-            return .green500
-        }
-    }
+
     
     // MARK: - Helper Functions
     private func parseGoalAmount(from goalString: String) -> Int {
@@ -335,7 +327,7 @@ struct ProgressTabView: View {
                             ZStack {
                                 // Background circle
                                 Circle()
-                                    .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
+                                    .fill(isToday(day: day) ? Color.primary : Color.clear)
                                     .frame(width: 32, height: 32)
                                 
                                 // Complete stroke around the day (always visible)
@@ -346,16 +338,18 @@ struct ProgressTabView: View {
                                 // Progress ring with blue color (fills based on completion percentage)
                                 let progress = getDayProgress(day: day)
                                 
+                                // Progress ring (filled based on progress)
                                 Circle()
                                     .trim(from: 0, to: progress)
-                                    .stroke(Color.pastelBlue500, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                                     .frame(width: 32, height: 32)
                                     .rotationEffect(.degrees(-90)) // Start from top
+                                    .opacity(progress > 0 ? 1.0 : 0.0)
                                 
                                 // Day number
                                 Text("\(day)")
                                     .font(.appBodySmall)
-                                    .foregroundColor(.text01)
+                                    .foregroundColor(isToday(day: day) ? .onPrimary : .text01)
                             }
                         }
                         .buttonStyle(PlainButtonStyle())

@@ -601,6 +601,19 @@ class StreakDataCalculator {
             print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X times a week' schedule")
             return false
             
+        case let s where s.contains("days a week"):
+            if let daysPerWeek = extractDaysPerWeek(from: s) {
+                let calendar = Calendar.current
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let today = calendar.startOfDay(for: Date())
+                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
+                let isScheduled = daysSinceStart >= 0 && daysSinceStart % daysPerWeek == 0
+                print("🔍 WEEKDAY SCHEDULE DEBUG - \(daysPerWeek) days a week | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
+                return isScheduled
+            }
+            print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X days a week' schedule")
+            return false
+            
         default:
             // For any unrecognized schedule format, don't show the habit (safer default)
             print("🔍 WEEKDAY SCHEDULE DEBUG - Unrecognized schedule format: '\(schedule)'")
@@ -646,6 +659,18 @@ class StreakDataCalculator {
     
     private static func extractTimesPerWeek(from schedule: String) -> Int? {
         let pattern = #"(\d+)\s+times\s+a\s+week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
+    private static func extractDaysPerWeek(from schedule: String) -> Int? {
+        let pattern = #"(\d+)\s+days\s+a\s+week"#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
               let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
             return nil
