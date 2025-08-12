@@ -666,50 +666,12 @@ struct ProgressTabView: View {
         Group {
             if !habits.isEmpty {
                 VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 20) {
-                        // Left side: Text content
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Today's Goal Progress")
-                                .font(.appTitleMediumEmphasised)
-                                .foregroundColor(.onPrimaryContainer)
-                            
-                            Text("Great progress! Keep building your habits!")
-                                .font(.appBodySmall)
-                                .foregroundColor(.primaryFocus)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        // Right side: Circular progress ring
-                        ZStack {
-                            // Background circle (unfilled part)
-                            Circle()
-                                .stroke(Color.primaryContainer, lineWidth: 8)
-                                .frame(width: 52, height: 52)
-                            
-                            // Progress circle (filled part) - showing actual completion percentage
-                            Circle()
-                                .trim(from: 0, to: todaysActualCompletionPercentage)
-                                .stroke(
-                                    Color.primary,
-                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                                )
-                                .frame(width: 52, height: 52)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 0.5), value: todaysActualCompletionPercentage)
-                            
-                            // Percentage text
-                            VStack(spacing: 2) {
-                                Text("\(Int(todaysActualCompletionPercentage * 100))%")
-                                    .font(.appLabelMediumEmphasised)
-                                    .foregroundColor(.primaryFocus)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(Color.surfaceDim)
-                    .cornerRadius(16)
+                    ProgressChartComponents.ProgressCard(
+                        title: "Today's Goal Progress",
+                        subtitle: "Great progress! Keep building your habits!",
+                        progress: todaysActualCompletionPercentage,
+                        progressRingSize: 52
+                    )
                 }
                 .padding(.horizontal, 20)
             }
@@ -811,64 +773,29 @@ struct ProgressTabView: View {
                 CalendarGridComponents.WeekdayHeader()
                 
                 // Calendar grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
-                    // Empty cells for days before the first day of the month
-                    let emptyCells = firstDayOfMonth()
-                    ForEach(0..<emptyCells, id: \.self) { index in
-                        Text("")
-                            .frame(width: 32, height: 32)
-                            .id("empty-\(monthYearString())-\(index)")
-                    }
-                    
-                    // Actual days of the month
-                    let totalDays = daysInMonth()
-                    ForEach(1...totalDays, id: \.self) { day in
-                        Button(action: {
-                            // Add haptic feedback when selecting a date
-                            let selectionFeedback = UISelectionFeedbackGenerator()
-                            selectionFeedback.selectionChanged()
-                            
-                            // Create a date for the selected day in the current month
-                            let calendar = Calendar.current
-                            let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-                            if let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) {
-                                // Here you can add logic to handle the selected date
-                                // For now, we'll just print it to console
-                                print("Selected date: \(dateForDay)")
-                            }
-                        }) {
-                            ZStack {
-                                // Background circle
-                                Circle()
-                                    .fill(isToday(day: day) ? Color.primary : Color.clear)
-                                    .frame(width: 32, height: 32)
-                                
-                                // Complete stroke around the day (always visible)
-                                Circle()
-                                    .stroke(Color.primaryContainer, lineWidth: 1)
-                                    .frame(width: 32, height: 32)
-                                
-                                // Progress ring with blue color (fills based on completion percentage)
-                                let progress = getDayProgress(day: day)
-                                
-                                // Progress ring (filled based on progress)
-                                Circle()
-                                    .trim(from: 0, to: progress)
-                                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                                    .frame(width: 32, height: 32)
-                                    .rotationEffect(.degrees(-90)) // Start from top
-                                    .opacity(progress > 0 ? 1.0 : 0.0)
-                                
-                                // Day number
-                                Text("\(day)")
-                                    .font(.appBodySmall)
-                                    .foregroundColor(isToday(day: day) ? .onPrimary : .text01)
-                            }
+                CalendarGridComponents.CalendarGrid(
+                    firstDayOfMonth: firstDayOfMonth(),
+                    daysInMonth: daysInMonth(),
+                    currentDate: currentDate,
+                    selectedDate: Date(), // TODO: Add selected date state
+                    getDayProgress: { day in
+                        getDayProgress(day: day)
+                    },
+                    onDayTap: { day in
+                        // Add haptic feedback when selecting a date
+                        let selectionFeedback = UISelectionFeedbackGenerator()
+                        selectionFeedback.selectionChanged()
+                        
+                        // Create a date for the selected day in the current month
+                        let calendar = Calendar.current
+                        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+                        if let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) {
+                            // Here you can add logic to handle the selected date
+                            // For now, we'll just print it to console
+                            print("Selected date: \(dateForDay)")
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .id("day-\(monthYearString())-\(day)")
                     }
-                }
+                )
                 .frame(minHeight: 200) // Ensure minimum height for calendar
 
             }

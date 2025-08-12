@@ -201,81 +201,44 @@ struct CreateHabitStep1View: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     // Name field - container style matching habit type container
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Name")
-                            .font(.appTitleMedium)
-                            .foregroundColor(.text01)
-                        
-                        TextField("Habit name", text: $name)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .submitLabel(.done)
-                            .focused($isNameFieldFocused)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .padding(.horizontal, 16)
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.outline, lineWidth: 1.5)
+                    FormInputComponents.FormContainer {
+                        VStack(alignment: .leading, spacing: 12) {
+                            FormInputComponents.FormSectionHeader(title: "Name")
+                            
+                            FormInputComponents.CustomTextField(
+                                placeholder: "Habit name",
+                                text: $name
                             )
-                            .cornerRadius(12)
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 16)
-                    .background(.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.outline, lineWidth: 1.5)
-                    )
-                    .cornerRadius(12)
                     
                     // Description field - container style matching habit type container
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Description")
-                            .font(.appTitleMedium)
-                            .foregroundColor(.text01)
-                        
-                        TextField("Description (Optional)", text: $description)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .submitLabel(.done)
-                            .focused($isDescriptionFieldFocused)
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .padding(.horizontal, 16)
-                            .background(.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(.outline, lineWidth: 1.5)
+                    FormInputComponents.FormContainer {
+                        VStack(alignment: .leading, spacing: 12) {
+                            FormInputComponents.FormSectionHeader(title: "Description")
+                            
+                            FormInputComponents.CustomTextField(
+                                placeholder: "Description (Optional)",
+                                text: $description
                             )
-                            .cornerRadius(12)
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 16)
-                    .background(.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(.outline, lineWidth: 1.5)
-                    )
-                    .cornerRadius(12)
                     
                     // Color and Icon selection
                     if isViewLoaded {
                         VStack(spacing: 16) {
-                            VisualSelectionRow(
+                            FormInputComponents.SelectionRowWithVisual(
                                 title: "Colour",
+                                icon: nil,
                                 color: color,
                                 value: getColorName(for: color),
                                 action: { showingColorSheet = true }
                             )
                             
-                            VisualSelectionRow(
+                            FormInputComponents.SelectionRowWithVisual(
                                 title: "Icon",
-                                color: color,
                                 icon: icon,
+                                color: color,
                                 value: getIconDisplayValue(icon),
                                 action: { showingIconSheet = true }
                             )
@@ -289,12 +252,18 @@ struct CreateHabitStep1View: View {
                             
                             HStack(spacing: 12) {
                                 // Habit Building button
-                                HabitTypeButton(title: "Habit Building", isSelected: isFormationSelected) {
+                                FormInputComponents.HabitTypeButton(
+                                    title: "Habit Building",
+                                    isSelected: isFormationSelected
+                                ) {
                                     habitType = .formation
                                 }
                                 
                                 // Habit Breaking button
-                                HabitTypeButton(title: "Habit Breaking", isSelected: isBreakingSelected) {
+                                FormInputComponents.HabitTypeButton(
+                                    title: "Habit Breaking",
+                                    isSelected: isBreakingSelected
+                                ) {
                                     habitType = .breaking
                                 }
                             }
