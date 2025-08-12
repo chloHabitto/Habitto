@@ -37,7 +37,7 @@ struct ProgressTabView: View {
     
     // MARK: - Overall Progress Section
     private var overallProgressSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             // Overall + down chevron header - left aligned
             Button(action: {
                 showingHabitsList = true
