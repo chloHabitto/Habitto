@@ -200,11 +200,67 @@ struct CreateHabitStep1View: View {
             // Main content with simplified structure
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    // Name field - immediate keyboard response
-                    OptimizedTextField(placeholder: "Name", text: $name, isFocused: $isNameFieldFocused)
+                    // Name field - container style matching habit type container
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Name")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        TextField("Habit name", text: $name)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .submitLabel(.done)
+                            .focused($isNameFieldFocused)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .padding(.horizontal, 16)
+                            .background(.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(.outline, lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
                     
-                    // Description field
-                    OptimizedTextField(placeholder: "Description (Optional)", text: $description, isFocused: $isDescriptionFieldFocused)
+                    // Description field - container style matching habit type container
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Description")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        TextField("Description (Optional)", text: $description)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .submitLabel(.done)
+                            .focused($isDescriptionFieldFocused)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .padding(.horizontal, 16)
+                            .background(.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(.outline, lineWidth: 1.5)
+                            )
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
                     
                     // Color and Icon selection
                     if isViewLoaded {
