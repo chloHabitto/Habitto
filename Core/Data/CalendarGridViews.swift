@@ -59,7 +59,7 @@ struct WeeklyCalendarGridView: View {
                             // .background(Color.purple)
                             .overlay(
                                 Rectangle()
-                                    .stroke(.outline, lineWidth: 1)
+                                    .stroke(.outline3, lineWidth: 1)
                             )
                         
                         ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
@@ -70,7 +70,7 @@ struct WeeklyCalendarGridView: View {
                                 .frame(height: 32)
                                 .overlay(
                                     Rectangle()
-                                        .stroke(.outline, lineWidth: 1)
+                                        .stroke(.outline3, lineWidth: 1)
                                 )
                         }
                     }
@@ -98,7 +98,7 @@ struct WeeklyCalendarGridView: View {
                                 // .background(Color.purple)
                                 .overlay(
                                     Rectangle()
-                                        .stroke(.outline, lineWidth: 1)
+                                        .stroke(.outline3, lineWidth: 1)
                                 )
                                 
                                 // Heatmap cells
@@ -120,7 +120,7 @@ struct WeeklyCalendarGridView: View {
                                     .frame(width: 32, height: 32)
                                     .overlay(
                                         Rectangle()
-                                            .stroke(.outline, lineWidth: 1)
+                                            .stroke(.outline3, lineWidth: 1)
                                     )
                                 }
                             }
@@ -140,7 +140,7 @@ struct WeeklyCalendarGridView: View {
                             // .background(Color.purple)
                             .overlay(
                                 Rectangle()
-                                    .stroke(.outline, lineWidth: 1)
+                                    .stroke(.outline3, lineWidth: 1)
                             )
                         
                         ForEach(0..<7, id: \.self) { dayIndex in
@@ -161,7 +161,7 @@ struct WeeklyCalendarGridView: View {
                             .frame(width: 32, height: 32)
                             .overlay(
                                 Rectangle()
-                                    .stroke(.outline, lineWidth: 1)
+                                    .stroke(.outline3, lineWidth: 1)
                             )
                         }
                     }
@@ -309,7 +309,7 @@ struct MonthlyCalendarGridView: View {
                     .background(Color.white)
                     .overlay(
                         Rectangle()
-                            .stroke(.outline, lineWidth: 1)
+                            .stroke(.outline3, lineWidth: 1)
                     )
                 
                 // Day headers - must match heatmap cells exactly
@@ -321,7 +321,7 @@ struct MonthlyCalendarGridView: View {
                         .background(Color.white)
                         .overlay(
                             Rectangle()
-                                .stroke(.outline, lineWidth: 1)
+                                .stroke(.outline3, lineWidth: 1)
                         )
                 }
             }
@@ -339,7 +339,7 @@ struct MonthlyCalendarGridView: View {
                         .background(Color.white)
                         .overlay(
                             Rectangle()
-                                .stroke(.outline, lineWidth: 1)
+                                .stroke(.outline3, lineWidth: 1)
                         )
                     
                     // Week heatmap cells - must match day headers exactly
@@ -358,7 +358,7 @@ struct MonthlyCalendarGridView: View {
                         .background(Color.white)
                         .overlay(
                             Rectangle()
-                                .stroke(.outline, lineWidth: 1)
+                                .stroke(.outline3, lineWidth: 1)
                         )
                     }
                 }
@@ -385,7 +385,7 @@ struct MonthlyCalendarGridView: View {
             
             // Vertical divider
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1, height: 40)
             
             // Completed days
@@ -401,7 +401,7 @@ struct MonthlyCalendarGridView: View {
             
             // Vertical divider
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1, height: 40)
             
             // Consistency percentage
@@ -633,7 +633,7 @@ struct YearlyCalendarGridView: View {
             
             // Vertical divider
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1, height: 40)
             
             // Completed days
@@ -649,7 +649,7 @@ struct YearlyCalendarGridView: View {
             
             // Vertical divider
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1, height: 40)
             
             // Consistency percentage

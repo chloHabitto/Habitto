@@ -117,7 +117,7 @@ struct CreateHabitStep1View: View {
             .background(.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
+                    .stroke(.outline3, lineWidth: 1.5)
             )
             .cornerRadius(12)
     }
@@ -181,7 +181,7 @@ struct CreateHabitStep1View: View {
             .background(isSelected ? .primary : .primaryContainer)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
+                    .stroke(.outline3, lineWidth: 1.5)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -274,7 +274,7 @@ struct CreateHabitStep1View: View {
                         .background(.surface)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline, lineWidth: 1.5)
+                                .stroke(.outline3, lineWidth: 1.5)
                         )
                         .cornerRadius(12)
                     }

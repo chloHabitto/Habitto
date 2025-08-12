@@ -123,7 +123,7 @@ class ProgressViewComponentsHelper {
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.outline, lineWidth: 1)
+                .stroke(Color.outline3, lineWidth: 1)
         )
         .padding(.horizontal, 20)
         .id("calendar-container-\(monthYearString)")

@@ -108,7 +108,7 @@ struct ReminderBottomSheet: View {
             // Divider under header - only show when there are reminders
             if !reminders.isEmpty {
                 Divider()
-                    .background(.outline)
+                    .background(.outline3)
             }
             
             // Content area

@@ -71,7 +71,7 @@ struct UnifiedTabBarView: View {
             VStack {
                 Spacer()
                 Rectangle()
-                    .fill(Color.outline)
+                    .fill(Color.outline3)
                     .frame(height: 1)
             }
             .opacity(style == .underline ? 1 : 0)
@@ -140,7 +140,7 @@ struct PillTabButton: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
-                        .stroke(isSelected ? .clear : .outline, lineWidth: 1.5)
+                        .stroke(isSelected ? .clear : .outline3, lineWidth: 1.5)
                 )
         }
         .buttonStyle(PlainButtonStyle())

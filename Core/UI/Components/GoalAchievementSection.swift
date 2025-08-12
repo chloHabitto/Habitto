@@ -102,7 +102,7 @@ struct SimpleGoalAchievementCard: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.outline, lineWidth: 1)
+                .stroke(Color.outline3, lineWidth: 1)
         )
     }
 }

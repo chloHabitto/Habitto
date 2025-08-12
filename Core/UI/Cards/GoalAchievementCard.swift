@@ -105,7 +105,7 @@ struct GoalAchievementCard: View {
         .background(.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(.outline, lineWidth: 1)
+                .stroke(.outline3, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }

@@ -245,7 +245,7 @@ struct MonthButton: View {
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? .clear : .outline, lineWidth: 1)
+                        .stroke(isSelected ? .clear : .outline3, lineWidth: 1)
                 )
         }
         .buttonStyle(PlainButtonStyle())

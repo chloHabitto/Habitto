@@ -127,7 +127,7 @@ struct OverallOptionRow: View {
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.primary : Color.outline, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.primary : Color.outline3, lineWidth: isSelected ? 2 : 1)
             )
             .padding(.horizontal, 20)
         }
@@ -174,7 +174,7 @@ struct HabitRowView: View {
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.primary : Color.outline, lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.primary : Color.outline3, lineWidth: isSelected ? 2 : 1)
             )
             .padding(.horizontal, 20)
         }

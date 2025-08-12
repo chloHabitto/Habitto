@@ -24,7 +24,7 @@ struct EmptyStateView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(.outline, lineWidth: 1)
+                .stroke(.outline3, lineWidth: 1)
         )
     }
 }

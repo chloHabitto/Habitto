@@ -226,7 +226,7 @@ struct ScheduleBottomSheet: View {
 
                         // 2. Divider
                         Divider()
-                            .background(.outline)
+                            .background(.outline3)
                             .padding(.vertical, 20)
                             .padding(.horizontal, 16)
 
@@ -268,7 +268,7 @@ struct ScheduleBottomSheet: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(.outline, lineWidth: 1)
+                                                        .stroke(.outline3, lineWidth: 1)
                                                 )
                                         }
                                     }
@@ -332,7 +332,7 @@ struct ScheduleBottomSheet: View {
                         
                         // 2. Divider
                         Divider()
-                            .background(.outline)
+                            .background(.outline3)
                             .padding(.vertical, 20)
                             .padding(.horizontal, 16)
                         
@@ -377,7 +377,7 @@ struct ScheduleBottomSheet: View {
                                         .background(.surface)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .stroke(.outline, lineWidth: 1)
+                                                .stroke(.outline3, lineWidth: 1)
                                         )
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                     
@@ -434,7 +434,7 @@ struct ScheduleBottomSheet: View {
                                         .background(.surface)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .stroke(.outline, lineWidth: 1)
+                                                .stroke(.outline3, lineWidth: 1)
                                         )
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                     

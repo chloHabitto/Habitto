@@ -78,7 +78,7 @@ struct StreakSummaryCardsView: View {
             )
             
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1)
                 .frame(height: 60)
             
@@ -166,7 +166,7 @@ struct ProgressTabsView: View {
                     }
                     
                     Rectangle()
-                        .fill(selectedTab == index ? .text03 : .divider)
+                        .fill(selectedTab == index ? .text03 : .outline2)
                         .frame(height: 3)
                         .frame(maxWidth: .infinity)
                         .animation(.easeInOut(duration: 0.2), value: selectedTab)
@@ -337,14 +337,14 @@ struct SummaryStatisticsView: View {
             StatisticCardView(value: "\(completionRate)%", label: "Completion")
             
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1)
                 .frame(height: 60)
             
             StatisticCardView(value: pluralizeDay(bestStreak), label: "Best streak")
             
             Rectangle()
-                .fill(.outline)
+                .fill(.outline3)
                 .frame(width: 1)
                 .frame(height: 60)
             

@@ -147,29 +147,29 @@ struct ProgressTabView: View {
                         }
                     }
                 )
-                .frame(minHeight: 200)
-                .simultaneousGesture(
-                    DragGesture()
-                        .onEnded { value in
-                            let threshold: CGFloat = 50
-                            // Only trigger month change for horizontal swipes
-                            if abs(value.translation.width) > abs(value.translation.height) {
-                                if value.translation.width > threshold {
-                                    // Swipe right - go to previous month
+                .frame(minHeight: 240)
+            .simultaneousGesture(
+                DragGesture()
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        // Only trigger month change for horizontal swipes
+                        if abs(value.translation.width) > abs(value.translation.height) {
+                            if value.translation.width > threshold {
+                                // Swipe right - go to previous month
                                     calendarHelper.previousMonth()
-                                } else if value.translation.width < -threshold {
-                                    // Swipe left - go to next month
+                            } else if value.translation.width < -threshold {
+                                // Swipe left - go to next month
                                     calendarHelper.nextMonth()
                                 }
                             }
                         }
                 )
-            }
+                    }
             .padding(20)
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.outline, lineWidth: 1)
+                    .stroke(Color.outline3, lineWidth: 1)
             )
             .padding(.horizontal, 20)
             

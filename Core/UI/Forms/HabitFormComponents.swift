@@ -151,7 +151,7 @@ struct ReminderSection: View {
             
             if !reminders.isEmpty {
                 Divider()
-                    .background(.outline)
+                    .background(.outline3)
                     .padding(.vertical, 4)
                 
                 VStack(spacing: 4) {

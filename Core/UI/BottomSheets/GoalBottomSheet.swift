@@ -93,7 +93,7 @@ struct GoalBottomSheet: View {
                         
                         // 2. Divider
                         Divider()
-                            .background(.outline)
+                            .background(.outline3)
                             .padding(.vertical, 20)
                             .padding(.horizontal, 16)
                         
@@ -125,7 +125,7 @@ struct GoalBottomSheet: View {
                                     .background(.surface)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 24)
-                                            .stroke(.outline, lineWidth: 1)
+                                            .stroke(.outline3, lineWidth: 1)
                                     )
                                     .clipShape(RoundedRectangle(cornerRadius: 24))
                                 
@@ -176,7 +176,7 @@ struct GoalBottomSheet: View {
                         
                         // 2. Divider
                         Divider()
-                            .background(.outline)
+                            .background(.outline3)
                             .padding(.vertical, 20)
                             .padding(.horizontal, 16)
                         

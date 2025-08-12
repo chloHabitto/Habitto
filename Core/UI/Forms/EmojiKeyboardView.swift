@@ -53,7 +53,7 @@ struct EmojiKeyboardView: View {
             
             // Bottom stroke to separate category tabs from emoji grid
             Divider()
-                .background(.outline)
+                .background(.outline3)
                 .padding(.top, 8)
             
             // Emoji grid

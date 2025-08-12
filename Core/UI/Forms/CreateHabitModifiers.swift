@@ -11,7 +11,7 @@ struct InputFieldModifier: ViewModifier {
             .background(.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
+                    .stroke(.outline3, lineWidth: 1.5)
             )
             .cornerRadius(12)
     }
@@ -25,7 +25,7 @@ struct SelectionRowModifier: ViewModifier {
             .background(.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
+                    .stroke(.outline3, lineWidth: 1.5)
             )
             .cornerRadius(12)
     }

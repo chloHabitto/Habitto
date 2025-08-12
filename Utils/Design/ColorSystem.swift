@@ -115,9 +115,10 @@ struct ColorTokens {
     static let text06 = Color("grey700")
     
     // Outline Colors
-    static let divider = Color("grey100")
-    static let outline = Color("grey200")
-    static let outline2 = Color("grey300")
+    static let outline2 = Color("grey100")
+    static let outline3 = Color("grey200")
+    static let outline1 = Color("grey50")
+    static let outline4 = Color("grey300")
     static let outlineHighlight = Color("navy400")
     
     // Basic Colors
@@ -176,9 +177,10 @@ extension Color {
     static let text06 = ColorTokens.text06
     
     // Outline Colors
-    static let divider = ColorTokens.divider
-    static let outline = ColorTokens.outline
+    static let outline1 = ColorTokens.outline1
     static let outline2 = ColorTokens.outline2
+    static let outline3 = ColorTokens.outline3
+    static let outline4 = ColorTokens.outline4
     static let outlineHighlight = ColorTokens.outlineHighlight
     
     // System Colors
@@ -231,9 +233,10 @@ extension ShapeStyle where Self == Color {
     static var text06: Color { ColorTokens.text06 }
     
     // Outline Colors
-    static var divider: Color { ColorTokens.divider }
-    static var outline: Color { ColorTokens.outline }
     static var outline2: Color { ColorTokens.outline2 }
+    static var outline3: Color { ColorTokens.outline3 }
+    static var outline1: Color { ColorTokens.outline1 }
+    static var outline4: Color { ColorTokens.outline4 }
     static var outlineHighlight: Color { ColorTokens.outlineHighlight }
     
     // System Colors

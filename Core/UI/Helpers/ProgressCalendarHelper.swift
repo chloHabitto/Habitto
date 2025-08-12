@@ -6,9 +6,7 @@ class ProgressCalendarHelper: ObservableObject {
     
     // MARK: - Calendar Navigation
     func previousMonth() {
-        var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
+        let calendar = Calendar.current
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
@@ -19,9 +17,7 @@ class ProgressCalendarHelper: ObservableObject {
     }
     
     func nextMonth() {
-        var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
+        let calendar = Calendar.current
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
@@ -41,31 +37,55 @@ class ProgressCalendarHelper: ObservableObject {
     func monthYearString() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "en_US")
         return formatter.string(from: currentDate)
     }
     
     func firstDayOfMonth() -> Int {
         var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
+        
+        // Set Monday as the first day of the week
+        calendar.firstWeekday = 2 // 2 = Monday
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfMonth = calendar.date(from: firstDayComponents) else { 
             return 0 
         }
         
-        let weekday = calendar.component(.weekday, from: firstDayOfMonth)
-        return weekday - 1
+        // Get the weekday of the first day of the month (1 = Sunday, 2 = Monday, etc.)
+        let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
+        
+        // Calculate how many empty cells we need at the start
+        // Since we want Monday as the first day of the week:
+        // - If first day is Monday (weekday = 2), we need 0 empty cells
+        // - If first day is Tuesday (weekday = 3), we need 1 empty cell
+        // - If first day is Sunday (weekday = 1), we need 6 empty cells
+        let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
+        
+        // Debug: Let's see what's happening
+        print("🔍 Calendar Debug:")
+        print("   Current Date: \(currentDate)")
+        print("   First Day of Month: \(firstDayOfMonth)")
+        print("   Weekday of First Day: \(weekdayOfFirstDay) (1=Sun, 2=Mon, 3=Tue, etc.)")
+        print("   First Weekday Setting: \(calendar.firstWeekday) (2=Monday)")
+        print("   Empty Cells Needed: \(emptyCells)")
+        print("   Days in Month: \(daysInMonth())")
+        print("   Total Grid Cells: \(emptyCells + daysInMonth())")
+        
+        return emptyCells
     }
     
     func daysInMonth() -> Int {
-        var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
-        
+        let calendar = Calendar.current
         let range = calendar.range(of: .day, in: .month, for: currentDate)
-        return range?.count ?? 0
+        let days = range?.count ?? 0
+        
+        // Debug: Show days in month calculation
+        print("📅 Days in Month Debug:")
+        print("   Current Date: \(currentDate)")
+        print("   Days Range: \(range?.description ?? "nil")")
+        print("   Days Count: \(days)")
+        
+        return days
     }
     
     func isToday(day: Int) -> Bool {

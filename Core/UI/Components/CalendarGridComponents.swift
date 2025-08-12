@@ -15,20 +15,24 @@ struct CalendarGridComponents {
             Button(action: onTap) {
                 ZStack {
                     // Background
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(backgroundColor)
-                    
-                    // Progress ring
-                    if progress > 0 {
+                    if isToday {
                         Circle()
-                            .trim(from: 0, to: progress)
-                            .stroke(
-                                Color.primary,
-                                style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                            )
-                            .frame(width: 24, height: 24)
-                            .rotationEffect(.degrees(-90))
+                            .fill(backgroundColor)
+                            .frame(width: 30, height: 30)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(backgroundColor)
                     }
+                    
+                    // Progress ring - always show, but with different colors
+                    Circle()
+                        .trim(from: 0, to: progress > 0 ? progress : 1.0)
+                        .stroke(
+                            progress > 0 ? (isToday ? Color.white : Color.primary) : (isToday ? Color.white.opacity(0.7) : Color.outline3),
+                            style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
+                        )
+                        .frame(width: 30, height: 30)
+                        .rotationEffect(.degrees(-90))
                     
                     // Day number
                     Text("\(day)")
@@ -96,7 +100,7 @@ struct CalendarGridComponents {
     
     // MARK: - Weekday Header
     struct WeekdayHeader: View {
-        private let weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        private let weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         
         var body: some View {
             HStack(spacing: 0) {
@@ -123,9 +127,10 @@ struct CalendarGridComponents {
         var body: some View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
                 // Empty cells for days before the first day of the month
-                ForEach(0..<firstDayOfMonth, id: \.self) { _ in
+                ForEach(0..<firstDayOfMonth, id: \.self) { index in
                     Color.clear
                         .frame(height: 32)
+                        .id("empty-start-\(index)")
                 }
                 
                 // Day cells
@@ -142,7 +147,31 @@ struct CalendarGridComponents {
                     ) {
                         onDayTap(day)
                     }
+                    .id("day-\(day)")
+                    .onAppear {
+                        // Debug: Show each day as it appears
+                        print("   📅 Day \(day) appeared")
+                    }
                 }
+                
+                // Empty cells to complete the grid (always show 6 rows)
+                let totalCells = firstDayOfMonth + daysInMonth
+                let remainingCells = max(0, 42 - totalCells) // 42 = 6 rows × 7 columns
+                ForEach(0..<remainingCells, id: \.self) { index in
+                    Color.clear
+                        .frame(height: 32)
+                        .id("empty-end-\(index)")
+                }
+            }
+            .onAppear {
+                // Debug: Show grid layout information
+                print("📅 Calendar Grid Debug:")
+                print("   First Day Position: \(firstDayOfMonth)")
+                print("   Days in Month: \(daysInMonth)")
+                print("   Empty Cells at Start: \(firstDayOfMonth)")
+                print("   Day Cells: \(daysInMonth)")
+                print("   Remaining Empty Cells: \(max(0, 42 - (firstDayOfMonth + daysInMonth)))")
+                print("   Total Grid Cells: \(firstDayOfMonth + daysInMonth + max(0, 42 - (firstDayOfMonth + daysInMonth)))")
             }
         }
     }
@@ -152,8 +181,14 @@ struct CalendarGridComponents {
         let calendar = Calendar.current
         let today = Date()
         
+        // Get the first day of the month
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) else {
+        guard let firstDayOfMonth = calendar.date(from: monthComponents) else {
+            return false
+        }
+        
+        // Calculate the date for the specific day by adding (day - 1) to the first day
+        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth) else {
             return false
         }
         
@@ -168,8 +203,14 @@ struct CalendarGridComponents {
     static func isSelected(day: Int, currentDate: Date, selectedDate: Date) -> Bool {
         let calendar = Calendar.current
         
+        // Get the first day of the month
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) else {
+        guard let firstDayOfMonth = calendar.date(from: monthComponents) else {
+            return false
+        }
+        
+        // Calculate the date for the specific day by adding (day - 1) to the first day
+        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth) else {
             return false
         }
         
@@ -178,22 +219,30 @@ struct CalendarGridComponents {
     
     static func firstDayOfMonth(from date: Date) -> Int {
         var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
+        
+        // Set Monday as the first day of the week
+        calendar.firstWeekday = 2 // 2 = Monday
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: date)
         guard let firstDayOfMonth = calendar.date(from: firstDayComponents) else { 
             return 0 
         }
         
-        let weekday = calendar.component(.weekday, from: firstDayOfMonth)
-        return weekday - 1
+        // Get the weekday of the first day of the month (1 = Sunday, 2 = Monday, etc.)
+        let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
+        
+        // Calculate how many empty cells we need at the start
+        // Since we want Monday as the first day of the week:
+        // - If first day is Monday (weekday = 2), we need 0 empty cells
+        // - If first day is Tuesday (weekday = 3), we need 1 empty cell
+        // - If first day is Sunday (weekday = 1), we need 6 empty cells
+        let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
+        
+        return emptyCells
     }
     
     static func daysInMonth(from date: Date) -> Int {
-        var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US")
-        calendar.timeZone = TimeZone.current
+        let calendar = Calendar.current
         
         let range = calendar.range(of: .day, in: .month, for: date)
         return range?.count ?? 0
@@ -202,7 +251,6 @@ struct CalendarGridComponents {
     static func monthYearString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "en_US")
         return formatter.string(from: date)
     }
 }

@@ -269,7 +269,7 @@ struct HabitEditView: View {
     private var bottomButtonDock: some View {
         VStack(spacing: 0) {
             Divider()
-                .background(.outline)
+                .background(.outline3)
             
             saveButton
         }
@@ -715,7 +715,7 @@ struct HabitEditView: View {
             .background(.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(.outline, lineWidth: 1.5)
+                    .stroke(.outline3, lineWidth: 1.5)
             )
             .cornerRadius(12)
             .contentShape(Rectangle())
@@ -777,7 +777,7 @@ struct HabitEditView: View {
                     .background(selectedHabitType == .formation ? .primary : .primaryContainer)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(.outline, lineWidth: 1.5)
+                            .stroke(.outline3, lineWidth: 1.5)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -805,7 +805,7 @@ struct HabitEditView: View {
                     .background(selectedHabitType == .breaking ? .primary : .primaryContainer)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(.outline, lineWidth: 1.5)
+                            .stroke(.outline3, lineWidth: 1.5)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -818,7 +818,7 @@ struct HabitEditView: View {
         .background(.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(.outline, lineWidth: 1.5)
+                .stroke(.outline3, lineWidth: 1.5)
         )
         .cornerRadius(12)
     }
@@ -845,7 +845,7 @@ struct HabitEditView: View {
             
             if !reminders.isEmpty {
                 Divider()
-                    .background(.outline)
+                    .background(.outline3)
                     .padding(.vertical, 4)
                 
                 VStack(spacing: 4) {

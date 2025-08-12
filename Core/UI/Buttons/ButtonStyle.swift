@@ -138,7 +138,7 @@ enum ButtonStyle {
             case .default, .hover:
                 return .primary
             case .disabled:
-                return .outline
+                return .outline3
             case .loading:
                 return .primary // TODO: Update in the future
             }

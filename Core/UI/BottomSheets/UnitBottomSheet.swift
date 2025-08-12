@@ -64,7 +64,7 @@ struct UnitBottomSheet: View {
                                     .background(currentUnit == unit ? ColorTokens.primary : .surfaceContainer)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(currentUnit == unit ? ColorTokens.primary : .outline, lineWidth: 1)
+                                            .stroke(currentUnit == unit ? ColorTokens.primary : .outline3, lineWidth: 1)
                                     )
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }

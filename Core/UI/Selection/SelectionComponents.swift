@@ -35,7 +35,7 @@ struct BottomSheetSelectionRow: View {
             .background(.surface)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? .primary : .outline, lineWidth: 1.5)
+                    .stroke(isSelected ? .primary : .outline3, lineWidth: 1.5)
             )
             .cornerRadius(12)
         }
@@ -188,7 +188,7 @@ struct PillSelectionRow: View {
         .background(.surface)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? .primary : .outline, lineWidth: 1.5)
+                .stroke(isSelected ? .primary : .outline3, lineWidth: 1.5)
         )
         .cornerRadius(12)
     }

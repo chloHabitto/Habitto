@@ -24,7 +24,7 @@ struct FormInputComponents {
             font: Font = .appBodyLarge,
             textColor: Color = .text01,
             backgroundColor: Color = .surface,
-            borderColor: Color = .outline,
+            borderColor: Color = .outline3,
             cornerRadius: CGFloat = 12,
             lineWidth: CGFloat = 1.5,
             minHeight: CGFloat = 48,
@@ -229,7 +229,7 @@ struct FormInputComponents {
                 .background(isSelected ? primaryColor : secondaryColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? primaryColor : .outline, lineWidth: 1.5)
+                        .stroke(isSelected ? primaryColor : .outline3, lineWidth: 1.5)
                 )
                 .cornerRadius(12)
             }
