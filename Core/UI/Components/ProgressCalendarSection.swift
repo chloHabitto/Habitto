@@ -125,11 +125,6 @@ struct ProgressCalendarBody: View {
                 .stroke(Color.outline3, lineWidth: 1)
         )
         .padding(.horizontal, 20)
-        .id("calendar-container-\(monthYearString())")
-        .transition(.asymmetric(
-            insertion: .move(edge: .trailing).combined(with: .opacity),
-            removal: .move(edge: .leading).combined(with: .opacity)
-        ))
     }
 }
 
@@ -144,7 +139,6 @@ struct ProgressCalendarHeaderRow: View {
             Text(monthYearString())
                 .font(.appTitleMedium)
                 .foregroundColor(.text01)
-                .id("month-header-\(monthYearString())")
             
             Spacer()
             
@@ -244,7 +238,6 @@ struct ProgressCalendarEmptyCells: View {
         ForEach(0..<emptyCells, id: \.self) { index in
             Text("")
                 .frame(width: 32, height: 32)
-                .id("empty-\(monthYearString())-\(index)")
         }
     }
 }
@@ -312,6 +305,5 @@ struct ProgressCalendarDayCell: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .id("day-\(monthYearString())-\(day)")
     }
 }

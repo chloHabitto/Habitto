@@ -88,7 +88,6 @@ struct ProgressTabView: View {
                     Text(calendarHelper.monthYearString())
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
-                        .id("month-header-\(calendarHelper.monthYearString())")
                     
                     Spacer()
                     

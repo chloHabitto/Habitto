@@ -9,6 +9,7 @@ struct CalendarGridComponents {
         let progress: Double
         let isToday: Bool
         let isSelected: Bool
+        let isCurrentMonth: Bool
         let onTap: () -> Void
         
         var body: some View {
@@ -24,15 +25,17 @@ struct CalendarGridComponents {
                             .fill(backgroundColor)
                     }
                     
-                    // Progress ring - always show, but with different colors
-                    Circle()
-                        .trim(from: 0, to: progress > 0 ? progress : 1.0)
-                        .stroke(
-                            progress > 0 ? (isToday ? Color.white : Color.primary) : (isToday ? Color.white.opacity(0.7) : Color.outline3),
-                            style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
-                        )
-                        .frame(width: 30, height: 30)
-                        .rotationEffect(.degrees(-90))
+                    // Progress ring - only show for current month days
+                    if isCurrentMonth {
+                        Circle()
+                            .trim(from: 0, to: progress > 0 ? progress : 1.0)
+                            .stroke(
+                                progress > 0 ? (isToday ? Color.white : Color.primary) : (isToday ? Color.white.opacity(0.7) : Color.outline3),
+                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
+                            )
+                            .frame(width: 30, height: 30)
+                            .rotationEffect(.degrees(-90))
+                    }
                     
                     // Day number
                     Text("\(day)")
@@ -49,8 +52,10 @@ struct CalendarGridComponents {
                 return .primary
             } else if isSelected {
                 return .secondary
-            } else {
+            } else if isCurrentMonth {
                 return Color.clear
+            } else {
+                return Color.clear // Overflow days have no background
             }
         }
         
@@ -59,8 +64,10 @@ struct CalendarGridComponents {
                 return .white
             } else if isSelected {
                 return .text01
-            } else {
+            } else if isCurrentMonth {
                 return .text01
+            } else {
+                return .outline2 // More visible color for overflow days
             }
         }
     }
@@ -126,14 +133,22 @@ struct CalendarGridComponents {
         
         var body: some View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                // Empty cells for days before the first day of the month
+                // Previous month overflow days
                 ForEach(0..<firstDayOfMonth, id: \.self) { index in
-                    Color.clear
-                        .frame(height: 32)
-                        .id("empty-start-\(index)")
+                    let previousMonthDay = CalendarGridComponents.getPreviousMonthDay(index: index, firstDayOfMonth: firstDayOfMonth, currentDate: currentDate)
+                    CalendarDayCell(
+                        day: previousMonthDay,
+                        progress: 0.0,
+                        isToday: false,
+                        isSelected: false,
+                        isCurrentMonth: false
+                    ) {
+                        // No action for overflow days
+                    }
+                    .id("prev-\(index)")
                 }
                 
-                // Day cells
+                // Day cells for current month
                 ForEach(1...daysInMonth, id: \.self) { day in
                     let progress = getDayProgress(day)
                     let isToday = CalendarGridComponents.isToday(day: day, currentDate: currentDate)
@@ -143,7 +158,8 @@ struct CalendarGridComponents {
                         day: day,
                         progress: progress,
                         isToday: isToday,
-                        isSelected: isSelected
+                        isSelected: isSelected,
+                        isCurrentMonth: true
                     ) {
                         onDayTap(day)
                     }
@@ -154,24 +170,49 @@ struct CalendarGridComponents {
                     }
                 }
                 
-                // Empty cells to complete the grid (always show 6 rows)
+                // Next month overflow days - only show what's needed to complete the last week
                 let totalCells = firstDayOfMonth + daysInMonth
-                let remainingCells = max(0, 42 - totalCells) // 42 = 6 rows × 7 columns
-                ForEach(0..<remainingCells, id: \.self) { index in
+                let cellsInLastWeek = totalCells % 7
+                let nextMonthDaysNeeded = cellsInLastWeek > 0 ? (7 - cellsInLastWeek) : 0
+                
+                ForEach(0..<nextMonthDaysNeeded, id: \.self) { index in
+                    let nextMonthDay = index + 1
+                    CalendarDayCell(
+                        day: nextMonthDay,
+                        progress: 0.0,
+                        isToday: false,
+                        isSelected: false,
+                        isCurrentMonth: false
+                    ) {
+                        // No action for overflow days
+                    }
+                    .id("next-\(index)")
+                }
+                
+                // Fill remaining cells to complete 6-week grid (if needed)
+                let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
+                let remainingEmptyCells = max(0, 42 - totalGridCells) // 42 = 6 rows × 7 columns
+                ForEach(0..<remainingEmptyCells, id: \.self) { index in
                     Color.clear
                         .frame(height: 32)
-                        .id("empty-end-\(index)")
+                        .id("empty-\(index)")
                 }
             }
             .onAppear {
                 // Debug: Show grid layout information
+                let cellsInLastWeek = (firstDayOfMonth + daysInMonth) % 7
+                let nextMonthDaysNeeded = cellsInLastWeek > 0 ? (7 - cellsInLastWeek) : 0
+                let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
+                let remainingEmptyCells = max(0, 42 - totalGridCells)
+                
                 print("📅 Calendar Grid Debug:")
                 print("   First Day Position: \(firstDayOfMonth)")
                 print("   Days in Month: \(daysInMonth)")
-                print("   Empty Cells at Start: \(firstDayOfMonth)")
-                print("   Day Cells: \(daysInMonth)")
-                print("   Remaining Empty Cells: \(max(0, 42 - (firstDayOfMonth + daysInMonth)))")
-                print("   Total Grid Cells: \(firstDayOfMonth + daysInMonth + max(0, 42 - (firstDayOfMonth + daysInMonth)))")
+                print("   Previous Month Overflow: \(firstDayOfMonth)")
+                print("   Current Month Days: \(daysInMonth)")
+                print("   Next Month Overflow: \(nextMonthDaysNeeded)")
+                print("   Empty Cells: \(remainingEmptyCells)")
+                print("   Total Grid Cells: \(totalGridCells)")
             }
         }
     }
@@ -252,5 +293,26 @@ struct CalendarGridComponents {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: date)
+    }
+    
+    static func getPreviousMonthDay(index: Int, firstDayOfMonth: Int, currentDate: Date) -> Int {
+        let calendar = Calendar.current
+        
+        // Get the first day of the current month
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let firstDayOfCurrentMonth = calendar.date(from: monthComponents) else {
+            return 1
+        }
+        
+        // Calculate how many days we need to go back
+        let daysToSubtract = firstDayOfMonth - index
+        
+        // Get the date for the overflow day
+        guard let overflowDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: firstDayOfCurrentMonth) else {
+            return 1
+        }
+        
+        // Return the day number
+        return calendar.component(.day, from: overflowDate)
     }
 }
