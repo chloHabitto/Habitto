@@ -22,6 +22,7 @@ struct MonthlyCompletionRateSection: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
+            .padding(.top, 16)
             
             // Completion rate card
             VStack(spacing: 16) {
