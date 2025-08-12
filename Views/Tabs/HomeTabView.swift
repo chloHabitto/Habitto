@@ -188,6 +188,22 @@ struct HomeTabView: View {
         return finalFilteredHabits
     }
     
+    // MARK: - Base Habits for Stats Calculation (No Tab Filtering)
+    private var baseHabitsForSelectedDate: [Habit] {
+        // Calculate filtered habits for the selected date (only by date/schedule, no tab filtering)
+        return habits.filter { habit in
+            let selected = DateUtils.startOfDay(for: selectedDate)
+            let start = DateUtils.startOfDay(for: habit.startDate)
+            let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            guard selected >= start && selected <= end else {
+                return false
+            }
+            
+            return shouldShowHabitOnDate(habit, date: selectedDate)
+        }
+    }
+    
     private func getWeekdayName(_ weekday: Int) -> String {
         switch weekday {
         case 1: return "Sunday"
@@ -487,8 +503,8 @@ struct HomeTabView: View {
     }
     
     private var stats: [(String, Int)] {
-        // Calculate stats directly from habitsForSelectedDate to ensure they're always up to date
-        let habitsForDate = habitsForSelectedDate
+        // Calculate stats from baseHabitsForSelectedDate (no tab filtering) to avoid circular dependency
+        let habitsForDate = baseHabitsForSelectedDate
         return [
             ("Total", habitsForDate.count),
             ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),

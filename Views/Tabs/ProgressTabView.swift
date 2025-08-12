@@ -135,24 +135,63 @@ struct ProgressTabView: View {
             return 0.0
         }
         
-        // Calculate total progress for all habits of the selected type on this day
-        let habitsForDay = habits.filter { $0.habitType == selectedHabitType }
-        guard !habitsForDay.isEmpty else { return 0.0 }
+        let dateKey = DateUtils.dateKey(for: dateForDay)
+        
+        // Determine which habits to show based on selection
+        let habitsForDay: [Habit]
+        
+        if let selectedHabit = selectedHabit {
+            // If a specific habit is selected, only show that habit (regardless of type)
+            habitsForDay = [selectedHabit]
+            
+            // Debug: Only log for specific days to avoid spam
+            if day <= 7 { // Only log for first week
+                print("🔍 CALENDAR DEBUG - Day \(day): Specific habit selected: '\(selectedHabit.name)'")
+            }
+        } else {
+            // If no specific habit is selected, show all habits of the selected type
+            habitsForDay = habits.filter { $0.habitType == selectedHabitType }
+            
+            // Debug: Only log for specific days to avoid spam
+            if day <= 7 { // Only log for first week
+                print("🔍 CALENDAR DEBUG - Day \(day): No specific habit selected, showing \(habitsForDay.count) habits of type \(selectedHabitType)")
+            }
+        }
+        
+        guard !habitsForDay.isEmpty else { 
+            if day <= 7 { // Only log for first week
+                print("🔍 CALENDAR DEBUG - Day \(day): No habits to show")
+            }
+            return 0.0 
+        }
         
         var totalProgress = 0.0
         var totalGoal = 0.0
         
         for habit in habitsForDay {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: dateForDay) {
-                let goalAmount = parseGoalAmount(from: habit.goal)
-                let progress = habit.getProgress(for: dateForDay)
-                
+            let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: dateForDay)
+            let goalAmount = parseGoalAmount(from: habit.goal)
+            let progress = habit.getProgress(for: dateForDay)
+            
+            // Debug: Only log for specific days to avoid spam
+            if day <= 7 { // Only log for first week
+                print("🔍 CALENDAR DEBUG - Day \(day): Habit '\(habit.name)' | Should show: \(shouldShow) | Goal: \(goalAmount) | Progress: \(progress)")
+                print("🔍 CALENDAR DEBUG - Day \(day): Habit goal string: '\(habit.goal)' | Parsed goal amount: \(goalAmount)")
+            }
+            
+            if shouldShow {
                 totalGoal += Double(goalAmount)
                 totalProgress += Double(progress)
             }
         }
         
         let finalProgress = totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+        
+        // Debug: Only log for specific days to avoid spam
+        if day <= 7 { // Only log for first week
+            print("🔍 CALENDAR DEBUG - Day \(day): Final progress: \(finalProgress) (totalProgress: \(totalProgress), totalGoal: \(totalGoal))")
+        }
+        
         return finalProgress
     }
     
@@ -1292,6 +1331,7 @@ struct ProgressTabView: View {
     // MARK: - Overall Option Row
     private var overallOptionRow: some View {
         Button(action: {
+            print("🔍 HABIT SELECTION DEBUG - User selected 'Overall' (no specific habit)")
             selectedHabit = nil
             showingHabitsList = false
         }) {
@@ -1339,6 +1379,9 @@ struct ProgressTabView: View {
     // MARK: - Individual Habit Row
     private func habitRowView(for habit: Habit) -> some View {
         Button(action: {
+            print("🔍 HABIT SELECTION DEBUG - User selected habit: '\(habit.name)' (ID: \(habit.id))")
+            print("🔍 HABIT SELECTION DEBUG - Habit completion history: \(habit.completionHistory)")
+            print("🔍 HABIT SELECTION DEBUG - Habit goal: '\(habit.goal)'")
             selectedHabit = habit
             showingHabitsList = false
         }) {
@@ -1422,8 +1465,33 @@ struct ProgressTabView: View {
         .onChange(of: selectedPeriod) { _, _ in
             updateCacheIfNeeded()
         }
+        .onChange(of: selectedHabit) { _, newHabit in
+            if let habit = newHabit {
+                print("🔍 CALENDAR STATE DEBUG - Calendar displaying for selected habit: '\(habit.name)'")
+                print("🔍 CALENDAR STATE DEBUG - Selected habit completion history: \(habit.completionHistory)")
+                print("🔍 CALENDAR STATE DEBUG - Selected habit goal: '\(habit.goal)'")
+                
+                if habit.completionHistory.isEmpty {
+                    print("🔍 CALENDAR STATE DEBUG - WARNING: Selected habit has no completion history!")
+                    print("🔍 CALENDAR STATE DEBUG - This is why the calendar shows no progress rings.")
+                    print("🔍 CALENDAR STATE DEBUG - The habit needs to have progress logged to show in the calendar.")
+                }
+            } else {
+                print("🔍 CALENDAR STATE DEBUG - Calendar displaying for overall progress (habit type: \(selectedHabitType))")
+            }
+            updateCacheIfNeeded()
+        }
         .onAppear {
             updateCacheIfNeeded()
+            
+            // Debug: Show initial state
+            if let selectedHabit = selectedHabit {
+                print("🔍 CALENDAR STATE DEBUG - Calendar appeared for selected habit: '\(selectedHabit.name)'")
+                print("🔍 CALENDAR STATE DEBUG - Selected habit completion history: \(selectedHabit.completionHistory)")
+                print("🔍 CALENDAR STATE DEBUG - Selected habit goal: '\(selectedHabit.goal)'")
+            } else {
+                print("🔍 CALENDAR STATE DEBUG - Calendar appeared for overall progress (habit type: \(selectedHabitType))")
+            }
         }
         .sheet(isPresented: $showingHabitsList) {
             habitsListPopup
