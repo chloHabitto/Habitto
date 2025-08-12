@@ -168,20 +168,15 @@ struct HomeTabView: View {
         
         // Filter by completion status based on selected tab
         let finalFilteredHabits = filteredHabits.filter { habit in
-            let progress = habit.getProgress(for: selectedDate)
-            
-            // Debug logging for progress values
-            // print("🔍 HomeTabView: Habit '\(habit.name)' has progress \(progress) for \(DateUtils.dateKey(for: selectedDate))") // Removed as per edit hint
-            
             switch selectedStatsTab {
             case 0: // Total tab - show all habits
                 return true
-            case 1: // Undone tab - show only habits with 0 progress
-                let shouldShow = progress == 0
+            case 1: // Undone tab - show habits with 0 progress OR incomplete progress
+                let shouldShow = !habit.isCompleted(for: selectedDate)
                 // print("🔍 HomeTabView: Undone tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
                 return shouldShow
-            case 2: // Done tab - show only habits with progress > 0
-                let shouldShow = progress > 0
+            case 2: // Done tab - show only habits that are actually completed
+                let shouldShow = habit.isCompleted(for: selectedDate)
                 // print("🔍 HomeTabView: Done tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
                 return shouldShow
             default:
@@ -496,8 +491,8 @@ struct HomeTabView: View {
         let habitsForDate = habitsForSelectedDate
         return [
             ("Total", habitsForDate.count),
-            ("Undone", habitsForDate.filter { $0.getProgress(for: selectedDate) == 0 }.count),
-            ("Done", habitsForDate.filter { $0.getProgress(for: selectedDate) > 0 }.count)
+            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
+            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count)
         ]
     }
     

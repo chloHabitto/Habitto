@@ -173,7 +173,28 @@ struct Habit: Identifiable, Codable, Equatable {
     
     func isCompleted(for date: Date) -> Bool {
         let dateKey = Self.dateKey(for: date)
-        return (completionHistory[dateKey] ?? 0) > 0
+        let progress = completionHistory[dateKey] ?? 0
+        
+        // Parse the goal to get the target amount
+        if let targetAmount = parseGoalAmount(from: goal) {
+            // A habit is complete when progress reaches or exceeds the goal amount
+            return progress >= targetAmount
+        }
+        
+        // Fallback: if we can't parse the goal, consider it complete with any progress
+        return progress > 0
+    }
+    
+    // Helper method to parse goal amount from goal string
+    private func parseGoalAmount(from goalString: String) -> Int? {
+        // Extract the number from goal strings like "6 times per day", "3 times", etc.
+        let components = goalString.components(separatedBy: CharacterSet.decimalDigits.inverted)
+        for component in components {
+            if let amount = Int(component), amount > 0 {
+                return amount
+            }
+        }
+        return nil
     }
     
     func getProgress(for date: Date) -> Int {
