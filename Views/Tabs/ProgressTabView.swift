@@ -1,9 +1,25 @@
 import SwiftUI
 
+// MARK: - Progress Trend Enum
+enum ProgressTrend {
+    case improving
+    case declining
+    case maintaining
+}
+
+// MARK: - Week Over Week Trend Enum
+enum WeekOverWeekTrend {
+    case improving
+    case declining
+    case maintaining
+}
+
 struct ProgressTabView: View {
     @State private var selectedHabitType: HabitType = .formation
     @State private var selectedPeriod: TimePeriod = .today
     @State private var currentDate = Date() // For calendar navigation
+    @State private var showingHabitsList = false // For habits popup
+    @State private var selectedHabit: Habit? = nil // For individual habit selection
     let habits: [Habit]
     
     // Performance optimization: Cache expensive computations
@@ -147,6 +163,61 @@ struct ProgressTabView: View {
         return StreakDataCalculator.parseGoalAmount(from: goalString)
     }
     
+    private func monthlyHabitCompletionRate(for habit: Habit) -> Double {
+        let calendar = Calendar.current
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0.0
+        }
+        
+        var habitProgress = 0.0
+        var habitGoals = 0.0
+        
+        // Calculate progress for each day in the month
+        var currentDate = monthStart
+        while currentDate <= monthEnd {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                let goalAmount = parseGoalAmount(from: habit.goal)
+                let progress = habit.getProgress(for: currentDate)
+                
+                habitGoals += Double(goalAmount)
+                habitProgress += Double(progress)
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+    }
+    
+    private func getDayProgress(for date: Date) -> Double {
+        let habitsForDay: [Habit]
+        
+        if let selectedHabit = selectedHabit {
+            // If a specific habit is selected, only show that habit (regardless of type)
+            habitsForDay = [selectedHabit]
+        } else {
+            // If no specific habit is selected, show all habits of the selected type
+            habitsForDay = habits.filter { $0.habitType == selectedHabitType }
+        }
+        
+        guard !habitsForDay.isEmpty else { return 0.0 }
+        
+        var totalProgress = 0.0
+        var totalGoal = 0.0
+        
+        for habit in habitsForDay {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: date) {
+                let goalAmount = parseGoalAmount(from: habit.goal)
+                let progress = habit.getProgress(for: date)
+                totalGoal += Double(goalAmount)
+                totalProgress += Double(progress)
+            }
+        }
+        
+        return totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+    }
+    
     // MARK: - Today's Progress Computed Properties
     private var todaysActualCompletionPercentage: Double {
         guard !habits.isEmpty else { return 0.0 }
@@ -168,6 +239,395 @@ struct ProgressTabView: View {
         }
         
         return totalProgress / Double(habits.count)
+    }
+    
+    // MARK: - Monthly Progress Computed Properties
+    private var monthlyCompletionRate: Double {
+        guard !habits.isEmpty else { return 0.0 }
+        
+        let calendar = Calendar.current
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0.0
+        }
+        
+        var totalMonthlyProgress = 0.0
+        var totalMonthlyGoals = 0.0
+        
+        let habitsToCalculate: [Habit]
+        if let selectedHabit = selectedHabit {
+            // If a specific habit is selected, only calculate that habit (regardless of type)
+            habitsToCalculate = [selectedHabit]
+        } else {
+            // If no specific habit is selected, calculate all habits of the selected type
+            habitsToCalculate = habits.filter({ $0.habitType == selectedHabitType })
+        }
+        
+        for habit in habitsToCalculate {
+            var habitProgress = 0.0
+            var habitGoals = 0.0
+            
+            // Calculate progress for each day in the month
+            var currentDate = monthStart
+            while currentDate <= monthEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    habitGoals += Double(goalAmount)
+                    habitProgress += Double(progress)
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            
+            totalMonthlyProgress += habitProgress
+            totalMonthlyGoals += habitGoals
+        }
+        
+        return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+    }
+    
+    private var monthlyCompletedHabits: Int {
+        let calendar = Calendar.current
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0
+        }
+        
+        var completedCount = 0
+        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+            var currentDate = monthStart
+            var hasCompletedAnyDay = false
+            
+            while currentDate <= monthEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    if progress >= goalAmount {
+                        hasCompletedAnyDay = true
+                        break
+                    }
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            
+            if hasCompletedAnyDay {
+                completedCount += 1
+            }
+        }
+        
+        return completedCount
+    }
+    
+    private var monthlyTotalHabits: Int {
+        return habits.filter { $0.habitType == selectedHabitType }.count
+    }
+    
+    // MARK: - Habit Performance Breakdown Computed Properties
+    private var topPerformingHabit: Habit? {
+        let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
+        guard !filteredHabits.isEmpty else { return nil }
+        
+        return filteredHabits.max { habit1, habit2 in
+            monthlyHabitCompletionRate(for: habit1) < monthlyHabitCompletionRate(for: habit2)
+        }
+    }
+    
+    private var needsAttentionHabit: Habit? {
+        let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
+        guard !filteredHabits.isEmpty else { return nil }
+        
+        return filteredHabits.min { habit1, habit2 in
+            monthlyHabitCompletionRate(for: habit1) < monthlyHabitCompletionRate(for: habit2)
+        }
+    }
+    
+    private var progressTrend: ProgressTrend {
+        let currentMonthRate = monthlyCompletionRate
+        let previousMonthRate = previousMonthCompletionRate
+        
+        if currentMonthRate > previousMonthRate + 0.05 { // 5% improvement threshold
+            return .improving
+        } else if currentMonthRate < previousMonthRate - 0.05 { // 5% decline threshold
+            return .declining
+        } else {
+            return .maintaining
+        }
+    }
+    
+    private var progressTrendColor: Color {
+        switch progressTrend {
+        case .improving:
+            return .green
+        case .declining:
+            return .red
+        case .maintaining:
+            return .blue
+        }
+    }
+    
+    private var progressTrendIcon: String {
+        switch progressTrend {
+        case .improving:
+            return "arrow.up.circle.fill"
+        case .declining:
+            return "arrow.down.circle.fill"
+        case .maintaining:
+            return "minus.circle.fill"
+        }
+    }
+    
+    private var progressTrendText: String {
+        switch progressTrend {
+        case .improving:
+            return "Improving"
+        case .declining:
+            return "Declining"
+        case .maintaining:
+            return "Maintaining"
+        }
+    }
+    
+    private var progressTrendDescription: String {
+        switch progressTrend {
+        case .improving:
+            return "Keep up the great work!"
+        case .declining:
+            return "Time to refocus"
+        case .maintaining:
+            return "Staying consistent"
+        }
+    }
+    
+    private var previousMonthCompletionRate: Double {
+        guard !habits.isEmpty else { return 0.0 }
+        
+        let calendar = Calendar.current
+        let previousMonth = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? currentDate
+        let monthComponents = calendar.dateComponents([.year, .month], from: previousMonth)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0.0
+        }
+        
+        var totalMonthlyProgress = 0.0
+        var totalMonthlyGoals = 0.0
+        
+        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+            var habitProgress = 0.0
+            var habitGoals = 0.0
+            
+            // Calculate progress for each day in the previous month
+            var currentDate = monthStart
+            while currentDate <= monthEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    habitGoals += Double(goalAmount)
+                    habitProgress += Double(progress)
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            
+            totalMonthlyProgress += habitProgress
+            totalMonthlyGoals += habitGoals
+        }
+        
+        return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+    }
+    
+    // MARK: - Goal Achievement Computed Properties
+    private var monthlyGoalsMet: Int {
+        let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
+        guard !filteredHabits.isEmpty else { return 0 }
+        
+        let calendar = Calendar.current
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0
+        }
+        
+        var goalsMetCount = 0
+        
+        for habit in filteredHabits {
+            var currentDate = monthStart
+            var hasMetGoal = false
+            
+            while currentDate <= monthEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    if progress >= goalAmount {
+                        hasMetGoal = true
+                        break
+                    }
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+            
+            if hasMetGoal {
+                goalsMetCount += 1
+            }
+        }
+        
+        return goalsMetCount
+    }
+    
+    private var monthlyTotalGoals: Int {
+        return habits.filter { $0.habitType == selectedHabitType }.count
+    }
+    
+    private var monthlyGoalsMetPercentage: Double {
+        guard monthlyTotalGoals > 0 else { return 0.0 }
+        return Double(monthlyGoalsMet) / Double(monthlyTotalGoals)
+    }
+    
+    private var averageDailyProgress: Double {
+        let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
+        guard !filteredHabits.isEmpty else { return 0.0 }
+        
+        let calendar = Calendar.current
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let monthStart = calendar.date(from: monthComponents),
+              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
+            return 0.0
+        }
+        
+        var totalDailyProgress = 0.0
+        var totalDays = 0
+        
+        // Calculate average progress for each day in the month
+        var currentDate = monthStart
+        while currentDate <= monthEnd {
+            let dayProgress = getDayProgress(for: currentDate)
+            if dayProgress > 0 { // Only count days with scheduled habits
+                totalDailyProgress += dayProgress
+                totalDays += 1
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return totalDays > 0 ? totalDailyProgress / Double(totalDays) : 0.0
+    }
+    
+    private var weekOverWeekTrend: WeekOverWeekTrend {
+        let currentWeekRate = currentWeekCompletionRate
+        let previousWeekRate = previousWeekCompletionRate
+        
+        if currentWeekRate > previousWeekRate + 0.05 { // 5% improvement threshold
+            return .improving
+        } else if currentWeekRate < previousWeekRate - 0.05 { // 5% decline threshold
+            return .declining
+        } else {
+            return .maintaining
+        }
+    }
+    
+    private var weekOverWeekTrendColor: Color {
+        switch weekOverWeekTrend {
+        case .improving:
+            return .green
+        case .declining:
+            return .red
+        case .maintaining:
+            return .blue
+        }
+    }
+    
+    private var weekOverWeekTrendIcon: String {
+        switch weekOverWeekTrend {
+        case .improving:
+            return "arrow.up.circle.fill"
+        case .declining:
+            return "arrow.down.circle.fill"
+        case .maintaining:
+            return "minus.circle.fill"
+        }
+    }
+    
+    private var weekOverWeekTrendText: String {
+        switch weekOverWeekTrend {
+        case .improving:
+            return "Improving"
+        case .declining:
+            return "Declining"
+        case .maintaining:
+            return "Maintaining"
+        }
+    }
+    
+    private var weekOverWeekTrendDescription: String {
+        switch weekOverWeekTrend {
+        case .improving:
+            return "Better than last week"
+        case .declining:
+            return "Below last week's performance"
+        case .maintaining:
+            return "Similar to last week"
+        }
+    }
+    
+    private var currentWeekCompletionRate: Double {
+        guard !habits.isEmpty else { return 0.0 }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
+        
+        var totalWeeklyProgress = 0.0
+        var totalWeeklyGoals = 0.0
+        
+        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+            var currentDate = weekStart
+            while currentDate < weekEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    totalWeeklyGoals += Double(goalAmount)
+                    totalWeeklyProgress += Double(progress)
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+        }
+        
+        return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
+    }
+    
+    private var previousWeekCompletionRate: Double {
+        guard !habits.isEmpty else { return 0.0 }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: today) ?? today
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.start ?? previousWeek
+        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.end ?? previousWeek
+        
+        var totalWeeklyProgress = 0.0
+        var totalWeeklyGoals = 0.0
+        
+        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+            var currentDate = weekStart
+            while currentDate < weekEnd {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    let progress = habit.getProgress(for: currentDate)
+                    
+                    totalWeeklyGoals += Double(goalAmount)
+                    totalWeeklyProgress += Double(progress)
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            }
+        }
+        
+        return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
     }
     
     // MARK: - Independent Today's Progress Container
@@ -229,17 +689,46 @@ struct ProgressTabView: View {
     private var overallProgressSection: some View {
         VStack(spacing: 16) {
             // Overall + down chevron header - left aligned
-            HStack {
-                Text("Overall")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                
-                Image(systemName: "chevron.down")
-                    .font(.appLabelMedium)
-                    .foregroundColor(.primaryFocus)
-                
-                Spacer()
+            Button(action: {
+                showingHabitsList = true
+            }) {
+                HStack(spacing: 0) {
+                    // Always show an icon - either overall icon or selected habit icon
+                    if let selectedHabit = selectedHabit {
+                        HabitIconView(habit: selectedHabit)
+                            .frame(width: 38, height: 54)
+                    } else {
+                        // Overall icon when no specific habit is selected - match HabitIconView exactly
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primary.opacity(0.15))
+                                .frame(width: 30, height: 30)
+                            
+                            Image(systemName: "chart.bar.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.primary)
+                        }
+                        .frame(width: 38, height: 54)
+                    }
+                    
+                    Spacer()
+                        .frame(width: 8)
+                    
+                    Text(selectedHabit?.name ?? "Overall")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                        .frame(width: 12)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.primaryFocus)
+                    
+                    Spacer()
+                }
             }
+            .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 20)
             
             // Monthly Calendar
@@ -372,36 +861,560 @@ struct ProgressTabView: View {
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
             ))
-            .gesture(
+            .simultaneousGesture(
                 DragGesture()
+                    .onChanged { value in
+                        // Only handle horizontal swipes for month navigation
+                        if abs(value.translation.width) > abs(value.translation.height) {
+                            // Horizontal swipe detected - prevent vertical scrolling interference
+                        }
+                    }
                     .onEnded { value in
                         let threshold: CGFloat = 50
-                        if value.translation.width > threshold {
-                            // Swipe right - go to previous month
-                            previousMonth()
-                        } else if value.translation.width < -threshold {
-                            // Swipe left - go to next month
-                            nextMonth()
+                        // Only trigger month change for horizontal swipes
+                        if abs(value.translation.width) > abs(value.translation.height) {
+                            if value.translation.width > threshold {
+                                // Swipe right - go to previous month
+                                previousMonth()
+                            } else if value.translation.width < -threshold {
+                                // Swipe left - go to next month
+                                nextMonth()
+                            }
                         }
                     }
             )
+            
+            // Monthly Completion Rate Section
+            monthlyCompletionRateSection
         }
         .padding(.top, 20)
+    }
+    
+    // MARK: - Monthly Completion Rate Section
+    private var monthlyCompletionRateSection: some View {
+        VStack(spacing: 16) {
+            // Section header
+            HStack {
+                Text("Monthly Progress")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            // Completion rate card
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    // Circular progress indicator
+                    ZStack {
+                        // Background circle
+                        Circle()
+                            .stroke(Color.primaryContainer, lineWidth: 8)
+                            .frame(width: 60, height: 60)
+                        
+                        // Progress circle
+                        Circle()
+                            .trim(from: 0, to: monthlyCompletionRate)
+                            .stroke(
+                                Color.primary,
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                        
+                        // Percentage text
+                        Text("\(Int(monthlyCompletionRate * 100))%")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.text01)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    // Progress details
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Monthly Completion Rate")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text("\(monthlyCompletedHabits) of \(monthlyTotalHabits) habits")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+                    }
+                    
+                    Spacer()
+                }
+            }
+            .padding(20)
+            .background(Color.surface)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.outline, lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+            
+            // Habit Performance Breakdown Section
+            habitPerformanceBreakdownSection
+        }
+    }
+    
+    // MARK: - Habit Performance Breakdown Section
+    private var habitPerformanceBreakdownSection: some View {
+        VStack(spacing: 16) {
+            // Section header
+            HStack {
+                Text("Habit Performance")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            // Performance breakdown cards
+            VStack(spacing: 12) {
+                // Top Performing Habit
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.green.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.green)
+                    }
+                    
+                    // Habit details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Top Performing")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text(topPerformingHabit?.name ?? "No habits")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                            .lineLimit(1)
+                        
+                        if let habit = topPerformingHabit {
+                            Text("\(Int(monthlyHabitCompletionRate(for: habit) * 100))% completion")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.green)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+                
+                // Needs Attention Habit
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.orange)
+                    }
+                    
+                    // Habit details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Needs Attention")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text(needsAttentionHabit?.name ?? "No habits")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                            .lineLimit(1)
+                        
+                        if let habit = needsAttentionHabit {
+                            Text("\(Int(monthlyHabitCompletionRate(for: habit) * 100))% completion")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+                
+                // Progress Trend
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(progressTrendColor.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: progressTrendIcon)
+                            .font(.system(size: 16))
+                            .foregroundColor(progressTrendColor)
+                    }
+                    
+                    // Trend details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Progress Trend")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text(progressTrendText)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text(progressTrendDescription)
+                            .font(.appLabelSmall)
+                            .foregroundColor(progressTrendColor)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+            }
+            .padding(.horizontal, 20)
+            
+            // Goal Achievement Section
+            goalAchievementSection
+        }
+    }
+    
+    // MARK: - Goal Achievement Section
+    private var goalAchievementSection: some View {
+        VStack(spacing: 16) {
+            // Section header
+            HStack {
+                Text("Goal Achievement")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            // Goal achievement cards
+            VStack(spacing: 12) {
+                // Monthly Goals Met
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.purple.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "target")
+                            .font(.system(size: 16))
+                            .foregroundColor(.purple)
+                    }
+                    
+                    // Goal details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Monthly Goals Met")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text("\(monthlyGoalsMet) of \(monthlyTotalGoals) targets")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text("\(Int(monthlyGoalsMetPercentage * 100))% achievement rate")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.purple)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+                
+                // Average Daily Progress
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                    }
+                    
+                    // Progress details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Average Daily Progress")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text("\(Int(averageDailyProgress * 100))% completion")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text("Typical daily performance")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.blue)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+                
+                // Week-over-Week Comparison
+                HStack(spacing: 16) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(weekOverWeekTrendColor.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: weekOverWeekTrendIcon)
+                            .font(.system(size: 16))
+                            .foregroundColor(weekOverWeekTrendColor)
+                    }
+                    
+                    // Comparison details
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Week-over-Week")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text(weekOverWeekTrendText)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text(weekOverWeekTrendDescription)
+                            .font(.appLabelSmall)
+                            .foregroundColor(weekOverWeekTrendColor)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(16)
+                .background(Color.surface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline, lineWidth: 1)
+                )
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    // MARK: - Habits List Popup
+    private var habitsListPopup: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                habitsPopupHeader
+                
+                // Habits list
+                habitsPopupList
+            }
+            .background(Color.surface)
+            .navigationBarHidden(true)
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+    
+    // MARK: - Habits Popup Header
+    private var habitsPopupHeader: some View {
+        HStack {
+            Text("Active Habits")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.onPrimaryContainer)
+            
+            Spacer()
+            
+            Button("Done") {
+                showingHabitsList = false
+            }
+            .font(.appBodyMedium)
+            .foregroundColor(.primary)
+        }
+        .padding(20)
+        .background(Color.surface)
+    }
+    
+    // MARK: - Habits Popup List
+    private var habitsPopupList: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                // Overall option (always first)
+                overallOptionRow
+                
+                // Individual habits
+                ForEach(habits, id: \.id) { habit in
+                    habitRowView(for: habit)
+                }
+            }
+            .padding(.vertical, 20)
+        }
+        .onAppear {
+            print("🔍 HABITS POPUP DEBUG - Total habits: \(habits.count)")
+            print("🔍 HABITS POPUP DEBUG - Selected habit type: \(selectedHabitType)")
+            for habit in habits {
+                print("🔍 HABITS POPUP DEBUG - Habit: \(habit.name), Type: \(habit.habitType)")
+            }
+        }
+    }
+    
+    // MARK: - Overall Option Row
+    private var overallOptionRow: some View {
+        Button(action: {
+            selectedHabit = nil
+            showingHabitsList = false
+        }) {
+            HStack(spacing: 16) {
+                // Overall icon - same style as habit icons
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.15))
+                        .frame(width: 30, height: 30)
+                    
+                    Image(systemName: "chart.bar.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 12)
+                
+                // Overall text
+                Text("Overall")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                // Selection indicator
+                if selectedHabit == nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding(16)
+            .background(selectedHabit == nil ? Color.primary.opacity(0.05) : Color.surface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedHabit == nil ? Color.primary : Color.outline, lineWidth: selectedHabit == nil ? 2 : 1)
+            )
+            .padding(.horizontal, 20)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Individual Habit Row
+    private func habitRowView(for habit: Habit) -> some View {
+        Button(action: {
+            selectedHabit = habit
+            showingHabitsList = false
+        }) {
+            HStack(spacing: 16) {
+                // Habit icon
+                HabitIconView(habit: habit)
+                    .frame(width: 40, height: 40)
+                
+                // Habit details in VStack
+                VStack(alignment: .leading, spacing: 4) {
+                    // Habit type indicator
+                    habitTypeIndicator(for: habit)
+                    
+                    // Habit name
+                    Text(habit.name)
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text01)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Selection indicator
+                if selectedHabit?.id == habit.id {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.primary)
+                }
+            }
+            .padding(16)
+            .background(selectedHabit?.id == habit.id ? Color.primary.opacity(0.05) : Color.surface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedHabit?.id == habit.id ? Color.primary : Color.outline, lineWidth: selectedHabit?.id == habit.id ? 2 : 1)
+            )
+            .padding(.horizontal, 20)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Habit Type Indicator
+    private func habitTypeIndicator(for habit: Habit) -> some View {
+        let typeText = habit.habitType == .formation ? "Habit Building" : "Habit Breaking"
+        let typeColor = habit.habitType == .formation ? Color.green.opacity(0.1) : Color.red.opacity(0.1)
+        
+        return Text(typeText)
+            .font(.appLabelSmall)
+            .foregroundColor(.text02)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(typeColor)
+            )
     }
     
     var body: some View {
         WhiteSheetContainer(
             // title: "Progress"
         ) {
-            VStack(spacing: 0) {
-                // Independent Today's Progress Container
-                independentTodaysProgressContainer
-                    .padding(.top, 20)
-                
-                // Overall Progress Section with Monthly Calendar
-                overallProgressSection
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(spacing: 0) {
+                    // Independent Today's Progress Container
+                    independentTodaysProgressContainer
+                        .padding(.top, 20)
+                    
+                    // Overall Progress Section with Monthly Calendar
+                    overallProgressSection
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .frame(maxHeight: .infinity, alignment: .top)
+            .scrollDisabled(false)
+            .scrollDismissesKeyboard(.immediately)
+            .scrollContentBackground(.hidden)
+            .coordinateSpace(name: "scrollView")
         }
         .onChange(of: selectedHabitType) { _, _ in
             updateCacheIfNeeded()
@@ -411,6 +1424,9 @@ struct ProgressTabView: View {
         }
         .onAppear {
             updateCacheIfNeeded()
+        }
+        .sheet(isPresented: $showingHabitsList) {
+            habitsListPopup
         }
     }
     
