@@ -1,18 +1,10 @@
 import SwiftUI
 
 // MARK: - Progress Trend Enum
-enum ProgressTrend {
-    case improving
-    case declining
-    case maintaining
-}
+// Moved to Core/Models/ProgressTrend.swift
 
-// MARK: - Week Over Week Trend Enum
-enum WeekOverWeekTrend {
-    case improving
-    case declining
-    case maintaining
-}
+// MARK: - Week Over Week Trend Enum  
+// Moved to Core/Models/WeekOverWeekTrend.swift
 
 struct ProgressTabView: View {
     @State private var selectedHabitType: HabitType = .formation
@@ -135,7 +127,7 @@ struct ProgressTabView: View {
             return 0.0
         }
         
-        let dateKey = DateUtils.dateKey(for: dateForDay)
+
         
         // Determine which habits to show based on selection
         let habitsForDay: [Habit]
@@ -816,14 +808,7 @@ struct ProgressTabView: View {
                 .padding(.bottom, 16)
                 
                 // Days of week header
-                HStack(spacing: 0) {
-                    ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
-                        Text(day)
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
+                CalendarGridComponents.WeekdayHeader()
                 
                 // Calendar grid
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
@@ -924,520 +909,27 @@ struct ProgressTabView: View {
             )
             
             // Monthly Completion Rate Section
-            monthlyCompletionRateSection
+            MonthlyCompletionRateSection(
+                monthlyCompletionRate: monthlyCompletionRate,
+                monthlyCompletedHabits: monthlyCompletedHabits,
+                monthlyTotalHabits: monthlyTotalHabits,
+                topPerformingHabit: topPerformingHabit,
+                needsAttentionHabit: needsAttentionHabit,
+                progressTrendColor: progressTrendColor,
+                progressTrendIcon: progressTrendIcon,
+                progressTrendText: progressTrendText,
+                progressTrendDescription: progressTrendDescription,
+                monthlyHabitCompletionRate: monthlyHabitCompletionRate
+            )
         }
         .padding(.top, 20)
     }
     
-    // MARK: - Monthly Completion Rate Section
-    private var monthlyCompletionRateSection: some View {
-        VStack(spacing: 16) {
-            // Section header
-            HStack {
-                Text("Monthly Progress")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            
-            // Completion rate card
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                    // Circular progress indicator
-                    ZStack {
-                        // Background circle
-                        Circle()
-                            .stroke(Color.primaryContainer, lineWidth: 8)
-                            .frame(width: 60, height: 60)
-                        
-                        // Progress circle
-                        Circle()
-                            .trim(from: 0, to: monthlyCompletionRate)
-                            .stroke(
-                                Color.primary,
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                            )
-                            .frame(width: 60, height: 60)
-                            .rotationEffect(.degrees(-90))
-                        
-                        // Percentage text
-                        Text("\(Int(monthlyCompletionRate * 100))%")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.text01)
-                            .fontWeight(.semibold)
-                    }
-                    
-                    // Progress details
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Monthly Completion Rate")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Text("\(monthlyCompletedHabits) of \(monthlyTotalHabits) habits")
-                            .font(.appBodySmall)
-                            .foregroundColor(.text02)
-                    }
-                    
-                    Spacer()
-                }
-            }
-            .padding(20)
-            .background(Color.surface)
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.outline, lineWidth: 1)
-            )
-            .padding(.horizontal, 20)
-            
-            // Habit Performance Breakdown Section
-            habitPerformanceBreakdownSection
-        }
-    }
+    // Moved to Core/UI/Components/MonthlyCompletionRateSection.swift
     
-    // MARK: - Habit Performance Breakdown Section
-    private var habitPerformanceBreakdownSection: some View {
-        VStack(spacing: 16) {
-            // Section header
-            HStack {
-                Text("Habit Performance")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            
-            // Performance breakdown cards
-            VStack(spacing: 12) {
-                // Top Performing Habit
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.green.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.green)
-                    }
-                    
-                    // Habit details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Top Performing")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text(topPerformingHabit?.name ?? "No habits")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                            .lineLimit(1)
-                        
-                        if let habit = topPerformingHabit {
-                            Text("\(Int(monthlyHabitCompletionRate(for: habit) * 100))% completion")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.green)
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-                
-                // Needs Attention Habit
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.orange.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.orange)
-                    }
-                    
-                    // Habit details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Needs Attention")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text(needsAttentionHabit?.name ?? "No habits")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                            .lineLimit(1)
-                        
-                        if let habit = needsAttentionHabit {
-                            Text("\(Int(monthlyHabitCompletionRate(for: habit) * 100))% completion")
-                                .font(.appLabelSmall)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-                
-                // Progress Trend
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(progressTrendColor.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: progressTrendIcon)
-                            .font(.system(size: 16))
-                            .foregroundColor(progressTrendColor)
-                    }
-                    
-                    // Trend details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Progress Trend")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text(progressTrendText)
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Text(progressTrendDescription)
-                            .font(.appLabelSmall)
-                            .foregroundColor(progressTrendColor)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-            }
-            .padding(.horizontal, 20)
-            
-            // Goal Achievement Section
-            goalAchievementSection
-        }
-    }
+    // Moved to Core/UI/Components/GoalAchievementSection.swift
     
-    // MARK: - Goal Achievement Section
-    private var goalAchievementSection: some View {
-        VStack(spacing: 16) {
-            // Section header
-            HStack {
-                Text("Goal Achievement")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            
-            // Goal achievement cards
-            VStack(spacing: 12) {
-                // Monthly Goals Met
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.purple.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "target")
-                            .font(.system(size: 16))
-                            .foregroundColor(.purple)
-                    }
-                    
-                    // Goal details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Monthly Goals Met")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text("\(monthlyGoalsMet) of \(monthlyTotalGoals) targets")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Text("\(Int(monthlyGoalsMetPercentage * 100))% achievement rate")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.purple)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-                
-                // Average Daily Progress
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
-                    }
-                    
-                    // Progress details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Average Daily Progress")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text("\(Int(averageDailyProgress * 100))% completion")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Text("Typical daily performance")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.blue)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-                
-                // Week-over-Week Comparison
-                HStack(spacing: 16) {
-                    // Icon
-                    ZStack {
-                        Circle()
-                            .fill(weekOverWeekTrendColor.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: weekOverWeekTrendIcon)
-                            .font(.system(size: 16))
-                            .foregroundColor(weekOverWeekTrendColor)
-                    }
-                    
-                    // Comparison details
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Week-over-Week")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text(weekOverWeekTrendText)
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Text(weekOverWeekTrendDescription)
-                            .font(.appLabelSmall)
-                            .foregroundColor(weekOverWeekTrendColor)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(16)
-                .background(Color.surface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline, lineWidth: 1)
-                )
-            }
-            .padding(.horizontal, 20)
-        }
-    }
-    
-    // MARK: - Habits List Popup
-    private var habitsListPopup: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                habitsPopupHeader
-                
-                // Habits list
-                habitsPopupList
-            }
-            .background(Color.surface)
-            .navigationBarHidden(true)
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-    
-    // MARK: - Habits Popup Header
-    private var habitsPopupHeader: some View {
-        HStack {
-            Text("Active Habits")
-                .font(.appTitleMediumEmphasised)
-                .foregroundColor(.onPrimaryContainer)
-            
-            Spacer()
-            
-            Button("Done") {
-                showingHabitsList = false
-            }
-            .font(.appBodyMedium)
-            .foregroundColor(.primary)
-        }
-        .padding(20)
-        .background(Color.surface)
-    }
-    
-    // MARK: - Habits Popup List
-    private var habitsPopupList: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                // Overall option (always first)
-                overallOptionRow
-                
-                // Individual habits
-                ForEach(habits, id: \.id) { habit in
-                    habitRowView(for: habit)
-                }
-            }
-            .padding(.vertical, 20)
-        }
-        .onAppear {
-            print("🔍 HABITS POPUP DEBUG - Total habits: \(habits.count)")
-            print("🔍 HABITS POPUP DEBUG - Selected habit type: \(selectedHabitType)")
-            for habit in habits {
-                print("🔍 HABITS POPUP DEBUG - Habit: \(habit.name), Type: \(habit.habitType)")
-            }
-        }
-    }
-    
-    // MARK: - Overall Option Row
-    private var overallOptionRow: some View {
-        Button(action: {
-            print("🔍 HABIT SELECTION DEBUG - User selected 'Overall' (no specific habit)")
-            selectedHabit = nil
-            showingHabitsList = false
-        }) {
-            HStack(spacing: 16) {
-                // Overall icon - same style as habit icons
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.primary.opacity(0.15))
-                        .frame(width: 30, height: 30)
-                    
-                    Image(systemName: "chart.bar.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 12)
-                
-                // Overall text
-                Text("Overall")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                    .lineLimit(1)
-                
-                Spacer()
-                
-                // Selection indicator
-                if selectedHabit == nil {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.primary)
-                }
-            }
-            .padding(16)
-            .background(selectedHabit == nil ? Color.primary.opacity(0.05) : Color.surface)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(selectedHabit == nil ? Color.primary : Color.outline, lineWidth: selectedHabit == nil ? 2 : 1)
-            )
-            .padding(.horizontal, 20)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    // MARK: - Individual Habit Row
-    private func habitRowView(for habit: Habit) -> some View {
-        Button(action: {
-            print("🔍 HABIT SELECTION DEBUG - User selected habit: '\(habit.name)' (ID: \(habit.id))")
-            print("🔍 HABIT SELECTION DEBUG - Habit completion history: \(habit.completionHistory)")
-            print("🔍 HABIT SELECTION DEBUG - Habit goal: '\(habit.goal)'")
-            selectedHabit = habit
-            showingHabitsList = false
-        }) {
-            HStack(spacing: 16) {
-                // Habit icon
-                HabitIconView(habit: habit)
-                    .frame(width: 40, height: 40)
-                
-                // Habit details in VStack
-                VStack(alignment: .leading, spacing: 4) {
-                    // Habit type indicator
-                    habitTypeIndicator(for: habit)
-                    
-                    // Habit name
-                    Text(habit.name)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text01)
-                        .lineLimit(1)
-                }
-                
-                Spacer()
-                
-                // Selection indicator
-                if selectedHabit?.id == habit.id {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.primary)
-                }
-            }
-            .padding(16)
-            .background(selectedHabit?.id == habit.id ? Color.primary.opacity(0.05) : Color.surface)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(selectedHabit?.id == habit.id ? Color.primary : Color.outline, lineWidth: selectedHabit?.id == habit.id ? 2 : 1)
-            )
-            .padding(.horizontal, 20)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    // MARK: - Habit Type Indicator
-    private func habitTypeIndicator(for habit: Habit) -> some View {
-        let typeText = habit.habitType == .formation ? "Habit Building" : "Habit Breaking"
-        let typeColor = habit.habitType == .formation ? Color.green.opacity(0.1) : Color.red.opacity(0.1)
-        
-        return Text(typeText)
-            .font(.appLabelSmall)
-            .foregroundColor(.text02)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(typeColor)
-            )
-    }
+    // Moved to Core/UI/Components/HabitsListPopup.swift
     
     var body: some View {
         WhiteSheetContainer(
@@ -1494,7 +986,18 @@ struct ProgressTabView: View {
             }
         }
         .sheet(isPresented: $showingHabitsList) {
-            habitsListPopup
+            HabitsListPopup(
+                habits: habits,
+                selectedHabit: selectedHabit,
+                showingHabitsList: showingHabitsList,
+                onHabitSelected: { habit in
+                    selectedHabit = habit
+                    showingHabitsList = false
+                },
+                onDismiss: {
+                    showingHabitsList = false
+                }
+            )
         }
     }
     
@@ -1540,127 +1043,9 @@ struct ProgressTabView: View {
         }
     }
     
-    // MARK: - Habit Type Selector
-    private var habitTypeSelector: some View {
-        UnifiedTabBarView(
-            tabs: TabItem.createHabitTypeTabs(
-                buildingCount: habits.filter { $0.habitType == .formation }.count,
-                breakingCount: habits.filter { $0.habitType == .breaking }.count
-            ),
-            selectedIndex: selectedHabitType == .formation ? 0 : 1,
-            style: .underline
-        ) { index in
-            selectedHabitType = index == 0 ? .formation : .breaking
-        }
-        .padding(.top, 2)
-        .padding(.bottom, 8)
-    }
+    // Moved to Core/UI/Components/ProgressSelectorComponents.swift
     
-    // MARK: - Period Selector
-    private var periodSelector: some View {
-        UnifiedTabBarView(
-            tabs: TabItem.createPeriodTabs(),
-            selectedIndex: periodStats.firstIndex { $0.1 == selectedPeriod } ?? 0,
-            style: .pill
-        ) { index in
-            if let period = periodStats[index].1 {
-                selectedPeriod = period
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .padding(.bottom, 16)
-    }
-    
-    private var periodStats: [(String, TimePeriod?)] {
-        return [
-            ("Today", .today),
-            ("Week", .week),
-            ("Year", .year),
-            ("All", .all)
-        ]
-    }
-    
-    // MARK: - Chart Components
-    private var overallProgressChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Overall Progress")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            // Placeholder for progress chart
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.surface)
-                .frame(height: 200)
-                .overlay(
-                    VStack {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 40))
-                            .foregroundColor(.primary)
-                        Text("Progress Chart")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text05)
-                    }
-                )
-        }
-    }
-    
-    private var successRateChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Success Rate")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            // Placeholder for success rate chart
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.surface)
-                .frame(height: 150)
-                .overlay(
-                    VStack {
-                        Image(systemName: "chart.pie")
-                            .font(.system(size: 40))
-                            .foregroundColor(.primary)
-                        Text("Success Rate Chart")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text05)
-                    }
-                )
-        }
-    }
-    
-    // MARK: - Progress Overview Charts
-    private var progressOverviewCharts: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Progress Overview")
-                    .font(.appTitleLarge)
-                    .fontWeight(.bold)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-                
-                Image(systemName: "info.circle")
-                    .font(.system(size: 16))
-                    .foregroundColor(.text06)
-                    .help("Shows your overall progress trends for this period")
-            }
-            
-            if cachedHabitsWithProgress.isEmpty {
-                EmptyStateView(
-                    icon: selectedHabitType == .formation ? "chart.line.uptrend.xyaxis" : "chart.line.downtrend.xyaxis",
-                    message: "No progress data for this period"
-                )
-            } else {
-                VStack(spacing: 16) {
-                    // Overall Progress Chart
-                    overallProgressChart
-                    
-                    // Success Rate Chart
-                    successRateChart
-                }
-            }
-        }
-    }
+    // Moved to Core/UI/Components/ProgressOverviewCharts.swift
     
     // MARK: - Today's Progress Computed Properties
     // private var todaysProgressPercentage: Double {
@@ -1994,271 +1379,27 @@ struct ProgressTabView: View {
 }
 
 // MARK: - Supporting Types
-enum TimePeriod: CaseIterable {
-    case today, week, year, all
+// Moved to Core/Models/TimePeriod.swift
     
-    var displayName: String {
-        switch self {
-        case .today: return "Today"
-        case .week: return "Week"
-        case .year: return "Year"
-        case .all: return "All"
-        }
-    }
-    
-    var dates: [Date] {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        switch self {
-        case .today:
-            return [calendar.startOfDay(for: today)]
-        case .week:
-            let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-            return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
-        case .year:
-            // For "Year" period, return all dates from the start of the year to today
-            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
-            var dates: [Date] = []
-            var currentDate = yearStart
-            while currentDate <= today {
-                dates.append(currentDate)
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            return dates
-        case .all:
-            // For "All" period, return all dates from the start of the year to today
-            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
-            var dates: [Date] = []
-            var currentDate = yearStart
-            while currentDate <= today {
-                dates.append(currentDate)
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            return dates
-        }
-    }
-    
-    var previousPeriodDates: [Date] {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        switch self {
-        case .today:
-            let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-            return [calendar.startOfDay(for: yesterday)]
-        case .week:
-            let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-            let previousWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart) ?? weekStart
-            return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: previousWeekStart) }
-        case .year:
-            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
-            let previousYearStart = calendar.date(byAdding: .year, value: -1, to: yearStart) ?? yearStart
-            var dates: [Date] = []
-            var currentDate = previousYearStart
-            let previousYearEnd = calendar.dateInterval(of: .year, for: previousYearStart)?.end ?? previousYearStart
-            while currentDate < previousYearEnd {
-                dates.append(currentDate)
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            return dates
-        case .all:
-            // For "All" period, return previous year's dates
-            let yearStart = calendar.dateInterval(of: .year, for: today)?.start ?? today
-            let previousYearStart = calendar.date(byAdding: .year, value: -1, to: yearStart) ?? yearStart
-            var dates: [Date] = []
-            var currentDate = previousYearStart
-            let previousYearEnd = calendar.dateInterval(of: .year, for: previousYearStart)?.end ?? previousYearStart
-            while currentDate < previousYearEnd {
-                dates.append(currentDate)
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            return dates
-        }
-    }
-    
-    var weeksCount: Int {
-        switch self {
-        case .today: return 0
-        case .week: return 1
-        case .year: return 52
-        case .all: return 52
-        }
-    }
-}
 
-enum TrendDirection {
-    case improving, stable, declining
     
-    var icon: String {
-        switch self {
-        case .improving: return "arrow.up"
-        case .stable: return "arrow.right"
-        case .declining: return "arrow.down"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .improving: return .success
-        case .stable: return .warning
-        case .declining: return .error
-        }
-    }
-}
 
-struct HabitProgress: Identifiable {
-    let id = UUID()
-    let habit: Habit
-    let period: TimePeriod
-    let completionPercentage: Double
-    let trend: TrendDirection
     
-    var status: HabitStatus {
-        // Check if the habit has any completion history at all
-        let hasAnyCompletionHistory = !habit.completionHistory.isEmpty
-        
-        // Calculate days since habit creation
-        let calendar = Calendar.current
-        let today = Date()
-        let daysSinceCreation = calendar.dateComponents([.day], from: habit.startDate, to: today).day ?? 0
-        
-        // If habit is too new (less than 3 days since creation) or has no completion history yet, show "New Habit" status
-        if daysSinceCreation < 3 || !hasAnyCompletionHistory {
-            return .newHabit
-        }
-        
-        if habit.habitType == .breaking {
-            // For habit breaking, use reduction-focused status
-            if completionPercentage >= 80 {
-                return .excellentReduction
-            } else if completionPercentage >= 50 {
-                return .goodReduction
-            } else if completionPercentage >= 20 {
-                return .moderateReduction
-            } else {
-                return .needsMoreReduction
-            }
-        } else {
-            // For habit building, use completion-focused status
-            if completionPercentage >= 80 {
-                return .workingWell
-            } else if completionPercentage >= 50 {
-                return .needsAttention
-            } else {
-                return .atRisk
-            }
-        }
-    }
-}
 
-enum HabitStatus {
-    case workingWell, needsAttention, atRisk, newHabit
-    case excellentReduction, goodReduction, moderateReduction, needsMoreReduction
     
-    var label: String {
-        switch self {
-        case .workingWell: return "Working Well"
-        case .needsAttention: return "Needs Attention"
-        case .atRisk: return "At Risk"
-        case .newHabit: return "New Habit"
-        case .excellentReduction: return "Excellent Reduction"
-        case .goodReduction: return "Good Reduction"
-        case .moderateReduction: return "Moderate Reduction"
-        case .needsMoreReduction: return "Needs More Reduction"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .workingWell: return .success
-        case .needsAttention: return .warning
-        case .atRisk: return .error
-        case .newHabit: return .primary
-        case .excellentReduction: return .success
-        case .goodReduction: return .success
-        case .moderateReduction: return .warning
-        case .needsMoreReduction: return .error
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .workingWell: return "checkmark.circle.fill"
-        case .needsAttention: return "exclamationmark.triangle.fill"
-        case .atRisk: return "xmark.circle.fill"
-        case .newHabit: return "sparkles"
-        case .excellentReduction: return "arrow.down.circle.fill"
-        case .goodReduction: return "arrow.down.circle.fill"
-        case .moderateReduction: return "arrow.down.triangle.fill"
-        case .needsMoreReduction: return "arrow.up.triangle.fill"
-        }
-    }
-}
 
-struct Goal {
-    let amount: Double
-    let unit: String
-}
 
-struct HabitGoal: Identifiable {
-    let id = UUID()
-    let habit: Habit
-    let goal: Goal
-    let currentAverage: Double
-    let goalHitRate: Double
-}
+// Moved to Core/Models/TrendDirection.swift
 
-enum InsightType {
-    case success, warning, info, tip
-    
-    var color: Color {
-        switch self {
-        case .success: return .success
-        case .warning: return .warning
-        case .info: return .primary
-        case .tip: return .secondary
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .success: return "checkmark.circle.fill"
-        case .warning: return "exclamationmark.triangle.fill"
-        case .info: return "info.circle.fill"
-        case .tip: return "lightbulb.fill"
-        }
-    }
-}
+// Moved to Core/Models/HabitProgress.swift
 
-// MARK: - EmptyStateView
-struct EmptyStateView: View {
-    let icon: String
-    let message: String
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(.primaryContainer)
-            
-            Text(message)
-                .font(.appBodyLarge)
-                .foregroundColor(.text05)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 48)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(.outline, lineWidth: 1)
-        )
-    }
-}
+// Moved to Core/Models/HabitStatus.swift
+
+// Moved to Core/Models/HabitGoal.swift
+
+// Moved to Core/Models/InsightType.swift
+
+// Moved to Core/UI/Common/EmptyStateView.swift
 
 #Preview {
     ProgressTabView(habits: [])

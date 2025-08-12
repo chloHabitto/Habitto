@@ -1,0 +1,310 @@
+import SwiftUI
+
+// MARK: - Form Input Components
+struct FormInputComponents {
+    
+    // MARK: - Custom Text Field
+    struct CustomTextField: View {
+        let placeholder: String
+        @Binding var text: String
+        let font: Font
+        let textColor: Color
+        let backgroundColor: Color
+        let borderColor: Color
+        let cornerRadius: CGFloat
+        let lineWidth: CGFloat
+        let minHeight: CGFloat
+        let horizontalPadding: CGFloat
+        let submitLabel: SubmitLabel
+        @FocusState var isFocused: Bool
+        
+        init(
+            placeholder: String,
+            text: Binding<String>,
+            font: Font = .appBodyLarge,
+            textColor: Color = .text01,
+            backgroundColor: Color = .surface,
+            borderColor: Color = .outline,
+            cornerRadius: CGFloat = 12,
+            lineWidth: CGFloat = 1.5,
+            minHeight: CGFloat = 48,
+            horizontalPadding: CGFloat = 16,
+            submitLabel: SubmitLabel = .done
+        ) {
+            self.placeholder = placeholder
+            self._text = text
+            self.font = font
+            self.textColor = textColor
+            self.backgroundColor = backgroundColor
+            self.borderColor = borderColor
+            self.cornerRadius = cornerRadius
+            self.lineWidth = lineWidth
+            self.minHeight = minHeight
+            self.horizontalPadding = horizontalPadding
+            self.submitLabel = submitLabel
+        }
+        
+        var body: some View {
+            TextField(placeholder, text: $text)
+                .font(font)
+                .foregroundColor(textColor)
+                .textFieldStyle(PlainTextFieldStyle())
+                .submitLabel(submitLabel)
+                .focused($isFocused)
+                .frame(maxWidth: .infinity, minHeight: minHeight)
+                .padding(.horizontal, horizontalPadding)
+                .background(backgroundColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(borderColor, lineWidth: lineWidth)
+                )
+                .cornerRadius(cornerRadius)
+        }
+    }
+    
+    // MARK: - Selection Row
+    struct SelectionRow: View {
+        let title: String
+        let value: String
+        let action: () -> Void
+        let showChevron: Bool
+        let titleFont: Font
+        let valueFont: Font
+        let titleColor: Color
+        let valueColor: Color
+        
+        init(
+            title: String,
+            value: String,
+            action: @escaping () -> Void,
+            showChevron: Bool = true,
+            titleFont: Font = .appBodyLarge,
+            valueFont: Font = .appBodyMedium,
+            titleColor: Color = .text01,
+            valueColor: Color = .text02
+        ) {
+            self.title = title
+            self.value = value
+            self.action = action
+            self.showChevron = showChevron
+            self.titleFont = titleFont
+            self.valueFont = valueFont
+            self.titleColor = titleColor
+            self.valueColor = valueColor
+        }
+        
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: 12) {
+                    Text(title)
+                        .font(titleFont)
+                        .foregroundColor(titleColor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Text(value)
+                        .font(valueFont)
+                        .foregroundColor(valueColor)
+                    
+                    if showChevron {
+                        Image(systemName: "chevron.right")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text03)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.surface)
+                .cornerRadius(12)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Selection Row with Visual Elements
+    struct SelectionRowWithVisual: View {
+        let title: String
+        let icon: String?
+        let color: Color
+        let value: String
+        let action: () -> Void
+        let showChevron: Bool
+        let iconSize: CGFloat
+        
+        init(
+            title: String,
+            icon: String? = nil,
+            color: Color = .primary,
+            value: String,
+            action: @escaping () -> Void,
+            showChevron: Bool = true,
+            iconSize: CGFloat = 24
+        ) {
+            self.title = title
+            self.icon = icon
+            self.color = color
+            self.value = value
+            self.action = action
+            self.showChevron = showChevron
+            self.iconSize = iconSize
+        }
+        
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: 12) {
+                    if let icon = icon {
+                        Image(systemName: icon)
+                            .font(.system(size: iconSize))
+                            .foregroundColor(color)
+                            .frame(width: iconSize, height: iconSize)
+                    }
+                    
+                    Text(title)
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text01)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Text(value)
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    if showChevron {
+                        Image(systemName: "chevron.right")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text03)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.surface)
+                .cornerRadius(12)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Habit Type Button
+    struct HabitTypeButton: View {
+        let title: String
+        let isSelected: Bool
+        let action: () -> Void
+        let primaryColor: Color
+        let secondaryColor: Color
+        let selectedTextColor: Color
+        let unselectedTextColor: Color
+        
+        init(
+            title: String,
+            isSelected: Bool,
+            action: @escaping () -> Void,
+            primaryColor: Color = .primary,
+            secondaryColor: Color = .surface,
+            selectedTextColor: Color = .onPrimary,
+            unselectedTextColor: Color = .text01
+        ) {
+            self.title = title
+            self.isSelected = isSelected
+            self.action = action
+            self.primaryColor = primaryColor
+            self.secondaryColor = secondaryColor
+            self.selectedTextColor = selectedTextColor
+            self.unselectedTextColor = unselectedTextColor
+        }
+        
+        var body: some View {
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.appLabelSmallEmphasised)
+                            .foregroundColor(selectedTextColor)
+                    }
+                    
+                    Text(title)
+                        .font(.appBodyLarge)
+                        .foregroundColor(isSelected ? selectedTextColor : unselectedTextColor)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(isSelected ? primaryColor : secondaryColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? primaryColor : .outline, lineWidth: 1.5)
+                )
+                .cornerRadius(12)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Form Section Header
+    struct FormSectionHeader: View {
+        let title: String
+        let subtitle: String?
+        let titleFont: Font
+        let subtitleFont: Font
+        let titleColor: Color
+        let subtitleColor: Color
+        let spacing: CGFloat
+        
+        init(
+            title: String,
+            subtitle: String? = nil,
+            titleFont: Font = .appTitleMedium,
+            subtitleFont: Font = .appBodySmall,
+            titleColor: Color = .text01,
+            subtitleColor: Color = .text02,
+            spacing: CGFloat = 12
+        ) {
+            self.title = title
+            self.subtitle = subtitle
+            self.titleFont = titleFont
+            self.subtitleFont = subtitleFont
+            self.titleColor = titleColor
+            self.subtitleColor = subtitleColor
+            self.spacing = spacing
+        }
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: spacing) {
+                Text(title)
+                    .font(titleFont)
+                    .foregroundColor(titleColor)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(subtitleFont)
+                        .foregroundColor(subtitleColor)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Form Container
+    struct FormContainer<Content: View>: View {
+        let content: Content
+        let backgroundColor: Color
+        let cornerRadius: CGFloat
+        let padding: EdgeInsets
+        
+        init(
+            backgroundColor: Color = .surfaceDim,
+            cornerRadius: CGFloat = 16,
+            padding: EdgeInsets = EdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20),
+            @ViewBuilder content: () -> Content
+        ) {
+            self.backgroundColor = backgroundColor
+            self.cornerRadius = cornerRadius
+            self.padding = padding
+            self.content = content()
+        }
+        
+        var body: some View {
+            content
+                .padding(padding)
+                .background(backgroundColor)
+                .cornerRadius(cornerRadius)
+        }
+    }
+}
