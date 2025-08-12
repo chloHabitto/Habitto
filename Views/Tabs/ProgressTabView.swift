@@ -199,13 +199,45 @@ struct ProgressTabView: View {
             
             // Monthly Calendar
             VStack(spacing: 12) {
-                // Calendar header with month/year and navigation chevrons
+                // Calendar header with month/year and Today button
                 HStack {
                     Text(monthYearString())
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
                     
                     Spacer()
+                    
+                    // Today button (shown when not on current month or when current date is not today)
+                    let calendar = Calendar.current
+                    let today = Date()
+                    let isCurrentMonth = calendar.isDate(currentDate, equalTo: today, toGranularity: .month)
+                    let isTodayInCurrentMonth = calendar.isDate(today, equalTo: currentDate, toGranularity: .month)
+                    
+                    if !isCurrentMonth || !isTodayInCurrentMonth {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.08)) {
+                                currentDate = Date()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image("Icon-replay")
+                                    .resizable()
+                                    .frame(width: 12, height: 12)
+                                    .foregroundColor(.primaryFocus)
+                                Text("Today")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                            .padding(.leading, 12)
+                            .padding(.trailing, 8)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: .infinity)
+                                    .stroke(.primaryFocus, lineWidth: 1)
+                            )
+                        }
+                    }
                 }
                 .padding(.bottom, 16)
                 
@@ -232,19 +264,34 @@ struct ProgressTabView: View {
                     // Actual days of the month
                     let totalDays = daysInMonth()
                     ForEach(1...totalDays, id: \.self) { day in
-                        Text("\(day)")
-                            .font(.appBodySmall)
-                            .foregroundColor(.text01)
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle()
-                                    .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.primaryContainer, lineWidth: 1)
-                            )
-
+                        Button(action: {
+                            // Add haptic feedback when selecting a date
+                            let selectionFeedback = UISelectionFeedbackGenerator()
+                            selectionFeedback.selectionChanged()
+                            
+                            // Create a date for the selected day in the current month
+                            let calendar = Calendar.current
+                            let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+                            if let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) {
+                                // Here you can add logic to handle the selected date
+                                // For now, we'll just print it to console
+                                print("Selected date: \(dateForDay)")
+                            }
+                        }) {
+                            Text("\(day)")
+                                .font(.appBodySmall)
+                                .foregroundColor(.text01)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
+                                )
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.primaryContainer, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .frame(minHeight: 200) // Ensure minimum height for calendar
