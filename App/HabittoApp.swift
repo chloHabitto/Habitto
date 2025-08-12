@@ -9,6 +9,7 @@ struct HabittoApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
+                .preferredColorScheme(.light) // Force light mode only
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
                 .environmentObject(coreDataAdapter)
