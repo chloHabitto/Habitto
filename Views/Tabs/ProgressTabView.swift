@@ -3,6 +3,7 @@ import SwiftUI
 struct ProgressTabView: View {
     @State private var selectedHabitType: HabitType = .formation
     @State private var selectedPeriod: TimePeriod = .today
+    @State private var currentDate = Date() // For calendar navigation
     let habits: [Habit]
     
     // Performance optimization: Cache expensive computations
@@ -13,6 +14,92 @@ struct ProgressTabView: View {
     
     init(habits: [Habit]) {
         self.habits = habits
+    }
+    
+    // MARK: - Calendar Helper Functions
+    private func previousMonth() {
+        var calendar = Calendar.current
+        calendar.locale = Locale(identifier: "en_US")
+        calendar.timeZone = TimeZone.current
+        
+        // Get the first day of the current month
+        let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
+        
+        // Subtract one month from the first day
+        if let newDate = calendar.date(byAdding: .month, value: -1, to: firstDayOfCurrentMonth) {
+            currentDate = newDate
+        }
+    }
+    
+    private func nextMonth() {
+        var calendar = Calendar.current
+        calendar.locale = Locale(identifier: "en_US")
+        calendar.timeZone = TimeZone.current
+        
+        // Get the first day of the current month
+        let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
+        
+        // Add one month from the first day
+        if let newDate = calendar.date(byAdding: .month, value: 1, to: firstDayOfCurrentMonth) {
+            currentDate = newDate
+        }
+    }
+    
+    private func monthYearString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        formatter.locale = Locale(identifier: "en_US")
+        let result = formatter.string(from: currentDate)
+        return result
+    }
+    
+    private func firstDayOfMonth() -> Int {
+        var calendar = Calendar.current
+        calendar.locale = Locale(identifier: "en_US") // Ensure English locale
+        calendar.timeZone = TimeZone.current
+        
+        // Create a date for the first day of the current month
+        let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let firstDayOfMonth = calendar.date(from: firstDayComponents) else { 
+            return 0 
+        }
+        
+        // Get the weekday of the first day (1 = Sunday, 2 = Monday, etc.)
+        let weekday = calendar.component(.weekday, from: firstDayOfMonth)
+        
+        // Convert to 0-based index (Sunday = 0, Monday = 1, etc.)
+        // This is correct - if August 1st is Friday (weekday 6), we need 5 empty cells
+        return weekday - 1
+    }
+    
+    private func daysInMonth() -> Int {
+        var calendar = Calendar.current
+        calendar.locale = Locale(identifier: "en_US") // Ensure English locale
+        calendar.timeZone = TimeZone.current
+        
+        let range = calendar.range(of: .day, in: .month, for: currentDate)
+        return range?.count ?? 0
+    }
+    
+    private func isToday(day: Int) -> Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Create a date for the specific day in the current month
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) else {
+            return false
+        }
+        
+        // Compare with today's date
+        let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
+        let dayDateComponents = calendar.dateComponents([.year, .month, .day], from: dateForDay)
+        
+        return todayComponents.year == dayDateComponents.year && 
+               todayComponents.month == dayDateComponents.month && 
+               todayComponents.day == dayDateComponents.day
     }
     
     // MARK: - Today's Progress Computed Properties
@@ -93,34 +180,114 @@ struct ProgressTabView: View {
         }
     }
     
+    // MARK: - Overall Progress Section
+    private var overallProgressSection: some View {
+        VStack(spacing: 16) {
+            // Overall + down chevron header - left aligned
+            HStack {
+                Text("Overall")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Image(systemName: "chevron.down")
+                    .font(.appLabelMedium)
+                    .foregroundColor(.primaryFocus)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            // Monthly Calendar
+            VStack(spacing: 12) {
+                // Calendar header with month/year and navigation chevrons
+                HStack {
+                    Text(monthYearString())
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 16)
+                
+                // Days of week header
+                HStack(spacing: 0) {
+                    ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
+                        Text(day)
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                // Calendar grid
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
+                    // Empty cells for days before the first day of the month
+                    let emptyCells = firstDayOfMonth()
+                    ForEach(0..<emptyCells, id: \.self) { index in
+                        Text("")
+                            .frame(width: 32, height: 32)
+                            .id("empty-\(index)")
+                    }
+                    
+                    // Actual days of the month
+                    let totalDays = daysInMonth()
+                    ForEach(1...totalDays, id: \.self) { day in
+                        Text("\(day)")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text01)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.primaryContainer, lineWidth: 1)
+                            )
+
+                    }
+                }
+                .frame(minHeight: 200) // Ensure minimum height for calendar
+
+            }
+            .padding(20)
+            .background(Color.surface)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.outline, lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+            .gesture(
+                DragGesture()
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        if value.translation.width > threshold {
+                            // Swipe right - go to previous month
+                            previousMonth()
+                        } else if value.translation.width < -threshold {
+                            // Swipe left - go to next month
+                            nextMonth()
+                        }
+                    }
+            )
+        }
+        .padding(.top, 20)
+    }
+    
     var body: some View {
         WhiteSheetContainer(
-            title: "Progress"
+            // title: "Progress"
         ) {
             VStack(spacing: 0) {
-                // Top Level Tabs: Building | Breaking
-                // habitTypeSelector
-                
-                // Sub Tabs: Today | Weekly | Yearly
-                // periodSelector
-                
                 // Independent Today's Progress Container
                 independentTodaysProgressContainer
-                
-                ScrollView {
-                    VStack(spacing: 32) {
-                        // Today's Progress Section (only shown when Today is selected)
-                        // todaysProgressSection
-                        
-                        // Progress Overview Charts
-                        // progressOverviewCharts
-                        
-                        // Spacer(minLength: 20)
-                    }
-                    .padding(.horizontal, 20)
                     .padding(.top, 20)
-                }
+                
+                // Overall Progress Section with Monthly Calendar
+                overallProgressSection
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         .onChange(of: selectedHabitType) { _, _ in
             updateCacheIfNeeded()
@@ -297,85 +464,30 @@ struct ProgressTabView: View {
         }
     }
     
-    // MARK: - Today's Progress Component
-    private var todaysProgressSection: some View {
-        Group {
-            if !cachedHabitsWithProgress.isEmpty {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 20) {
-                        // Left side: Text content
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Today's Goal Progress")
-                                .font(.appTitleMediumEmphasised)
-                                .foregroundColor(.onPrimaryContainer)
-                            
-                            Text(encouragingText)
-                                .font(.appBodySmall)
-                                .foregroundColor(.primaryFocus)
-                                .multilineTextAlignment(.leading)
-                        }
-                        
-                        Spacer()
-                        
-                        // Right side: Circular progress ring
-                        ZStack {
-                            // Background circle (unfilled part)
-                            Circle()
-                                .stroke(Color.primaryContainer, lineWidth: 8)
-                                .frame(width: 40, height: 40)
-                            
-                            // Progress circle (filled part)
-                            Circle()
-                                .trim(from: 0, to: todaysProgressPercentage / 100)
-                                .stroke(
-                                    Color.primary,
-                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                                )
-                                .frame(width: 40, height: 40)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 0.5), value: todaysProgressPercentage)
-                            
-                            // Percentage text
-                            VStack(spacing: 2) {
-                                Text("\(Int(todaysProgressPercentage))%")
-                                    .font(.appLabelMediumEmphasised)
-                                    .foregroundColor(.primaryFocus)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(Color.surfaceDim)
-                    .cornerRadius(16)
-                }
-            }
-        }
-    }
-    
     // MARK: - Today's Progress Computed Properties
-    private var todaysProgressPercentage: Double {
-        guard !cachedHabitsWithProgress.isEmpty else { return 0 }
-        
-        let totalProgress = cachedHabitsWithProgress.reduce(0.0) { sum, habitProgress in
-            sum + habitProgress.completionPercentage
-        }
-        
-        return totalProgress / Double(cachedHabitsWithProgress.count)
-    }
+    // private var todaysProgressPercentage: Double {
+    //     guard !cachedHabitsWithProgress.isEmpty else { return 0 }
+    //     
+    //     let totalProgress = cachedHabitsWithProgress.reduce(0.0) { sum, habitProgress in
+    //         sum + habitProgress.completionPercentage
+    //     }
+    //     
+    //     return totalProgress / Double(cachedHabitsWithProgress.count)
+    // }
     
-    private var encouragingText: String {
-        let percentage = todaysProgressPercentage
-        
-        if percentage >= 80 {
-            return "Excellent progress! Keep it up!"
-        } else if percentage >= 50 {
-            return "Good progress! You're on track!"
-        } else if percentage >= 20 {
-            return "Getting started! Every step counts!"
-        } else {
-            return "New day, new opportunities!"
-        }
-    }
+    // private var encouragingText: String {
+    //     let percentage = todaysProgressPercentage
+    //     
+    //     if percentage >= 80 {
+    //         return "Excellent progress! Keep it up!"
+    //     } else if percentage >= 50 {
+    //         return "Good progress! You're on track!"
+    //     } else if percentage >= 20 {
+    //         return "Getting started! Every step counts!"
+    //     } else {
+    //         return "New day, new opportunities!"
+    //     }
+    // }
     
     private var performanceOverviewTitle: String {
         switch selectedHabitType {
