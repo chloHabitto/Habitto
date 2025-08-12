@@ -204,6 +204,7 @@ struct ProgressTabView: View {
                     Text(monthYearString())
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
+                        .id("month-header-\(monthYearString())")
                     
                     Spacer()
                     
@@ -258,7 +259,7 @@ struct ProgressTabView: View {
                     ForEach(0..<emptyCells, id: \.self) { index in
                         Text("")
                             .frame(width: 32, height: 32)
-                            .id("empty-\(index)")
+                            .id("empty-\(monthYearString())-\(index)")
                     }
                     
                     // Actual days of the month
@@ -292,6 +293,7 @@ struct ProgressTabView: View {
                                 )
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .id("day-\(monthYearString())-\(day)")
                     }
                 }
                 .frame(minHeight: 200) // Ensure minimum height for calendar
@@ -305,6 +307,11 @@ struct ProgressTabView: View {
                     .stroke(Color.outline, lineWidth: 1)
             )
             .padding(.horizontal, 20)
+            .id("calendar-container-\(monthYearString())")
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
             .gesture(
                 DragGesture()
                     .onEnded { value in
