@@ -102,6 +102,59 @@ struct ProgressTabView: View {
                todayComponents.day == dayDateComponents.day
     }
     
+    // MARK: - Progress Ring Helper Functions
+    private func getDayProgress(day: Int) -> Double {
+        let calendar = Calendar.current
+        
+        // Create a date for the specific day in the current month
+        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) else {
+            return 0.0
+        }
+        
+        // Calculate total progress for all habits of the selected type on this day
+        let habitsForDay = habits.filter { $0.habitType == selectedHabitType }
+        guard !habitsForDay.isEmpty else { return 0.0 }
+        
+        var totalProgress = 0.0
+        var totalGoal = 0.0
+        
+        for habit in habitsForDay {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: dateForDay) {
+                let goalAmount = parseGoalAmount(from: habit.goal)
+                let progress = habit.getProgress(for: dateForDay)
+                
+                totalGoal += Double(goalAmount)
+                totalProgress += Double(progress)
+            }
+        }
+        
+        if totalGoal == 0 {
+            return 0.0
+        }
+        
+        return min(totalProgress / totalGoal, 1.0)
+    }
+    
+    private func getDayProgressColor(progress: Double) -> Color {
+        if progress == 0 {
+            return .clear
+        } else if progress < 0.25 {
+            return .red500
+        } else if progress < 0.5 {
+            return .yellow500
+        } else if progress < 0.75 {
+            return .pastelBlue500
+        } else {
+            return .green500
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func parseGoalAmount(from goalString: String) -> Int {
+        return StreakDataCalculator.parseGoalAmount(from: goalString)
+    }
+    
     // MARK: - Today's Progress Computed Properties
     private var todaysActualCompletionPercentage: Double {
         guard !habits.isEmpty else { return 0.0 }
@@ -279,18 +332,31 @@ struct ProgressTabView: View {
                                 print("Selected date: \(dateForDay)")
                             }
                         }) {
-                            Text("\(day)")
-                                .font(.appBodySmall)
-                                .foregroundColor(.text01)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    Circle()
-                                        .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.primaryContainer, lineWidth: 1)
-                                )
+                            ZStack {
+                                // Background circle
+                                Circle()
+                                    .fill(isToday(day: day) ? Color.primary.opacity(0.2) : Color.clear)
+                                    .frame(width: 32, height: 32)
+                                
+                                // Complete stroke around the day (always visible)
+                                Circle()
+                                    .stroke(Color.primaryContainer, lineWidth: 1)
+                                    .frame(width: 32, height: 32)
+                                
+                                // Progress ring with blue color (fills based on completion percentage)
+                                let progress = getDayProgress(day: day)
+                                
+                                Circle()
+                                    .trim(from: 0, to: progress)
+                                    .stroke(Color.pastelBlue500, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .frame(width: 32, height: 32)
+                                    .rotationEffect(.degrees(-90)) // Start from top
+                                
+                                // Day number
+                                Text("\(day)")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text01)
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
                         .id("day-\(monthYearString())-\(day)")
