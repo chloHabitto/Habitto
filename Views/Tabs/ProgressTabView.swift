@@ -146,7 +146,6 @@ struct ProgressTabView: View {
                         }
                     }
                 )
-                .frame(minHeight: 240)
             .simultaneousGesture(
                 DragGesture()
                     .onEnded { value in

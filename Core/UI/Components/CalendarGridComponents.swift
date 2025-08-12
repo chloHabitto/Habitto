@@ -189,10 +189,12 @@ struct CalendarGridComponents {
                     .id("next-\(index)")
                 }
                 
-                // Fill remaining cells to complete 6-week grid (if needed)
+                // Only add empty cells if we need to complete the current week
                 let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
-                let remainingEmptyCells = max(0, 42 - totalGridCells) // 42 = 6 rows × 7 columns
-                ForEach(0..<remainingEmptyCells, id: \.self) { index in
+                let currentWeekCells = totalGridCells % 7
+                let emptyCellsToCompleteWeek = currentWeekCells > 0 ? (7 - currentWeekCells) : 0
+                
+                ForEach(0..<emptyCellsToCompleteWeek, id: \.self) { index in
                     Color.clear
                         .frame(height: 32)
                         .id("empty-\(index)")
@@ -203,7 +205,9 @@ struct CalendarGridComponents {
                 let cellsInLastWeek = (firstDayOfMonth + daysInMonth) % 7
                 let nextMonthDaysNeeded = cellsInLastWeek > 0 ? (7 - cellsInLastWeek) : 0
                 let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
-                let remainingEmptyCells = max(0, 42 - totalGridCells)
+                let currentWeekCells = totalGridCells % 7
+                let emptyCellsToCompleteWeek = currentWeekCells > 0 ? (7 - currentWeekCells) : 0
+                let totalWeeks = (totalGridCells + emptyCellsToCompleteWeek) / 7
                 
                 print("📅 Calendar Grid Debug:")
                 print("   First Day Position: \(firstDayOfMonth)")
@@ -211,8 +215,9 @@ struct CalendarGridComponents {
                 print("   Previous Month Overflow: \(firstDayOfMonth)")
                 print("   Current Month Days: \(daysInMonth)")
                 print("   Next Month Overflow: \(nextMonthDaysNeeded)")
-                print("   Empty Cells: \(remainingEmptyCells)")
-                print("   Total Grid Cells: \(totalGridCells)")
+                print("   Empty Cells to Complete Week: \(emptyCellsToCompleteWeek)")
+                print("   Total Grid Cells: \(totalGridCells + emptyCellsToCompleteWeek)")
+                print("   Total Weeks: \(totalWeeks)")
             }
         }
     }
