@@ -84,22 +84,47 @@ struct ProgressTabView: View {
             // Monthly Calendar
             VStack(spacing: 12) {
                 // Calendar header with month/year and Today button
-                ProgressViewComponentsHelper.calendarHeader(
-                    monthYearString: calendarHelper.monthYearString(),
-                    isCurrentMonth: calendarHelper.isCurrentMonth(),
-                    isTodayInCurrentMonth: calendarHelper.isTodayInCurrentMonth(),
-                    onTodayTap: calendarHelper.goToToday
-                )
+                HStack {
+                    Text(calendarHelper.monthYearString())
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                        .id("month-header-\(calendarHelper.monthYearString())")
+                    
+                    Spacer()
+                    
+                    if !calendarHelper.isCurrentMonth() || !calendarHelper.isTodayInCurrentMonth() {
+                        Button(action: calendarHelper.goToToday) {
+                            HStack(spacing: 4) {
+                                Image("Icon-replay")
+                                    .resizable()
+                                    .frame(width: 12, height: 12)
+                                    .foregroundColor(.primaryFocus)
+                                Text("Today")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                            .padding(.leading, 12)
+                            .padding(.trailing, 8)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: .infinity)
+                                    .stroke(.primaryFocus, lineWidth: 1)
+                            )
+                        }
+                    }
+                }
+                .padding(.bottom, 16)
                 
                 // Days of week header
                 CalendarGridComponents.WeekdayHeader()
                 
                 // Calendar grid
-                ProgressViewComponentsHelper.calendarContainer(
-                    monthYearString: calendarHelper.monthYearString(),
+                CalendarGridComponents.CalendarGrid(
                     firstDayOfMonth: calendarHelper.firstDayOfMonth(),
                     daysInMonth: calendarHelper.daysInMonth(),
                     currentDate: calendarHelper.currentDate,
+                    selectedDate: Date(),
                     getDayProgress: { day in
                         ProgressCalculationHelper.getDayProgress(
                             day: day,
@@ -120,22 +145,32 @@ struct ProgressTabView: View {
                             // For now, we'll just print it to console
                             print("Selected date: \(dateForDay)")
                         }
-                    },
-                    onSwipeGesture: { value in
-                        let threshold: CGFloat = 50
-                        // Only trigger month change for horizontal swipes
-                        if abs(value.translation.width) > abs(value.translation.height) {
-                            if value.translation.width > threshold {
-                                // Swipe right - go to previous month
-                                calendarHelper.previousMonth()
-                            } else if value.translation.width < -threshold {
-                                // Swipe left - go to next month
-                                calendarHelper.nextMonth()
-                            }
-                        }
                     }
                 )
+                .frame(minHeight: 200)
+                .simultaneousGesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = 50
+                            // Only trigger month change for horizontal swipes
+                            if abs(value.translation.width) > abs(value.translation.height) {
+                                if value.translation.width > threshold {
+                                    // Swipe right - go to previous month
+                                    calendarHelper.previousMonth()
+                                } else if value.translation.width < -threshold {
+                                    // Swipe left - go to next month
+                                    calendarHelper.nextMonth()
+                                }
+                            }
+                        }
+                )
             }
+            .padding(20)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.outline, lineWidth: 1)
+            )
             .padding(.horizontal, 20)
             
             // Monthly Completion Rate Section

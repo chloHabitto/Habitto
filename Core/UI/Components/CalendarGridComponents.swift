@@ -107,7 +107,6 @@ struct CalendarGridComponents {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal, 20)
             .padding(.bottom, 8)
         }
     }
@@ -145,7 +144,6 @@ struct CalendarGridComponents {
                     }
                 }
             }
-            .padding(.horizontal, 20)
         }
     }
     
