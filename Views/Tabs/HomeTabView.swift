@@ -163,9 +163,10 @@ struct HomeTabView: View {
     @ViewBuilder
     private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "list.bullet.circle")
-                .font(.appDisplaySmall)
-                .foregroundColor(.secondary)
+            Image("Habit-List-Empty-State@4x")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 120)
             Text("No habits yet")
                 .font(.appButtonText2)
                 .foregroundColor(.secondary)

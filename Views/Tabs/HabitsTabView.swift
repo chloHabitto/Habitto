@@ -287,7 +287,6 @@ struct HabitsTabView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 18)
-                .padding(.bottom, 20)
             }
             .refreshable {
                 // Refresh habits data when user pulls down
