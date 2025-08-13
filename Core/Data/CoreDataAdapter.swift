@@ -113,6 +113,92 @@ class CoreDataAdapter: ObservableObject {
         }
     }
     
+    // MARK: - Fetch Difficulty Data
+    func fetchDifficultiesForHabit(_ habitId: UUID, month: Int, year: Int) -> [Double] {
+        let context = coreDataManager.persistentContainer.viewContext
+        let request: NSFetchRequest<DifficultyLogEntity> = DifficultyLogEntity.fetchRequest()
+        
+        // Create date range for the specified month and year
+        let calendar = Calendar.current
+        var startDateComponents = DateComponents()
+        startDateComponents.year = year
+        startDateComponents.month = month
+        startDateComponents.day = 1
+        startDateComponents.hour = 0
+        startDateComponents.minute = 0
+        startDateComponents.second = 0
+        
+        guard let startDate = calendar.date(from: startDateComponents) else { return [] }
+        
+        var endDateComponents = DateComponents()
+        endDateComponents.year = year
+        endDateComponents.month = month + 1
+        endDateComponents.day = 1
+        endDateComponents.hour = 0
+        endDateComponents.minute = 0
+        endDateComponents.second = 0
+        
+        guard let endDate = calendar.date(from: endDateComponents) else { return [] }
+        
+        // Filter by habit ID and date range
+        request.predicate = NSPredicate(
+            format: "habit.id == %@ AND timestamp >= %@ AND timestamp < %@",
+            habitId as CVarArg,
+            startDate as NSDate,
+            endDate as NSDate
+        )
+        
+        do {
+            let results = try context.fetch(request)
+            return results.map { Double($0.difficulty) }
+        } catch {
+            print("❌ CoreDataAdapter: Failed to fetch difficulties: \(error)")
+            return []
+        }
+    }
+    
+    func fetchAllDifficulties(month: Int, year: Int) -> [Double] {
+        let context = coreDataManager.persistentContainer.viewContext
+        let request: NSFetchRequest<DifficultyLogEntity> = DifficultyLogEntity.fetchRequest()
+        
+        // Create date range for the specified month and year
+        let calendar = Calendar.current
+        var startDateComponents = DateComponents()
+        startDateComponents.year = year
+        startDateComponents.month = month
+        startDateComponents.day = 1
+        startDateComponents.hour = 0
+        startDateComponents.minute = 0
+        startDateComponents.second = 0
+        
+        guard let startDate = calendar.date(from: startDateComponents) else { return [] }
+        
+        var endDateComponents = DateComponents()
+        endDateComponents.year = year
+        endDateComponents.month = month + 1
+        endDateComponents.day = 1
+        endDateComponents.hour = 0
+        endDateComponents.minute = 0
+        endDateComponents.second = 0
+        
+        guard let endDate = calendar.date(from: endDateComponents) else { return [] }
+        
+        // Filter by date range
+        request.predicate = NSPredicate(
+            format: "timestamp >= %@ AND timestamp < %@",
+            startDate as NSDate,
+            endDate as NSDate
+        )
+        
+        do {
+            let results = try context.fetch(request)
+            return results.map { Double($0.difficulty) }
+        } catch {
+            print("❌ CoreDataAdapter: Failed to fetch all difficulties: \(error)")
+            return []
+        }
+    }
+    
     // MARK: - Save Habits
     func saveHabits(_ habits: [Habit]) {
         do {
