@@ -30,8 +30,7 @@ struct CreateHabitStep1View: View {
     @FocusState private var isNameFieldFocused: Bool
     @FocusState private var isDescriptionFieldFocused: Bool
     
-    // Simplified state management to prevent hangs
-    @State private var isViewLoaded = false
+
     
     // Cache screen width to avoid repeated UIScreen.main.bounds.width access
     private let screenWidth = UIScreen.main.bounds.width
@@ -200,84 +199,164 @@ struct CreateHabitStep1View: View {
             // Main content with simplified structure
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    // Name field - container style matching habit type container
-                    FormInputComponents.FormContainer {
-                        VStack(alignment: .leading, spacing: 12) {
-                            FormInputComponents.FormSectionHeader(title: "Name")
-                            
-                            FormInputComponents.CustomTextField(
-                                placeholder: "Habit name",
-                                text: $name
-                            )
-                        }
+                    // Name field - container with surface background and stroke
+                    VStack(alignment: .leading, spacing: 12) {
+                        FormInputComponents.FormSectionHeader(title: "Name")
+                        
+                        FormInputComponents.CustomTextField(
+                            placeholder: "Habit name",
+                            text: $name
+                        )
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(.outline3, lineWidth: 1.5)
+                    )
+                    .cornerRadius(16)
                     
-                    // Description field - container style matching habit type container
-                    FormInputComponents.FormContainer {
-                        VStack(alignment: .leading, spacing: 12) {
-                            FormInputComponents.FormSectionHeader(title: "Description")
-                            
-                            FormInputComponents.CustomTextField(
-                                placeholder: "Description (Optional)",
-                                text: $description
-                            )
-                        }
+                    // Description field - container with surface background and stroke
+                    VStack(alignment: .leading, spacing: 12) {
+                        FormInputComponents.FormSectionHeader(title: "Description")
+                        
+                        FormInputComponents.CustomTextField(
+                            placeholder: "Description (Optional)",
+                            text: $description
+                        )
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(.outline3, lineWidth: 1.5)
+                    )
+                    .cornerRadius(16)
                     
-                    // Color and Icon selection
-                    if isViewLoaded {
-                        VStack(spacing: 16) {
-                            FormInputComponents.SelectionRowWithVisual(
-                                title: "Colour",
-                                icon: nil,
-                                color: color,
-                                value: getColorName(for: color),
-                                action: { showingColorSheet = true }
-                            )
-                            
-                            FormInputComponents.SelectionRowWithVisual(
-                                title: "Icon",
-                                icon: icon,
-                                color: color,
-                                value: getIconDisplayValue(icon),
-                                action: { showingIconSheet = true }
-                            )
+                    // Colour selection
+                    HStack(spacing: 12) {
+                        Text("Colour")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        HStack(spacing: 8) {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(color)
+                                .frame(width: 24, height: 24)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(.outline3, lineWidth: 1)
+                                )
+                            Text(getColorName(for: color))
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text02)
                         }
                         
-                        // Habit type selection
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Habit Type")
-                                .font(.appTitleMedium)
-                                .foregroundColor(.text01)
-                            
-                            HStack(spacing: 12) {
-                                // Habit Building button
-                                FormInputComponents.HabitTypeButton(
-                                    title: "Habit Building",
-                                    isSelected: isFormationSelected
-                                ) {
-                                    habitType = .formation
-                                }
-                                
-                                // Habit Breaking button
-                                FormInputComponents.HabitTypeButton(
-                                    title: "Habit Breaking",
-                                    isSelected: isBreakingSelected
-                                ) {
-                                    habitType = .breaking
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline3, lineWidth: 1.5)
-                        )
-                        .cornerRadius(12)
+                        Image(systemName: "chevron.right")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text03)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline3, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
+                    .onTapGesture {
+                        showingColorSheet = true
+                    }
+                    
+                    // Icon selection
+                    HStack(spacing: 12) {
+                        Text("Icon")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        HStack(spacing: 8) {
+                            if icon != "None" {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(color.opacity(0.15))
+                                        .frame(width: 24, height: 24)
+                                    
+                                    if icon.hasPrefix("Icon-") {
+                                        Image(icon)
+                                            .resizable()
+                                            .frame(width: 14, height: 14)
+                                            .foregroundColor(color)
+                                    } else {
+                                        Text(icon)
+                                            .font(.system(size: 14))
+                                    }
+                                }
+                            } else {
+                                // Placeholder rectangle to maintain consistent height
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.clear)
+                                    .frame(width: 24, height: 24)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(.outline3.opacity(0), lineWidth: 1)
+                                    )
+                            }
+                            Text(getIconDisplayValue(icon))
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text02)
+                        }
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text03)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline3, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
+                    .onTapGesture {
+                        showingIconSheet = true
+                    }
+                    
+                    // Habit type selection
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Habit Type")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        HStack(spacing: 12) {
+                            // Habit Building button
+                            FormInputComponents.HabitTypeButton(
+                                title: "Habit Building",
+                                isSelected: isFormationSelected,
+                                action: { habitType = .formation }
+                            )
+                            
+                            // Habit Breaking button
+                            FormInputComponents.HabitTypeButton(
+                                title: "Habit Breaking",
+                                isSelected: isBreakingSelected,
+                                action: { habitType = .breaking }
+                            )
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.outline3, lineWidth: 1.5)
+                    )
+                    .cornerRadius(12)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 0)
@@ -315,12 +394,7 @@ struct CreateHabitStep1View: View {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onAppear {
-            // Simple loading - no complex progressive loading to prevent hangs
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isViewLoaded = true
-            }
-        }
+
         .sheet(isPresented: $showingIconSheet) {
             IconBottomSheet(
                 selectedIcon: $icon,

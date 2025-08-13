@@ -151,7 +151,8 @@ struct FormInputComponents {
         var body: some View {
             Button(action: action) {
                 HStack(spacing: 12) {
-                    if let icon = icon {
+                    // Only show icon on the left if it's not an icon selection row or if no icon is selected
+                    if let icon = icon, icon != "None", title != "Icon" {
                         Image(systemName: icon)
                             .font(.system(size: iconSize))
                             .foregroundColor(color)
@@ -159,13 +160,53 @@ struct FormInputComponents {
                     }
                     
                     Text(title)
-                        .font(.appBodyLarge)
+                        .font(.appTitleMedium)
                         .foregroundColor(.text01)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text(value)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text02)
+                    // Show color preview rectangle for color selection, icon preview for icon selection, otherwise show text value
+                    if icon == nil && title == "Colour" {
+                        HStack(spacing: 8) {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(color)
+                                .frame(width: 24, height: 24)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(.outline3, lineWidth: 1)
+                                )
+                            Text(value)
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text02)
+                        }
+                    } else if title == "Icon" && icon != nil && icon != "None" {
+                        HStack(spacing: 8) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(color.opacity(0.15))
+                                    .frame(width: 30, height: 30)
+                                
+                                if icon!.hasPrefix("Icon-") {
+                                    // Asset icon
+                                    Image(icon!)
+                                        .resizable()
+                                        .frame(width: 14, height: 14)
+                                        .foregroundColor(color)
+                                } else {
+                                    // Emoji or system icon
+                                    Text(icon!)
+                                        .font(.system(size: 14))
+                                }
+                            }
+                            
+                            Text(value)
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text02)
+                        }
+                    } else {
+                        Text(value)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                    }
                     
                     if showChevron {
                         Image(systemName: "chevron.right")
