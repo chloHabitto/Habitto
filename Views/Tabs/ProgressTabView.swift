@@ -98,7 +98,7 @@ struct ProgressTabView: View {
                                     .resizable()
                                     .frame(width: 12, height: 12)
                                     .foregroundColor(.primaryFocus)
-                                Text("Today")
+                                Text("This month")
                                     .font(.appLabelMedium)
                                     .foregroundColor(.primaryFocus)
                             }
