@@ -12,6 +12,18 @@ struct ScheduledHabitItem: View {
     @State private var currentProgress: Int = 0
     @State private var dragOffset: CGFloat = 0
     @State private var showingActionSheet = false
+    @State private var showingCompletionSheet = false
+    
+    // Computed property for background color to simplify complex expression
+    private var backgroundColor: Color {
+        if dragOffset > 30 {
+            return Color.green.opacity(0.2)
+        } else if dragOffset < -30 {
+            return Color.red.opacity(0.2)
+        } else {
+            return .surface
+        }
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -58,11 +70,7 @@ struct ScheduledHabitItem: View {
         .padding(.trailing, 4)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(
-                    dragOffset > 30 ? Color.green.opacity(0.2) :
-                    dragOffset < -30 ? Color.red.opacity(0.2) :
-                    .surface
-                )
+                .fill(backgroundColor)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -126,6 +134,12 @@ struct ScheduledHabitItem: View {
                             
                             // Call the callback to save the progress
                             onProgressChange?(habit, selectedDate, newProgress)
+                            
+                            // Check if habit is completed and show completion sheet
+                            let goalAmount = extractNumericGoalAmount(from: habit.goal)
+                            if newProgress >= goalAmount {
+                                showingCompletionSheet = true
+                            }
                             
                             // Haptic feedback for increase
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -221,6 +235,15 @@ struct ScheduledHabitItem: View {
                 }
             }
         }
+        .sheet(isPresented: $showingCompletionSheet) {
+            HabitCompletionBottomSheet(
+                isPresented: $showingCompletionSheet,
+                habit: habit
+            )
+            .presentationDetents([.height(500)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(32)
+        }
     }
     
     // Helper function to extract goal amount without schedule
@@ -242,6 +265,18 @@ struct ScheduledHabitItem: View {
         }
         
         return goal // Fallback to original goal if format is unexpected
+    }
+    
+    // Helper function to extract numeric goal amount for comparison
+    private func extractNumericGoalAmount(from goal: String) -> Int {
+        let goalString = extractGoalAmount(from: goal)
+        
+        // Extract the first number from the goal string
+        let numbers = goalString.components(separatedBy: CharacterSet.decimalDigits.inverted)
+            .compactMap { Int($0) }
+        
+        // Return the first number found, or default to 1 if none found
+        return numbers.first ?? 1
     }
 }
 

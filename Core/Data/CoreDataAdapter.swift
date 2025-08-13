@@ -89,6 +89,30 @@ class CoreDataAdapter: ObservableObject {
         print("✅ CoreDataAdapter: Loaded \(habits.count) unique habits from Core Data (filtered from \(loadedHabits.count) total)")
     }
     
+    // MARK: - Save Difficulty Rating
+    func saveDifficultyRating(habitId: UUID, date: Date, difficulty: Int32) {
+        let context = coreDataManager.persistentContainer.viewContext
+        
+        // Create new DifficultyLogEntity
+        let difficultyLog = DifficultyLogEntity(context: context)
+        difficultyLog.difficulty = difficulty
+        difficultyLog.timestamp = date
+        difficultyLog.context = "Daily completion rating"
+        
+        // Find the habit and associate it
+        if let habitEntity = coreDataManager.fetchHabit(by: habitId) {
+            difficultyLog.habit = habitEntity
+        }
+        
+        // Save to Core Data
+        do {
+            try context.save()
+            print("✅ CoreDataAdapter: Saved difficulty rating \(difficulty) for habit \(habitId) on \(date)")
+        } catch {
+            print("❌ CoreDataAdapter: Failed to save difficulty rating: \(error)")
+        }
+    }
+    
     // MARK: - Save Habits
     func saveHabits(_ habits: [Habit]) {
         do {

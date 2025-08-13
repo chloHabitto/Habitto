@@ -375,6 +375,21 @@ class CoreDataManager: ObservableObject {
         }
     }
     
+    /// Fetch a single habit by ID
+    func fetchHabit(by id: UUID) -> HabitEntity? {
+        let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+        request.fetchLimit = 1
+        
+        do {
+            let results = try context.fetch(request)
+            return results.first
+        } catch {
+            print("❌ Fetch habit by ID error: \(error)")
+            return nil
+        }
+    }
+    
     /// Fetch habits with specific type for better performance
     func fetchHabitsByType(_ type: HabitType) -> [HabitEntity] {
         let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
