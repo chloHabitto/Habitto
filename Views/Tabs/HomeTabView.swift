@@ -747,23 +747,21 @@ struct HomeTabView: View {
         if weekOffset == 0 {
             // Get today's weekday (1 = Sunday, 2 = Monday, etc.)
             let weekday = calendar.component(.weekday, from: today)
-            // Calculate how many days to subtract to get to Monday
-            let daysToSubtract = weekday == 1 ? 6 : weekday - 2 // If Sunday, subtract 6; otherwise subtract (weekday - 2)
+            // Calculate how many days to subtract to get to the user's preferred first day of the week
+            let daysToSubtract = (weekday - calendar.firstWeekday + 7) % 7
             targetWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
         } else {
             // For other weeks, calculate relative to the current week
             let weekday = calendar.component(.weekday, from: today)
-            let daysToSubtract = weekday == 1 ? 6 : weekday - 2
+            let daysToSubtract = (weekday - calendar.firstWeekday + 7) % 7
             let currentWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
             targetWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentWeekStart)!
         }
         
-        // Generate 7 days starting from the target week start (Monday)
+        // Generate 7 days starting from the target week start (using user's preference)
         let dates = (0..<7).compactMap { dayOffset in
             calendar.date(byAdding: .day, value: dayOffset, to: targetWeekStart)
         }
-        
-
         
         return dates
     }
