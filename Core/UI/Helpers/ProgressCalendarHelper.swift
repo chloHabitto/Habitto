@@ -12,7 +12,9 @@ class ProgressCalendarHelper: ObservableObject {
         guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
         
         if let newDate = calendar.date(byAdding: .month, value: -1, to: firstDayOfCurrentMonth) {
-            currentDate = newDate
+            withAnimation(.none) {
+                currentDate = newDate
+            }
         }
     }
     
@@ -23,7 +25,9 @@ class ProgressCalendarHelper: ObservableObject {
         guard let firstDayOfCurrentMonth = calendar.date(from: firstDayComponents) else { return }
         
         if let newDate = calendar.date(byAdding: .month, value: 1, to: firstDayOfCurrentMonth) {
-            currentDate = newDate
+            withAnimation(.none) {
+                currentDate = newDate
+            }
         }
     }
     

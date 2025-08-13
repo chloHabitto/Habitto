@@ -17,7 +17,7 @@ struct MonthlyCompletionRateSection: View {
             // Section header
             HStack {
                 Text("Monthly Progress")
-                    .font(.appTitleMediumEmphasised)
+                    .font(.appTitleSmallEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 Spacer()
             }
@@ -103,7 +103,7 @@ struct HabitPerformanceBreakdownSection: View {
             // Section header
             HStack {
                 Text("Habit Performance")
-                    .font(.appTitleMediumEmphasised)
+                    .font(.appTitleSmallEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 Spacer()
             }

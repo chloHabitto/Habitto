@@ -200,6 +200,8 @@ struct CalendarGridComponents {
                         .id("empty-\(index)")
                 }
             }
+            .animation(.none, value: firstDayOfMonth)
+            .animation(.none, value: daysInMonth)
             .onAppear {
                 // Debug: Show grid layout information
                 let cellsInLastWeek = (firstDayOfMonth + daysInMonth) % 7

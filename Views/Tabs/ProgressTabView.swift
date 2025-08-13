@@ -71,7 +71,7 @@ struct ProgressTabView: View {
                     Spacer()
                         .frame(width: 12)
                     
-                    Image(systemName: "chevron.down")
+                    Image(systemName: showingHabitsList ? "chevron.up" : "chevron.down")
                         .font(.appLabelMedium)
                         .foregroundColor(.primaryFocus)
                     
