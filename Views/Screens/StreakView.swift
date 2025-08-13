@@ -63,7 +63,7 @@ struct StreakView: View {
                                 Button(action: {
                                     // More button action
                                 }) {
-                                    Image("Icon-moreDots")
+                                    Image(.iconMoreDots)
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
                                         .frame(width: 20, height: 20)

@@ -241,7 +241,7 @@ struct NumberStepper: View {
                         value.wrappedValue -= 1
                     }
                 }) {
-                    Image("Icon-minus")
+                    Image(.iconMinus)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(value.wrappedValue > range.lowerBound ? .text01 : .text05)
@@ -269,7 +269,7 @@ struct NumberStepper: View {
                         value.wrappedValue += 1
                     }
                 }) {
-                    Image("Icon-plus")
+                    Image(.iconPlus)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(value.wrappedValue < range.upperBound ? .text01 : .text05)

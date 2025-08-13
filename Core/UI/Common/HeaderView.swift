@@ -59,7 +59,7 @@ struct HeaderView: View {
                 // Streak pill
                 Button(action: onStreakTap) {
                     HStack(spacing: 6) {
-                        Image("Icon-fire")
+                        Image(.iconFire)
                             .resizable()
                             .frame(width: 32, height: 32)
                         Text(pluralizeStreak(currentStreak))
@@ -81,7 +81,7 @@ struct HeaderView: View {
             HStack(spacing: 2) {
                 // Notification bell
                 Button(action: onNotificationTap) {
-                    Image("Icon-notification")
+                    Image(.iconNotification)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.white)
@@ -90,7 +90,7 @@ struct HeaderView: View {
                 
                 // Add (+) button
                 Button(action: onCreateHabit) {
-                    Image("Icon-plusCircle")
+                    Image(.iconPlusCircle)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.white)

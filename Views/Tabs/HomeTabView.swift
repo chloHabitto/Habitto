@@ -567,7 +567,7 @@ struct HomeTabView: View {
                          }
                      }) {
                          HStack(spacing: 4) {
-                             Image("Icon-replay")
+                             Image(.iconReplay)
                                  .resizable()
                                  .frame(width: 12, height: 12)
                                  .foregroundColor(.primaryFocus)
@@ -589,7 +589,7 @@ struct HomeTabView: View {
                  Button(action: {
                      showingWeekPicker = true
                  }) {
-                     Image("Icon-calendar")
+                     Image(.iconCalendar)
                          .resizable()
                          .frame(width: 20, height: 20)
                          .foregroundColor(.secondary)

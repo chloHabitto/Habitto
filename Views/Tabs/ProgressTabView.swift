@@ -94,7 +94,7 @@ struct ProgressTabView: View {
                     if !calendarHelper.isCurrentMonth() || !calendarHelper.isTodayInCurrentMonth() {
                         Button(action: calendarHelper.goToToday) {
                             HStack(spacing: 4) {
-                                Image("Icon-replay")
+                                Image(.iconReplay)
                                     .resizable()
                                     .frame(width: 12, height: 12)
                                     .foregroundColor(.primaryFocus)

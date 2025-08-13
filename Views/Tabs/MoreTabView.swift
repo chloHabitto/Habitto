@@ -66,7 +66,7 @@ struct MoreTabView: View {
     private var vacationModeSection: some View {
         HStack(spacing: 12) {
             // Vacation Icon
-            Image("Icon-vacation")
+                                Image(.iconVacation)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 24, height: 24)

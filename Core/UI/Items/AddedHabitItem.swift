@@ -81,7 +81,7 @@ struct AddedHabitItem: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         } label: {
-                            Image("Icon-more_vert")
+                            Image(.iconMoreVert)
                                 .resizable()
                                 .frame(width: 24, height: 24)
                                 .foregroundColor(.text06)
@@ -109,7 +109,7 @@ struct AddedHabitItem: View {
                         HStack(spacing: 4) {
                             // Goal
                             HStack(spacing: 4) {
-                                Image("Icon-flag-filled")
+                                Image(.iconFlagFilled)
                                     .resizable()
                                     .renderingMode(.template)
                                     .frame(width: 16, height: 16)

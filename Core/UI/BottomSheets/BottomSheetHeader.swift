@@ -10,7 +10,7 @@ struct BottomSheetHeader: View {
             // Close button row
             HStack {
                 Button(action: onClose) {
-                    Image("Icon-close")
+                    Image(.iconClose)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.text04)

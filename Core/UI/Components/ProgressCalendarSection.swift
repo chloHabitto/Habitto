@@ -165,7 +165,7 @@ struct ProgressCalendarTodayButton: View {
         if !isCurrentMonth || !isTodayInCurrentMonth {
             Button(action: onTodayPressed) {
                 HStack(spacing: 4) {
-                    Image("Icon-replay")
+                    Image(.iconReplay)
                         .resizable()
                         .frame(width: 12, height: 12)
                         .foregroundColor(.primaryFocus)

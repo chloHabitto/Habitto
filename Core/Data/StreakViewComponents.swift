@@ -43,7 +43,7 @@ struct MainStreakDisplayView: View {
                     .frame(width: 80, height: 80)
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
-                Image("Icon-fire")
+                Image(.iconFire)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 60, height: 60)
@@ -205,7 +205,7 @@ struct DateRangeSelectorView: View {
                         .frame(width: 12, height: 12)
                         .foregroundColor(.text04)
                 } else {
-                    Image("Icon-leftArrow")
+                    Image(.iconLeftArrow)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 16, height: 16)

@@ -95,7 +95,7 @@ struct ReminderBottomSheet: View {
                     Button(action: {
                             showingAddReminderSheet = true
                     }) {
-                        Image("Icon-plus")
+                        Image(.iconPlus)
                             .resizable()
                             .frame(width: 24, height: 24)
                             .foregroundColor(.primary)
@@ -235,7 +235,7 @@ struct AddReminderSheet: View {
                 Button(action: {
                     dismiss()
                 }) {
-                    Image("Icon-leftArrow")
+                    Image(.iconLeftArrow)
                         .resizable()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.text01)
