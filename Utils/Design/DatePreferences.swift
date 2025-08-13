@@ -39,11 +39,11 @@ enum DateFormatOption: String, CaseIterable {
     var example: String {
         switch self {
         case .dayMonthYear:
-            return "31/12/2025"
+            return "31/Dec/2025"
         case .monthDayYear:
-            return "12/31/2025"
+            return "Dec/31/2025"
         case .yearMonthDay:
-            return "2025-12-31"
+            return "2025/Dec/31"
         }
     }
     
@@ -90,7 +90,7 @@ enum DateFormatOption: String, CaseIterable {
         case .monthDayYear:
             return "MM/dd/yyyy"      // 08/09/2025
         case .yearMonthDay:
-            return "yyyy-MM-dd"      // 2025-08-09
+            return "yyyy/MM/dd"      // 2025-08-09
         }
     }
 }

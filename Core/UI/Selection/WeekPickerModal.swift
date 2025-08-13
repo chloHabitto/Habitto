@@ -13,8 +13,7 @@ struct WeekPickerModal: View {
         self._tempSelectedWeekStartDate = State(initialValue: selectedWeekStartDate.wrappedValue)
         
         // Initialize selected range based on the current selected week (not always current week)
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate.wrappedValue)?.start ?? selectedWeekStartDate.wrappedValue
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         self._selectedDateRange = State(initialValue: weekStart...weekEnd)
@@ -118,8 +117,7 @@ struct WeekPickerModal: View {
                 tempSelectedWeekStartDate = selectedWeekStartDate
                 
                 // Update selected range
-                var calendar = Calendar.current
-                calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+                let calendar = AppDateFormatter.shared.getUserCalendar()
                 let weekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
                 let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
                 selectedDateRange = weekStart...weekEnd
@@ -140,8 +138,7 @@ struct WeekPickerModal: View {
     // MARK: - Helper Properties and Functions
     
     private var isCurrentWeekSelected: Bool {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         
         let today = Date()
         let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
@@ -150,8 +147,7 @@ struct WeekPickerModal: View {
     }
     
     private func resetToCurrentWeek() {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         
         let today = Date()
         let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today

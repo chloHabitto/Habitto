@@ -45,10 +45,7 @@ class ProgressCalendarHelper: ObservableObject {
     }
     
     func firstDayOfMonth() -> Int {
-        var calendar = Calendar.current
-        
-        // Set Monday as the first day of the week
-        calendar.firstWeekday = 2 // 2 = Monday
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfMonth = calendar.date(from: firstDayComponents) else { 
@@ -59,10 +56,7 @@ class ProgressCalendarHelper: ObservableObject {
         let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
         
         // Calculate how many empty cells we need at the start
-        // Since we want Monday as the first day of the week:
-        // - If first day is Monday (weekday = 2), we need 0 empty cells
-        // - If first day is Tuesday (weekday = 3), we need 1 empty cell
-        // - If first day is Sunday (weekday = 1), we need 6 empty cells
+        // Using user's preferred first day of the week:
         let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
         
         // Debug: Let's see what's happening
@@ -70,7 +64,7 @@ class ProgressCalendarHelper: ObservableObject {
         print("   Current Date: \(currentDate)")
         print("   First Day of Month: \(firstDayOfMonth)")
         print("   Weekday of First Day: \(weekdayOfFirstDay) (1=Sun, 2=Mon, 3=Tue, etc.)")
-        print("   First Weekday Setting: \(calendar.firstWeekday) (2=Monday)")
+        print("   First Weekday Setting: \(calendar.firstWeekday) (1=Sunday, 2=Monday)")
         print("   Empty Cells Needed: \(emptyCells)")
         print("   Days in Month: \(daysInMonth())")
         print("   Total Grid Cells: \(emptyCells + daysInMonth())")

@@ -87,14 +87,13 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private var calendarDays: [Date?] {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
         
-        // Find Monday of the first week
+        // Find the first day of the week based on user preference
         let firstWeekday = calendar.component(.weekday, from: startOfMonth)
-        let daysFromMonday = (firstWeekday == 1) ? 6 : firstWeekday - 2
-        let firstDisplayDate = calendar.date(byAdding: .day, value: -daysFromMonday, to: startOfMonth) ?? startOfMonth
+        let daysFromFirstWeekday = (firstWeekday - calendar.firstWeekday + 7) % 7
+        let firstDisplayDate = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: startOfMonth) ?? startOfMonth
         
         var days: [Date?] = []
         var currentDate = firstDisplayDate
@@ -127,8 +126,7 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private func selectWeek(for date: Date) {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start,
               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
         
@@ -148,8 +146,7 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private func initializeCurrentWeek() {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart

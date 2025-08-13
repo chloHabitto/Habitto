@@ -107,7 +107,14 @@ struct CalendarGridComponents {
     
     // MARK: - Weekday Header
     struct WeekdayHeader: View {
-        private let weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        private var weekdayNames: [String] {
+            let calendar = AppDateFormatter.shared.getUserCalendar()
+            if calendar.firstWeekday == 1 { // Sunday
+                return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            } else { // Monday
+                return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            }
+        }
         
         var body: some View {
             HStack(spacing: 0) {
@@ -266,10 +273,7 @@ struct CalendarGridComponents {
     }
     
     static func firstDayOfMonth(from date: Date) -> Int {
-        var calendar = Calendar.current
-        
-        // Set Monday as the first day of the week
-        calendar.firstWeekday = 2 // 2 = Monday
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         
         let firstDayComponents = calendar.dateComponents([.year, .month], from: date)
         guard let firstDayOfMonth = calendar.date(from: firstDayComponents) else { 
@@ -280,10 +284,7 @@ struct CalendarGridComponents {
         let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
         
         // Calculate how many empty cells we need at the start
-        // Since we want Monday as the first day of the week:
-        // - If first day is Monday (weekday = 2), we need 0 empty cells
-        // - If first day is Tuesday (weekday = 3), we need 1 empty cell
-        // - If first day is Sunday (weekday = 1), we need 6 empty cells
+        // Using user's preferred first day of the week:
         let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
         
         return emptyCells

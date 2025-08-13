@@ -15,10 +15,9 @@ extension Date {
     }
     
     static func currentWeekStartDate() -> Date {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
-        // Get the start of the current week (Monday)
+        // Get the start of the current week (using user's preference)
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         return weekStart
     }
