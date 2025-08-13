@@ -460,6 +460,7 @@ struct ProgressTabView: View {
                         .padding(.top, 20)
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.bottom, 40)
             }
             .scrollDisabled(false)
             .scrollDismissesKeyboard(.immediately)

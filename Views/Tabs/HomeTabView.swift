@@ -101,12 +101,35 @@ struct HomeTabView: View {
             doneCount: stats.indices.contains(2) ? stats[2].1 : 0
         )
         
-        UnifiedTabBarView(
-            tabs: tabs,
-            selectedIndex: selectedStatsTab,
-            style: .underline
-        ) { index in
-            selectedStatsTab = index // All tabs are now clickable
+        // Debug logging for iOS 18 compatibility
+        let _ = print("🔍 DEBUG: HomeTabView stats - Total: \(stats.indices.contains(0) ? stats[0].1 : 0), Undone: \(stats.indices.contains(1) ? stats[1].1 : 0), Done: \(stats.indices.contains(2) ? stats[2].1 : 0)")
+        let _ = print("🔍 DEBUG: HomeTabView tabs count: \(tabs.count)")
+        let _ = print("🔍 DEBUG: HomeTabView tabs: \(tabs.map { $0.title })")
+        
+        // Ensure tabs are always rendered, even if stats are empty
+        if tabs.isEmpty {
+            // Fallback tabs if something goes wrong
+            let fallbackTabs = [
+                TabItem(title: "Total", value: "0"),
+                TabItem(title: "Undone", value: "0"),
+                TabItem(title: "Done", value: "0")
+            ]
+            
+            UnifiedTabBarView(
+                tabs: fallbackTabs,
+                selectedIndex: selectedStatsTab,
+                style: .underline
+            ) { index in
+                selectedStatsTab = index
+            }
+        } else {
+            UnifiedTabBarView(
+                tabs: tabs,
+                selectedIndex: selectedStatsTab,
+                style: .underline
+            ) { index in
+                selectedStatsTab = index // All tabs are now clickable
+            }
         }
     }
     
