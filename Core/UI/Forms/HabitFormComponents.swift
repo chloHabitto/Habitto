@@ -183,16 +183,10 @@ struct PeriodSection: View {
     let onStartDateTap: () -> Void
     let onEndDateTap: () -> Void
     
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter
-    }()
-    
     private let calendar = Calendar.current
     
     private func formatDate(_ date: Date) -> String {
-        return dateFormatter.string(from: date)
+        return AppDateFormatter.shared.formatCreateHabitDate(date)
     }
     
     private func isToday(_ date: Date) -> Bool {

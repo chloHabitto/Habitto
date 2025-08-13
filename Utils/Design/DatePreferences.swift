@@ -66,7 +66,19 @@ enum DateFormatOption: String, CaseIterable {
         case .monthDayYear:
             return "E, MMM d, yyyy"  // Fri, Aug 9, 2025
         case .yearMonthDay:
-            return "E, yyyy MMM d"   // Fri, 2025 Aug 9
+            return "yyyy, MMM d, E"  // 2025, Aug 13, Wed
+        }
+    }
+    
+    // Create habit date format (for period section like "13 Aug, 2025" or "Aug 13, 2025")
+    var createHabitDateFormat: String {
+        switch self {
+        case .dayMonthYear:
+            return "d MMM, yyyy"     // 13 Aug, 2025
+        case .monthDayYear:
+            return "MMM d, yyyy"     // Aug 13, 2025
+        case .yearMonthDay:
+            return "yyyy, MMM d"     // 2025, Aug 13
         }
     }
     
@@ -93,20 +105,35 @@ enum FirstDayOption: String, CaseIterable {
 struct AppDateFormatter {
     static let shared = AppDateFormatter()
     
+    // Reusable DateFormatter instances to prevent memory leaks
+    private var displayDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.shortDateFormat
+        return formatter
+    }
+    
+    private var numericDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.numericDateFormat
+        return formatter
+    }
+    
+    private var createHabitDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.createHabitDateFormat
+        return formatter
+    }
+    
     private init() {}
     
     // Format date for display in lists, cards, etc.
     func formatDisplayDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = DatePreferences.shared.dateFormat.shortDateFormat
-        return formatter.string(from: date)
+        return displayDateFormatter.string(from: date)
     }
     
     // Format date numerically (e.g., for compact displays)
     func formatNumericDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = DatePreferences.shared.dateFormat.numericDateFormat
-        return formatter.string(from: date)
+        return numericDateFormatter.string(from: date)
     }
     
     // Check if date is today (considering user's first day preference)
@@ -122,6 +149,11 @@ struct AppDateFormatter {
         } else {
             return formatDisplayDate(date)
         }
+    }
+    
+    // Format date for create habit period section
+    func formatCreateHabitDate(_ date: Date) -> String {
+        return createHabitDateFormatter.string(from: date)
     }
     
     // Get calendar with user's preferred first day

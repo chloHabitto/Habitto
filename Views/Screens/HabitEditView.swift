@@ -631,9 +631,7 @@ struct HabitEditView: View {
     }
     
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatCreateHabitDate(date)
     }
     
     private func isToday(_ date: Date) -> Bool {
