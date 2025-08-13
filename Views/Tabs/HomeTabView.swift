@@ -4,6 +4,7 @@ struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
     @State private var currentWeekOffset: Int = 0
+    @State private var showingWeekPicker: Bool = false
 
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
@@ -59,6 +60,29 @@ struct HomeTabView: View {
                         }
                 )
         }
+        .overlay(
+            // Week Selection Modal
+            showingWeekPicker ? AnyView(
+                WeekPickerModal(
+                    selectedWeekStartDate: Binding(
+                        get: { selectedDate },
+                        set: { newDate in
+                            selectedDate = newDate
+                            // Update currentWeekOffset to match the selected week
+                            let calendar = Calendar.current
+                            let today = Date()
+                            let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+                            let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: newDate)?.start ?? newDate
+                            let weeksDifference = calendar.dateComponents([.weekOfYear], from: weekStart, to: selectedWeekStart).weekOfYear ?? 0
+                            currentWeekOffset = weeksDifference
+                        }
+                    ),
+                    isPresented: $showingWeekPicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
+            ) : AnyView(EmptyView())
+        )
     }
     
     @ViewBuilder
@@ -562,7 +586,9 @@ struct HomeTabView: View {
                      }
                  }
                  
-                 Button(action: {}) {
+                 Button(action: {
+                     showingWeekPicker = true
+                 }) {
                      Image("Icon-calendar")
                          .resizable()
                          .frame(width: 20, height: 20)
