@@ -263,6 +263,9 @@ struct FormInputComponents {
                     Text(title)
                         .font(.appBodyLarge)
                         .foregroundColor(isSelected ? selectedTextColor : unselectedTextColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .truncationMode(.tail)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 16)

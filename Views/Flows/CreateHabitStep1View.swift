@@ -216,6 +216,9 @@ struct CreateHabitStep1View: View {
                             .stroke(.outline3, lineWidth: 1.5)
                     )
                     .cornerRadius(16)
+                    .onTapGesture {
+                        isNameFieldFocused = true
+                    }
                     
                     // Description field - container with surface background and stroke
                     VStack(alignment: .leading, spacing: 12) {

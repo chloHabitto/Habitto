@@ -53,6 +53,14 @@ struct DateCalendarSettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGray6))
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        dismiss()
+                    }
+                }
+        )
     }
     
     // MARK: - Top Navigation Bar
