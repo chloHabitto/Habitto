@@ -2,6 +2,8 @@ import SwiftUI
 import Lottie
 
 struct SplashView: View {
+    @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var tutorialManager = TutorialManager()
     @State private var showMainApp = false
     
     var body: some View {
@@ -15,16 +17,19 @@ struct SplashView: View {
             .onAppear {
                 // Start timer immediately - no waiting for loading
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    // Always show main app - no authentication required
                     showMainApp = true
                 }
             }
             .fullScreenCover(isPresented: $showMainApp) {
+                // Navigate directly to main app without authentication
                 HomeView()
                     .preferredColorScheme(.light)
                     .environment(\.managedObjectContext, CoreDataManager.shared.context)
                     .environmentObject(CoreDataManager.shared)
                     .environmentObject(CoreDataAdapter.shared)
-                    .environmentObject(TutorialManager())
+                    .environmentObject(tutorialManager)
+                    .environmentObject(authManager)
             }
     }
 }
@@ -56,8 +61,6 @@ struct LottieView: UIViewRepresentable {
         // No updates needed
     }
 }
-
-
 
 #Preview {
     SplashView()

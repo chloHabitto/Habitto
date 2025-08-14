@@ -3,8 +3,10 @@ import SwiftUI
 struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
     @EnvironmentObject var tutorialManager: TutorialManager
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var isVacationModeEnabled = false
     @State private var showingDateCalendarSettings = false
+    @State private var showingSignOutAlert = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -38,6 +40,14 @@ struct MoreTabView: View {
         }
         .fullScreenCover(isPresented: $showingDateCalendarSettings) {
             DateCalendarSettingsView()
+        }
+        .alert("Sign Out", isPresented: $showingSignOutAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Sign Out", role: .destructive) {
+                authManager.signOut()
+            }
+        } message: {
+            Text("Are you sure you want to sign out? You'll need to sign in again to access your data.")
         }
     }
     
@@ -111,11 +121,7 @@ struct MoreTabView: View {
             // Account/Notifications Group
             settingsGroup(
                 title: "Account & Notifications",
-                items: [
-                    SettingItem(title: "Account", value: nil, hasChevron: true),
-                    SettingItem(title: "Notifications", value: nil, hasChevron: true),
-                    SettingItem(title: "Sync & Security", value: nil, hasChevron: true)
-                ]
+                items: accountAndNotificationsItems
             )
             
             // Support/Legal Group
@@ -156,16 +162,16 @@ struct MoreTabView: View {
         VStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 HStack(spacing: 12) {
-                    // Heart Icon
-                    Image(systemName: "heart")
+                    // Icon based on item type
+                    Image(systemName: iconForSetting(item.title))
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
+                        .foregroundColor(iconColorForSetting(item.title))
                         .frame(width: 24, height: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.text01)
+                            .foregroundColor(item.title == "Sign Out" ? .red600 : .text01)
                     }
                     
                     Spacer()
@@ -216,6 +222,81 @@ struct MoreTabView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Icon Helpers
+    private func iconForSetting(_ title: String) -> String {
+        switch title {
+        case "Language":
+            return "globe"
+        case "Theme":
+            return "paintbrush"
+        case "Date & Calendar":
+            return "calendar"
+        case "Account":
+            return "person.circle"
+        case "Notifications":
+            return "bell"
+        case "Sync & Security":
+            return "lock.shield"
+        case "Sign Out":
+            return "rectangle.portrait.and.arrow.right"
+        case "FAQ":
+            return "questionmark.circle"
+        case "Contact us":
+            return "envelope"
+        case "Send Feedback":
+            return "message"
+        case "Terms & Conditions":
+            return "doc.text"
+        case "Show Tutorial Again":
+            return "lightbulb"
+        default:
+            return "heart"
+        }
+    }
+    
+    private func iconColorForSetting(_ title: String) -> Color {
+        switch title {
+        case "Sign Out":
+            return .red600
+        case "Sync & Security":
+            return .navy600
+        case "Notifications":
+            return .yellow600
+        case "Account":
+            return .green600
+        default:
+            return .grey600
+        }
+    }
+    
+    private var accountAndNotificationsItems: [SettingItem] {
+        var items: [SettingItem] = []
+        
+        switch authManager.authState {
+        case .authenticated:
+            // User is logged in - show profile and sign out options
+            items.append(SettingItem(title: "Account", hasChevron: true) {
+                // TODO: Navigate to account settings
+            })
+            items.append(SettingItem(title: "Notifications", hasChevron: true) {
+                // TODO: Navigate to notification settings
+            })
+            items.append(SettingItem(title: "Sign Out", hasChevron: false) {
+                showingSignOutAlert = true
+            })
+        case .unauthenticated, .error, .authenticating:
+            // User is not logged in - show login option
+            items.append(SettingItem(title: "Login", hasChevron: true) {
+                // TODO: Show login modal
+            })
+            items.append(SettingItem(title: "Notifications", hasChevron: true) {
+                // TODO: Navigate to notification settings
+            })
+        }
+        
+        return items
     }
 }
 

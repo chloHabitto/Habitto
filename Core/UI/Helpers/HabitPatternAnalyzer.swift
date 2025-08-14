@@ -478,7 +478,7 @@ class HabitPatternAnalyzer {
         
         // Sort by success rate and assign ranks
         var sortedPerformances = habitPerformances.sorted { $0.successRate > $1.successRate }
-        for (index, performance) in sortedPerformances.enumerated() {
+        for index in sortedPerformances.indices {
             sortedPerformances[index].rank = index + 1
         }
         

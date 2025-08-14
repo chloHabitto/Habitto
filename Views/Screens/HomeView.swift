@@ -142,6 +142,7 @@ class HomeViewState: ObservableObject {
 struct HomeView: View {
     @StateObject private var state = HomeViewState()
     @EnvironmentObject var tutorialManager: TutorialManager
+    @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
         VStack(spacing: 0) {

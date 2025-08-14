@@ -18,49 +18,34 @@ struct HeaderView: View {
     let showProfile: Bool
     let currentStreak: Int
     
-    init(onCreateHabit: @escaping () -> Void, onStreakTap: @escaping () -> Void, onNotificationTap: @escaping () -> Void, showProfile: Bool = false, currentStreak: Int = 0) {
-        self.onCreateHabit = onCreateHabit
-        self.onStreakTap = onStreakTap
-        self.onNotificationTap = onNotificationTap
-        self.showProfile = showProfile
-        self.currentStreak = currentStreak
-    }
+    @EnvironmentObject var authManager: AuthenticationManager
+    @State private var showingLoginView = false
     
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             if showProfile {
-                // Profile section
-                ZStack {
-                    HStack(spacing: 12) {
-                        // Profile image
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 48, height: 48)
-                            .overlay(
-                                Text("C")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.black)
-                            )
+                // Profile section for More tab
+                VStack(alignment: .leading, spacing: 4) {
+                    if isLoggedIn {
+                        // User is logged in - show profile info
+                        Text("Welcome back!")
+                            .font(.appButtonText2)
+                            .foregroundColor(.white)
                         
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Hi there,")
-                                .font(.system(size: 24, weight: .medium))
+                        if let user = authManager.currentUser {
+                            Text(user.displayName ?? user.email ?? "User")
+                                .font(.appButtonText1)
                                 .foregroundColor(.white)
-                            
-                            Button(action: {
-                                // TODO: Handle profile view action
-                            }) {
-                                HStack(spacing: 4) {
-                                    Text("View Profile")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(.white)
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.white)
-                                }
-                            }
                         }
+                    } else {
+                        // User is not logged in - show login prompt
+                        Text("Welcome to Habitto!")
+                            .font(.appButtonText2)
+                            .foregroundColor(.white)
+                        
+                        Text("Sign in to sync your data")
+                            .font(.appButtonText1)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                 }
             } else {
@@ -87,14 +72,19 @@ struct HeaderView: View {
             Spacer()
             
             if showProfile {
-                // Login button for More tab
+                // Login/Profile button for More tab
                 HabittoButton(
                     size: .small,
-                    style: .fillNeutral,
-                    content: .text("Login"),
+                    style: isLoggedIn ? .fillPrimary : .fillNeutral,
+                    content: .text(isLoggedIn ? "Profile" : "Login"),
                     hugging: true
                 ) {
-                    // TODO: Handle login action
+                    if isLoggedIn {
+                        // Sign out
+                        authManager.signOut()
+                    } else {
+                        showingLoginView = true
+                    }
                 }
             } else {
                 // Notification and Add icons for other tabs
@@ -123,5 +113,29 @@ struct HeaderView: View {
         .padding(.trailing, 20)
         .padding(.top, 28)
         .padding(.bottom, 28)
+        .sheet(isPresented: $showingLoginView) {
+            LoginView()
+        }
+    }
+    
+    // MARK: - Computed Properties
+    private var isLoggedIn: Bool {
+        switch authManager.authState {
+        case .authenticated:
+            return true
+        case .unauthenticated, .error:
+            return false
+        case .authenticating:
+            return false
+        }
+    }
+    
+    // MARK: - Helper Methods
+    private func pluralizeStreak(_ streak: Int) -> String {
+        if streak == 1 {
+            return "\(streak) day"
+        } else {
+            return "\(streak) days"
+        }
     }
 } 

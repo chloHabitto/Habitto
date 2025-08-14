@@ -1,11 +1,23 @@
 import SwiftUI
+import FirebaseCore
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+}
 
 @main
 struct HabittoApp: App {
+    // register app delegate for Firebase setup
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
     @StateObject private var coreDataAdapter = CoreDataAdapter.shared
     @StateObject private var tutorialManager = TutorialManager()
+    @StateObject private var authManager = AuthenticationManager.shared
     
     var body: some Scene {
         WindowGroup {
@@ -15,6 +27,7 @@ struct HabittoApp: App {
                 .environmentObject(coreDataManager)
                 .environmentObject(coreDataAdapter)
                 .environmentObject(tutorialManager)
+                .environmentObject(authManager)
                 .onAppear {
                     print("🚀 HabittoApp: App started!")
                     setupCoreData()
