@@ -43,15 +43,23 @@ struct HeaderView: View {
                             )
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Hi Chloe,")
+                            Text("Hi there,")
                                 .font(.system(size: 24, weight: .medium))
                                 .foregroundColor(.white)
                             
-                            Button("View Profile >") {
+                            Button(action: {
                                 // TODO: Handle profile view action
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("View Profile")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.white)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
                             }
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.white)
                         }
                     }
                 }
@@ -78,28 +86,41 @@ struct HeaderView: View {
             
             Spacer()
             
-            HStack(spacing: 2) {
-                // Notification bell
-                Button(action: onNotificationTap) {
-                    Image(.iconNotification)
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.white)
+            if showProfile {
+                // Login button for More tab
+                HabittoButton(
+                    size: .small,
+                    style: .fillNeutral,
+                    content: .text("Login"),
+                    hugging: true
+                ) {
+                    // TODO: Handle login action
                 }
-                .frame(width: 44, height: 44)
-                
-                // Add (+) button
-                Button(action: onCreateHabit) {
-                    Image(.iconPlusCircle)
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.white)
+            } else {
+                // Notification and Add icons for other tabs
+                HStack(spacing: 2) {
+                    // Notification bell
+                    Button(action: onNotificationTap) {
+                        Image(.iconNotification)
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 44, height: 44)
+                    
+                    // Add (+) button
+                    Button(action: onCreateHabit) {
+                        Image(.iconPlusCircle)
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 44, height: 44)
                 }
-                .frame(width: 44, height: 44)
             }
         }
         .padding(.leading, 20)
-        .padding(.trailing, 8)
+        .padding(.trailing, 20)
         .padding(.top, 28)
         .padding(.bottom, 28)
     }
