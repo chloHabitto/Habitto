@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
+    @EnvironmentObject var tutorialManager: TutorialManager
     @State private var isVacationModeEnabled = false
     @State private var showingDateCalendarSettings = false
     
@@ -55,7 +56,7 @@ struct MoreTabView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(.systemGray5))
+        .background(Color.surfaceDim)
         .cornerRadius(8)
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -102,8 +103,8 @@ struct MoreTabView: View {
                 title: "General Settings",
                 items: [
                     SettingItem(title: "Language", value: "English", hasChevron: true),
-                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true),
-                    SettingItem(title: "Appearance", value: "Light", hasChevron: true)
+                    SettingItem(title: "Theme", value: "Light", hasChevron: true),
+                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true)
                 ]
             )
             
@@ -112,7 +113,8 @@ struct MoreTabView: View {
                 title: "Account & Notifications",
                 items: [
                     SettingItem(title: "Account", value: nil, hasChevron: true),
-                    SettingItem(title: "Notifications", value: nil, hasChevron: true)
+                    SettingItem(title: "Notifications", value: nil, hasChevron: true),
+                    SettingItem(title: "Sync & Security", value: nil, hasChevron: true)
                 ]
             )
             
@@ -124,6 +126,16 @@ struct MoreTabView: View {
                     SettingItem(title: "Contact us", value: nil, hasChevron: true),
                     SettingItem(title: "Send Feedback", value: nil, hasChevron: true),
                     SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true)
+                ]
+            )
+            
+            // Tutorial Group
+            settingsGroup(
+                title: "Tutorial",
+                items: [
+                    SettingItem(title: "Show Tutorial Again", value: nil, hasChevron: false, action: {
+                        tutorialManager.resetTutorial()
+                    })
                 ]
             )
             
@@ -176,7 +188,9 @@ struct MoreTabView: View {
                 .padding(.vertical, 16)
                 .background(Color.white)
                 .onTapGesture {
-                    if item.title == "Date & Calendar" {
+                    if let action = item.action {
+                        action()
+                    } else if item.title == "Date & Calendar" {
                         showingDateCalendarSettings = true
                     }
                 }
@@ -210,11 +224,13 @@ struct SettingItem {
     let title: String
     let value: String?
     let hasChevron: Bool
+    let action: (() -> Void)?
     
-    init(title: String, value: String? = nil, hasChevron: Bool = false) {
+    init(title: String, value: String? = nil, hasChevron: Bool = false, action: (() -> Void)? = nil) {
         self.title = title
         self.value = value
         self.hasChevron = hasChevron
+        self.action = action
     }
 }
 

@@ -495,6 +495,119 @@ class CoreDataAdapter: ObservableObject {
         return 0
     }
     
+    // MARK: - Fetch Completion Records with Timestamps
+    func fetchCompletionRecordsWithTimestamps(for habit: Habit) -> [CompletionRecordEntity] {
+        let habitEntities = coreDataManager.fetchHabits()
+        guard let entity = habitEntities.first(where: { $0.id == habit.id }) else {
+            print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
+            return []
+        }
+        
+        if let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
+            let sortedRecords = completionRecords.sorted { record1, record2 in
+                guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
+                    return false
+                }
+                return timestamp1 > timestamp2
+            }
+            print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) completion records with timestamps for habit '\(habit.name)'")
+            return sortedRecords
+        }
+        
+        print("⚠️ CoreDataAdapter: No completion records found for habit: \(habit.name)")
+        return []
+    }
+    
+    // MARK: - Fetch All Completion Records with Timestamps
+    func fetchAllCompletionRecordsWithTimestamps() -> [CompletionRecordEntity] {
+        let habitEntities = coreDataManager.fetchHabits()
+        var allRecords: [CompletionRecordEntity] = []
+        
+        for entity in habitEntities {
+            if let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
+                allRecords.append(contentsOf: completionRecords)
+            }
+        }
+        
+        let sortedRecords = allRecords.sorted { record1, record2 in
+            guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
+                return false
+            }
+            return timestamp1 > timestamp2
+        }
+        
+        print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) total completion records with timestamps")
+        return sortedRecords
+    }
+    
+    // MARK: - Fetch Completion Records by Habit Type
+    func fetchCompletionRecordsByHabitType(_ habitType: HabitType) -> [CompletionRecordEntity] {
+        let habitEntities = coreDataManager.fetchHabits()
+        var typeRecords: [CompletionRecordEntity] = []
+        
+        for entity in habitEntities {
+            if entity.habitType == habitType.rawValue,
+               let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
+                typeRecords.append(contentsOf: completionRecords)
+            }
+        }
+        
+        let sortedRecords = typeRecords.sorted { record1, record2 in
+            guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
+                return false
+            }
+            return timestamp1 > timestamp2
+        }
+        
+        print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) completion records with timestamps for habit type: \(habitType)")
+        return sortedRecords
+    }
+    
+    // MARK: - Fetch Difficulty Logs for Habit
+    func fetchDifficultyLogs(for habit: Habit) -> [DifficultyLogEntity] {
+        let habitEntities = coreDataManager.fetchHabits()
+        guard let entity = habitEntities.first(where: { $0.id == habit.id }) else {
+            print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
+            return []
+        }
+        
+        if let difficultyLogs = entity.difficultyLogs as? Set<DifficultyLogEntity> {
+            let sortedLogs = difficultyLogs.sorted { log1, log2 in
+                guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
+                    return false
+                }
+                return timestamp1 > timestamp2
+            }
+            print("✅ CoreDataAdapter: Fetched \(sortedLogs.count) difficulty logs for habit '\(habit.name)'")
+            return sortedLogs
+        }
+        
+        print("⚠️ CoreDataAdapter: No difficulty logs found for habit: \(habit.name)")
+        return []
+    }
+    
+    // MARK: - Fetch All Difficulty Logs
+    func fetchAllDifficultyLogs() -> [DifficultyLogEntity] {
+        let habitEntities = coreDataManager.fetchHabits()
+        var allLogs: [DifficultyLogEntity] = []
+        
+        for entity in habitEntities {
+            if let difficultyLogs = entity.difficultyLogs as? Set<DifficultyLogEntity> {
+                allLogs.append(contentsOf: difficultyLogs)
+            }
+        }
+        
+        let sortedLogs = allLogs.sorted { log1, log2 in
+            guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
+                return false
+            }
+            return timestamp1 > timestamp2
+        }
+        
+        print("✅ CoreDataAdapter: Fetched \(sortedLogs.count) total difficulty logs")
+        return sortedLogs
+    }
+    
     // MARK: - Clean Up Duplicates
     func cleanupDuplicateHabits() {
         print("🔄 CoreDataAdapter: Starting duplicate cleanup...")

@@ -458,6 +458,27 @@ struct ProgressTabView: View {
                     // Difficulty Insights Section
                     difficultyInsightsSection
                         .padding(.top, 20)
+                    
+                    // Time-Based Insights Section
+                    TimeInsightsSection(
+                        habit: selectedHabit,
+                        completionRecords: selectedHabit != nil ? 
+                            CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
+                            CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(selectedHabitType)
+                    )
+                    .padding(.top, 20)
+                    
+                    // Pattern Analysis Section
+                    PatternInsightsSection(
+                        habit: selectedHabit,
+                        completionRecords: selectedHabit != nil ? 
+                            CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
+                            CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(selectedHabitType),
+                        difficultyLogs: selectedHabit != nil ? 
+                            CoreDataAdapter.shared.fetchDifficultyLogs(for: selectedHabit!) :
+                            CoreDataAdapter.shared.fetchAllDifficultyLogs()
+                    )
+                    .padding(.top, 20)
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
                 .padding(.bottom, 40)

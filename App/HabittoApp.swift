@@ -5,14 +5,16 @@ struct HabittoApp: App {
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
     @StateObject private var coreDataAdapter = CoreDataAdapter.shared
+    @StateObject private var tutorialManager = TutorialManager()
     
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            SplashView()
                 .preferredColorScheme(.light) // Force light mode only
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
                 .environmentObject(coreDataAdapter)
+                .environmentObject(tutorialManager)
                 .onAppear {
                     print("🚀 HabittoApp: App started!")
                     setupCoreData()

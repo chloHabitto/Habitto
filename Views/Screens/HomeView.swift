@@ -141,6 +141,7 @@ class HomeViewState: ObservableObject {
 
 struct HomeView: View {
     @StateObject private var state = HomeViewState()
+    @EnvironmentObject var tutorialManager: TutorialManager
     
     var body: some View {
         VStack(spacing: 0) {
@@ -287,6 +288,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $state.showingNotificationView) {
             NotificationView()
+        }
+        .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
+            TutorialBottomSheet(tutorialManager: tutorialManager)
         }
     }
     

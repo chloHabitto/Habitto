@@ -251,12 +251,14 @@ class CoreDataManager: ObservableObject {
             // Update existing record
             print("🔄 CoreDataManager: Updating existing completion record")
             existingRecord.progress = Int32(progress)
+            existingRecord.timestamp = Date() // Update timestamp when progress changes
         } else {
             // Create new completion record
             print("🆕 CoreDataManager: Creating new completion record")
             let completionRecord = CompletionRecordEntity(context: context)
             completionRecord.dateKey = dateKey
             completionRecord.progress = Int32(progress)
+            completionRecord.timestamp = Date() // Set timestamp when creating new record
             completionRecord.habit = habitEntity
             
             // FIX: Properly set up the bidirectional relationship

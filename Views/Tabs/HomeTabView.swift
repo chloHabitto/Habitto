@@ -162,18 +162,34 @@ struct HomeTabView: View {
     
     @ViewBuilder
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Image("Habit-List-Empty-State@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
-            Text("No habits yet")
-                .font(.appButtonText2)
-                .foregroundColor(.secondary)
-            Text("Create your first habit to get started")
-                .font(.appBodyMedium)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+        VStack(spacing: 4) {
+            if habits.isEmpty {
+                // No habits at all
+                Image("Habit-List-Empty-State@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 160)
+                Text("No habits yet")
+                    .font(.appTitleLargeEmphasised)
+                    .foregroundColor(.text04)
+                Text("Create your first habit to get started")
+                    .font(.appTitleSmall)
+                    .foregroundColor(.text06)
+                    .multilineTextAlignment(.center)
+            } else {
+                // No scheduled habits for today
+                Image("Today-Habit-List-Empty-State@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 160)
+                Text("No habits today")
+                    .font(.appTitleLargeEmphasised)
+                    .foregroundColor(.text04)
+                Text("Let's relax and enjoy the day!")
+                    .font(.appTitleSmall)
+                    .foregroundColor(.text06)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(.vertical, 40)
     }
