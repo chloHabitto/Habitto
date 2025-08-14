@@ -419,8 +419,14 @@ class AppleSignInPresentationContextProvider: NSObject, ASAuthorizationControlle
             return window
         }
         
-        // Last resort - use the main window
-        return UIApplication.shared.windows.first ?? UIWindow()
+        // Last resort - use the main window (iOS 15+ compatible)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window
+        }
+        
+        // Final fallback
+        return UIWindow()
     }
 }
 

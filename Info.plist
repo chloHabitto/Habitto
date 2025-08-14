@@ -6,6 +6,12 @@
 	<string>com.chloe-lee.Habitto</string>
 	<key>CFBundleExecutable</key>
 	<string>Habitto</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
 	<key>CFBundleName</key>
 	<string>Habitto</string>
 	<key>CFBundleDisplayName</key>
@@ -13,7 +19,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>0.1.6</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UISupportedInterfaceOrientations</key>
