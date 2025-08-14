@@ -20,6 +20,7 @@ struct HeaderView: View {
     
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingLoginView = false
+    @State private var showingProfileView = false
     
     var body: some View {
         HStack(spacing: 0) {
@@ -42,7 +43,7 @@ struct HeaderView: View {
                             
                             // View Profile button with chevron
                             Button(action: {
-                                // TODO: Handle profile view action
+                                showingProfileView = true
                             }) {
                                 HStack(spacing: 4) {
                                     Text("View Profile")
@@ -144,6 +145,9 @@ struct HeaderView: View {
         .padding(.bottom, 28)
         .sheet(isPresented: $showingLoginView) {
             LoginView()
+        }
+        .sheet(isPresented: $showingProfileView) {
+            ProfileView()
         }
     }
     
