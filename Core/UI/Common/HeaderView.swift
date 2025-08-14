@@ -1,15 +1,6 @@
 import SwiftUI
 
-// MARK: - Helper Functions
-private func pluralizeStreak(_ count: Int) -> String {
-    if count == 0 {
-        return "0 day"
-    } else if count == 1 {
-        return "1 day"
-    } else {
-        return "\(count) days"
-    }
-}
+
 
 struct HeaderView: View {
     let onCreateHabit: () -> Void
@@ -182,8 +173,10 @@ struct HeaderView: View {
     
     // MARK: - Helper Methods
     private func pluralizeStreak(_ streak: Int) -> String {
-        if streak == 1 {
-            return "\(streak) day"
+        if streak == 0 {
+            return "0 day"
+        } else if streak == 1 {
+            return "1 day"
         } else {
             return "\(streak) days"
         }
