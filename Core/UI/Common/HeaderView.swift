@@ -30,21 +30,15 @@ struct HeaderView: View {
                     Image("Default-Profile@4x")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 48, height: 48)
+                        .frame(width: 56, height: 56)
                         .clipShape(Circle())
                     
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 2) {
                         if isLoggedIn {
                             // User is logged in - show profile info
-                            Text("Hi there,")
+                            Text(greetingText)
                                 .font(.appHeadlineMediumEmphasised)
                                 .foregroundColor(.white)
-                            
-                            if let user = authManager.currentUser {
-                                Text(user.displayName ?? user.email ?? "User")
-                                    .font(.appButtonText1)
-                                    .foregroundColor(.white)
-                            }
                             
                             // View Profile button with chevron
                             Button(action: {
@@ -107,11 +101,11 @@ struct HeaderView: View {
             Spacer()
             
             if showProfile {
-                // Login/Profile button for More tab
+                // Login/Log Out button for More tab
                 HabittoButton(
                     size: .small,
                     style: isLoggedIn ? .fillPrimary : .fillNeutral,
-                    content: .text(isLoggedIn ? "Profile" : "Login"),
+                    content: .text(isLoggedIn ? "Log Out" : "Login"),
                     hugging: true
                 ) {
                     if isLoggedIn {
@@ -163,6 +157,23 @@ struct HeaderView: View {
         case .authenticating:
             return false
         }
+    }
+    
+    private var greetingText: String {
+        if isLoggedIn, let user = authManager.currentUser {
+            if let displayName = user.displayName, !displayName.isEmpty {
+                // Extract first name from display name
+                let firstName = displayName.components(separatedBy: " ").first ?? displayName
+                return "Hi \(firstName),"
+            } else if let email = user.email, !email.isEmpty {
+                // If no display name, use email prefix (capitalize first letter)
+                let emailPrefix = email.components(separatedBy: "@").first ?? email
+                let capitalizedPrefix = emailPrefix.prefix(1).uppercased() + emailPrefix.dropFirst().lowercased()
+                return "Hi \(capitalizedPrefix),"
+            }
+        }
+        // Default greeting for guest users
+        return "Hi there,"
     }
     
     // MARK: - Helper Methods

@@ -152,47 +152,80 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
+        print("🔐 AuthenticationManager: Starting Google Sign-In process...")
         authState = .authenticating
         
         guard let presentingViewController = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first?.rootViewController else {
             let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller available"])
             authState = .error(error.localizedDescription)
+            print("❌ AuthenticationManager: No presenting view controller available")
             completion(.failure(error))
             return
         }
         
-        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] result, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    self?.authState = .error(error.localizedDescription)
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let user = result?.user,
-                      let idToken = user.idToken?.tokenString else {
-                    let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get user or ID token"])
-                    self?.authState = .error(error.localizedDescription)
-                    completion(.failure(error))
-                    return
-                }
-                
-                let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
-                
-                Auth.auth().signIn(with: credential) { [weak self] result, error in
+        print("🔐 AuthenticationManager: Presenting view controller found, initiating Google Sign-In...")
+        
+                        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] result, error in
                     DispatchQueue.main.async {
                         if let error = error {
+                            print("❌ AuthenticationManager: Google Sign-In failed with error: \(error.localizedDescription)")
                             self?.authState = .error(error.localizedDescription)
                             completion(.failure(error))
-                        } else if let user = result?.user {
-                            self?.authState = .authenticated(user)
-                            self?.currentUser = user
-                            completion(.success(user))
+                            return
+                        }
+                        
+                        print("✅ AuthenticationManager: Google Sign-In successful, processing user data...")
+                        
+                        guard let googleUser = result?.user,
+                              let idToken = googleUser.idToken?.tokenString else {
+                            let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get user or ID token"])
+                            print("❌ AuthenticationManager: Failed to get user or ID token from Google")
+                            self?.authState = .error(error.localizedDescription)
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        print("✅ AuthenticationManager: Got ID token, creating Firebase credential...")
+                        
+                        let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: googleUser.accessToken.tokenString)
+                        
+                        print("✅ AuthenticationManager: Firebase credential created, signing in to Firebase...")
+                        
+                        Auth.auth().signIn(with: credential) { [weak self] result, error in
+                            DispatchQueue.main.async {
+                                if let error = error {
+                                    print("❌ AuthenticationManager: Firebase sign-in failed: \(error.localizedDescription)")
+                                    self?.authState = .error(error.localizedDescription)
+                                    completion(.failure(error))
+                                } else if let firebaseUser = result?.user {
+                                    print("✅ AuthenticationManager: Firebase sign-in successful for user: \(firebaseUser.email ?? "No email")")
+                                    
+                                    // Update user profile with Google profile information if display name is missing
+                                    if firebaseUser.displayName == nil || firebaseUser.displayName?.isEmpty == true {
+                                        // Get the Google user profile information from the GIDGoogleUser
+                                        if let googleDisplayName = googleUser.profile?.name,
+                                           !googleDisplayName.isEmpty {
+                                            print("🔐 AuthenticationManager: Updating user profile with Google display name: \(googleDisplayName)")
+                                            let changeRequest = firebaseUser.createProfileChangeRequest()
+                                            changeRequest.displayName = googleDisplayName
+                                            changeRequest.commitChanges { error in
+                                                if let error = error {
+                                                    print("⚠️ AuthenticationManager: Failed to update display name: \(error.localizedDescription)")
+                                                } else {
+                                                    print("✅ AuthenticationManager: Successfully updated user display name")
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    self?.authState = .authenticated(firebaseUser)
+                                    self?.currentUser = firebaseUser
+                                    completion(.success(firebaseUser))
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
     }
     
     // MARK: - Apple Sign In

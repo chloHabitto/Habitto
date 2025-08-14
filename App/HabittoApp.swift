@@ -7,6 +7,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
         
+        // Configure Google Sign-In with explicit client ID
+        let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
+        print("🔐 AppDelegate: Setting Google Sign-In client ID: \(clientID)")
+        
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+        print("✅ AppDelegate: Google Sign-In configuration set successfully")
+        
         // Configure Google Sign-In
         GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
             if let error = error {

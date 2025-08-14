@@ -51,9 +51,11 @@
 			<string>Google Sign-In</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>471173860270-1nt71pnacuh14m7n31j8rn2ghcv493hl.apps.googleusercontent.com</string>
+				<string>com.googleusercontent.apps.657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8</string>
 			</array>
 		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com</string>
 </dict>
 </plist>
