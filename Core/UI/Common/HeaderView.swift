@@ -25,51 +25,60 @@ struct HeaderView: View {
         HStack(spacing: 0) {
             if showProfile {
                 // Profile section for More tab
-                VStack(alignment: .leading, spacing: 4) {
-                    if isLoggedIn {
-                        // User is logged in - show profile info
-                        Text("Hi there,")
-                            .font(.appHeadlineMediumEmphasised)
-                            .foregroundColor(.white)
-                        
-                        if let user = authManager.currentUser {
-                            Text(user.displayName ?? user.email ?? "User")
-                                .font(.appButtonText1)
+                HStack(spacing: 12) {
+                    // Profile picture
+                    Image("Default-Profile@4x")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 48, height: 48)
+                        .clipShape(Circle())
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        if isLoggedIn {
+                            // User is logged in - show profile info
+                            Text("Hi there,")
+                                .font(.appHeadlineMediumEmphasised)
                                 .foregroundColor(.white)
-                        }
-                        
-                        // View Profile button with chevron
-                        Button(action: {
-                            // TODO: Handle profile view action
-                        }) {
-                            HStack(spacing: 4) {
-                                Text("View Profile")
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(.white)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .medium))
+                            
+                            if let user = authManager.currentUser {
+                                Text(user.displayName ?? user.email ?? "User")
+                                    .font(.appButtonText1)
                                     .foregroundColor(.white)
                             }
-                        }
-                    } else {
-                        // User is not logged in - show login prompt
-                        Text("Hi there,")
-                            .font(.appHeadlineMediumEmphasised)
-                            .foregroundColor(.white)
-                        
-                        // View Profile button with chevron (leads to login)
-                        Button(action: {
-                            // TODO: Show login modal
-                        }) {
-                            HStack(spacing: 4) {
-                                Text("View Profile")
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(.white)
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.white)
+                            
+                            // View Profile button with chevron
+                            Button(action: {
+                                // TODO: Handle profile view action
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("View Profile")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.white)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                        } else {
+                            // User is not logged in - show login prompt
+                            Text("Hi there,")
+                                .font(.appHeadlineMediumEmphasised)
+                                .foregroundColor(.white)
+                            
+                            // View Profile button with chevron (leads to login)
+                            Button(action: {
+                                // TODO: Show login modal
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("View Profile")
+                                        .font(.system(size: 14, weight: .regular))
+                                        .foregroundColor(.white)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white)
+                                }
                             }
                         }
                     }
