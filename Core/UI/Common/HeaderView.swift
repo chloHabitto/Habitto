@@ -28,8 +28,8 @@ struct HeaderView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     if isLoggedIn {
                         // User is logged in - show profile info
-                        Text("Welcome back!")
-                            .font(.appButtonText2)
+                        Text("Hi there,")
+                            .font(.appHeadlineMediumEmphasised)
                             .foregroundColor(.white)
                         
                         if let user = authManager.currentUser {
@@ -37,15 +37,41 @@ struct HeaderView: View {
                                 .font(.appButtonText1)
                                 .foregroundColor(.white)
                         }
+                        
+                        // View Profile button with chevron
+                        Button(action: {
+                            // TODO: Handle profile view action
+                        }) {
+                            HStack(spacing: 4) {
+                                Text("View Profile")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.white)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                        }
                     } else {
                         // User is not logged in - show login prompt
-                        Text("Welcome to Habitto!")
-                            .font(.appButtonText2)
+                        Text("Hi there,")
+                            .font(.appHeadlineMediumEmphasised)
                             .foregroundColor(.white)
                         
-                        Text("Sign in to sync your data")
-                            .font(.appButtonText1)
-                            .foregroundColor(.white.opacity(0.8))
+                        // View Profile button with chevron (leads to login)
+                        Button(action: {
+                            // TODO: Show login modal
+                        }) {
+                            HStack(spacing: 4) {
+                                Text("View Profile")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.white)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                        }
                     }
                 }
             } else {
