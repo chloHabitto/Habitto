@@ -3,11 +3,11 @@ import SwiftUI
 // MARK: - Helper Functions
 private func pluralizeStreak(_ count: Int) -> String {
     if count == 0 {
-        return "0 streak"
+        return "0 day"
     } else if count == 1 {
-        return "1 streak"
+        return "1 day"
     } else {
-        return "\(count) streaks"
+        return "\(count) days"
     }
 }
 
