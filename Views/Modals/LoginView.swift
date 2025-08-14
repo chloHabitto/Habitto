@@ -25,9 +25,11 @@ struct LoginView: View {
                 // Header
                 VStack(spacing: 16) {
                     // Logo/App Icon
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.green600)
+                    Image("Default-Profile@4x")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                        .clipShape(Circle())
                         .padding(.top, 40)
                     
                     VStack(spacing: 8) {
@@ -59,6 +61,12 @@ struct LoginView: View {
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.outline2, lineWidth: 1)
+                            )
                     }
                     
                     // Password Field
@@ -86,6 +94,12 @@ struct LoginView: View {
                                     .frame(width: 44, height: 44)
                             }
                         }
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.outline2, lineWidth: 1)
+                        )
                     }
                     
                     // Forgot Password (only for sign in)
@@ -101,28 +115,13 @@ struct LoginView: View {
                     }
                     
                     // Sign In/Up Button
-                    Button(action: {
+                    HabittoButton(
+                        size: .large,
+                        style: .fillPrimary,
+                        content: .text(isLoading ? "Please wait..." : (isSignUp ? "Create Account" : "Sign In")),
+                        hugging: false
+                    ) {
                         handleEmailAuth()
-                    }) {
-                        HStack(spacing: 12) {
-                            if isLoading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: isSignUp ? "person.badge.plus" : "arrow.right")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Text(isLoading ? "Please wait..." : (isSignUp ? "Create Account" : "Sign In"))
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(isFormValid ? Color.green600 : Color.grey400)
-                        .cornerRadius(12)
                     }
                     .disabled(!isFormValid || isLoading)
                     
@@ -360,12 +359,6 @@ struct CustomTextFieldStyle: TextFieldStyle {
         configuration
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
-            .background(Color.white)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.outline2, lineWidth: 1)
-            )
     }
 }
 
