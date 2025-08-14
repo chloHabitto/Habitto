@@ -1,7 +1,8 @@
 import Foundation
 import FirebaseAuth
 import AuthenticationServices
-import Combine
+import GoogleSignIn
+import CryptoKit
 
 // MARK: - Authentication State
 enum AuthenticationState {
@@ -11,29 +12,35 @@ enum AuthenticationState {
     case error(String)
 }
 
-// MARK: - Authentication Manager
+@MainActor
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
     
     @Published var authState: AuthenticationState = .unauthenticated
     @Published var currentUser: UserProtocol?
     
-    private var cancellables = Set<AnyCancellable>()
+    private var authStateListener: AuthStateDidChangeListenerHandle?
     
     private init() {
         setupAuthStateListener()
     }
     
-    // MARK: - Firebase Auth State Listener
+    deinit {
+        // Clean up the listener in deinit
+        if let listener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(listener)
+        }
+    }
+    
+    // MARK: - Authentication State Listener
     private func setupAuthStateListener() {
-        _ = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             DispatchQueue.main.async {
                 if let user = user {
                     self?.authState = .authenticated(user)
                     self?.currentUser = user
-                    print("✅ AuthenticationManager: User authenticated - \(user.email ?? "No email")")
+                    print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
                 } else {
-                    // User is not authenticated - this is fine for guest mode
                     self?.authState = .unauthenticated
                     self?.currentUser = nil
                     print("ℹ️ AuthenticationManager: User in guest mode - no authentication required")
@@ -42,38 +49,7 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
-    // MARK: - Sign In Methods
-    
-    /// Sign in with Apple ID (Firebase integration)
-    func signInWithApple(credential: ASAuthorizationAppleIDCredential, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        authState = .authenticating
-        
-        // For now, create a mock user since Firebase OAuth is not available in this SDK version
-        // TODO: Update Firebase SDK to enable proper Apple Sign-In integration
-        let mockUser = CustomUser(
-            uid: "apple_\(UUID().uuidString)",
-            email: credential.email ?? "apple_user@example.com",
-            displayName: [credential.fullName?.givenName, credential.fullName?.familyName]
-                .compactMap { $0 }
-                .joined(separator: " ")
-        )
-        
-        DispatchQueue.main.async {
-            self.authState = .authenticated(mockUser)
-            self.currentUser = mockUser
-            self.currentNonce = nil // Clear nonce after successful use
-            completion(.success(mockUser))
-        }
-    }
-    
-    /// Sign in with Google (currently disabled - SDK not available)
-    func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // TODO: Add Google Sign-In SDK to project and implement proper authentication
-        let error = NSError(domain: "AuthenticationError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Google Sign-In is not currently available. Please use email/password or Apple Sign-In."])
-        completion(.failure(error))
-    }
-    
-    /// Sign in with email and password
+    // MARK: - Email/Password Authentication
     func signInWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
         authState = .authenticating
         
@@ -91,7 +67,6 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
-    /// Create account with email and password
     func createAccountWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
         authState = .authenticating
         
@@ -109,7 +84,6 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
-    /// Sign out
     func signOut() {
         do {
             try Auth.auth().signOut()
@@ -174,6 +148,73 @@ class AuthenticationManager: ObservableObject {
         }
         
         return result
+    }
+    
+    // MARK: - Google Sign In
+    func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
+        authState = .authenticating
+        
+        guard let presentingViewController = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.windows.first?.rootViewController else {
+            let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller available"])
+            authState = .error(error.localizedDescription)
+            completion(.failure(error))
+            return
+        }
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.authState = .error(error.localizedDescription)
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let user = result?.user,
+                      let idToken = user.idToken?.tokenString else {
+                    let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get user or ID token"])
+                    self?.authState = .error(error.localizedDescription)
+                    completion(.failure(error))
+                    return
+                }
+                
+                let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
+                
+                Auth.auth().signIn(with: credential) { [weak self] result, error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            self?.authState = .error(error.localizedDescription)
+                            completion(.failure(error))
+                        } else if let user = result?.user {
+                            self?.authState = .authenticated(user)
+                            self?.currentUser = user
+                            completion(.success(user))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Apple Sign In
+    func signInWithApple(credential: ASAuthorizationAppleIDCredential, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
+        authState = .authenticating
+        
+        // For now, create a mock user since Firebase OAuth is not available in this SDK version
+        // TODO: Update Firebase SDK to enable proper Apple Sign-In integration
+        let mockUser = CustomUser(
+            uid: "apple_\(UUID().uuidString)",
+            email: credential.email ?? "apple_user@example.com",
+            displayName: [credential.fullName?.givenName, credential.fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+        )
+        
+        DispatchQueue.main.async {
+            self.authState = .authenticated(mockUser)
+            self.currentUser = mockUser
+            self.currentNonce = nil // Clear nonce after successful use
+            completion(.success(mockUser))
+        }
     }
     
     // MARK: - User Profile Management

@@ -177,26 +177,20 @@ struct LoginView: View {
                             }
                             .disabled(isLoading)
                             
-                            // Google Button
-                            Button(action: {
-                                handleGoogleLogin()
-                            }) {
+                            // Continue with Google
+                            Button(action: handleGoogleLogin) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "globe")
                                         .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(.text01)
+                                        .foregroundColor(.white)
                                     
                                     Text("Continue with Google")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.text01)
+                                        .foregroundColor(.white)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 28)
-                                        .stroke(Color.outline2, lineWidth: 1)
-                                )
+                                .background(Color.blue)
                                 .cornerRadius(28)
                             }
                             .disabled(isLoading)

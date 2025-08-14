@@ -1,11 +1,29 @@
 import SwiftUI
 import FirebaseCore
+import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        
+        // Configure Google Sign-In
+        GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+            if let error = error {
+                print("❌ Google Sign-In restore error: \(error.localizedDescription)")
+            } else if let user = user {
+                print("✅ Google Sign-In restored previous sign-in for user: \(user.profile?.email ?? "No email")")
+            }
+        }
+        
         return true
+    }
+    
+    // Handle Google Sign-In URL callback
+    func application(_ app: UIApplication,
+                     open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }
 

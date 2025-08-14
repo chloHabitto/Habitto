@@ -46,6 +46,14 @@
 				<string>com.chloe-lee.Habitto.signin</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>471173860270-1nt71pnacuh14m7n31j8rn2ghcv493hl.apps.googleusercontent.com</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
