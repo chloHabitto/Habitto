@@ -287,9 +287,14 @@ struct LoginView: View {
     private func handleAppleLogin() {
         isLoading = true
         
-        let request = ASAuthorizationAppleIDProvider().createRequest()
+        // Generate nonce first
+        let nonce = authManager.generateNonce()
+        
+        // Create the Apple ID provider request
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
         request.requestedScopes = [.fullName, .email]
-        request.nonce = authManager.generateNonce()
+        request.nonce = nonce
         
         let authorizationController = ASAuthorizationController(authorizationRequests: [request])
         
@@ -314,7 +319,29 @@ struct LoginView: View {
             onFailure: { error in
                 DispatchQueue.main.async {
                     self.isLoading = false
-                    self.errorMessage = error.localizedDescription
+                    
+                    // Provide more specific error messages
+                    let errorMessage: String
+                    if let authError = error as? ASAuthorizationError {
+                        switch authError.code {
+                        case .canceled:
+                            errorMessage = "Apple Sign-In was canceled"
+                        case .failed:
+                            errorMessage = "Apple Sign-In failed. Please try again."
+                        case .invalidResponse:
+                            errorMessage = "Invalid response from Apple. Please try again."
+                        case .notHandled:
+                            errorMessage = "Apple Sign-In request not handled. Please try again."
+                        case .unknown:
+                            errorMessage = "Unknown error occurred. Please try again."
+                        @unknown default:
+                            errorMessage = "Apple Sign-In failed: \(error.localizedDescription)"
+                        }
+                    } else {
+                        errorMessage = "Apple Sign-In failed: \(error.localizedDescription)"
+                    }
+                    
+                    self.errorMessage = errorMessage
                     self.showError = true
                 }
             }
@@ -322,11 +349,14 @@ struct LoginView: View {
         
         let presentationContextProvider = AppleSignInPresentationContextProvider()
         
+        // Store references to prevent deallocation
         self.appleSignInDelegate = delegate
         self.appleSignInPresentationContextProvider = presentationContextProvider
         
         authorizationController.delegate = delegate
         authorizationController.presentationContextProvider = presentationContextProvider
+        
+        // Perform the request
         authorizationController.performRequests()
     }
     
@@ -381,11 +411,22 @@ class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate {
 
 class AppleSignInPresentationContextProvider: NSObject, ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            fatalError("No window available")
+        // Use the key window approach which is more reliable
+        if let keyWindow = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow }) {
+            return keyWindow
         }
-        return window
+        
+        // Fallback to first available window
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window
+        }
+        
+        // Last resort - use the main window
+        return UIApplication.shared.windows.first ?? UIWindow()
     }
 }
 

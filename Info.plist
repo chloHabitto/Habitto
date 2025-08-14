@@ -38,6 +38,14 @@
 				<string>com.chloe-lee.Habitto</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Apple Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.chloe-lee.Habitto.signin</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
