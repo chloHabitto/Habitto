@@ -125,6 +125,25 @@ struct LoginView: View {
                     }
                     .disabled(!isFormValid || isLoading)
                     
+                    // Toggle Sign In/Sign Up (moved below button)
+                    HStack(spacing: 4) {
+                        Text(isSignUp ? "Already have an account?" : "Don't have an account?")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.text04)
+                        
+                        Button(isSignUp ? "Sign In" : "Sign Up") {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isSignUp.toggle()
+                                email = ""
+                                password = ""
+                                errorMessage = ""
+                            }
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.green600)
+                    }
+                    .padding(.top, 16)
+                    
                     // Divider
                     HStack {
                         Rectangle()
@@ -160,7 +179,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.black)
-                            .cornerRadius(12)
+                            .cornerRadius(28)
                         }
                         .disabled(isLoading)
                         
@@ -181,10 +200,10 @@ struct LoginView: View {
                             .frame(height: 56)
                             .background(Color.white)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 28)
                                     .stroke(Color.outline2, lineWidth: 1)
                             )
-                            .cornerRadius(12)
+                            .cornerRadius(28)
                         }
                         .disabled(isLoading)
                     }
@@ -194,23 +213,23 @@ struct LoginView: View {
                 Spacer()
                 
                 // Toggle Sign In/Sign Up
-                HStack(spacing: 4) {
-                    Text(isSignUp ? "Already have an account?" : "Don't have an account?")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.text04)
+                // HStack(spacing: 4) {
+                //     Text(isSignUp ? "Already have an account?" : "Don't have an account?")
+                //         .font(.system(size: 16, weight: .regular))
+                //         .foregroundColor(.text04)
                     
-                    Button(isSignUp ? "Sign In" : "Sign Up") {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isSignUp.toggle()
-                            email = ""
-                            password = ""
-                            errorMessage = ""
-                        }
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.green600)
-                }
-                .padding(.bottom, 40)
+                //     Button(isSignUp ? "Sign In" : "Sign Up") {
+                //         withAnimation(.easeInOut(duration: 0.3)) {
+                //             isSignUp.toggle()
+                //             email = ""
+                //             password = ""
+                //             errorMessage = ""
+                //         }
+                //     }
+                //     .font(.system(size: 16, weight: .semibold))
+                //     .foregroundColor(.green600)
+                // }
+                // .padding(.bottom, 40)
             }
             .background(Color.surface)
             .navigationBarTitleDisplayMode(.inline)
