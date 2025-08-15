@@ -43,6 +43,7 @@ struct HabittoApp: App {
     @StateObject private var coreDataAdapter = CoreDataAdapter.shared
     @StateObject private var tutorialManager = TutorialManager()
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var vacationManager = VacationManager.shared
     
     var body: some Scene {
         WindowGroup {
@@ -53,6 +54,7 @@ struct HabittoApp: App {
                 .environmentObject(coreDataAdapter)
                 .environmentObject(tutorialManager)
                 .environmentObject(authManager)
+                .environmentObject(vacationManager)
                 .onAppear {
                     print("🚀 HabittoApp: App started!")
                     setupCoreData()

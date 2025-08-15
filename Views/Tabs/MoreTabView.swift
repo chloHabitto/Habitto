@@ -4,11 +4,13 @@ struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
-    @State private var isVacationModeEnabled = false
+    @EnvironmentObject var vacationManager: VacationManager
     @State private var showingDateCalendarSettings = false
     @State private var showingSignOutAlert = false
     @State private var showingProfileView = false
     @State private var showingAccountView = false
+    @State private var showingVacationModeSheet = false
+    @State private var showingVacationSummary = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -49,6 +51,12 @@ struct MoreTabView: View {
         .sheet(isPresented: $showingAccountView) {
             AccountView()
         }
+        .sheet(isPresented: $showingVacationModeSheet) {
+            VacationModeSheet()
+        }
+        .sheet(isPresented: $showingVacationSummary) {
+            VacationSummaryView()
+        }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Sign Out", role: .destructive) {
@@ -81,37 +89,43 @@ struct MoreTabView: View {
         .padding(.bottom, 16)
     }
     
-    // MARK: - Vacation Mode Section
+        // MARK: - Vacation Mode Section
     private var vacationModeSection: some View {
-        HStack(spacing: 12) {
-            // Vacation Icon
-                                Image(.iconVacation)
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
-                .foregroundColor(.navy200)
-            
-            VStack(alignment: .leading, spacing: 2) {
+        Button(action: {
+            showingVacationModeSheet = true
+        }) {
+            HStack(spacing: 12) {
+                // Vacation Icon
+                Image(.iconVacation)
+                    .renderingMode(.template)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(.navy200)
+                
+                // Title
                 Text("Vacation Mode")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.text01)
                 
-                Text("Pause all habit schedules & reminders")
+                Spacer()
+                
+                // Status Text
+                Text(vacationManager.isActive ? "On" : "Off")
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(.text04)
+                
+                // Chevron
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.text04)
             }
-            
-            Spacer()
-            
-            // Toggle Switch
-            Toggle("", isOn: $isVacationModeEnabled)
-                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                .labelsHidden()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .cornerRadius(12)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(Color.white)
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Settings Sections
@@ -165,6 +179,13 @@ struct MoreTabView: View {
                     .padding(.bottom, 20)
             }
         }
+    }
+    
+    // MARK: - Helper Functions
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
     }
     
     // MARK: - Settings Group Helper
