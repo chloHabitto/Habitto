@@ -376,4 +376,7 @@ struct SettingItem {
 
 #Preview {
     MoreTabView(state: HomeViewState())
+        .environmentObject(VacationManager.shared)
+        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(TutorialManager())
 } 

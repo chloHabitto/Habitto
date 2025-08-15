@@ -345,6 +345,7 @@ struct HomeView: View {
         .environmentObject(mockState)
         .environmentObject(AuthenticationManager.shared)
         .environmentObject(mockTutorialManager)
+        .environmentObject(VacationManager.shared)
         .onAppear {
             // Initialize with some mock data for preview
             mockState.habits = []
