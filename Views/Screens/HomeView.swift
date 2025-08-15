@@ -338,7 +338,17 @@ struct HomeView: View {
 }
 
 #Preview {
+    let mockState = HomeViewState()
+    let mockTutorialManager = TutorialManager()
+    
     HomeView()
+        .environmentObject(mockState)
+        .environmentObject(AuthenticationManager.shared)
+        .environmentObject(mockTutorialManager)
+        .onAppear {
+            // Initialize with some mock data for preview
+            mockState.habits = []
+        }
 }
 
  
