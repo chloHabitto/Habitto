@@ -86,10 +86,11 @@ struct MoreTabView: View {
         HStack(spacing: 12) {
             // Vacation Icon
                                 Image(.iconVacation)
+                .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 24, height: 24)
-                .foregroundColor(.grey200)
+                .foregroundColor(.navy200)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Vacation Mode")
