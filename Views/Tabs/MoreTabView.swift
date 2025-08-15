@@ -5,7 +5,6 @@ struct MoreTabView: View {
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
-    @State private var showingDateCalendarSettings = false
     @State private var showingSignOutAlert = false
     @State private var showingProfileView = false
     @State private var showingAccountView = false
@@ -33,9 +32,6 @@ struct MoreTabView: View {
                 .padding(.top, 0)
                 .padding(.bottom, 20)
             }
-        }
-        .fullScreenCover(isPresented: $showingDateCalendarSettings) {
-            DateCalendarSettingsView()
         }
         .sheet(isPresented: $showingProfileView) {
             ProfileView()
@@ -91,19 +87,10 @@ struct MoreTabView: View {
                 title: "General Settings",
                 items: [
                     SettingItem(title: "Settings", value: nil, hasChevron: true),
-                    SettingItem(title: "Language", value: "English", hasChevron: true),
-                    SettingItem(title: "Theme", value: "Light", hasChevron: true),
-                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true),
                     SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
                         showingVacationModeSheet = true
                     })
                 ]
-            )
-            
-            // Notifications Group
-            settingsGroup(
-                title: "Notifications",
-                items: notificationsItems
             )
             
             // Support/Legal Group
@@ -196,10 +183,8 @@ struct MoreTabView: View {
                 .onTapGesture {
                     if let action = item.action {
                         action()
-                    } else if item.title == "Account" {
+                    } else if item.title == "Settings" {
                         showingAccountView = true
-                    } else if item.title == "Date & Calendar" {
-                        showingDateCalendarSettings = true
                     }
                 }
                 
@@ -229,18 +214,10 @@ struct MoreTabView: View {
     // MARK: - Icon Helpers
     private func iconForSetting(_ title: String) -> String {
         switch title {
-        case "Language":
-            return "Icon-Language_Filled"
-        case "Theme":
-            return "Icon-Theme_Filled"
-        case "Date & Calendar":
-            return "Icon-Calendar_Filled"
         case "Vacation Mode":
             return "Icon-Vacation"
-        case "Account":
-            return "Icon-Profile_Filled"
-        case "Notifications":
-            return "Icon-Bell_Filled"
+        case "Settings":
+            return "Icon-Setting_Filled"
         case "Sync & Security":
             return "lock.shield"
         case "Sign Out":
@@ -266,15 +243,7 @@ struct MoreTabView: View {
             return .red600
         case "Sync & Security":
             return .navy200
-        case "Notifications":
-            return .navy200
-        case "Account":
-            return .navy200
-        case "Language":
-            return .navy200
-        case "Theme":
-            return .navy200
-        case "Date & Calendar":
+        case "Settings":
             return .navy200
         case "Vacation Mode":
             return .navy200
@@ -289,16 +258,6 @@ struct MoreTabView: View {
         default:
             return .navy200
         }
-    }
-    
-    private var notificationsItems: [SettingItem] {
-        var items: [SettingItem] = []
-        
-        items.append(SettingItem(title: "Notifications", hasChevron: true) {
-            // TODO: Navigate to notification settings
-        })
-        
-        return items
     }
     
     private var accountAndNotificationsItems: [SettingItem] {

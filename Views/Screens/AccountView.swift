@@ -4,6 +4,15 @@ struct AccountView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @Environment(\.dismiss) private var dismiss
     
+    // State variables for showing different screens
+    @State private var showingPersonalInformation = false
+    @State private var showingSecurity = false
+    @State private var showingNotifications = false
+    @State private var showingDataPrivacy = false
+    @State private var showingLanguage = false
+    @State private var showingDateCalendar = false
+    @State private var showingTheme = false
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -45,48 +54,48 @@ struct AccountView: View {
                         // Account Settings
                         VStack(spacing: 0) {
                             AccountOptionRow(
-                                icon: "person.circle",
+                                icon: "Icon-Profile_Filled",
                                 title: "Personal Information",
                                 subtitle: "Manage your personal details",
                                 hasChevron: true
                             ) {
-                                // TODO: Navigate to personal information
+                                showingPersonalInformation = true
                             }
                             
                             Divider()
                                 .padding(.leading, 56)
                             
                             AccountOptionRow(
-                                icon: "lock.shield",
+                                icon: "Icon-ShieldKeyhole_Filled",
                                 title: "Security",
                                 subtitle: "Password and authentication",
                                 hasChevron: true
                             ) {
-                                // TODO: Navigate to security settings
+                                showingSecurity = true
                             }
                             
                             Divider()
                                 .padding(.leading, 56)
                             
                             AccountOptionRow(
-                                icon: "bell",
+                                icon: "Icon-Bell_Filled",
                                 title: "Notifications",
                                 subtitle: "Manage your notification preferences",
                                 hasChevron: true
                             ) {
-                                // TODO: Navigate to notification settings
+                                showingNotifications = true
                             }
                             
                             Divider()
                                 .padding(.leading, 56)
                             
                             AccountOptionRow(
-                                icon: "icloud",
+                                icon: "Icon-Cloud_Filled",
                                 title: "Data & Privacy",
                                 subtitle: "Manage your data and privacy settings",
                                 hasChevron: true
                             ) {
-                                // TODO: Navigate to data & privacy
+                                showingDataPrivacy = true
                             }
                         }
                         .background(Color.surface)
@@ -94,10 +103,50 @@ struct AccountView: View {
                         .padding(.horizontal, 20)
                     }
                     
+                    // App Settings
+                    VStack(spacing: 0) {
+                        AccountOptionRow(
+                            icon: "Icon-Language_Filled",
+                            title: "Language",
+                            subtitle: "Choose your preferred language",
+                            hasChevron: true
+                        ) {
+                            showingLanguage = true
+                        }
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        AccountOptionRow(
+                            icon: "Icon-Calendar_Filled",
+                            title: "Date & Calendar",
+                            subtitle: "Manage date and calendar preferences",
+                            hasChevron: true
+                        ) {
+                            showingDateCalendar = true
+                        }
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        AccountOptionRow(
+                            icon: "Icon-Theme_Filled",
+                            title: "Theme",
+                            subtitle: "Choose your preferred app theme",
+                            hasChevron: true
+                        ) {
+                            showingTheme = true
+                        }
+                    }
+                    .background(Color.surface)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 20)
+                    
                     Spacer()
                 }
             }
-            .navigationTitle("Account")
+            .background(Color.surface2)
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbar {
@@ -112,7 +161,27 @@ struct AccountView: View {
                 }
             }
         }
-        .background(Color.surface2)
+        .sheet(isPresented: $showingPersonalInformation) {
+            PersonalInformationView()
+        }
+        .sheet(isPresented: $showingSecurity) {
+            SecurityView()
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationsView()
+        }
+        .sheet(isPresented: $showingDataPrivacy) {
+            DataPrivacyView()
+        }
+        .sheet(isPresented: $showingLanguage) {
+            LanguageView()
+        }
+        .sheet(isPresented: $showingDateCalendar) {
+            DateCalendarView()
+        }
+        .sheet(isPresented: $showingTheme) {
+            ThemeView()
+        }
     }
 }
 
@@ -127,10 +196,21 @@ struct AccountOptionRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(.primary)
-                    .frame(width: 24)
+                if icon.hasPrefix("Icon-") {
+                    // Custom icon
+                    Image(icon)
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.navy200)
+                } else {
+                    // System icon
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(.navy200)
+                        .frame(width: 24)
+                }
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
