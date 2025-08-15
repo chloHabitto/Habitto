@@ -131,7 +131,7 @@ struct HeaderView: View {
             }
         }
         .padding(.leading, 20)
-        .padding(.trailing, 20)
+        .padding(.trailing, 16)
         .padding(.top, 28)
         .padding(.bottom, 28)
         .sheet(isPresented: $showingLoginView) {
