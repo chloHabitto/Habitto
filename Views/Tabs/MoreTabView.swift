@@ -26,14 +26,6 @@ struct MoreTabView: View {
             // Settings content in main content area
             ScrollView {
                 VStack(spacing: 0) {
-                    // Vacation Mode Section
-                    vacationModeSection
-                    
-                    // Divider after vacation mode
-                    Rectangle()
-                        .fill(Color(hex: "F0F0F6"))
-                        .frame(height: 8)
-                    
                     // Settings Sections
                     settingsSections
                 }
@@ -89,44 +81,7 @@ struct MoreTabView: View {
         .padding(.bottom, 16)
     }
     
-        // MARK: - Vacation Mode Section
-    private var vacationModeSection: some View {
-        Button(action: {
-            showingVacationModeSheet = true
-        }) {
-            HStack(spacing: 12) {
-                // Vacation Icon
-                Image(.iconVacation)
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(.navy200)
-                
-                // Title
-                Text("Vacation Mode")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.text01)
-                
-                Spacer()
-                
-                // Status Text
-                Text(vacationManager.isActive ? "On" : "Off")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.text04)
-                
-                // Chevron
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.text04)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color.white)
-            .cornerRadius(12)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
+
     
     // MARK: - Settings Sections
     private var settingsSections: some View {
@@ -135,10 +90,13 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "General Settings",
                 items: [
-                    SettingItem(title: "Account", value: nil, hasChevron: true),
+                    SettingItem(title: "Settings", value: nil, hasChevron: true),
                     SettingItem(title: "Language", value: "English", hasChevron: true),
                     SettingItem(title: "Theme", value: "Light", hasChevron: true),
-                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true)
+                    SettingItem(title: "Date & Calendar", value: nil, hasChevron: true),
+                    SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
+                        showingVacationModeSheet = true
+                    })
                 ]
             )
             
@@ -277,6 +235,8 @@ struct MoreTabView: View {
             return "Icon-Theme_Filled"
         case "Date & Calendar":
             return "Icon-Calendar_Filled"
+        case "Vacation Mode":
+            return "Icon-Vacation"
         case "Account":
             return "Icon-Profile_Filled"
         case "Notifications":
@@ -315,6 +275,8 @@ struct MoreTabView: View {
         case "Theme":
             return .navy200
         case "Date & Calendar":
+            return .navy200
+        case "Vacation Mode":
             return .navy200
         case "FAQ":
             return .navy200
