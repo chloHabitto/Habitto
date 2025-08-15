@@ -10,6 +10,7 @@ struct MoreTabView: View {
     @State private var showingAccountView = false
     @State private var showingVacationModeSheet = false
     @State private var showingVacationSummary = false
+    @State private var showingAboutUs = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -44,6 +45,9 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingVacationSummary) {
             VacationSummaryView()
+        }
+        .sheet(isPresented: $showingAboutUs) {
+            AboutUsView()
         }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
@@ -186,6 +190,8 @@ struct MoreTabView: View {
                         action()
                     } else if item.title == "Settings" {
                         showingAccountView = true
+                    } else if item.title == "About us" {
+                        showingAboutUs = true
                     }
                 }
                 
