@@ -112,11 +112,22 @@ class CoreDataManager: ObservableObject {
     
     // MARK: - Core Data Health Check
     func checkCoreDataHealth() -> Bool {
+        print("🔍 CoreDataManager: Checking Core Data health...")
+        
+        // Check if persistent container is loaded
+        guard persistentContainer.persistentStoreCoordinator.persistentStores.count > 0 else {
+            print("❌ CoreDataManager: No persistent stores found")
+            return false
+        }
+        
+        // Context is always available as a computed property
+        
+        // Test fetch to ensure Core Data is working
         do {
-            // Try to perform a simple fetch to test Core Data
-            let request: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-            request.fetchLimit = 1
-            _ = try context.fetch(request)
+            let testRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+            testRequest.fetchLimit = 1
+            _ = try context.fetch(testRequest)
+            print("✅ CoreDataManager: Core Data health check passed")
             return true
         } catch {
             print("❌ CoreDataManager: Core Data health check failed: \(error)")

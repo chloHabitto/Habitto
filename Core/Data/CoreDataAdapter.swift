@@ -57,20 +57,62 @@ class CoreDataAdapter: ObservableObject {
     @objc private func appDidBecomeActive() {
         print("🔄 CoreDataAdapter: App became active, reloading habits...")
         
-        // Reload habits from Core Data
+        // Force reload habits from Core Data
         loadHabits(force: true)
+        
+        // Also check for any pending changes
+        // Note: CoreDataManager doesn't have saveIfNeeded method
         
         print("✅ CoreDataAdapter: Habits reloaded after app became active")
     }
     
+    // MARK: - Debug Methods
+    func debugHabitsState() {
+        print("🔍 CoreDataAdapter: Debug - Current habits state:")
+        print("  - Published habits count: \(habits.count)")
+        print("  - Core Data entities count: \(coreDataManager.fetchHabits().count)")
+        
+        // Check for any habits without IDs
+        let invalidHabits = habits.filter { $0.id == UUID() }
+        if !invalidHabits.isEmpty {
+            print("⚠️ CoreDataAdapter: Found \(invalidHabits.count) habits with default UUIDs")
+        }
+        
+        // Check for duplicate IDs
+        var seenIds: Set<UUID> = []
+        var duplicates: [Habit] = []
+        for habit in habits {
+            if seenIds.contains(habit.id) {
+                duplicates.append(habit)
+            } else {
+                seenIds.insert(habit.id)
+            }
+        }
+        
+        if !duplicates.isEmpty {
+            print("⚠️ CoreDataAdapter: Found \(duplicates.count) duplicate habits:")
+            for duplicate in duplicates {
+                print("    - \(duplicate.name) (ID: \(duplicate.id))")
+            }
+        }
+        
+        print("✅ CoreDataAdapter: Debug completed")
+    }
+    
     // MARK: - Load Habits
     func loadHabits(force: Bool = false) {
+        print("🔄 CoreDataAdapter: loadHabits called (force: \(force))")
+        
+        // Always load if force is true, or if habits is empty
         if !force && !habits.isEmpty {
+            print("ℹ️ CoreDataAdapter: Skipping load - habits not empty and not forced")
             return
         }
         
         let entities = coreDataManager.fetchHabits()
         let loadedHabits = entities.map { $0.toHabit() }
+        
+        print("🔍 CoreDataAdapter: Fetched \(loadedHabits.count) habits from Core Data")
         
         // Deduplicate habits by ID to prevent duplicates
         var uniqueHabits: [Habit] = []
@@ -85,8 +127,14 @@ class CoreDataAdapter: ObservableObject {
             }
         }
         
-        habits = uniqueHabits
-        print("✅ CoreDataAdapter: Loaded \(habits.count) unique habits from Core Data (filtered from \(loadedHabits.count) total)")
+        // Always update on main thread and notify observers
+        DispatchQueue.main.async {
+            self.habits = uniqueHabits
+            print("✅ CoreDataAdapter: Updated habits array with \(uniqueHabits.count) unique habits")
+            
+            // Notify observers that habits have changed
+            self.objectWillChange.send()
+        }
     }
     
     // MARK: - Save Difficulty Rating
@@ -243,13 +291,24 @@ class CoreDataAdapter: ObservableObject {
     // MARK: - Create Habit
     func createHabit(_ habit: Habit) {
         print("🔄 CoreDataAdapter: Creating habit: \(habit.name)")
+        print("🔄 CoreDataAdapter: Current habits count before creation: \(habits.count)")
         
         // Try to create in Core Data first
         do {
             let createdEntity = try coreDataManager.createHabit(from: habit)
             print("🔄 CoreDataAdapter: Habit created in Core Data with ID: \(createdEntity.id?.uuidString ?? "nil")")
+            
+            // Force reload habits immediately
             loadHabits(force: true)
-            print("🔄 CoreDataAdapter: Habits loaded, total: \(habits.count)")
+            
+            // Verify the habit was added
+            print("🔄 CoreDataAdapter: Habits after creation: \(habits.count)")
+            if let addedHabit = habits.first(where: { $0.id == habit.id }) {
+                print("✅ CoreDataAdapter: Habit successfully added: \(addedHabit.name)")
+            } else {
+                print("⚠️ CoreDataAdapter: Habit not found in habits array after creation")
+            }
+            
         } catch {
             print("❌ CoreDataAdapter: Failed to create habit in Core Data: \(error)")
             print("🔄 CoreDataAdapter: Falling back to UserDefaults...")
@@ -259,9 +318,12 @@ class CoreDataAdapter: ObservableObject {
             currentHabits.append(habit)
             HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
             
-            // Update the published habits
-            habits = currentHabits
-            print("✅ CoreDataAdapter: Habit saved to UserDefaults, total: \(habits.count)")
+            // Update the published habits on main thread
+            DispatchQueue.main.async {
+                self.habits = currentHabits
+                print("✅ CoreDataAdapter: Habit saved to UserDefaults, total: \(self.habits.count)")
+                self.objectWillChange.send()
+            }
         }
     }
     

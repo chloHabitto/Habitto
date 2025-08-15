@@ -43,20 +43,27 @@ class HomeViewState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        print("🚀 HomeViewState: Initializing...")
+        
         // Subscribe to Core Data changes with proper state management
         coreDataAdapter.$habits
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newHabits in
-                DispatchQueue.main.async {
-                    print("🔍 HomeViewState: Received habits update from CoreDataAdapter - count: \(newHabits.count)")
-                    if let self = self {
-                        print("🔍 HomeViewState: Previous habits count: \(self.habits.count)")
-                        self.habits = newHabits
-                        print("🔍 HomeViewState: Updated habits count: \(self.habits.count)")
-                    }
+                print("🔍 HomeViewState: Received habits update from CoreDataAdapter - count: \(newHabits.count)")
+                if let self = self {
+                    print("🔍 HomeViewState: Previous habits count: \(self.habits.count)")
+                    self.habits = newHabits
+                    print("🔍 HomeViewState: Updated habits count: \(self.habits.count)")
+                    
+                    // Force UI update
+                    self.objectWillChange.send()
                 }
             }
             .store(in: &cancellables)
+        
+        // Initial load of habits
+        print("🔍 HomeViewState: Performing initial habits load...")
+        coreDataAdapter.loadHabits(force: true)
     }
     
     func updateHabits(_ newHabits: [Habit]) {
@@ -136,6 +143,16 @@ class HomeViewState: ObservableObject {
         // Save the corrected habits
         updateHabits(habits)
         print("🔄 HomeView: All streaks validated")
+    }
+    
+    func refreshHabits() {
+        print("🔄 HomeViewState: Manual refresh requested")
+        coreDataAdapter.loadHabits(force: true)
+        
+        // Also validate streaks
+        if !habits.isEmpty {
+            validateAllStreaks()
+        }
     }
 }
 
@@ -239,6 +256,13 @@ struct HomeView: View {
         .onAppear {
             print("🚀 HomeView: onAppear called!")
             loadHabitsOptimized()
+            
+            // Add additional debugging
+            print("🔍 HomeView: Current habits count: \(state.habits.count)")
+            print("🔍 HomeView: CoreDataAdapter habits count: \(CoreDataAdapter.shared.habits.count)")
+            
+            // Debug Core Data state
+            CoreDataAdapter.shared.debugHabitsState()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             print("🏠 HomeView: App going to background, backing up habits...")
