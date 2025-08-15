@@ -328,6 +328,14 @@ struct LoginView: View {
                             errorMessage = "Apple Sign-In request not handled. Please try again."
                         case .unknown:
                             errorMessage = "Unknown error occurred. Please try again."
+                        case .notInteractive:
+                            errorMessage = "Apple Sign-In requires user interaction. Please try again."
+                        case .matchedExcludedCredential:
+                            errorMessage = "Credential already exists. Please try a different account."
+                        case .credentialImport:
+                            errorMessage = "Credential import failed. Please try again."
+                        case .credentialExport:
+                            errorMessage = "Credential export failed. Please try again."
                         @unknown default:
                             errorMessage = "Apple Sign-In failed: \(error.localizedDescription)"
                         }

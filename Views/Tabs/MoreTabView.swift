@@ -7,6 +7,8 @@ struct MoreTabView: View {
     @State private var isVacationModeEnabled = false
     @State private var showingDateCalendarSettings = false
     @State private var showingSignOutAlert = false
+    @State private var showingProfileView = false
+    @State private var showingAccountView = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -40,6 +42,12 @@ struct MoreTabView: View {
         }
         .fullScreenCover(isPresented: $showingDateCalendarSettings) {
             DateCalendarSettingsView()
+        }
+        .sheet(isPresented: $showingProfileView) {
+            ProfileView()
+        }
+        .sheet(isPresented: $showingAccountView) {
+            AccountView()
         }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
@@ -81,7 +89,7 @@ struct MoreTabView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 24, height: 24)
-                .foregroundColor(.text01)
+                .foregroundColor(.grey200)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Vacation Mode")
@@ -112,16 +120,17 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "General Settings",
                 items: [
+                    SettingItem(title: "Account", value: nil, hasChevron: true),
                     SettingItem(title: "Language", value: "English", hasChevron: true),
                     SettingItem(title: "Theme", value: "Light", hasChevron: true),
                     SettingItem(title: "Date & Calendar", value: nil, hasChevron: true)
                 ]
             )
             
-            // Account/Notifications Group
+            // Notifications Group
             settingsGroup(
-                title: "Account & Notifications",
-                items: accountAndNotificationsItems
+                title: "Notifications",
+                items: notificationsItems
             )
             
             // Support/Legal Group
@@ -163,10 +172,21 @@ struct MoreTabView: View {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 HStack(spacing: 12) {
                     // Icon based on item type
-                    Image(systemName: iconForSetting(item.title))
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(iconColorForSetting(item.title))
-                        .frame(width: 24, height: 24)
+                    if iconForSetting(item.title).hasPrefix("Icon-") {
+                        // Custom icon
+                        Image(iconForSetting(item.title))
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(iconColorForSetting(item.title))
+                    } else {
+                        // System icon
+                        Image(systemName: iconForSetting(item.title))
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(iconColorForSetting(item.title))
+                            .frame(width: 24, height: 24)
+                    }
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
@@ -196,6 +216,8 @@ struct MoreTabView: View {
                 .onTapGesture {
                     if let action = item.action {
                         action()
+                    } else if item.title == "Account" {
+                        showingAccountView = true
                     } else if item.title == "Date & Calendar" {
                         showingDateCalendarSettings = true
                     }
@@ -228,27 +250,27 @@ struct MoreTabView: View {
     private func iconForSetting(_ title: String) -> String {
         switch title {
         case "Language":
-            return "globe"
+            return "Icon-Language_Filled"
         case "Theme":
-            return "paintbrush"
+            return "Icon-Theme_Filled"
         case "Date & Calendar":
-            return "calendar"
+            return "Icon-Calendar_Filled"
         case "Account":
-            return "person.circle"
+            return "Icon-Profile_Filled"
         case "Notifications":
-            return "bell"
+            return "Icon-Bell_Filled"
         case "Sync & Security":
             return "lock.shield"
         case "Sign Out":
             return "rectangle.portrait.and.arrow.right"
         case "FAQ":
-            return "questionmark.circle"
+            return "Icon-QuestionCircle_Filled"
         case "Contact us":
-            return "envelope"
+            return "Icon-Letter_Filled"
         case "Send Feedback":
-            return "message"
+            return "Icon-ChatRoundLike_Filled"
         case "Terms & Conditions":
-            return "doc.text"
+            return "Icon-DocumentText_Filled"
         case "Show Tutorial Again":
             return "lightbulb"
         default:
@@ -261,14 +283,38 @@ struct MoreTabView: View {
         case "Sign Out":
             return .red600
         case "Sync & Security":
-            return .navy600
+            return .navy200
         case "Notifications":
-            return .yellow600
+            return .navy200
         case "Account":
-            return .green600
+            return .navy200
+        case "Language":
+            return .navy200
+        case "Theme":
+            return .navy200
+        case "Date & Calendar":
+            return .navy200
+        case "FAQ":
+            return .navy200
+        case "Contact us":
+            return .navy200
+        case "Send Feedback":
+            return .navy200
+        case "Terms & Conditions":
+            return .navy200
         default:
-            return .grey600
+            return .navy200
         }
+    }
+    
+    private var notificationsItems: [SettingItem] {
+        var items: [SettingItem] = []
+        
+        items.append(SettingItem(title: "Notifications", hasChevron: true) {
+            // TODO: Navigate to notification settings
+        })
+        
+        return items
     }
     
     private var accountAndNotificationsItems: [SettingItem] {
@@ -276,13 +322,7 @@ struct MoreTabView: View {
         
         switch authManager.authState {
         case .authenticated:
-            // User is logged in - show profile and sign out options
-            items.append(SettingItem(title: "Account", hasChevron: true) {
-                // TODO: Navigate to account settings
-            })
-            items.append(SettingItem(title: "Notifications", hasChevron: true) {
-                // TODO: Navigate to notification settings
-            })
+            // User is logged in - show sign out option
             items.append(SettingItem(title: "Sign Out", hasChevron: false) {
                 showingSignOutAlert = true
             })
@@ -290,9 +330,6 @@ struct MoreTabView: View {
             // User is not logged in - show login option
             items.append(SettingItem(title: "Login", hasChevron: true) {
                 // TODO: Show login modal
-            })
-            items.append(SettingItem(title: "Notifications", hasChevron: true) {
-                // TODO: Navigate to notification settings
             })
         }
         

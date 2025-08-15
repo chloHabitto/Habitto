@@ -112,19 +112,19 @@ struct HeaderView: View {
                 HStack(spacing: 2) {
                     // Notification bell
                     Button(action: onNotificationTap) {
-                        Image(.iconNotification)
+                        Image("Icon-Bell_Filled")
                             .resizable()
                             .frame(width: 24, height: 24)
-                            .foregroundColor(.white)
+                            .foregroundColor(.onPrimary)
                     }
                     .frame(width: 44, height: 44)
                     
                     // Add (+) button
                     Button(action: onCreateHabit) {
-                        Image(.iconPlusCircle)
+                        Image("Icon-AddCircle_Filled")
                             .resizable()
                             .frame(width: 24, height: 24)
-                            .foregroundColor(.white)
+                            .foregroundColor(.onPrimary)
                     }
                     .frame(width: 44, height: 44)
                 }
