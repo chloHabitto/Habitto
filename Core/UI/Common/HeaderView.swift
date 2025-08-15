@@ -52,9 +52,9 @@ struct HeaderView: View {
                                 .font(.appHeadlineMediumEmphasised)
                                 .foregroundColor(.white)
                             
-                            // View Profile button with chevron (leads to login)
+                            // View Profile button with chevron (leads to profile)
                             Button(action: {
-                                // TODO: Show login modal
+                                showingProfileView = true
                             }) {
                                 HStack(spacing: 4) {
                                     Text("View Profile")
@@ -111,19 +111,20 @@ struct HeaderView: View {
                 // Notification and Add icons for other tabs
                 HStack(spacing: 2) {
                     // Notification bell
-                    Button(action: onNotificationTap) {
-                        Image("Icon-Bell_Filled")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(.onPrimary)
-                    }
-                    .frame(width: 44, height: 44)
+                    // Button(action: onNotificationTap) {
+                    //     Image("Icon-Bell_Filled")
+                    //         .resizable()
+                    //         .frame(width: 24, height: 24)
+                    //         .foregroundColor(.onPrimary)
+                    // }
+                    // .frame(width: 44, height: 44)
                     
                     // Add (+) button
                     Button(action: onCreateHabit) {
                         Image("Icon-AddCircle_Filled")
+                            .renderingMode(.template)
                             .resizable()
-                            .frame(width: 24, height: 24)
+                            .frame(width: 28, height: 28)
                             .foregroundColor(.onPrimary)
                     }
                     .frame(width: 44, height: 44)

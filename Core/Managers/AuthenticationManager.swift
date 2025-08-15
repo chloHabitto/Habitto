@@ -267,6 +267,24 @@ class AuthenticationManager: ObservableObject {
         }
     }
     
+    func updateUserEmail(newEmail: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let currentUser = Auth.auth().currentUser else {
+            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"])))
+            return
+        }
+        
+        // First send email verification, then update the email
+        currentUser.sendEmailVerification(beforeUpdatingEmail: newEmail) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
+    }
+    
     // MARK: - Validation
     func isValidEmail(_ email: String) -> Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"

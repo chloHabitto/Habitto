@@ -6,120 +6,177 @@ struct ProfileView: View {
     
     @State private var firstName: String = ""
     @State private var lastName: String = ""
+    @State private var email: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var originalFirstName: String = ""
     @State private var originalLastName: String = ""
+    @State private var originalEmail: String = ""
     @State private var showingPhotoOptions = false
+    @State private var showingSignIn = false
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
-                    // Profile Header
-                    VStack(spacing: 16) {
-                        // Profile Picture
-                        Button(action: {
-                            showingPhotoOptions = true
-                        }) {
-                            ZStack(alignment: .bottomTrailing) {
-                                Image("Default-Profile@4x")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 80, height: 80)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.primaryContainer, lineWidth: 3)
-                                    )
+                ZStack {
+                    // Main Content
+                    VStack(spacing: 24) {
+                        // Profile Header
+                        VStack(spacing: 16) {
+                            // Profile Picture
+                            Button(action: {
+                                showingPhotoOptions = true
+                            }) {
+                                ZStack(alignment: .bottomTrailing) {
+                                    Image("Default-Profile@4x")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 80, height: 80)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.primaryContainer, lineWidth: 3)
+                                        )
+                                    
+                                    // Edit Icon
+                                    Image("Icon-pen")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundColor(.primary)
+                                        .padding(2)
+                                        .background(Color.primaryContainer)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.primaryContainer, lineWidth: 2)
+                                        )
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.top, 20)
+                        
+                        // Name Fields
+                        VStack(spacing: 16) {
+                            // First Name Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("First Name")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
                                 
-                                // Edit Icon
-                                Image("Icon-pen")
-                                    .renderingMode(.template)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 24, height: 24)
-                                    .foregroundColor(.primary)
-                                    .padding(2)
-                                    .background(Color.primaryContainer)
-                                    .clipShape(Circle())
+                                TextField("Enter first name", text: $firstName)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text01)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 16)
+                                    .background(Color.surface)
                                     .overlay(
-                                        Circle()
-                                            .stroke(Color.primaryContainer, lineWidth: 2)
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.outline3, lineWidth: 1.5)
                                     )
+                                    .cornerRadius(12)
+                                    .disabled(!isLoggedIn)
+                            }
+                            
+                            // Last Name Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Last Name")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
+                                
+                                TextField("Enter last name", text: $lastName)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text01)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 16)
+                                    .background(Color.surface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.outline3, lineWidth: 1.5)
+                                    )
+                                    .cornerRadius(12)
+                                    .disabled(!isLoggedIn)
+                            }
+                            
+                            // Email Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Email")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.text01)
+                                
+                                TextField("Enter email", text: $email)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text01)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 16)
+                                    .background(Color.surface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.outline3, lineWidth: 1.5)
+                                    )
+                                    .cornerRadius(12)
+                                    .disabled(!isLoggedIn)
+                                    .keyboardType(.emailAddress)
+                                    .autocapitalization(.none)
+                                    .autocorrectionDisabled()
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(.top, 20)
-                    
-                    // Name Fields
-                    VStack(spacing: 16) {
-                        if !isLoggedIn {
-                            Text("Please log in to edit your profile")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text03)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 8)
-                        }
+                        .padding(.horizontal, 20)
                         
-                        // First Name Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("First Name")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter first name", text: $firstName)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.outline3, lineWidth: 1.5)
-                                )
-                                .cornerRadius(12)
-                                .disabled(!isLoggedIn)
-                        }
+                        Spacer()
                         
-                        // Last Name Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Last Name")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter last name", text: $lastName)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.outline3, lineWidth: 1.5)
+
+                        
+                        // Save Button
+                        VStack(spacing: 16) {
+                            HabittoButton(
+                                size: .large,
+                                style: .fillPrimary,
+                                content: .text("Save"),
+                                hugging: false
+                            ) {
+                                saveChanges()
+                            }
+                            .disabled(!hasChanges || !isLoggedIn)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                    }
+                    
+                    // Sign-in Overlay for Guest Users (on top of everything)
+                    if !isLoggedIn {
+                        // White background rectangle with gradient opacity - full screen
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(0.5),
+                                        Color.white.opacity(0.7),
+                                        Color.white.opacity(0.9),
+                                        Color.white.opacity(1.0)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
                                 )
-                                .cornerRadius(12)
-                                .disabled(!isLoggedIn)
-                        }
+                            )
+                            .ignoresSafeArea()
+                            .overlay(
+                                // Sign-in button centered
+                                VStack {
+                                    Spacer()
+                                    
+                                    HabittoButton.largeFillPrimary(
+                                        text: "Please sign-in to edit your profile"
+                                    ) {
+                                        showingSignIn = true
+                                    }
+                                    .padding(.horizontal, 16)
+                                    
+                                    Spacer()
+                                }
+                            )
                     }
-                    .padding(.horizontal, 20)
-                    
-                    Spacer()
-                    
-                    // Save Button
-                    VStack(spacing: 16) {
-                        HabittoButton(
-                            size: .large,
-                            style: .fillPrimary,
-                            content: .text("Save"),
-                            hugging: false
-                        ) {
-                            saveChanges()
-                        }
-                        .disabled(!hasChanges || !isLoggedIn)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
                 }
             }
             .navigationTitle("Profile")
@@ -146,6 +203,9 @@ struct ProfileView: View {
                 showingPhotoOptions = false
             })
         }
+        .sheet(isPresented: $showingSignIn) {
+            LoginView()
+        }
     }
     
     // MARK: - Helper Functions
@@ -159,45 +219,80 @@ struct ProfileView: View {
     }
     
     private var hasChanges: Bool {
-        return firstName != originalFirstName || lastName != originalLastName
+        return firstName != originalFirstName || lastName != originalLastName || email != originalEmail
     }
     
     private func loadUserData() {
-        if let user = authManager.currentUser,
-           let displayName = user.displayName,
-           !displayName.isEmpty {
-            // Split the display name into first and last name
-            let nameComponents = displayName.components(separatedBy: " ")
-            if nameComponents.count >= 2 {
-                firstName = nameComponents[0]
-                lastName = nameComponents[1...].joined(separator: " ")
-            } else if nameComponents.count == 1 {
-                firstName = nameComponents[0]
+        if let user = authManager.currentUser {
+            // Load display name
+            if let displayName = user.displayName,
+               !displayName.isEmpty {
+                // Split the display name into first and last name
+                let nameComponents = displayName.components(separatedBy: " ")
+                if nameComponents.count >= 2 {
+                    firstName = nameComponents[0]
+                    lastName = nameComponents[1...].joined(separator: " ")
+                } else if nameComponents.count == 1 {
+                    firstName = nameComponents[0]
+                    lastName = ""
+                }
+            } else {
+                firstName = ""
                 lastName = ""
             }
+            
+            // Load email
+            email = user.email ?? ""
         } else {
-            // User not logged in or no display name
+            // User not logged in
             firstName = ""
             lastName = ""
+            email = ""
         }
         
         // Store original values for change detection
         originalFirstName = firstName
         originalLastName = lastName
+        originalEmail = email
     }
     
     private func saveChanges() {
         // Update the user's display name in Firebase
         let newDisplayName = [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " ")
         
+        // Check if email has changed
+        let hasEmailChanged = email != originalEmail
+        
+        // Update display name first
         authManager.updateUserProfile(displayName: newDisplayName.isEmpty ? nil : newDisplayName, photoURL: nil) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    // Update original values to reflect saved state
-                    self.originalFirstName = self.firstName
-                    self.originalLastName = self.lastName
-                    print("✅ Profile updated successfully")
+                    // If email also changed, update it
+                    if hasEmailChanged {
+                        self.authManager.updateUserEmail(newEmail: self.email) { emailResult in
+                            DispatchQueue.main.async {
+                                switch emailResult {
+                                case .success:
+                                    // Update all original values to reflect saved state
+                                    self.originalFirstName = self.firstName
+                                    self.originalLastName = self.lastName
+                                    self.originalEmail = self.email
+                                    print("✅ Profile and email updated successfully")
+                                case .failure(let emailError):
+                                    print("❌ Failed to update email: \(emailError.localizedDescription)")
+                                    // Still update name values since that succeeded
+                                    self.originalFirstName = self.firstName
+                                    self.originalLastName = self.lastName
+                                }
+                            }
+                        }
+                    } else {
+                        // Only name was updated
+                        self.originalFirstName = self.firstName
+                        self.originalLastName = self.lastName
+                        print("✅ Profile updated successfully")
+                    }
                 case .failure(let error):
                     print("❌ Failed to update profile: \(error.localizedDescription)")
                 }
