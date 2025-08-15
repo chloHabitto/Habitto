@@ -100,7 +100,8 @@ struct MoreTabView: View {
                     SettingItem(title: "FAQ", value: nil, hasChevron: true),
                     SettingItem(title: "Contact us", value: nil, hasChevron: true),
                     SettingItem(title: "Send Feedback", value: nil, hasChevron: true),
-                    SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true)
+                    SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true),
+                    SettingItem(title: "About us", value: nil, hasChevron: true)
                 ]
             )
             
@@ -215,7 +216,7 @@ struct MoreTabView: View {
     private func iconForSetting(_ title: String) -> String {
         switch title {
         case "Vacation Mode":
-            return "Icon-Vacation"
+            return "Icon-Vacation_Filled"
         case "Settings":
             return "Icon-Setting_Filled"
         case "Sync & Security":
@@ -230,6 +231,8 @@ struct MoreTabView: View {
             return "Icon-ChatRoundLike_Filled"
         case "Terms & Conditions":
             return "Icon-DocumentText_Filled"
+        case "About us":
+            return "Icon-InfoCircle_Filled"
         case "Show Tutorial Again":
             return "lightbulb"
         default:
@@ -254,6 +257,8 @@ struct MoreTabView: View {
         case "Send Feedback":
             return .navy200
         case "Terms & Conditions":
+            return .navy200
+        case "About us":
             return .navy200
         default:
             return .navy200
