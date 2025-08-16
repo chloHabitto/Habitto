@@ -63,20 +63,19 @@ struct ScheduledHabitItem: View {
                 
 
             }
-            .frame(width: 80, alignment: .trailing)
             .padding(.leading, 16)
             .padding(.trailing, 8)
         }
         .padding(.trailing, 4)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(backgroundColor)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12)
                 .stroke(.outline3, lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .contentShape(Rectangle())
         .offset(x: dragOffset)
         .overlay(

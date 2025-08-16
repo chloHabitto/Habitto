@@ -139,8 +139,13 @@ struct HomeTabView: View {
     private var habitsListSection: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
-                if habitsForSelectedDate.isEmpty {
-                    emptyStateView
+                if habits.isEmpty {
+                    // No habits created in the app at all
+                    HabitEmptyStateView.noHabitsYet()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else if habitsForSelectedDate.isEmpty {
+                    // No habits for the selected tab/date
+                    emptyStateViewForTab
                         .frame(maxWidth: .infinity, alignment: .center)
                 } else {
                     ForEach(Array(habitsForSelectedDate.enumerated()), id: \.element.id) { index, habit in
@@ -161,37 +166,29 @@ struct HomeTabView: View {
     }
     
     @ViewBuilder
-    private var emptyStateView: some View {
-        VStack(spacing: 4) {
-            if habits.isEmpty {
-                // No habits at all
-                Image("Habit-List-Empty-State@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 160)
-                Text("No habits yet")
-                    .font(.appTitleLargeEmphasised)
-                    .foregroundColor(.text04)
-                Text("Create your first habit to get started")
-                    .font(.appTitleSmall)
-                    .foregroundColor(.text06)
-                    .multilineTextAlignment(.center)
-            } else {
-                // No scheduled habits for today
-                Image("Today-Habit-List-Empty-State@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 160)
-                Text("No habits today")
-                    .font(.appTitleLargeEmphasised)
-                    .foregroundColor(.text04)
-                Text("Let's relax and enjoy the day!")
-                    .font(.appTitleSmall)
-                    .foregroundColor(.text06)
-                    .multilineTextAlignment(.center)
-            }
+    private var emptyStateViewForTab: some View {
+        switch selectedStatsTab {
+        case 0: // Total tab
+            HabitEmptyStateView(
+                imageName: "Habit-List-Empty-State@4x",
+                title: "No habits for today",
+                subtitle: "Create a habit to get started"
+            )
+        case 1: // Undone tab
+            HabitEmptyStateView(
+                imageName: "Today-Habit-List-Empty-State@4x",
+                title: "All habits completed!",
+                subtitle: "Great job! All your habits are done for today"
+            )
+        case 2: // Done tab
+            HabitEmptyStateView(
+                imageName: "Habit-List-Empty-State@4x",
+                title: "No completed habits",
+                subtitle: "Start building your streak today"
+            )
+        default:
+            HabitEmptyStateView.noHabitsToday()
         }
-        .padding(.vertical, 40)
     }
     
 

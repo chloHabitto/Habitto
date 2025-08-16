@@ -184,23 +184,13 @@ struct HabitsTabView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     if habits.isEmpty {
-                        // Empty state
-                        VStack(spacing: 12) {
-                            Image(systemName: "list.bullet.circle")
-                                .font(.appDisplaySmall)
-                                .foregroundColor(.secondary)
-                            
-                            Text("No habits yet")
-                                .font(.appButtonText2)
-                                .foregroundColor(.secondary)
-                            
-                            Text("Create your first habit to get started")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 40)
-                        .padding(.horizontal, 20)
+                        // No habits created in the app at all
+                        HabitEmptyStateView.noHabitsYet()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else if filteredHabits.isEmpty {
+                        // No habits for the selected tab
+                        emptyStateViewForTab
+                            .frame(maxWidth: .infinity, alignment: .center)
                     } else {
                         LazyVStack(spacing: 12) {
                             ForEach(Array(filteredHabits.enumerated()), id: \.element.id) { index, habit in
@@ -380,6 +370,31 @@ struct HabitsTabView: View {
             return uniqueHabits
         default:
             return uniqueHabits
+        }
+    }
+    
+    // MARK: - Empty State Views
+    @ViewBuilder
+    private var emptyStateViewForTab: some View {
+        switch selectedStatsTab {
+        case 0: // Active tab
+            HabitEmptyStateView(
+                imageName: "Habit-List-Empty-State@4x",
+                title: "No active habits",
+                subtitle: "All your habits are currently inactive or completed"
+            )
+        case 1: // Inactive tab
+            HabitEmptyStateView(
+                imageName: "Today-Habit-List-Empty-State@4x",
+                title: "No inactive habits",
+                subtitle: "All your habits are currently active"
+            )
+        default:
+            HabitEmptyStateView(
+                imageName: "Habit-List-Empty-State@4x",
+                title: "No habits found",
+                subtitle: "Try adjusting your filters"
+            )
         }
     }
     
