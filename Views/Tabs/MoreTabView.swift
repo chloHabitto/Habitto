@@ -11,6 +11,11 @@ struct MoreTabView: View {
     @State private var showingVacationModeSheet = false
     @State private var showingVacationSummary = false
     @State private var showingAboutUs = false
+    @State private var showingFAQ = false
+    @State private var showingContactUs = false
+    @State private var showingSendFeedback = false
+    @State private var showingTermsConditions = false
+    @State private var showingVacationMode = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -48,6 +53,21 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingAboutUs) {
             AboutUsView()
+        }
+        .sheet(isPresented: $showingFAQ) {
+            FAQView()
+        }
+        .sheet(isPresented: $showingContactUs) {
+            ContactUsView()
+        }
+        .sheet(isPresented: $showingSendFeedback) {
+            SendFeedbackView()
+        }
+        .sheet(isPresented: $showingTermsConditions) {
+            TermsConditionsView()
+        }
+        .sheet(isPresented: $showingVacationMode) {
+            VacationModeView()
         }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) { }
@@ -92,7 +112,7 @@ struct MoreTabView: View {
                 items: [
                     SettingItem(title: "Settings", value: nil, hasChevron: true),
                     SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
-                        showingVacationModeSheet = true
+                        showingVacationMode = true
                     })
                 ]
             )
@@ -101,11 +121,21 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "Support & Legal",
                 items: [
-                    SettingItem(title: "FAQ", value: nil, hasChevron: true),
-                    SettingItem(title: "Contact us", value: nil, hasChevron: true),
-                    SettingItem(title: "Send Feedback", value: nil, hasChevron: true),
-                    SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true),
-                    SettingItem(title: "About us", value: nil, hasChevron: true)
+                    SettingItem(title: "FAQ", value: nil, hasChevron: true, action: {
+                        showingFAQ = true
+                    }),
+                    SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
+                        showingContactUs = true
+                    }),
+                    SettingItem(title: "Send Feedback", value: nil, hasChevron: true, action: {
+                        showingSendFeedback = true
+                    }),
+                    SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true, action: {
+                        showingTermsConditions = true
+                    }),
+                    SettingItem(title: "About us", value: nil, hasChevron: true, action: {
+                        showingAboutUs = true
+                    })
                 ]
             )
             
@@ -188,10 +218,6 @@ struct MoreTabView: View {
                 .onTapGesture {
                     if let action = item.action {
                         action()
-                    } else if item.title == "Settings" {
-                        showingAccountView = true
-                    } else if item.title == "About us" {
-                        showingAboutUs = true
                     }
                 }
                 

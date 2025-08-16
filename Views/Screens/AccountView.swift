@@ -17,9 +17,16 @@ struct AccountView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Account Header
+                    // Header with close button and left-aligned title
+                    ScreenHeader(
+                        title: "Settings",
+                        description: "Manage your account preferences"
+                    ) {
+                        dismiss()
+                    }
+                    
+                    // Profile Picture
                     VStack(spacing: 16) {
-                        // Profile Picture
                         Image("Default-Profile@4x")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -47,7 +54,7 @@ struct AccountView: View {
                             }
                         }
                     }
-                    .padding(.top, 20)
+                    .padding(.top, 16)
                     
                     // Account Options
                     VStack(spacing: 0) {
