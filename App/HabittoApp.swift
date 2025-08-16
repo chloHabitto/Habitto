@@ -5,6 +5,8 @@ import GoogleSignIn
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        // Configure Firebase
         FirebaseApp.configure()
         
         // Configure Google Sign-In with explicit client ID
