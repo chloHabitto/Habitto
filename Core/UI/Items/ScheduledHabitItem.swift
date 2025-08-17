@@ -73,14 +73,14 @@ struct ScheduledHabitItem: View {
         }
         .padding(.trailing, 4)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(backgroundColor)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.outline3, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.outline3, lineWidth: 2)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .contentShape(Rectangle())
         .offset(x: dragOffset)
         .overlay(
@@ -289,23 +289,38 @@ struct ScheduledHabitItem: View {
         return currentProgress >= goalAmount
     }
     
-    // Helper function to complete the habit
+    // Helper function to toggle habit completion
     private func completeHabit() {
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        let newProgress = goalAmount
         
-        print("🔄 ScheduledHabitItem: Completion button tapped for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
-        currentProgress = newProgress
-        
-        // Call the callback to save the progress
-        onProgressChange?(habit, selectedDate, newProgress)
-        
-        // Show completion sheet
-        showingCompletionSheet = true
-        
-        // Haptic feedback for completion
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        if isHabitCompleted() {
+            // If already completed, uncomplete it (set progress to 0)
+            let newProgress = 0
+            print("🔄 ScheduledHabitItem: Uncompleting habit \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+            currentProgress = newProgress
+            
+            // Call the callback to save the progress
+            onProgressChange?(habit, selectedDate, newProgress)
+            
+            // Haptic feedback for uncompletion
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        } else {
+            // If not completed, complete it (set progress to goal amount)
+            let newProgress = goalAmount
+            print("🔄 ScheduledHabitItem: Completing habit \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+            currentProgress = newProgress
+            
+            // Call the callback to save the progress
+            onProgressChange?(habit, selectedDate, newProgress)
+            
+            // Show completion sheet
+            showingCompletionSheet = true
+            
+            // Haptic feedback for completion
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
+        }
     }
 }
 
