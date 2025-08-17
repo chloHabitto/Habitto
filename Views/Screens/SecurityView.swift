@@ -4,6 +4,7 @@ struct SecurityView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingDeleteAccountAlert = false
+    @State private var showingSignOutAlert = false
     
     var body: some View {
         NavigationView {
@@ -61,18 +62,29 @@ struct SecurityView: View {
                     
                     // Delete Account Section
                     VStack(spacing: 0) {
-                        Button(action: {
-                            showingDeleteAccountAlert = true
-                        }) {
-                            Text("Delete Account")
-                                .font(.appButtonText1)
-                                .foregroundColor(.onPrimary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(Color.red500)
-                                .clipShape(RoundedRectangle(cornerRadius: 28))
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        HabittoButton(
+                            size: .large,
+                            style: .fillTertiary,
+                            content: .text("Delete Account"),
+                            action: {
+                                showingDeleteAccountAlert = true
+                            }
+                        )
+                    }
+                    .background(Color.surface)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 20)
+                    
+                    // Sign Out Section
+                    VStack(spacing: 0) {
+                        HabittoButton(
+                            size: .large,
+                            style: .fillTertiary,
+                            content: .text("Sign Out"),
+                            action: {
+                                showingSignOutAlert = true
+                            }
+                        )
                     }
                     .background(Color.surface)
                     .cornerRadius(16)
@@ -95,6 +107,15 @@ struct SecurityView: View {
             }
         } message: {
             Text("This action cannot be undone. All your data, habits, and progress will be permanently deleted.")
+        }
+        .alert("Sign Out", isPresented: $showingSignOutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                authManager.signOut()
+                dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to sign out? You'll need to sign in again to access your data.")
         }
     }
 }

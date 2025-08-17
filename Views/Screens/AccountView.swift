@@ -6,13 +6,11 @@ struct AccountView: View {
     
     // State variables for showing different screens
     @State private var showingPersonalInformation = false
-    @State private var showingSecurity = false
     @State private var showingNotifications = false
     @State private var showingDataPrivacy = false
     @State private var showingLanguage = false
     @State private var showingDateCalendar = false
     @State private var showingTheme = false
-    @State private var showingSignOutAlert = false
     
     var body: some View {
         NavigationView {
@@ -37,18 +35,6 @@ struct AccountView: View {
                                 hasChevron: true
                             ) {
                                 showingPersonalInformation = true
-                            }
-                            
-                            Divider()
-                                .padding(.leading, 56)
-                            
-                            AccountOptionRow(
-                                icon: "Icon-ShieldKeyhole_Filled",
-                                title: "Security",
-                                subtitle: "Password and authentication",
-                                hasChevron: true
-                            ) {
-                                showingSecurity = true
                             }
                             
                             Divider()
@@ -119,21 +105,6 @@ struct AccountView: View {
                     .cornerRadius(16)
                     .padding(.horizontal, 20)
                     
-                    // Sign Out Section
-                    VStack(spacing: 0) {
-                        HabittoButton(
-                            size: .large,
-                            style: .fillTertiary,
-                            content: .text("Sign Out"),
-                            action: {
-                                showingSignOutAlert = true
-                            }
-                        )
-                    }
-                    .background(Color.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    
                     Spacer()
                 }
             }
@@ -141,9 +112,6 @@ struct AccountView: View {
         }
         .sheet(isPresented: $showingPersonalInformation) {
             PersonalInformationView()
-        }
-        .sheet(isPresented: $showingSecurity) {
-            SecurityView()
         }
         .sheet(isPresented: $showingNotifications) {
             NotificationsView()
@@ -159,15 +127,6 @@ struct AccountView: View {
         }
         .sheet(isPresented: $showingTheme) {
             ThemeView()
-        }
-        .alert("Sign Out", isPresented: $showingSignOutAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Sign Out", role: .destructive) {
-                authManager.signOut()
-                dismiss()
-            }
-        } message: {
-            Text("Are you sure you want to sign out?")
         }
     }
 }
