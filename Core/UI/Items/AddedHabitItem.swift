@@ -29,6 +29,7 @@ struct AddedHabitItem: View {
             
             // SelectedIcon
             HabitIconView(habit: habit)
+                .padding(.top, 8)
             
             // VStack with title, description, and bottom row
             VStack(spacing: 8) {
@@ -81,11 +82,11 @@ struct AddedHabitItem: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         } label: {
-                            Image(.iconMoreVert)
-                                .resizable()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(.text06)
-                                .contentShape(Rectangle())
+                                                    Image(.iconMoreVert)
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.text05)
+                            .contentShape(Rectangle())
                         }
                         .frame(width: 40, height: 40)
                         .opacity(isEditMode ? 0 : 1)
@@ -123,15 +124,15 @@ struct AddedHabitItem: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
+            .padding(.top, 8)
             .padding(.bottom, 14)
         }
         .background(.surface)
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(.outline3, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(.outline3, lineWidth: 2)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .contentShape(Rectangle())
     }
     
