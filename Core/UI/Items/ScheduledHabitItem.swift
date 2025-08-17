@@ -25,6 +25,20 @@ struct ScheduledHabitItem: View {
         }
     }
     
+    // Computed property for completion button to simplify complex expression
+    private var completionButton: some View {
+        Button(action: {
+            completeHabit()
+        }) {
+            Image(systemName: isHabitCompleted() ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 24))
+                .foregroundColor(isHabitCompleted() ? .pastelBlue500 : .primaryContainerFocus)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
     var body: some View {
         HStack(spacing: 12) {
             // ColorMark
@@ -36,7 +50,7 @@ struct ScheduledHabitItem: View {
             // SelectedIcon
             HabitIconView(habit: habit)
             
-            // VStack with title and description
+            // VStack with title and progress
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
                     .font(.appTitleMediumEmphasised)
@@ -44,7 +58,7 @@ struct ScheduledHabitItem: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 
-                Text(habit.description.isEmpty ? "No description" : habit.description)
+                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
                     .font(.appBodyExtraSmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -53,18 +67,9 @@ struct ScheduledHabitItem: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 16)
             
-            // Goal Progress
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.text05)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                
-
-            }
-            .padding(.leading, 16)
-            .padding(.trailing, 8)
+            // Completion Button
+            completionButton
+                .padding(.trailing, 8)
         }
         .padding(.trailing, 4)
         .background(
@@ -276,6 +281,31 @@ struct ScheduledHabitItem: View {
         
         // Return the first number found, or default to 1 if none found
         return numbers.first ?? 1
+    }
+    
+    // Helper function to check if habit is completed for the selected date
+    private func isHabitCompleted() -> Bool {
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+        return currentProgress >= goalAmount
+    }
+    
+    // Helper function to complete the habit
+    private func completeHabit() {
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+        let newProgress = goalAmount
+        
+        print("🔄 ScheduledHabitItem: Completion button tapped for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+        currentProgress = newProgress
+        
+        // Call the callback to save the progress
+        onProgressChange?(habit, selectedDate, newProgress)
+        
+        // Show completion sheet
+        showingCompletionSheet = true
+        
+        // Haptic feedback for completion
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
     }
 }
 
