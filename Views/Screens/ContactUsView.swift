@@ -45,11 +45,11 @@ struct ContactUsView: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             // Header
-                            ScreenHeader(
-                                title: "Contact Us",
+                ScreenHeader(
+                    title: "Contact Us",
                                 description: "We'd love to hear from you"
-                            ) {
-                                dismiss()
+                ) {
+                    dismiss()
                             }
                             .padding(.top, 16)
                             .padding(.bottom, 24)
@@ -281,8 +281,8 @@ struct ContactUsView: View {
                         .foregroundColor(.primary)
                     }
                 }
-        }
-        .padding(.horizontal, 20)
+                }
+                .padding(.horizontal, 20)
     }
     
     // MARK: - Submit Button

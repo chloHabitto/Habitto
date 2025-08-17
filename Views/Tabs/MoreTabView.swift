@@ -110,7 +110,9 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "General Settings",
                 items: [
-                    SettingItem(title: "Settings", value: nil, hasChevron: true),
+                    SettingItem(title: "Settings", value: nil, hasChevron: true, action: {
+                        showingAccountView = true
+                    }),
                     SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
                         showingVacationMode = true
                     })
@@ -121,30 +123,20 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "Support & Legal",
                 items: [
+                    SettingItem(title: "About us", value: nil, hasChevron: true, action: {
+                        showingAboutUs = true
+                    }),
+                    SettingItem(title: "Tutorial & Tips", value: nil, hasChevron: true, action: {
+                        tutorialManager.resetTutorial()
+                    }),
                     SettingItem(title: "FAQ", value: nil, hasChevron: true, action: {
                         showingFAQ = true
                     }),
                     SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
                         showingContactUs = true
                     }),
-                    SettingItem(title: "Send Feedback", value: nil, hasChevron: true, action: {
-                        showingSendFeedback = true
-                    }),
                     SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true, action: {
                         showingTermsConditions = true
-                    }),
-                    SettingItem(title: "About us", value: nil, hasChevron: true, action: {
-                        showingAboutUs = true
-                    })
-                ]
-            )
-            
-            // Tutorial Group
-            settingsGroup(
-                title: "Tutorial",
-                items: [
-                    SettingItem(title: "Show Tutorial Again", value: nil, hasChevron: false, action: {
-                        tutorialManager.resetTutorial()
                     })
                 ]
             )
@@ -264,9 +256,9 @@ struct MoreTabView: View {
         case "Terms & Conditions":
             return "Icon-DocumentText_Filled"
         case "About us":
-            return "Icon-InfoCircle_Filled"
-        case "Show Tutorial Again":
-            return "lightbulb"
+            return "Icon-ChatRoundLike_Filled"
+        case "Tutorial & Tips":
+            return "Icon-Notes_Filled"
         default:
             return "heart"
         }

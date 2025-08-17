@@ -153,20 +153,6 @@ struct AccountView: View {
                 }
             }
             .background(Color.surface2)
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                }
-            }
         }
         .sheet(isPresented: $showingPersonalInformation) {
             PersonalInformationView()
