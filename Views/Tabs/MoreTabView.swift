@@ -5,7 +5,6 @@ struct MoreTabView: View {
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
-    @State private var showingSignOutAlert = false
     @State private var showingProfileView = false
     @State private var showingAccountView = false
     @State private var showingVacationModeSheet = false
@@ -68,14 +67,6 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingVacationMode) {
             VacationModeView()
-        }
-        .alert("Sign Out", isPresented: $showingSignOutAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Sign Out", role: .destructive) {
-                authManager.signOut()
-            }
-        } message: {
-            Text("Are you sure you want to sign out? You'll need to sign in again to access your data.")
         }
     }
     
@@ -243,16 +234,10 @@ struct MoreTabView: View {
             return "Icon-Vacation_Filled"
         case "Settings":
             return "Icon-Setting_Filled"
-        case "Sync & Security":
-            return "lock.shield"
-        case "Sign Out":
-            return "rectangle.portrait.and.arrow.right"
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":
             return "Icon-Letter_Filled"
-        case "Send Feedback":
-            return "Icon-ChatRoundLike_Filled"
         case "Terms & Conditions":
             return "Icon-DocumentText_Filled"
         case "About us":
@@ -266,10 +251,6 @@ struct MoreTabView: View {
     
     private func iconColorForSetting(_ title: String) -> Color {
         switch title {
-        case "Sign Out":
-            return .red600
-        case "Sync & Security":
-            return .navy200
         case "Settings":
             return .navy200
         case "Vacation Mode":
@@ -278,8 +259,6 @@ struct MoreTabView: View {
             return .navy200
         case "Contact us":
             return .navy200
-        case "Send Feedback":
-            return .navy200
         case "Terms & Conditions":
             return .navy200
         case "About us":
@@ -287,25 +266,6 @@ struct MoreTabView: View {
         default:
             return .navy200
         }
-    }
-    
-    private var accountAndNotificationsItems: [SettingItem] {
-        var items: [SettingItem] = []
-        
-        switch authManager.authState {
-        case .authenticated:
-            // User is logged in - show sign out option
-            items.append(SettingItem(title: "Sign Out", hasChevron: false) {
-                showingSignOutAlert = true
-            })
-        case .unauthenticated, .error, .authenticating:
-            // User is not logged in - show login option
-            items.append(SettingItem(title: "Login", hasChevron: true) {
-                // TODO: Show login modal
-            })
-        }
-        
-        return items
     }
 }
 
