@@ -15,6 +15,7 @@ struct MoreTabView: View {
     @State private var showingSendFeedback = false
     @State private var showingTermsConditions = false
     @State private var showingVacationMode = false
+    @State private var showingSecurity = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -68,6 +69,9 @@ struct MoreTabView: View {
         .sheet(isPresented: $showingVacationMode) {
             VacationModeView()
         }
+        .sheet(isPresented: $showingSecurity) {
+            SecurityView()
+        }
     }
     
     // MARK: - Trial Banner
@@ -106,6 +110,9 @@ struct MoreTabView: View {
                     }),
                     SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
                         showingVacationMode = true
+                    }),
+                    SettingItem(title: "Security", value: nil, hasChevron: true, action: {
+                        showingSecurity = true
                     })
                 ]
             )
@@ -234,6 +241,8 @@ struct MoreTabView: View {
             return "Icon-Vacation_Filled"
         case "Settings":
             return "Icon-Setting_Filled"
+        case "Security":
+            return "Icon-ShieldKeyhole_Filled"
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":
@@ -254,6 +263,8 @@ struct MoreTabView: View {
         case "Settings":
             return .navy200
         case "Vacation Mode":
+            return .navy200
+        case "Security":
             return .navy200
         case "FAQ":
             return .navy200
