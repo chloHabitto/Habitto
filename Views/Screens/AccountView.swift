@@ -12,6 +12,7 @@ struct AccountView: View {
     @State private var showingLanguage = false
     @State private var showingDateCalendar = false
     @State private var showingTheme = false
+    @State private var showingSignOutAlert = false
     
     var body: some View {
         NavigationView {
@@ -24,37 +25,6 @@ struct AccountView: View {
                     ) {
                         dismiss()
                     }
-                    
-                    // Profile Picture
-                    VStack(spacing: 16) {
-                        Image("Default-Profile@4x")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.primaryContainer, lineWidth: 3)
-                            )
-                        
-                        // User Info
-                        VStack(spacing: 8) {
-                            if let user = authManager.currentUser {
-                                if let displayName = user.displayName, !displayName.isEmpty {
-                                    Text(displayName)
-                                        .font(.appHeadlineMediumEmphasised)
-                                        .foregroundColor(.text01)
-                                }
-                                
-                                if let email = user.email {
-                                    Text(email)
-                                        .font(.appBodyMedium)
-                                        .foregroundColor(.text03)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.top, 16)
                     
                     // Account Options
                     VStack(spacing: 0) {
@@ -127,7 +97,7 @@ struct AccountView: View {
                         AccountOptionRow(
                             icon: "Icon-Calendar_Filled",
                             title: "Date & Calendar",
-                            subtitle: "Manage date and calendar preferences",
+                            subtitle: "Set your date and calendar preferences",
                             hasChevron: true
                         ) {
                             showingDateCalendar = true
@@ -137,13 +107,28 @@ struct AccountView: View {
                             .padding(.leading, 56)
                         
                         AccountOptionRow(
-                            icon: "Icon-Theme_Filled",
+                            icon: "Icon-Palette_Filled",
                             title: "Theme",
                             subtitle: "Choose your preferred app theme",
                             hasChevron: true
                         ) {
                             showingTheme = true
                         }
+                    }
+                    .background(Color.surface)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 20)
+                    
+                    // Sign Out Section
+                    VStack(spacing: 0) {
+                        HabittoButton(
+                            size: .large,
+                            style: .fillTertiary,
+                            content: .text("Sign Out"),
+                            action: {
+                                showingSignOutAlert = true
+                            }
+                        )
                     }
                     .background(Color.surface)
                     .cornerRadius(16)
@@ -174,6 +159,15 @@ struct AccountView: View {
         }
         .sheet(isPresented: $showingTheme) {
             ThemeView()
+        }
+        .alert("Sign Out", isPresented: $showingSignOutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                authManager.signOut()
+                dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
         }
     }
 }
