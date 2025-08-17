@@ -3,6 +3,7 @@ import SwiftUI
 struct SecurityView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
+    @State private var showingPersonalInformation = false
     @State private var showingDeleteAccountAlert = false
     @State private var showingSignOutAlert = false
     
@@ -12,14 +13,27 @@ struct SecurityView: View {
                 VStack(spacing: 24) {
                     // Header with close button and left-aligned title
                     ScreenHeader(
-                        title: "Security",
-                        description: "Manage your account security and authentication"
+                        title: "Account",
+                        description: "Manage your account settings and security"
                     ) {
                         dismiss()
                     }
                     
-                    // Security Options
+                    // Account Options
                     VStack(spacing: 0) {
+                        // Personal Information
+                        AccountOptionRow(
+                            icon: "Icon-Profile_Filled",
+                            title: "Personal Information",
+                            subtitle: "Manage your personal details",
+                            hasChevron: true
+                        ) {
+                            showingPersonalInformation = true
+                        }
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
                         // Password Management
                         AccountOptionRow(
                             icon: "Icon-ShieldKeyhole_Filled",
@@ -96,6 +110,9 @@ struct SecurityView: View {
                 .padding(.top, 0)
                 .padding(.bottom, 20)
             }
+        }
+        .sheet(isPresented: $showingPersonalInformation) {
+            PersonalInformationView()
         }
         .background(Color.surface2)
         .navigationBarHidden(true)

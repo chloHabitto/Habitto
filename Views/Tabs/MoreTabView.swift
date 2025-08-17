@@ -6,7 +6,6 @@ struct MoreTabView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
     @State private var showingProfileView = false
-    @State private var showingAccountView = false
     @State private var showingVacationModeSheet = false
     @State private var showingVacationSummary = false
     @State private var showingAboutUs = false
@@ -16,6 +15,9 @@ struct MoreTabView: View {
     @State private var showingTermsConditions = false
     @State private var showingVacationMode = false
     @State private var showingSecurity = false
+    @State private var showingDataPrivacy = false
+    @State private var showingNotifications = false
+    @State private var showingPreferences = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -41,9 +43,6 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingProfileView) {
             ProfileView()
-        }
-        .sheet(isPresented: $showingAccountView) {
-            AccountView()
         }
         .sheet(isPresented: $showingVacationModeSheet) {
             VacationModeSheet()
@@ -71,6 +70,15 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingSecurity) {
             SecurityView()
+        }
+        .sheet(isPresented: $showingDataPrivacy) {
+            DataPrivacyView()
+        }
+        .sheet(isPresented: $showingNotifications) {
+            NotificationsView()
+        }
+        .sheet(isPresented: $showingPreferences) {
+            PreferencesView()
         }
     }
     
@@ -105,14 +113,20 @@ struct MoreTabView: View {
             settingsGroup(
                 title: "General Settings",
                 items: [
-                    SettingItem(title: "Settings", value: nil, hasChevron: true, action: {
-                        showingAccountView = true
-                    }),
                     SettingItem(title: "Vacation Mode", value: vacationManager.isActive ? "On" : "Off", hasChevron: true, action: {
                         showingVacationMode = true
                     }),
-                    SettingItem(title: "Security", value: nil, hasChevron: true, action: {
+                    SettingItem(title: "Account", value: nil, hasChevron: true, action: {
                         showingSecurity = true
+                    }),
+                    SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
+                        showingDataPrivacy = true
+                    }),
+                    SettingItem(title: "Notifications", value: nil, hasChevron: true, action: {
+                        showingNotifications = true
+                    }),
+                    SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
+                        showingPreferences = true
                     })
                 ]
             )
@@ -239,10 +253,14 @@ struct MoreTabView: View {
         switch title {
         case "Vacation Mode":
             return "Icon-Vacation_Filled"
-        case "Settings":
+        case "Account":
+            return "Icon-Profile_Filled"
+        case "Data & Privacy":
+            return "Icon-Cloud_Filled"
+        case "Notifications":
+            return "Icon-Bell_Filled"
+        case "Preferences":
             return "Icon-Setting_Filled"
-        case "Security":
-            return "Icon-ShieldKeyhole_Filled"
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":
@@ -260,11 +278,15 @@ struct MoreTabView: View {
     
     private func iconColorForSetting(_ title: String) -> Color {
         switch title {
-        case "Settings":
-            return .navy200
         case "Vacation Mode":
             return .navy200
-        case "Security":
+        case "Account":
+            return .navy200
+        case "Data & Privacy":
+            return .navy200
+        case "Notifications":
+            return .navy200
+        case "Preferences":
             return .navy200
         case "FAQ":
             return .navy200

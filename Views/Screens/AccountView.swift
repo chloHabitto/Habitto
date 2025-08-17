@@ -5,12 +5,7 @@ struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
     
     // State variables for showing different screens
-    @State private var showingPersonalInformation = false
-    @State private var showingNotifications = false
     @State private var showingDataPrivacy = false
-    @State private var showingLanguage = false
-    @State private var showingDateCalendar = false
-    @State private var showingTheme = false
     
     var body: some View {
         NavigationView {
@@ -29,32 +24,8 @@ struct AccountView: View {
                         // Account Settings
                         VStack(spacing: 0) {
                             AccountOptionRow(
-                                icon: "Icon-Profile_Filled",
-                                title: "Personal Information",
-                                subtitle: "Manage your personal details",
-                                hasChevron: true
-                            ) {
-                                showingPersonalInformation = true
-                            }
-                            
-                            Divider()
-                                .padding(.leading, 56)
-                            
-                            AccountOptionRow(
-                                icon: "Icon-Bell_Filled",
-                                title: "Notifications",
-                                subtitle: "Manage your notification preferences",
-                                hasChevron: true
-                            ) {
-                                showingNotifications = true
-                            }
-                            
-                            Divider()
-                                .padding(.leading, 56)
-                            
-                            AccountOptionRow(
                                 icon: "Icon-Cloud_Filled",
-                                title: "Data & Privacy",
+                                title: "Data Management",
                                 subtitle: "Manage your data and privacy settings",
                                 hasChevron: true
                             ) {
@@ -66,67 +37,13 @@ struct AccountView: View {
                         .padding(.horizontal, 20)
                     }
                     
-                    // App Settings
-                    VStack(spacing: 0) {
-                        AccountOptionRow(
-                            icon: "Icon-Language_Filled",
-                            title: "Language",
-                            subtitle: "Choose your preferred language",
-                            hasChevron: true
-                        ) {
-                            showingLanguage = true
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        AccountOptionRow(
-                            icon: "Icon-Calendar_Filled",
-                            title: "Date & Calendar",
-                            subtitle: "Set your date and calendar preferences",
-                            hasChevron: true
-                        ) {
-                            showingDateCalendar = true
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        AccountOptionRow(
-                            icon: "Icon-Palette_Filled",
-                            title: "Theme",
-                            subtitle: "Choose your preferred app theme",
-                            hasChevron: true
-                        ) {
-                            showingTheme = true
-                        }
-                    }
-                    .background(Color.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    
                     Spacer()
                 }
             }
             .background(Color.surface2)
         }
-        .sheet(isPresented: $showingPersonalInformation) {
-            PersonalInformationView()
-        }
-        .sheet(isPresented: $showingNotifications) {
-            NotificationsView()
-        }
         .sheet(isPresented: $showingDataPrivacy) {
             DataPrivacyView()
-        }
-        .sheet(isPresented: $showingLanguage) {
-            LanguageView()
-        }
-        .sheet(isPresented: $showingDateCalendar) {
-            DateCalendarView()
-        }
-        .sheet(isPresented: $showingTheme) {
-            ThemeView()
         }
     }
 }
