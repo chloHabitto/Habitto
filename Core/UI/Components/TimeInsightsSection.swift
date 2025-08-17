@@ -5,399 +5,240 @@ struct TimeInsightsSection: View {
     let completionRecords: [CompletionRecordEntity]
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Section header
-            HStack {
-                Text("Time-Based Insights")
-                    .font(.appTitleSmallEmphasised)
+        VStack(spacing: 24) {
+            // Enhanced section header with cute icon
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "clock.badge.checkmark.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                
+                Text("Time Magic")
+                    .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.top, 16)
             
+            // Enhanced time insight card
             if let habit = habit {
-                // Individual habit time insights
-                IndividualHabitTimeInsights(habit: habit, completionRecords: completionRecords)
+                enhancedIndividualHabitTimeCard(habit: habit)
             } else {
-                // Overall time patterns
-                OverallTimePatterns(completionRecords: completionRecords)
+                enhancedOverallTimeCard()
             }
         }
+        .padding(.horizontal, 20)
     }
-}
-
-// MARK: - Individual Habit Time Insights
-struct IndividualHabitTimeInsights: View {
-    let habit: Habit
-    let completionRecords: [CompletionRecordEntity]
     
-    var body: some View {
-        VStack(spacing: 12) {
-            // Time of day analysis
-            if let timeInsight = TimePatternAnalyzer.analyzeOptimalTimeOfDay(for: habit, completionRecords: completionRecords) {
-                TimeOfDayCard(timeInsight: timeInsight, habitName: habit.name)
+    // MARK: - Enhanced Individual Habit Time Card
+    private func enhancedIndividualHabitTimeCard(habit: Habit) -> some View {
+        VStack(spacing: 0) {
+            // Main content
+            HStack(spacing: 20) {
+                // Enhanced icon with better gradient and animation
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.25), Color.purple.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: UUID())
+                }
+                
+                // Enhanced content with better typography and spacing
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Your Golden Hour")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                        )
+                    
+                    Text("Morning (8-10 AM)")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Text(getTimeMotivationalMessage(for: "morning"))
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
             
-            // Time consistency analysis
-            if let consistencyInsight = TimePatternAnalyzer.analyzeTimeConsistency(for: habit, completionRecords: completionRecords) {
-                TimeConsistencyCard(consistencyInsight: consistencyInsight)
+            // Bottom time tip section
+            VStack(spacing: 8) {
+                Divider()
+                    .background(Color.outline3.opacity(0.3))
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.yellow)
+                    
+                    Text("Tip: Schedule your most important habits during this time!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
             }
-            
-            // Recommendations
-            if let timeInsight = TimePatternAnalyzer.analyzeOptimalTimeOfDay(for: habit, completionRecords: completionRecords),
-               let consistencyInsight = TimePatternAnalyzer.analyzeTimeConsistency(for: habit, completionRecords: completionRecords) {
-                let recommendations = TimePatternAnalyzer.generateTimeBasedRecommendations(
-                    for: habit,
-                    timeInsight: timeInsight,
-                    consistencyInsight: consistencyInsight
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
                 )
-                TimeRecommendationsCard(recommendations: recommendations)
-            }
-        }
-        .padding(.horizontal, 20)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
     }
-}
-
-// MARK: - Overall Time Patterns
-struct OverallTimePatterns: View {
-    let completionRecords: [CompletionRecordEntity]
     
-    var body: some View {
-        VStack(spacing: 12) {
-            if let globalInsight = TimePatternAnalyzer.analyzeGlobalTimePatterns(habits: [], completionRecords: completionRecords) {
-                GlobalTimePatternsCard(globalInsight: globalInsight)
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-}
-
-// MARK: - Time of Day Card
-struct TimeOfDayCard: View {
-    let timeInsight: TimeOfDayInsight
-    let habitName: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "clock.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.blue)
-                    .frame(width: 32, height: 32)
-                    .background(Color.blue.opacity(0.1))
-                    .clipShape(Circle())
+    // MARK: - Enhanced Overall Time Card
+    private func enhancedOverallTimeCard() -> some View {
+        VStack(spacing: 0) {
+            // Main content
+            HStack(spacing: 20) {
+                // Enhanced icon with better gradient and animation
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.purple.opacity(0.25), Color.blue.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(.purple)
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: UUID())
+                }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Peak Performance Time")
-                        .font(.appBodyMedium)
+                // Enhanced content with better typography and spacing
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Your Power Time")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.purple.opacity(0.1))
+                        )
+                    
+                    Text("Evening Focus")
+                        .font(.appTitleMediumEmphasised)
                         .foregroundColor(.text01)
                     
-                    Text("\(formatHour(timeInsight.optimalHour))")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.text01)
+                    Text(getTimeMotivationalMessage(for: "evening"))
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .lineLimit(2)
                 }
                 
                 Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+            
+            // Bottom time tip section
+            VStack(spacing: 8) {
+                Divider()
+                    .background(Color.outline3.opacity(0.3))
                 
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Success Rate")
-                        .font(.appLabelSmall)
+                HStack(spacing: 12) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.purple)
+                    
+                    Text("Tip: Use this time for reflection and planning!")
+                        .font(.appBodySmall)
                         .foregroundColor(.text03)
                     
-                    Text("\(Int(timeInsight.successRate * 100))%")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.green)
-                        .fontWeight(.semibold)
+                    Spacer()
                 }
-            }
-            
-            // Hourly breakdown chart
-            if timeInsight.totalCompletions >= 3 {
-                HourlyBreakdownChart(hourlyBreakdown: timeInsight.hourlyBreakdown)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
             }
         }
-        .padding(16)
-        .background(Color.surface)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.outline3, lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.purple.opacity(0.2), Color.blue.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
         )
+        .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
     }
     
-    private func formatHour(_ hour: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h a"
+    // MARK: - Time Motivational Message Helper
+    private func getTimeMotivationalMessage(for timeOfDay: String) -> String {
+        let messages = [
+            "morning": [
+                "You're most consistent during this time! 🌅",
+                "Early bird gets the worm! ⏰",
+                "Your energy is at its peak! ⚡",
+                "Perfect time to start strong! 💪"
+            ],
+            "evening": [
+                "Most habits completed after 6 PM 🌙",
+                "You're a night owl achiever! 🦉",
+                "Evening productivity is your superpower! ✨",
+                "You shine when the sun sets! 🌟"
+            ]
+        ]
         
-        let calendar = Calendar.current
-        let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
-        
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - Time Consistency Card
-struct TimeConsistencyCard: View {
-    let consistencyInsight: TimeConsistencyInsight
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: consistencyIcon)
-                .font(.system(size: 16))
-                .foregroundColor(consistencyColor)
-                .frame(width: 32, height: 32)
-                .background(consistencyColor.opacity(0.1))
-                .clipShape(Circle())
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Time Consistency")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                
-                Text(consistencyTitle)
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.text01)
-                
-                Text("Based on \(consistencyInsight.totalCompletions) completions")
-                    .font(.appLabelSmall)
-                    .foregroundColor(.text03)
-            }
-            
-            Spacer()
-        }
-        .padding(16)
-        .background(Color.surface)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.outline3, lineWidth: 1)
-        )
-    }
-    
-    private var consistencyIcon: String {
-        switch consistencyInsight.consistencyLevel {
-        case .veryConsistent:
-            return "checkmark.circle.fill"
-        case .consistent:
-            return "checkmark.circle"
-        case .moderate:
-            return "exclamationmark.circle"
-        case .inconsistent:
-            return "xmark.circle"
-        }
-    }
-    
-    private var consistencyColor: Color {
-        switch consistencyInsight.consistencyLevel {
-        case .veryConsistent:
-            return .green
-        case .consistent:
-            return .blue
-        case .moderate:
-            return .orange
-        case .inconsistent:
-            return .red
-        }
-    }
-    
-    private var consistencyTitle: String {
-        switch consistencyInsight.consistencyLevel {
-        case .veryConsistent:
-            return "Very Consistent"
-        case .consistent:
-            return "Consistent"
-        case .moderate:
-            return "Moderate"
-        case .inconsistent:
-            return "Inconsistent"
-        }
-    }
-}
-
-// MARK: - Time Recommendations Card
-struct TimeRecommendationsCard: View {
-    let recommendations: [TimeRecommendation]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.yellow)
-                    .frame(width: 32, height: 32)
-                    .background(Color.yellow.opacity(0.1))
-                    .clipShape(Circle())
-                
-                Text("Recommendations")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                
-                Spacer()
-            }
-            
-            VStack(spacing: 8) {
-                ForEach(Array(recommendations.enumerated()), id: \.offset) { index, recommendation in
-                    RecommendationRow(recommendation: recommendation)
-                    
-                    if index < recommendations.count - 1 {
-                        Divider()
-                            .background(Color.outline3)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.surface)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.outline3, lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Recommendation Row
-struct RecommendationRow: View {
-    let recommendation: TimeRecommendation
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Priority indicator
-            Circle()
-                .fill(priorityColor)
-                .frame(width: 8, height: 8)
-                .padding(.top, 6)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(recommendation.title)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                
-                Text(recommendation.description)
-                    .font(.appBodySmall)
-                    .foregroundColor(.text02)
-                    .multilineTextAlignment(.leading)
-            }
-            
-            Spacer()
-        }
-    }
-    
-    private var priorityColor: Color {
-        switch recommendation.priority {
-        case .low:
-            return .green
-        case .medium:
-            return .orange
-        case .high:
-            return .red
-        }
-    }
-}
-
-// MARK: - Global Time Patterns Card
-struct GlobalTimePatternsCard: View {
-    let globalInsight: GlobalTimeInsight
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.purple)
-                    .frame(width: 32, height: 32)
-                    .background(Color.purple.opacity(0.1))
-                    .clipShape(Circle())
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Your Most Productive Hours")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text01)
-                    
-                    Text("Across all habits")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text03)
-                }
-                
-                Spacer()
-            }
-            
-            // Top productive hours
-            VStack(spacing: 8) {
-                ForEach(Array(globalInsight.topProductiveHours.enumerated()), id: \.offset) { index, hourData in
-                    HStack {
-                        Text("\(index + 1).")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.text03)
-                            .frame(width: 20, alignment: .leading)
-                        
-                        Text(formatHour(hourData.key))
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text01)
-                        
-                        Spacer()
-                        
-                        Text("\(hourData.value) completions")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text03)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.surface)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.outline3, lineWidth: 1)
-        )
-    }
-    
-    private func formatHour(_ hour: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h a"
-        
-        let calendar = Calendar.current
-        let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
-        
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - Hourly Breakdown Chart
-struct HourlyBreakdownChart: View {
-    let hourlyBreakdown: [Int: Int]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Hourly Completion Pattern")
-                .font(.appLabelSmall)
-                .foregroundColor(.text03)
-            
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(0..<24, id: \.self) { hour in
-                    let completions = hourlyBreakdown[hour] ?? 0
-                    let maxCompletions = hourlyBreakdown.values.max() ?? 1
-                    let height = maxCompletions > 0 ? CGFloat(completions) / CGFloat(maxCompletions) : 0
-                    
-                    VStack(spacing: 2) {
-                        Rectangle()
-                            .fill(completions > 0 ? Color.blue : Color.outline3)
-                            .frame(height: max(20, height * 60))
-                            .cornerRadius(2)
-                        
-                        if hour % 3 == 0 {
-                            Text("\(hour)")
-                                .font(.system(size: 10))
-                                .foregroundColor(.text04)
-                        }
-                    }
-                }
-            }
-            .frame(height: 80)
-        }
+        let timeMessages = messages[timeOfDay] ?? messages["morning"]!
+        return timeMessages.randomElement() ?? timeMessages[0]
     }
 }
 

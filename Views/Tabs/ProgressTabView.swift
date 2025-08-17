@@ -18,19 +18,63 @@ struct ProgressTabView: View {
     // MARK: - Calendar Helper Functions
     // Moved to ProgressCalendarHelper.swift
     
-    // MARK: - Independent Today's Progress Container
-    private var independentTodaysProgressContainer: some View {
+    // MARK: - Today's Progress Summary (Simplified Card)
+    private var todaysProgressSummary: some View {
         Group {
             if !habits.isEmpty {
-                VStack(alignment: .leading, spacing: 20) {
-                    ProgressChartComponents.ProgressCard(
-                        title: "Today's Goal Progress",
-                        subtitle: "Great progress! Keep building your habits!",
-                        progress: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits),
-                        progressRingSize: 52
-                    )
+                VStack(spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Today's Progress")
+                                .font(.appTitleMediumEmphasised)
+                                .foregroundColor(.onPrimaryContainer)
+                            
+                            Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text02)
+                        }
+                        
+                        Spacer()
+                        
+                        // Circular progress ring on the right
+                        ZStack {
+                            Circle()
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
+                                .frame(width: 60, height: 60)
+                            
+                            Circle()
+                                .trim(from: 0, to: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [Color.primary, Color.primary.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                )
+                                .frame(width: 60, height: 60)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 1.0), value: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
+                            
+                            Text("\(Int(ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits) * 100))%")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
+                .padding(.vertical, 20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
                 .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
         }
     }
@@ -146,23 +190,23 @@ struct ProgressTabView: View {
                         }
                     }
                 )
-            .simultaneousGesture(
-                DragGesture()
-                    .onEnded { value in
-                        let threshold: CGFloat = 50
-                        // Only trigger month change for horizontal swipes
-                        if abs(value.translation.width) > abs(value.translation.height) {
-                            if value.translation.width > threshold {
-                                // Swipe right - go to previous month
+                .simultaneousGesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = 50
+                            // Only trigger month change for horizontal swipes
+                            if abs(value.translation.width) > abs(value.translation.height) {
+                                if value.translation.width > threshold {
+                                    // Swipe right - go to previous month
                                     calendarHelper.previousMonth()
-                            } else if value.translation.width < -threshold {
-                                // Swipe left - go to next month
+                                } else if value.translation.width < -threshold {
+                                    // Swipe left - go to next month
                                     calendarHelper.nextMonth()
                                 }
                             }
                         }
                 )
-                    }
+            }
             .padding(20)
             .cornerRadius(20)
             .overlay(
@@ -224,7 +268,7 @@ struct ProgressTabView: View {
                         selectedHabitType: selectedHabitType
                     )
                 )),
-                progressTrendText: ProgressTrendHelper.progressTrendText(for: ProgressTrendHelper.progressTrend(
+                progressTrendText: ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
@@ -261,186 +305,169 @@ struct ProgressTabView: View {
         .padding(.top, 20)
     }
     
-    // MARK: - Difficulty Insights Section
+    // MARK: - Enhanced Difficulty Insights Section
     private var difficultyInsightsSection: some View {
-        VStack(spacing: 16) {
-            // Section header
-            HStack {
-                Text("Difficulty Insights")
-                    .font(.appTitleSmallEmphasised)
+        VStack(spacing: 24) {
+            // Enhanced section header with cute icon
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.orange.opacity(0.2), Color.red.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.orange)
+                }
+                
+                Text("Challenge Corner")
+                    .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
                 Spacer()
             }
             .padding(.horizontal, 20)
             
-            // Difficulty insights content
-            VStack(spacing: 12) {
-                // Most difficult habit this month
-                if let mostDifficultHabit = getMostDifficultHabit() {
-                    difficultyInsightCard(
-                        title: "Most Challenging",
-                        subtitle: mostDifficultHabit.name,
-                        description: "Average difficulty: \(getAverageDifficulty(for: mostDifficultHabit))",
-                        color: .red,
-                        icon: "exclamationmark.triangle.fill"
-                    )
-                }
-                
-                // Difficulty trend
-                if let difficultyTrend = getDifficultyTrend() {
-                    difficultyInsightCard(
-                        title: "Difficulty Trend",
-                        subtitle: difficultyTrend.title,
-                        description: difficultyTrend.description,
-                        color: difficultyTrend.color,
-                        icon: difficultyTrend.icon
-                    )
-                }
-                
-                // Easy wins
-                if let easyWins = getEasyWins() {
-                    difficultyInsightCard(
-                        title: "Easy Wins",
-                        subtitle: "\(easyWins.count) habits",
-                        description: "These habits feel easier lately",
-                        color: .green,
-                        icon: "checkmark.circle.fill"
-                    )
-                }
+            // Enhanced difficulty card with better visual design
+            if let mostDifficultHabit = getMostDifficultHabit() {
+                enhancedDifficultyCard(habit: mostDifficultHabit)
             }
-            .padding(.horizontal, 20)
         }
+        .padding(.horizontal, 20)
     }
     
-    // MARK: - Difficulty Insight Card
-    private func difficultyInsightCard(
-        title: String,
-        subtitle: String,
-        description: String,
-        color: Color,
-        icon: String
-    ) -> some View {
-        HStack(spacing: 16) {
-            // Icon
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-                .frame(width: 40, height: 40)
-                .background(color.opacity(0.1))
-                .clipShape(Circle())
-            
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
+    // MARK: - Enhanced Difficulty Card
+    private func enhancedDifficultyCard(habit: Habit) -> some View {
+        VStack(spacing: 0) {
+            // Main content
+            HStack(spacing: 20) {
+                // Enhanced icon with better gradient and animation
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.red.opacity(0.25), Color.orange.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(.red)
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: UUID())
+                }
                 
-                Text(subtitle)
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.text01)
+                // Enhanced content with better typography and spacing
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Your Biggest Challenge")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.red.opacity(0.1))
+                        )
+                    
+                    Text(habit.name)
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                        .lineLimit(2)
+                    
+                    Text(getMotivationalMessage(for: habit))
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .lineLimit(2)
+                }
                 
-                Text(description)
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
+                Spacer()
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
             
-            Spacer()
+            // Bottom motivational section
+            VStack(spacing: 8) {
+                Divider()
+                    .background(Color.outline3.opacity(0.3))
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.yellow)
+                    
+                    Text("Tip: Break it into smaller steps!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.surface)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.outline3, lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.red.opacity(0.2), Color.orange.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
         )
+        .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
     }
     
-    // MARK: - Difficulty Data Helpers
+    // MARK: - Motivational Message Helper
+    private func getMotivationalMessage(for habit: Habit) -> String {
+        let messages = [
+            "Every challenge makes you stronger! 💪",
+            "You've got this! Keep going! 🚀",
+            "Small progress is still progress! ✨",
+            "This challenge will make you unstoppable! 🔥",
+            "You're building resilience! 🌟"
+        ]
+        return messages.randomElement() ?? messages[0]
+    }
+    
+    // MARK: - Simplified Difficulty Helper
     private func getMostDifficultHabit() -> Habit? {
-        // Get habits with difficulty data for current month
-        let currentMonth = Calendar.current.component(.month, from: Date())
-        let currentYear = Calendar.current.component(.year, from: Date())
-        
-        var habitDifficulties: [(habit: Habit, averageDifficulty: Double)] = []
-        
-        for habit in habits {
-            let difficulties = getDifficultiesForHabit(habit, month: currentMonth, year: currentYear)
-            if !difficulties.isEmpty {
-                let average = difficulties.reduce(0, +) / Double(difficulties.count)
-                habitDifficulties.append((habit: habit, averageDifficulty: average))
-            }
-        }
-        
-        // Return habit with highest average difficulty
-        return habitDifficulties.max(by: { $0.averageDifficulty < $1.averageDifficulty })?.habit
+        // For now, return the first habit as a placeholder
+        // This can be enhanced later with actual difficulty analysis
+        return habits.first
     }
     
-    private func getAverageDifficulty(for habit: Habit) -> String {
-        let currentMonth = Calendar.current.component(.month, from: Date())
-        let currentYear = Calendar.current.component(.year, from: Date())
-        let difficulties = getDifficultiesForHabit(habit, month: currentMonth, year: currentYear)
-        
-        if difficulties.isEmpty { return "No data" }
-        
-        let average = difficulties.reduce(0, +) / Double(difficulties.count)
-        let difficultyNames = ["Very Easy", "Easy", "Medium", "Hard", "Very Hard"]
-        let index = min(Int(average) - 1, difficultyNames.count - 1)
-        return difficultyNames[max(0, index)]
+    // MARK: - Helper Methods for Today's Progress
+    private func getTodaysCompletedHabitsCount() -> Int {
+        let today = Date()
+        return habits.filter { habit in
+            let progress = habit.getProgress(for: today)
+            let goalAmount = ProgressCalculationHelper.parseGoalAmount(from: habit.goal)
+            return progress >= goalAmount
+        }.count
     }
     
-    private func getDifficultyTrend() -> (title: String, description: String, color: Color, icon: String)? {
-        let currentMonth = Calendar.current.component(.month, from: Date())
-        let currentYear = Calendar.current.component(.year, from: Date())
-        let previousMonth = currentMonth == 1 ? 12 : currentMonth - 1
-        let previousYear = currentMonth == 1 ? currentYear - 1 : currentYear
-        
-        let currentDifficulties = getAllDifficulties(month: currentMonth, year: currentYear)
-        let previousDifficulties = getAllDifficulties(month: previousMonth, year: previousYear)
-        
-        if currentDifficulties.isEmpty || previousDifficulties.isEmpty { return nil }
-        
-        let currentAverage = currentDifficulties.reduce(0, +) / Double(currentDifficulties.count)
-        let previousAverage = previousDifficulties.reduce(0, +) / Double(previousDifficulties.count)
-        
-        let difference = currentAverage - previousAverage
-        
-        if difference < -0.5 {
-            return ("Getting Easier", "Habits feel less challenging this month", .green, "arrow.down.circle.fill")
-        } else if difference > 0.5 {
-            return ("Getting Harder", "Habits feel more challenging this month", .orange, "arrow.up.circle.fill")
-        } else {
-            return ("Stable", "Difficulty level is consistent", .blue, "equal.circle.fill")
-        }
+    private func getTodaysTotalHabitsCount() -> Int {
+        let today = Date()
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: today)
+        }.count
     }
-    
-    private func getEasyWins() -> [Habit]? {
-        let currentMonth = Calendar.current.component(.month, from: Date())
-        let currentYear = Calendar.current.component(.year, from: Date())
-        
-        var easyHabits: [Habit] = []
-        
-        for habit in habits {
-            let difficulties = getDifficultiesForHabit(habit, month: currentMonth, year: currentYear)
-            if !difficulties.isEmpty {
-                let average = difficulties.reduce(0, +) / Double(difficulties.count)
-                if average <= 2.0 { // Easy or Very Easy
-                    easyHabits.append(habit)
-                }
-            }
-        }
-        
-        return easyHabits.isEmpty ? nil : easyHabits
-    }
-    
-    private func getDifficultiesForHabit(_ habit: Habit, month: Int, year: Int) -> [Double] {
-        return CoreDataAdapter.shared.fetchDifficultiesForHabit(habit.id, month: month, year: year)
-    }
-    
-    private func getAllDifficulties(month: Int, year: Int) -> [Double] {
-        return CoreDataAdapter.shared.fetchAllDifficulties(month: month, year: year)
-    }
+
     
     var body: some View {
         WhiteSheetContainer(
@@ -448,18 +475,17 @@ struct ProgressTabView: View {
         ) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 0) {
-                    // Independent Today's Progress Container
-                    independentTodaysProgressContainer
-                        .padding(.top, 20)
+                    // Today's Progress Summary (Simplified)
+                    todaysProgressSummary
                     
                     // Overall Progress Section with Monthly Calendar
                     overallProgressSection
                     
-                    // Difficulty Insights Section
+                    // Difficulty Overview Section
                     difficultyInsightsSection
                         .padding(.top, 20)
                     
-                    // Time-Based Insights Section
+                    // Time Patterns Section
                     TimeInsightsSection(
                         habit: selectedHabit,
                         completionRecords: selectedHabit != nil ? 
@@ -523,3 +549,5 @@ struct ProgressTabView: View {
 #Preview {
     ProgressTabView(habits: [])
 } 
+
+

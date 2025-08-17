@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Calendar Grid Components
 struct CalendarGridComponents {
     
-    // MARK: - Calendar Day Cell
+    // MARK: - Enhanced Calendar Day Cell
     struct CalendarDayCell: View {
         let day: Int
         let progress: Double
@@ -12,39 +12,108 @@ struct CalendarGridComponents {
         let isCurrentMonth: Bool
         let onTap: () -> Void
         
+        // Animation states
+        @State private var isPressed = false
+        @State private var progressAnimation = 0.0
+        @State private var scale: CGFloat = 1.0
+        
         var body: some View {
-            Button(action: onTap) {
+            Button(action: {
+                // Haptic feedback
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+                
+                // Animate progress ring
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    progressAnimation = progress
+                }
+                
+                onTap()
+            }) {
                 ZStack {
-                    // Background
+                    // Enhanced background with gradients
                     if isToday {
                         Circle()
-                            .fill(backgroundColor)
-                            .frame(width: 30, height: 30)
-                    } else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(backgroundColor)
-                    }
-                    
-                    // Progress ring - only show for current month days
-                    if isCurrentMonth {
-                        Circle()
-                            .trim(from: 0, to: progress > 0 ? progress : 1.0)
-                            .stroke(
-                                progress > 0 ? (isToday ? Color.white : Color.primary) : (isToday ? Color.white.opacity(0.7) : Color.outline3),
-                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                            .frame(width: 30, height: 30)
-                            .rotationEffect(.degrees(-90))
+                            .frame(width: 36, height: 36)
+                            .shadow(color: Color.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+                    } else if isSelected {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.secondary.opacity(0.2), Color.secondary.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 36, height: 36)
+                    } else if isCurrentMonth {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.clear)
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.clear)
                     }
                     
-                    // Day number
+                    // Enhanced progress ring with animations
+                    if isCurrentMonth {
+                        ZStack {
+                            // Background progress ring
+                            Circle()
+                                .stroke(
+                                    Color.outline3.opacity(0.3),
+                                    style: StrokeStyle(lineWidth: 2, lineCap: .round)
+                                )
+                                .frame(width: 32, height: 32)
+                            
+                            // Animated progress ring
+                            Circle()
+                                .trim(from: 0, to: progressAnimation)
+                                .stroke(
+                                    progressRingGradient,
+                                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                                )
+                                .frame(width: 32, height: 32)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.8), value: progressAnimation)
+                        }
+                    }
+                    
+                    // Enhanced day number with better typography
                     Text("\(day)")
-                        .font(.appLabelSmall)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(textColor)
                 }
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 40, height: 40)
             .buttonStyle(PlainButtonStyle())
+            .scaleEffect(scale)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: scale)
+            .onAppear {
+                // Animate progress ring on appear
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0...0.5)) {
+                    withAnimation(.easeInOut(duration: 0.8)) {
+                        progressAnimation = progress
+                    }
+                }
+            }
+            .onLongPressGesture(minimumDuration: 0.1, maximumDistance: 10) {
+                // Long press for detailed view (future enhancement)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    scale = 1.1
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        scale = 1.0
+                    }
+                }
+            }
         }
         
         private var backgroundColor: Color {
@@ -55,7 +124,7 @@ struct CalendarGridComponents {
             } else if isCurrentMonth {
                 return Color.clear
             } else {
-                return Color.clear // Overflow days have no background
+                return Color.clear
             }
         }
         
@@ -67,45 +136,106 @@ struct CalendarGridComponents {
             } else if isCurrentMonth {
                 return .text01
             } else {
-                return .outline2 // More visible color for overflow days
+                return .outline2
+            }
+        }
+        
+        private var progressRingGradient: LinearGradient {
+            if progress > 0 {
+                // Progress - beautiful pastel blue gradient
+                return LinearGradient(
+                    colors: [Color.pastelBlue500, Color.pastelBlue500.opacity(0.7)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            } else {
+                // No progress - subtle outline
+                return LinearGradient(
+                    colors: [Color.outline3, Color.outline3.opacity(0.7)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             }
         }
     }
     
-    // MARK: - Calendar Header
+    // MARK: - Enhanced Calendar Header
     struct CalendarHeader: View {
         let monthYearString: String
         let onPrevious: () -> Void
         let onNext: () -> Void
         
+        @State private var previousButtonScale: CGFloat = 1.0
+        @State private var nextButtonScale: CGFloat = 1.0
+        
         var body: some View {
             HStack {
-                Button(action: onPrevious) {
-                    Image(systemName: "chevron.left")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.text01)
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        previousButtonScale = 0.9
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            previousButtonScale = 1.0
+                        }
+                    }
+                    onPrevious()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                        
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                    }
                 }
+                .scaleEffect(previousButtonScale)
                 
                 Spacer()
                 
                 Text(monthYearString)
-                    .font(.appTitleMedium)
+                    .font(.appTitleMediumEmphasised)
                     .foregroundColor(.text01)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.surface.opacity(0.5))
+                    )
                 
                 Spacer()
                 
-                Button(action: onNext) {
-                    Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.text01)
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        nextButtonScale = 0.9
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            nextButtonScale = 1.0
+                        }
+                    }
+                    onNext()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                    }
                 }
+                .scaleEffect(nextButtonScale)
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, 20)
         }
     }
     
-    // MARK: - Weekday Header
+    // MARK: - Enhanced Weekday Header
     struct WeekdayHeader: View {
         private var weekdayNames: [String] {
             let calendar = AppDateFormatter.shared.getUserCalendar()
@@ -120,16 +250,23 @@ struct CalendarGridComponents {
             HStack(spacing: 0) {
                 ForEach(weekdayNames, id: \.self) { day in
                     Text(day)
-                        .font(.appLabelSmall)
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.text02)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.surface.opacity(0.3))
+                        )
+                        .padding(.horizontal, 2)
                 }
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 16)
+            .padding(.horizontal, 8)
         }
     }
     
-    // MARK: - Calendar Grid
+    // MARK: - Enhanced Calendar Grid
     struct CalendarGrid: View {
         let firstDayOfMonth: Int
         let daysInMonth: Int
@@ -138,8 +275,10 @@ struct CalendarGridComponents {
         let getDayProgress: (Int) -> Double
         let onDayTap: (Int) -> Void
         
+        @State private var gridAppearAnimation = false
+        
         var body: some View {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 12) {
                 // Previous month overflow days
                 ForEach(0..<firstDayOfMonth, id: \.self) { index in
                     let previousMonthDay = CalendarGridComponents.getPreviousMonthDay(index: index, firstDayOfMonth: firstDayOfMonth, currentDate: currentDate)
@@ -153,6 +292,7 @@ struct CalendarGridComponents {
                         // No action for overflow days
                     }
                     .id("prev-\(index)")
+                    .opacity(0.3)
                 }
                 
                 // Day cells for current month
@@ -171,13 +311,16 @@ struct CalendarGridComponents {
                         onDayTap(day)
                     }
                     .id("day-\(day)")
-                    .onAppear {
-                        // Debug: Show each day as it appears
-                        print("   📅 Day \(day) appeared")
-                    }
+                    .opacity(gridAppearAnimation ? 1 : 0)
+                    .offset(y: gridAppearAnimation ? 0 : 20)
+                    .animation(
+                        .spring(response: 0.6, dampingFraction: 0.8)
+                        .delay(Double(day) * 0.02),
+                        value: gridAppearAnimation
+                    )
                 }
                 
-                // Next month overflow days - only show what's needed to complete the last week
+                // Next month overflow days
                 let totalCells = firstDayOfMonth + daysInMonth
                 let cellsInLastWeek = totalCells % 7
                 let nextMonthDaysNeeded = cellsInLastWeek > 0 ? (7 - cellsInLastWeek) : 0
@@ -194,55 +337,41 @@ struct CalendarGridComponents {
                         // No action for overflow days
                     }
                     .id("next-\(index)")
+                    .opacity(0.3)
                 }
                 
-                // Only add empty cells if we need to complete the current week
+                // Empty cells to complete week
                 let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
                 let currentWeekCells = totalGridCells % 7
                 let emptyCellsToCompleteWeek = currentWeekCells > 0 ? (7 - currentWeekCells) : 0
                 
                 ForEach(0..<emptyCellsToCompleteWeek, id: \.self) { index in
                     Color.clear
-                        .frame(height: 32)
+                        .frame(height: 40)
                         .id("empty-\(index)")
                 }
             }
-            .animation(.none, value: firstDayOfMonth)
-            .animation(.none, value: daysInMonth)
+            .animation(.easeInOut(duration: 0.5), value: firstDayOfMonth)
+            .animation(.easeInOut(duration: 0.5), value: daysInMonth)
             .onAppear {
-                // Debug: Show grid layout information
-                let cellsInLastWeek = (firstDayOfMonth + daysInMonth) % 7
-                let nextMonthDaysNeeded = cellsInLastWeek > 0 ? (7 - cellsInLastWeek) : 0
-                let totalGridCells = firstDayOfMonth + daysInMonth + nextMonthDaysNeeded
-                let currentWeekCells = totalGridCells % 7
-                let emptyCellsToCompleteWeek = currentWeekCells > 0 ? (7 - currentWeekCells) : 0
-                let totalWeeks = (totalGridCells + emptyCellsToCompleteWeek) / 7
-                
-                print("📅 Calendar Grid Debug:")
-                print("   First Day Position: \(firstDayOfMonth)")
-                print("   Days in Month: \(daysInMonth)")
-                print("   Previous Month Overflow: \(firstDayOfMonth)")
-                print("   Current Month Days: \(daysInMonth)")
-                print("   Next Month Overflow: \(nextMonthDaysNeeded)")
-                print("   Empty Cells to Complete Week: \(emptyCellsToCompleteWeek)")
-                print("   Total Grid Cells: \(totalGridCells + emptyCellsToCompleteWeek)")
-                print("   Total Weeks: \(totalWeeks)")
+                // Trigger grid appear animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    gridAppearAnimation = true
+                }
             }
         }
     }
     
-    // MARK: - Helper Functions
+    // MARK: - Helper Functions (unchanged)
     static func isToday(day: Int, currentDate: Date) -> Bool {
         let calendar = Calendar.current
         let today = Date()
         
-        // Get the first day of the month
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfMonth = calendar.date(from: monthComponents) else {
             return false
         }
         
-        // Calculate the date for the specific day by adding (day - 1) to the first day
         guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth) else {
             return false
         }
@@ -258,13 +387,11 @@ struct CalendarGridComponents {
     static func isSelected(day: Int, currentDate: Date, selectedDate: Date) -> Bool {
         let calendar = Calendar.current
         
-        // Get the first day of the month
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfMonth = calendar.date(from: monthComponents) else {
             return false
         }
         
-        // Calculate the date for the specific day by adding (day - 1) to the first day
         guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth) else {
             return false
         }
@@ -280,11 +407,7 @@ struct CalendarGridComponents {
             return 0 
         }
         
-        // Get the weekday of the first day of the month (1 = Sunday, 2 = Monday, etc.)
         let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
-        
-        // Calculate how many empty cells we need at the start
-        // Using user's preferred first day of the week:
         let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
         
         return emptyCells
@@ -306,21 +429,17 @@ struct CalendarGridComponents {
     static func getPreviousMonthDay(index: Int, firstDayOfMonth: Int, currentDate: Date) -> Int {
         let calendar = Calendar.current
         
-        // Get the first day of the current month
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let firstDayOfCurrentMonth = calendar.date(from: monthComponents) else {
             return 1
         }
         
-        // Calculate how many days we need to go back
         let daysToSubtract = firstDayOfMonth - index
         
-        // Get the date for the overflow day
         guard let overflowDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: firstDayOfCurrentMonth) else {
             return 1
         }
         
-        // Return the day number
         return calendar.component(.day, from: overflowDate)
     }
 }
