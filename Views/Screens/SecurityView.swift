@@ -9,86 +9,82 @@ struct SecurityView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header with close button and left-aligned title
-                    ScreenHeader(
-                        title: "Account",
-                        description: "Manage your account settings and security"
-                    ) {
-                        dismiss()
-                    }
-                    
-                    // Account Options
-                    VStack(spacing: 0) {
-                        // Personal Information
-                        AccountOptionRow(
-                            icon: "Icon-Profile_Filled",
-                            title: "Personal Information",
-                            subtitle: "Manage your personal details",
-                            hasChevron: true
-                        ) {
-                            showingPersonalInformation = true
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        // Password Management
-                        AccountOptionRow(
-                            icon: "Icon-ShieldKeyhole_Filled",
-                            title: "Change Password",
-                            subtitle: "Update your account password",
-                            hasChevron: true
-                        ) {
-                            // TODO: Implement change password functionality
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        // Two-Factor Authentication
-                        AccountOptionRow(
-                            icon: "Icon-ShieldCheck_Filled",
-                            title: "Two-Factor Authentication",
-                            subtitle: "Add an extra layer of security",
-                            hasChevron: true
-                        ) {
-                            // TODO: Implement 2FA functionality
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        // Login Sessions
-                        AccountOptionRow(
-                            icon: "Icon-Devices_Filled",
-                            title: "Active Sessions",
-                            subtitle: "Manage your logged-in devices",
-                            hasChevron: true
-                        ) {
-                            // TODO: Implement active sessions functionality
-                        }
-                    }
-                    .background(Color.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    
-                    // Delete Account Section
-                    VStack(spacing: 0) {
-                        HabittoButton(
-                            size: .large,
-                            style: .fillTertiary,
-                            content: .text("Delete Account"),
-                            action: {
-                                showingDeleteAccountAlert = true
+            VStack(spacing: 0) {
+                // Header with close button and left-aligned title
+                ScreenHeader(
+                    title: "Account",
+                    description: "Manage your account settings and security"
+                ) {
+                    dismiss()
+                }
+                
+                Spacer().frame(height: 16)
+                
+                // Scrollable content
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Account Options
+                        VStack(spacing: 0) {
+                            // Personal Information
+                            AccountOptionRow(
+                                icon: "Icon-Profile_Filled",
+                                title: "Personal Information",
+                                subtitle: "Manage your personal details",
+                                hasChevron: true
+                            ) {
+                                showingPersonalInformation = true
                             }
-                        )
+                            
+                            Divider()
+                                .padding(.leading, 56)
+                            
+                            // Password Management
+                            AccountOptionRow(
+                                icon: "Icon-ShieldKeyhole_Filled",
+                                title: "Change Password",
+                                subtitle: "Update your account password",
+                                hasChevron: true
+                            ) {
+                                // TODO: Implement change password functionality
+                            }
+                            
+                            Divider()
+                                .padding(.leading, 56)
+                            
+                            // Two-Factor Authentication
+                            AccountOptionRow(
+                                icon: "Icon-ShieldCheck_Filled",
+                                title: "Two-Factor Authentication",
+                                subtitle: "Add an extra layer of security",
+                                hasChevron: true
+                            ) {
+                                // TODO: Implement 2FA functionality
+                            }
+                            
+                            Divider()
+                                .padding(.leading, 56)
+                            
+                            // Login Sessions
+                            AccountOptionRow(
+                                icon: "Icon-Devices_Filled",
+                                title: "Active Sessions",
+                                subtitle: "Manage your logged-in devices",
+                                hasChevron: true
+                            ) {
+                                // TODO: Implement active sessions functionality
+                            }
+                        }
+                        .background(Color.surface)
+                        .cornerRadius(16)
+                        .padding(.horizontal, 20)
                     }
-                    .background(Color.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    
+                    .padding(.horizontal, 0)
+                    .padding(.top, 0)
+                    .padding(.bottom, 20)
+                }
+                
+                // Fixed bottom section with buttons
+                VStack(spacing: 16) {
                     // Sign Out Section
                     VStack(spacing: 0) {
                         HabittoButton(
@@ -104,12 +100,24 @@ struct SecurityView: View {
                     .cornerRadius(16)
                     .padding(.horizontal, 20)
                     
-                    Spacer(minLength: 24)
+                    // Delete Account Section
+                    VStack(spacing: 0) {
+                        HabittoButton(
+                            size: .large,
+                            style: .fillDestructive,
+                            content: .text("Delete Account"),
+                            action: {
+                                showingDeleteAccountAlert = true
+                            }
+                        )
+                    }
+                    .background(Color.surface)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 0)
-                .padding(.top, 0)
                 .padding(.bottom, 20)
             }
+            .background(Color.surface2)
         }
         .sheet(isPresented: $showingPersonalInformation) {
             PersonalInformationView()
