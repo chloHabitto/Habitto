@@ -46,7 +46,7 @@ struct PreferencesView: View {
                             .padding(.leading, 56)
                         
                         AccountOptionRow(
-                            icon: "Icon-Palette_Filled",
+                            icon: "Icon-Theme_Filled",
                             title: "Theme",
                             subtitle: "Choose your preferred app theme",
                             hasChevron: true

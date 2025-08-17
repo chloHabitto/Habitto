@@ -8,6 +8,7 @@ enum ButtonStyle {
     case tertiary
     case fillTertiary
     case fillNeutral
+    case fillDestructive
     
     func backgroundColor(for state: ButtonState) -> Color {
         switch self {
@@ -66,6 +67,15 @@ enum ButtonStyle {
                 return .disabledBackground
             case .loading:
                 return .primaryContainer // TODO: Update in the future
+            }
+        case .fillDestructive:
+            switch state {
+            case .default, .hover:
+                return .red500
+            case .disabled:
+                return .disabledBackground
+            case .loading:
+                return .red500 // TODO: Update in the future
             }
         }
     }
@@ -127,6 +137,15 @@ enum ButtonStyle {
                 return .text04
             case .loading:
                 return .onPrimaryContainer // TODO: Update in the future
+            }
+        case .fillDestructive:
+            switch state {
+            case .default, .hover:
+                return .onPrimary
+            case .disabled:
+                return .text04
+            case .loading:
+                return .onPrimary // TODO: Update in the future
             }
         }
     }
