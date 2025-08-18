@@ -5,9 +5,9 @@ struct TimeInsightsSection: View {
     let completionRecords: [CompletionRecordEntity]
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             // Enhanced section header
-            HStack(spacing: 12) {
+            HStack {
                 Text("Time Magic")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)

@@ -6,9 +6,9 @@ struct PatternInsightsSection: View {
     let difficultyLogs: [DifficultyLogEntity]
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             // Enhanced section header
-            HStack(spacing: 12) {
+            HStack {
                 Text("Pattern Magic")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
