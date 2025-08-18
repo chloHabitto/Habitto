@@ -36,14 +36,14 @@ struct StreakView: View {
         VStack(spacing: 0) {
             // Fixed Header Section
             StreakHeaderView(onDismiss: { dismiss() })
-                .zIndex(1)
+                .zIndex(10)
             
-                        // Fixed Primary Background Content (Non-scrollable)
+            // Fixed Primary Background Content (Non-scrollable)
             VStack(spacing: 16) {
-                    // Main Streak Display
+                // Main Streak Display
                 MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
-                    
-                    // Streak Summary Cards
+                
+                // Streak Summary Cards
                 StreakSummaryCardsView(
                     bestStreak: streakStatistics.bestStreak,
                     averageStreak: streakStatistics.averageStreak
@@ -56,22 +56,22 @@ struct StreakView: View {
             
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
-                    WhiteSheetContainer(
-                        title: "Habit Streak",
-                        rightButton: {
-                            AnyView(
-                                Button(action: {
-                                    // More button action
-                                }) {
-                                    Image(.iconMoreDots)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 20, height: 20)
-                                        .foregroundColor(.primary)
-                                }
-                                .frame(width: 44, height: 44)
-                                .buttonStyle(PlainButtonStyle())
-                            )
+                WhiteSheetContainer(
+                    title: "Habit Streak",
+                    rightButton: {
+                        AnyView(
+                            Button(action: {
+                                // More button action
+                            }) {
+                                Image(.iconMoreDots)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 20, height: 20)
+                                    .foregroundColor(.primary)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(PlainButtonStyle())
+                        )
                     },
                     showGrabber: true
                 ) {
@@ -101,35 +101,33 @@ struct StreakView: View {
                         // Scrollable Content Section
                         ScrollView {
                             VStack(spacing: 16) {
-                                                        // Date range selector - show week for weekly, month for monthly, year for yearly
-                        DateRangeSelectorView(
-                            displayText: selectedProgressTab == 2 ? "\(selectedYear)" : (selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText()),
-                            onTap: { 
-                                if selectedProgressTab == 2 {
-                                    showingYearPicker = true
-                                } else if selectedProgressTab == 1 {
-                                    showingMonthPicker = true
-                                } else {
-                                    showingCalendar = true
+                                // Date range selector - show week for weekly, month for monthly, year for yearly
+                                DateRangeSelectorView(
+                                    displayText: selectedProgressTab == 2 ? "\(selectedYear)" : (selectedProgressTab == 1 ? selectedMonth.monthText() : selectedWeekStartDate.weekRangeText()),
+                                    onTap: { 
+                                        if selectedProgressTab == 2 {
+                                            showingYearPicker = true
+                                        } else if selectedProgressTab == 1 {
+                                            showingMonthPicker = true
+                                        } else {
+                                            showingCalendar = true
+                                        }
+                                    },
+                                    showDownChevron: true
+                                )
+                                .onAppear {
+                                    print("🔍 STREAK VIEW DEBUG - Current week start: \(DateUtils.dateKey(for: selectedWeekStartDate)) | Week range: \(selectedWeekStartDate.weekRangeText())")
+                                    print("🔍 STREAK VIEW DEBUG - Selected week start date: \(selectedWeekStartDate)")
+                                    print("🔍 STREAK VIEW DEBUG - Calendar first weekday: \(Calendar.current.firstWeekday)")
+                                    
+                                    // Debug: Print the week dates
+                                    let calendar = Calendar.current
+                                    for i in 0..<7 {
+                                        let date = calendar.date(byAdding: .day, value: i, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                        let weekday = calendar.component(.weekday, from: date)
+                                        print("🔍 STREAK VIEW DEBUG - Day \(i): \(DateUtils.dateKey(for: date)) | Weekday: \(weekday)")
+                                    }
                                 }
-                            },
-                            showDownChevron: true
-                        )
-                        
-                        // Debug: Print current week info
-                        .onAppear {
-                            print("🔍 STREAK VIEW DEBUG - Current week start: \(DateUtils.dateKey(for: selectedWeekStartDate)) | Week range: \(selectedWeekStartDate.weekRangeText())")
-                            print("🔍 STREAK VIEW DEBUG - Selected week start date: \(selectedWeekStartDate)")
-                            print("🔍 STREAK VIEW DEBUG - Calendar first weekday: \(Calendar.current.firstWeekday)")
-                            
-                            // Debug: Print the week dates
-                            let calendar = Calendar.current
-                            for i in 0..<7 {
-                                let date = calendar.date(byAdding: .day, value: i, to: selectedWeekStartDate) ?? selectedWeekStartDate
-                                let weekday = calendar.component(.weekday, from: date)
-                                print("🔍 STREAK VIEW DEBUG - Day \(i): \(DateUtils.dateKey(for: date)) | Weekday: \(weekday)")
-                            }
-                        }
                                 
                                 // Calendar content based on selected tab
                                 Group {
@@ -157,15 +155,15 @@ struct StreakView: View {
                                         )
                                     }
                                 }
-                            
-                            // Summary Statistics - Only show for Weekly tab, not Monthly or Yearly
-                            if selectedProgressTab == 0 {
-                                SummaryStatisticsView(
-                                    completionRate: streakStatistics.completionRate,
-                                    bestStreak: streakStatistics.bestStreak,
-                                    consistencyRate: streakStatistics.consistencyRate
-                                )
-                            }
+                                
+                                // Summary Statistics - Only show for Weekly tab, not Monthly or Yearly
+                                if selectedProgressTab == 0 {
+                                    SummaryStatisticsView(
+                                        completionRate: streakStatistics.completionRate,
+                                        bestStreak: streakStatistics.bestStreak,
+                                        consistencyRate: streakStatistics.consistencyRate
+                                    )
+                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.top, 16)
@@ -178,35 +176,36 @@ struct StreakView: View {
                     width: geometry.size.width,
                     height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
                 )
-                    .offset(y: dragOffset)
+                .offset(y: dragOffset)
+                .zIndex(5)
                 .ignoresSafeArea(.container, edges: .bottom)
             }
-                                                .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        let translation = value.translation.height
-                                        if translation < 0 { // Dragging up
-                            dragOffset = max(translation, -234) // 16 points more header space (250 - 16)
-                                        } else { // Dragging down
-                                            dragOffset = min(translation, 0) // Limit downward drag
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        let translation = value.translation.height
-                                        let velocity = value.velocity.height
-                                        
-                                        if translation < -150 || velocity < -300 { // Increased expand threshold
-                                                isExpanded = true
-                                            dragOffset = -234 // 16 points more header space (250 - 16)
-                                        } else if translation > 25 || velocity > 300 { // Collapse threshold
-                                                isExpanded = false
-                                                dragOffset = 0
-                                        } else { // Return to current state
-                                            dragOffset = isExpanded ? -234 : 0
-                                        }
-                                    }
-                            )
-                }
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        let translation = value.translation.height
+                        if translation < 0 { // Dragging up
+                            dragOffset = max(translation, -275) // Slightly increased max height
+                        } else { // Dragging down
+                            dragOffset = min(translation, 0) // Limit downward drag
+                        }
+                    }
+                    .onEnded { value in
+                        let translation = value.translation.height
+                        let velocity = value.velocity.height
+                        
+                        if translation < -150 || velocity < -300 { // Increased expand threshold
+                            isExpanded = true
+                            dragOffset = -275 // Slightly increased max height
+                        } else if translation > 25 || velocity > 300 { // Collapse threshold
+                            isExpanded = false
+                            dragOffset = 0
+                        } else { // Return to current state
+                            dragOffset = isExpanded ? -275 : 0
+                        }
+                    }
+            )
+        }
         .background(Color.primary)
         .ignoresSafeArea(.container, edges: .bottom)
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -343,94 +342,9 @@ struct StreakView: View {
             }
         }
     }
-    
-
-    
-    // MARK: - Progress Section
-    private var progressSection: some View {
-        VStack(spacing: 16) {
-            // Progress tabs
-            ProgressTabsView(selectedTab: selectedProgressTab) { index in
-                selectedProgressTab = index
-            }
-            
-            // Date range selector
-            DateRangeSelectorView(
-                displayText: selectedWeekStartDate.weekRangeText(),
-                onTap: { showingCalendar = true },
-                showDownChevron: true
-            )
-            
-            // Content based on selected tab
-            if selectedProgressTab == 0 {
-                // Weekly view
-                WeeklyCalendarGridView(
-                    userHabits: userHabits,
-                    selectedWeekStartDate: selectedWeekStartDate
-                )
-                            } else if selectedProgressTab == 1 {
-                    // Monthly view
-                    MonthlyCalendarGridView(
-                        userHabits: userHabits,
-                        selectedMonth: selectedMonth
-                    )
-            } else {
-                // Yearly view
-                YearlyCalendarGridView(
-                    userHabits: userHabits,
-                    selectedWeekStartDate: selectedWeekStartDate,
-                    yearlyHeatmapData: yearlyHeatmapData,
-                    isDataLoaded: isDataLoaded,
-                    isLoadingProgress: isLoadingProgress,
-                    selectedYear: selectedYear
-                )
-            }
-        }
-        .padding(.bottom, 16)
-        .background(
-            // Extended background that covers the revealed area during swipe
-            Color(.systemBackground)
-                .frame(width: UIScreen.main.bounds.width + abs(dismissOffset), height: UIScreen.main.bounds.height)
-                .offset(x: dismissOffset < 0 ? dismissOffset : 0)
-        )
-        .offset(x: dismissOffset)
-        .opacity(isDismissing ? 0 : 1)
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    // Only allow rightward swipes (positive translation)
-                    if value.translation.width > 0 {
-                        dismissOffset = value.translation.width
-                    }
-                }
-                .onEnded { value in
-                    // Swipe right to dismiss (like back button)
-                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
-                        // Animate the dismiss
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            dismissOffset = UIScreen.main.bounds.width
-                            isDismissing = true
-                        }
-                        // Dismiss immediately without animation after our animation completes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                            // Dismiss without any animation
-                            dismiss()
-                        }
-                    } else {
-                        // Snap back if swipe wasn't far enough
-                        withAnimation(.spring()) {
-                            dismissOffset = 0
-                        }
-                    }
-                }
-        )
-    }
-    
-
 }
 
 #Preview {
     StreakView()
         .environmentObject(HomeViewState())
 }
-
