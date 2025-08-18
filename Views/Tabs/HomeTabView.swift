@@ -652,6 +652,7 @@ struct HomeTabView: View {
             }
         }
         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+        .animation(nil, value: currentWeekOffset) // Disable swipe animation
         .onChange(of: currentWeekOffset) { oldValue, newValue in
             
             // Add haptic feedback when scrolling between weeks
