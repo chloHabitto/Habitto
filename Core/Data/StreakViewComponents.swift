@@ -31,152 +31,311 @@ struct StreakHeaderView: View {
     }
 }
 
-// MARK: - Main Streak Display
+// MARK: - Modern Main Streak Display
 struct MainStreakDisplayView: View {
     let currentStreak: Int
+    @State private var isAnimating = false
+    @State private var fireScale: CGFloat = 1.0
+    @State private var glowOpacity: Double = 0.0
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: StreakSpacing.lg) {
+            // Enhanced Fire Icon with Modern Design
             ZStack {
+                // Outer glow effect
                 Circle()
-                    .fill(.white)
-                    .frame(width: 80, height: 80)
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .fill(StreakColors.fireGradient)
+                    .frame(width: 120, height: 120)
+                    .blur(radius: 20)
+                    .opacity(glowOpacity)
+                    .scaleEffect(isAnimating ? 1.2 : 1.0)
+                    .animation(StreakAnimations.fireFloat, value: isAnimating)
                 
+                // Main background circle with glassmorphism
+                Circle()
+                    .fill(StreakColors.glassBackground)
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                StreakColors.fireGradient,
+                                lineWidth: 3
+                            )
+                    )
+                    .frame(width: 100, height: 100)
+                    .streakShadow(StreakShadows.medium)
+                
+                // Fire icon with enhanced styling
                 Image(.iconFire)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 60, height: 60)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.warning, Color("yellow400")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                    .foregroundStyle(StreakColors.fireGradient)
+                    .scaleEffect(fireScale)
+                    .animation(StreakAnimations.fireFlicker, value: isAnimating)
+                
+                // Floating particles around the fire
+                ForEach(0..<6, id: \.self) { index in
+                    Circle()
+                        .fill(StreakColors.fireYellow)
+                        .frame(width: 4, height: 4)
+                        .offset(
+                            x: 35 * cos(Double(index) * .pi / 3),
+                            y: 35 * sin(Double(index) * .pi / 3)
                         )
-                    )
+                        .opacity(isAnimating ? 0.8 : 0.3)
+                        .scaleEffect(isAnimating ? 1.5 : 0.8)
+                        .animation(
+                            Animation.easeInOut(duration: 2.0)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.2),
+                            value: isAnimating
+                        )
+                }
             }
             
-            Text(pluralizeDay(currentStreak))
-                .font(.appHeadlineMediumEmphasised)
-                .foregroundColor(.white)
+            // Enhanced Streak Counter with Modern Typography
+            VStack(spacing: StreakSpacing.sm) {
+                Text(pluralizeDay(currentStreak))
+                    .font(StreakTypography.numberSmall)
+                    .foregroundStyle(StreakColors.streakGradient)
+                    .scaleEffect(isAnimating ? 1.05 : 1.0)
+                    .animation(StreakAnimations.streakCount, value: currentStreak)
+            }
+        }
+        .onAppear {
+            startAnimations()
+        }
+        .onChange(of: currentStreak) { _, newStreak in
+            if newStreak > 0 {
+                celebrateNewStreak()
+            }
         }
     }
+    
+    // MARK: - Animation Functions
+    private func startAnimations() {
+        withAnimation(StreakAnimations.easeInOut.delay(0.3)) {
+            isAnimating = true
+        }
+        
+        // Start glow animation
+        withAnimation(StreakAnimations.fireFloat) {
+            glowOpacity = 0.6
+        }
+    }
+    
+    private func celebrateNewStreak() {
+        // Fire scale animation
+        withAnimation(StreakAnimations.spring) {
+            fireScale = 1.3
+        }
+        
+        // Reset scale
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(StreakAnimations.spring) {
+                fireScale = 1.0
+            }
+        }
+    }
+    
+
 }
 
-// MARK: - Streak Summary Cards
+// MARK: - Modern Streak Summary Cards
 struct StreakSummaryCardsView: View {
     let bestStreak: Int
     let averageStreak: Int
+    @State private var isAnimating = false
     
     var body: some View {
         HStack(spacing: 0) {
-            StreakCardView(
+            // Best Streak Card
+            ModernStreakCardView(
                 icon: "Icon-starBadge",
-                iconColor: .warning,
+                iconColor: StreakColors.streakGold,
                 value: pluralizeDay(bestStreak),
-                label: "Best streak"
+                label: "Best Streak",
+                description: "",
+                isAnimating: isAnimating,
+                delay: 0.0
             )
             
+            // Divider with modern styling
             Rectangle()
-                .fill(.outline3)
+                .fill(StreakColors.lightText.opacity(0.2))
                 .frame(width: 1)
-                .frame(height: 60)
+                .frame(height: 80)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(StreakAnimations.easeInOut.delay(0.4), value: isAnimating)
             
-            StreakCardView(
+            // Average Streak Card
+            ModernStreakCardView(
                 icon: "Icon-medalBadge",
-                iconColor: Color("yellow400"),
+                iconColor: StreakColors.fireOrange,
                 value: pluralizeDay(averageStreak),
-                label: "Average streak"
+                label: "Average Streak",
+                description: "",
+                isAnimating: isAnimating,
+                delay: 0.2
             )
         }
-        .background(.surfaceContainer)
-        .cornerRadius(16)
-        .padding(.horizontal, 16)
+        .background(StreakColors.glassBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: StreakCorners.lg)
+                .stroke(
+                    LinearGradient(
+                        colors: [StreakColors.fireOrange.opacity(0.3), StreakColors.streakGold.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .streakCorner(StreakCorners.lg)
+        .streakShadow(StreakShadows.soft)
+        .padding(.horizontal, StreakSpacing.lg)
+        .onAppear {
+            withAnimation(StreakAnimations.easeInOut.delay(0.2)) {
+                isAnimating = true
+            }
+        }
     }
 }
 
-struct StreakCardView: View {
+// MARK: - Modern Individual Streak Card
+struct ModernStreakCardView: View {
     let icon: String
     let iconColor: Color
     let value: String
     let label: String
+    let description: String
+    let isAnimating: Bool
+    let delay: Double
     
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                if icon.hasPrefix("Icon-") {
-                    Image(icon)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(iconColor)
-                } else {
-                    Image(systemName: icon)
-                        .font(.appTitleMedium)
-                        .foregroundColor(iconColor)
+        VStack(spacing: StreakSpacing.md) {
+            // Icon and Value Row
+            HStack(spacing: StreakSpacing.sm) {
+                // Enhanced Icon with Background
+                ZStack {
+                    Circle()
+                        .fill(iconColor.opacity(0.15))
+                        .frame(width: 32, height: 32)
+                    
+                    if icon.hasPrefix("Icon-") {
+                        Image(icon)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(iconColor)
+                    } else {
+                        Image(systemName: icon)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(iconColor)
+                    }
                 }
+                .scaleEffect(isAnimating ? 1.1 : 1.0)
+                .animation(StreakAnimations.spring.delay(delay), value: isAnimating)
                 
+                // Value with Modern Typography
                 Text(value)
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.text01)
+                    .font(StreakTypography.titleLarge)
+                    .foregroundColor(StreakColors.primaryText)
+                    .opacity(isAnimating ? 1.0 : 0.0)
+                    .animation(StreakAnimations.easeInOut.delay(delay + 0.1), value: isAnimating)
             }
             
-            Text(label)
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
+            // Label and (optional) Description
+            VStack(spacing: StreakSpacing.xs) {
+                Text(label)
+                    .font(StreakTypography.labelMedium)
+                    .foregroundColor(StreakColors.secondaryText)
+                    .opacity(isAnimating ? 1.0 : 0.0)
+                    .animation(StreakAnimations.easeInOut.delay(delay + 0.2), value: isAnimating)
+
+                if !description.isEmpty {
+                    Text(description)
+                        .font(StreakTypography.bodySmall)
+                        .foregroundColor(StreakColors.accentText)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .opacity(isAnimating ? 1.0 : 0.0)
+                        .animation(StreakAnimations.easeInOut.delay(delay + 0.3), value: isAnimating)
+                }
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 12)
-        .padding(.bottom, 16)
-        .padding(.horizontal, 12)
+        .padding(.vertical, StreakSpacing.lg)
+        .padding(.horizontal, StreakSpacing.md)
     }
 }
 
-// MARK: - Progress Tabs
+// MARK: - Modern Progress Tabs
 struct ProgressTabsView: View {
     let selectedTab: Int
     let onTabSelected: (Int) -> Void
     
-    private let tabs = ["Weekly", "Monthly", "Yearly", "Dummy"]
+    private let tabs = ["Weekly", "Monthly", "Yearly"]
     
     var body: some View {
         HStack(spacing: 0) {
             ForEach(0..<tabs.count, id: \.self) { index in
-                VStack(spacing: 0) {
-                    if index == 3 { // Dummy tab
-                        Text(tabs[index])
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.text04)
-                            .opacity(0)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    } else {
-                        Button(action: { onTabSelected(index) }) {
-                            Text(tabs[index])
-                                .font(.appTitleSmallEmphasised)
-                                .foregroundColor(selectedTab == index ? .text03 : .text04)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    Rectangle()
-                        .fill(selectedTab == index ? .text03 : .outline2)
-                        .frame(height: 3)
-                        .frame(maxWidth: .infinity)
-                        .animation(.easeInOut(duration: 0.2), value: selectedTab)
-                }
-                .frame(maxWidth: .infinity)
+                ModernTabButton(
+                    title: tabs[index],
+                    isSelected: selectedTab == index,
+                    onTap: { onTabSelected(index) }
+                )
             }
         }
-        .frame(maxWidth: .infinity)
-        .background(Color.white)
-        .ignoresSafeArea(.container, edges: .horizontal)
+        .background(StreakColors.surfaceBackground)
+        .streakCorner(StreakCorners.lg)
+        .streakShadow(StreakShadows.soft)
+        .padding(.horizontal, StreakSpacing.lg)
+    }
+}
+
+// MARK: - Modern Tab Button
+struct ModernTabButton: View {
+    let title: String
+    let isSelected: Bool
+    let onTap: () -> Void
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 0) {
+                // Tab Text
+                Text(title)
+                    .font(StreakTypography.labelLarge)
+                    .foregroundColor(isSelected ? StreakColors.primaryText : StreakColors.lightText)
+                    .padding(.horizontal, StreakSpacing.lg)
+                    .padding(.vertical, StreakSpacing.md)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: StreakCorners.lg)
+                            .fill(isSelected ? StreakColors.primary.opacity(0.1) : Color.clear)
+                    )
+                    .scaleEffect(isPressed ? 0.95 : 1.0)
+                    .animation(StreakAnimations.easeOut, value: isPressed)
+                
+                // Modern Underline Indicator
+                Rectangle()
+                    .fill(
+                        isSelected ? StreakColors.fireOrange : Color.clear
+                    )
+                    .frame(height: 3)
+                    .frame(maxWidth: .infinity)
+                    .streakCorner(StreakCorners.xs)
+                    .animation(StreakAnimations.spring, value: isSelected)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            withAnimation(StreakAnimations.easeOut) {
+                isPressed = pressing
+            }
+        }, perform: {})
     }
 }
 
@@ -326,52 +485,127 @@ struct HeatmapCellView: View {
 
 
 
-// MARK: - Summary Statistics
+// MARK: - Modern Summary Statistics
 struct SummaryStatisticsView: View {
     let completionRate: Int
     let bestStreak: Int
     let consistencyRate: Int
+    @State private var isAnimating = false
     
     var body: some View {
         HStack(spacing: 0) {
-            StatisticCardView(value: "\(completionRate)%", label: "Completion")
+            // Completion Rate Card
+            ModernStatisticCardView(
+                value: "\(completionRate)%",
+                label: "Completion",
+                icon: "checkmark.circle.fill",
+                iconColor: StreakColors.success,
+                isAnimating: isAnimating,
+                delay: 0.0
+            )
             
+            // Modern Divider
             Rectangle()
-                .fill(.outline3)
+                .fill(StreakColors.lightText.opacity(0.2))
                 .frame(width: 1)
-                .frame(height: 60)
+                .frame(height: 70)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(StreakAnimations.easeInOut.delay(0.4), value: isAnimating)
             
-            StatisticCardView(value: pluralizeDay(bestStreak), label: "Best streak")
+            // Best Streak Card
+            ModernStatisticCardView(
+                value: pluralizeDay(bestStreak),
+                label: "Best Streak",
+                icon: "flame.fill",
+                iconColor: StreakColors.fireOrange,
+                isAnimating: isAnimating,
+                delay: 0.2
+            )
             
+            // Modern Divider
             Rectangle()
-                .fill(.outline3)
+                .fill(StreakColors.lightText.opacity(0.2))
                 .frame(width: 1)
-                .frame(height: 60)
+                .frame(height: 70)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(StreakAnimations.easeInOut.delay(0.6), value: isAnimating)
             
-            StatisticCardView(value: "\(consistencyRate)%", label: "Consistency")
+            // Consistency Rate Card
+            ModernStatisticCardView(
+                value: "\(consistencyRate)%",
+                label: "Consistency",
+                icon: "chart.line.uptrend.xyaxis",
+                iconColor: StreakColors.info,
+                isAnimating: isAnimating,
+                delay: 0.4
+            )
         }
-        .background(.surfaceContainer)
-        .cornerRadius(16)
-//        .padding(.horizontal, 16)
+        .background(StreakColors.glassBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: StreakCorners.lg)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            StreakColors.success.opacity(0.3),
+                            StreakColors.fireOrange.opacity(0.3),
+                            StreakColors.info.opacity(0.3)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .streakCorner(StreakCorners.lg)
+        .streakShadow(StreakShadows.soft)
+        .onAppear {
+            withAnimation(StreakAnimations.easeInOut.delay(0.2)) {
+                isAnimating = true
+            }
+        }
     }
 }
 
-struct StatisticCardView: View {
+// MARK: - Modern Individual Statistic Card
+struct ModernStatisticCardView: View {
     let value: String
     let label: String
+    let icon: String
+    let iconColor: Color
+    let isAnimating: Bool
+    let delay: Double
     
     var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
+        VStack(spacing: StreakSpacing.sm) {
+            // Icon with Background
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(iconColor)
+            }
+            .scaleEffect(isAnimating ? 1.1 : 1.0)
+            .animation(StreakAnimations.spring.delay(delay), value: isAnimating)
             
+            // Value with Modern Typography
+            Text(value)
+                .font(StreakTypography.titleMedium)
+                .foregroundColor(StreakColors.primaryText)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(StreakAnimations.easeInOut.delay(delay + 0.1), value: isAnimating)
+            
+            // Label
             Text(label)
-                .font(.appBodySmall)
-                .foregroundColor(.text04)
+                .font(StreakTypography.labelMedium)
+                .foregroundColor(StreakColors.secondaryText)
+                .opacity(isAnimating ? 1.0 : 0.0)
+                .animation(StreakAnimations.easeInOut.delay(delay + 0.2), value: isAnimating)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
+        .padding(.vertical, StreakSpacing.lg)
+        .padding(.horizontal, StreakSpacing.md)
     }
 } 
