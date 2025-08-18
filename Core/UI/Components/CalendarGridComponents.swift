@@ -351,8 +351,8 @@ struct CalendarGridComponents {
                         .id("empty-\(index)")
                 }
             }
-            .animation(.easeInOut(duration: 0.5), value: firstDayOfMonth)
-            .animation(.easeInOut(duration: 0.5), value: daysInMonth)
+            .animation(nil, value: firstDayOfMonth) // Disable month change animation
+            .animation(nil, value: daysInMonth) // Disable month change animation
             .onAppear {
                 // Trigger grid appear animation
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

@@ -6,24 +6,8 @@ struct TimeInsightsSection: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            // Enhanced section header with cute icon
+            // Enhanced section header
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.2), Color.purple.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "clock.badge.checkmark.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.blue)
-                }
-                
                 Text("Time Magic")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)

@@ -307,25 +307,9 @@ struct ProgressTabView: View {
     
     // MARK: - Enhanced Difficulty Insights Section
     private var difficultyInsightsSection: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 8) {
             // Enhanced section header with cute icon
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.orange.opacity(0.2), Color.red.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.orange)
-                }
-                
                 Text("Challenge Corner")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
@@ -362,8 +346,6 @@ struct ProgressTabView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundColor(.red)
-                        .scaleEffect(1.0)
-                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: UUID())
                 }
                 
                 // Enhanced content with better typography and spacing

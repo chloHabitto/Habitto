@@ -185,7 +185,7 @@ struct StreakView: View {
                     .onChanged { value in
                         let translation = value.translation.height
                         if translation < 0 { // Dragging up
-                            dragOffset = max(translation, -275) // Slightly increased max height
+                            dragOffset = max(translation, -280) // Slightly increased max height
                         } else { // Dragging down
                             dragOffset = min(translation, 0) // Limit downward drag
                         }
@@ -196,12 +196,12 @@ struct StreakView: View {
                         
                         if translation < -150 || velocity < -300 { // Increased expand threshold
                             isExpanded = true
-                            dragOffset = -275 // Slightly increased max height
+                            dragOffset = -280 // Slightly increased max height
                         } else if translation > 25 || velocity > 300 { // Collapse threshold
                             isExpanded = false
                             dragOffset = 0
                         } else { // Return to current state
-                            dragOffset = isExpanded ? -275 : 0
+                            dragOffset = isExpanded ? -280 : 0
                         }
                     }
             )
