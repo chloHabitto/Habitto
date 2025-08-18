@@ -307,9 +307,9 @@ struct ProgressTabView: View {
     
     // MARK: - Enhanced Difficulty Insights Section
     private var difficultyInsightsSection: some View {
-        VStack(spacing: 8) {
-            // Enhanced section header with cute icon
-            HStack(spacing: 12) {
+        VStack(spacing: 20) {
+            // Enhanced section header
+            HStack {
                 Text("Challenge Corner")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
