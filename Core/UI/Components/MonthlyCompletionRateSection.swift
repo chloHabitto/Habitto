@@ -18,16 +18,6 @@ struct MonthlyCompletionRateSection: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            // Section header with better spacing
-            HStack {
-                Text("Monthly Progress")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            
             // Main completion rate card - enhanced prominence and spacing
             VStack(spacing: 24) {
                 HStack(spacing: 24) {

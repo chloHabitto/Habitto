@@ -407,6 +407,22 @@ struct ProgressTabView: View {
             StreakDataCalculator.shouldShowHabitOnDate(habit, date: today)
         }.count
     }
+    
+    // MARK: - Helper Methods for Enhanced Insights
+    private func getAllCompletionRecords() -> [CompletionRecordEntity] {
+        var allRecords: [CompletionRecordEntity] = []
+        for habit in habits {
+            let records = getCompletionRecords(for: habit)
+            allRecords.append(contentsOf: records)
+        }
+        return allRecords
+    }
+    
+    private func getAllDifficultyLogs() -> [DifficultyLogEntity] {
+        // Use CoreDataAdapter to fetch all difficulty logs
+        // Return empty array if coreDataAdapter is not available (e.g., in previews)
+        return coreDataAdapter.fetchAllDifficultyLogs()
+    }
 
     
     var body: some View {
@@ -430,36 +446,27 @@ struct ProgressTabView: View {
                     
                     // Habit-Specific Insights (only show when habit selected)
                     if let selectedHabit = selectedHabit {
-                        habitSpecificInsightsSection(for: selectedHabit)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 20)
+                        // Show only essential insights for selected habit
+                        VStack(spacing: 20) {
+                            // Just the time recommendation - most actionable insight
+                            bestTimeRecommendationSimplified(for: selectedHabit)
+                                .padding(.horizontal, 20)
+                        }
+                        .padding(.top, 20)
                     }
                     
-                    // General Insights (only show when "All habits" selected)
+                    // Enhanced Insights (only show when "All habits" selected)
                     if selectedHabit == nil {
-                        // Difficulty Overview Section
-                        difficultyInsightsSection
-                            .padding(.top, 20)
-                        
-                        // Time Patterns Section
-                        TimeInsightsSection(
-                            habit: selectedHabit,
-                            completionRecords: selectedHabit != nil ? 
-                                CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
-                                CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(.formation) // Default to formation type
-                        )
-                        .padding(.top, 20)
-                        
-                        // Pattern Analysis Section
-                        PatternInsightsSection(
-                            habit: selectedHabit,
-                            completionRecords: selectedHabit != nil ? 
-                                CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
-                                CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(.formation), // Default to formation type
-                            difficultyLogs: selectedHabit != nil ? 
-                                CoreDataAdapter.shared.fetchDifficultyLogs(for: selectedHabit!) :
-                                CoreDataAdapter.shared.fetchAllDifficultyLogs()
-                        )
+                        VStack(spacing: 20) {
+                            // Challenge Corner - Your biggest challenge
+                            difficultyInsightsSection
+                            
+                            // Time Magic - Your time patterns
+                            TimeInsightsSection(habit: nil, completionRecords: getAllCompletionRecords())
+                            
+                            // Pattern Magic - Your consistency patterns
+                            PatternInsightsSection(habit: nil, completionRecords: getAllCompletionRecords(), difficultyLogs: getAllDifficultyLogs())
+                        }
                         .padding(.top, 20)
                     }
                 }
@@ -733,23 +740,619 @@ struct ProgressTabView: View {
         )
     }
     
+    // MARK: - Personalized Recommendations Section
+    private func personalizedRecommendationsSection(for habit: Habit?) -> some View {
+        VStack(spacing: 20) {
+            // Personalized Recommendations header
+            HStack {
+                Image(systemName: "lightbulb.fill")
+                    .font(.title2)
+                    .foregroundColor(.yellow)
+                
+                Text("Personalized Recommendations")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            if let selectedHabit = habit {
+                // Habit-specific recommendations
+                habitSpecificRecommendations(for: selectedHabit)
+            } else {
+                // General recommendations for all habits
+                generalRecommendations
+            }
+        }
+    }
+    
+    // MARK: - Habit-Specific Recommendations
+    private func habitSpecificRecommendations(for habit: Habit) -> some View {
+        VStack(spacing: 16) {
+            // Best Time Recommendation
+            bestTimeRecommendation(for: habit)
+            
+            // Success Pattern Insights
+            successPatternInsights(for: habit)
+            
+            // Weekly Optimization Tips
+            weeklyOptimizationTips(for: habit)
+        }
+    }
+    
+    // MARK: - Best Time Recommendation
+    private func bestTimeRecommendation(for habit: Habit) -> some View {
+        let completionRecords = getCompletionRecords(for: habit)
+        let timeAnalysis = TimeBlockHelper.analyzeTimePatterns(for: habit, completionRecords: completionRecords)
+        let bestTimeBlock = timeAnalysis.first
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "clock.badge.checkmark.fill")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("Best Time to Complete")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            if let bestTime = bestTimeBlock, bestTime.successRate > 0.5 {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: bestTime.timeBlock.icon)
+                            .font(.system(size: 16))
+                            .foregroundColor(.primary)
+                        
+                        Text("\(bestTime.timeBlock.displayName)s are your best time!")
+                            .font(.appBodyMediumEmphasised)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Spacer()
+                    }
+                    
+                    Text("You complete this habit \(bestTime.successRatePercentage) of the time during \(bestTime.timeBlock.displayName.lowercased())s")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                    
+                    Text("💡 Try to schedule this habit for \(bestTime.timeBlock.displayName.lowercased())s when possible")
+                        .font(.appBodySmall)
+                        .foregroundColor(.primary)
+                        .italic()
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primaryContainer.opacity(0.1))
+                )
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Not enough data yet")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                    
+                    Text("Complete this habit a few more times to get personalized time recommendations")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text04)
+                        .italic()
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.outline3.opacity(0.1))
+                )
+            }
+        }
+    }
+    
+    // MARK: - Success Pattern Insights
+    private func successPatternInsights(for habit: Habit) -> some View {
+        let completionRecords = getCompletionRecords(for: habit)
+        let monthlyRate = ProgressCalculationHelper.getHabitMonthlyCompletionRate(for: habit, currentDate: Date())
+        let weeklyRate = ProgressCalculationHelper.getHabitWeeklyCompletionRate(for: habit, currentDate: Date())
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("Success Patterns")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("This Month:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(Int(monthlyRate * 100))%")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                HStack {
+                    Text("This Week:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(Int(weeklyRate * 100))%")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                // Success insight
+                if monthlyRate > 0.8 {
+                    Text("🎯 Excellent! You're consistently successful with this habit")
+                        .font(.appBodySmall)
+                        .foregroundColor(.green)
+                        .italic()
+                } else if monthlyRate > 0.6 {
+                    Text("👍 Good progress! You're building consistency")
+                        .font(.appBodySmall)
+                        .foregroundColor(.primary)
+                        .italic()
+                } else if monthlyRate > 0.3 {
+                    Text("💪 Keep going! Every completion builds momentum")
+                        .font(.appBodySmall)
+                        .foregroundColor(.orange)
+                        .italic()
+                } else {
+                    Text("🌟 Starting is the hardest part. You've got this!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .italic()
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
+    // MARK: - Weekly Optimization Tips
+    private func weeklyOptimizationTips(for habit: Habit) -> some View {
+        let completionRecords = getCompletionRecords(for: habit)
+        let timeAnalysis = TimeBlockHelper.analyzeTimePatterns(for: habit, completionRecords: completionRecords)
+        let bestTimeBlock = timeAnalysis.first
+        let worstTimeBlock = timeAnalysis.last
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "target")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("This Week's Strategy")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                if let bestTime = bestTimeBlock, let worstTime = worstTimeBlock, bestTime.successRate > 0.5 {
+                    Text("🎯 **Focus on \(bestTime.timeBlock.displayName.lowercased())s**")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("Schedule this habit during your most successful time: \(bestTime.timeBlock.displayName.lowercased())s")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                    
+                    if worstTime.successRate < 0.3 {
+                        Text("⚠️ **Avoid \(worstTime.timeBlock.displayName.lowercased())s**")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.orange)
+                        
+                        Text("This time has lower success rate (\(worstTime.successRatePercentage))")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+                    }
+                } else {
+                    Text("📅 **Build Consistency**")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("Focus on completing this habit at the same time each day to build a routine")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+                
+                Text("💡 **Pro Tip**: Set a daily reminder for your chosen time")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primary)
+                    .italic()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
+    // MARK: - General Recommendations
+    private var generalRecommendations: some View {
+        VStack(spacing: 16) {
+            // Overall Progress Insights
+            overallProgressInsights
+            
+            // Best Performing Habit
+            bestPerformingHabitInsight
+            
+            // Habit Optimization Tips
+            habitOptimizationTips
+            
+            // Weekly Strategy
+            weeklyStrategy
+        }
+    }
+    
+    // MARK: - Overall Progress Insights
+    private var overallProgressInsights: some View {
+        let todayCompleted = getTodaysCompletedHabitsCount()
+        let todayTotal = getTodaysTotalHabitsCount()
+        let todayProgress = todayTotal > 0 ? Double(todayCompleted) / Double(todayTotal) : 0.0
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("Today's Progress")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Completed:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(todayCompleted) of \(todayTotal) habits")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                }
+                
+                if todayProgress > 0.8 {
+                    Text("🎉 Amazing day! You're on fire!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.green)
+                        .italic()
+                } else if todayProgress > 0.6 {
+                    Text("👍 Great progress! Keep the momentum going")
+                        .font(.appBodySmall)
+                        .foregroundColor(.primary)
+                        .italic()
+                } else if todayProgress > 0.3 {
+                    Text("💪 Good start! Every habit completed counts")
+                        .font(.appBodySmall)
+                        .foregroundColor(.orange)
+                        .italic()
+                } else {
+                    Text("🌟 Tomorrow is a new opportunity to build habits")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .italic()
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
+    // MARK: - Best Performing Habit Insight
+    private var bestPerformingHabitInsight: some View {
+        let bestHabit = getBestPerformingHabit()
+        let longestStreakHabit = getHabitWithLongestStreak()
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .font(.title3)
+                    .foregroundColor(.yellow)
+                
+                Text("Top Performers")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                if let best = bestHabit {
+                    let monthlyRate = ProgressCalculationHelper.getHabitMonthlyCompletionRate(for: best, currentDate: Date())
+                    
+                    HStack {
+                        Text("🏆 Best This Month:")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Spacer()
+                        
+                        Text("\(Int(monthlyRate * 100))%")
+                            .font(.appBodyMediumEmphasised)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("\(best.name) - \(best.goal)")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                        .italic()
+                }
+                
+                if let longest = longestStreakHabit, longest.streak > 0 {
+                    HStack {
+                        Text("🔥 Longest Streak:")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Spacer()
+                        
+                        Text("\(longest.streak) days")
+                            .font(.appBodyMediumEmphasised)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("\(longest.name) - \(longest.goal)")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                        .italic()
+                }
+                
+                Text("💡 **Tip**: Learn from your most successful habits")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primary)
+                    .italic()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
+    // MARK: - Habit Optimization Tips
+    private var habitOptimizationTips: some View {
+        let totalHabits = habits.count
+        let activeHabits = habits.filter { $0.streak > 0 }.count
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "gear")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("Habit Optimization")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Active Habits:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(activeHabits) of \(totalHabits)")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                }
+                
+                if activeHabits == totalHabits {
+                    Text("🎯 Perfect! All habits are active and building momentum")
+                        .font(.appBodySmall)
+                        .foregroundColor(.green)
+                        .italic()
+                } else if activeHabits > totalHabits / 2 {
+                    Text("💪 Strong foundation! Focus on the inactive habits")
+                        .font(.appBodySmall)
+                        .foregroundColor(.primary)
+                        .italic()
+                } else {
+                    Text("🌟 Start with 1-2 habits to build momentum")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .italic()
+                }
+                
+                Text("💡 **Tip**: Focus on consistency over quantity")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primary)
+                    .italic()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
+    // MARK: - Weekly Strategy
+    private var weeklyStrategy: some View {
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.title3)
+                    .foregroundColor(.primary)
+                
+                Text("This Week's Strategy")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("📅 **Plan Your Week**")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("Schedule your most challenging habits during your peak energy times")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+                
+                Text("🎯 **Focus Areas**")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("• Complete 1 habit each day to build momentum")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+                
+                Text("• Use the calendar to track your progress")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+                
+                Text("• Celebrate small wins to stay motivated")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+                
+                Text("💡 **Pro Tip**: Review your progress at the end of each week")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primary)
+                    .italic()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.surface)
+            )
+        }
+    }
+    
     // MARK: - Helper Methods
     private func getCompletionRecords(for habit: Habit) -> [CompletionRecordEntity] {
         // Get completion records from Core Data
+        // Return empty array if Core Data is not available (e.g., in previews)
+        let context = CoreDataManager.shared.context
+        
+        // Check if the context is valid and ready
+        guard context.persistentStoreCoordinator?.persistentStores.isEmpty == false else {
+            print("⚠️ Warning: Core Data persistent stores not loaded")
+            return []
+        }
+        
         let request: NSFetchRequest<CompletionRecordEntity> = CompletionRecordEntity.fetchRequest()
         request.predicate = NSPredicate(format: "habit.id == %@", habit.id as CVarArg)
         
         do {
-            return try CoreDataManager.shared.context.fetch(request)
+            return try context.fetch(request)
         } catch {
             print("❌ Error fetching completion records: \(error)")
             return []
         }
     }
+    
+    // MARK: - Simplified Insights
+    private func bestTimeRecommendationSimplified(for habit: Habit) -> some View {
+        let completionRecords = getCompletionRecords(for: habit)
+        let timeAnalysis = TimeBlockHelper.analyzeTimePatterns(for: habit, completionRecords: completionRecords)
+        let bestTimeBlock = timeAnalysis.first
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "lightbulb.fill")
+                    .font(.title2)
+                    .foregroundColor(.yellow)
+                
+                Text("Quick Tip")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            if let bestTime = bestTimeBlock, bestTime.successRate > 0.5 {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: bestTime.timeBlock.icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(.primary)
+                        
+                        Text("\(bestTime.timeBlock.displayName)s work best for you")
+                            .font(.appBodyMediumEmphasised)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Spacer()
+                    }
+                    
+                    Text("You complete this habit \(bestTime.successRatePercentage) of the time during \(bestTime.timeBlock.displayName.lowercased())s")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.primaryContainer.opacity(0.1))
+                )
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Keep going!")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("Complete this habit a few more times to get personalized insights")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.surface)
+                )
+            }
+        }
+    }
+    
+
+    
+    // MARK: - Helper Methods for Recommendations
+    private func getBestPerformingHabit() -> Habit? {
+        return habits.max { habit1, habit2 in
+            let rate1 = ProgressCalculationHelper.getHabitMonthlyCompletionRate(for: habit1, currentDate: Date())
+            let rate2 = ProgressCalculationHelper.getHabitMonthlyCompletionRate(for: habit2, currentDate: Date())
+            return rate1 < rate2
+        }
+    }
+    
+    private func getHabitWithLongestStreak() -> Habit? {
+        return habits.max { $0.streak < $1.streak }
+    }
 }
 
 #Preview {
     ProgressTabView(habits: [])
+        .environmentObject(CoreDataAdapter.shared)
 } 
 
 
