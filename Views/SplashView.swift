@@ -7,30 +7,34 @@ struct SplashView: View {
     @State private var showMainApp = false
     
     var body: some View {
-        // Remove ZStack - just show animation directly
-        LottieView(name: "SplashAnimation")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea() // Fill entire screen
-            .onAppear {
-                // Animation plays automatically
-            }
-            .onAppear {
-                // Start timer immediately - no waiting for loading
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    // Always show main app - no authentication required
-                    showMainApp = true
+        GeometryReader { geometry in
+            // Ensure animation fills entire screen without white space
+            LottieView(name: "SplashAnimation")
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                .ignoresSafeArea(.all, edges: .all) // Fill entire screen including safe areas
+                .onAppear {
+                    // Animation plays automatically
                 }
-            }
-            .fullScreenCover(isPresented: $showMainApp) {
-                // Navigate directly to main app without authentication
-                HomeView()
-                    .preferredColorScheme(.light)
-                    .environment(\.managedObjectContext, CoreDataManager.shared.context)
-                    .environmentObject(CoreDataManager.shared)
-                    .environmentObject(CoreDataAdapter.shared)
-                    .environmentObject(tutorialManager)
-                    .environmentObject(authManager)
-            }
+                .onAppear {
+                    // Start timer immediately - no waiting for loading
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        // Always show main app - no authentication required
+                        showMainApp = true
+                    }
+                }
+                .fullScreenCover(isPresented: $showMainApp) {
+                    // Navigate directly to main app without authentication
+                    HomeView()
+                        .preferredColorScheme(.light)
+                        .environment(\.managedObjectContext, CoreDataManager.shared.context)
+                        .environmentObject(CoreDataManager.shared)
+                        .environmentObject(CoreDataAdapter.shared)
+                        .environmentObject(tutorialManager)
+                        .environmentObject(authManager)
+                }
+        }
+        .ignoresSafeArea(.all, edges: .all)
     }
 }
 
@@ -45,6 +49,12 @@ struct LottieView: UIViewRepresentable {
         animationView.animationSpeed = 1.0
         animationView.backgroundColor = .clear
         animationView.isOpaque = false // Allow transparency
+        
+        // Ensure the animation view fills the entire container
+        animationView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Set clipsToBounds to false to allow full screen coverage
+        animationView.clipsToBounds = false
         
         // Load and play the animation immediately
         if let animation = LottieAnimation.named(name) {

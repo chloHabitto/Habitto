@@ -52,11 +52,18 @@ class HomeViewState: ObservableObject {
                 print("🔍 HomeViewState: Received habits update from CoreDataAdapter - count: \(newHabits.count)")
                 if let self = self {
                     print("🔍 HomeViewState: Previous habits count: \(self.habits.count)")
+                    
+                    // Debug: Check if new habits contain the expected habit
+                    if let newHabit = newHabits.last {
+                        print("🔍 HomeViewState: Newest habit in update: \(newHabit.name) (ID: \(newHabit.id))")
+                    }
+                    
                     self.habits = newHabits
                     print("🔍 HomeViewState: Updated habits count: \(self.habits.count)")
                     
                     // Force UI update
                     self.objectWillChange.send()
+                    print("🔍 HomeViewState: UI update triggered")
                 }
             }
             .store(in: &cancellables)
@@ -105,7 +112,14 @@ class HomeViewState: ObservableObject {
     }
     
     func createHabit(_ habit: Habit) {
+        print("🔍 HomeViewState: createHabit called for habit: \(habit.name)")
+        print("🔍 HomeViewState: Habit ID: \(habit.id)")
+        print("🔍 HomeViewState: Current habits count: \(habits.count)")
+        
         coreDataAdapter.createHabit(habit)
+        
+        print("🔍 HomeViewState: coreDataAdapter.createHabit completed")
+        print("🔍 HomeViewState: Waiting for Core Data update notification...")
     }
     
     func backupHabits() {
@@ -153,6 +167,19 @@ class HomeViewState: ObservableObject {
         if !habits.isEmpty {
             validateAllStreaks()
         }
+    }
+    
+    // Debug method to check current state
+    func debugCurrentState() {
+        print("🔍 HomeViewState: === DEBUG STATE ===")
+        print("🔍 HomeViewState: Current habits count: \(habits.count)")
+        print("🔍 HomeViewState: CoreDataAdapter habits count: \(coreDataAdapter.habits.count)")
+        
+        for (index, habit) in habits.enumerated() {
+            print("🔍 HomeViewState: Habit \(index): \(habit.name) (ID: \(habit.id))")
+        }
+        
+        print("🔍 HomeViewState: === END DEBUG ===")
     }
 }
 
@@ -263,6 +290,9 @@ struct HomeView: View {
             
             // Debug Core Data state
             CoreDataAdapter.shared.debugHabitsState()
+            
+            // Debug current state
+            state.debugCurrentState()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             print("🏠 HomeView: App going to background, backing up habits...")
@@ -277,7 +307,13 @@ struct HomeView: View {
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
+                print("🔍 HomeView: CreateHabitFlowView onSave called with habit: \(habit.name)")
+                print("🔍 HomeView: Habit details - ID: \(habit.id), Color: \(habit.color), Icon: \(habit.icon)")
+                print("🔍 HomeView: Current habits count before creation: \(state.habits.count)")
+                
                 state.createHabit(habit)
+                
+                print("🔍 HomeView: createHabit called, waiting for Core Data update...")
                 state.showingCreateHabit = false
             })
         }

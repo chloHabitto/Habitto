@@ -298,15 +298,19 @@ class CoreDataAdapter: ObservableObject {
             let createdEntity = try coreDataManager.createHabit(from: habit)
             print("🔄 CoreDataAdapter: Habit created in Core Data with ID: \(createdEntity.id?.uuidString ?? "nil")")
             
-            // Force reload habits immediately
-            loadHabits(force: true)
-            
-            // Verify the habit was added
-            print("🔄 CoreDataAdapter: Habits after creation: \(habits.count)")
-            if let addedHabit = habits.first(where: { $0.id == habit.id }) {
-                print("✅ CoreDataAdapter: Habit successfully added: \(addedHabit.name)")
-            } else {
-                print("⚠️ CoreDataAdapter: Habit not found in habits array after creation")
+            // ✅ FIX: Immediately add the habit to the published array for instant UI update
+            // This ensures the UI shows the new habit immediately
+            DispatchQueue.main.async {
+                var updatedHabits = self.habits
+                updatedHabits.append(habit)
+                self.habits = updatedHabits
+                print("✅ CoreDataAdapter: Habit immediately added to published array, new count: \(self.habits.count)")
+                
+                // Also reload from Core Data to ensure consistency
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    print("🔄 CoreDataAdapter: Reloading habits from Core Data for consistency...")
+                    self.loadHabits(force: true)
+                }
             }
             
         } catch {
