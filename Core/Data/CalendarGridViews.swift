@@ -49,14 +49,14 @@ struct WeeklyCalendarGridView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 VStack(spacing: 0) {
-                    // Header row
+                    // Header row with modern styling
                     HStack(spacing: 0) {
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: 8)
                             .fill(.clear)
                             .frame(minWidth: 0, maxWidth: .infinity)
-                            .frame(height: 32)
-                            .padding(.leading, 8)
-                            // .background(Color.purple)
+                            .frame(height: 36)
+                            .padding(.leading, 12)
+                            .background(Color.white)
                             .overlay(
                                 Rectangle()
                                     .stroke(.outline3, lineWidth: 1)
@@ -66,8 +66,9 @@ struct WeeklyCalendarGridView: View {
                             Text(day)
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text04)
-                                .frame(width: 32)
-                                .frame(height: 32)
+                                .frame(width: 36)
+                                .frame(height: 36)
+                                .background(Color.white)
                                 .overlay(
                                     Rectangle()
                                         .stroke(.outline3, lineWidth: 1)
@@ -76,11 +77,11 @@ struct WeeklyCalendarGridView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    // Habit rows - Performance optimization: Lazy loading
+                    // Habit rows - Performance optimization: Lazy loading with modern styling
                     LazyVStack(spacing: 0) {
                         ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
                             HStack(spacing: 0) {
-                                // Habit name cell
+                                // Habit name cell with modern styling
                                 HStack(spacing: 8) {
                                     HabitIconInlineView(habit: habit)
                                     
@@ -93,15 +94,15 @@ struct WeeklyCalendarGridView: View {
                                         .padding(.trailing, 4)
                                 }
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                                .frame(height: 32)
-                                .padding(.leading, 8)
-                                // .background(Color.purple)
+                                .frame(height: 36)
+                                .padding(.leading, 12)
+                                .background(Color.white)
                                 .overlay(
                                     Rectangle()
                                         .stroke(.outline3, lineWidth: 1)
                                 )
                                 
-                                // Heatmap cells
+                                // Heatmap cells with modern styling
                                 ForEach(0..<7, id: \.self) { dayIndex in
                                     let heatmapData = StreakDataCalculator.getWeeklyHeatmapData(
                                         for: habit,
@@ -117,7 +118,8 @@ struct WeeklyCalendarGridView: View {
                                         isScheduled: heatmapData.isScheduled,
                                         completionPercentage: heatmapData.completionPercentage
                                     )
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.white)
                                     .overlay(
                                         Rectangle()
                                             .stroke(.outline3, lineWidth: 1)
@@ -129,15 +131,15 @@ struct WeeklyCalendarGridView: View {
                         }
                     }
                     
-                    // Total row
+                    // Total row with modern styling
                     HStack(spacing: 0) {
                         Text("Total")
                             .font(.appBodyMediumEmphasised)
                             .foregroundColor(.text01)
                             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                            .frame(height: 32)
-                            .padding(.leading, 8)
-                            // .background(Color.purple)
+                            .frame(height: 36)
+                            .padding(.leading, 12)
+                            .background(Color.white)
                             .overlay(
                                 Rectangle()
                                     .stroke(.outline3, lineWidth: 1)
@@ -158,7 +160,8 @@ struct WeeklyCalendarGridView: View {
                                 isScheduled: totalHeatmapData.isScheduled,
                                 completionPercentage: totalHeatmapData.completionPercentage
                             )
-                            .frame(width: 32, height: 32)
+                            .frame(width: 36, height: 36)
+                            .background(Color.white)
                             .overlay(
                                 Rectangle()
                                     .stroke(.outline3, lineWidth: 1)
@@ -168,6 +171,7 @@ struct WeeklyCalendarGridView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+
 //                .padding(.horizontal, 16)
 //                .background(.red)
             }
@@ -765,3 +769,5 @@ struct YearlyCalendarGridView: View {
         return StreakDataCalculator.parseGoalAmount(from: goalString)
     }
 } 
+
+
