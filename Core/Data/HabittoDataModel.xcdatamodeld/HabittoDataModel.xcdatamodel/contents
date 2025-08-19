@@ -3,6 +3,7 @@
     <entity name="CompletionRecordEntity" representedClassName="CompletionRecordEntity" syncable="YES" codeGenerationType="class">
         <attribute name="dateKey" optional="YES" attributeType="String"/>
         <attribute name="progress" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="timeBlock" optional="YES" attributeType="String"/>
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="habit" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="HabitEntity" inverseName="completionHistory" inverseEntity="HabitEntity"/>
     </entity>

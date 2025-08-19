@@ -1,9 +1,10 @@
 import SwiftUI
+import CoreData
 
 struct ProgressTabView: View {
-    @State private var selectedHabitType: HabitType = .formation
-    @State private var showingHabitsList = false
-    @State private var selectedHabit: Habit? = nil
+    @EnvironmentObject var coreDataAdapter: CoreDataAdapter
+    @State private var selectedHabit: Habit?
+    @State private var showingHabitSelector = false
     let habits: [Habit]
     
     // Use the calendar helper
@@ -82,49 +83,6 @@ struct ProgressTabView: View {
     // MARK: - Overall Progress Section
     private var overallProgressSection: some View {
         VStack(spacing: 0) {
-            // Overall + down chevron header - left aligned
-            Button(action: {
-                showingHabitsList = true
-            }) {
-                HStack(spacing: 0) {
-                    // Always show an icon - either overall icon or selected habit icon
-                    if let selectedHabit = selectedHabit {
-                        HabitIconView(habit: selectedHabit)
-                            .frame(width: 38, height: 54)
-                    } else {
-                        // Overall icon when no specific habit is selected - match HabitIconView exactly
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.primary.opacity(0.15))
-                                .frame(width: 30, height: 30)
-                            
-                            Image(systemName: "chart.bar.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.primary)
-                        }
-                        .frame(width: 38, height: 54)
-                    }
-                    
-                    Spacer()
-                        .frame(width: 8)
-                    
-                    Text(selectedHabit?.name ?? "Overall")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                        .frame(width: 12)
-                    
-                    Image(systemName: showingHabitsList ? "chevron.up" : "chevron.down")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.primaryFocus)
-                    
-                    Spacer()
-                }
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.horizontal, 20)
-            
             // Monthly Calendar
             VStack(spacing: 12) {
                 // Calendar header with month/year and Today button
@@ -173,7 +131,7 @@ struct ProgressTabView: View {
                             day: day,
                             currentDate: calendarHelper.currentDate,
                             habits: habits,
-                            selectedHabitType: selectedHabitType,
+                            selectedHabitType: .formation, // Default to formation type
                             selectedHabit: selectedHabit
                         )
                     },
@@ -220,78 +178,78 @@ struct ProgressTabView: View {
                 monthlyCompletionRate: ProgressCalculationHelper.monthlyCompletionRate(
                     habits: habits,
                     currentDate: calendarHelper.currentDate,
-                    selectedHabitType: selectedHabitType,
+                    selectedHabitType: .formation, // Default to formation type
                     selectedHabit: selectedHabit
                 ),
                 monthlyCompletedHabits: ProgressCalculationHelper.monthlyCompletedHabits(
                     habits: habits,
                     currentDate: calendarHelper.currentDate,
-                    selectedHabitType: selectedHabitType
+                    selectedHabitType: .formation // Default to formation type
                 ),
                 monthlyTotalHabits: ProgressTrendHelper.monthlyTotalHabits(
                     habits: habits,
-                    selectedHabitType: selectedHabitType
+                    selectedHabitType: .formation // Default to formation type
                 ),
                 topPerformingHabit: ProgressTrendHelper.topPerformingHabit(
                     habits: habits,
-                    selectedHabitType: selectedHabitType,
+                    selectedHabitType: .formation, // Default to formation type
                     currentDate: calendarHelper.currentDate
                 ),
                 needsAttentionHabit: ProgressTrendHelper.needsAttentionHabit(
                     habits: habits,
-                    selectedHabitType: selectedHabitType,
+                    selectedHabitType: .formation, // Default to formation type
                     currentDate: calendarHelper.currentDate
                 ),
                 progressTrendColor: ProgressTrendHelper.progressTrendColor(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType,
+                        selectedHabitType: .formation, // Default to formation type
                         selectedHabit: selectedHabit
                     ),
                     previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType
+                        selectedHabitType: .formation // Default to formation type
                     )
                 )),
                 progressTrendIcon: ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType,
+                        selectedHabitType: .formation, // Default to formation type
                         selectedHabit: selectedHabit
                     ),
                     previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType
+                        selectedHabitType: .formation // Default to formation type
                     )
                 )),
                 progressTrendText: ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType,
+                        selectedHabitType: .formation, // Default to formation type
                         selectedHabit: selectedHabit
                     ),
                     previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType
+                        selectedHabitType: .formation // Default to formation type
                     )
                 )),
                 progressTrendDescription: ProgressTrendHelper.progressTrendDescription(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType,
+                        selectedHabitType: .formation, // Default to formation type
                         selectedHabit: selectedHabit
                     ),
                     previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
-                        selectedHabitType: selectedHabitType
+                        selectedHabitType: .formation // Default to formation type
                     )
                 )),
                 monthlyHabitCompletionRate: { habit in
@@ -457,36 +415,53 @@ struct ProgressTabView: View {
         ) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 0) {
-                    // Today's Progress Summary (Simplified)
-                    todaysProgressSummary
+                    // Habit Selector Header
+                    habitSelectorHeader
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                    
+                    // Today's Progress Summary (Simplified) - only show when "All habits" selected
+                    // if selectedHabit == nil {
+                    //     todaysProgressSummary
+                    // }
                     
                     // Overall Progress Section with Monthly Calendar
                     overallProgressSection
                     
-                    // Difficulty Overview Section
-                    difficultyInsightsSection
+                    // Habit-Specific Insights (only show when habit selected)
+                    if let selectedHabit = selectedHabit {
+                        habitSpecificInsightsSection(for: selectedHabit)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                    }
+                    
+                    // General Insights (only show when "All habits" selected)
+                    if selectedHabit == nil {
+                        // Difficulty Overview Section
+                        difficultyInsightsSection
+                            .padding(.top, 20)
+                        
+                        // Time Patterns Section
+                        TimeInsightsSection(
+                            habit: selectedHabit,
+                            completionRecords: selectedHabit != nil ? 
+                                CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
+                                CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(.formation) // Default to formation type
+                        )
                         .padding(.top, 20)
-                    
-                    // Time Patterns Section
-                    TimeInsightsSection(
-                        habit: selectedHabit,
-                        completionRecords: selectedHabit != nil ? 
-                            CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
-                            CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(selectedHabitType)
-                    )
-                    .padding(.top, 20)
-                    
-                    // Pattern Analysis Section
-                    PatternInsightsSection(
-                        habit: selectedHabit,
-                        completionRecords: selectedHabit != nil ? 
-                            CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
-                            CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(selectedHabitType),
-                        difficultyLogs: selectedHabit != nil ? 
-                            CoreDataAdapter.shared.fetchDifficultyLogs(for: selectedHabit!) :
-                            CoreDataAdapter.shared.fetchAllDifficultyLogs()
-                    )
-                    .padding(.top, 20)
+                        
+                        // Pattern Analysis Section
+                        PatternInsightsSection(
+                            habit: selectedHabit,
+                            completionRecords: selectedHabit != nil ? 
+                                CoreDataAdapter.shared.fetchCompletionRecordsWithTimestamps(for: selectedHabit!) :
+                                CoreDataAdapter.shared.fetchCompletionRecordsByHabitType(.formation), // Default to formation type
+                            difficultyLogs: selectedHabit != nil ? 
+                                CoreDataAdapter.shared.fetchDifficultyLogs(for: selectedHabit!) :
+                                CoreDataAdapter.shared.fetchAllDifficultyLogs()
+                        )
+                        .padding(.top, 20)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
                 .padding(.bottom, 40)
@@ -508,22 +483,267 @@ struct ProgressTabView: View {
                     print("🔍 CALENDAR STATE DEBUG - The habit needs to have progress logged to show in the calendar.")
                 }
             } else {
-                print("🔍 CALENDAR STATE DEBUG - Calendar displaying for overall progress (habit type: \(selectedHabitType))")
+                print("🔍 CALENDAR STATE DEBUG - Calendar displaying for overall progress")
             }
         }
-        .sheet(isPresented: $showingHabitsList) {
-            HabitsListPopup(
-                habits: habits,
-                selectedHabit: selectedHabit,
-                showingHabitsList: showingHabitsList,
-                onHabitSelected: { habit in
-                    selectedHabit = habit
-                    showingHabitsList = false
-                },
-                onDismiss: {
-                    showingHabitsList = false
+        .sheet(isPresented: $showingHabitSelector) {
+            HabitSelectorView(selectedHabit: $selectedHabit)
+        }
+    }
+    
+    // MARK: - Habit Selector Header
+    private var habitSelectorHeader: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Monthly Progress")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingHabitSelector = true
+                }) {
+                    HStack(spacing: 8) {
+                        Text(selectedHabit?.name ?? "All habits")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.text04)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.primaryContainer)
+                    )
                 }
-            )
+            }
+        }
+    }
+    
+    // MARK: - Habit-Specific Insights Section
+    private func habitSpecificInsightsSection(for habit: Habit) -> some View {
+        VStack(spacing: 20) {
+            // Habit Overview Card
+            habitOverviewCard(for: habit)
+            
+            // Time Pattern Analysis
+            timePatternAnalysisCard(for: habit)
+            
+            // Progress Metrics
+            progressMetricsCard(for: habit)
+        }
+    }
+    
+    // MARK: - Habit Overview Card
+    private func habitOverviewCard(for habit: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Habit Overview")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
+                // Habit icon or emoji
+                Text(habit.icon)
+                    .font(.title2)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Goal:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text(habit.goal)
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                }
+                
+                HStack {
+                    Text("Current Streak:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(habit.streak) days")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                HStack {
+                    Text("Best Streak:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    Text("\(habit.streak) days")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.surface)
+        )
+    }
+    
+    // MARK: - Time Pattern Analysis Card
+    private func timePatternAnalysisCard(for habit: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "clock.badge.checkmark.fill")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                
+                Text("Time Pattern Analysis")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            // Get completion records for this habit
+            let completionRecords = getCompletionRecords(for: habit)
+            let timeAnalysis = TimeBlockHelper.analyzeTimePatterns(for: habit, completionRecords: completionRecords)
+            
+            if timeAnalysis.isEmpty {
+                Text("Complete this habit a few times to see time pattern insights")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
+                    .italic()
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(timeAnalysis.prefix(3), id: \.timeBlock) { analysis in
+                        HStack {
+                            Image(systemName: analysis.timeBlock.icon)
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                                .frame(width: 24)
+                            
+                            Text(analysis.timeBlock.displayName)
+                                .font(.appBodyMedium)
+                                .foregroundColor(.onPrimaryContainer)
+                            
+                            Spacer()
+                            
+                            Text("\(analysis.completionCount)/\(analysis.totalOpportunities)")
+                                .font(.appBodySmall)
+                                .foregroundColor(.text02)
+                            
+                            Text(analysis.successRatePercentage)
+                                .font(.appBodyMediumEmphasised)
+                                .foregroundColor(.primary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.primaryContainer.opacity(0.1))
+                        )
+                    }
+                }
+                
+                if let insight = TimeBlockHelper.getTimeBlockInsight(for: habit, completionRecords: completionRecords) {
+                    Text(insight)
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                        .padding(.top, 8)
+                        .italic()
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.surface)
+        )
+    }
+    
+    // MARK: - Progress Metrics Card
+    private func progressMetricsCard(for habit: Habit) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                
+                Text("Progress Metrics")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
+            
+            VStack(spacing: 12) {
+                HStack {
+                    Text("This Month:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    let monthlyRate = ProgressCalculationHelper.getHabitMonthlyCompletionRate(for: habit, currentDate: Date())
+                    Text("\(Int(monthlyRate * 100))%")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                HStack {
+                    Text("This Week:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    let weeklyRate = ProgressCalculationHelper.getHabitWeeklyCompletionRate(for: habit, currentDate: Date())
+                    Text("\(Int(weeklyRate * 100))%")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                HStack {
+                    Text("Today's Progress:")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Spacer()
+                    
+                    let todayProgress = ProgressCalculationHelper.getHabitSpecificProgress(for: habit, date: Date())
+                    Text("\(Int(todayProgress * 100))%")
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.surface)
+        )
+    }
+    
+    // MARK: - Helper Methods
+    private func getCompletionRecords(for habit: Habit) -> [CompletionRecordEntity] {
+        // Get completion records from Core Data
+        let request: NSFetchRequest<CompletionRecordEntity> = CompletionRecordEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "habit.id == %@", habit.id as CVarArg)
+        
+        do {
+            return try CoreDataManager.shared.context.fetch(request)
+        } catch {
+            print("❌ Error fetching completion records: \(error)")
+            return []
         }
     }
 }

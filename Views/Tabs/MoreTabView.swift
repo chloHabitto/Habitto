@@ -18,6 +18,16 @@ struct MoreTabView: View {
     @State private var showingDataPrivacy = false
     @State private var showingNotifications = false
     @State private var showingPreferences = false
+    @State private var showingLanguageView = false
+    @State private var showingThemeView = false
+    @State private var showingNotificationsView = false
+    @State private var showingDataPrivacyView = false
+    @State private var showingAccountView = false
+    @State private var showingPreferencesView = false
+    @State private var showingFAQView = false
+    @State private var showingTermsConditionsView = false
+    @State private var showingAboutUsView = false
+    @State private var showingSignOutAlert = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -79,6 +89,43 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingPreferences) {
             PreferencesView()
+        }
+        .sheet(isPresented: $showingLanguageView) {
+            LanguageView()
+        }
+        .sheet(isPresented: $showingThemeView) {
+            ThemeView()
+        }
+        .sheet(isPresented: $showingNotificationsView) {
+            NotificationsView()
+        }
+        .sheet(isPresented: $showingDataPrivacyView) {
+            DataPrivacyView()
+        }
+        .sheet(isPresented: $showingAccountView) {
+            AccountView()
+        }
+        .sheet(isPresented: $showingPreferencesView) {
+            PreferencesView()
+        }
+        .sheet(isPresented: $showingFAQView) {
+            FAQView()
+        }
+        .sheet(isPresented: $showingTermsConditionsView) {
+            TermsConditionsView()
+        }
+        .sheet(isPresented: $showingAboutUsView) {
+            AboutUsView()
+        }
+        .alert(isPresented: $showingSignOutAlert) {
+            Alert(
+                title: Text("Sign Out"),
+                message: Text("Are you sure you want to sign out?"),
+                primaryButton: .destructive(Text("Sign Out")) {
+                    authManager.signOut()
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
     
@@ -271,6 +318,8 @@ struct MoreTabView: View {
             return "Icon-ChatRoundLike_Filled"
         case "Tutorial & Tips":
             return "Icon-Notes_Filled"
+        case "Time Block Test":
+            return "clock.fill"
         default:
             return "heart"
         }
@@ -295,6 +344,8 @@ struct MoreTabView: View {
         case "Terms & Conditions":
             return .navy200
         case "About us":
+            return .navy200
+        case "Time Block Test":
             return .navy200
         default:
             return .navy200
