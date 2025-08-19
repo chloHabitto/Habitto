@@ -110,14 +110,16 @@ struct HeaderView: View {
             } else {
                 // Notification and Add icons for other tabs
                 HStack(spacing: 2) {
-                    // Notification bell
-                    // Button(action: onNotificationTap) {
-                    //     Image("Icon-Bell_Filled")
-                    //         .resizable()
-                    //         .frame(width: 24, height: 24)
-                    //         .foregroundColor(.onPrimary)
-                    // }
-                    // .frame(width: 44, height: 44)
+                    // Settings icon
+                    Button(action: onNotificationTap) {
+                        Image("Icon-Setting_Filled")
+                            .renderingMode(.template)
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.onPrimary)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(PlainButtonStyle())
                     
                     // Add (+) button
                     Button(action: onCreateHabit) {

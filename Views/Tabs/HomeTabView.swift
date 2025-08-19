@@ -36,6 +36,39 @@ struct HomeTabView: View {
                         statsRowSection
                     }
                 )
+            },
+            rightButton: {
+                AnyView(
+                    HStack(spacing: 2) {
+                        // Add (+) button
+                        Button(action: {
+                            // TODO: Add create habit action
+                            print("➕ Add habit button tapped")
+                        }) {
+                            Image("Icon-AddCircle_Filled")
+                                .renderingMode(.template)
+                                .resizable()
+                                .frame(width: 28, height: 28)
+                                .foregroundColor(.onPrimary)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Notification button
+                        Button(action: {
+                            // TODO: Add notification action
+                            print("🔔 Notification button tapped")
+                        }) {
+                            Image("Icon-Bell_Filled")
+                                .renderingMode(.template)
+                                .resizable()
+                                .frame(width: 28, height: 28)
+                                .foregroundColor(.onPrimary)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                )
             }
         ) {
             habitsListSection
@@ -575,72 +608,99 @@ struct HomeTabView: View {
     
 
     
-         // MARK: - Date Section
-     private var dateSection: some View {
-         HStack {
-             Text(formattedCurrentDate)
-                                                 .font(.appTitleLargeEmphasised)
-                 .lineSpacing(8)
-                 .foregroundColor(.primary)
-             
-             Spacer()
-             
-             HStack(spacing: 4) {
-                 
-                 
-                 // Today button (shown when not on current week or selected date is not today)
-                 let calendar = Calendar.current
-                 let today = Date()
-                 let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
-                     calendar.isDate(date, inSameDayAs: today)
-                 }
-                 let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: today)
-                 
-                 if !isTodayInCurrentWeek || !isTodaySelected {
-                     Button(action: {
-                         withAnimation(.easeInOut(duration: 0.08)) {
-                             selectedDate = Date()
-                             currentWeekOffset = 0
-                         }
-                     }) {
-                         HStack(spacing: 4) {
-                             Image(.iconReplay)
-                                 .resizable()
-                                 .frame(width: 12, height: 12)
-                                 .foregroundColor(.primaryFocus)
-                             Text("Today")
-                                 .font(.appLabelMedium)
-                                 .foregroundColor(.primaryFocus)
-                         }
-                         .padding(.leading, 12)
-                         .padding(.trailing, 8)
-                         .padding(.top, 4)
-                         .padding(.bottom, 4)
-                         .overlay(
-                             RoundedRectangle(cornerRadius: .infinity)
-                                 .stroke(.primaryFocus, lineWidth: 1)
-                         )
-                     }
-                 }
-                 
-                 Button(action: {
-                     showingWeekPicker = true
-                 }) {
-                     Image(.iconCalendar)
-                         .resizable()
-                         .frame(width: 20, height: 20)
-                         .foregroundColor(.secondary)
-                 }
-                 .frame(width: 44, height: 44)
-                 .padding(.trailing, 4)
-             }
-         }
-         .frame(height: 44)
-         .padding(.leading, 16)
-         .padding(.trailing, 8)
-         .padding(.top, 4)
-         .padding(.bottom, 0)
-     }
+             // MARK: - Date Section
+    private var dateSection: some View {
+        HStack {
+            // Date text with chevron down icon - acts as a button
+            Button(action: {
+                showingWeekPicker = true
+            }) {
+                HStack(spacing: 8) {
+                    Text(formattedCurrentDate)
+                        .font(.appTitleLargeEmphasised)
+                        .lineSpacing(8)
+                        .foregroundColor(.primary)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .opacity(0.7)
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            HStack(spacing: 4) {
+                
+                
+                // Today button (shown when not on current week or selected date is not today)
+                let calendar = Calendar.current
+                let today = Date()
+                let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
+                    calendar.isDate(date, inSameDayAs: today)
+                }
+                let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: today)
+                
+                if !isTodayInCurrentWeek || !isTodaySelected {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.08)) {
+                            selectedDate = Date()
+                            currentWeekOffset = 0
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(.iconReplay)
+                                .resizable()
+                                .frame(width: 12, height: 12)
+                                .foregroundColor(.primaryFocus)
+                            Text("Today")
+                                .font(.appLabelMedium)
+                                .foregroundColor(.primaryFocus)
+                        }
+                        .padding(.leading, 12)
+                        .padding(.trailing, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .infinity)
+                                .stroke(.primaryFocus, lineWidth: 1)
+                        )
+                    }
+                }
+                
+                // Calendar icon button - hidden since date button now has same functionality
+                // Button(action: {
+                //     showingWeekPicker = true
+                // }) {
+                //     Image(.iconCalendar)
+                //         .resizable()
+                //         .frame(width: 20, height: 20)
+                //         .foregroundColor(.secondary)
+                // }
+                // .frame(width: 44, height: 44)
+                // .padding(.trailing, 4)
+            }
+            
+            Spacer()
+            
+            // Ellipsis icon (three dots)
+            Button(action: {
+                // TODO: Add ellipsis action
+                print("⋯ Ellipsis button tapped")
+            }) {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.primary)
+                    .opacity(0.7)
+            }
+            .frame(width: 44, height: 44)
+            .buttonStyle(PlainButtonStyle())
+        }
+        .frame(height: 44)
+        .padding(.leading, 16)
+        .padding(.trailing, 8)
+        .padding(.top, 4)
+        .padding(.bottom, 0)
+    }
     
              // MARK: - Weekly Calendar
     private var weeklyCalendar: some View {
