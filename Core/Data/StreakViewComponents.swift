@@ -423,22 +423,25 @@ struct HeatmapCellView: View {
             
             ZStack {
                 // Background
-                Rectangle()
+                RoundedRectangle(cornerRadius: 8)
                     .fill(.clear)
                     .frame(width: size, height: size)
                 
                 if isScheduled {
-                    // Show heatmap when scheduled
-                    Rectangle()
+                    // Show heatmap when scheduled with modern rounded design
+                    RoundedRectangle(cornerRadius: 12)
                         .fill(heatmapColor(for: completionPercentage))
                         .frame(width: cellSize, height: cellSize)
-                        .cornerRadius(max(2, cellSize * 0.2))
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 } else {
                     // Show subtle indicator when not scheduled
-                    Rectangle()
-                        .fill(.primaryContainer)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.primaryContainer.opacity(0.3))
                         .frame(width: cellSize, height: cellSize)
-                        .cornerRadius(max(2, cellSize * 0.2))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.outline3.opacity(0.2), lineWidth: 0.5)
+                        )
                 }
             }
         }
@@ -453,7 +456,7 @@ struct HeatmapCellView: View {
         // Clamp completion percentage between 0 and 100
         let clampedPercentage = max(0.0, min(100.0, completionPercentage))
         
-        // Map completion percentage to color intensity
+        // Map completion percentage to modern color intensity with better contrast
         // 0% = primaryContainer (lightest)
         // 100% = green600 (darkest)
         
