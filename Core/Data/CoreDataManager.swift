@@ -263,6 +263,8 @@ class CoreDataManager: ObservableObject {
             print("🔄 CoreDataManager: Updating existing completion record")
             existingRecord.progress = Int32(progress)
             existingRecord.timestamp = Date() // Update timestamp when progress changes
+            // Update time block when progress changes
+            existingRecord.timeBlock = TimeBlockHelper.TimeBlock.fromTime(Date()).rawValue
         } else {
             // Create new completion record
             print("🆕 CoreDataManager: Creating new completion record")
@@ -270,6 +272,8 @@ class CoreDataManager: ObservableObject {
             completionRecord.dateKey = dateKey
             completionRecord.progress = Int32(progress)
             completionRecord.timestamp = Date() // Set timestamp when creating new record
+            // Set time block for new record
+            completionRecord.timeBlock = TimeBlockHelper.TimeBlock.fromTime(Date()).rawValue
             completionRecord.habit = habitEntity
             
             // FIX: Properly set up the bidirectional relationship
