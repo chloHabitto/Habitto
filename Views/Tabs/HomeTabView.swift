@@ -626,7 +626,7 @@ struct HomeTabView: View {
             }) {
                 HStack(spacing: 8) {
                     Text(formattedCurrentDate)
-                        .font(.appTitleLargeEmphasised)
+                        .font(.appTitleMediumEmphasised)
                         .lineSpacing(8)
                         .foregroundColor(.primary)
                     
