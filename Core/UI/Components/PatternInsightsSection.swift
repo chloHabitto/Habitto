@@ -6,7 +6,7 @@ struct PatternInsightsSection: View {
     let difficultyLogs: [DifficultyLogEntity]
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             // Enhanced section header
             HStack {
                 Text("Pattern Magic")
