@@ -497,25 +497,19 @@ struct ProgressTabView: View {
                 Spacer()
             }
             
-            // Progress Tabs
-            HStack(spacing: 0) {
-                ForEach(ProgressTab.allCases, id: \.self) { tab in
-                    Button(action: {
-                        selectedProgressTab = tab
-                    }) {
-                        VStack(spacing: 8) {
-                            Text(tab.rawValue)
-                                .font(.appBodyMedium)
-                                .foregroundColor(selectedProgressTab == tab ? .primary : .text03)
-                            
-                            // Underline for selected tab
-                            Rectangle()
-                                .fill(selectedProgressTab == tab ? Color.primary : Color.clear)
-                                .frame(height: 2)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
+            // Progress Tabs - using consistent app style
+            let progressTabs = [
+                TabItem(title: "Daily", value: nil),
+                TabItem(title: "Weekly", value: nil),
+                TabItem(title: "Monthly", value: nil)
+            ]
+            
+            UnifiedTabBarView(
+                tabs: progressTabs,
+                selectedIndex: ProgressTab.allCases.firstIndex(of: selectedProgressTab) ?? 0,
+                style: .underline
+            ) { index in
+                selectedProgressTab = ProgressTab.allCases[index]
             }
         }
     }
