@@ -115,7 +115,7 @@ struct ProgressTabView: View {
                         }
                     }
                 }
-                .padding(.bottom, 16)
+                .padding(.bottom, 12)
                 
                 // Days of week header
                 CalendarGridComponents.WeekdayHeader()
@@ -431,15 +431,13 @@ struct ProgressTabView: View {
         ) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 0) {
+                    // Today's Progress Card (always visible)
+                    todaysProgressSummary
+                    
                     // Habit Selector Header
                     habitSelectorHeader
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
-                    
-                    // Today's Progress Summary (Simplified) - only show when "All habits" selected
-                    // if selectedHabit == nil {
-                    //     todaysProgressSummary
-                    // }
                     
                     // Overall Progress Section with Monthly Calendar
                     overallProgressSection
