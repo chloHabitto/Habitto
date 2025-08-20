@@ -24,11 +24,11 @@ struct MonthlyCompletionRateSection: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("This Month's Progress")
                             .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.onPrimaryContainer)
+                            .foregroundColor(.white)
                         
                         Text(getCompletionMessage())
                             .font(.appBodyMedium)
-                            .foregroundColor(.text02)
+                            .foregroundColor(.white.opacity(0.9))
                     }
                     
                     Spacer()
@@ -36,14 +36,14 @@ struct MonthlyCompletionRateSection: View {
                     // Circular progress ring on the right - matching today's style
                     ZStack {
                         Circle()
-                            .stroke(Color.outline3.opacity(0.3), lineWidth: 6)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 6)
                             .frame(width: 48, height: 48)
                         
                         Circle()
                             .trim(from: 0, to: monthlyCompletionRate)
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    colors: [Color.white, Color.white.opacity(0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -55,7 +55,7 @@ struct MonthlyCompletionRateSection: View {
                         
                         Text("\(Int(monthlyCompletionRate * 100))%")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.white)
                     }
                     .scaleEffect(celebrationScale)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: celebrationScale)
@@ -65,10 +65,10 @@ struct MonthlyCompletionRateSection: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.surface)
+                    .fill(Color.primary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
                     )
             )
             .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
