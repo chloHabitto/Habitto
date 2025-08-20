@@ -497,20 +497,39 @@ struct ProgressTabView: View {
                 Spacer()
             }
             
-            // Progress Tabs - using consistent app style
-            let progressTabs = [
-                TabItem(title: "Daily", value: nil),
-                TabItem(title: "Weekly", value: nil),
-                TabItem(title: "Monthly", value: nil)
-            ]
-            
-            UnifiedTabBarView(
-                tabs: progressTabs,
-                selectedIndex: ProgressTab.allCases.firstIndex(of: selectedProgressTab) ?? 0,
-                style: .underline
-            ) { index in
-                selectedProgressTab = ProgressTab.allCases[index]
+            // Progress Tabs - full width expansion
+            HStack(spacing: 0) {
+                ForEach(ProgressTab.allCases, id: \.self) { tab in
+                    Button(action: {
+                        selectedProgressTab = tab
+                    }) {
+                        VStack(spacing: 2) {
+                            Text(tab.title)
+                                .font(.appTitleSmallEmphasised)
+                                .foregroundColor(selectedProgressTab == tab ? .text03 : .text04)
+                            
+                            // Underline for selected tab
+                            Rectangle()
+                                .fill(selectedProgressTab == tab ? .text03 : .clear)
+                                .frame(height: 4)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .frame(maxWidth: .infinity)
+                }
             }
+            .background(Color.white)
+            .overlay(
+                // Bottom stroke for the entire tab bar
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.outline3)
+                        .frame(height: 1)
+                }
+            )
         }
     }
     
@@ -522,54 +541,100 @@ struct ProgressTabView: View {
         }
     }
     
-    // MARK: - Weekly Progress Content
+        // MARK: - Weekly Progress Content
     private var weeklyProgressContent: some View {
         VStack(spacing: 20) {
-            // Empty for now
-            VStack(spacing: 16) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 48))
-                    .foregroundColor(.text04)
-                
-                Text("Weekly Progress")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text02)
-                
-                Text("Coming soon!")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text03)
+            // This Week's Progress Card
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("This Week's Progress")
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.white)
+                        
+                        Text(getWeeklyCompletionMessage())
+                            .font(.appBodyMedium)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    
+                    Spacer()
+                    
+                    // Circular progress ring on the right
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 6)
+                            .frame(width: 48, height: 48)
+                        
+                        Circle()
+                            .trim(from: 0, to: getWeeklyCompletionRate())
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                            )
+                            .frame(width: 48, height: 48)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: getWeeklyCompletionRate())
+                        
+                        Text("\(Int(getWeeklyCompletionRate() * 100))%")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding(.horizontal, 20)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 60)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.primary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 20)
         }
     }
     
-    // MARK: - Monthly Progress Content
+        // MARK: - Monthly Progress Content
     private var monthlyProgressContent: some View {
         VStack(spacing: 20) {
+            // Monthly Progress Card - moved below tabs with primary background
+            MonthlyCompletionRateSection(
+                monthlyCompletedHabits: getMonthlyCompletedHabitsCount(),
+                monthlyTotalHabits: getMonthlyTotalHabitsCount(),
+                selectedHabit: selectedHabit
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
             // Habit Selector Header
             habitSelectorHeader
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-            
+
             // Overall Progress Section with Monthly Calendar
             overallProgressSection
-            
+
             // Enhanced Insights (only show when "All habits" selected)
             if selectedHabit == nil {
                 VStack(spacing: 20) {
                     // Challenge Corner - Your biggest challenge
                     difficultyInsightsSection
-                    
+
                     // Time Magic - Your time patterns
                     TimeInsightsSection(habit: nil, completionRecords: getAllCompletionRecords())
-                    
+
                     // Pattern Magic - Your consistency patterns
                     PatternInsightsSection(habit: nil, completionRecords: getAllCompletionRecords(), difficultyLogs: getAllDifficultyLogs())
                 }
                 .padding(.top, 20)
             }
-            
+
             // Habit-Specific Insights (only show when habit selected)
             if let selectedHabit = selectedHabit {
                 // Show only essential insights for selected habit
