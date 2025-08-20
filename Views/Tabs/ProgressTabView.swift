@@ -23,14 +23,14 @@ struct ProgressTabView: View {
     private var todaysProgressSummary: some View {
         Group {
             if !habits.isEmpty {
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Today's Progress")
                                 .font(.appTitleMediumEmphasised)
                                 .foregroundColor(.onPrimaryContainer)
                             
-                            Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
+                            Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed today")
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text02)
                         }
@@ -40,8 +40,8 @@ struct ProgressTabView: View {
                         // Circular progress ring on the right
                         ZStack {
                             Circle()
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
-                                .frame(width: 60, height: 60)
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 6)
+                                .frame(width: 48, height: 48)
                             
                             Circle()
                                 .trim(from: 0, to: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
@@ -51,20 +51,20 @@ struct ProgressTabView: View {
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
-                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
                                 )
-                                .frame(width: 60, height: 60)
+                                .frame(width: 48, height: 48)
                                 .rotationEffect(.degrees(-90))
                                 .animation(.easeInOut(duration: 1.0), value: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
                             
                             Text("\(Int(ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits) * 100))%")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.primary)
                         }
                     }
                     .padding(.horizontal, 20)
                 }
-                .padding(.vertical, 20)
+                .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.surface)
@@ -75,7 +75,7 @@ struct ProgressTabView: View {
                 )
                 .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
                 .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(.top, 12)
             }
         }
     }
@@ -84,7 +84,7 @@ struct ProgressTabView: View {
     private var overallProgressSection: some View {
         VStack(spacing: 0) {
             // Monthly Calendar
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 // Calendar header with month/year and Today button
                 HStack {
                     Text(calendarHelper.monthYearString())
@@ -265,7 +265,7 @@ struct ProgressTabView: View {
     
     // MARK: - Enhanced Difficulty Insights Section
     private var difficultyInsightsSection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             // Enhanced section header
             HStack {
                 Text("Challenge Corner")
@@ -281,7 +281,6 @@ struct ProgressTabView: View {
                 enhancedDifficultyCard(habit: mostDifficultHabit)
             }
         }
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Enhanced Difficulty Card
@@ -370,6 +369,7 @@ struct ProgressTabView: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Motivational Message Helper

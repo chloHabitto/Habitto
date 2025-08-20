@@ -5,7 +5,7 @@ struct TimeInsightsSection: View {
     let completionRecords: [CompletionRecordEntity]
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             // Enhanced section header
             HStack {
                 Text("Time Magic")
@@ -23,7 +23,6 @@ struct TimeInsightsSection: View {
                 enhancedOverallTimeCard()
             }
         }
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Enhanced Individual Habit Time Card
@@ -113,6 +112,7 @@ struct TimeInsightsSection: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Enhanced Overall Time Card
@@ -202,6 +202,7 @@ struct TimeInsightsSection: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Time Motivational Message Helper

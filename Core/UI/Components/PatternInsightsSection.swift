@@ -24,7 +24,6 @@ struct PatternInsightsSection: View {
                 enhancedOverallPatternCard()
             }
         }
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Enhanced Individual Habit Pattern Card
@@ -114,6 +113,7 @@ struct PatternInsightsSection: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Enhanced Overall Pattern Card
@@ -203,6 +203,7 @@ struct PatternInsightsSection: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Pattern Motivational Message Helper

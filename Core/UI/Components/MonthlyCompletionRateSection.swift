@@ -18,88 +18,60 @@ struct MonthlyCompletionRateSection: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            // Main completion rate card - enhanced prominence and spacing
-            VStack(spacing: 24) {
-                HStack(spacing: 24) {
-                    // Larger, more prominent progress ring with enhanced styling
-                    ZStack {
-                        // Background circle with enhanced gradient
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.primaryContainer.opacity(0.4), Color.primaryContainer.opacity(0.15)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 12
-                            )
-                            .frame(width: 90, height: 90)
+                        // Main completion rate card - matching today's progress card style
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("This Month's Progress")
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.onPrimaryContainer)
                         
-                        // Progress circle with enhanced gradient and animation
+                        Text(getCompletionMessage())
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                    }
+                    
+                    Spacer()
+                    
+                    // Circular progress ring on the right - matching today's style
+                    ZStack {
+                        Circle()
+                            .stroke(Color.outline3.opacity(0.3), lineWidth: 6)
+                            .frame(width: 48, height: 48)
+                        
                         Circle()
                             .trim(from: 0, to: monthlyCompletionRate)
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.6)],
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
-                                style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
                             )
-                            .frame(width: 90, height: 90)
+                            .frame(width: 48, height: 48)
                             .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 2.0), value: monthlyCompletionRate)
+                            .animation(.easeInOut(duration: 1.0), value: monthlyCompletionRate)
                         
-                        // Enhanced percentage text with better typography
                         Text("\(Int(monthlyCompletionRate * 100))%")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.primary)
                     }
                     .scaleEffect(celebrationScale)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8), value: celebrationScale)
-                    
-                    // Enhanced progress details with better spacing and typography
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(getCompletionMessage())
-                            .font(.appTitleLargeEmphasised)
-                            .foregroundColor(.text01)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        Text("\(monthlyCompletedHabits) of \(monthlyTotalHabits) habits completed this month")
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text02)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    
-                    Spacer()
                 }
+                .padding(.horizontal, 20)
             }
-            .padding(32)
+            .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.surface, Color.surface.opacity(0.85)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
                     )
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.outline3.opacity(0.6), Color.outline3.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            )
-            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
+            .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 20)
             .overlay(
                 // Celebration confetti overlay
@@ -252,11 +224,9 @@ struct HabitSpotlightSection: View {
     
     // Micro-interaction states
     @State private var topHabitScale: CGFloat = 1.0
-    @State private var needsAttentionScale: CGFloat = 1.0
-    @State private var trendScale: CGFloat = 1.0
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             // Enhanced section header with better typography
             HStack {
                 Text("Habit Spotlight")
@@ -266,10 +236,10 @@ struct HabitSpotlightSection: View {
             }
             .padding(.horizontal, 20)
             
-            // Enhanced spotlight card with better spacing and visual hierarchy
-            VStack(spacing: 28) {
-                // Top performing habit highlight with enhanced styling
-                if let topHabit = topPerformingHabit {
+            // Enhanced spotlight card - only showing superstar habit
+            if let topHabit = topPerformingHabit {
+                VStack(spacing: 0) {
+                    // Main content
                     HStack(spacing: 20) {
                         // Enhanced star icon with better gradient
                         ZStack {
@@ -281,10 +251,10 @@ struct HabitSpotlightSection: View {
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .frame(width: 56, height: 56)
+                                .frame(width: 64, height: 64)
                             
                             Image(systemName: "star.fill")
-                                .font(.system(size: 24, weight: .medium))
+                                .font(.system(size: 28, weight: .semibold))
                                 .foregroundColor(.yellow)
                         }
                         .scaleEffect(topHabitScale)
@@ -303,15 +273,22 @@ struct HabitSpotlightSection: View {
                             impactFeedback.impactOccurred()
                         }
                         
-                        VStack(alignment: .leading, spacing: 6) {
+                        // Enhanced content with better typography and spacing
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("Your Superstar Habit")
                                 .font(.appLabelMedium)
                                 .foregroundColor(.text02)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.yellow.opacity(0.1))
+                                )
                             
                             Text(topHabit.name)
                                 .font(.appTitleMediumEmphasised)
                                 .foregroundColor(.text01)
-                                .lineLimit(1)
+                                .lineLimit(2)
                             
                             let rate = monthlyHabitCompletionRate(topHabit)
                             Text("\(Int(rate))% completion rate")
@@ -322,161 +299,47 @@ struct HabitSpotlightSection: View {
                         
                         Spacer()
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
                     
-                    // Enhanced divider with better styling
-                    Rectangle()
-                        .fill(Color.outline3.opacity(0.3))
-                        .frame(height: 1)
-                        .padding(.horizontal, 20)
+                    // Bottom motivational section
+                    VStack(spacing: 8) {
+                        Divider()
+                            .background(Color.outline3.opacity(0.3))
+                        
+                        HStack(spacing: 12) {
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.yellow)
+                            
+                            Text("Tip: Keep shining! You're setting an amazing example!")
+                                .font(.appBodySmall)
+                                .foregroundColor(.text03)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
+                    }
                 }
-                
-                // Needs attention habit with enhanced styling
-                if let needsAttentionHabit = needsAttentionHabit {
-                    HStack(spacing: 20) {
-                        // Enhanced heart icon with better gradient
-                        ZStack {
-                            Circle()
-                                .fill(
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(
                                     LinearGradient(
-                                        colors: [Color.pink.opacity(0.25), Color.red.opacity(0.15)],
+                                        colors: [Color.yellow.opacity(0.2), Color.orange.opacity(0.1)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
-                                    )
+                                    ),
+                                    lineWidth: 1.5
                                 )
-                                .frame(width: 56, height: 56)
-                            
-                            Image(systemName: "heart.fill")
-                                .font(.system(size: 24, weight: .medium))
-                                .foregroundColor(.pink)
-                        }
-                        .scaleEffect(needsAttentionScale)
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                                needsAttentionScale = 1.2
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                                    needsAttentionScale = 1.0
-                                }
-                            }
-                            
-                            // Haptic feedback
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Could Use Some Love")
-                                .font(.appLabelMedium)
-                                .foregroundColor(.text02)
-                            
-                            Text(needsAttentionHabit.name)
-                                .font(.appTitleMediumEmphasised)
-                                .foregroundColor(.text01)
-                                .lineLimit(1)
-                            
-                            let rate = monthlyHabitCompletionRate(needsAttentionHabit)
-                            Text("\(Int(rate))% completion rate")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.pink)
-                                .fontWeight(.semibold)
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    // Enhanced divider with better styling
-                    Rectangle()
-                        .fill(Color.outline3.opacity(0.3))
-                        .frame(height: 1)
-                        .padding(.horizontal, 20)
-                }
-                
-                // Progress trend with enhanced styling
-                HStack(spacing: 20) {
-                    // Enhanced trend icon with better gradient
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [progressTrendColor.opacity(0.25), progressTrendColor.opacity(0.15)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 56, height: 56)
-                        
-                        Image(systemName: progressTrendIcon)
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(progressTrendColor)
-                    }
-                    .scaleEffect(trendScale)
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                            trendScale = 1.2
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                                trendScale = 1.0
-                            }
-                        }
-                        
-                        // Haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Your Progress Journey")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.text02)
-                        
-                        Text(getTrendMessage())
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text01)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    
-                    Spacer()
-                }
-            }
-            .padding(28)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.surface, Color.surface.opacity(0.9)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
                         )
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.outline3.opacity(0.4), Color.outline3.opacity(0.2)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            )
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-            .padding(.horizontal, 20)
-        }
-    }
-    
-    // Helper function to get friendly trend message
-    private func getTrendMessage() -> String {
-        if progressTrendText.contains("Improving") {
-            return "You're getting better every day!"
-        } else if progressTrendText.contains("Declining") {
-            return "Every setback is a setup for a comeback!"
-        } else {
-            return "You're maintaining great consistency!"
+                )
+                .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+                .padding(.horizontal, 20)
+            }
         }
     }
 }

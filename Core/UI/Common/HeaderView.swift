@@ -108,29 +108,15 @@ struct HeaderView: View {
                     }
                 }
             } else {
-                // Notification and Add icons for other tabs
-                HStack(spacing: 2) {
-                    // Settings icon
-                    Button(action: onNotificationTap) {
-                        Image("Icon-Setting_Filled")
-                            .renderingMode(.template)
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(.onPrimary)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Add (+) button
-                    Button(action: onCreateHabit) {
-                        Image("Icon-AddCircle_Filled")
-                            .renderingMode(.template)
-                            .resizable()
-                            .frame(width: 28, height: 28)
-                            .foregroundColor(.onPrimary)
-                    }
-                    .frame(width: 44, height: 44)
+                // Add icon for other tabs
+                Button(action: onCreateHabit) {
+                    Image("Icon-AddCircle_Filled")
+                        .renderingMode(.template)
+                        .resizable()
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.onPrimary)
                 }
+                .frame(width: 44, height: 44)
             }
         }
         .padding(.leading, 20)
