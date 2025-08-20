@@ -261,7 +261,7 @@ struct CalendarGridComponents {
                         .padding(.horizontal, 2)
                 }
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 8)
             .padding(.horizontal, 8)
         }
     }

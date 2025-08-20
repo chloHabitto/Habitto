@@ -64,8 +64,8 @@ struct ContactUsView: View {
                             .padding(.bottom, 50)
                         }
                     }
-                    .onChange(of: focusedField) { field in
-                        if let field = field {
+                    .onChange(of: focusedField) { oldValue, newValue in
+                        if let field = newValue {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 proxy.scrollTo(field, anchor: .center)
                             }

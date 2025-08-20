@@ -25,6 +25,13 @@ struct ScheduledHabitItem: View {
         }
     }
     
+    // Computed property for progress percentage
+    private var progressPercentage: Double {
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+        guard goalAmount > 0 else { return 0.0 }
+        return Double(currentProgress) / Double(goalAmount)
+    }
+    
     // Computed property for completion button to simplify complex expression
     private var completionButton: some View {
         Button(action: {
@@ -32,7 +39,7 @@ struct ScheduledHabitItem: View {
         }) {
             Image(systemName: isHabitCompleted() ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 24))
-                .foregroundColor(isHabitCompleted() ? .pastelBlue500 : .primaryContainerFocus)
+                .foregroundColor(isHabitCompleted() ? habit.color : .primaryContainerFocus)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
@@ -50,8 +57,8 @@ struct ScheduledHabitItem: View {
             // SelectedIcon
             HabitIconView(habit: habit)
             
-            // VStack with title and progress
-            VStack(alignment: .leading, spacing: 2) {
+            // VStack with title, progress text, and progress bar
+            VStack(alignment: .leading, spacing: 8) {
                 Text(habit.name)
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.text02)
@@ -59,10 +66,30 @@ struct ScheduledHabitItem: View {
                     .truncationMode(.tail)
                 
                 Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
-                    .font(.appBodyExtraSmall)
+                    .font(.appBodySmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                
+                // Progress Bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Background bar
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.outline3.opacity(0.3))
+                            .frame(height: 6)
+                        
+                        // Progress bar
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(habit.color)
+                            .frame(
+                                width: geometry.size.width * progressPercentage,
+                                height: 6
+                            )
+                            .animation(.easeInOut(duration: 0.3), value: currentProgress)
+                    }
+                }
+                .frame(height: 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 16)

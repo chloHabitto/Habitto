@@ -6,6 +6,7 @@ struct HomeTabView: View {
     @State private var currentWeekOffset: Int = 0
     @State private var showingWeekPicker: Bool = false
 
+
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
@@ -73,6 +74,7 @@ struct HomeTabView: View {
         ) {
             habitsListSection
         }
+
         .onAppear {
             // Ensure selectedDate is set to today when the view appears
             let today = Calendar.current.startOfDay(for: Date())
@@ -128,6 +130,11 @@ struct HomeTabView: View {
     
     @ViewBuilder
     private var statsTabBar: some View {
+        tabsView
+    }
+    
+    @ViewBuilder
+    private var tabsView: some View {
         let tabs = TabItem.createHomeStatsTabs(
             totalCount: stats.indices.contains(0) ? stats[0].1 : 0,
             undoneCount: stats.indices.contains(1) ? stats[1].1 : 0,
@@ -165,6 +172,8 @@ struct HomeTabView: View {
             }
         }
     }
+    
+
     
 
     
@@ -622,16 +631,16 @@ struct HomeTabView: View {
                         .foregroundColor(.primary)
                     
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.primary)
                         .opacity(0.7)
                 }
             }
             .buttonStyle(PlainButtonStyle())
             
+            Spacer()
+            
             HStack(spacing: 4) {
-                
-                
                 // Today button (shown when not on current week or selected date is not today)
                 let calendar = Calendar.current
                 let today = Date()
@@ -680,20 +689,7 @@ struct HomeTabView: View {
                 // .padding(.trailing, 4)
             }
             
-            Spacer()
-            
-            // Ellipsis icon (three dots)
-            Button(action: {
-                // TODO: Add ellipsis action
-                print("⋯ Ellipsis button tapped")
-            }) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.primary)
-                    .opacity(0.7)
-            }
-            .frame(width: 44, height: 44)
-            .buttonStyle(PlainButtonStyle())
+
         }
         .frame(height: 44)
         .padding(.leading, 16)
