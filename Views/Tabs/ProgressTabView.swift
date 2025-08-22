@@ -5,6 +5,7 @@ struct ProgressTabView: View {
     @EnvironmentObject var coreDataAdapter: CoreDataAdapter
     @State private var selectedHabit: Habit?
     @State private var showingHabitSelector = false
+    @State private var selectedTimePeriod: Int = 1 // 0: Daily, 1: Weekly, 2: Monthly
     let habits: [Habit]
     
     // Use the calendar helper
@@ -14,6 +15,20 @@ struct ProgressTabView: View {
     
     init(habits: [Habit]) {
         self.habits = habits
+    }
+    
+    // MARK: - Computed Properties
+    private var timePeriodTitle: String {
+        switch selectedTimePeriod {
+        case 0:
+            return "Daily Progress"
+        case 1:
+            return "Weekly Progress"
+        case 2:
+            return calendarHelper.monthYearString()
+        default:
+            return "Weekly Progress"
+        }
     }
     
     // MARK: - Calendar Helper Functions
@@ -82,6 +97,199 @@ struct ProgressTabView: View {
     
     // MARK: - Overall Progress Section
     private var overallProgressSection: some View {
+        VStack(spacing: 0) {
+            switch selectedTimePeriod {
+            case 0: // Daily
+                dailyProgressSection
+            case 1: // Weekly
+                weeklyProgressSection
+            case 2: // Monthly
+                monthlyProgressSection
+            default:
+                weeklyProgressSection
+            }
+        }
+        .padding(.top, 20)
+    }
+    
+    // MARK: - Daily Progress Section
+    private var dailyProgressSection: some View {
+        VStack(spacing: 16) {
+            // Daily Progress Header
+            HStack {
+                Text("Daily Progress")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Button(action: calendarHelper.goToToday) {
+                    HStack(spacing: 4) {
+                        Image(.iconReplay)
+                            .resizable()
+                            .frame(width: 12, height: 12)
+                            .foregroundColor(.primaryFocus)
+                        Text("Today")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.primaryFocus)
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 8)
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: .infinity)
+                            .stroke(.primaryFocus, lineWidth: 1)
+                    )
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            // Daily Progress Summary
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Today's Completion")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                    }
+                    
+                    Spacer()
+                    
+                    // Daily progress ring
+                    ZStack {
+                        Circle()
+                            .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
+                            .frame(width: 60, height: 60)
+                        
+                        Circle()
+                            .trim(from: 0, to: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
+                        
+                        Text("\(Int(ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits) * 100))%")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+    
+    // MARK: - Weekly Progress Section
+    private var weeklyProgressSection: some View {
+        VStack(spacing: 16) {
+            // Weekly Progress Header
+            HStack {
+                Text("Weekly Progress")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Button(action: calendarHelper.goToToday) {
+                    HStack(spacing: 4) {
+                        Image(.iconReplay)
+                            .resizable()
+                            .frame(width: 12, height: 12)
+                            .foregroundColor(.primaryFocus)
+                        Text("This week")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.primaryFocus)
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 8)
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: .infinity)
+                            .stroke(.primaryFocus, lineWidth: 1)
+                    )
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            // Weekly Progress Summary
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("This Week's Completion")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.onPrimaryContainer)
+                        
+                        Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount()) habits completed")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                    }
+                    
+                    Spacer()
+                    
+                    // Weekly progress ring
+                    ZStack {
+                        Circle()
+                            .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
+                            .frame(width: 60, height: 60)
+                        
+                        Circle()
+                            .trim(from: 0, to: getWeeklyCompletionPercentage())
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: getWeeklyCompletionPercentage())
+                        
+                        Text("\(Int(getWeeklyCompletionPercentage() * 100))%")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+    
+    // MARK: - Monthly Progress Section
+    private var monthlyProgressSection: some View {
         VStack(spacing: 0) {
             // Monthly Calendar
             VStack(spacing: 8) {
@@ -260,7 +468,6 @@ struct ProgressTabView: View {
                 }
             )
         }
-        .padding(.top, 20)
     }
     
     // MARK: - Enhanced Difficulty Insights Section
@@ -500,7 +707,7 @@ struct ProgressTabView: View {
     private var habitSelectorHeader: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Monthly Progress")
+                Text("Progress Overview")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
@@ -525,6 +732,19 @@ struct ProgressTabView: View {
                             .fill(Color.primaryContainer)
                     )
                 }
+            }
+            
+            // Time Period Tabs
+            UnifiedTabBarView(
+                tabs: [
+                    TabItem(title: "Daily"),
+                    TabItem(title: "Weekly"),
+                    TabItem(title: "Monthly")
+                ],
+                selectedIndex: selectedTimePeriod,
+                style: .underline
+            ) { index in
+                selectedTimePeriod = index
             }
         }
     }
@@ -1345,6 +1565,56 @@ struct ProgressTabView: View {
     
     private func getHabitWithLongestStreak() -> Habit? {
         return habits.max { $0.streak < $1.streak }
+    }
+    
+    // MARK: - Weekly Progress Helper Methods
+    private func getWeeklyCompletedHabitsCount() -> Int {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        
+        return habits.reduce(0) { total, habit in
+            let weeklyCompletions = habit.completionHistory.filter { completion in
+                let completionDate = completion.date
+                return completionDate >= weekStart && completionDate <= today
+            }
+            return total + weeklyCompletions.count
+        }
+    }
+    
+    private func getWeeklyTotalHabitsCount() -> Int {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
+        
+        return habits.reduce(0) { total, habit in
+            let startDate = habit.startDate
+            let endDate = habit.endDate ?? weekEnd
+            
+            // Check if habit is active during this week
+            if startDate <= weekEnd && endDate >= weekStart {
+                // Count days in the week where this habit should be active
+                var count = 0
+                var currentDate = weekStart
+                
+                while currentDate <= weekEnd {
+                    if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                        count += 1
+                    }
+                    currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+                }
+                
+                return total + count
+            }
+            return total
+        }
+    }
+    
+    private func getWeeklyCompletionPercentage() -> Double {
+        let total = getWeeklyTotalHabitsCount()
+        guard total > 0 else { return 0.0 }
+        return Double(getWeeklyCompletedHabitsCount()) / Double(total)
     }
 }
 
