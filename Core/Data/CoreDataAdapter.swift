@@ -72,6 +72,20 @@ class CoreDataAdapter: ObservableObject {
         print("  - Published habits count: \(habits.count)")
         print("  - Core Data entities count: \(coreDataManager.fetchHabits().count)")
         
+        // List all published habits
+        print("📋 Published habits:")
+        for (index, habit) in habits.enumerated() {
+            print("  \(index): \(habit.name) (ID: \(habit.id), reminders: \(habit.reminders.count))")
+        }
+        
+        // List all Core Data entities
+        let entities = coreDataManager.fetchHabits()
+        print("📋 Core Data entities:")
+        for (index, entity) in entities.enumerated() {
+            let remindersCount = (entity.reminders as? Set<ReminderItemEntity>)?.count ?? 0
+            print("  \(index): \(entity.name ?? "nil") (ID: \(entity.id?.uuidString ?? "nil"), reminders: \(remindersCount))")
+        }
+        
         // Check for any habits without IDs
         let invalidHabits = habits.filter { $0.id == UUID() }
         if !invalidHabits.isEmpty {
@@ -99,6 +113,36 @@ class CoreDataAdapter: ObservableObject {
         print("✅ CoreDataAdapter: Debug completed")
     }
     
+    // Emergency recovery method
+    func recoverMissingHabits() {
+        print("🚨 CoreDataAdapter: Starting emergency habit recovery...")
+        
+        // Force reload all entities from Core Data
+        let entities = coreDataManager.fetchHabits()
+        print("🔍 Found \(entities.count) entities in Core Data")
+        
+        // Try to convert each entity individually to catch any errors
+        var recoveredHabits: [Habit] = []
+        for (index, entity) in entities.enumerated() {
+            do {
+                let habit = entity.toHabit()
+                recoveredHabits.append(habit)
+                print("✅ Recovered habit \(index): \(habit.name)")
+            } catch {
+                print("❌ Failed to convert entity \(index): \(error)")
+                print("   Entity name: \(entity.name ?? "nil")")
+                print("   Entity ID: \(entity.id?.uuidString ?? "nil")")
+            }
+        }
+        
+        // Update the habits array
+        DispatchQueue.main.async {
+            self.habits = recoveredHabits
+            self.objectWillChange.send()
+            print("🚨 Recovery complete: \(recoveredHabits.count) habits recovered")
+        }
+    }
+    
     // MARK: - Load Habits
     func loadHabits(force: Bool = false) {
         print("🔄 CoreDataAdapter: loadHabits called (force: \(force))")
@@ -110,9 +154,29 @@ class CoreDataAdapter: ObservableObject {
         }
         
         let entities = coreDataManager.fetchHabits()
+        print("🔍 CoreDataAdapter: Fetched \(entities.count) entities from Core Data")
+        
+        // Debug each entity before conversion
+        for (index, entity) in entities.enumerated() {
+            print("🔍 Entity \(index): name=\(entity.name ?? "nil"), id=\(entity.id?.uuidString ?? "nil")")
+            if let reminders = entity.reminders as? Set<ReminderItemEntity> {
+                print("  📅 Has \(reminders.count) reminders")
+                for reminder in reminders {
+                    print("    - Reminder: id=\(reminder.id?.uuidString ?? "nil"), time=\(reminder.time?.description ?? "nil"), active=\(reminder.isActive)")
+                }
+            } else {
+                print("  📅 No reminders or reminders is nil")
+            }
+        }
+        
         let loadedHabits = entities.map { $0.toHabit() }
         
-        print("🔍 CoreDataAdapter: Fetched \(loadedHabits.count) habits from Core Data")
+        print("🔍 CoreDataAdapter: Converted to \(loadedHabits.count) habits")
+        
+        // Debug each converted habit
+        for (index, habit) in loadedHabits.enumerated() {
+            print("🔍 Habit \(index): name=\(habit.name), id=\(habit.id), reminders=\(habit.reminders.count)")
+        }
         
         // Deduplicate habits by ID to prevent duplicates
         var uniqueHabits: [Habit] = []
@@ -131,6 +195,11 @@ class CoreDataAdapter: ObservableObject {
         DispatchQueue.main.async {
             self.habits = uniqueHabits
             print("✅ CoreDataAdapter: Updated habits array with \(uniqueHabits.count) unique habits")
+            
+            // Debug final habits array
+            for (index, habit) in uniqueHabits.enumerated() {
+                print("🔍 Final Habit \(index): name=\(habit.name), id=\(habit.id)")
+            }
             
             // Notify observers that habits have changed
             self.objectWillChange.send()
@@ -333,11 +402,20 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Update Habit
     func updateHabit(_ habit: Habit) {
+        print("🔄 CoreDataAdapter: updateHabit called for: \(habit.name) (ID: \(habit.id))")
+        print("🔄 CoreDataAdapter: Habit has \(habit.reminders.count) reminders")
+        
         let habitEntities = coreDataManager.fetchHabits()
+        print("🔍 CoreDataAdapter: Found \(habitEntities.count) entities in database")
+        
         if let entity = habitEntities.first(where: { $0.id == habit.id }) {
+            print("✅ CoreDataAdapter: Found matching entity for habit: \(habit.name)")
+            print("🔍 CoreDataAdapter: Entity before update - reminders count: \((entity.reminders as? Set<ReminderItemEntity>)?.count ?? 0)")
+            
             do {
                 try coreDataManager.updateHabit(entity, with: habit)
                 print("✅ CoreDataAdapter: Habit updated in Core Data")
+                print("🔍 CoreDataAdapter: Entity after update - reminders count: \((entity.reminders as? Set<ReminderItemEntity>)?.count ?? 0)")
                 loadHabits(force: true)
             } catch {
                 print("❌ CoreDataAdapter: Failed to update habit in Core Data: \(error)")
@@ -354,10 +432,15 @@ class CoreDataAdapter: ObservableObject {
             }
         } else {
             print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
+            print("🔍 CoreDataAdapter: Available entity IDs:")
+            for entity in habitEntities {
+                print("  - Entity: \(entity.name ?? "nil") (ID: \(entity.id?.uuidString ?? "nil"))")
+            }
             print("🔄 CoreDataAdapter: Trying to find by name instead...")
             
             // Try to find by name as a fallback
             if let entity = habitEntities.first(where: { $0.name == habit.name }) {
+                print("✅ CoreDataAdapter: Found entity by name: \(entity.name ?? "nil")")
                 do {
                     try coreDataManager.updateHabit(entity, with: habit)
                     print("✅ CoreDataAdapter: Habit updated in Core Data by name")
