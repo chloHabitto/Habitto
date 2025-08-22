@@ -795,6 +795,13 @@ struct ProgressTabView: View {
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 .padding(.horizontal, 16)
             }
+            
+            // Add spacing before unified insights
+            Spacer()
+                .frame(height: 20)
+            
+            // Unified insights card
+            unifiedInsightsCard
         }
     }
     

@@ -11,8 +11,8 @@ struct TabBarView: View {
                 .frame(height: 1)
             HStack {
                 tabBarItem(icon: selectedTab == .home ? "Icon-home-filled" : "Icon-home-outlined", title: "Home", tab: .home)
-                tabBarItem(icon: selectedTab == .habits ? "Icon-book-filled" : "Icon-book-outlined", title: "Habits", tab: .habits)
                 tabBarItem(icon: selectedTab == .progress ? "Icon-chart-filled" : "Icon-chart-outlined", title: "Progress", tab: .progress)
+                tabBarItem(icon: selectedTab == .habits ? "Icon-book-filled" : "Icon-book-outlined", title: "Habits", tab: .habits)
                 tabBarItem(icon: selectedTab == .more ? "Icon-more-filled" : "Icon-more-outlined", title: "More", tab: .more)
             }
             .padding(.vertical, 2)
