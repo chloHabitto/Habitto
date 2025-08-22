@@ -37,7 +37,7 @@ class HomeViewState: ObservableObject {
     }
     
     // Core Data adapter
-    private let coreDataAdapter = CoreDataAdapter.shared
+    let coreDataAdapter = CoreDataAdapter.shared
     
     // Store cancellables for proper memory management
     private var cancellables = Set<AnyCancellable>()
@@ -190,6 +190,27 @@ struct HomeView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // TEMPORARY DEBUG BUTTONS
+            HStack {
+                Button("Debug") {
+                    state.coreDataAdapter.debugHabitsState()
+                }
+                .padding(8)
+                .background(Color.red.opacity(0.3))
+                .cornerRadius(8)
+                
+                Button("Recover") {
+                    state.coreDataAdapter.recoverMissingHabits()
+                }
+                .padding(8)
+                .background(Color.green.opacity(0.3))
+                .cornerRadius(8)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            
             // Main content area
             ZStack(alignment: .top) {
                 // Dark blue background fills entire screen

@@ -74,6 +74,46 @@ struct ProgressTabView: View {
         }
     }
     
+    // Helper struct for today's reminders
+    private struct TodaysReminder: Identifiable {
+        let id = UUID()
+        let habitName: String
+        let reminderTime: Date
+        let formattedTime: String
+        
+        init(habitName: String, reminderTime: Date) {
+            self.habitName = habitName
+            self.reminderTime = reminderTime
+            
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            self.formattedTime = formatter.string(from: reminderTime)
+        }
+    }
+    
+    // Get today's reminders from all habits
+    private func getTodaysReminders() -> [TodaysReminder] {
+        var todaysReminders: [TodaysReminder] = []
+        
+        for habit in habits {
+            // Check if habit has reminders
+            if !habit.reminders.isEmpty {
+                for reminder in habit.reminders {
+                    // Only include active reminders
+                    if reminder.isActive {
+                        todaysReminders.append(TodaysReminder(
+                            habitName: habit.name,
+                            reminderTime: reminder.time
+                        ))
+                    }
+                }
+            }
+        }
+        
+        // Sort reminders by time (earliest first)
+        return todaysReminders.sorted { $0.reminderTime < $1.reminderTime }
+    }
+    
     // MARK: - Calendar Helper Functions
     // Moved to ProgressCalendarHelper.swift
     
@@ -208,54 +248,70 @@ struct ProgressTabView: View {
                  // Today's reminders list
                  ScrollView(.horizontal, showsIndicators: false) {
                      HStack(spacing: 16) {
-                         // Placeholder reminder items
-                         ForEach(0..<5, id: \.self) { index in
-                             Button(action: {
-                                 // TODO: Handle reminder tap
-                                 print("📅 Reminder \(index + 1) tapped")
-                             }) {
-                                 VStack(alignment: .leading, spacing: 12) {
-                                 // Header with icon and title
-                                 HStack(spacing: 10) {
-                                     // Icon with background circle
-                                     ZStack {
-                                         Circle()
-                                             .fill(Color.primary.opacity(0.1))
-                                             .frame(width: 32, height: 32)
+                         // Get today's reminders from all habits
+                         let todaysReminders = getTodaysReminders()
+                         
+                         if !todaysReminders.isEmpty {
+                             // Display actual reminders
+                             ForEach(todaysReminders, id: \.id) { reminder in
+                                                              Button(action: {
+                                     // TODO: Handle reminder tap
+                                     print("📅 Reminder tapped for habit: \(reminder.habitName)")
+                                 }) {
+                                     VStack(alignment: .leading, spacing: 16) {
+                                         // Header with icon and title
+                                         HStack(spacing: 12) {
+                                             // Icon with background circle - larger for better touch target
+                                             ZStack {
+                                                 Circle()
+                                                     .fill(Color.primary.opacity(0.12))
+                                                     .frame(width: 36, height: 36)
+                                                 
+                                                 Image(systemName: "bell.fill")
+                                                     .font(.system(size: 16, weight: .semibold))
+                                                     .foregroundColor(.primary)
+                                             }
+                                             
+                                             // Title with better typography and spacing
+                                             VStack(alignment: .leading, spacing: 4) {
+                                                 Text(reminder.habitName)
+                                                     .font(.appTitleSmallEmphasised)
+                                                     .foregroundColor(.onPrimaryContainer)
+                                                     .lineLimit(1)
+                                                 
+                                                 // Subtitle for better hierarchy
+                                                 Text("Daily reminder")
+                                                     .font(.appBodySmall)
+                                                     .foregroundColor(.text03)
+                                                     .lineLimit(1)
+                                                 }
+                                             
+                                             Spacer()
+                                         }
                                          
-                                         Image(systemName: "bell.fill")
-                                             .font(.system(size: 14, weight: .semibold))
-                                             .foregroundColor(.primary)
+                                         // Time with enhanced styling and better spacing
+                                         HStack(spacing: 8) {
+                                             Image(systemName: "clock")
+                                                 .font(.system(size: 14, weight: .medium))
+                                                 .foregroundColor(.text03)
+                                                 .frame(width: 18)
+                                             
+                                             Text(reminder.formattedTime)
+                                                 .font(.appBodyMediumEmphasised)
+                                                 .foregroundColor(.text01)
+                                                 .fontWeight(.semibold)
+                                             
+                                             Spacer()
+                                             
+                                             // Status indicator for visual interest
+                                             Circle()
+                                                 .fill(Color.green)
+                                                 .frame(width: 8, height: 8)
+                                         }
                                      }
-                                     
-                                     // Title with better typography
-                                     Text("Reminder \(index + 1)")
-                                         .font(.appTitleSmallEmphasised)
-                                         .foregroundColor(.onPrimaryContainer)
-                                         .lineLimit(1)
-                                 }
-                                 
-                                 // Time with enhanced styling
-                                 HStack(spacing: 6) {
-                                     Image(systemName: "clock")
-                                         .font(.system(size: 12, weight: .medium))
-                                         .foregroundColor(.text03)
-                                         .frame(width: 16)
-                                     
-                                     Text("9:00 AM")
-                                         .font(.appBodyMediumEmphasised)
-                                         .foregroundColor(.text01)
-                                         .fontWeight(.medium)
-                                 }
-                                 
-                                 // Additional info line
-                                 Text("Daily habit reminder")
-                                     .font(.appBodySmall)
-                                     .foregroundColor(.text03)
-                                     .lineLimit(1)
-                             }
-                             .frame(width: 200, alignment: .leading)
-                             .padding(20)
+                                 .frame(width: 220, alignment: .leading)
+                                 .padding(.horizontal, 24)
+                                 .padding(.vertical, 20)
                              .background(
                                  RoundedRectangle(cornerRadius: 20)
                                      .fill(
@@ -287,7 +343,69 @@ struct ProgressTabView: View {
                          .scaleEffect(0.98)
                          .animation(.easeInOut(duration: 0.1), value: true)
                      }
+                 } else {
+                     // Empty state when no reminders - compact to match card height
+                     VStack(spacing: 12) {
+                         // Compact illustration
+                         ZStack {
+                             Circle()
+                                 .fill(
+                                     LinearGradient(
+                                         colors: [
+                                             Color.primary.opacity(0.1),
+                                             Color.primary.opacity(0.05)
+                                         ],
+                                         startPoint: .topLeading,
+                                         endPoint: .bottomTrailing
+                                     )
+                                 )
+                                 .frame(width: 48, height: 48)
+                             
+                             Image(systemName: "bell.badge")
+                                 .font(.system(size: 22, weight: .medium))
+                                 .foregroundColor(.primary.opacity(0.7))
+                         }
+                         
+                         // Compact content
+                         VStack(spacing: 8) {
+                             Text("No reminders today")
+                                 .font(.appTitleSmallEmphasised)
+                                 .foregroundColor(.onPrimaryContainer)
+                             
+                             Text("Add reminders to stay on track")
+                                 .font(.appBodySmall)
+                                 .foregroundColor(.text02)
+                                 .multilineTextAlignment(.center)
+                                 .lineLimit(1)
+                         }
+                         
+                         // Compact CTA button
+                         Button(action: {
+                             // TODO: Navigate to add reminder
+                             print("📅 Add reminder tapped")
+                         }) {
+                             HStack(spacing: 6) {
+                                 Image(systemName: "plus")
+                                     .font(.system(size: 12, weight: .medium))
+                                 
+                                 Text("Add reminder")
+                                     .font(.appBodyMedium)
+                             }
+                             .foregroundColor(.primary)
+                             .padding(.horizontal, 16)
+                             .padding(.vertical, 8)
+                             .background(
+                                 RoundedRectangle(cornerRadius: 12)
+                                     .fill(Color.primary.opacity(0.1))
+                             )
+                         }
+                         .buttonStyle(PlainButtonStyle())
+                     }
+                     .frame(width: 220)
+                     .padding(.horizontal, 24)
+                     .padding(.vertical, 20)
                  }
+             }
                      .padding(.horizontal, 20)
                      .padding(.vertical, 12)
                  }

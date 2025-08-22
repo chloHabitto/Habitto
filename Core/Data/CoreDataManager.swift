@@ -220,6 +220,20 @@ class CoreDataManager: ObservableObject {
         habitEntity.baseline = Int32(habit.baseline)
         habitEntity.target = Int32(habit.target)
         
+        // Create reminder entities and establish bidirectional relationship
+        var newReminders: Set<ReminderItemEntity> = []
+        for reminderItem in habit.reminders {
+            let reminderEntity = ReminderItemEntity(context: context)
+            reminderEntity.id = reminderItem.id
+            reminderEntity.time = reminderItem.time
+            reminderEntity.isActive = reminderItem.isActive
+            reminderEntity.habit = habitEntity
+            newReminders.insert(reminderEntity)
+        }
+        
+        // Set the reminders relationship on the habit entity
+        habitEntity.reminders = newReminders as NSSet
+        
         try save()
         return habitEntity
     }
@@ -247,6 +261,27 @@ class CoreDataManager: ObservableObject {
         habitEntity.createdAt = habit.createdAt
         habitEntity.baseline = Int32(habit.baseline)
         habitEntity.target = Int32(habit.target)
+        
+        // Update reminders - first remove existing ones
+        if let existingReminders = habitEntity.reminders as? Set<ReminderItemEntity> {
+            for reminderEntity in existingReminders {
+                context.delete(reminderEntity)
+            }
+        }
+        
+        // Create new reminder entities and establish bidirectional relationship
+        var newReminders: Set<ReminderItemEntity> = []
+        for reminderItem in habit.reminders {
+            let reminderEntity = ReminderItemEntity(context: context)
+            reminderEntity.id = reminderItem.id
+            reminderEntity.time = reminderItem.time
+            reminderEntity.isActive = reminderItem.isActive
+            reminderEntity.habit = habitEntity
+            newReminders.insert(reminderEntity)
+        }
+        
+        // Set the reminders relationship on the habit entity
+        habitEntity.reminders = newReminders as NSSet
         
         try save()
     }
@@ -342,6 +377,27 @@ class CoreDataManager: ObservableObject {
                     existingHabit.streak = Int32(habit.streak)
                     existingHabit.baseline = Int32(habit.baseline)
                     existingHabit.target = Int32(habit.target)
+                    
+                    // Update reminders - first remove existing ones
+                    if let existingReminders = existingHabit.reminders as? Set<ReminderItemEntity> {
+                        for reminderEntity in existingReminders {
+                            backgroundContext.delete(reminderEntity)
+                        }
+                    }
+                    
+                    // Create new reminder entities and establish bidirectional relationship
+                    var newReminders: Set<ReminderItemEntity> = []
+                    for reminderItem in habit.reminders {
+                        let reminderEntity = ReminderItemEntity(context: backgroundContext)
+                        reminderEntity.id = reminderItem.id
+                        reminderEntity.time = reminderItem.time
+                        reminderEntity.isActive = reminderItem.isActive
+                        reminderEntity.habit = existingHabit
+                        newReminders.insert(reminderEntity)
+                    }
+                    
+                    // Set the reminders relationship on the habit entity
+                    existingHabit.reminders = newReminders as NSSet
                 } else {
                     // Create new habit entity
                     let habitEntity = HabitEntity(context: backgroundContext)
@@ -361,6 +417,20 @@ class CoreDataManager: ObservableObject {
                     habitEntity.streak = Int32(habit.streak)
                     habitEntity.baseline = Int32(habit.baseline)
                     habitEntity.target = Int32(habit.target)
+                    
+                    // Create reminder entities and establish bidirectional relationship
+                    var newReminders: Set<ReminderItemEntity> = []
+                    for reminderItem in habit.reminders {
+                        let reminderEntity = ReminderItemEntity(context: backgroundContext)
+                        reminderEntity.id = reminderItem.id
+                        reminderEntity.time = reminderItem.time
+                        reminderEntity.isActive = reminderItem.isActive
+                        reminderEntity.habit = habitEntity
+                        newReminders.insert(reminderEntity)
+                    }
+                    
+                    // Set the reminders relationship on the habit entity
+                    habitEntity.reminders = newReminders as NSSet
                 }
             }
             

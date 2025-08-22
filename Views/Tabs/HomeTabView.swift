@@ -294,17 +294,43 @@ struct HomeTabView: View {
     // MARK: - Base Habits for Stats Calculation (No Tab Filtering)
     private var baseHabitsForSelectedDate: [Habit] {
         // Calculate filtered habits for the selected date (only by date/schedule, no tab filtering)
-        return habits.filter { habit in
+        print("🔍 DEBUG: baseHabitsForSelectedDate - Starting with \(habits.count) total habits")
+        print("🔍 DEBUG: Selected date: \(selectedDate)")
+        
+        let filteredHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
             let start = DateUtils.startOfDay(for: habit.startDate)
             let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
             
+            print("🔍 DEBUG: Checking habit '\(habit.name)' (ID: \(habit.id))")
+            print("  - Selected date: \(selected)")
+            print("  - Start date: \(start)")
+            print("  - End date: \(end)")
+            print("  - Date range check: \(selected >= start && selected <= end)")
+            
             guard selected >= start && selected <= end else {
+                print("  ❌ Habit '\(habit.name)' filtered out - date range check failed")
                 return false
             }
             
-            return shouldShowHabitOnDate(habit, date: selectedDate)
+            let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
+            print("  - shouldShowHabitOnDate result: \(shouldShow)")
+            
+            if shouldShow {
+                print("  ✅ Habit '\(habit.name)' included in filtered list")
+            } else {
+                print("  ❌ Habit '\(habit.name)' filtered out by shouldShowHabitOnDate")
+            }
+            
+            return shouldShow
         }
+        
+        print("🔍 DEBUG: baseHabitsForSelectedDate - Final filtered count: \(filteredHabits.count)")
+        for (index, habit) in filteredHabits.enumerated() {
+            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id))")
+        }
+        
+        return filteredHabits
     }
     
     private func getWeekdayName(_ weekday: Int) -> String {
