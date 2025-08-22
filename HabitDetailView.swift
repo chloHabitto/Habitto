@@ -9,6 +9,8 @@ struct HabitDetailView: View {
     @State private var todayProgress: Int = 0
     @State private var showingEditView = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingReminderSheet = false
+    @State private var selectedReminder: ReminderItem?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -45,6 +47,20 @@ struct HabitDetailView: View {
                 onUpdateHabit?(updatedHabit)
                 print("🔄 HabitDetailView: onUpdateHabit callback called")
             })
+        }
+        .sheet(isPresented: $showingReminderSheet) {
+            ReminderEditSheet(
+                habit: habit,
+                reminder: selectedReminder,
+                onSave: { updatedHabit in
+                    habit = updatedHabit
+                    onUpdateHabit?(updatedHabit)
+                    selectedReminder = nil
+                },
+                onCancel: {
+                    selectedReminder = nil
+                }
+            )
         }
         .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
@@ -132,11 +148,17 @@ struct HabitDetailView: View {
             Divider()
                 .padding(.horizontal, 16)
             
+            // Reminders Section
+            remindersSection
+            
+            Divider()
+                .padding(.horizontal, 16)
+            
             // Today's Progress Section
             todayProgressSection
         }
         .background(.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
     
@@ -145,7 +167,7 @@ struct HabitDetailView: View {
         HStack(spacing: 12) {
             // Habit Icon
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(.surfaceContainer)
                     .frame(width: 48, height: 48)
                 
@@ -156,7 +178,7 @@ struct HabitDetailView: View {
                         .foregroundColor(.primary)
                 } else if habit.icon == "None" {
                     // No icon selected - show colored rounded rectangle
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(habit.color)
                         .frame(width: 24, height: 24)
                 } else {
@@ -178,13 +200,13 @@ struct HabitDetailView: View {
             Spacer()
             
             // Active status tag
-                            Text("Active")
-                    .font(.appLabelSmall)
-                    .foregroundColor(.onPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.secondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            Text("Active")
+                .font(.appLabelSmall)
+                .foregroundColor(.onPrimary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
@@ -216,6 +238,125 @@ struct HabitDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
+    }
+    
+    // MARK: - Reminders Section
+    private var remindersSection: some View {
+        VStack(spacing: 16) {
+            // Reminders header
+            HStack {
+                Text("Reminders")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text05)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingReminderSheet = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            // Reminders list
+            if !habit.reminders.isEmpty {
+                VStack(spacing: 12) {
+                    ForEach(habit.reminders, id: \.id) { reminder in
+                        reminderRow(for: reminder)
+                    }
+                }
+            } else {
+                // Empty state
+                HStack {
+                    Image(systemName: "bell.slash")
+                        .font(.system(size: 16))
+                        .foregroundColor(.text04)
+                    
+                    Text("No reminders set")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text04)
+                    
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+    
+    private func reminderRow(for reminder: ReminderItem) -> some View {
+        HStack(spacing: 12) {
+            // Time icon
+            Image(systemName: "clock")
+                .font(.system(size: 16))
+                .foregroundColor(.primary)
+                .frame(width: 20)
+            
+            // Time text
+            Text(formatReminderTime(reminder.time))
+                .font(.appBodyMedium)
+                .foregroundColor(.text01)
+            
+            Spacer()
+            
+            // Edit button
+            Button(action: {
+                selectedReminder = reminder
+                showingReminderSheet = true
+            }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14))
+                    .foregroundColor(.text03)
+            }
+            
+            // Delete button
+            Button(action: {
+                deleteReminder(reminder)
+            }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 14))
+                    .foregroundColor(.red)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color.surfaceContainer.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+    
+    private func formatReminderTime(_ time: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: time)
+    }
+    
+    private func deleteReminder(_ reminder: ReminderItem) {
+        let updatedReminders = habit.reminders.filter { $0.id != reminder.id }
+        let updatedHabit = Habit(
+            id: habit.id,
+            name: habit.name,
+            description: habit.description,
+            icon: habit.icon,
+            color: habit.color,
+            habitType: habit.habitType,
+            schedule: habit.schedule,
+            goal: habit.goal,
+            reminder: habit.reminder,
+            startDate: habit.startDate,
+            endDate: habit.endDate,
+            isCompleted: habit.isCompleted,
+            streak: habit.streak,
+            createdAt: habit.createdAt,
+            reminders: updatedReminders,
+            baseline: habit.baseline,
+            target: habit.target,
+            completionHistory: habit.completionHistory,
+            actualUsage: habit.actualUsage
+        )
+        onUpdateHabit?(updatedHabit)
     }
     
     // MARK: - Today's Progress Section
@@ -474,6 +615,130 @@ struct HabitDetailView: View {
         }
         
         return goal // Fallback to original goal if format is unexpected
+    }
+}
+
+// MARK: - Reminder Edit Sheet
+struct ReminderEditSheet: View {
+    let habit: Habit
+    let reminder: ReminderItem?
+    let onSave: (Habit) -> Void
+    let onCancel: () -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTime = Date()
+    @State private var isEditing = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                // Time picker
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Reminder Time")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(WheelDatePickerStyle())
+                        .labelsHidden()
+                }
+                .padding(.horizontal, 20)
+                
+                Spacer()
+            }
+            .padding(.top, 20)
+            .navigationTitle(reminder == nil ? "Add Reminder" : "Edit Reminder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        onCancel()
+                        dismiss()
+                    }
+                    .foregroundColor(.text03)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        saveReminder()
+                    }
+                    .font(.appBodyMediumEmphasised)
+                    .foregroundColor(.primary)
+                }
+            }
+        }
+        .onAppear {
+            if let reminder = reminder {
+                selectedTime = reminder.time
+                isEditing = true
+            }
+        }
+    }
+    
+    private func saveReminder() {
+        if isEditing, let reminder = reminder {
+            // Update existing reminder
+            let updatedReminders = habit.reminders.map { existingReminder in
+                if existingReminder.id == reminder.id {
+                    return ReminderItem(time: selectedTime, isActive: existingReminder.isActive)
+                }
+                return existingReminder
+            }
+            
+            let updatedHabit = Habit(
+                id: habit.id,
+                name: habit.name,
+                description: habit.description,
+                icon: habit.icon,
+                color: habit.color,
+                habitType: habit.habitType,
+                schedule: habit.schedule,
+                goal: habit.goal,
+                reminder: habit.reminder,
+                startDate: habit.startDate,
+                endDate: habit.endDate,
+                isCompleted: habit.isCompleted,
+                streak: habit.streak,
+                createdAt: habit.createdAt,
+                reminders: updatedReminders,
+                baseline: habit.baseline,
+                target: habit.target,
+                completionHistory: habit.completionHistory,
+                actualUsage: habit.actualUsage
+            )
+            
+            onSave(updatedHabit)
+        } else {
+            // Create new reminder
+            let newReminder = ReminderItem(time: selectedTime, isActive: true)
+            let updatedReminders = habit.reminders + [newReminder]
+            
+            let updatedHabit = Habit(
+                id: habit.id,
+                name: habit.name,
+                description: habit.description,
+                icon: habit.icon,
+                color: habit.color,
+                habitType: habit.habitType,
+                schedule: habit.schedule,
+                goal: habit.goal,
+                reminder: habit.reminder,
+                startDate: habit.startDate,
+                endDate: habit.endDate,
+                isCompleted: habit.isCompleted,
+                streak: habit.streak,
+                createdAt: habit.createdAt,
+                reminders: updatedReminders,
+                baseline: habit.baseline,
+                target: habit.target,
+                completionHistory: habit.completionHistory,
+                actualUsage: habit.actualUsage
+            )
+            
+            onSave(updatedHabit)
+        }
+        
+        dismiss()
     }
 }
 

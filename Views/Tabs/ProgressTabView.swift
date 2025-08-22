@@ -10,6 +10,7 @@ struct ProgressTabView: View {
     @State private var showingDatePicker = false // Control date picker modal
     @State private var currentInsightPage: Int = 0 // For unified insights card pagination
     @State private var selectedWeekStartDate = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+    @State private var showingAllReminders = false // Control reminders sheet
     let habits: [Habit]
     
     // Use the calendar helper
@@ -82,10 +83,14 @@ struct ProgressTabView: View {
         let habitName: String
         let reminderTime: Date
         let formattedTime: String
+        let reminder: ReminderItem
+        let habit: Habit
         
-        init(habitName: String, reminderTime: Date) {
+        init(habitName: String, reminderTime: Date, reminder: ReminderItem, habit: Habit) {
             self.habitName = habitName
             self.reminderTime = reminderTime
+            self.reminder = reminder
+            self.habit = habit
             
             let formatter = DateFormatter()
             formatter.timeStyle = .short
@@ -105,7 +110,9 @@ struct ProgressTabView: View {
                     if reminder.isActive {
                         todaysReminders.append(TodaysReminder(
                             habitName: habit.name,
-                            reminderTime: reminder.time
+                            reminderTime: reminder.time,
+                            reminder: reminder,
+                            habit: habit
                         ))
                     }
                 }
@@ -114,6 +121,47 @@ struct ProgressTabView: View {
         
         // Sort reminders by time (earliest first)
         return todaysReminders.sorted { $0.reminderTime < $1.reminderTime }
+    }
+    
+    // Toggle reminder active status
+    private func toggleReminder(_ reminder: ReminderItem, in habit: Habit) {
+        // Create a new Habit instance with updated reminders
+        let updatedReminders = habit.reminders.map { existingReminder in
+            if existingReminder.id == reminder.id {
+                // Create a new ReminderItem with toggled isActive status
+                return ReminderItem(
+                    time: existingReminder.time,
+                    isActive: !existingReminder.isActive
+                )
+            }
+            return existingReminder
+        }
+        
+        // Create a new Habit instance with the updated reminders
+        let updatedHabit = Habit(
+            id: habit.id,
+            name: habit.name,
+            description: habit.description,
+            icon: habit.icon,
+            color: habit.color,
+            habitType: habit.habitType,
+            schedule: habit.schedule,
+            goal: habit.goal,
+            reminder: habit.reminder,
+            startDate: habit.startDate,
+            endDate: habit.endDate,
+            isCompleted: habit.isCompleted,
+            streak: habit.streak,
+            createdAt: habit.createdAt,
+            reminders: updatedReminders,
+            baseline: habit.baseline,
+            target: habit.target,
+            completionHistory: habit.completionHistory,
+            actualUsage: habit.actualUsage
+        )
+        
+        // Update the habit in Core Data
+        coreDataAdapter.updateHabit(updatedHabit)
     }
     
     // MARK: - Calendar Helper Functions
@@ -320,12 +368,12 @@ struct ProgressTabView: View {
                             .foregroundColor(.white)
                         
                         Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
-                            .font(.appBodyMedium)
+                                .font(.appBodyMedium)
                             .foregroundColor(.white.opacity(0.8))
-                    }
-                    
-                    Spacer()
-                    
+                        }
+                        
+                        Spacer()
+                        
                     // Daily progress ring
                     dailyProgressRing
                 }
@@ -335,214 +383,219 @@ struct ProgressTabView: View {
                         .fill(Color.primary)
                 )
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                                 .padding(.horizontal, 16)
-             }
-             
-             // Today's Reminders Section
-             VStack(spacing: 8) {
-                 // Header with "See more" button
-                 HStack {
-                     Text("Today's reminders")
-                         .font(.appTitleSmallEmphasised)
-                                .foregroundColor(.onPrimaryContainer)
-                            
-                     Spacer()
-                     
-                     Button(action: {
-                         // TODO: Navigate to reminders view
-                         print("📅 See more reminders tapped")
-                     }) {
-                         HStack(spacing: 4) {
-                             Text("See more")
+                .padding(.horizontal, 16)
+            }
+            
+            // Today's Reminders Section
+            VStack(spacing: 8) {
+                // Header with "See more" button
+                HStack {
+                    Text("Today's reminders")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        // Show all reminders (both active and inactive)
+                        showingAllReminders = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("See more")
                                 .font(.appBodyMedium)
-                                 .foregroundColor(.primaryFocus)
-                             
-                             Image(systemName: "chevron.right")
-                                 .font(.system(size: 12, weight: .medium))
-                                 .foregroundColor(.primaryFocus)
-                         }
-                     }
-                 }
-                 .padding(.horizontal, 16)
-                 
-                 // Today's reminders list
-                 ScrollView(.horizontal, showsIndicators: false) {
-                     HStack(spacing: 16) {
-                         // Get today's reminders from all habits
-                         let todaysReminders = getTodaysReminders()
-                         
-                         if !todaysReminders.isEmpty {
-                             // Display actual reminders
-                             ForEach(todaysReminders, id: \.id) { reminder in
-                                                              Button(action: {
-                                     // TODO: Handle reminder tap
-                                     print("📅 Reminder tapped for habit: \(reminder.habitName)")
-                                 }) {
-                                     VStack(alignment: .leading, spacing: 16) {
-                                         // Header with icon and title
-                                         HStack(spacing: 12) {
-                                             // Icon with background circle - larger for better touch target
-                                             ZStack {
-                                                 Circle()
-                                                     .fill(Color.primary.opacity(0.12))
-                                                     .frame(width: 36, height: 36)
-                                                 
-                                                 Image("Icon-Bell_Filled")
-                                                     .resizable()
-                                                     .frame(width: 16, height: 16)
-                                                     .foregroundColor(.primary)
-                                             }
-                                             
-                                             // Title with better typography and spacing
-                                             VStack(alignment: .leading, spacing: 4) {
-                                                 Text(reminder.habitName)
-                                                     .font(.appTitleSmallEmphasised)
-                                                     .foregroundColor(.onPrimaryContainer)
-                                                     .lineLimit(1)
-                                                 
-                                                 // Subtitle for better hierarchy
-                                                 Text("Daily reminder")
-                                                     .font(.appBodySmall)
-                                                     .foregroundColor(.text03)
-                                                     .lineLimit(1)
+                                .foregroundColor(.primaryFocus)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primaryFocus)
                         }
+                    }
+                }
+                .padding(.horizontal, 16)
+                
+                // Today's reminders list
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        // Get today's reminders from all habits
+                        let todaysReminders = getTodaysReminders()
                         
-                        Spacer()
-                                         }
-                                         
-                                         // Time with enhanced styling and better spacing
-                                         HStack(spacing: 8) {
-                                             Image(systemName: "clock")
-                                                 .font(.system(size: 14, weight: .medium))
-                                                 .foregroundColor(.text03)
-                                                 .frame(width: 18)
-                                             
-                                             Text(reminder.formattedTime)
-                                                 .font(.appBodyMediumEmphasised)
-                                                 .foregroundColor(.text01)
-                                                 .fontWeight(.semibold)
-                                             
-                                             Spacer()
-                                             
-                                             // Toggle for reminder status
-                                             Toggle("", isOn: .constant(true))
-                                                 .toggleStyle(SwitchToggleStyle(tint: .primary))
-                                                 .scaleEffect(0.8)
-                                         }
-                                         .frame(maxWidth: .infinity)
-                                     }
-                                 .frame(width: 220, alignment: .leading)
-                                 .padding(.horizontal, 20)
-                                 .padding(.vertical, 20)
-                             .background(
-                                 RoundedRectangle(cornerRadius: 20)
-                                     .fill(
-                                         LinearGradient(
-                                             colors: [
-                                                 Color.surface,
-                                                 Color.surface.opacity(0.95)
-                                             ],
-                                             startPoint: .topLeading,
-                                             endPoint: .bottomTrailing
-                                         )
-                                     )
-                                     .overlay(
-                                         RoundedRectangle(cornerRadius: 20)
-                                             .stroke(
-                                                 LinearGradient(
-                                                     colors: [
-                                                         Color.primary.opacity(0.1),
-                                                         Color.primary.opacity(0.05)
-                                                     ],
-                                                     startPoint: .topLeading,
-                                                     endPoint: .bottomTrailing
-                                                 ),
-                                                 lineWidth: 1.5
-                                             )
-                                     )
-                             )
-                         }
-                         .scaleEffect(0.98)
-                         .animation(.easeInOut(duration: 0.1), value: true)
-                     }
-                 } else {
-                                          // Empty state when no reminders - simple, cute, and beautiful
-                     HStack(spacing: 16) {
-                         // Cute bell icon with soft background
+                        if !todaysReminders.isEmpty {
+                            // Display actual reminders
+                            ForEach(todaysReminders, id: \.id) { reminder in
+                                Button(action: {
+                                    // TODO: Handle reminder tap
+                                    print("📅 Reminder tapped for habit: \(reminder.habitName)")
+                                }) {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        // Header with icon and title
+                                        HStack(spacing: 12) {
+                                            // Icon with background circle - larger for better touch target
                         ZStack {
                             Circle()
-                                 .fill(
-                                     LinearGradient(
-                                         colors: [
-                                             Color.primary.opacity(0.08),
-                                             Color.primary.opacity(0.04)
-                                         ],
-                                         startPoint: .topLeading,
-                                         endPoint: .bottomTrailing
-                                     )
-                                 )
-                                .frame(width: 48, height: 48)
-                            
-                             Image("Icon-Bell_Filled")
-                                 .resizable()
-                                 .frame(width: 20, height: 20)
-                                 .foregroundColor(.primary.opacity(0.7))
-                         }
-                         
-                         // Simple, friendly text
-                         VStack(alignment: .leading, spacing: 4) {
-                             Text("All caught up! 🎉")
-                                 .font(.appTitleSmallEmphasised)
-                                 .foregroundColor(.onPrimaryContainer)
-                                 
-                             Text("No reminders for today")
-                                 .font(.appBodyMedium)
-                                 .foregroundColor(.text03)
-                         }
-                         
-                         Spacer()
-                     }
-                     .frame(maxWidth: .infinity, alignment: .leading)
-                     .padding(.horizontal, 16)
-                     .padding(.vertical, 20)
-                     .background(
-                         RoundedRectangle(cornerRadius: 20)
-                             .fill(
-                                 LinearGradient(
-                                     colors: [
-                                         Color.surface,
-                                         Color.surface.opacity(0.98)
-                                     ],
-                                     startPoint: .topLeading,
-                                     endPoint: .bottomTrailing
-                                 )
-                             )
-                             .overlay(
-                                 RoundedRectangle(cornerRadius: 20)
+                                                    .fill(Color.primary.opacity(0.12))
+                                                    .frame(width: 36, height: 36)
+                                                
+                                                Image("Icon-Bell_Filled")
+                                                    .resizable()
+                                                    .frame(width: 16, height: 16)
+                                                    .foregroundColor(.primary)
+                                            }
+                                            
+                                            // Title with better typography and spacing
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(reminder.habitName)
+                                                    .font(.appTitleSmallEmphasised)
+                                                    .foregroundColor(.onPrimaryContainer)
+                                                    .lineLimit(1)
+                                                
+                                                // Subtitle for better hierarchy
+                                                Text("Daily reminder")
+                                                    .font(.appBodySmall)
+                                                    .foregroundColor(.text03)
+                                                    .lineLimit(1)
+                                            }
+                                            
+                                            Spacer()
+                                        }
+                                        
+                                        // Time with enhanced styling and better spacing
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.text03)
+                                                .frame(width: 18)
+                                            
+                                            Text(reminder.formattedTime)
+                                                .font(.appBodyMediumEmphasised)
+                                                .foregroundColor(.text01)
+                                                .fontWeight(.semibold)
+                                            
+                                            Spacer()
+                                            
+                                            // Toggle for reminder status
+                                            Toggle("", isOn: Binding(
+                                                get: { reminder.reminder.isActive },
+                                                set: { newValue in
+                                                    toggleReminder(reminder.reminder, in: reminder.habit)
+                                                }
+                                            ))
+                                                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                                .scaleEffect(0.8)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                    .frame(width: 220, alignment: .leading)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 20)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [
+                                                        Color.surface,
+                                                        Color.surface.opacity(0.95)
+                                                    ],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 20)
                                 .stroke(
                                     LinearGradient(
-                                             colors: [
-                                                 Color.primary.opacity(0.08),
-                                                 Color.primary.opacity(0.04)
-                                             ],
+                                                            colors: [
+                                                                Color.primary.opacity(0.1),
+                                                                Color.primary.opacity(0.05)
+                                                            ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
-                                         lineWidth: 1
-                                     )
-                             )
-                     )
-                 }
-             }
-                     .padding(.horizontal, 16)
-                     .padding(.vertical, 8)
-                 }
-             }
-             .padding(.top, 32)
-         }
-     }
-     
-     // MARK: - Weekly Progress Section
+                                                        lineWidth: 1.5
+                                                    )
+                                            )
+                                    )
+                                }
+                                .scaleEffect(0.98)
+                                .animation(.easeInOut(duration: 0.1), value: true)
+                            }
+                        } else {
+                            // Empty state when no reminders - simple, cute, and beautiful
+                            HStack(spacing: 16) {
+                                // Cute bell icon with soft background
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.primary.opacity(0.08),
+                                                    Color.primary.opacity(0.04)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                )
+                                .frame(width: 48, height: 48)
+                                    
+                                    Image("Icon-Bell_Filled")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.primary.opacity(0.7))
+                                }
+                                
+                                // Simple, friendly text
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("All caught up! 🎉")
+                                        .font(.appTitleSmallEmphasised)
+                                        .foregroundColor(.onPrimaryContainer)
+                                    
+                                    Text("No reminders for today")
+                                        .font(.appBodyMedium)
+                                        .foregroundColor(.text03)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 20)
+                .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.surface,
+                                                Color.surface.opacity(0.98)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                        .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [
+                                                        Color.primary.opacity(0.08),
+                                                        Color.primary.opacity(0.04)
+                                                    ],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 1
+                                            )
+                                    )
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+            .padding(.top, 24)
+        }
+    }
+    
+    // MARK: - Weekly Progress Section
     private var weeklyProgressSection: some View {
         VStack(spacing: 0) {
             // Add top spacing to separate from tabs
@@ -596,205 +649,137 @@ struct ProgressTabView: View {
                     HStack(spacing: 0) {
                         ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
                             Text(day)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.text02)
+                                .font(.appLabelMedium)
+                                .foregroundColor(.text03)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 8)
                         }
                     }
-                    .padding(.bottom, 8)
-                    .padding(.horizontal, 8)
+                    .background(Color.outline3.opacity(0.1))
                     
-                                    // Week days grid - simple horizontal layout
-                HStack(spacing: 0) {
-                    ForEach(0..<7, id: \.self) { dayIndex in
-                        // Animation states for each day cell
-                        @State var scale: CGFloat = 1.0
-                        @State var progressAnimation: Double = 0.0
-                        let calendar = Calendar.current
-                        let weekStart = selectedWeekStartDate
-                        let currentDay = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? Date()
-                        let isToday = calendar.isDate(currentDay, inSameDayAs: Date())
-                        let dayProgress = ProgressCalculationHelper.getDayProgress(
-                            for: currentDay,
-                            habits: habits,
-                            selectedHabitType: .formation,
-                            selectedHabit: selectedHabit
-                        )
-                        
-                        // Simple day cell with progress ring around date
-                        ZStack {
-                            // Today background highlight (same as monthly calendar)
-                            if isToday {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color.primary, Color.primary.opacity(0.8)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
+                    // Week days grid
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { dayOffset in
+                            let currentDay = Calendar.current.date(byAdding: .day, value: dayOffset, to: selectedWeekStartDate) ?? Date()
+                            let isToday = Calendar.current.isDateInToday(currentDay)
+                            
+                            VStack(spacing: 4) {
+                                ZStack {
+                                    // Progress ring
+                                    Circle()
+                                        .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
+                                        .frame(width: 32, height: 32)
+                                    
+                                    // Progress fill
+                                    Circle()
+                                        .trim(from: 0, to: getDayProgress(for: currentDay))
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [Color.pastelBlue500, Color.primary],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            style: StrokeStyle(lineWidth: 2, lineCap: .round)
                                         )
-                                    )
-                                    .frame(width: 36, height: 36)
-                                    .shadow(color: Color.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+                                        .frame(width: 32, height: 32)
+                                        .rotationEffect(.degrees(-90))
+                                        .animation(.easeInOut(duration: 0.8), value: getDayProgress(for: currentDay))
+                                    
+                                    // Today highlight
+                                    if isToday {
+                                        Circle()
+                                            .fill(LinearGradient(
+                                                colors: [Color.primary, Color.primary.opacity(0.8)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ))
+                                            .frame(width: 36, height: 36)
+                                            .shadow(color: Color.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+                                    }
+                                    
+                                    // Day number
+                                    Text("\(Calendar.current.component(.day, from: currentDay))")
+                                        .font(.appLabelMedium)
+                                        .foregroundColor(isToday ? .white : .text01)
+                                        .fontWeight(.medium)
+                                }
                             }
-                            
-                            // Progress ring background
-                            Circle()
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
-                                .frame(width: 32, height: 32)
-                            
-                            // Progress ring - using same colors as monthly calendar
-                            Circle()
-                                .trim(from: 0, to: dayProgress)
-                                .stroke(
-                                    dayProgress > 0 ? 
-                                    LinearGradient(
-                                        colors: [Color.pastelBlue500, Color.pastelBlue500.opacity(0.7)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ) :
-                                    LinearGradient(
-                                        colors: [Color.outline3, Color.outline3.opacity(0.7)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
-                                )
-                                .frame(width: 32, height: 32)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 0.8), value: dayProgress)
-                            
-                            // Day number
-                            Text("\(Calendar.current.component(.day, from: currentDay))")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(isToday ? .white : .text01)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .scaleEffect(scale)
-                        .opacity(gridAppearAnimation ? 1 : 0)
-                        .offset(y: gridAppearAnimation ? 0 : 20)
-                        .animation(
-                            .spring(response: 0.6, dampingFraction: 0.8)
-                            .delay(Double(dayIndex) * 0.02),
-                            value: gridAppearAnimation
-                        )
-                        .onAppear {
-                            // Animate progress ring on appear (same as monthly calendar)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0...0.5)) {
-                                withAnimation(.easeInOut(duration: 0.8)) {
-                                    progressAnimation = dayProgress
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .onTapGesture {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedProgressDate = currentDay
+                                    selectedTimePeriod = 0 // Switch to daily view
                                 }
                             }
                         }
-                        .onTapGesture {
-                            // Add haptic feedback when selecting a date
-                            let selectionFeedback = UISelectionFeedbackGenerator()
-                            selectionFeedback.selectionChanged()
-                            
-                            // Scale animation on tap (same as monthly calendar)
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                scale = 1.1
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                    scale = 1.0
-                                }
-                            }
-                            
-                            print("Selected week day: \(currentDay)")
+                    }
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 0.8).delay(0.2)) {
+                            gridAppearAnimation = true
                         }
                     }
                 }
-                .padding(.horizontal, 8)
-                .onAppear {
-                    // Trigger grid appear animation (same as monthly calendar)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        gridAppearAnimation = true
-                    }
-                }
-                .gesture(
-                    DragGesture()
-                        .onEnded { value in
-                            let threshold: CGFloat = 50
-                            if abs(value.translation.width) > threshold {
-                                if value.translation.width > 0 {
-                                    // Swipe right - go to previous week
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: selectedWeekStartDate) ?? selectedWeekStartDate
-                                    }
-                                } else {
-                                    // Swipe left - go to next week
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: selectedWeekStartDate) ?? selectedWeekStartDate
-                                    }
-                                }
-                            }
-                        }
+                .background(Color.outline3.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
                 )
-                }
+                .padding(.horizontal, 16)
             }
-            .padding(20)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.outline3, lineWidth: 1)
-            )
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity)
-            
-            // Add spacing between weekly calendar and progress card
-            Spacer()
-                .frame(height: 16)
             
             // Weekly Progress Card
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Weekly Completion")
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.white)
-                        
-                        Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount()) habits completed")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
+                    Text("Weekly Progress")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(.text01)
                     
                     Spacer()
                     
-                    // Weekly progress ring
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
-                            .frame(width: 60, height: 60)
+                    Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount())")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                }
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.outline3.opacity(0.3))
+                            .frame(height: 8)
                         
-                        Circle()
-                            .trim(from: 0, to: getWeeklyCompletionPercentage())
-                            .stroke(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
                                 LinearGradient(
-                                    colors: [Color.white, Color.white.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                            .frame(width: 60, height: 60)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 1.0), value: getWeeklyCompletionPercentage())
-                        
-                        Text("\(Int(getWeeklyCompletionPercentage() * 100))%")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .frame(width: geometry.size.width * getWeeklyCompletionPercentage(), height: 8)
+                            .animation(.easeInOut(duration: 0.5), value: getWeeklyCompletionPercentage())
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.primary)
-                )
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                .padding(.horizontal, 16)
+                .frame(height: 8)
+                
+                Text("\(Int(getWeeklyCompletionPercentage() * 100))% completed")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
             }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .padding(.horizontal, 16)
             
             // Add spacing before unified insights
             Spacer()
@@ -813,147 +798,58 @@ struct ProgressTabView: View {
                 .frame(height: 20)
             
             // Monthly Calendar
-            VStack(spacing: 8) {
-                // Calendar header with month/year and Today button
+            monthlyCalendarSection
+            
+            // Monthly Progress Card
+            VStack(spacing: 16) {
                 HStack {
-                    Text(calendarHelper.monthYearString())
-                        .font(.appTitleMedium)
+                    Text("Monthly Progress")
+                        .font(.appTitleSmallEmphasised)
                         .foregroundColor(.text01)
                     
                     Spacer()
                     
-                    if !calendarHelper.isCurrentMonth() || !calendarHelper.isTodayInCurrentMonth() {
-                        Button(action: calendarHelper.goToToday) {
-                            HStack(spacing: 4) {
-                                Image(.iconReplay)
-                                    .resizable()
-                                    .frame(width: 12, height: 12)
-                                    .foregroundColor(.primaryFocus)
-                                Text("This month")
-                                    .font(.appLabelMedium)
-                                    .foregroundColor(.primaryFocus)
-                            }
-                            .padding(.leading, 12)
-                            .padding(.trailing, 8)
-                            .padding(.top, 4)
-                            .padding(.bottom, 4)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: .infinity)
-                                    .stroke(.primaryFocus, lineWidth: 1)
+                    Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount())")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                }
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.outline3.opacity(0.3))
+                            .frame(height: 8)
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        }
+                            .frame(width: geometry.size.width * getMonthlyCompletionPercentage(), height: 8)
+                            .animation(.easeInOut(duration: 0.5), value: getMonthlyCompletionPercentage())
                     }
                 }
-                .padding(.bottom, 12)
+                .frame(height: 8)
                 
-                // Days of week header
-                CalendarGridComponents.WeekdayHeader()
-                
-                // Calendar grid
-                CalendarGridComponents.CalendarGrid(
-                    firstDayOfMonth: calendarHelper.firstDayOfMonth(),
-                    daysInMonth: calendarHelper.daysInMonth(),
-                    currentDate: calendarHelper.currentDate,
-                    selectedDate: Date(),
-                    getDayProgress: { day in
-                        ProgressCalculationHelper.getDayProgress(
-                            day: day,
-                            currentDate: calendarHelper.currentDate,
-                            habits: habits,
-                            selectedHabitType: .formation, // Default to formation type
-                            selectedHabit: selectedHabit
-                        )
-                    },
-                    onDayTap: { day in
-                        // Add haptic feedback when selecting a date
-                        let selectionFeedback = UISelectionFeedbackGenerator()
-                        selectionFeedback.selectionChanged()
-                        
-                        // Create a date for the selected day in the current month
-                        if let dateForDay = calendarHelper.dateForDay(day) {
-                            // Here you can add logic to handle the selected date
-                            // For now, we'll just print it to console
-                            print("Selected date: \(dateForDay)")
-                        }
-                    }
-                )
-                .simultaneousGesture(
-                    DragGesture()
-                        .onEnded { value in
-                            let threshold: CGFloat = 50
-                            // Only trigger month change for horizontal swipes
-                            if abs(value.translation.width) > abs(value.translation.height) {
-                                if value.translation.width > threshold {
-                                    // Swipe right - go to previous month
-                                    calendarHelper.previousMonth()
-                                } else if value.translation.width < -threshold {
-                                    // Swipe left - go to next month
-                                    calendarHelper.nextMonth()
-                                }
-                            }
-                        }
-                )
+                Text("\(Int(getMonthlyCompletionPercentage() * 100))% completed")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
             }
             .padding(20)
-            .cornerRadius(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.white)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.outline3, lineWidth: 1)
+                            .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
+                    )
             )
-            .padding(.horizontal, 20)
-            
-            // Add spacing between calendar and progress card
-            Spacer()
-                .frame(height: 16)
-            
-            // Monthly Progress Card
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Monthly Completion")
-                            .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.white)
-                        
-                        Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount()) habits completed")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    
-                    Spacer()
-                    
-                    // Monthly progress ring
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
-                            .frame(width: 60, height: 60)
-                        
-                        Circle()
-                            .trim(from: 0, to: getMonthlyCompletionPercentage())
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.white, Color.white.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                            )
-                            .frame(width: 60, height: 60)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 1.0), value: getMonthlyCompletionPercentage())
-                        
-                        Text("\(Int(getMonthlyCompletionPercentage() * 100))%")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.primary)
-                )
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                .padding(.horizontal, 16)
-            }
+            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .padding(.horizontal, 16)
             
             // Add spacing before unified insights
             Spacer()
@@ -1455,36 +1351,36 @@ struct ProgressTabView: View {
         WhiteSheetContainer(
             // title: "Progress"
         ) {
-            VStack(spacing: 0) {
+                VStack(spacing: 0) {
                 // Fixed Header Section
-                habitSelectorHeader
+                    habitSelectorHeader
                     .padding(.top, 16)
                     .background(Color.white)
-                
+                    
                 // Scrollable Content
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: 0) {
-                        // Overall Progress Section with Monthly Calendar
-                        overallProgressSection
-                        
-                        // Habit-Specific Insights (only show when habit selected)
-                        if let selectedHabit = selectedHabit {
-                            // Show only essential insights for selected habit
-                            VStack(spacing: 20) {
-                                // Just the time recommendation - most actionable insight
-                                bestTimeRecommendationSimplified(for: selectedHabit)
+                    // Overall Progress Section with Monthly Calendar
+                    overallProgressSection
+                    
+                    // Habit-Specific Insights (only show when habit selected)
+                    if let selectedHabit = selectedHabit {
+                        // Show only essential insights for selected habit
+                        VStack(spacing: 20) {
+                            // Just the time recommendation - most actionable insight
+                            bestTimeRecommendationSimplified(for: selectedHabit)
                                     .padding(.horizontal, 16)
-                            }
-                            .padding(.top, 20)
                         }
+                        .padding(.top, 20)
                     }
-                    .frame(maxWidth: .infinity, alignment: .top)
-                    .padding(.bottom, 40)
                 }
-                .scrollDisabled(false)
-                .scrollDismissesKeyboard(.immediately)
-                .scrollContentBackground(.hidden)
-                .coordinateSpace(name: "scrollView")
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.bottom, 40)
+            }
+            .scrollDisabled(false)
+            .scrollDismissesKeyboard(.immediately)
+            .scrollContentBackground(.hidden)
+            .coordinateSpace(name: "scrollView")
             }
             .frame(maxWidth: .infinity)
         }
@@ -1522,6 +1418,9 @@ struct ProgressTabView: View {
                     )
             }
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showingAllReminders) {
+            AllRemindersView(habits: habits, coreDataAdapter: coreDataAdapter)
         }
     }
     
@@ -2478,6 +2377,334 @@ struct ProgressTabView: View {
         let total = getWeeklyTotalHabitsCount()
         guard total > 0 else { return 0.0 }
         return Double(getWeeklyCompletedHabitsCount()) / Double(total)
+    }
+    
+    // Get day progress for a specific date
+    private func getDayProgress(for date: Date) -> Double {
+        return ProgressCalculationHelper.getDayProgress(
+            for: date,
+            habits: habits,
+            selectedHabitType: .formation,
+            selectedHabit: selectedHabit
+        )
+    }
+    
+    // MARK: - Monthly Calendar Section
+    private var monthlyCalendarSection: some View {
+        VStack(spacing: 8) {
+            // Calendar header with month/year and Today button
+            HStack {
+                Text(calendarHelper.monthYearString())
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                if !calendarHelper.isCurrentMonth() || !calendarHelper.isTodayInCurrentMonth() {
+                    Button(action: calendarHelper.goToToday) {
+                        HStack(spacing: 4) {
+                            Image(.iconReplay)
+                                .resizable()
+                                .frame(width: 12, height: 12)
+                                .foregroundColor(.primaryFocus)
+                            Text("This month")
+                                .font(.appLabelMedium)
+                                .foregroundColor(.primaryFocus)
+                        }
+                        .padding(.leading, 12)
+                        .padding(.trailing, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .infinity)
+                                .stroke(.primaryFocus, lineWidth: 1)
+                        )
+                    }
+                }
+            }
+            .padding(.bottom, 12)
+            
+            // Days of week header
+            CalendarGridComponents.WeekdayHeader()
+            
+            // Calendar grid
+            CalendarGridComponents.CalendarGrid(
+                firstDayOfMonth: calendarHelper.firstDayOfMonth(),
+                daysInMonth: calendarHelper.daysInMonth(),
+                currentDate: calendarHelper.currentDate,
+                selectedDate: Date(),
+                getDayProgress: { day in
+                    ProgressCalculationHelper.getDayProgress(
+                        day: day,
+                        currentDate: calendarHelper.currentDate,
+                        habits: habits,
+                        selectedHabitType: .formation, // Default to formation type
+                        selectedHabit: selectedHabit
+                    )
+                },
+                onDayTap: { day in
+                    // Add haptic feedback when selecting a date
+                    let selectionFeedback = UISelectionFeedbackGenerator()
+                    selectionFeedback.selectionChanged()
+                    
+                    // Create a date for the selected day in the current month
+                    if let dateForDay = calendarHelper.dateForDay(day) {
+                        // Here you can add logic to handle the selected date
+                        // For now, we'll just print it to console
+                        print("Selected date: \(dateForDay)")
+                    }
+                }
+            )
+            .simultaneousGesture(
+                DragGesture()
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        // Only trigger month change for horizontal swipes
+                        if abs(value.translation.width) > abs(value.translation.height) {
+                            if value.translation.width > threshold {
+                                // Swipe right - go to previous month
+                                calendarHelper.previousMonth()
+                            } else if value.translation.width < -threshold {
+                                // Swipe left - go to next month
+                                calendarHelper.nextMonth()
+                            }
+                        }
+                    }
+            )
+        }
+        .padding(20)
+        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.outline3, lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - All Reminders View
+struct AllRemindersView: View {
+    let habits: [Habit]
+    let coreDataAdapter: CoreDataAdapter
+    
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header with close button, title, and description
+                VStack(spacing: 16) {
+                    // Close button
+                    HStack {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.text03)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    Circle()
+                                        .fill(Color.outline3.opacity(0.1))
+                                )
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    // Title
+                    Text("All Reminders")
+                        .font(.appHeadlineSmallEmphasised)
+                        .foregroundColor(.text01)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Description
+                    Text("Manage all your habit reminders")
+                        .font(.appTitleSmall)
+                        .foregroundColor(.text05)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineLimit(2)
+                }
+                .padding(.top, 20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+                
+                // Reminders list
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(habits, id: \.id) { habit in
+                            if !habit.reminders.isEmpty {
+                                VStack(spacing: 12) {
+                                    // Habit header
+                                    HStack {
+                                        HStack(spacing: 12) {
+                                            // Habit icon
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(habit.color.opacity(0.15))
+                                                    .frame(width: 30, height: 30)
+                                                
+                                                if habit.icon.hasPrefix("Icon-") {
+                                                    Image(habit.icon)
+                                                        .resizable()
+                                                        .frame(width: 16, height: 16)
+                                                        .foregroundColor(habit.color)
+                                                } else if habit.icon == "None" {
+                                                    RoundedRectangle(cornerRadius: 6)
+                                                        .fill(Color.outline3)
+                                                        .frame(width: 12, height: 12)
+                                                } else {
+                                                    Text(habit.icon)
+                                                        .font(.system(size: 14))
+                                                }
+                                            }
+                                            
+                                            Text(habit.name)
+                                                .font(.appTitleSmallEmphasised)
+                                                .foregroundColor(.text01)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Text("\(habit.reminders.count) reminder\(habit.reminders.count == 1 ? "" : "s")")
+                                            .font(.appBodySmall)
+                                            .foregroundColor(.text03)
+                                    }
+                                    
+                                    // Reminders for this habit
+                                    VStack(spacing: 8) {
+                                        ForEach(habit.reminders, id: \.id) { reminder in
+                                            ReminderRowView(
+                                                reminder: reminder,
+                                                habit: habit,
+                                                coreDataAdapter: coreDataAdapter
+                                            )
+                                        }
+                                    }
+                                }
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(.white)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(habit.color.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+            .navigationBarHidden(true)
+        }
+    }
+}
+
+// MARK: - Reminder Row View
+struct ReminderRowView: View {
+    let reminder: ReminderItem
+    let habit: Habit
+    let coreDataAdapter: CoreDataAdapter
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Time icon
+            ZStack {
+                Circle()
+                    .fill(habit.color.opacity(0.1))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: "clock")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(habit.color)
+            }
+            
+            // Time and status
+            VStack(alignment: .leading, spacing: 4) {
+                Text(formatTime(reminder.time))
+                    .font(.appBodyMediumEmphasised)
+                    .foregroundColor(.text01)
+                
+                Text(reminder.isActive ? "Active" : "Inactive")
+                    .font(.appBodySmall)
+                    .foregroundColor(reminder.isActive ? .green : .text03)
+            }
+            
+            Spacer()
+            
+            // Toggle
+            Toggle("", isOn: Binding(
+                get: { reminder.isActive },
+                set: { newValue in
+                    toggleReminder(reminder, in: habit)
+                }
+            ))
+            .toggleStyle(SwitchToggleStyle(tint: habit.color))
+            .scaleEffect(0.8)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(reminder.isActive ? habit.color.opacity(0.05) : Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    reminder.isActive ? habit.color.opacity(0.2) : Color.outline3.opacity(0.3),
+                    lineWidth: 1
+                )
+        )
+    }
+    
+    private func formatTime(_ time: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: time)
+    }
+    
+    private func toggleReminder(_ reminder: ReminderItem, in habit: Habit) {
+        // Create a new Habit instance with updated reminders
+        let updatedReminders = habit.reminders.map { existingReminder in
+            if existingReminder.id == reminder.id {
+                // Create a new ReminderItem with toggled isActive status
+                return ReminderItem(
+                    time: existingReminder.time,
+                    isActive: !existingReminder.isActive
+                )
+            }
+            return existingReminder
+        }
+        
+        // Create a new Habit instance with the updated reminders
+        let updatedHabit = Habit(
+            id: habit.id,
+            name: habit.name,
+            description: habit.description,
+            icon: habit.icon,
+            color: habit.color,
+            habitType: habit.habitType,
+            schedule: habit.schedule,
+            goal: habit.goal,
+            reminder: habit.reminder,
+            startDate: habit.startDate,
+            endDate: habit.endDate,
+            isCompleted: habit.isCompleted,
+            streak: habit.streak,
+            createdAt: habit.createdAt,
+            reminders: updatedReminders,
+            baseline: habit.baseline,
+            target: habit.target,
+            completionHistory: habit.completionHistory,
+            actualUsage: habit.actualUsage
+        )
+        
+        // Update the habit in Core Data
+        coreDataAdapter.updateHabit(updatedHabit)
     }
 }
 
