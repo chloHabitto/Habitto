@@ -34,66 +34,7 @@ struct ProgressTabView: View {
     // MARK: - Calendar Helper Functions
     // Moved to ProgressCalendarHelper.swift
     
-    // MARK: - Today's Progress Summary (Simplified Card)
-    private var todaysProgressSummary: some View {
-        Group {
-            if !habits.isEmpty {
-                VStack(spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Today's Progress")
-                                .font(.appTitleMediumEmphasised)
-                                .foregroundColor(.onPrimaryContainer)
-                            
-                            Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed today")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text02)
-                        }
-                        
-                        Spacer()
-                        
-                        // Circular progress ring on the right
-                        ZStack {
-                            Circle()
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 6)
-                                .frame(width: 48, height: 48)
-                            
-                            Circle()
-                                .trim(from: 0, to: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [Color.primary, Color.primary.opacity(0.8)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                                )
-                                .frame(width: 48, height: 48)
-                                .rotationEffect(.degrees(-90))
-                                .animation(.easeInOut(duration: 1.0), value: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
-                            
-                            Text("\(Int(ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits) * 100))%")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.primary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
-                        )
-                )
-                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-            }
-        }
-    }
+
     
     // MARK: - Overall Progress Section
     private var overallProgressSection: some View {
@@ -434,7 +375,7 @@ struct ProgressTabView: View {
                         selectedHabitType: .formation // Default to formation type
                     )
                 )),
-                progressTrendText: ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
+                progressTrendText: ProgressTrendHelper.progressTrendText(for: ProgressTrendHelper.progressTrend(
                     currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
                         habits: habits,
                         currentDate: calendarHelper.currentDate,
@@ -638,9 +579,6 @@ struct ProgressTabView: View {
         ) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 0) {
-                    // Today's Progress Card (always visible)
-                    todaysProgressSummary
-                    
                     // Habit Selector Header
                     habitSelectorHeader
                         .padding(.horizontal, 20)
@@ -1574,11 +1512,17 @@ struct ProgressTabView: View {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         
         return habits.reduce(0) { total, habit in
-            let weeklyCompletions = habit.completionHistory.filter { completion in
-                let completionDate = completion.date
-                return completionDate >= weekStart && completionDate <= today
+            let weeklyCompletions = habit.completionHistory.filter { keyValue in
+                let dateString = keyValue.key
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                
+                if let completionDate = dateFormatter.date(from: dateString) {
+                    return completionDate >= weekStart && completionDate <= today
+                }
+                return false
             }
-            return total + weeklyCompletions.count
+            return total + weeklyCompletions.values.reduce(0, +)
         }
     }
     
