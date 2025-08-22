@@ -8,6 +8,7 @@ struct ProgressTabView: View {
     @State private var selectedTimePeriod: Int = 0 // 0: Daily, 1: Weekly, 2: Monthly
     @State private var selectedProgressDate: Date = Date() // Date for viewing progress
     @State private var showingDatePicker = false // Control date picker modal
+    @State private var currentInsightPage: Int = 0 // For unified insights card pagination
     let habits: [Habit]
     
     // Use the calendar helper
@@ -117,7 +118,110 @@ struct ProgressTabView: View {
     // MARK: - Calendar Helper Functions
     // Moved to ProgressCalendarHelper.swift
     
-
+    // Weekly date range string
+    private var weeklyDateRangeString: String {
+        let calendar = Calendar.current
+        let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        let endOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.end ?? Date()
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        
+        let startString = formatter.string(from: startOfWeek)
+        let endString = formatter.string(from: endOfWeek)
+        
+        return "\(startString) - \(endString)"
+    }
+    
+    // Check if current week is selected
+    private var isCurrentWeekSelected: Bool {
+        // For now, always return true since we don't have week selection yet
+        // TODO: Implement week selection logic
+        return true
+    }
+    
+    // Monthly completion helper functions
+    private func getMonthlyCompletedHabitsCount() -> Int {
+        return ProgressCalculationHelper.monthlyCompletedHabits(
+            habits: habits,
+            currentDate: calendarHelper.currentDate,
+            selectedHabitType: .formation
+        )
+    }
+    
+    private func getMonthlyTotalHabitsCount() -> Int {
+        return ProgressTrendHelper.monthlyTotalHabits(
+            habits: habits,
+            selectedHabitType: .formation
+        )
+    }
+    
+    private func getMonthlyCompletionPercentage() -> Double {
+        let completed = getMonthlyCompletedHabitsCount()
+        let total = getMonthlyTotalHabitsCount()
+        guard total > 0 else { return 0.0 }
+        return Double(completed) / Double(total)
+    }
+    
+    // Monthly insights helper functions
+    private func getTopPerformingHabit() -> Habit? {
+        return ProgressTrendHelper.topPerformingHabit(
+            habits: habits,
+            selectedHabitType: .formation,
+            currentDate: calendarHelper.currentDate
+        )
+    }
+    
+    private func getMonthlyHabitCompletionRate(for habit: Habit) -> Double {
+        return ProgressCalculationHelper.monthlyHabitCompletionRate(
+            for: habit,
+            currentDate: calendarHelper.currentDate
+        )
+    }
+    
+    private func getProgressTrendColor() -> Color {
+        return ProgressTrendHelper.progressTrendColor(for: ProgressTrendHelper.progressTrend(
+            currentMonthRate: getMonthlyCompletionPercentage(),
+            previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
+                habits: habits,
+                currentDate: calendarHelper.currentDate,
+                selectedHabitType: .formation
+            )
+        ))
+    }
+    
+    private func getProgressTrendIcon() -> String {
+        return ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
+            currentMonthRate: getMonthlyCompletionPercentage(),
+            previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
+                habits: habits,
+                currentDate: calendarHelper.currentDate,
+                selectedHabitType: .formation
+            )
+        ))
+    }
+    
+    private func getProgressTrendText() -> String {
+        return ProgressTrendHelper.progressTrendText(for: ProgressTrendHelper.progressTrend(
+            currentMonthRate: getMonthlyCompletionPercentage(),
+            previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
+                habits: habits,
+                currentDate: calendarHelper.currentDate,
+                selectedHabitType: .formation
+            )
+        ))
+    }
+    
+    private func getProgressTrendDescription() -> String {
+        return ProgressTrendHelper.progressTrendDescription(for: ProgressTrendHelper.progressTrend(
+            currentMonthRate: getMonthlyCompletionPercentage(),
+            previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
+                habits: habits,
+                currentDate: calendarHelper.currentDate,
+                selectedHabitType: .formation
+            )
+        ))
+    }
     
     // MARK: - Overall Progress Section
     private var overallProgressSection: some View {
@@ -188,13 +292,15 @@ struct ProgressTabView: View {
                 }
             }
             .frame(height: 44)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 4)
 //            .background(.red)
             
             // Daily Progress Summary
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
                         Text("Daily Completion")
                             .font(.appTitleSmallEmphasised)
                             .foregroundColor(.white)
@@ -211,11 +317,11 @@ struct ProgressTabView: View {
                 }
                 .padding(20)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 24)
                         .fill(Color.primary)
                 )
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                                 .padding(.horizontal, 20)
+                                 .padding(.horizontal, 16)
              }
              
              // Today's Reminders Section
@@ -224,8 +330,8 @@ struct ProgressTabView: View {
                  HStack {
                      Text("Today's reminders")
                          .font(.appTitleSmallEmphasised)
-                         .foregroundColor(.onPrimaryContainer)
-                     
+                                .foregroundColor(.onPrimaryContainer)
+                            
                      Spacer()
                      
                      Button(action: {
@@ -234,7 +340,7 @@ struct ProgressTabView: View {
                      }) {
                          HStack(spacing: 4) {
                              Text("See more")
-                                 .font(.appBodyMedium)
+                                .font(.appBodyMedium)
                                  .foregroundColor(.primaryFocus)
                              
                              Image(systemName: "chevron.right")
@@ -243,7 +349,7 @@ struct ProgressTabView: View {
                          }
                      }
                  }
-                 .padding(.horizontal, 20)
+                 .padding(.horizontal, 16)
                  
                  // Today's reminders list
                  ScrollView(.horizontal, showsIndicators: false) {
@@ -267,8 +373,9 @@ struct ProgressTabView: View {
                                                      .fill(Color.primary.opacity(0.12))
                                                      .frame(width: 36, height: 36)
                                                  
-                                                 Image(systemName: "bell.fill")
-                                                     .font(.system(size: 16, weight: .semibold))
+                                                 Image("Icon-Bell_Filled")
+                                                     .resizable()
+                                                     .frame(width: 16, height: 16)
                                                      .foregroundColor(.primary)
                                              }
                                              
@@ -284,9 +391,9 @@ struct ProgressTabView: View {
                                                      .font(.appBodySmall)
                                                      .foregroundColor(.text03)
                                                      .lineLimit(1)
-                                                 }
-                                             
-                                             Spacer()
+                        }
+                        
+                        Spacer()
                                          }
                                          
                                          // Time with enhanced styling and better spacing
@@ -303,14 +410,15 @@ struct ProgressTabView: View {
                                              
                                              Spacer()
                                              
-                                             // Status indicator for visual interest
-                                             Circle()
-                                                 .fill(Color.green)
-                                                 .frame(width: 8, height: 8)
+                                             // Toggle for reminder status
+                                             Toggle("", isOn: .constant(true))
+                                                 .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                                 .scaleEffect(0.8)
                                          }
+                                         .frame(maxWidth: .infinity)
                                      }
                                  .frame(width: 220, alignment: .leading)
-                                 .padding(.horizontal, 24)
+                                 .padding(.horizontal, 20)
                                  .padding(.vertical, 20)
                              .background(
                                  RoundedRectangle(cornerRadius: 20)
@@ -344,120 +452,152 @@ struct ProgressTabView: View {
                          .animation(.easeInOut(duration: 0.1), value: true)
                      }
                  } else {
-                     // Empty state when no reminders - compact to match card height
-                     VStack(spacing: 12) {
-                         // Compact illustration
-                         ZStack {
-                             Circle()
+                                          // Empty state when no reminders - simple, cute, and beautiful
+                     HStack(spacing: 16) {
+                         // Cute bell icon with soft background
+                        ZStack {
+                            Circle()
                                  .fill(
                                      LinearGradient(
                                          colors: [
-                                             Color.primary.opacity(0.1),
-                                             Color.primary.opacity(0.05)
+                                             Color.primary.opacity(0.08),
+                                             Color.primary.opacity(0.04)
                                          ],
                                          startPoint: .topLeading,
                                          endPoint: .bottomTrailing
                                      )
                                  )
-                                 .frame(width: 48, height: 48)
-                             
-                             Image(systemName: "bell.badge")
-                                 .font(.system(size: 22, weight: .medium))
+                                .frame(width: 48, height: 48)
+                            
+                             Image("Icon-Bell_Filled")
+                                 .resizable()
+                                 .frame(width: 20, height: 20)
                                  .foregroundColor(.primary.opacity(0.7))
                          }
                          
-                         // Compact content
-                         VStack(spacing: 8) {
-                             Text("No reminders today")
+                         // Simple, friendly text
+                         VStack(alignment: .leading, spacing: 4) {
+                             Text("All caught up! 🎉")
                                  .font(.appTitleSmallEmphasised)
                                  .foregroundColor(.onPrimaryContainer)
-                             
-                             Text("Add reminders to stay on track")
-                                 .font(.appBodySmall)
-                                 .foregroundColor(.text02)
-                                 .multilineTextAlignment(.center)
-                                 .lineLimit(1)
+                                 
+                             Text("No reminders for today")
+                                 .font(.appBodyMedium)
+                                 .foregroundColor(.text03)
                          }
                          
-                         // Compact CTA button
-                         Button(action: {
-                             // TODO: Navigate to add reminder
-                             print("📅 Add reminder tapped")
-                         }) {
-                             HStack(spacing: 6) {
-                                 Image(systemName: "plus")
-                                     .font(.system(size: 12, weight: .medium))
-                                 
-                                 Text("Add reminder")
-                                     .font(.appBodyMedium)
-                             }
-                             .foregroundColor(.primary)
-                             .padding(.horizontal, 16)
-                             .padding(.vertical, 8)
-                             .background(
-                                 RoundedRectangle(cornerRadius: 12)
-                                     .fill(Color.primary.opacity(0.1))
-                             )
-                         }
-                         .buttonStyle(PlainButtonStyle())
+                         Spacer()
                      }
-                     .frame(width: 220)
-                     .padding(.horizontal, 24)
+                     .frame(maxWidth: .infinity, alignment: .leading)
+                     .padding(.horizontal, 16)
                      .padding(.vertical, 20)
+                     .background(
+                         RoundedRectangle(cornerRadius: 20)
+                             .fill(
+                                 LinearGradient(
+                                     colors: [
+                                         Color.surface,
+                                         Color.surface.opacity(0.98)
+                                     ],
+                                     startPoint: .topLeading,
+                                     endPoint: .bottomTrailing
+                                 )
+                             )
+                             .overlay(
+                                 RoundedRectangle(cornerRadius: 20)
+                                .stroke(
+                                    LinearGradient(
+                                             colors: [
+                                                 Color.primary.opacity(0.08),
+                                                 Color.primary.opacity(0.04)
+                                             ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                         lineWidth: 1
+                                     )
+                             )
+                     )
                  }
              }
-                     .padding(.horizontal, 20)
-                     .padding(.vertical, 12)
+                     .padding(.horizontal, 16)
+                     .padding(.vertical, 8)
                  }
              }
-             .padding(.top, 24)
+             .padding(.top, 32)
          }
      }
      
      // MARK: - Weekly Progress Section
     private var weeklyProgressSection: some View {
-        VStack(spacing: 16) {
-            // Weekly Progress Header
+        VStack(spacing: 0) {
+            // Date Section (Weekly Range)
             HStack {
-                Text("Weekly Progress")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
+                // Week range text with chevron down icon - acts as a button
+                Button(action: {
+                    // TODO: Add week picker functionality
+                    print("📅 Week picker tapped")
+                }) {
+                    HStack(spacing: 8) {
+                        Text(weeklyDateRangeString)
+                            .font(.appTitleMediumEmphasised)
+                            .lineSpacing(8)
+                                .foregroundColor(.primary)
+                        
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                            .opacity(0.7)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
-                Button(action: calendarHelper.goToToday) {
-                    HStack(spacing: 4) {
-                        Image(.iconReplay)
-                            .resizable()
-                            .frame(width: 12, height: 12)
-                            .foregroundColor(.primaryFocus)
-                        Text("This week")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.primaryFocus)
+                // This week button (shown when selected week is not current week)
+                if !isCurrentWeekSelected {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.08)) {
+                            // TODO: Reset to current week
+                            print("📅 Reset to current week")
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(.iconReplay)
+                                .resizable()
+                                .frame(width: 12, height: 12)
+                                .foregroundColor(.primaryFocus)
+                            Text("This week")
+                                .font(.appLabelMedium)
+                                .foregroundColor(.primaryFocus)
+                        }
+                        .padding(.leading, 12)
+                        .padding(.trailing, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .infinity)
+                                .stroke(.primaryFocus, lineWidth: 1)
+                        )
                     }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 8)
-                    .padding(.top, 4)
-                    .padding(.bottom, 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: .infinity)
-                            .stroke(.primaryFocus, lineWidth: 1)
-                    )
                 }
             }
-            .padding(.horizontal, 20)
+            .frame(height: 44)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 4)
             
-            // Weekly Progress Summary
+            // Weekly Progress Card
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("This Week's Completion")
+                        Text("Weekly Completion")
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.onPrimaryContainer)
+                            .foregroundColor(.white)
                         
                         Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount()) habits completed")
                             .font(.appBodyMedium)
-                            .foregroundColor(.text02)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                     
                     Spacer()
@@ -465,14 +605,14 @@ struct ProgressTabView: View {
                     // Weekly progress ring
                     ZStack {
                         Circle()
-                            .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
                             .frame(width: 60, height: 60)
                         
                         Circle()
                             .trim(from: 0, to: getWeeklyCompletionPercentage())
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.8)],
+                                    colors: [Color.white, Color.white.opacity(0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -484,20 +624,16 @@ struct ProgressTabView: View {
                         
                         Text("\(Int(getWeeklyCompletionPercentage() * 100))%")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(20)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
-                        )
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.primary)
                 )
-                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
-                .padding(.horizontal, 20)
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .padding(.horizontal, 16)
             }
         }
     }
@@ -505,6 +641,10 @@ struct ProgressTabView: View {
     // MARK: - Monthly Progress Section
     private var monthlyProgressSection: some View {
         VStack(spacing: 0) {
+            // Add top spacing to separate from tabs
+            Spacer()
+                .frame(height: 20)
+            
             // Monthly Calendar
             VStack(spacing: 8) {
                 // Calendar header with month/year and Today button
@@ -595,92 +735,379 @@ struct ProgressTabView: View {
             )
             .padding(.horizontal, 20)
             
-            // Monthly Completion Rate Section
-            MonthlyCompletionRateSection(
-                monthlyCompletionRate: ProgressCalculationHelper.monthlyCompletionRate(
-                    habits: habits,
-                    currentDate: calendarHelper.currentDate,
-                    selectedHabitType: .formation, // Default to formation type
-                    selectedHabit: selectedHabit
-                ),
-                monthlyCompletedHabits: ProgressCalculationHelper.monthlyCompletedHabits(
-                    habits: habits,
-                    currentDate: calendarHelper.currentDate,
-                    selectedHabitType: .formation // Default to formation type
-                ),
-                monthlyTotalHabits: ProgressTrendHelper.monthlyTotalHabits(
-                    habits: habits,
-                    selectedHabitType: .formation // Default to formation type
-                ),
-                topPerformingHabit: ProgressTrendHelper.topPerformingHabit(
-                    habits: habits,
-                    selectedHabitType: .formation, // Default to formation type
-                    currentDate: calendarHelper.currentDate
-                ),
-                needsAttentionHabit: ProgressTrendHelper.needsAttentionHabit(
-                    habits: habits,
-                    selectedHabitType: .formation, // Default to formation type
-                    currentDate: calendarHelper.currentDate
-                ),
-                progressTrendColor: ProgressTrendHelper.progressTrendColor(for: ProgressTrendHelper.progressTrend(
-                    currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation, // Default to formation type
-                        selectedHabit: selectedHabit
-                    ),
-                    previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation // Default to formation type
-                    )
-                )),
-                progressTrendIcon: ProgressTrendHelper.progressTrendIcon(for: ProgressTrendHelper.progressTrend(
-                    currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation, // Default to formation type
-                        selectedHabit: selectedHabit
-                    ),
-                    previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation // Default to formation type
-                    )
-                )),
-                progressTrendText: ProgressTrendHelper.progressTrendText(for: ProgressTrendHelper.progressTrend(
-                    currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation, // Default to formation type
-                        selectedHabit: selectedHabit
-                    ),
-                    previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation // Default to formation type
-                    )
-                )),
-                progressTrendDescription: ProgressTrendHelper.progressTrendDescription(for: ProgressTrendHelper.progressTrend(
-                    currentMonthRate: ProgressCalculationHelper.monthlyCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation, // Default to formation type
-                        selectedHabit: selectedHabit
-                    ),
-                    previousMonthRate: ProgressCalculationHelper.previousMonthCompletionRate(
-                        habits: habits,
-                        currentDate: calendarHelper.currentDate,
-                        selectedHabitType: .formation // Default to formation type
-                    )
-                )),
-                monthlyHabitCompletionRate: { habit in
-                    ProgressCalculationHelper.monthlyHabitCompletionRate(
-                        for: habit,
-                        currentDate: calendarHelper.currentDate
-                    )
+            // Add spacing between calendar and progress card
+            Spacer()
+                .frame(height: 16)
+            
+            // Monthly Progress Card
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Monthly Completion")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.white)
+                        
+                        Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount()) habits completed")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    
+                    Spacer()
+                    
+                    // Monthly progress ring
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                            .frame(width: 60, height: 60)
+                        
+                        Circle()
+                            .trim(from: 0, to: getMonthlyCompletionPercentage())
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                            )
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: getMonthlyCompletionPercentage())
+                        
+                        Text("\(Int(getMonthlyCompletionPercentage() * 100))%")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                 }
-            )
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.primary)
+                )
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .padding(.horizontal, 16)
+            }
+            
+            // Add spacing before unified insights
+            Spacer()
+                .frame(height: 20)
+            
+            // Unified insights card
+            unifiedInsightsCard
+        }
+    }
+    
+    // MARK: - Unified Insights Card
+    private var unifiedInsightsCard: some View {
+        VStack(spacing: 0) {
+            // Header with title and page control
+            HStack {
+                Text(insightTitles[currentInsightPage])
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
+                // Page control
+                HStack(spacing: 8) {
+                    ForEach(0..<insightTitles.count, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentInsightPage ? Color.primary : Color.primary.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                            .scaleEffect(index == currentInsightPage ? 1.2 : 1.0)
+                            .animation(.easeInOut(duration: 0.2), value: currentInsightPage)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            
+            // Bottom stroke below header
+            Divider()
+                .background(Color.outline3.opacity(0.3))
+            
+            // Content area with native page swiping
+            TabView(selection: $currentInsightPage) {
+                habitSpotlightContent
+                    .tag(0)
+                
+                progressTrendContent
+                    .tag(1)
+                
+                challengeCornerContent
+                    .tag(2)
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .frame(minHeight: 180)
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    currentInsightPage = (currentInsightPage + 1) % insightTitles.count
+                }
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.primary.opacity(0.2), Color.primary.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                )
+        )
+        .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .padding(.horizontal, 16)
+    }
+    
+    // MARK: - Insight Content Pages
+    private var insightTitles: [String] {
+        ["Habit Spotlight", "Progress Trends", "Challenge Corner"]
+    }
+    
+    private var habitSpotlightContent: some View {
+        VStack(spacing: 0) {
+            if let topHabit = getTopPerformingHabit() {
+                // Main content
+                HStack(spacing: 20) {
+                    // Star icon
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.yellow.opacity(0.25), Color.orange.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 64, height: 64)
+                        
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.yellow)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Your Superstar Habit")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.text02)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.yellow.opacity(0.1))
+                            )
+                        
+                        Text(topHabit.name)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                            .lineLimit(2)
+                        
+                        let rate = getMonthlyHabitCompletionRate(for: topHabit)
+                        Text("\(Int(rate * 100))% completion rate")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.yellow)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                
+                // Bottom motivational section
+                VStack(spacing: 8) {
+                    Divider()
+                        .background(Color.outline3.opacity(0.3))
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.yellow)
+                        
+                        Text("You're on fire! Keep this momentum going! 🔥")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text03)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.yellow.opacity(0.5))
+                    
+                    Text("Keep building habits to see your superstar!")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+    
+    private var progressTrendContent: some View {
+        VStack(spacing: 0) {
+            // Main content
+            HStack(spacing: 20) {
+                // Trend icon
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [getProgressTrendColor().opacity(0.25), getProgressTrendColor().opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: getProgressTrendIcon())
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(getProgressTrendColor())
+                }
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Monthly Progress")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(getProgressTrendColor().opacity(0.1))
+                        )
+                    
+                    Text(getProgressTrendText())
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                        .lineLimit(2)
+                    
+                    Text(getProgressTrendDescription())
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+            
+            // Bottom trend analysis section
+            VStack(spacing: 8) {
+                Divider()
+                    .background(Color.outline3.opacity(0.3))
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(getProgressTrendColor())
+                    
+                    Text("Your progress pattern shows consistent improvement!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+        }
+    }
+    
+    private var challengeCornerContent: some View {
+        VStack(spacing: 0) {
+            if let mostDifficultHabit = getMostDifficultHabit() {
+                // Main content
+                HStack(spacing: 20) {
+                    // Challenge icon
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.red.opacity(0.25), Color.orange.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 64, height: 64)
+                        
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.red)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Your Biggest Challenge")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.text02)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.red.opacity(0.1))
+                            )
+                        
+                        Text(mostDifficultHabit.name)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                            .lineLimit(2)
+                        
+                        Text(getMotivationalMessage(for: mostDifficultHabit))
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text03)
+                            .lineLimit(2)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                
+                // Bottom motivational section
+                VStack(spacing: 8) {
+                    Divider()
+                        .background(Color.outline3.opacity(0.3))
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.yellow)
+                        
+                        Text("Tip: Break it into smaller steps!")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text03)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.green.opacity(0.7))
+                    
+                    Text("No challenges right now - you're crushing it!")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
         }
     }
     
@@ -790,7 +1217,7 @@ struct ProgressTabView: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
     }
     
     // MARK: - Motivational Message Helper
@@ -855,38 +1282,38 @@ struct ProgressTabView: View {
         WhiteSheetContainer(
             // title: "Progress"
         ) {
-            VStack(spacing: 0) {
+                VStack(spacing: 0) {
                 // Fixed Header Section
-                habitSelectorHeader
-                    .padding(.top, 20)
+                    habitSelectorHeader
+                    .padding(.top, 16)
                     .background(Color.white)
-                
+                    
                 // Scrollable Content
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: 0) {
-                        // Overall Progress Section with Monthly Calendar
-                        overallProgressSection
-                        
-                        // Habit-Specific Insights (only show when habit selected)
-                        if let selectedHabit = selectedHabit {
-                            // Show only essential insights for selected habit
-                            VStack(spacing: 20) {
-                                // Just the time recommendation - most actionable insight
-                                bestTimeRecommendationSimplified(for: selectedHabit)
-                                    .padding(.horizontal, 20)
-                            }
-                            .padding(.top, 20)
+                    // Overall Progress Section with Monthly Calendar
+                    overallProgressSection
+                    
+                    // Habit-Specific Insights (only show when habit selected)
+                    if let selectedHabit = selectedHabit {
+                        // Show only essential insights for selected habit
+                        VStack(spacing: 20) {
+                            // Just the time recommendation - most actionable insight
+                            bestTimeRecommendationSimplified(for: selectedHabit)
+                                .padding(.horizontal, 20)
                         }
-                        
-
+                        .padding(.top, 20)
                     }
-                    .frame(maxWidth: .infinity, alignment: .top)
-                    .padding(.bottom, 40)
+                    
+
                 }
-                .scrollDisabled(false)
-                .scrollDismissesKeyboard(.immediately)
-                .scrollContentBackground(.hidden)
-                .coordinateSpace(name: "scrollView")
+                .frame(maxWidth: .infinity, alignment: .top)
+                .padding(.bottom, 40)
+            }
+            .scrollDisabled(false)
+            .scrollDismissesKeyboard(.immediately)
+            .scrollContentBackground(.hidden)
+            .coordinateSpace(name: "scrollView")
             }
         }
         .onChange(of: selectedHabit) { _, newHabit in
@@ -930,7 +1357,7 @@ struct ProgressTabView: View {
     private var habitSelectorHeader: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Progress Overview")
+                Text("Progress")
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
@@ -956,7 +1383,7 @@ struct ProgressTabView: View {
                     )
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             
             // Time Period Tabs - Custom implementation to match Home/Habits tab behavior
             HStack(spacing: 0) {
@@ -1231,7 +1658,7 @@ struct ProgressTabView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             
             if let selectedHabit = habit {
                 // Habit-specific recommendations

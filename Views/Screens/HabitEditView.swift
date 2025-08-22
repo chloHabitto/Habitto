@@ -1017,7 +1017,7 @@ struct HabitEditView: View {
             goal: updatedHabit.goal,
             reminder: updatedHabit.reminder,
             startDate: updatedHabit.startDate,
-            endDate: updatedHabit.endDate,
+            endDate: endDate,
             isCompleted: updatedHabit.isCompleted,
             streak: updatedHabit.streak,
             createdAt: updatedHabit.createdAt,

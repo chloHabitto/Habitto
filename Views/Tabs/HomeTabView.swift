@@ -76,9 +76,10 @@ struct HomeTabView: View {
         }
 
         .onAppear {
-            // Ensure selectedDate is set to today when the view appears
-            let today = Calendar.current.startOfDay(for: Date())
-            if selectedDate != today {
+            let today = DateUtils.today()
+            if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
+                // No update needed
+            } else {
                 selectedDate = today
             }
         }
@@ -141,10 +142,7 @@ struct HomeTabView: View {
             doneCount: stats.indices.contains(2) ? stats[2].1 : 0
         )
         
-        // Debug logging for iOS 18 compatibility
-        let _ = print("🔍 DEBUG: HomeTabView stats - Total: \(stats.indices.contains(0) ? stats[0].1 : 0), Undone: \(stats.indices.contains(1) ? stats[1].1 : 0), Done: \(stats.indices.contains(2) ? stats[2].1 : 0)")
-        let _ = print("🔍 DEBUG: HomeTabView tabs count: \(tabs.count)")
-        let _ = print("🔍 DEBUG: HomeTabView tabs: \(tabs.map { $0.title })")
+
         
         // Ensure tabs are always rendered, even if stats are empty
         if tabs.isEmpty {
@@ -257,6 +255,9 @@ struct HomeTabView: View {
     
     private var habitsForSelectedDate: [Habit] {
         // Calculate filtered habits for the selected date
+        print("🔍 DEBUG: habitsForSelectedDate - Starting with \(habits.count) total habits")
+        print("🔍 DEBUG: Selected stats tab: \(selectedStatsTab)")
+        
         let filteredHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
             let start = DateUtils.startOfDay(for: habit.startDate)
@@ -269,66 +270,56 @@ struct HomeTabView: View {
             return shouldShowHabitOnDate(habit, date: selectedDate)
         }
         
+        print("🔍 DEBUG: habitsForSelectedDate - After date/schedule filtering: \(filteredHabits.count) habits")
+        
         // Filter by completion status based on selected tab
         let finalFilteredHabits = filteredHabits.filter { habit in
+            let isCompleted = habit.isCompleted(for: selectedDate)
+            print("🔍 DEBUG: Tab filtering - Habit '\(habit.name)' completed: \(isCompleted)")
+            
             switch selectedStatsTab {
             case 0: // Total tab - show all habits
+                print("  ✅ Total tab - including habit '\(habit.name)'")
                 return true
             case 1: // Undone tab - show habits with 0 progress OR incomplete progress
-                let shouldShow = !habit.isCompleted(for: selectedDate)
-                // print("🔍 HomeTabView: Undone tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
+                let shouldShow = !isCompleted
+                print("  \(shouldShow ? "✅" : "❌") Undone tab - habit '\(habit.name)' should show: \(shouldShow)")
                 return shouldShow
             case 2: // Done tab - show only habits that are actually completed
-                let shouldShow = habit.isCompleted(for: selectedDate)
-                // print("🔍 HomeTabView: Done tab - Habit '\(habit.name)' should show: \(shouldShow)") // Removed as per edit hint
+                let shouldShow = isCompleted
+                print("  \(shouldShow ? "✅" : "❌") Done tab - habit '\(habit.name)' should show: \(shouldShow)")
                 return shouldShow
             default:
+                print("  ✅ Default case - including habit '\(habit.name)'")
                 return true
             }
         }
         
-        // print("🔍 HomeTabView: Final filtered habits count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)") // Removed as per edit hint
+        print("🔍 DEBUG: habitsForSelectedDate - Final filtered count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)")
+        for (index, habit) in finalFilteredHabits.enumerated() {
+            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id))")
+        }
+        
         return finalFilteredHabits
     }
     
     // MARK: - Base Habits for Stats Calculation (No Tab Filtering)
     private var baseHabitsForSelectedDate: [Habit] {
         // Calculate filtered habits for the selected date (only by date/schedule, no tab filtering)
-        print("🔍 DEBUG: baseHabitsForSelectedDate - Starting with \(habits.count) total habits")
-        print("🔍 DEBUG: Selected date: \(selectedDate)")
-        
         let filteredHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
             let start = DateUtils.startOfDay(for: habit.startDate)
             let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
             
-            print("🔍 DEBUG: Checking habit '\(habit.name)' (ID: \(habit.id))")
-            print("  - Selected date: \(selected)")
-            print("  - Start date: \(start)")
-            print("  - End date: \(end)")
-            print("  - Date range check: \(selected >= start && selected <= end)")
-            
             guard selected >= start && selected <= end else {
-                print("  ❌ Habit '\(habit.name)' filtered out - date range check failed")
                 return false
             }
             
             let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-            print("  - shouldShowHabitOnDate result: \(shouldShow)")
-            
-            if shouldShow {
-                print("  ✅ Habit '\(habit.name)' included in filtered list")
-            } else {
-                print("  ❌ Habit '\(habit.name)' filtered out by shouldShowHabitOnDate")
-            }
-            
             return shouldShow
         }
         
-        print("🔍 DEBUG: baseHabitsForSelectedDate - Final filtered count: \(filteredHabits.count)")
-        for (index, habit) in filteredHabits.enumerated() {
-            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id))")
-        }
+
         
         return filteredHabits
     }
@@ -391,7 +382,6 @@ struct HomeTabView: View {
             let shouldShow = weekday == 1
             return shouldShow
         default:
-            // print("🔍 Checking schedule: \(habit.schedule)") // Removed as per edit hint
             // Handle custom schedules like "Every Monday, Wednesday, Friday"
             if habit.schedule.lowercased().contains("every") && habit.schedule.lowercased().contains("day") {
                 // First check if it's an "Every X days" schedule
@@ -407,15 +397,17 @@ struct HomeTabView: View {
                 } else {
                     // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
                     let weekdays = extractWeekdays(from: habit.schedule)
-                    // print("🔍 Schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)") // Removed as per edit hint
-                    return weekdays.contains(weekday)
+                    let shouldShow = weekdays.contains(weekday)
+                    return shouldShow
                 }
             } else if habit.schedule.contains("days a week") {
                 // Handle frequency schedules like "2 days a week"
-                return shouldShowHabitWithFrequency(habit: habit, date: date)
+                let shouldShow = shouldShowHabitWithFrequency(habit: habit, date: date)
+                return shouldShow
             } else if habit.schedule.contains("days a month") {
                 // Handle monthly frequency schedules like "3 days a month"
-                return shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
+                let shouldShow = shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
+                return shouldShow
             } else if habit.schedule.contains("times per week") {
                 // Handle "X times per week" schedules
                 let schedule = habit.schedule.lowercased()
@@ -434,11 +426,10 @@ struct HomeTabView: View {
             // Check if schedule contains multiple weekdays separated by commas
             if habit.schedule.contains(",") {
                 let weekdays = extractWeekdays(from: habit.schedule)
-                // print("🔍 Comma-separated schedule: \(habit.schedule), Weekdays: \(weekdays), Current weekday: \(weekday)") // Removed as per edit hint
-                return weekdays.contains(weekday)
+                let shouldShow = weekdays.contains(weekday)
+                return shouldShow
             }
             // For any unrecognized schedule format, don't show the habit (safer default)
-            // print("🔍 Schedule didn't match any patterns, NOT showing habit: \(habit.schedule)") // Removed as per edit hint
             return false
         }
     }

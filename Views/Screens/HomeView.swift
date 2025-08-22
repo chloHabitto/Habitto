@@ -44,33 +44,18 @@ class HomeViewState: ObservableObject {
     
     init() {
         print("🚀 HomeViewState: Initializing...")
+        let today = DateUtils.today()
+        selectedDate = today
+        print("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
         
-        // Subscribe to Core Data changes with proper state management
+        // Subscribe to CoreDataAdapter changes
         coreDataAdapter.$habits
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] newHabits in
-                print("🔍 HomeViewState: Received habits update from CoreDataAdapter - count: \(newHabits.count)")
-                if let self = self {
-                    print("🔍 HomeViewState: Previous habits count: \(self.habits.count)")
-                    
-                    // Debug: Check if new habits contain the expected habit
-                    if let newHabit = newHabits.last {
-                        print("🔍 HomeViewState: Newest habit in update: \(newHabit.name) (ID: \(newHabit.id))")
-                    }
-                    
-                    self.habits = newHabits
-                    print("🔍 HomeViewState: Updated habits count: \(self.habits.count)")
-                    
-                    // Force UI update
-                    self.objectWillChange.send()
-                    print("🔍 HomeViewState: UI update triggered")
-                }
+            .sink { [weak self] habits in
+                print("🔄 HomeViewState: Received \(habits.count) habits from CoreDataAdapter")
+                self?.habits = habits
+                self?.objectWillChange.send()
             }
             .store(in: &cancellables)
-        
-        // Initial load of habits
-        print("🔍 HomeViewState: Performing initial habits load...")
-        coreDataAdapter.loadHabits(force: true)
     }
     
     func updateHabits(_ newHabits: [Habit]) {
@@ -174,12 +159,33 @@ class HomeViewState: ObservableObject {
         print("🔍 HomeViewState: === DEBUG STATE ===")
         print("🔍 HomeViewState: Current habits count: \(habits.count)")
         print("🔍 HomeViewState: CoreDataAdapter habits count: \(coreDataAdapter.habits.count)")
+        print("🔍 HomeViewState: Current selectedDate: \(selectedDate)")
         
         for (index, habit) in habits.enumerated() {
             print("🔍 HomeViewState: Habit \(index): \(habit.name) (ID: \(habit.id))")
         }
         
         print("🔍 HomeViewState: === END DEBUG ===")
+    }
+    
+    // Force update selectedDate to today
+    func forceUpdateSelectedDateToToday() {
+        print("🔄 HomeViewState: Force updating selectedDate to today")
+        let today = DateUtils.today()
+        print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
+        print("🔄 HomeViewState: Target today: \(today)")
+        selectedDate = today
+        print("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
+    }
+    
+    // Force refresh selectedDate with cache clearing
+    func forceRefreshSelectedDate() {
+        print("🔄 HomeViewState: Force refreshing selectedDate")
+        let today = DateUtils.forceRefreshToday()
+        print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
+        print("🔄 HomeViewState: Refreshed today: \(today)")
+        selectedDate = today
+        print("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
     }
 }
 
@@ -189,27 +195,7 @@ struct HomeView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
-        VStack(spacing: 0) {
-            // TEMPORARY DEBUG BUTTONS
-            HStack {
-                Button("Debug") {
-                    state.coreDataAdapter.debugHabitsState()
-                }
-                .padding(8)
-                .background(Color.red.opacity(0.3))
-                .cornerRadius(8)
-                
-                Button("Recover") {
-                    state.coreDataAdapter.recoverMissingHabits()
-                }
-                .padding(8)
-                .background(Color.green.opacity(0.3))
-                .cornerRadius(8)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
+                    VStack(spacing: 0) {
             
             // Main content area
             ZStack(alignment: .top) {

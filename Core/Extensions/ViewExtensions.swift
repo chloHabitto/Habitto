@@ -56,6 +56,44 @@ extension View {
 struct DateUtils {
     static let calendar = Calendar.current
     
+    // MARK: - Robust Today's Date Calculation
+    static func today() -> Date {
+        let now = Date()
+        print("🔍 DateUtils.today() - Raw Date(): \(now)")
+        print("🔍 DateUtils.today() - Current timezone: \(TimeZone.current)")
+        print("🔍 DateUtils.today() - Calendar timezone: \(calendar.timeZone)")
+        print("🔍 DateUtils.today() - Calendar locale: \(calendar.locale?.identifier ?? "nil")")
+        
+        // Force use of current timezone
+        var robustCalendar = Calendar.current
+        robustCalendar.timeZone = TimeZone.current
+        robustCalendar.locale = Locale.current
+        
+        let today = robustCalendar.startOfDay(for: now)
+        print("🔍 DateUtils.today() - Calculated today: \(today)")
+        print("🔍 DateUtils.today() - Today components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
+        
+        return today
+    }
+    
+    // Force refresh today's date (useful for debugging timezone issues)
+    static func forceRefreshToday() -> Date {
+        print("🔄 DateUtils.forceRefreshToday() - Clearing date cache and recalculating...")
+        clearDateCache()
+        
+        // Force timezone refresh
+        let now = Date()
+        var robustCalendar = Calendar.current
+        robustCalendar.timeZone = TimeZone.current
+        robustCalendar.locale = Locale.current
+        
+        let today = robustCalendar.startOfDay(for: now)
+        print("🔄 DateUtils.forceRefreshToday() - New today: \(today)")
+        print("🔄 DateUtils.forceRefreshToday() - New components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
+        
+        return today
+    }
+    
     static func startOfDay(for date: Date) -> Date {
         return calendar.startOfDay(for: date)
     }
@@ -207,7 +245,7 @@ extension View {
     func roundedTopBackground() -> some View {
         self
             .background(Color.white)
-            .clipShape(RoundedCorner(radius: 20, corners: [.topLeft, .topRight]))
+            .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
     }
 }
 
