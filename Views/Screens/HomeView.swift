@@ -6,7 +6,7 @@ import Foundation
 
 // MARK: - Tab Enum
 enum Tab {
-    case home, habits, progress, more
+    case home, progress, habits, more
 }
 
 // MARK: - HomeView State Manager
@@ -253,6 +253,8 @@ struct HomeView: View {
                                 state.showingDeleteConfirmation = true
                             }
                         )
+                    case .progress:
+                        ProgressTabView(habits: state.habits)
                     case .habits:
                         HabitsTabView(
                             habits: state.habits,
@@ -274,8 +276,6 @@ struct HomeView: View {
                                 print("🔄 HomeView: Habit updated and saved successfully")
                             }
                         )
-                    case .progress:
-                        ProgressTabView(habits: state.habits)
                     case .more:
                         MoreTabView(state: state)
                     }
