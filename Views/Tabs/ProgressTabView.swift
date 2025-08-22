@@ -5,7 +5,9 @@ struct ProgressTabView: View {
     @EnvironmentObject var coreDataAdapter: CoreDataAdapter
     @State private var selectedHabit: Habit?
     @State private var showingHabitSelector = false
-    @State private var selectedTimePeriod: Int = 1 // 0: Daily, 1: Weekly, 2: Monthly
+    @State private var selectedTimePeriod: Int = 0 // 0: Daily, 1: Weekly, 2: Monthly
+    @State private var selectedProgressDate: Date = Date() // Date for viewing progress
+    @State private var showingDatePicker = false // Control date picker modal
     let habits: [Habit]
     
     // Use the calendar helper
@@ -31,6 +33,47 @@ struct ProgressTabView: View {
         }
     }
     
+    // Formatted date for progress tab (similar to Home tab)
+    private var formattedProgressDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter.string(from: selectedProgressDate)
+    }
+    
+    // Check if selected date is today
+    private var isTodaySelected: Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        return calendar.isDate(selectedProgressDate, inSameDayAs: today)
+    }
+    
+    // Daily progress ring view
+    private var dailyProgressRing: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                .frame(width: 60, height: 60)
+            
+            Circle()
+                .trim(from: 0, to: getSelectedDateCompletionPercentage())
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.white, Color.white.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                )
+                .frame(width: 60, height: 60)
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 1.0), value: getSelectedDateCompletionPercentage())
+            
+            Text("\(Int(getSelectedDateCompletionPercentage() * 100))%")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+        }
+    }
+    
     // MARK: - Calendar Helper Functions
     // Moved to ProgressCalendarHelper.swift
     
@@ -50,98 +93,210 @@ struct ProgressTabView: View {
                 weeklyProgressSection
             }
         }
-        .padding(.top, 20)
     }
     
     // MARK: - Daily Progress Section
     private var dailyProgressSection: some View {
-        VStack(spacing: 16) {
-            // Daily Progress Header
+        VStack(spacing: 0) {
+            // Date Section (similar to Home tab)
             HStack {
-                Text("Daily Progress")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
+                // Date text with chevron down icon - acts as a button
+                Button(action: {
+                    showingDatePicker = true
+                }) {
+                    HStack(spacing: 8) {
+                        Text(formattedProgressDate)
+                            .font(.appTitleMediumEmphasised)
+                            .lineSpacing(8)
+                            .foregroundColor(.primary)
+                        
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                            .opacity(0.7)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
-                Button(action: calendarHelper.goToToday) {
-                    HStack(spacing: 4) {
-                        Image(.iconReplay)
-                            .resizable()
-                            .frame(width: 12, height: 12)
-                            .foregroundColor(.primaryFocus)
-                        Text("Today")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.primaryFocus)
+                // Today button (shown when selected date is not today)
+                if !isTodaySelected {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.08)) {
+                            selectedProgressDate = Date()
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(.iconReplay)
+                                .resizable()
+                                .frame(width: 12, height: 12)
+                                .foregroundColor(.primaryFocus)
+                            Text("Today")
+                                .font(.appLabelMedium)
+                                .foregroundColor(.primaryFocus)
+                        }
+                        .padding(.leading, 12)
+                        .padding(.trailing, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .infinity)
+                                .stroke(.primaryFocus, lineWidth: 1)
+                        )
                     }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 8)
-                    .padding(.top, 4)
-                    .padding(.bottom, 4)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: .infinity)
-                            .stroke(.primaryFocus, lineWidth: 1)
-                    )
                 }
             }
+            .frame(height: 44)
             .padding(.horizontal, 20)
+//            .background(.red)
             
             // Daily Progress Summary
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Today's Completion")
+                        Text("Daily Completion")
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.onPrimaryContainer)
+                            .foregroundColor(.white)
                         
                         Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
                             .font(.appBodyMedium)
-                            .foregroundColor(.text02)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                     
                     Spacer()
                     
                     // Daily progress ring
-                    ZStack {
-                        Circle()
-                            .stroke(Color.outline3.opacity(0.3), lineWidth: 8)
-                            .frame(width: 60, height: 60)
-                        
-                        Circle()
-                            .trim(from: 0, to: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
-                            .stroke(
-                                LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.8)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
-                            )
-                            .frame(width: 60, height: 60)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 1.0), value: ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits))
-                        
-                        Text("\(Int(ProgressCalculationHelper.todaysActualCompletionPercentage(habits: habits) * 100))%")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
+                    dailyProgressRing
                 }
                 .padding(20)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
-                        )
+                        .fill(Color.primary)
                 )
-                .shadow(color: .black.opacity(0.03), radius: 8, x: 0, y: 4)
-                .padding(.horizontal, 20)
-            }
-        }
-    }
-    
-    // MARK: - Weekly Progress Section
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                                 .padding(.horizontal, 20)
+             }
+             
+             // Today's Reminders Section
+             VStack(spacing: 8) {
+                 // Header with "See more" button
+                 HStack {
+                     Text("Today's reminders")
+                         .font(.appTitleSmallEmphasised)
+                         .foregroundColor(.onPrimaryContainer)
+                     
+                     Spacer()
+                     
+                     Button(action: {
+                         // TODO: Navigate to reminders view
+                         print("📅 See more reminders tapped")
+                     }) {
+                         HStack(spacing: 4) {
+                             Text("See more")
+                                 .font(.appBodyMedium)
+                                 .foregroundColor(.primaryFocus)
+                             
+                             Image(systemName: "chevron.right")
+                                 .font(.system(size: 12, weight: .medium))
+                                 .foregroundColor(.primaryFocus)
+                         }
+                     }
+                 }
+                 .padding(.horizontal, 20)
+                 
+                 // Today's reminders list
+                 ScrollView(.horizontal, showsIndicators: false) {
+                     HStack(spacing: 16) {
+                         // Placeholder reminder items
+                         ForEach(0..<5, id: \.self) { index in
+                             Button(action: {
+                                 // TODO: Handle reminder tap
+                                 print("📅 Reminder \(index + 1) tapped")
+                             }) {
+                                 VStack(alignment: .leading, spacing: 12) {
+                                 // Header with icon and title
+                                 HStack(spacing: 10) {
+                                     // Icon with background circle
+                                     ZStack {
+                                         Circle()
+                                             .fill(Color.primary.opacity(0.1))
+                                             .frame(width: 32, height: 32)
+                                         
+                                         Image(systemName: "bell.fill")
+                                             .font(.system(size: 14, weight: .semibold))
+                                             .foregroundColor(.primary)
+                                     }
+                                     
+                                     // Title with better typography
+                                     Text("Reminder \(index + 1)")
+                                         .font(.appTitleSmallEmphasised)
+                                         .foregroundColor(.onPrimaryContainer)
+                                         .lineLimit(1)
+                                 }
+                                 
+                                 // Time with enhanced styling
+                                 HStack(spacing: 6) {
+                                     Image(systemName: "clock")
+                                         .font(.system(size: 12, weight: .medium))
+                                         .foregroundColor(.text03)
+                                         .frame(width: 16)
+                                     
+                                     Text("9:00 AM")
+                                         .font(.appBodyMediumEmphasised)
+                                         .foregroundColor(.text01)
+                                         .fontWeight(.medium)
+                                 }
+                                 
+                                 // Additional info line
+                                 Text("Daily habit reminder")
+                                     .font(.appBodySmall)
+                                     .foregroundColor(.text03)
+                                     .lineLimit(1)
+                             }
+                             .frame(width: 200, alignment: .leading)
+                             .padding(20)
+                             .background(
+                                 RoundedRectangle(cornerRadius: 20)
+                                     .fill(
+                                         LinearGradient(
+                                             colors: [
+                                                 Color.surface,
+                                                 Color.surface.opacity(0.95)
+                                             ],
+                                             startPoint: .topLeading,
+                                             endPoint: .bottomTrailing
+                                         )
+                                     )
+                                     .overlay(
+                                         RoundedRectangle(cornerRadius: 20)
+                                             .stroke(
+                                                 LinearGradient(
+                                                     colors: [
+                                                         Color.primary.opacity(0.1),
+                                                         Color.primary.opacity(0.05)
+                                                     ],
+                                                     startPoint: .topLeading,
+                                                     endPoint: .bottomTrailing
+                                                 ),
+                                                 lineWidth: 1.5
+                                             )
+                                     )
+                             )
+                         }
+                         .scaleEffect(0.98)
+                         .animation(.easeInOut(duration: 0.1), value: true)
+                     }
+                 }
+                     .padding(.horizontal, 20)
+                     .padding(.vertical, 12)
+                 }
+             }
+             .padding(.top, 24)
+         }
+     }
+     
+     // MARK: - Weekly Progress Section
     private var weeklyProgressSection: some View {
         VStack(spacing: 16) {
             // Weekly Progress Header
@@ -539,21 +694,26 @@ struct ProgressTabView: View {
         return habits.first
     }
     
-    // MARK: - Helper Methods for Today's Progress
+    // MARK: - Helper Methods for Daily Progress (using selected date)
     private func getTodaysCompletedHabitsCount() -> Int {
-        let today = Date()
         return habits.filter { habit in
-            let progress = habit.getProgress(for: today)
+            let progress = habit.getProgress(for: selectedProgressDate)
             let goalAmount = ProgressCalculationHelper.parseGoalAmount(from: habit.goal)
             return progress >= goalAmount
         }.count
     }
     
     private func getTodaysTotalHabitsCount() -> Int {
-        let today = Date()
         return habits.filter { habit in
-            StreakDataCalculator.shouldShowHabitOnDate(habit, date: today)
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: selectedProgressDate)
         }.count
+    }
+    
+    private func getSelectedDateCompletionPercentage() -> Double {
+        let completed = getTodaysCompletedHabitsCount()
+        let total = getTodaysTotalHabitsCount()
+        guard total > 0 else { return 0.0 }
+        return Double(completed) / Double(total)
     }
     
     // MARK: - Helper Methods for Enhanced Insights
@@ -577,49 +737,39 @@ struct ProgressTabView: View {
         WhiteSheetContainer(
             // title: "Progress"
         ) {
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 0) {
-                    // Habit Selector Header
-                    habitSelectorHeader
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                    
-                    // Overall Progress Section with Monthly Calendar
-                    overallProgressSection
-                    
-                    // Habit-Specific Insights (only show when habit selected)
-                    if let selectedHabit = selectedHabit {
-                        // Show only essential insights for selected habit
-                        VStack(spacing: 20) {
-                            // Just the time recommendation - most actionable insight
-                            bestTimeRecommendationSimplified(for: selectedHabit)
-                                .padding(.horizontal, 20)
+            VStack(spacing: 0) {
+                // Fixed Header Section
+                habitSelectorHeader
+                    .padding(.top, 20)
+                    .background(Color.white)
+                
+                // Scrollable Content
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: 0) {
+                        // Overall Progress Section with Monthly Calendar
+                        overallProgressSection
+                        
+                        // Habit-Specific Insights (only show when habit selected)
+                        if let selectedHabit = selectedHabit {
+                            // Show only essential insights for selected habit
+                            VStack(spacing: 20) {
+                                // Just the time recommendation - most actionable insight
+                                bestTimeRecommendationSimplified(for: selectedHabit)
+                                    .padding(.horizontal, 20)
+                            }
+                            .padding(.top, 20)
                         }
-                        .padding(.top, 20)
+                        
+
                     }
-                    
-                    // Enhanced Insights (only show when "All habits" selected)
-                    if selectedHabit == nil {
-                        VStack(spacing: 20) {
-                            // Challenge Corner - Your biggest challenge
-                            difficultyInsightsSection
-                            
-                            // Time Magic - Your time patterns
-                            TimeInsightsSection(habit: nil, completionRecords: getAllCompletionRecords())
-                            
-                            // Pattern Magic - Your consistency patterns
-                            PatternInsightsSection(habit: nil, completionRecords: getAllCompletionRecords(), difficultyLogs: getAllDifficultyLogs())
-                        }
-                        .padding(.top, 12)
-                    }
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .padding(.bottom, 40)
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-                .padding(.bottom, 40)
+                .scrollDisabled(false)
+                .scrollDismissesKeyboard(.immediately)
+                .scrollContentBackground(.hidden)
+                .coordinateSpace(name: "scrollView")
             }
-            .scrollDisabled(false)
-            .scrollDismissesKeyboard(.immediately)
-            .scrollContentBackground(.hidden)
-            .coordinateSpace(name: "scrollView")
         }
         .onChange(of: selectedHabit) { _, newHabit in
             if let habit = newHabit {
@@ -638,6 +788,23 @@ struct ProgressTabView: View {
         }
         .sheet(isPresented: $showingHabitSelector) {
             HabitSelectorView(selectedHabit: $selectedHabit)
+        }
+        .sheet(isPresented: $showingDatePicker) {
+            NavigationView {
+                DatePicker("Select Date", selection: $selectedProgressDate, displayedComponents: .date)
+                    .datePickerStyle(GraphicalDatePickerStyle())
+                    .navigationTitle("Select Date")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarItems(
+                        leading: Button("Cancel") {
+                            showingDatePicker = false
+                        },
+                        trailing: Button("Done") {
+                            showingDatePicker = false
+                        }
+                    )
+            }
+            .presentationDetents([.medium])
         }
     }
     
@@ -671,19 +838,54 @@ struct ProgressTabView: View {
                     )
                 }
             }
+            .padding(.horizontal, 20)
             
-            // Time Period Tabs
-            UnifiedTabBarView(
-                tabs: [
-                    TabItem(title: "Daily"),
-                    TabItem(title: "Weekly"),
-                    TabItem(title: "Monthly")
-                ],
-                selectedIndex: selectedTimePeriod,
-                style: .underline
-            ) { index in
-                selectedTimePeriod = index
+            // Time Period Tabs - Custom implementation to match Home/Habits tab behavior
+            HStack(spacing: 0) {
+                ForEach(0..<3, id: \.self) { index in
+                    Button(action: {
+                        selectedTimePeriod = index
+                    }) {
+                        VStack(spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(["Daily", "Weekly", "Monthly"][index])
+                                    .font(.appTitleSmallEmphasised)
+                                    .foregroundColor(selectedTimePeriod == index ? .text03 : .text04)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .overlay(
+                                // Bottom stroke - only show for selected tabs
+                                VStack {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(.text03)
+                                        .frame(height: 4)
+                                }
+                                .opacity(selectedTimePeriod == index ? 1 : 0)
+                            )
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Spacer to push tabs to the left
+                Spacer()
+                
+                // Additional spacer on the right
+                Spacer()
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white)
+            .overlay(
+                // Bottom stroke for the entire tab bar
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.outline3)
+                        .frame(height: 1)
+                }
+            )
         }
     }
     
@@ -1566,5 +1768,7 @@ struct ProgressTabView: View {
     ProgressTabView(habits: [])
         .environmentObject(CoreDataAdapter.shared)
 } 
+
+
 
 
