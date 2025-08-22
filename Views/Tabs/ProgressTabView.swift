@@ -643,76 +643,40 @@ struct ProgressTabView: View {
                 }
                 .padding(.bottom, 12)
                 
-                // Weekly Calendar Grid (7 days in a row)
-                VStack(spacing: 0) {
-                    // Days of week header - simple horizontal layout
-                    HStack(spacing: 0) {
-                        ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
-                            Text(day)
-                                .font(.appLabelMedium)
-                                .foregroundColor(.text03)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                    }
-                    .background(Color.outline3.opacity(0.1))
+                // Weekly Calendar Grid (7 days in a row) - matching monthly calendar style
+                VStack(spacing: 8) {
+                    // Days of week header - using same style as monthly calendar
+                    CalendarGridComponents.WeekdayHeader()
                     
-                    // Week days grid
-                    HStack(spacing: 0) {
+                    // Week days grid - using LazyVGrid for perfect alignment with monthly calendar
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 12) {
                         ForEach(0..<7, id: \.self) { dayOffset in
                             let currentDay = Calendar.current.date(byAdding: .day, value: dayOffset, to: selectedWeekStartDate) ?? Date()
                             let isToday = Calendar.current.isDateInToday(currentDay)
+                            let dayNumber = Calendar.current.component(.day, from: currentDay)
                             
-                            VStack(spacing: 4) {
-                                ZStack {
-                                    // Progress ring
-                                    Circle()
-                                        .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
-                                        .frame(width: 32, height: 32)
-                                    
-                                    // Progress fill
-                                    Circle()
-                                        .trim(from: 0, to: getDayProgress(for: currentDay))
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [Color.pastelBlue500, Color.primary],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                                        )
-                                        .frame(width: 32, height: 32)
-                                        .rotationEffect(.degrees(-90))
-                                        .animation(.easeInOut(duration: 0.8), value: getDayProgress(for: currentDay))
-                                    
-                                    // Today highlight
-                                    if isToday {
-                                        Circle()
-                                            .fill(LinearGradient(
-                                                colors: [Color.primary, Color.primary.opacity(0.8)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ))
-                                            .frame(width: 36, height: 36)
-                                            .shadow(color: Color.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+                            CalendarGridComponents.CalendarDayCell(
+                                day: dayNumber,
+                                progress: getDayProgress(for: currentDay),
+                                isToday: isToday,
+                                isSelected: false,
+                                isCurrentMonth: true,
+                                onTap: {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        selectedProgressDate = currentDay
+                                        selectedTimePeriod = 0 // Switch to daily view
                                     }
-                                    
-                                    // Day number
-                                    Text("\(Calendar.current.component(.day, from: currentDay))")
-                                        .font(.appLabelMedium)
-                                        .foregroundColor(isToday ? .white : .text01)
-                                        .fontWeight(.medium)
                                 }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .onTapGesture {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedProgressDate = currentDay
-                                    selectedTimePeriod = 0 // Switch to daily view
-                                }
-                            }
+                            )
+                            .id("weekday-\(dayOffset)")
+                            .opacity(gridAppearAnimation ? 1 : 0)
+                            .offset(y: gridAppearAnimation ? 0 : 20)
+                            .animation(
+                                .spring(response: 0.6, dampingFraction: 0.8)
+                                .delay(Double(dayOffset) * 0.02),
+                                value: gridAppearAnimation
+                            )
                         }
                     }
                     .onAppear {
@@ -721,64 +685,69 @@ struct ProgressTabView: View {
                         }
                     }
                 }
-                .background(Color.outline3.opacity(0.05))
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
-                )
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
             }
+            .clipped()
+            .padding(16)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.outline3, lineWidth: 1)
+            )
+            .padding(.horizontal, 16)
+            
+            // Add spacing between weekly calendar and weekly progress card
+            Spacer()
+                .frame(height: 16)
             
             // Weekly Progress Card
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 HStack {
-                    Text("Weekly Progress")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.text01)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Weekly Completion")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.white)
+                        
+                        Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount()) habits completed")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                     
                     Spacer()
                     
-                    Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount())")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text03)
-                }
-                
-                // Progress bar
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.outline3.opacity(0.3))
-                            .frame(height: 8)
+                    // Weekly progress ring (similar to daily)
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                            .frame(width: 60, height: 60)
                         
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
+                        Circle()
+                            .trim(from: 0, to: getWeeklyCompletionPercentage())
+                            .stroke(
                                 LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
                             )
-                            .frame(width: geometry.size.width * getWeeklyCompletionPercentage(), height: 8)
-                            .animation(.easeInOut(duration: 0.5), value: getWeeklyCompletionPercentage())
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: getWeeklyCompletionPercentage())
+                        
+                        Text("\(Int(getWeeklyCompletionPercentage() * 100))%")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
-                .frame(height: 8)
-                
-                Text("\(Int(getWeeklyCompletionPercentage() * 100))% completed")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
             }
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
-                    )
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.primary)
             )
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 16)
             
             // Add spacing before unified insights
@@ -800,55 +769,57 @@ struct ProgressTabView: View {
             // Monthly Calendar
             monthlyCalendarSection
             
+            // Add spacing between monthly calendar and monthly progress card
+            Spacer()
+                .frame(height: 16)
+            
             // Monthly Progress Card
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 HStack {
-                    Text("Monthly Progress")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.text01)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Monthly Progress")
+                            .font(.appTitleSmallEmphasised)
+                            .foregroundColor(.white)
+                        
+                        Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount()) habits completed")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                     
                     Spacer()
                     
-                    Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount())")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text03)
-                }
-                
-                // Progress bar
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.outline3.opacity(0.3))
-                            .frame(height: 8)
+                    // Monthly progress ring (similar to daily)
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                            .frame(width: 60, height: 60)
                         
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
+                        Circle()
+                            .trim(from: 0, to: getMonthlyCompletionPercentage())
+                            .stroke(
                                 LinearGradient(
-                                    colors: [Color.primary, Color.primary.opacity(0.8)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                style: StrokeStyle(lineWidth: 8, lineCap: .round)
                             )
-                            .frame(width: geometry.size.width * getMonthlyCompletionPercentage(), height: 8)
-                            .animation(.easeInOut(duration: 0.5), value: getMonthlyCompletionPercentage())
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 1.0), value: getMonthlyCompletionPercentage())
+                        
+                        Text("\(Int(getMonthlyCompletionPercentage() * 100))%")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
-                .frame(height: 8)
-                
-                Text("\(Int(getMonthlyCompletionPercentage() * 100))% completed")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
             }
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.outline3.opacity(0.2), lineWidth: 1)
-                    )
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.primary)
             )
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 16)
             
             // Add spacing before unified insights
@@ -1374,7 +1345,6 @@ struct ProgressTabView: View {
                         .padding(.top, 20)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
                 .padding(.bottom, 40)
             }
             .scrollDisabled(false)
@@ -1382,7 +1352,6 @@ struct ProgressTabView: View {
             .scrollContentBackground(.hidden)
             .coordinateSpace(name: "scrollView")
             }
-            .frame(maxWidth: .infinity)
         }
         .onChange(of: selectedHabit) { _, newHabit in
             if let habit = newHabit {
@@ -1491,7 +1460,6 @@ struct ProgressTabView: View {
                 // Additional spacer on the right
                 Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white)
             .overlay(
                 // Bottom stroke for the entire tab bar
@@ -2329,8 +2297,9 @@ struct ProgressTabView: View {
         let today = Date()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         
-        return habits.reduce(0) { total, habit in
-            let weeklyCompletions = habit.completionHistory.filter { keyValue in
+        return habits.filter { habit in
+            // Check if this habit has any completions during the week
+            let hasWeeklyCompletions = habit.completionHistory.contains { keyValue in
                 let dateString = keyValue.key
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -2340,8 +2309,27 @@ struct ProgressTabView: View {
                 }
                 return false
             }
-            return total + weeklyCompletions.values.reduce(0, +)
-        }
+            
+            // If habit has completions, check if it meets the weekly goal
+            if hasWeeklyCompletions {
+                let weeklyCompletions = habit.completionHistory.filter { keyValue in
+                    let dateString = keyValue.key
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd"
+                    
+                    if let completionDate = dateFormatter.date(from: dateString) {
+                        return completionDate >= weekStart && completionDate <= today
+                    }
+                    return false
+                }
+                
+                let totalWeeklyProgress = weeklyCompletions.values.reduce(0, +)
+                let weeklyGoal = ProgressCalculationHelper.parseGoalAmount(from: habit.goal) * 7 // Weekly goal (daily goal × 7)
+                return totalWeeklyProgress >= weeklyGoal
+            }
+            
+            return false
+        }.count
     }
     
     private func getWeeklyTotalHabitsCount() -> Int {

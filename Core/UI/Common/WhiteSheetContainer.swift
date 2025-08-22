@@ -31,9 +31,7 @@ struct WhiteSheetContainer<Content: View>: View {
             
             // Content area
             content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .roundedTopBackground()
     }
     

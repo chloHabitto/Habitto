@@ -247,18 +247,17 @@ struct CalendarGridComponents {
         }
         
         var body: some View {
-            HStack(spacing: 0) {
+            HStack(spacing: 8) {
                 ForEach(weekdayNames, id: \.self) { day in
                     Text(day)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.text02)
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.surface.opacity(0.3))
                         )
-                        .padding(.horizontal, 2)
+                        .frame(maxWidth: .infinity)
                 }
             }
             .padding(.bottom, 8)
