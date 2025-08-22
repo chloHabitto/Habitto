@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct TabBarView: View {
     @Binding var selectedTab: Tab
@@ -23,7 +24,11 @@ struct TabBarView: View {
     
     private func tabBarItem(icon: String, title: String, tab: Tab) -> some View {
         let selectedColor = Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
-        return Button(action: { selectedTab = tab }) {
+        return Button(action: { 
+            // Add haptic feedback when tab is selected
+            UISelectionFeedbackGenerator().selectionChanged()
+            selectedTab = tab 
+        }) {
             VStack(spacing: 4) {
                 Image(icon)
                     .resizable()
