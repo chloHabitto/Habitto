@@ -51,8 +51,8 @@ struct WhiteSheetContainer<Content: View>: View {
             if let title = title {
                 HStack {
                     Text(title)
-                        .font(.appTitleLargeEmphasised)
-                        .foregroundColor(.primary)
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
                     
                     Spacer()
                     
