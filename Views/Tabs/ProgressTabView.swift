@@ -9,6 +9,7 @@ struct ProgressTabView: View {
     @State private var selectedProgressDate: Date = Date() // Date for viewing progress
     @State private var showingDatePicker = false // Control date picker modal
     @State private var currentInsightPage: Int = 0 // For unified insights card pagination
+    @State private var selectedWeekStartDate = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
     let habits: [Habit]
     
     // Use the calendar helper
@@ -135,9 +136,22 @@ struct ProgressTabView: View {
     
     // Check if current week is selected
     private var isCurrentWeekSelected: Bool {
-        // For now, always return true since we don't have week selection yet
-        // TODO: Implement week selection logic
-        return true
+        let currentWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        return Calendar.current.isDate(selectedWeekStartDate, inSameDayAs: currentWeekStart)
+    }
+    
+    // Get weekly date range string for a specific week
+    private func getWeeklyDateRangeString(for weekStartDate: Date) -> String {
+        let calendar = Calendar.current
+        let endOfWeek = calendar.date(byAdding: .day, value: 6, to: weekStartDate) ?? weekStartDate
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        
+        let startString = formatter.string(from: weekStartDate)
+        let endString = formatter.string(from: endOfWeek)
+        
+        return "\(startString) - \(endString)"
     }
     
     // Monthly completion helper functions
@@ -531,61 +545,207 @@ struct ProgressTabView: View {
      // MARK: - Weekly Progress Section
     private var weeklyProgressSection: some View {
         VStack(spacing: 0) {
-            // Date Section (Weekly Range)
-            HStack {
-                // Week range text with chevron down icon - acts as a button
-                Button(action: {
-                    // TODO: Add week picker functionality
-                    print("📅 Week picker tapped")
-                }) {
-                    HStack(spacing: 8) {
-                        Text(weeklyDateRangeString)
-                            .font(.appTitleMediumEmphasised)
-                            .lineSpacing(8)
-                                .foregroundColor(.primary)
-                        
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.primary)
-                            .opacity(0.7)
+            // Add top spacing to separate from tabs
+            Spacer()
+                .frame(height: 20)
+            
+            // Weekly Calendar
+            VStack(spacing: 8) {
+                // Animation state for grid appear animation
+                @State var gridAppearAnimation = true
+                
+                // Calendar header with week range and This week button
+                HStack {
+                    Text(getWeeklyDateRangeString(for: selectedWeekStartDate))
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    if !isCurrentWeekSelected {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                selectedWeekStartDate = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+                            }
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(.iconReplay)
+                                    .resizable()
+                                    .frame(width: 12, height: 12)
+                                    .foregroundColor(.primaryFocus)
+                                Text("This week")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                            .padding(.leading, 12)
+                            .padding(.trailing, 8)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: .infinity)
+                                    .stroke(.primaryFocus, lineWidth: 1)
+                            )
+                        }
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.bottom, 12)
                 
-                Spacer()
-                
-                // This week button (shown when selected week is not current week)
-                if !isCurrentWeekSelected {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.08)) {
-                            // TODO: Reset to current week
-                            print("📅 Reset to current week")
+                // Weekly Calendar Grid (7 days in a row)
+                VStack(spacing: 0) {
+                    // Days of week header - simple horizontal layout
+                    HStack(spacing: 0) {
+                        ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                            Text(day)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.text02)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
                         }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(.iconReplay)
-                                .resizable()
-                                .frame(width: 12, height: 12)
-                                .foregroundColor(.primaryFocus)
-                            Text("This week")
-                                .font(.appLabelMedium)
-                                .foregroundColor(.primaryFocus)
-                        }
-                        .padding(.leading, 12)
-                        .padding(.trailing, 8)
-                        .padding(.top, 4)
-                        .padding(.bottom, 4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: .infinity)
-                                .stroke(.primaryFocus, lineWidth: 1)
-                        )
                     }
+                    .padding(.bottom, 8)
+                    .padding(.horizontal, 8)
+                    
+                                    // Week days grid - simple horizontal layout
+                HStack(spacing: 0) {
+                    ForEach(0..<7, id: \.self) { dayIndex in
+                        // Animation states for each day cell
+                        @State var scale: CGFloat = 1.0
+                        @State var progressAnimation: Double = 0.0
+                        let calendar = Calendar.current
+                        let weekStart = selectedWeekStartDate
+                        let currentDay = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? Date()
+                        let isToday = calendar.isDate(currentDay, inSameDayAs: Date())
+                        let dayProgress = ProgressCalculationHelper.getDayProgress(
+                            for: currentDay,
+                            habits: habits,
+                            selectedHabitType: .formation,
+                            selectedHabit: selectedHabit
+                        )
+                        
+                        // Simple day cell with progress ring around date
+                        ZStack {
+                            // Today background highlight (same as monthly calendar)
+                            if isToday {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.primary, Color.primary.opacity(0.8)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 36, height: 36)
+                                    .shadow(color: Color.primary.opacity(0.3), radius: 4, x: 0, y: 2)
+                            }
+                            
+                            // Progress ring background
+                            Circle()
+                                .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
+                                .frame(width: 32, height: 32)
+                            
+                            // Progress ring - using same colors as monthly calendar
+                            Circle()
+                                .trim(from: 0, to: dayProgress)
+                                .stroke(
+                                    dayProgress > 0 ? 
+                                    LinearGradient(
+                                        colors: [Color.pastelBlue500, Color.pastelBlue500.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ) :
+                                    LinearGradient(
+                                        colors: [Color.outline3, Color.outline3.opacity(0.7)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                                )
+                                .frame(width: 32, height: 32)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 0.8), value: dayProgress)
+                            
+                            // Day number
+                            Text("\(Calendar.current.component(.day, from: currentDay))")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(isToday ? .white : .text01)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .scaleEffect(scale)
+                        .opacity(gridAppearAnimation ? 1 : 0)
+                        .offset(y: gridAppearAnimation ? 0 : 20)
+                        .animation(
+                            .spring(response: 0.6, dampingFraction: 0.8)
+                            .delay(Double(dayIndex) * 0.02),
+                            value: gridAppearAnimation
+                        )
+                        .onAppear {
+                            // Animate progress ring on appear (same as monthly calendar)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + Double.random(in: 0...0.5)) {
+                                withAnimation(.easeInOut(duration: 0.8)) {
+                                    progressAnimation = dayProgress
+                                }
+                            }
+                        }
+                        .onTapGesture {
+                            // Add haptic feedback when selecting a date
+                            let selectionFeedback = UISelectionFeedbackGenerator()
+                            selectionFeedback.selectionChanged()
+                            
+                            // Scale animation on tap (same as monthly calendar)
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                scale = 1.1
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                    scale = 1.0
+                                }
+                            }
+                            
+                            print("Selected week day: \(currentDay)")
+                        }
+                    }
+                }
+                .padding(.horizontal, 8)
+                .onAppear {
+                    // Trigger grid appear animation (same as monthly calendar)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        gridAppearAnimation = true
+                    }
+                }
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = 50
+                            if abs(value.translation.width) > threshold {
+                                if value.translation.width > 0 {
+                                    // Swipe right - go to previous week
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                    }
+                                } else {
+                                    // Swipe left - go to next week
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                    }
+                                }
+                            }
+                        }
+                )
                 }
             }
-            .frame(height: 44)
+            .padding(20)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.outline3, lineWidth: 1)
+            )
             .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 4)
+            .frame(maxWidth: .infinity)
+            
+            // Add spacing between weekly calendar and progress card
+            Spacer()
+                .frame(height: 16)
             
             // Weekly Progress Card
             VStack(spacing: 12) {
@@ -844,6 +1004,12 @@ struct ProgressTabView: View {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     currentInsightPage = (currentInsightPage + 1) % insightTitles.count
                 }
+                // Haptic feedback for tap navigation
+                UISelectionFeedbackGenerator().selectionChanged()
+            }
+            .onChange(of: currentInsightPage) { _, newPage in
+                // Haptic feedback for swipe navigation
+                UISelectionFeedbackGenerator().selectionChanged()
             }
         }
         .background(
@@ -1282,39 +1448,38 @@ struct ProgressTabView: View {
         WhiteSheetContainer(
             // title: "Progress"
         ) {
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
                 // Fixed Header Section
-                    habitSelectorHeader
+                habitSelectorHeader
                     .padding(.top, 16)
                     .background(Color.white)
-                    
+                
                 // Scrollable Content
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: 0) {
-                    // Overall Progress Section with Monthly Calendar
-                    overallProgressSection
-                    
-                    // Habit-Specific Insights (only show when habit selected)
-                    if let selectedHabit = selectedHabit {
-                        // Show only essential insights for selected habit
-                        VStack(spacing: 20) {
-                            // Just the time recommendation - most actionable insight
-                            bestTimeRecommendationSimplified(for: selectedHabit)
-                                .padding(.horizontal, 20)
+                        // Overall Progress Section with Monthly Calendar
+                        overallProgressSection
+                        
+                        // Habit-Specific Insights (only show when habit selected)
+                        if let selectedHabit = selectedHabit {
+                            // Show only essential insights for selected habit
+                            VStack(spacing: 20) {
+                                // Just the time recommendation - most actionable insight
+                                bestTimeRecommendationSimplified(for: selectedHabit)
+                                    .padding(.horizontal, 16)
+                            }
+                            .padding(.top, 20)
                         }
-                        .padding(.top, 20)
                     }
-                    
-
+                    .frame(maxWidth: .infinity, alignment: .top)
+                    .padding(.bottom, 40)
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-                .padding(.bottom, 40)
+                .scrollDisabled(false)
+                .scrollDismissesKeyboard(.immediately)
+                .scrollContentBackground(.hidden)
+                .coordinateSpace(name: "scrollView")
             }
-            .scrollDisabled(false)
-            .scrollDismissesKeyboard(.immediately)
-            .scrollContentBackground(.hidden)
-            .coordinateSpace(name: "scrollView")
-            }
+            .frame(maxWidth: .infinity)
         }
         .onChange(of: selectedHabit) { _, newHabit in
             if let habit = newHabit {
