@@ -58,7 +58,7 @@ struct ProgressTabView: View {
                 .frame(width: 60, height: 60)
             
             Circle()
-                .trim(from: 0, to: getSelectedDateCompletionPercentage())
+                .trim(from: 0, to: CGFloat(getSelectedDateCompletionPercentage()))
                 .stroke(
                     LinearGradient(
                         colors: [Color.white, Color.white.opacity(0.8)],
@@ -367,10 +367,10 @@ struct ProgressTabView: View {
                 VStack(spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                        Text("Daily Completion")
+                            Text("Today's Progress")
                             .font(.appTitleSmallEmphasised)
                             .foregroundColor(.white)
-                        
+                            
                         Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
                                 .font(.appBodyMedium)
                             .foregroundColor(.white.opacity(0.8))
@@ -650,8 +650,8 @@ struct ProgressTabView: View {
                 // Weekly Calendar Grid (7 days in a row) - matching monthly calendar style
                 VStack(spacing: 8) {
                     // Days of week header - using same style as monthly calendar
-                    CalendarGridComponents.WeekdayHeader()
-                    
+                CalendarGridComponents.WeekdayHeader()
+                
                     // Week days grid - using LazyVGrid for perfect alignment with monthly calendar
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 12) {
                         ForEach(0..<7, id: \.self) { dayOffset in
@@ -1292,15 +1292,212 @@ struct ProgressTabView: View {
     
     private func getTodaysTotalHabitsCount() -> Int {
         return habits.filter { habit in
-            StreakDataCalculator.shouldShowHabitOnDate(habit, date: selectedProgressDate)
+            // Match Home tab logic: check date range first
+            let selected = DateUtils.startOfDay(for: selectedProgressDate)
+            let start = DateUtils.startOfDay(for: habit.startDate)
+            let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            guard selected >= start && selected <= end else {
+                return false
+            }
+            
+            // Then check if habit should show on this date using same logic as Home tab
+            return shouldShowHabitOnDate(habit, date: selectedProgressDate)
         }.count
     }
     
+    // Daily progress percentage for selected date (overall progress across all habits)
     private func getSelectedDateCompletionPercentage() -> Double {
-        let completed = getTodaysCompletedHabitsCount()
-        let total = getTodaysTotalHabitsCount()
-        guard total > 0 else { return 0.0 }
-        return Double(completed) / Double(total)
+        return ProgressCalculationHelper.getDayProgress(
+            for: selectedProgressDate,
+            habits: habits,
+            selectedHabitType: .formation,
+            selectedHabit: nil
+        )
+    }
+    
+    // MARK: - Habit Scheduling Logic (matches Home tab)
+    private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
+        let weekday = DateUtils.weekday(for: date)
+        
+        // Check if the date is before the habit start date
+        if date < DateUtils.startOfDay(for: habit.startDate) {
+            return false
+        }
+        
+        // Check if the date is after the habit end date (if set)
+        if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
+            return false
+        }
+        
+        switch habit.schedule {
+        case "Everyday":
+            return true
+        case "Weekdays":
+            return weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+        case "Weekends":
+            return weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
+        case "Monday":
+            return weekday == 2
+        case "Tuesday":
+            return weekday == 3
+        case "Wednesday":
+            return weekday == 4
+        case "Thursday":
+            return weekday == 5
+        case "Friday":
+            return weekday == 6
+        case "Saturday":
+            return weekday == 7
+        case "Sunday":
+            return weekday == 1
+        default:
+            // Handle custom schedules like "Every Monday, Wednesday, Friday"
+            if habit.schedule.lowercased().contains("every") && habit.schedule.lowercased().contains("day") {
+                // First check if it's an "Every X days" schedule
+                if let dayCount = extractDayCount(from: habit.schedule) {
+                    // Handle "Every X days" schedules
+                    let startDate = DateUtils.startOfDay(for: habit.startDate)
+                    let targetDate = DateUtils.startOfDay(for: date)
+                    let daysSinceStart = DateUtils.daysBetween(startDate, targetDate)
+                    
+                    // Check if the target date falls on the schedule
+                    return daysSinceStart >= 0 && daysSinceStart % dayCount == 0
+                } else {
+                    // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
+                    let weekdays = extractWeekdays(from: habit.schedule)
+                    return weekdays.contains(weekday)
+                }
+            } else if habit.schedule.contains("days a week") {
+                // Handle frequency schedules like "2 days a week"
+                return shouldShowHabitWithFrequency(habit: habit, date: date)
+            } else if habit.schedule.contains("days a month") {
+                // Handle monthly frequency schedules like "3 days a month"
+                return shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
+            } else if habit.schedule.contains("times per week") {
+                // Handle "X times per week" schedules
+                let schedule = habit.schedule.lowercased()
+                let timesPerWeek = extractTimesPerWeek(from: schedule)
+                
+                if timesPerWeek != nil {
+                    // For now, show the habit if it's within the week
+                    let weekStart = DateUtils.startOfWeek(for: date)
+                    let weekEnd = DateUtils.endOfWeek(for: date)
+                    return date >= weekStart && date <= weekEnd
+                }
+                return false
+            }
+            // Check if schedule contains multiple weekdays separated by commas
+            if habit.schedule.contains(",") {
+                let weekdays = extractWeekdays(from: habit.schedule)
+                return weekdays.contains(weekday)
+            }
+            // For any unrecognized schedule format, don't show the habit
+            return false
+        }
+    }
+    
+    // MARK: - Schedule Parsing Helper Functions
+    private func extractDayCount(from schedule: String) -> Int? {
+        let pattern = #"every (\d+) days?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
+    private func extractWeekdays(from schedule: String) -> Set<Int> {
+        // Weekday names for parsing
+        let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        var weekdays: Set<Int> = []
+        let lowercasedSchedule = schedule.lowercased()
+        
+        for (index, dayName) in weekdayNames.enumerated() {
+            let dayNameLower = dayName.lowercased()
+            if lowercasedSchedule.contains(dayNameLower) {
+                // Calendar weekday is 1-based, where 1 = Sunday
+                let weekdayNumber = index + 1
+                weekdays.insert(weekdayNumber)
+            }
+        }
+        
+        return weekdays
+    }
+    
+    private func extractTimesPerWeek(from schedule: String) -> Int? {
+        let pattern = #"(\d+) times per week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
+    private func extractDaysPerWeek(from schedule: String) -> Int? {
+        let pattern = #"(\d+) days a week"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) else {
+            return nil
+        }
+        
+        let range = match.range(at: 1)
+        let numberString = (schedule as NSString).substring(with: range)
+        return Int(numberString)
+    }
+    
+    private func shouldShowHabitWithFrequency(habit: Habit, date: Date) -> Bool {
+        guard let daysPerWeek = extractDaysPerWeek(from: habit.schedule) else {
+            return false
+        }
+        
+        let today = Date()
+        let targetDate = DateUtils.startOfDay(for: date)
+        let todayStart = DateUtils.startOfDay(for: today)
+        
+        // If the target date is in the past, don't show the habit
+        if targetDate < todayStart {
+            return false
+        }
+        
+        // For frequency-based habits, show the habit on the first N days starting from today
+        let daysFromToday = DateUtils.daysBetween(todayStart, targetDate)
+        return daysFromToday >= 0 && daysFromToday < daysPerWeek
+    }
+    
+    private func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
+        let calendar = Calendar.current
+        let today = Date()
+        let targetDate = DateUtils.startOfDay(for: date)
+        let todayStart = DateUtils.startOfDay(for: today)
+        
+        // If the target date is in the past, don't show the habit
+        if targetDate < todayStart {
+            return false
+        }
+        
+        // Extract days per month from schedule
+        let pattern = #"(\d+) days a month"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: habit.schedule, options: [], range: NSRange(location: 0, length: habit.schedule.count)) else {
+            return false
+        }
+        
+        let range = match.range(at: 1)
+        let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
+        guard let daysPerMonth = Int(daysPerMonthString) else {
+            return false
+        }
+        
+        // For monthly frequency, show the habit on the first N days of each month
+        let dayOfMonth = calendar.component(.day, from: targetDate)
+        return dayOfMonth <= daysPerMonth
     }
     
     // MARK: - Helper Methods for Enhanced Insights
