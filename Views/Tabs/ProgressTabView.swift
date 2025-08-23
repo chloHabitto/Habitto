@@ -98,23 +98,24 @@ struct ProgressTabView: View {
         }
     }
     
-    // Get today's reminders from all habits
+    // Get today's reminders from habits scheduled for today only
     private func getTodaysReminders() -> [TodaysReminder] {
         var todaysReminders: [TodaysReminder] = []
         
         for habit in habits {
-            // Check if habit has reminders
-            if !habit.reminders.isEmpty {
+            // First check if this habit is scheduled for today
+            let isScheduledForToday = shouldShowHabitOnDate(habit, date: selectedProgressDate)
+            
+            // Only include reminders from habits that are scheduled for today
+            if isScheduledForToday && !habit.reminders.isEmpty {
                 for reminder in habit.reminders {
-                    // Only include active reminders
-                    if reminder.isActive {
-                        todaysReminders.append(TodaysReminder(
-                            habitName: habit.name,
-                            reminderTime: reminder.time,
-                            reminder: reminder,
-                            habit: habit
-                        ))
-                    }
+                    // Include ALL reminders (both active and inactive) for scheduled habits
+                    todaysReminders.append(TodaysReminder(
+                        habitName: habit.name,
+                        reminderTime: reminder.time,
+                        reminder: reminder,
+                        habit: habit
+                    ))
                 }
             }
         }
@@ -452,11 +453,18 @@ struct ProgressTabView: View {
                                                     .foregroundColor(.onPrimaryContainer)
                                                     .lineLimit(1)
                                                 
-                                                // Subtitle for better hierarchy
+                                                                                            // Subtitle with status indicator
+                                            HStack(spacing: 6) {
                                                 Text("Daily reminder")
                                                     .font(.appBodySmall)
                                                     .foregroundColor(.text03)
                                                     .lineLimit(1)
+                                                
+                                                // Status indicator dot
+                                                Circle()
+                                                    .fill(reminder.reminder.isActive ? Color.green : Color.grey)
+                                                    .frame(width: 6, height: 6)
+                                            }
                                             }
                                             
                                             Spacer()
