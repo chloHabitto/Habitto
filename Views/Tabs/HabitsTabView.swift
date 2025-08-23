@@ -689,6 +689,8 @@ struct HabitsTabView: View {
             style: .underline
         ) { index in
             if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
+                // Haptic feedback when switching tabs
+                UISelectionFeedbackGenerator().selectionChanged()
                 selectedStatsTab = index
             }
         }

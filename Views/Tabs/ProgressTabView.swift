@@ -299,6 +299,10 @@ struct ProgressTabView: View {
                 weeklyProgressSection
             }
         }
+        .onChange(of: selectedTimePeriod) { _, newValue in
+            // Haptic feedback when switching tabs
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
     }
     
     // MARK: - Daily Progress Section
