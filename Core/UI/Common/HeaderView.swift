@@ -93,17 +93,14 @@ struct HeaderView: View {
             Spacer()
             
             if showProfile {
-                // Login/Log Out button for More tab
-                HabittoButton(
-                    size: .small,
-                    style: isLoggedIn ? .fillPrimary : .fillNeutral,
-                    content: .text(isLoggedIn ? "Log Out" : "Login"),
-                    hugging: true
-                ) {
-                    if isLoggedIn {
-                        // Sign out
-                        authManager.signOut()
-                    } else {
+                // Only show Login button when user is not signed in
+                if !isLoggedIn {
+                    HabittoButton(
+                        size: .small,
+                        style: .fillNeutral,
+                        content: .text("Login"),
+                        hugging: true
+                    ) {
                         showingLoginView = true
                     }
                 }

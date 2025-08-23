@@ -101,6 +101,8 @@ struct ProgressTabView: View {
     // Get today's reminders from habits scheduled for today only
     private func getTodaysReminders() -> [TodaysReminder] {
         var todaysReminders: [TodaysReminder] = []
+        let calendar = Calendar.current
+        let now = Date()
         
         for habit in habits {
             // First check if this habit is scheduled for today
@@ -109,13 +111,34 @@ struct ProgressTabView: View {
             // Only include reminders from habits that are scheduled for today
             if isScheduledForToday && !habit.reminders.isEmpty {
                 for reminder in habit.reminders {
-                    // Include ALL reminders (both active and inactive) for scheduled habits
-                    todaysReminders.append(TodaysReminder(
-                        habitName: habit.name,
-                        reminderTime: reminder.time,
-                        reminder: reminder,
-                        habit: habit
-                    ))
+                    // Only include active reminders
+                    if reminder.isActive {
+                        // Create reminder time for the selected date
+                        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminder.time)
+                        let selectedDateComponents = calendar.dateComponents([.year, .month, .day], from: selectedProgressDate)
+                        
+                        var fullReminderDateComponents = DateComponents()
+                        fullReminderDateComponents.year = selectedDateComponents.year
+                        fullReminderDateComponents.month = selectedDateComponents.month
+                        fullReminderDateComponents.day = selectedDateComponents.day
+                        fullReminderDateComponents.hour = reminderComponents.hour
+                        fullReminderDateComponents.minute = reminderComponents.minute
+                        
+                        if let fullReminderDate = calendar.date(from: fullReminderDateComponents) {
+                            // If we're viewing today, only show reminders that haven't passed yet
+                            let isToday = calendar.isDate(selectedProgressDate, inSameDayAs: now)
+                            let hasNotPassedToday = !isToday || fullReminderDate >= now
+                            
+                            if hasNotPassedToday {
+                                todaysReminders.append(TodaysReminder(
+                                    habitName: habit.name,
+                                    reminderTime: reminder.time,
+                                    reminder: reminder,
+                                    habit: habit
+                                ))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -453,18 +476,11 @@ struct ProgressTabView: View {
                                                     .foregroundColor(.onPrimaryContainer)
                                                     .lineLimit(1)
                                                 
-                                                                                            // Subtitle with status indicator
-                                            HStack(spacing: 6) {
+                                                // Subtitle for better hierarchy
                                                 Text("Daily reminder")
                                                     .font(.appBodySmall)
                                                     .foregroundColor(.text03)
                                                     .lineLimit(1)
-                                                
-                                                // Status indicator dot
-                                                Circle()
-                                                    .fill(reminder.reminder.isActive ? Color.green : Color.grey)
-                                                    .frame(width: 6, height: 6)
-                                            }
                                             }
                                             
                                             Spacer()
