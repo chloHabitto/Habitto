@@ -41,36 +41,60 @@ struct ContactUsView: View {
                 Color.surface2
                     .ignoresSafeArea()
                 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // Header
-                ScreenHeader(
-                    title: "Contact Us",
-                                description: "We'd love to hear from you"
-                ) {
-                    dismiss()
+                VStack(spacing: 0) {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // Header
+                                ScreenHeader(
+                                    title: "Contact Us",
+                                    description: "We'd love to hear from you"
+                                ) {
+                                    dismiss()
+                                }
+                                .padding(.top, 16)
+                                .padding(.bottom, 24)
+                                
+                                // Form Content
+                                VStack(spacing: 24) {
+                                    topicDropdown
+                                    emailField
+                                    descriptionField
+                                }
+                                .padding(.bottom, 24)
                             }
-                            .padding(.top, 16)
-                            .padding(.bottom, 24)
+                        }
+                        .onChange(of: focusedField) { oldValue, newValue in
+                            if let field = newValue {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    proxy.scrollTo(field, anchor: .center)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Submit Button at bottom of screen
+                    VStack(spacing: 16) {
+                        HabittoButton(
+                            size: .large,
+                            style: .fillPrimary,
+                            content: .text(isSubmitting ? "Sending..." : "Submit"),
+                            state: (isFormValid && !isSubmitting) ? .default : .disabled
+                        ) {
+                            print("🔘 Submit button tapped!")
+                            print("📋 Form valid: \(isFormValid)")
+                            print("📝 Topic: \(selectedTopic)")
+                            print("📧 Email: \(email)")
+                            print("📄 Description: \(description)")
                             
-                            // Form Content
-                            VStack(spacing: 24) {
-                                topicDropdown
-                                emailField
-                                descriptionField
-                                submitButton
-                            }
-                            .padding(.bottom, 50)
-                        }
-                    }
-                    .onChange(of: focusedField) { oldValue, newValue in
-                        if let field = newValue {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                proxy.scrollTo(field, anchor: .center)
+                            Task {
+                                await submitForm()
                             }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .background(Color.surface2)
                 }
             }
         }
@@ -283,30 +307,6 @@ struct ContactUsView: View {
                 }
                 }
                 .padding(.horizontal, 20)
-    }
-    
-    // MARK: - Submit Button
-    private var submitButton: some View {
-        VStack(spacing: 16) {
-            HabittoButton(
-                size: .large,
-                style: .fillPrimary,
-                content: .text(isSubmitting ? "Sending..." : "Submit"),
-                state: (isFormValid && !isSubmitting) ? .default : .disabled
-            ) {
-                print("🔘 Submit button tapped!")
-                print("📋 Form valid: \(isFormValid)")
-                print("📝 Topic: \(selectedTopic)")
-                print("📧 Email: \(email)")
-                print("📄 Description: \(description)")
-                
-                Task {
-                    await submitForm()
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
     }
     
     // MARK: - Computed Properties
