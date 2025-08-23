@@ -89,6 +89,8 @@ struct StreakView: View {
                                     selectedIndex: selectedProgressTab,
                                     style: .underline
                                 ) { index in
+                                    // Haptic feedback when switching tabs
+                                    UISelectionFeedbackGenerator().selectionChanged()
                                     selectedProgressTab = index
                                 }
                             }

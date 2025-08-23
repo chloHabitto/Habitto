@@ -158,6 +158,8 @@ struct HomeTabView: View {
                 selectedIndex: selectedStatsTab,
                 style: .underline
             ) { index in
+                // Haptic feedback when switching tabs
+                UISelectionFeedbackGenerator().selectionChanged()
                 selectedStatsTab = index
             }
         } else {
@@ -166,6 +168,8 @@ struct HomeTabView: View {
                 selectedIndex: selectedStatsTab,
                 style: .underline
             ) { index in
+                // Haptic feedback when switching tabs
+                UISelectionFeedbackGenerator().selectionChanged()
                 selectedStatsTab = index // All tabs are now clickable
             }
         }
