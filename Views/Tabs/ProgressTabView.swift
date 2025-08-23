@@ -685,11 +685,9 @@ struct ProgressTabView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 8)
             }
             .clipped()
-            .padding(16)
+            .padding(20)
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
