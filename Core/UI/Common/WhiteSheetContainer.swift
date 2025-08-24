@@ -6,6 +6,7 @@ struct WhiteSheetContainer<Content: View>: View {
     let headerContent: (() -> AnyView)?
     let rightButton: (() -> AnyView)?
     let showGrabber: Bool
+    let contentBackground: Color
     let content: Content
     
     init(
@@ -14,6 +15,7 @@ struct WhiteSheetContainer<Content: View>: View {
         headerContent: (() -> AnyView)? = nil,
         rightButton: (() -> AnyView)? = nil,
         showGrabber: Bool = false,
+        contentBackground: Color = .white,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -21,18 +23,21 @@ struct WhiteSheetContainer<Content: View>: View {
         self.headerContent = headerContent
         self.rightButton = rightButton
         self.showGrabber = showGrabber
+        self.contentBackground = contentBackground
         self.content = content()
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header section with title
+            // Header section with white background
             headerSection
+                .background(Color.white)
             
-            // Content area
+            // Content area with custom background
             content
+                .background(contentBackground)
         }
-        .roundedTopBackground()
+        .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
     }
     
     private var headerSection: some View {
@@ -89,28 +94,28 @@ struct WhiteSheetContainer<Content: View>: View {
 // MARK: - Convenience Initializers
 extension WhiteSheetContainer {
     /// Creates a white sheet container with just a title
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: nil, showGrabber: false, content: content)
+    init(title: String, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: nil, showGrabber: false, contentBackground: contentBackground, content: content)
     }
     
     /// Creates a white sheet container with title and subtitle
-    init(title: String, subtitle: String, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: subtitle, headerContent: nil, rightButton: nil, showGrabber: false, content: content)
+    init(title: String, subtitle: String, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+        self.init(title: title, subtitle: subtitle, headerContent: nil, rightButton: nil, showGrabber: false, contentBackground: contentBackground, content: content)
     }
     
     /// Creates a white sheet container with custom header content
-    init(title: String, headerContent: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: nil, headerContent: headerContent, rightButton: nil, showGrabber: false, content: content)
+    init(title: String, headerContent: @escaping () -> AnyView, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+        self.init(title: title, subtitle: nil, headerContent: headerContent, rightButton: nil, showGrabber: false, contentBackground: contentBackground, content: content)
     }
     
     /// Creates a white sheet container with only custom header content (no title)
-    init(headerContent: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
-        self.init(title: nil, subtitle: nil, headerContent: headerContent, rightButton: nil, showGrabber: false, content: content)
+    init(headerContent: @escaping () -> AnyView, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+        self.init(title: nil, subtitle: nil, headerContent: headerContent, rightButton: nil, showGrabber: false, contentBackground: contentBackground, content: content)
     }
     
     /// Creates a white sheet container with title and right button
-    init(title: String, rightButton: @escaping () -> AnyView, @ViewBuilder content: () -> Content) {
-        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: rightButton, content: content)
+    init(title: String, rightButton: @escaping () -> AnyView, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+        self.init(title: title, subtitle: nil, headerContent: nil, rightButton: rightButton, contentBackground: contentBackground, content: content)
     }
 }
 
@@ -131,10 +136,26 @@ extension WhiteSheetContainer {
         
         WhiteSheetContainer(
             title: "Progress",
-            subtitle: "Track your habit progress"
+            subtitle: "Track your habit progress",
+            contentBackground: .surface2
         ) {
             VStack(spacing: 16) {
                 Text("Progress content goes here")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        
+        WhiteSheetContainer(
+            title: "Custom Background",
+            contentBackground: .primary.opacity(0.1)
+        ) {
+            VStack(spacing: 16) {
+                Text("Content with custom background")
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
                 
