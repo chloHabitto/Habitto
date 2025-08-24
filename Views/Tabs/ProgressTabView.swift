@@ -769,6 +769,7 @@ struct ProgressTabView: View {
             }
             .clipped()
             .padding(20)
+            .background(Color.surface)
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
@@ -970,14 +971,7 @@ struct ProgressTabView: View {
                 .fill(Color.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.primary.opacity(0.2), Color.primary.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.5
-                        )
+                        .stroke(Color.outline3, lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
@@ -1330,14 +1324,7 @@ struct ProgressTabView: View {
                 .fill(Color.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.red.opacity(0.2), Color.orange.opacity(0.1)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.5
-                        )
+                        .stroke(Color.outline3, lineWidth: 1)
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
@@ -1602,6 +1589,7 @@ struct ProgressTabView: View {
     var body: some View {
         WhiteSheetContainer(
             // title: "Progress"
+            contentBackground: .surface2
         ) {
                 VStack(spacing: 0) {
                 // Fixed Header Section
@@ -2774,6 +2762,7 @@ struct ProgressTabView: View {
             )
         }
         .padding(20)
+        .background(Color.surface)
         .cornerRadius(20)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
