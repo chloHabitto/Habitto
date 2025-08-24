@@ -63,14 +63,14 @@ struct ProgressTabView: View {
     private var dailyProgressRing: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                .stroke(Color.primary.opacity(0.2), lineWidth: 8)
                 .frame(width: 60, height: 60)
             
             Circle()
                 .trim(from: 0, to: CGFloat(getSelectedDateCompletionPercentage()))
                 .stroke(
                     LinearGradient(
-                        colors: [Color.white, Color.white.opacity(0.8)],
+                        colors: [Color.primary, Color.primary.opacity(0.8)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -82,7 +82,7 @@ struct ProgressTabView: View {
             
             Text("\(Int(getSelectedDateCompletionPercentage() * 100))%")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
         }
     }
     
@@ -407,11 +407,11 @@ struct ProgressTabView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Today's Progress")
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.white)
+                            .foregroundColor(.text01)
                             
                         Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
                                 .font(.appBodyMedium)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.text02)
                         }
                         
                         Spacer()
@@ -421,9 +421,11 @@ struct ProgressTabView: View {
                 }
                 .padding(20)
                 .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.primary)
+                    Image("Light-gradient-BG@4x")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
                 )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                 .padding(.horizontal, 16)
             }
@@ -785,13 +787,13 @@ struct ProgressTabView: View {
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Weekly Completion")
+                        Text("Weekly Progress")
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.white)
+                            .foregroundColor(.text01)
                         
                         Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyTotalHabitsCount()) habits completed")
                             .font(.appBodyMedium)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.text02)
                     }
                     
                     Spacer()
@@ -799,14 +801,14 @@ struct ProgressTabView: View {
                     // Weekly progress ring (similar to daily)
                     ZStack {
                         Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                            .stroke(Color.primary.opacity(0.2), lineWidth: 8)
                             .frame(width: 60, height: 60)
                         
                         Circle()
                             .trim(from: 0, to: getWeeklyCompletionPercentage())
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -818,15 +820,17 @@ struct ProgressTabView: View {
                         
                         Text("\(Int(getWeeklyCompletionPercentage() * 100))%")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                     }
                 }
             }
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.primary)
+                Image("Light-gradient-BG@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
             )
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 16)
             
@@ -859,11 +863,11 @@ struct ProgressTabView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Monthly Progress")
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(.white)
+                            .foregroundColor(.text01)
                         
                         Text("\(getMonthlyCompletedHabitsCount()) of \(getMonthlyTotalHabitsCount()) habits completed")
                             .font(.appBodyMedium)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.text02)
                     }
                     
                     Spacer()
@@ -871,14 +875,14 @@ struct ProgressTabView: View {
                     // Monthly progress ring (similar to daily)
                     ZStack {
                         Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                            .stroke(Color.primary.opacity(0.2), lineWidth: 8)
                             .frame(width: 60, height: 60)
                         
                         Circle()
                             .trim(from: 0, to: getMonthlyCompletionPercentage())
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color.white, Color.white.opacity(0.8)],
+                                    colors: [Color.primary, Color.primary.opacity(0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -890,15 +894,17 @@ struct ProgressTabView: View {
                         
                         Text("\(Int(getMonthlyCompletionPercentage() * 100))%")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                     }
                 }
             }
             .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.primary)
+                Image("Light-gradient-BG@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
             )
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 16)
             
@@ -1587,10 +1593,10 @@ struct ProgressTabView: View {
 
     
     var body: some View {
-        WhiteSheetContainer(
-            // title: "Progress"
-            contentBackground: .surface2
-        ) {
+                                WhiteSheetContainer(
+                            // title: "Progress"
+                            contentBackground: .surface
+                        ) {
                 VStack(spacing: 0) {
                 // Fixed Header Section
                     habitSelectorHeader
