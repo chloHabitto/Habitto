@@ -37,6 +37,12 @@ class ProgressCalendarHelper: ObservableObject {
         }
     }
     
+    func setDate(_ date: Date) {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            currentDate = date
+        }
+    }
+    
     // MARK: - Calendar Calculations
     func monthYearString() -> String {
         let formatter = DateFormatter()
