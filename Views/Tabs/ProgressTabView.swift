@@ -426,7 +426,10 @@ struct ProgressTabView: View {
                         .aspectRatio(contentMode: .fill)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 24))
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.outline3, lineWidth: 1)
+                )
                 .padding(.horizontal, 16)
             }
             
@@ -831,7 +834,10 @@ struct ProgressTabView: View {
                     .aspectRatio(contentMode: .fill)
             )
             .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.outline3, lineWidth: 1)
+            )
             .padding(.horizontal, 16)
             
             // Add spacing before unified insights
@@ -905,7 +911,10 @@ struct ProgressTabView: View {
                     .aspectRatio(contentMode: .fill)
             )
             .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.outline3, lineWidth: 1)
+            )
             .padding(.horizontal, 16)
             
             // Add spacing before unified insights
