@@ -9,7 +9,14 @@ struct ProgressTabView: View {
     @State private var selectedProgressDate: Date = Date() // Date for viewing progress
     @State private var showingDatePicker = false // Control date picker modal
     @State private var currentInsightPage: Int = 0 // For unified insights card pagination
-    @State private var selectedWeekStartDate = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+    @State private var selectedWeekStartDate: Date = {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let today = Date()
+        // Get the start of the current week (Monday)
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        return weekStart
+    }()
     @State private var showingAllReminders = false // Control reminders sheet
     let habits: [Habit]
     
@@ -208,8 +215,13 @@ struct ProgressTabView: View {
     
     // Check if current week is selected
     private var isCurrentWeekSelected: Bool {
-        let currentWeekStart = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        return Calendar.current.isDate(selectedWeekStartDate, inSameDayAs: currentWeekStart)
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+        let today = Date()
+        // Get the start of the current week (Monday)
+        let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        
+        return calendar.isDate(selectedWeekStartDate, inSameDayAs: currentWeekStart)
     }
     
     // Get weekly date range string for a specific week
@@ -646,7 +658,12 @@ struct ProgressTabView: View {
                     if !isCurrentWeekSelected {
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                selectedWeekStartDate = Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+                                var calendar = Calendar.current
+                                calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+                                let today = Date()
+                                // Get the start of the current week (Monday)
+                                let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+                                selectedWeekStartDate = weekStart
                             }
                         }) {
                             HStack(spacing: 4) {
@@ -670,6 +687,30 @@ struct ProgressTabView: View {
                     }
                 }
                 .padding(.bottom, 12)
+                .onAppear {
+                    // Debug: Print week start date info
+                    var calendar = Calendar.current
+                    calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
+                    let today = Date()
+                    let weekday = calendar.component(.weekday, from: selectedWeekStartDate)
+                    let weekdaySymbol = calendar.weekdaySymbols[weekday - 1]
+                    
+                    print("🔍 WEEKLY CALENDAR DEBUG - Today: \(today)")
+                    print("🔍 WEEKLY CALENDAR DEBUG - Today weekday: \(calendar.component(.weekday, from: today)) (\(calendar.weekdaySymbols[calendar.component(.weekday, from: today) - 1]))")
+                    print("🔍 WEEKLY CALENDAR DEBUG - Selected week start: \(selectedWeekStartDate)")
+                    print("🔍 WEEKLY CALENDAR DEBUG - Week start weekday: \(weekday) (\(weekdaySymbol))")
+                    print("🔍 WEEKLY CALENDAR DEBUG - Calendar firstWeekday: \(calendar.firstWeekday)")
+                    print("🔍 WEEKLY CALENDAR DEBUG - Date range: \(getWeeklyDateRangeString(for: selectedWeekStartDate))")
+                    
+                    // Debug: Print all 7 days in the week
+                    for i in 0..<7 {
+                        let dayDate = calendar.date(byAdding: .day, value: i, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                        let dayWeekday = calendar.component(.weekday, from: dayDate)
+                        let dayWeekdaySymbol = calendar.weekdaySymbols[dayWeekday - 1]
+                        let dayNumber = calendar.component(.day, from: dayDate)
+                        print("🔍 DAY \(i): \(dayDate) - \(dayWeekdaySymbol) \(dayNumber)")
+                    }
+                }
                 
                 // Weekly Calendar Grid (7 days in a row) - matching monthly calendar style
                 VStack(spacing: 8) {
@@ -1090,6 +1131,11 @@ struct ProgressTabView: View {
                 .padding(.bottom, 16)
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.surface)
+        )
     }
     
     private var challengeCornerContent: some View {
