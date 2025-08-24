@@ -113,6 +113,7 @@ struct ColorTokens {
     static let text04 = Color("navy400")
     static let text05 = Color("grey800")
     static let text06 = Color("grey700")
+
     
     // Outline Colors
     static let outline2 = Color("grey100")

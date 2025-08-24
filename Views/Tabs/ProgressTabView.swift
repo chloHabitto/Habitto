@@ -18,6 +18,8 @@ struct ProgressTabView: View {
         return weekStart
     }()
     @State private var showingAllReminders = false // Control reminders sheet
+    @State private var showingWeekPicker = false // Control week picker modal
+    @State private var showingMonthPicker = false
     let habits: [Habit]
     
     // Use the calendar helper
@@ -649,9 +651,21 @@ struct ProgressTabView: View {
                 
                 // Calendar header with week range and This week button
                 HStack {
-                    Text(getWeeklyDateRangeString(for: selectedWeekStartDate))
+                    HStack(spacing: 4) {
+                        Text(getWeeklyDateRangeString(for: selectedWeekStartDate))
                         .font(.appTitleMedium)
                         .foregroundColor(.text01)
+                        
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.primary)
+                            .opacity(0.7)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        print("📅 Week picker button tapped")
+                        showingWeekPicker = true
+                    }
                     
                     Spacer()
                     
@@ -684,33 +698,11 @@ struct ProgressTabView: View {
                                     .stroke(.primaryFocus, lineWidth: 1)
                             )
                         }
+                        .padding(.trailing, 4) // Add some trailing padding to prevent clipping
                     }
                 }
                 .padding(.bottom, 12)
-                .onAppear {
-                    // Debug: Print week start date info
-                    var calendar = Calendar.current
-                    calendar.firstWeekday = 2 // Monday = 2, Sunday = 1
-                    let today = Date()
-                    let weekday = calendar.component(.weekday, from: selectedWeekStartDate)
-                    let weekdaySymbol = calendar.weekdaySymbols[weekday - 1]
-                    
-                    print("🔍 WEEKLY CALENDAR DEBUG - Today: \(today)")
-                    print("🔍 WEEKLY CALENDAR DEBUG - Today weekday: \(calendar.component(.weekday, from: today)) (\(calendar.weekdaySymbols[calendar.component(.weekday, from: today) - 1]))")
-                    print("🔍 WEEKLY CALENDAR DEBUG - Selected week start: \(selectedWeekStartDate)")
-                    print("🔍 WEEKLY CALENDAR DEBUG - Week start weekday: \(weekday) (\(weekdaySymbol))")
-                    print("🔍 WEEKLY CALENDAR DEBUG - Calendar firstWeekday: \(calendar.firstWeekday)")
-                    print("🔍 WEEKLY CALENDAR DEBUG - Date range: \(getWeeklyDateRangeString(for: selectedWeekStartDate))")
-                    
-                    // Debug: Print all 7 days in the week
-                    for i in 0..<7 {
-                        let dayDate = calendar.date(byAdding: .day, value: i, to: selectedWeekStartDate) ?? selectedWeekStartDate
-                        let dayWeekday = calendar.component(.weekday, from: dayDate)
-                        let dayWeekdaySymbol = calendar.weekdaySymbols[dayWeekday - 1]
-                        let dayNumber = calendar.component(.day, from: dayDate)
-                        print("🔍 DAY \(i): \(dayDate) - \(dayWeekdaySymbol) \(dayNumber)")
-                    }
-                }
+                .clipped() // Ensure no clipping occurs
                 
                 // Weekly Calendar Grid (7 days in a row) - matching monthly calendar style
                 VStack(spacing: 8) {
@@ -754,6 +746,26 @@ struct ProgressTabView: View {
                         }
                     }
                 }
+                .simultaneousGesture(
+                    DragGesture()
+                        .onEnded { value in
+                            let threshold: CGFloat = 50
+                            // Only trigger week change for horizontal swipes
+                            if abs(value.translation.width) > abs(value.translation.height) {
+                                if value.translation.width > threshold {
+                                    // Swipe right - go to previous week
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                    }
+                                } else if value.translation.width < -threshold {
+                                    // Swipe left - go to next week
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        selectedWeekStartDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: selectedWeekStartDate) ?? selectedWeekStartDate
+                                    }
+                                }
+                            }
+                        }
+                )
             }
             .clipped()
             .padding(20)
@@ -1640,26 +1652,47 @@ struct ProgressTabView: View {
         .sheet(isPresented: $showingHabitSelector) {
             HabitSelectorView(selectedHabit: $selectedHabit)
         }
-        .sheet(isPresented: $showingDatePicker) {
-            NavigationView {
-                DatePicker("Select Date", selection: $selectedProgressDate, displayedComponents: .date)
-                    .datePickerStyle(GraphicalDatePickerStyle())
-                    .navigationTitle("Select Date")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .navigationBarItems(
-                        leading: Button("Cancel") {
-                            showingDatePicker = false
-                        },
-                        trailing: Button("Done") {
-                            showingDatePicker = false
-                        }
-                    )
-            }
-            .presentationDetents([.medium])
-        }
         .sheet(isPresented: $showingAllReminders) {
             AllRemindersView(habits: habits, coreDataAdapter: coreDataAdapter)
         }
+        .overlay(
+            // Week Selection Modal
+            showingWeekPicker ? AnyView(
+                WeekPickerModal(
+                    selectedWeekStartDate: $selectedWeekStartDate,
+                    isPresented: $showingWeekPicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Month Selection Modal
+            showingMonthPicker ? AnyView(
+                MonthPickerModal(
+                    selectedMonth: Binding(
+                        get: { calendarHelper.currentDate },
+                        set: { newDate in
+                            calendarHelper.setDate(newDate)
+                        }
+                    ),
+                    isPresented: $showingMonthPicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Date Selection Modal
+            showingDatePicker ? AnyView(
+                DatePickerModal(
+                    selectedDate: $selectedProgressDate,
+                    isPresented: $showingDatePicker
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
+            ) : AnyView(EmptyView())
+        )
     }
     
     // MARK: - Habit Selector Header
@@ -2651,9 +2684,20 @@ struct ProgressTabView: View {
         VStack(spacing: 8) {
             // Calendar header with month/year and Today button
             HStack {
-                Text(calendarHelper.monthYearString())
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
+                HStack(spacing: 4) {
+                    Text(calendarHelper.monthYearString())
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                        .opacity(0.7)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    showingMonthPicker = true
+                }
                 
                 Spacer()
                 
