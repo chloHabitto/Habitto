@@ -20,6 +20,9 @@ struct ProgressTabView: View {
     @State private var showingAllReminders = false // Control reminders sheet
     @State private var showingWeekPicker = false // Control week picker modal
     @State private var showingMonthPicker = false
+    @State private var showingDifficultyHistory = false // Control difficulty history sheet
+    @State private var showingDifficultyEditor = false // Control difficulty editor sheet
+    @State private var selectedDifficultyForEdit: TodaysDifficulty? // Selected difficulty for editing
     let habits: [Habit]
     
     // Use the calendar helper
@@ -104,6 +107,47 @@ struct ProgressTabView: View {
             let formatter = DateFormatter()
             formatter.timeStyle = .short
             self.formattedTime = formatter.string(from: reminderTime)
+        }
+    }
+    
+    // Helper struct for today's difficulties
+    private struct TodaysDifficulty: Identifiable {
+        let id = UUID()
+        let habitName: String
+        let habitIcon: String
+        let difficultyLevel: DifficultyLevel
+        let difficultyWord: String
+        let completionTime: String
+        let note: String?
+        let habit: Habit
+        
+        init(habitName: String, habitIcon: String, difficultyLevel: DifficultyLevel, completionTime: String, note: String? = nil, habit: Habit) {
+            self.habitName = habitName
+            self.habitIcon = habitIcon
+            self.difficultyLevel = difficultyLevel
+            self.difficultyWord = difficultyLevel.displayName
+            self.completionTime = completionTime
+            self.note = note
+            self.habit = habit
+        }
+    }
+    
+    // Difficulty levels enum
+    private enum DifficultyLevel: Int, CaseIterable {
+        case veryEasy = 1
+        case easy = 2
+        case medium = 3
+        case hard = 4
+        case veryHard = 5
+        
+        var displayName: String {
+            switch self {
+            case .veryEasy: return "Very Easy"
+            case .easy: return "Easy"
+            case .medium: return "Medium"
+            case .hard: return "Hard"
+            case .veryHard: return "Very Hard"
+            }
         }
     }
     
@@ -254,6 +298,68 @@ struct ProgressTabView: View {
             habits: habits,
             selectedHabitType: .formation
         )
+    }
+    
+    // Get difficulties for the selected date from completed habits
+    private func getDifficultiesForSelectedDate() -> [TodaysDifficulty] {
+        var difficulties: [TodaysDifficulty] = []
+        let calendar = Calendar.current
+        let dateKey = DateUtils.dateKey(for: selectedProgressDate)
+        
+        for habit in habits {
+            // Check if this habit was actually completed on the selected date
+            let wasCompleted = (habit.completionHistory[dateKey] ?? 0) > 0
+            
+            if wasCompleted {
+                // Get actual difficulty logs for this habit on the selected date
+                let difficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
+                let logsForSelectedDate = difficultyLogs.filter { log in
+                    guard let timestamp = log.timestamp else { return false }
+                    return calendar.isDate(timestamp, inSameDayAs: selectedProgressDate)
+                }
+                
+                if let latestLog = logsForSelectedDate.first {
+                    // Convert difficulty level (1-10) to our DifficultyLevel enum
+                    let difficultyLevel = convertDifficultyLevel(from: Int(latestLog.difficulty))
+                    
+                    // Format the completion time
+                    let formatter = DateFormatter()
+                    formatter.timeStyle = .short
+                    let completionTime = formatter.string(from: latestLog.timestamp ?? selectedProgressDate)
+                    
+                    let difficulty = TodaysDifficulty(
+                        habitName: habit.name,
+                        habitIcon: habit.icon,
+                        difficultyLevel: difficultyLevel,
+                        completionTime: completionTime,
+                        note: latestLog.context?.isEmpty == true ? nil : latestLog.context,
+                        habit: habit
+                    )
+                    
+                    difficulties.append(difficulty)
+                }
+            }
+        }
+        
+        return difficulties
+    }
+    
+    // Convert difficulty level from 1-10 scale to our enum
+    private func convertDifficultyLevel(from level: Int) -> DifficultyLevel {
+        switch level {
+        case 1...2:
+            return .veryEasy
+        case 3...4:
+            return .easy
+        case 5...6:
+            return .medium
+        case 7...8:
+            return .hard
+        case 9...10:
+            return .veryHard
+        default:
+            return .medium
+        }
     }
     
     private func getMonthlyCompletionPercentage() -> Double {
@@ -434,6 +540,7 @@ struct ProgressTabView: View {
                 )
                 .padding(.horizontal, 16)
             }
+            .padding(.bottom, 8)
             
             // Today's Reminders Section
             VStack(spacing: 8) {
@@ -550,17 +657,7 @@ struct ProgressTabView: View {
                                             )
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    LinearGradient(
-                                                            colors: [
-                                                                Color.primary.opacity(0.1),
-                                                                Color.primary.opacity(0.05)
-                                                            ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                                        lineWidth: 1.5
-                                                    )
+                                                    .stroke(Color.outline3, lineWidth: 1)
                                             )
                                     )
                                 }
@@ -621,27 +718,308 @@ struct ProgressTabView: View {
                                     )
                         .overlay(
                                         RoundedRectangle(cornerRadius: 20)
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.primary.opacity(0.08),
-                                                        Color.primary.opacity(0.04)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
-                                            )
+                                            .stroke(Color.outline3, lineWidth: 1)
                                     )
                             )
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
+                }
+            }
+            .padding(.top, 28)
+            
+            // Today's Difficulty Section
+            todaysDifficultySection
+        }
+    }
+    
+        // MARK: - Today's Difficulty Section
+    private var todaysDifficultySection: some View {
+        VStack(spacing: 8) {
+            // Header with "See more" button
+                HStack {
+                    Text("Difficulty")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        // Show all difficulties for today
+                        showingDifficultyHistory = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("See more")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.primaryFocus)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primaryFocus)
+                        }
+                    }
+                }
+            .padding(.horizontal, 16)
+            
+            // Today's difficulty list
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    // Get difficulties for the selected date
+                    let difficulties = getDifficultiesForSelectedDate()
+                    
+                    if !difficulties.isEmpty {
+                        // Display actual difficulty cards
+                        ForEach(difficulties, id: \.id) { difficulty in
+                            difficultyCard(for: difficulty)
+                        }
+                    } else {
+                        // Empty state when no difficulties recorded
+                        emptyDifficultyState
+                    }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
             }
-            .padding(.top, 24)
         }
+        .padding(.top, 28)
+    }
+    
+    // MARK: - Difficulty Card Component
+    private func difficultyCard(for difficulty: TodaysDifficulty) -> some View {
+        Button(action: {
+            // Edit difficulty
+            selectedDifficultyForEdit = difficulty
+            showingDifficultyEditor = true
+        }) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Top row: Difficulty image + Habit name + Edit button
+                HStack(spacing: 16) {
+                    // Difficulty image with enhanced styling
+                    ZStack {
+                        Circle()
+                            .fill(difficultyBackgroundColor(for: difficulty.difficultyLevel))
+                            .frame(width: 48, height: 48)
+                        
+                        difficultyImageView(for: difficulty.difficultyLevel)
+                            .frame(width: 28, height: 28)
+                    }
+                    
+                    // Habit name with better typography
+                    Text(difficulty.habitName)
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                    
+                    Spacer()
+                    
+                    // Enhanced edit button
+                    ZStack {
+                        Circle()
+                            .fill(Color.primary.opacity(0.08))
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
+                    }
+                }
+                
+                Spacer(minLength: 8)
+                
+                // Bottom row: Difficulty word + Time with better layout
+                HStack(spacing: 12) {
+                    // Difficulty word with enhanced styling
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(difficultyIndicatorColor(for: difficulty.difficultyLevel))
+                            .frame(width: 8, height: 8)
+                        
+                        Text(difficulty.difficultyWord)
+                            .font(.appBodyMedium)
+                            .foregroundColor(.onPrimaryContainer)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Spacer()
+                    
+                    // Time with enhanced clock icon
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.text02)
+                        
+                        Text(difficulty.completionTime)
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+                            .fontWeight(.medium)
+                    }
+                }
+            }
+            .frame(width: 240, height: 100, alignment: .topLeading) // Changed to topLeading alignment
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+                                                        .background(
+                                                RoundedRectangle(cornerRadius: 24)
+                                                    .fill(Color.surface)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 24)
+                                                            .stroke(Color.outline3, lineWidth: 1)
+                                                    )
+                                            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(1.0)
+        .animation(.easeInOut(duration: 0.15), value: true)
+    }
+    
+    // MARK: - Difficulty Image View
+    private func difficultyImageView(for level: DifficultyLevel) -> some View {
+        Group {
+            switch level {
+            case .veryEasy:
+                Image("Difficulty-VeryEasy@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+            case .easy:
+                Image("Difficulty-Easy@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+            case .medium:
+                Image("Difficulty-Medium@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+            case .hard:
+                Image("Difficulty-Hard@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+            case .veryHard:
+                Image("Difficulty-VeryHard@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+            }
+        }
+    }
+    
+    // MARK: - Difficulty Color Helpers
+    private func difficultyBackgroundColor(for level: DifficultyLevel) -> Color {
+        switch level {
+        case .veryEasy:
+            return Color.green.opacity(0.12)
+        case .easy:
+            return Color.green.opacity(0.10)
+        case .medium:
+            return Color.orange.opacity(0.12)
+        case .hard:
+            return Color.red.opacity(0.12)
+        case .veryHard:
+            return Color.purple.opacity(0.15)
+        }
+    }
+    
+    private func difficultyIndicatorColor(for level: DifficultyLevel) -> Color {
+        switch level {
+        case .veryEasy:
+            return Color.green
+        case .easy:
+            return Color.green.opacity(0.8)
+        case .medium:
+            return Color.orange
+        case .hard:
+            return Color.red
+        case .veryHard:
+            return Color.purple
+        }
+    }
+    
+    private func difficultyBorderColor(for level: DifficultyLevel) -> Color {
+        switch level {
+        case .veryEasy:
+            return Color.green.opacity(0.2)
+        case .easy:
+            return Color.green.opacity(0.15)
+        case .medium:
+            return Color.orange.opacity(0.2)
+        case .hard:
+            return Color.red.opacity(0.2)
+        case .veryHard:
+            return Color.purple.opacity(0.25)
+        }
+    }
+    
+    // MARK: - Empty Difficulty State
+    private var emptyDifficultyState: some View {
+        HStack(spacing: 16) {
+            // Cute chart icon with soft background
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.primary.opacity(0.08),
+                                Color.primary.opacity(0.04)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                
+                Image(systemName: "chart.bar.fill")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.primary.opacity(0.7))
+            }
+            
+            // Simple, friendly text
+            VStack(alignment: .leading, spacing: 4) {
+                Text("No difficulties recorded yet! 📝")
+                    .font(.appTitleSmallEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("Complete some habits to start tracking")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text03)
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.surface,
+                            Color.surface.opacity(0.98)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.primary.opacity(0.08),
+                                    Color.primary.opacity(0.04)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
     }
     
     // MARK: - Weekly Progress Section
