@@ -350,7 +350,9 @@ struct ProgressTabView: View {
             HStack {
                 // Date text with chevron down icon - acts as a button
                 Button(action: {
+                    print("🔍 DEBUG: Date picker button tapped!")
                     showingDatePicker = true
+                    print("🔍 DEBUG: showingDatePicker set to: \(showingDatePicker)")
                 }) {
                     HStack(spacing: 8) {
                         Text(formattedProgressDate)
@@ -1685,17 +1687,12 @@ struct ProgressTabView: View {
                 .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
             ) : AnyView(EmptyView())
         )
-        .overlay(
-            // Date Selection Modal
-            showingDatePicker ? AnyView(
-                DatePickerModal(
-                    selectedDate: $selectedProgressDate,
-                    isPresented: $showingDatePicker
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
-            ) : AnyView(EmptyView())
-        )
+        .sheet(isPresented: $showingDatePicker) {
+            DatePickerModal(
+                selectedDate: $selectedProgressDate,
+                isPresented: $showingDatePicker
+            )
+        }
     }
     
     // MARK: - Habit Selector Header
