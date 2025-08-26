@@ -380,10 +380,10 @@ struct HabitEditView: View {
             .sheet(isPresented: $showingGoalFrequencySheet) {
                 ScheduleBottomSheet(
                     onClose: { showingGoalFrequencySheet = false },
-                    onScheduleSelected: { selectedSchedule in
-                        goalFrequency = selectedSchedule.lowercased()
-                        showingGoalFrequencySheet = false
-                    },
+                                    onScheduleSelected: { selectedSchedule in
+                    goalFrequency = selectedSchedule
+                    showingGoalFrequencySheet = false
+                },
                     initialSchedule: goalFrequency
                 )
             }
@@ -400,10 +400,10 @@ struct HabitEditView: View {
             .sheet(isPresented: $showingBaselineFrequencySheet) {
                 ScheduleBottomSheet(
                     onClose: { showingBaselineFrequencySheet = false },
-                    onScheduleSelected: { selectedSchedule in
-                        baselineFrequency = selectedSchedule.lowercased()
-                        showingBaselineFrequencySheet = false
-                    },
+                                    onScheduleSelected: { selectedSchedule in
+                    baselineFrequency = selectedSchedule
+                    showingBaselineFrequencySheet = false
+                },
                     initialSchedule: baselineFrequency
                 )
             }
@@ -503,7 +503,7 @@ struct HabitEditView: View {
             ScheduleBottomSheet(
                 onClose: { showingTargetFrequencySheet = false },
                 onScheduleSelected: { selectedSchedule in
-                    targetFrequency = selectedSchedule.lowercased()
+                    targetFrequency = selectedSchedule
                     showingTargetFrequencySheet = false
                 },
                 initialSchedule: targetFrequency
