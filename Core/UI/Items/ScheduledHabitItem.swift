@@ -25,11 +25,13 @@ struct ScheduledHabitItem: View {
         }
     }
     
-    // Computed property for progress percentage
+    // Computed property for progress percentage (capped at 100% for display purposes)
     private var progressPercentage: Double {
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
         guard goalAmount > 0 else { return 0.0 }
-        return Double(currentProgress) / Double(goalAmount)
+        let percentage = Double(currentProgress) / Double(goalAmount)
+        // Cap at 100% so progress bar never exceeds background width
+        return min(percentage, 1.0)
     }
     
     // Computed property for completion button to simplify complex expression
@@ -83,7 +85,7 @@ struct ScheduledHabitItem: View {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(habit.color)
                             .frame(
-                                width: geometry.size.width * progressPercentage,
+                                width: min(geometry.size.width * progressPercentage, geometry.size.width),
                                 height: 6
                             )
                             .animation(.easeInOut(duration: 0.3), value: currentProgress)
@@ -92,7 +94,7 @@ struct ScheduledHabitItem: View {
                 .frame(height: 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 16)
+            .frame(height: 80) // Fixed height for consistency
             
             // Completion Button
             completionButton
@@ -104,10 +106,10 @@ struct ScheduledHabitItem: View {
                 .fill(backgroundColor)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .stroke(.outline3, lineWidth: 2)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .contentShape(Rectangle())
         .offset(x: dragOffset)
         .overlay(
