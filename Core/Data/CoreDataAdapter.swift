@@ -894,7 +894,7 @@ extension HabitEntity {
             icon: self.icon ?? "None",
             color: color,
             habitType: habitType,
-            schedule: self.schedule ?? "everyday",
+            schedule: (self.schedule ?? "Everyday").capitalized,
             goal: self.goal ?? "1 time",
             reminder: self.reminder ?? "No reminder",
             startDate: self.startDate ?? Date(),

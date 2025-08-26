@@ -209,7 +209,7 @@ class CoreDataManager: ObservableObject {
         habitEntity.icon = habit.icon
         habitEntity.colorHex = habit.color.toHex()
         habitEntity.habitType = habit.habitType.rawValue
-        habitEntity.schedule = habit.schedule
+        habitEntity.schedule = habit.schedule.capitalized
         habitEntity.goal = habit.goal
         habitEntity.reminder = habit.reminder
         habitEntity.startDate = habit.startDate
@@ -251,7 +251,7 @@ class CoreDataManager: ObservableObject {
         habitEntity.icon = habit.icon
         habitEntity.colorHex = habit.color.toHex()
         habitEntity.habitType = habit.habitType.rawValue
-        habitEntity.schedule = habit.schedule
+        habitEntity.schedule = habit.schedule.capitalized
         habitEntity.goal = habit.goal
         habitEntity.reminder = habit.reminder
         habitEntity.startDate = habit.startDate
@@ -406,7 +406,7 @@ class CoreDataManager: ObservableObject {
                     habitEntity.habitDescription = habit.description
                     habitEntity.icon = habit.icon
                     habitEntity.colorHex = habit.color.toHex()
-                    habitEntity.schedule = habit.schedule
+                    habitEntity.schedule = habit.schedule.capitalized
                     habitEntity.goal = habit.goal
                     habitEntity.habitType = habit.habitType.rawValue
                     habitEntity.startDate = habit.startDate
