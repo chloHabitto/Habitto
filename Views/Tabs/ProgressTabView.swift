@@ -319,8 +319,12 @@ struct ProgressTabView: View {
                 }
                 
                 if let latestLog = logsForSelectedDate.first {
+
+                    
                     // Convert difficulty level (1-10) to our DifficultyLevel enum
                     let difficultyLevel = convertDifficultyLevel(from: Int(latestLog.difficulty))
+                    
+
                     
                     // Format the completion time
                     let formatter = DateFormatter()
@@ -344,18 +348,18 @@ struct ProgressTabView: View {
         return difficulties
     }
     
-    // Convert difficulty level from 1-10 scale to our enum
+    // Convert difficulty level from 1-5 scale to our enum
     private func convertDifficultyLevel(from level: Int) -> DifficultyLevel {
         switch level {
-        case 1...2:
+        case 1:
             return .veryEasy
-        case 3...4:
+        case 2:
             return .easy
-        case 5...6:
+        case 3:
             return .medium
-        case 7...8:
+        case 4:
             return .hard
-        case 9...10:
+        case 5:
             return .veryHard
         default:
             return .medium
@@ -519,7 +523,7 @@ struct ProgressTabView: View {
                             
                         Text("\(getTodaysCompletedHabitsCount()) of \(getTodaysTotalHabitsCount()) habits completed")
                                 .font(.appBodyMedium)
-                            .foregroundColor(.text02)
+                                .foregroundColor(.text02)
                         }
                         
                         Spacer()
@@ -669,15 +673,15 @@ struct ProgressTabView: View {
                             HStack(spacing: 16) {
                                 // Cute bell icon with soft background
                                 ZStack {
-                                    Circle()
+                            Circle()
                                         .fill(
-                                            LinearGradient(
+                                    LinearGradient(
                                                 colors: [
                                                     Color.primary.opacity(0.08),
                                                     Color.primary.opacity(0.04)
                                                 ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                             )
                                 )
                                 .frame(width: 48, height: 48)
@@ -792,18 +796,33 @@ struct ProgressTabView: View {
             selectedDifficultyForEdit = difficulty
             showingDifficultyEditor = true
         }) {
-            VStack(alignment: .leading, spacing: 0) {
-                // Top row: Difficulty image + Habit name + Edit button
-                HStack(spacing: 16) {
-                    // Difficulty image with enhanced styling
+            VStack(alignment: .leading, spacing: 16) {
+                // Top row: Habit icon + Habit name + Edit button
+                HStack(spacing: 12) {
+                    // Habit icon with same style as HabitIconView
                     ZStack {
-                        Circle()
-                            .fill(difficultyBackgroundColor(for: difficulty.difficultyLevel))
-                            .frame(width: 48, height: 48)
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(difficulty.habit.color.opacity(0.15))
+                            .frame(width: 30, height: 30)
                         
-                        difficultyImageView(for: difficulty.difficultyLevel)
-                            .frame(width: 28, height: 28)
+                        if difficulty.habitIcon.hasPrefix("Icon-") {
+                            // Asset icon
+                            Image(difficulty.habitIcon)
+                                .resizable()
+                                .frame(width: 14, height: 14)
+                                .foregroundColor(difficulty.habit.color)
+                        } else if difficulty.habitIcon == "None" {
+                            // No icon selected - show colored rounded rectangle
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(difficulty.habit.color)
+                                .frame(width: 14, height: 14)
+                        } else {
+                            // Emoji or system icon
+                            Text(difficulty.habitIcon)
+                                .font(.system(size: 14))
+                        }
                     }
+                    .padding(.horizontal, 4)
                     
                     // Habit name with better typography
                     Text(difficulty.habitName)
@@ -826,48 +845,53 @@ struct ProgressTabView: View {
                     }
                 }
                 
-                Spacer(minLength: 8)
-                
-                // Bottom row: Difficulty word + Time with better layout
+                // Bottom row: Difficulty image + Difficulty level + Time
                 HStack(spacing: 12) {
-                    // Difficulty word with enhanced styling
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(difficultyIndicatorColor(for: difficulty.difficultyLevel))
-                            .frame(width: 8, height: 8)
+                    // Difficulty image and level grouped together
+                    HStack(spacing: 8) {
+                        // Difficulty image
+                        ZStack {
+                            Circle()
+                                .fill(difficultyBackgroundColor(for: difficulty.difficultyLevel))
+                                .frame(width: 32, height: 32)
+                            
+                            difficultyImageView(for: difficulty.difficultyLevel)
+                                .frame(width: 20, height: 20)
+                        }
                         
+                        // Difficulty level
                         Text(difficulty.difficultyWord)
-                            .font(.appBodyMedium)
+                            .font(.appBodyMediumEmphasised)
                             .foregroundColor(.onPrimaryContainer)
-                            .fontWeight(.medium)
+                            .fontWeight(.semibold)
                     }
                     
                     Spacer()
                     
-                    // Time with enhanced clock icon
+                    // Time with enhanced styling
                     HStack(spacing: 6) {
-                        Image(systemName: "clock.fill")
+                        Image(systemName: "clock")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.text02)
+                            .foregroundColor(.text03)
+                            .frame(width: 16)
                         
                         Text(difficulty.completionTime)
                             .font(.appBodySmall)
                             .foregroundColor(.text02)
-                            .fontWeight(.medium)
                     }
                 }
             }
-            .frame(width: 240, height: 100, alignment: .topLeading) // Changed to topLeading alignment
+            .frame(width: 240, height: 100, alignment: .topLeading)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-                                                        .background(
-                                                RoundedRectangle(cornerRadius: 24)
-                                                    .fill(Color.surface)
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 24)
-                                                            .stroke(Color.outline3, lineWidth: 1)
-                                                    )
-                                            )
+                .background(
+                RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.surface)
+                        .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.outline3, lineWidth: 1)
+                    )
+            )
         }
         .buttonStyle(PlainButtonStyle())
         .scaleEffect(1.0)
@@ -1329,7 +1353,7 @@ struct ProgressTabView: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.top, 20)
+        .padding(.top, 20)
             .padding(.bottom, 16)
             
             // Bottom stroke below header
@@ -1982,10 +2006,10 @@ struct ProgressTabView: View {
 
     
     var body: some View {
-                                WhiteSheetContainer(
-                            // title: "Progress"
+        WhiteSheetContainer(
+            // title: "Progress"
                             contentBackground: .surface
-                        ) {
+        ) {
                 VStack(spacing: 0) {
                 // Fixed Header Section
                     habitSelectorHeader
