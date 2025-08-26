@@ -316,7 +316,7 @@ struct CreateHabitStep2View: View {
             ScheduleBottomSheet(
                 onClose: { showingGoalFrequencySheet = false },
                 onScheduleSelected: { selectedSchedule in
-                    goalFrequency = selectedSchedule.lowercased()
+                    goalFrequency = selectedSchedule
                     showingGoalFrequencySheet = false
                 },
                 initialSchedule: goalFrequency
@@ -336,7 +336,7 @@ struct CreateHabitStep2View: View {
             ScheduleBottomSheet(
                 onClose: { showingBaselineFrequencySheet = false },
                 onScheduleSelected: { selectedSchedule in
-                    baselineFrequency = selectedSchedule.lowercased()
+                    baselineFrequency = selectedSchedule
                     showingBaselineFrequencySheet = false
                 },
                 initialSchedule: baselineFrequency
@@ -356,7 +356,7 @@ struct CreateHabitStep2View: View {
             ScheduleBottomSheet(
                 onClose: { showingTargetFrequencySheet = false },
                 onScheduleSelected: { selectedSchedule in
-                    targetFrequency = selectedSchedule.lowercased()
+                    targetFrequency = selectedSchedule
                     showingTargetFrequencySheet = false
                 },
                 initialSchedule: targetFrequency

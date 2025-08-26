@@ -355,34 +355,34 @@ struct HomeTabView: View {
             return false
         }
         
-        switch habit.schedule {
-        case "Everyday":
+        switch habit.schedule.lowercased() {
+        case "everyday", "every day":
             return true
-        case "Weekdays":
+        case "weekdays":
             let shouldShow = weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
             return shouldShow
-        case "Weekends":
+        case "weekends":
             let shouldShow = weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
             return shouldShow
-        case "Monday":
+        case "monday", "mon":
             let shouldShow = weekday == 2
             return shouldShow
-        case "Tuesday":
+        case "tuesday", "tue":
             let shouldShow = weekday == 3
             return shouldShow
-        case "Wednesday":
+        case "wednesday", "wed":
             let shouldShow = weekday == 4
             return shouldShow
-        case "Thursday":
+        case "thursday", "thu":
             let shouldShow = weekday == 5
             return shouldShow
-        case "Friday":
+        case "friday", "fri":
             let shouldShow = weekday == 6
             return shouldShow
-        case "Saturday":
+        case "saturday", "sat":
             let shouldShow = weekday == 7
             return shouldShow
-        case "Sunday":
+        case "sunday", "sun":
             let shouldShow = weekday == 1
             return shouldShow
         default:

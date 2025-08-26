@@ -135,6 +135,12 @@ struct ScheduleBottomSheet: View {
                 print("🔍 SCHEDULE SHEET INIT - Set monthlyValue: \(monthlyValue)")
             }
             
+        } else if lowercasedSchedule.hasPrefix("every ") && lowercasedSchedule.contains("days") {
+            // Handle "Every X days" schedules
+            selectedTab = 0 // Interval tab
+            selectedSchedule = "Daily"
+            selectedDays = schedule
+            print("🔍 SCHEDULE SHEET INIT - Set 'Every X days' schedule: \(schedule)")
         } else {
             // Handle basic daily schedules like "Everyday", "Weekdays", "Weekends"
             selectedTab = 0 // Interval tab

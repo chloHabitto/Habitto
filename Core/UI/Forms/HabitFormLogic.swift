@@ -64,7 +64,11 @@ class HabitFormLogic {
         case let freq where freq.contains("times a month"):
             return frequency // Keep original case
         case let freq where freq.hasPrefix("every ") && freq.contains("days"):
+            // Convert "every 5 days" to "Every 5 days" format
             return freq.replacingOccurrences(of: "every ", with: "Every ")
+        case let freq where freq.hasPrefix("Every ") && freq.contains("days"):
+            // Already in correct format
+            return freq
         default:
             return frequency
         }
