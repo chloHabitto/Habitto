@@ -7,6 +7,15 @@ struct SecurityView: View {
     @State private var showingDeleteAccountAlert = false
     @State private var showingSignOutAlert = false
     
+    // Computed property to check if user can change password
+    private var canChangePassword: Bool {
+        guard let currentUser = authManager.currentUser,
+              let providerData = currentUser.providerData.first else {
+            return false
+        }
+        return providerData.providerID == "password"
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -38,41 +47,43 @@ struct SecurityView: View {
                             Divider()
                                 .padding(.leading, 56)
                             
-                            // Password Management
-                            AccountOptionRow(
-                                icon: "Icon-ShieldKeyhole_Filled",
-                                title: "Change Password",
-                                subtitle: "Update your account password",
-                                hasChevron: true
-                            ) {
-                                // TODO: Implement change password functionality
+                            // Password Management - Only show for email/password users
+                            if canChangePassword {
+                                AccountOptionRow(
+                                    icon: "Icon-ShieldKeyhole_Filled",
+                                    title: "Change Password",
+                                    subtitle: "Update your account password",
+                                    hasChevron: true
+                                ) {
+                                    // TODO: Implement change password functionality
+                                }
+                            } else {
+                                // Show info for OAuth users (Google/Apple)
+                                HStack(spacing: 12) {
+                                    Image("Icon-Info_Filled")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundColor(.text04)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Password Management")
+                                            .font(.appBodyLarge)
+                                            .foregroundColor(.text01)
+                                        
+                                        Text("Password changes are managed through your sign-in provider")
+                                            .font(.appBodySmall)
+                                            .foregroundColor(.text03)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
                             }
                             
-                            Divider()
-                                .padding(.leading, 56)
-                            
-                            // Two-Factor Authentication
-                            AccountOptionRow(
-                                icon: "Icon-ShieldCheck_Filled",
-                                title: "Two-Factor Authentication",
-                                subtitle: "Add an extra layer of security",
-                                hasChevron: true
-                            ) {
-                                // TODO: Implement 2FA functionality
-                            }
-                            
-                            Divider()
-                                .padding(.leading, 56)
-                            
-                            // Login Sessions
-                            AccountOptionRow(
-                                icon: "Icon-Devices_Filled",
-                                title: "Active Sessions",
-                                subtitle: "Manage your logged-in devices",
-                                hasChevron: true
-                            ) {
-                                // TODO: Implement active sessions functionality
-                            }
+
                         }
                         .background(Color.surface)
                         .cornerRadius(16)

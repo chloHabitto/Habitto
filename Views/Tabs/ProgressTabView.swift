@@ -841,9 +841,9 @@ struct ProgressTabView: View {
                         
                         Image(systemName: "pencil")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
+                                .foregroundColor(.primary)
+                        }
                     }
-                }
                 
                 // Bottom row: Difficulty image + Difficulty level + Time
                 HStack(spacing: 12) {
@@ -3000,8 +3000,29 @@ struct ProgressTabView: View {
         let calendar = Calendar.current
         let today = Date()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
         
         return habits.filter { habit in
+            // Check if this habit is scheduled for at least one day during the week
+            let isScheduledForWeek = {
+                let startDate = habit.startDate
+                let endDate = habit.endDate ?? weekEnd
+                
+                if startDate <= weekEnd && endDate >= weekStart {
+                    var currentDate = weekStart
+                    while currentDate <= weekEnd {
+                        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                            return true
+                        }
+                        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+                    }
+                }
+                return false
+            }()
+            
+            // Only check completion for habits that are actually scheduled this week
+            guard isScheduledForWeek else { return false }
+            
             // Check if this habit has any completions during the week
             let hasWeeklyCompletions = habit.completionHistory.contains { keyValue in
                 let dateString = keyValue.key
@@ -3009,30 +3030,13 @@ struct ProgressTabView: View {
                 dateFormatter.dateFormat = "yyyy-MM-dd"
                 
                 if let completionDate = dateFormatter.date(from: dateString) {
-                    return completionDate >= weekStart && completionDate <= today
+                    return completionDate >= weekStart && completionDate <= weekEnd
                 }
                 return false
             }
             
-            // If habit has completions, check if it meets the weekly goal
-            if hasWeeklyCompletions {
-                let weeklyCompletions = habit.completionHistory.filter { keyValue in
-                    let dateString = keyValue.key
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateFormat = "yyyy-MM-dd"
-                    
-                    if let completionDate = dateFormatter.date(from: dateString) {
-                        return completionDate >= weekStart && completionDate <= today
-                    }
-                    return false
-                }
-                
-                let totalWeeklyProgress = weeklyCompletions.values.reduce(0, +)
-                let weeklyGoal = ProgressCalculationHelper.parseGoalAmount(from: habit.goal) * 7 // Weekly goal (daily goal × 7)
-                return totalWeeklyProgress >= weeklyGoal
-            }
-            
-            return false
+            // Count as completed if there's any progress during the week
+            return hasWeeklyCompletions
         }.count
     }
     
@@ -3042,27 +3046,24 @@ struct ProgressTabView: View {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
         
-        return habits.reduce(0) { total, habit in
+        // Count unique habits that are scheduled for at least one day during the week
+        return habits.filter { habit in
             let startDate = habit.startDate
             let endDate = habit.endDate ?? weekEnd
             
             // Check if habit is active during this week
             if startDate <= weekEnd && endDate >= weekStart {
-                // Count days in the week where this habit should be active
-                var count = 0
+                // Check if this habit is scheduled for at least one day during the week
                 var currentDate = weekStart
-                
                 while currentDate <= weekEnd {
                     if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                        count += 1
+                        return true // This habit is scheduled for at least one day this week
                     }
                     currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
                 }
-                
-                return total + count
             }
-            return total
-        }
+            return false
+        }.count
     }
     
     private func getWeeklyCompletionPercentage() -> Double {

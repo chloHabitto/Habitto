@@ -31,6 +31,25 @@ struct VacationModeSheet: View {
                         }
                         
                         Spacer()
+                        
+                        // Vacation Mode Toggle
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Toggle("", isOn: Binding(
+                                get: { vacationManager.isActive },
+                                set: { isOn in
+                                    if isOn {
+                                        startVacation()
+                                    } else {
+                                        showingEndVacationAlert = true
+                                    }
+                                }
+                            ))
+                            .toggleStyle(SwitchToggleStyle(tint: .primary))
+                            
+                            Text(vacationManager.isActive ? "ON" : "OFF")
+                                .font(.caption2)
+                                .foregroundColor(.text04)
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
