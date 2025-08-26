@@ -81,8 +81,45 @@ class NotificationManager: ObservableObject {
         
         // Then schedule new notifications for active reminders
         for reminder in reminders where reminder.isActive {
-            let notificationId = "\(habit.id.uuidString)_\(reminder.id.uuidString)"
-            scheduleHabitReminder(for: habit, reminderTime: reminder.time, reminderId: notificationId)
+            // Only schedule notifications if the habit is actually scheduled for today
+            if shouldShowHabitOnDate(habit, date: Date()) {
+                let notificationId = "\(habit.id.uuidString)_\(reminder.id.uuidString)"
+                scheduleHabitReminder(for: habit, reminderTime: reminder.time, reminderId: notificationId)
+                print("✅ NotificationManager: Scheduled notification for habit '\(habit.name)' at \(reminder.time) - habit is scheduled for today")
+            } else {
+                print("⚠️ NotificationManager: Skipped notification for habit '\(habit.name)' - habit is not scheduled for today")
+            }
+        }
+    }
+    
+    // Check if habit should be shown on a specific date (copied from StreakDataCalculator)
+    private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: date)
+        
+        switch habit.schedule.lowercased() {
+        case "daily", "everyday":
+            return true
+        case "weekdays":
+            return weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+        case "weekends":
+            return weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
+        case "monday", "mon":
+            return weekday == 2
+        case "tuesday", "tue":
+            return weekday == 3
+        case "wednesday", "wed":
+            return weekday == 4
+        case "thursday", "thu":
+            return weekday == 5
+        case "friday", "fri":
+            return weekday == 6
+        case "saturday", "sat":
+            return weekday == 7
+        case "sunday", "sun":
+            return weekday == 1
+        default:
+            return true
         }
     }
     
