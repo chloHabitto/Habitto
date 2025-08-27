@@ -39,6 +39,7 @@ struct ProgressTabView: View {
                     }
                 }
                 .padding(.top, 20)
+                .padding(.bottom, 40)
             }
         }
         .sheet(isPresented: $showingHabitSelector) {
@@ -79,6 +80,7 @@ struct ProgressTabView: View {
                 }
             }
             .padding(.horizontal, 16)
+            .padding(.top, 12)
             
             // Time Period Tabs
             HStack(spacing: 0) {
