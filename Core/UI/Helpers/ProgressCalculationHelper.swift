@@ -52,13 +52,17 @@ class ProgressCalculationHelper {
         return totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
     }
     
-    static func getDayProgress(for date: Date, habits: [Habit], selectedHabitType: HabitType, selectedHabit: Habit?) -> Double {
+    static func getDayProgress(for date: Date, habits: [Habit], selectedHabitType: HabitType?, selectedHabit: Habit?) -> Double {
         let habitsForDay: [Habit]
         
         if let selectedHabit = selectedHabit {
             habitsForDay = [selectedHabit]
-        } else {
+        } else if let selectedHabitType = selectedHabitType {
+            // Filter by specific habit type
             habitsForDay = habits.filter { $0.habitType == selectedHabitType }
+        } else {
+            // No type filter - include all habits
+            habitsForDay = habits
         }
         
         guard !habitsForDay.isEmpty else { return 0.0 }
@@ -69,7 +73,11 @@ class ProgressCalculationHelper {
         
         print("🔍 PROGRESS CALCULATION DEBUG - Date: \(date)")
         print("  Total habits passed: \(habits.count)")
-        print("  Filtered habits for type \(selectedHabitType): \(habitsForDay.count)")
+        if let selectedHabitType = selectedHabitType {
+            print("  Filtered habits for type \(selectedHabitType): \(habitsForDay.count)")
+        } else {
+            print("  No type filter - including all habits: \(habitsForDay.count)")
+        }
         
         for habit in habitsForDay {
             let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
