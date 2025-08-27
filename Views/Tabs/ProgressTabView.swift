@@ -544,7 +544,7 @@ struct ProgressTabView: View {
                 )
                 .padding(.horizontal, 16)
             }
-            .padding(.bottom, 8)
+            .padding(.bottom, 16)
             
             // New Reminders Section
             VStack(spacing: 20) {
@@ -716,9 +716,10 @@ struct ProgressTabView: View {
                     )
             )
             .padding(.horizontal, 16)
+            .padding(.bottom, 16)
             
             // New Difficulty Section
-            VStack(spacing: 8) {
+            VStack(spacing: 20) {
                 // Header with "See more" button
                 HStack {
                     Text("Difficulty")
@@ -897,60 +898,8 @@ struct ProgressTabView: View {
             )
             .padding(.horizontal, 16)
             
-            // Today's Difficulty Section
-            todaysDifficultySection
+
         }
-    }
-    
-        // MARK: - Today's Difficulty Section
-    private var todaysDifficultySection: some View {
-        VStack(spacing: 8) {
-            // Header with "See more" button
-                HStack {
-                    Text("Difficulty")
-                        .font(.appTitleSmallEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        // Show all difficulties for today
-                        showingDifficultyHistory = true
-                    }) {
-                        HStack(spacing: 4) {
-                            Text("See more")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.primaryFocus)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.primaryFocus)
-                        }
-                    }
-                }
-            .padding(.horizontal, 16)
-            
-            // Today's difficulty list
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    // Get difficulties for the selected date
-                    let difficulties = getDifficultiesForSelectedDate()
-                    
-                    if !difficulties.isEmpty {
-                        // Display actual difficulty cards
-                        ForEach(difficulties, id: \.id) { difficulty in
-                            difficultyCard(for: difficulty)
-                        }
-                    } else {
-                        // Empty state when no difficulties recorded
-                        emptyDifficultyState
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 4)
-            }
-        }
-        .padding(.top, 28)
     }
     
     // MARK: - Difficulty Card Component
