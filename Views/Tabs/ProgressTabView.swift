@@ -14,12 +14,18 @@ struct ProgressTabView: View {
     @StateObject private var calendarHelper = ProgressCalendarHelper()
     
     var body: some View {
-        NavigationView {
+        WhiteSheetContainer(
+            headerContent: {
+                AnyView(
+                    VStack(spacing: 0) {
+                        // Habit Selector Header
+                        habitSelectorHeader
+                    }
+                )
+            }
+        ) {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Habit Selector Header
-                    habitSelectorHeader
-                    
                     // Tab Content
                     if selectedTimePeriod == 0 {
                         // Daily Tab
@@ -34,12 +40,11 @@ struct ProgressTabView: View {
                 }
                 .padding(.top, 20)
             }
-            .navigationBarHidden(true)
-            .sheet(isPresented: $showingHabitSelector) {
-                HabitSelectorView(
-                    selectedHabit: $selectedHabit
-                )
-            }
+        }
+        .sheet(isPresented: $showingHabitSelector) {
+            HabitSelectorView(
+                selectedHabit: $selectedHabit
+            )
         }
     }
     
@@ -125,7 +130,6 @@ struct ProgressTabView: View {
             if selectedHabit == nil || shouldShowHabitOnDate(selectedHabit!, date: selectedProgressDate) {
                 // Today's Progress Summary
                 dailyProgressCard
-                    .padding(.bottom, 16)
                 
                 // New Reminders Section
                 remindersSection
@@ -205,7 +209,6 @@ struct ProgressTabView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .stroke(Color.outline3, lineWidth: 1)
             )
-            .padding(.horizontal, 16)
         }
     }
     
@@ -254,6 +257,7 @@ struct ProgressTabView: View {
                 .foregroundColor(.text07)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 20)
             
             // Carousel
             ScrollView(.horizontal, showsIndicators: false) {
@@ -298,7 +302,6 @@ struct ProgressTabView: View {
                 .padding(.bottom, 16)
             }
         }
-        .padding(.top, 20)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.surface)
@@ -307,8 +310,6 @@ struct ProgressTabView: View {
                         .stroke(Color.outline3, lineWidth: 1)
                 )
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
     }
     
     // MARK: - Reminder Card
@@ -396,6 +397,7 @@ struct ProgressTabView: View {
                 .foregroundColor(.text07)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 20)
             
             // Carousel
             ScrollView(.horizontal, showsIndicators: false) {
@@ -440,7 +442,6 @@ struct ProgressTabView: View {
                 .padding(.bottom, 16)
             }
         }
-        .padding(.top, 20)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.surface)
@@ -449,8 +450,6 @@ struct ProgressTabView: View {
                         .stroke(Color.outline3, lineWidth: 1)
                 )
         )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
     }
     
     // MARK: - Difficulty Card
@@ -545,13 +544,76 @@ struct ProgressTabView: View {
     
     // MARK: - Helper Functions
     private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
-        // TODO: Implement proper logic to check if habit is scheduled for the given date
-        return true // Placeholder - implement actual logic
+        let weekday = DateUtils.weekday(for: date)
+        
+        // Check if the date is before the habit start date
+        if date < DateUtils.startOfDay(for: habit.startDate) {
+            return false
+        }
+        
+        // Check if the date is after the habit end date (if set)
+        if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
+            return false
+        }
+        
+        switch habit.schedule {
+        case "Everyday":
+            return true
+        case "Weekdays":
+            return weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
+        case "Weekends":
+            return weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
+        case "Monday":
+            return weekday == 2
+        case "Tuesday":
+            return weekday == 3
+        case "Wednesday":
+            return weekday == 4
+        case "Thursday":
+            return weekday == 5
+        case "Friday":
+            return weekday == 6
+        case "Saturday":
+            return weekday == 7
+        case "Sunday":
+            return weekday == 1
+        default:
+            // Handle custom schedules like "Every Monday, Wednesday, Friday"
+            if habit.schedule.lowercased().contains("every") && habit.schedule.lowercased().contains("day") {
+                // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
+                let weekdays = extractWeekdays(from: habit.schedule)
+                return weekdays.contains(weekday)
+            } else if habit.schedule.contains(",") {
+                // Check if schedule contains multiple weekdays separated by commas
+                let weekdays = extractWeekdays(from: habit.schedule)
+                return weekdays.contains(weekday)
+            }
+            // For any unrecognized schedule format, don't show the habit (safer default)
+            return false
+        }
+    }
+    
+    private func extractWeekdays(from schedule: String) -> Set<Int> {
+        // Weekday names for parsing
+        let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        var weekdays: Set<Int> = []
+        let lowercasedSchedule = schedule.lowercased()
+        
+        for (index, dayName) in weekdayNames.enumerated() {
+            let dayNameLower = dayName.lowercased()
+            if lowercasedSchedule.contains(dayNameLower) {
+                // Calendar weekday is 1-based, where 1 = Sunday
+                let weekdayNumber = index + 1
+                weekdays.insert(weekdayNumber)
+            }
+        }
+        
+        return weekdays
     }
     
     private func getTodaysCompletedHabitsCount() -> Int {
         // Count only habits that are scheduled for today AND were completed
-        return habits.filter { habit in
+        let completedCount = habits.filter { habit in
             // Check if habit is scheduled for today
             let isScheduledToday = shouldShowHabitOnDate(habit, date: selectedProgressDate)
             
@@ -561,13 +623,21 @@ struct ProgressTabView: View {
             
             return isScheduledToday && wasCompleted
         }.count
+        
+        // Debug logging
+        print("🔍 PROGRESS DEBUG - Completed habits: \(completedCount)")
+        return completedCount
     }
     
     private func getTodaysTotalHabitsCount() -> Int {
         // Count only habits that are scheduled for today
-        return habits.filter { habit in
+        let totalCount = habits.filter { habit in
             shouldShowHabitOnDate(habit, date: selectedProgressDate)
         }.count
+        
+        // Debug logging
+        print("🔍 PROGRESS DEBUG - Total scheduled habits: \(totalCount)")
+        return totalCount
     }
     
     private func getTodaysProgressPercentage() -> Double {
