@@ -546,6 +546,62 @@ struct ProgressTabView: View {
             }
             .padding(.bottom, 8)
             
+            // New Reminders Section
+            VStack(spacing: 20) {
+                // Header with "See more" button
+                HStack {
+                    Text("Reminders")
+                        .font(.appTitleSmallEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        // TODO: Handle see more action
+                        print("See more reminders tapped")
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("See more")
+                                .font(.appBodyMedium)
+                                .foregroundColor(.primaryFocus)
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primaryFocus)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                
+                // Reminders carousel with 5 blank cards
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(0..<5, id: \.self) { index in
+                            // Blank card with specified dimensions
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.surface)
+                                .frame(width: 141, height: 114)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.outline3, lineWidth: 1)
+                                )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+            .padding(.top, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.outline3, lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 16)
+            
             // Today's Reminders Section
             VStack(spacing: 8) {
                 // Header with "See more" button
