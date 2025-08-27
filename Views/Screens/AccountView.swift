@@ -54,7 +54,17 @@ struct AccountOptionRow: View {
     let title: String
     let subtitle: String
     let hasChevron: Bool
+    let iconColor: Color
     let action: () -> Void
+    
+    init(icon: String, title: String, subtitle: String, hasChevron: Bool, iconColor: Color = .navy200, action: @escaping () -> Void) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.hasChevron = hasChevron
+        self.iconColor = iconColor
+        self.action = action
+    }
     
     var body: some View {
         Button(action: action) {
@@ -66,12 +76,12 @@ struct AccountOptionRow: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.navy200)
+                        .foregroundColor(iconColor)
                 } else {
                     // System icon
                     Image(systemName: icon)
                         .font(.system(size: 20))
-                        .foregroundColor(.navy200)
+                        .foregroundColor(iconColor)
                         .frame(width: 24)
                 }
                 
