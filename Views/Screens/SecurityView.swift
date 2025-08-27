@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct SecurityView: View {
     @Environment(\.dismiss) private var dismiss
@@ -9,8 +10,8 @@ struct SecurityView: View {
     
     // Computed property to check if user can change password
     private var canChangePassword: Bool {
-        guard let currentUser = authManager.currentUser,
-              let providerData = currentUser.providerData.first else {
+        guard let firebaseUser = Auth.auth().currentUser,
+              let providerData = firebaseUser.providerData.first else {
             return false
         }
         return providerData.providerID == "password"
@@ -39,7 +40,8 @@ struct SecurityView: View {
                                 icon: "Icon-Profile_Filled",
                                 title: "Personal Information",
                                 subtitle: "Manage your personal details",
-                                hasChevron: true
+                                hasChevron: true,
+                                iconColor: .navy200
                             ) {
                                 showingPersonalInformation = true
                             }
@@ -60,12 +62,12 @@ struct SecurityView: View {
                             } else {
                                 // Show info for OAuth users (Google/Apple)
                                 HStack(spacing: 12) {
-                                    Image("Icon-Info_Filled")
+                                    Image("Icon-LockKeyhold_Filled")
                                         .renderingMode(.template)
                                         .resizable()
                                         .aspectRatio(contentMode: .fit)
                                         .frame(width: 24, height: 24)
-                                        .foregroundColor(.text04)
+                                        .foregroundColor(.navy200)
                                     
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Password Management")

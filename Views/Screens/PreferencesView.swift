@@ -29,6 +29,7 @@ struct PreferencesView: View {
                         ) {
                             showingLanguage = true
                         }
+                        .opacity(0.6)
                         
                         Divider()
                             .padding(.leading, 56)
@@ -53,10 +54,18 @@ struct PreferencesView: View {
                         ) {
                             showingTheme = true
                         }
+                        .opacity(0.6)
                     }
                     .background(Color.surface)
                     .cornerRadius(16)
                     .padding(.horizontal, 20)
+                    
+                    // Note about upcoming updates
+                    Text("Language and theme will be updated soon")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
                     
                     Spacer(minLength: 24)
                 }

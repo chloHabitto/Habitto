@@ -78,7 +78,7 @@ struct UnifiedInputElement: View {
                 // Frequency selector button - larger width for one-line text
                 Button(action: onFrequencyTap) {
                     HStack {
-                        Text(frequencyText)
+                        Text(frequencyText.capitalized)
                             .font(.appBodyLarge)
                             .foregroundColor(isValid ? .text04 : .text06)
                             .id(uiUpdateTrigger) // Force re-render when trigger changes
@@ -103,7 +103,7 @@ struct UnifiedInputElement: View {
             
             // Descriptive text showing what the user has selected (for Goal and Current)
             if title == "Goal" {
-                Text("I want to do this habit \(numberText) \(unitText) on \(frequencyText)")
+                Text("I want to do this habit \(numberText) \(unitText) on \(frequencyText.capitalized)")
                     .font(.appBodyMedium)
                     .foregroundColor(.text04)
                     .padding(.horizontal, 16)
@@ -112,7 +112,7 @@ struct UnifiedInputElement: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(.top, 8)
             } else if title == "Current" {
-                Text("I do this habit \(numberText) \(unitText) on \(frequencyText)")
+                Text("I do this habit \(numberText) \(unitText) on \(frequencyText.capitalized)")
                     .font(.appBodyMedium)
                     .foregroundColor(.text04)
                     .padding(.horizontal, 16)
