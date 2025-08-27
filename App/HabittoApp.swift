@@ -65,6 +65,13 @@ struct HabittoApp: App {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         print("🔄 HabittoApp: Force reloading habits after app start...")
                         coreDataAdapter.loadHabits(force: true)
+                        
+                        // Reschedule notifications after habits are loaded
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            print("🔄 HabittoApp: Rescheduling notifications after app start...")
+                            let habits = coreDataAdapter.habits
+                            NotificationManager.shared.rescheduleAllNotifications(for: habits)
+                        }
                     }
                 }
         }
@@ -91,6 +98,13 @@ struct HabittoApp: App {
         ) { _ in
             print("🔄 HabittoApp: App became active, reloading habits...")
             coreDataAdapter.loadHabits(force: true)
+            
+            // Reschedule notifications after a short delay to ensure habits are loaded
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                print("🔄 HabittoApp: Rescheduling notifications after app became active...")
+                let habits = coreDataAdapter.habits
+                NotificationManager.shared.rescheduleAllNotifications(for: habits)
+            }
         }
         
         // Monitor app lifecycle to save data when app goes to background

@@ -160,41 +160,46 @@ class ProgressCalculationLogic {
         
         guard !habitsForDay.isEmpty else { return 0.0 }
         
-        var totalProgress = 0.0
-        var totalGoal = 0.0
+        // For daily progress, we want to calculate completion percentage based on habits completed vs scheduled
+        var completedHabits = 0
+        var totalScheduledHabits = 0
         
         for habit in habitsForDay {
             if StreakDataCalculator.shouldShowHabitOnDate(habit, date: date) {
-                let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-                let progress = habit.getProgress(for: date)
-                totalGoal += Double(goalAmount)
-                totalProgress += Double(progress)
+                totalScheduledHabits += 1
+                
+                // Check if habit is completed for this date
+                if habit.isCompleted(for: date) {
+                    completedHabits += 1
+                }
             }
         }
         
-        return totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+        // Return completion percentage (0.0 to 1.0)
+        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
     }
     
     static func todaysActualCompletionPercentage(for habits: [Habit]) -> Double {
         guard !habits.isEmpty else { return 0.0 }
         
         let today = Date()
-        let totalProgress = habits.reduce(0.0) { sum, habit in
-            // Get today's progress count
-            let todayProgress = habit.getProgress(for: today)
-            
-            // Parse the goal to get target amount
-            if let goal = parseGoal(from: habit.goal) {
-                // Calculate completion percentage for this habit (capped at 100%)
-                let habitCompletion = min(Double(todayProgress) / Double(goal.amount), 1.0)
-                return sum + habitCompletion
-            } else {
-                // Fallback: if no goal, treat as binary completion
-                return sum + (todayProgress > 0 ? 1.0 : 0.0)
+        var completedHabits = 0
+        var totalScheduledHabits = 0
+        
+        for habit in habits {
+            // Only count habits that are scheduled for today
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
+                totalScheduledHabits += 1
+                
+                // Check if habit is completed for today
+                if habit.isCompleted(for: today) {
+                    completedHabits += 1
+                }
             }
         }
         
-        return totalProgress / Double(habits.count)
+        // Return completion percentage (0.0 to 1.0)
+        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
     }
     
     // MARK: - Performance Analysis

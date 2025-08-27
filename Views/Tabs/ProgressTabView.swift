@@ -1796,12 +1796,20 @@ struct ProgressTabView: View {
     
     // Daily progress percentage for selected date (overall progress across all habits)
     private func getSelectedDateCompletionPercentage() -> Double {
-        return ProgressCalculationHelper.getDayProgress(
+        let percentage = ProgressCalculationHelper.getDayProgress(
             for: selectedProgressDate,
             habits: habits,
             selectedHabitType: .formation,
             selectedHabit: nil
         )
+        
+        // Debug logging
+        print("🔍 PROGRESS DEBUG - Date: \(selectedProgressDate)")
+        print("  Total habits: \(habits.count)")
+        print("  Formation habits: \(habits.filter { $0.habitType == .formation }.count)")
+        print("  Calculated percentage: \(percentage * 100)%")
+        
+        return percentage
     }
     
     // MARK: - Habit Scheduling Logic (matches Home tab)
