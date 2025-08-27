@@ -573,25 +573,140 @@ struct ProgressTabView: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // Reminders carousel with 5 blank cards
+                // Reminders carousel with real habit data
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(0..<5, id: \.self) { index in
-                            // Blank card with specified dimensions
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.surface)
-                                .frame(width: 141, height: 114)
-                                .overlay(
+                        let todaysReminders = getTodaysReminders()
+                        
+                        if !todaysReminders.isEmpty {
+                            ForEach(todaysReminders, id: \.id) { reminder in
+                                // Reminder card with real data
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // Habit icon
+                                    ZStack {
+                                        Circle()
+                                            .fill(reminder.habit.color.opacity(0.12))
+                                            .frame(width: 32, height: 32)
+                                        
+                                        if reminder.habit.icon.hasPrefix("Icon-") {
+                                            // Asset icon
+                                            Image(reminder.habit.icon)
+                                                .resizable()
+                                                .frame(width: 16, height: 16)
+                                                .foregroundColor(reminder.habit.color)
+                                        } else if reminder.habit.icon == "None" {
+                                            // No icon selected - show colored rounded rectangle
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(reminder.habit.color)
+                                                .frame(width: 16, height: 16)
+                                        } else {
+                                            // Emoji or system icon
+                                            Text(reminder.habit.icon)
+                                                .font(.system(size: 16))
+                                        }
+                                    }
+                                    
+                                    // Habit name
+                                    Text(reminder.habitName)
+                                        .font(.appBodyMediumEmphasised)
+                                        .foregroundColor(.onPrimaryContainer)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                    
+                                    // Time row with toggle
+                                    HStack(spacing: 8) {
+                                        // Time icon and time
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.text03)
+                                            
+                                            Text(reminder.formattedTime)
+                                                .font(.appBodySmall)
+                                                .foregroundColor(.text02)
+                                                .lineLimit(1)
+                                        }
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        
+                                        Spacer()
+                                        
+                                        // Toggle
+                                        Toggle("", isOn: Binding(
+                                            get: { reminder.reminder.isActive },
+                                            set: { newValue in
+                                                toggleReminder(reminder.reminder, in: reminder.habit)
+                                            }
+                                        ))
+                                            .toggleStyle(SwitchToggleStyle(tint: .primary))
+                                            .scaleEffect(0.7)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                                .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.outline3, lineWidth: 1)
+                                        .fill(Color.surface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.outline3, lineWidth: 1)
+                                        )
                                 )
+                            }
+                        } else {
+                            // Empty state when no reminders
+                            HStack(spacing: 16) {
+                                // Cute bell icon with soft background
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.primary.opacity(0.08),
+                                                    Color.primary.opacity(0.04)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(width: 48, height: 48)
+                                    
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundColor(.primary.opacity(0.7))
+                                }
+                                
+                                // Simple, friendly text
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("No reminders for today")
+                                        .font(.appTitleSmallEmphasised)
+                                        .foregroundColor(.onPrimaryContainer)
+                                    
+                                    Text("All caught up! 🎉")
+                                        .font(.appBodyMedium)
+                                        .foregroundColor(.text03)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.surface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.outline3, lineWidth: 1)
+                                    )
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
                 }
             }
-            .padding(.top, 16)
+            .padding(.top, 20)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.surface)
@@ -602,19 +717,19 @@ struct ProgressTabView: View {
             )
             .padding(.horizontal, 16)
             
-            // Today's Reminders Section
+            // New Difficulty Section
             VStack(spacing: 8) {
                 // Header with "See more" button
                 HStack {
-                    Text("Today's reminders")
+                    Text("Difficulty")
                         .font(.appTitleSmallEmphasised)
                         .foregroundColor(.onPrimaryContainer)
                     
                     Spacer()
                     
                     Button(action: {
-                        // Show all reminders (both active and inactive)
-                        showingAllReminders = true
+                        // Show all difficulties for today
+                        showingDifficultyHistory = true
                     }) {
                         HStack(spacing: 4) {
                             Text("See more")
@@ -627,134 +742,127 @@ struct ProgressTabView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
                 
-                // Today's reminders list
+                // Difficulty carousel with real data
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        // Get today's reminders from all habits
-                        let todaysReminders = getTodaysReminders()
+                        let difficulties = getDifficultiesForSelectedDate()
                         
-                        if !todaysReminders.isEmpty {
-                            // Display actual reminders
-                            ForEach(todaysReminders, id: \.id) { reminder in
-                                Button(action: {
-                                    // TODO: Handle reminder tap
-                                    print("📅 Reminder tapped for habit: \(reminder.habitName)")
-                                }) {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                        // Header with icon and title
-                                        HStack(spacing: 12) {
-                                            // Icon with background circle - larger for better touch target
-                        ZStack {
-                            Circle()
-                                                    .fill(Color.primary.opacity(0.12))
-                                                    .frame(width: 36, height: 36)
-                                                
-                                                Image("Icon-Bell_Filled")
-                                                    .resizable()
-                                                    .frame(width: 16, height: 16)
-                                                    .foregroundColor(.primary)
-                                            }
-                                            
-                                            // Title with better typography and spacing
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(reminder.habitName)
-                                                    .font(.appTitleSmallEmphasised)
-                                                    .foregroundColor(.onPrimaryContainer)
-                                                    .lineLimit(1)
-                                                
-                                                // Subtitle for better hierarchy
-                                                Text("Daily reminder")
-                                                    .font(.appBodySmall)
-                                                    .foregroundColor(.text03)
-                                                    .lineLimit(1)
-                                            }
-                                            
-                                            Spacer()
-                                        }
+                        if !difficulties.isEmpty {
+                            ForEach(difficulties, id: \.id) { difficulty in
+                                // Difficulty card with real data
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // Habit icon
+                                    ZStack {
+                                        Circle()
+                                            .fill(difficulty.habit.color.opacity(0.12))
+                                            .frame(width: 32, height: 32)
                                         
-                                        // Time with enhanced styling and better spacing
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "clock")
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(.text03)
-                                                .frame(width: 18)
-                                            
-                                            Text(reminder.formattedTime)
-                                                .font(.appBodyMediumEmphasised)
-                                                .foregroundColor(.text01)
-                                                .fontWeight(.semibold)
-                                            
-                                            Spacer()
-                                            
-                                            // Toggle for reminder status
-                                            Toggle("", isOn: Binding(
-                                                get: { reminder.reminder.isActive },
-                                                set: { newValue in
-                                                    toggleReminder(reminder.reminder, in: reminder.habit)
-                                                }
-                                            ))
-                                                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                                                .scaleEffect(0.8)
+                                        if difficulty.habitIcon.hasPrefix("Icon-") {
+                                            // Asset icon
+                                            Image(difficulty.habitIcon)
+                                                .resizable()
+                                                .frame(width: 16, height: 16)
+                                                .foregroundColor(difficulty.habit.color)
+                                        } else if difficulty.habitIcon == "None" {
+                                            // No icon selected - show colored rounded rectangle
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(difficulty.habit.color)
+                                                .frame(width: 16, height: 16)
+                                        } else {
+                                            // Emoji or system icon
+                                            Text(difficulty.habitIcon)
+                                                .font(.system(size: 16))
                                         }
-                                        .frame(maxWidth: .infinity)
                                     }
-                                    .frame(width: 220, alignment: .leading)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 20)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.surface,
-                                                        Color.surface.opacity(0.95)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.outline3, lineWidth: 1)
-                                            )
-                                    )
+                                    
+                                    // Habit name
+                                    Text(difficulty.habitName)
+                                        .font(.appBodyMediumEmphasised)
+                                        .foregroundColor(.onPrimaryContainer)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                    
+                                    // Difficulty row with time
+                                    HStack(spacing: 8) {
+                                        // Difficulty level
+                                        HStack(spacing: 8) {
+                                            // Difficulty image
+                                            ZStack {
+                                                Circle()
+                                                    .fill(difficultyBackgroundColor(for: difficulty.difficultyLevel))
+                                                    .frame(width: 20, height: 20)
+                                                
+                                                difficultyImageView(for: difficulty.difficultyLevel)
+                                                    .frame(width: 12, height: 12)
+                                            }
+                                            
+                                            Text(difficulty.difficultyWord)
+                                                .font(.appBodySmall)
+                                                .foregroundColor(.text02)
+                                                .lineLimit(1)
+                                        }
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        
+                                        Spacer()
+                                        
+                                        // Time
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.text03)
+                                            
+                                            Text(difficulty.completionTime)
+                                                .font(.appBodySmall)
+                                                .foregroundColor(.text02)
+                                                .lineLimit(1)
+                                        }
+                                        .fixedSize(horizontal: true, vertical: false)
+                                    }
                                 }
-                                .scaleEffect(0.98)
-                                .animation(.easeInOut(duration: 0.1), value: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.surface)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.outline3, lineWidth: 1)
+                                        )
+                                )
                             }
                         } else {
-                            // Empty state when no reminders - simple, cute, and beautiful
+                            // Empty state when no difficulties recorded
                             HStack(spacing: 16) {
-                                // Cute bell icon with soft background
+                                // Cute chart icon with soft background
                                 ZStack {
-                            Circle()
+                                    Circle()
                                         .fill(
-                                    LinearGradient(
+                                            LinearGradient(
                                                 colors: [
                                                     Color.primary.opacity(0.08),
                                                     Color.primary.opacity(0.04)
                                                 ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
                                             )
-                                )
-                                .frame(width: 48, height: 48)
+                                        )
+                                        .frame(width: 48, height: 48)
                                     
-                                    Image("Icon-Bell_Filled")
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
+                                    Image(systemName: "chart.bar.fill")
+                                        .font(.system(size: 20, weight: .medium))
                                         .foregroundColor(.primary.opacity(0.7))
                                 }
                                 
                                 // Simple, friendly text
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("All caught up! 🎉")
+                                    Text("No difficulties recorded yet! 📝")
                                         .font(.appTitleSmallEmphasised)
                                         .foregroundColor(.onPrimaryContainer)
                                     
-                                    Text("No reminders for today")
+                                    Text("Complete some habits to start tracking")
                                         .font(.appBodyMedium)
                                         .foregroundColor(.text03)
                                 }
@@ -764,30 +872,30 @@ struct ProgressTabView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 20)
-                .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.surface,
-                                                Color.surface.opacity(0.98)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                        .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.surface)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
                                             .stroke(Color.outline3, lineWidth: 1)
                                     )
                             )
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
             }
-            .padding(.top, 28)
+            .padding(.top, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.outline3, lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 16)
             
             // Today's Difficulty Section
             todaysDifficultySection
