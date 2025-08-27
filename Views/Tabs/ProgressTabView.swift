@@ -1796,10 +1796,12 @@ struct ProgressTabView: View {
     
     // Daily progress percentage for selected date (overall progress across all habits)
     private func getSelectedDateCompletionPercentage() -> Double {
+        // Calculate progress for all habits, not just formation habits
+        // This gives a better overall daily completion view
         let percentage = ProgressCalculationHelper.getDayProgress(
             for: selectedProgressDate,
             habits: habits,
-            selectedHabitType: .formation,
+            selectedHabitType: nil, // Pass nil to include all habit types
             selectedHabit: nil
         )
         
@@ -1807,6 +1809,7 @@ struct ProgressTabView: View {
         print("🔍 PROGRESS DEBUG - Date: \(selectedProgressDate)")
         print("  Total habits: \(habits.count)")
         print("  Formation habits: \(habits.filter { $0.habitType == .formation }.count)")
+        print("  Breaking habits: \(habits.filter { $0.habitType == .breaking }.count)")
         print("  Calculated percentage: \(percentage * 100)%")
         
         return percentage

@@ -147,15 +147,18 @@ class ProgressCalculationLogic {
     }
     
     // MARK: - Daily Progress Calculations
-    static func getDayProgress(for date: Date, habits: [Habit], selectedHabitType: HabitType, selectedHabit: Habit?) -> Double {
+    static func getDayProgress(for date: Date, habits: [Habit], selectedHabitType: HabitType?, selectedHabit: Habit?) -> Double {
         let habitsForDay: [Habit]
         
         if let selectedHabit = selectedHabit {
             // If a specific habit is selected, only show that habit (regardless of type)
             habitsForDay = [selectedHabit]
-        } else {
+        } else if let selectedHabitType = selectedHabitType {
             // If no specific habit is selected, show all habits of the selected type
             habitsForDay = habits.filter { $0.habitType == selectedHabitType }
+        } else {
+            // No type filter - include all habits
+            habitsForDay = habits
         }
         
         guard !habitsForDay.isEmpty else { return 0.0 }
