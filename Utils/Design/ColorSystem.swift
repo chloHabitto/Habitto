@@ -113,6 +113,7 @@ struct ColorTokens {
     static let text04 = Color("navy400")
     static let text05 = Color("grey800")
     static let text06 = Color("grey700")
+    static let text07 = Color("navy300")
 
     
     // Outline Colors
@@ -176,6 +177,7 @@ extension Color {
     static let text04 = ColorTokens.text04
     static let text05 = ColorTokens.text05
     static let text06 = ColorTokens.text06
+    static let text07 = ColorTokens.text07
     
     // Outline Colors
     static let outline1 = ColorTokens.outline1
