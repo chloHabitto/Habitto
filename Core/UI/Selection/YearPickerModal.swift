@@ -22,7 +22,7 @@ struct YearPickerModal: View {
                 }
             
             // Modal content
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -46,27 +46,37 @@ struct YearPickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
+                .padding(.bottom, 20)
                 
                 // Year Picker
                 YearPicker(selectedYear: $tempSelectedYear)
                     .frame(height: 300)
                     .padding(.horizontal, 20)
+                    .environmentObject(CoreDataAdapter.shared)
                 
-                // Reset button - only show if year is different from current year
-                if !isCurrentYearSelected {
-                    Button(action: {
-                        resetToCurrentYear()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.appBodyMedium)
-                            Text("Reset to current year")
-                                .font(.appBodyMedium)
+                // Reset button - always reserve space for consistent height
+                VStack {
+                    if !isCurrentYearSelected {
+                        Button(action: {
+                            resetToCurrentYear()
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.appBodyMedium)
+                                Text("Reset to current year")
+                                    .font(.appBodyMedium)
+                            }
+                            .foregroundColor(.text02)
                         }
-                        .foregroundColor(.text02)
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 20)
+                    } else {
+                        // Invisible spacer to maintain consistent height
+                        Color.clear
+                            .frame(height: 56) // Height of reset button + padding
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.horizontal, 20)
                 }
                 
                 // Selected year display
@@ -86,14 +96,17 @@ struct YearPickerModal: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.primary)
-                    .cornerRadius(16)
+                    .cornerRadius(20)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
             .background(.surface)
             .cornerRadius(20)
+            .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
+            .frame(height: 200)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
@@ -114,6 +127,7 @@ struct YearPickerModal: View {
 struct YearPicker: View {
     @Binding var selectedYear: Int
     @State private var currentYear: Int
+    @EnvironmentObject var coreDataAdapter: CoreDataAdapter
     
     init(selectedYear: Binding<Int>) {
         self._selectedYear = selectedYear
@@ -165,8 +179,38 @@ struct YearPicker: View {
     private var availableYears: [Int] {
         let calendar = Calendar.current
         let currentYear = calendar.component(.year, from: Date())
-        // Show years from 2020 to current year + 5
-        return Array(2020...(currentYear + 5))
+        
+        // Get the earliest year from user's habits (when they started using the app)
+        let earliestYear = getUserEarliestYear()
+        
+        // Show years from earliest habit year to current year + 5
+        return Array(earliestYear...(currentYear + 5))
+    }
+    
+    private func getUserEarliestYear() -> Int {
+        let calendar = Calendar.current
+        let currentYear = calendar.component(.year, from: Date())
+        
+        // Default to current year if no habits exist
+        guard !coreDataAdapter.habits.isEmpty else {
+            return currentYear
+        }
+        
+        // Find the earliest start date among all habits
+        let earliestDate = coreDataAdapter.habits
+            .compactMap { habit in
+                habit.startDate
+            }
+            .min()
+        
+        if let earliestDate = earliestDate {
+            let earliestYear = calendar.component(.year, from: earliestDate)
+            // Ensure we don't go too far back (minimum 2020 for very old data)
+            return max(earliestYear, 2020)
+        }
+        
+        // Fallback to current year
+        return currentYear
     }
     
     private func previousYear() {

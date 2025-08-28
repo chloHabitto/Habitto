@@ -8,6 +8,7 @@ struct ProgressTabView: View {
     @State private var showingHabitSelector = false
     @State private var showingDatePicker = false
     @State private var showingWeekPicker = false
+    @State private var showingYearPicker = false
     @State private var selectedWeekStartDate: Date = Date()
     
     // MARK: - Environment
@@ -100,31 +101,35 @@ struct ProgressTabView: View {
         ) {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Third Filter - Date Selection (Daily and Weekly)
-                    if selectedTimePeriod == 0 || selectedTimePeriod == 1 { // Daily or Weekly tab
-                        HStack {
+                    // Third Filter - Date Selection (Daily, Weekly, and Yearly)
+                    if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 { // Daily, Weekly, or Yearly tab
+            HStack {
                             Button(action: {
                                 // Open appropriate picker based on period
                                 if selectedTimePeriod == 0 { // Daily
                                     showingDatePicker = true
                                 } else if selectedTimePeriod == 1 { // Weekly
                                     showingWeekPicker = true
+                                } else if selectedTimePeriod == 2 { // Yearly
+                                    showingYearPicker = true
                                 }
                             }) {
                                 HStack(spacing: 8) {
-                                    Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) : formatWeek(selectedWeekStartDate))
-                                        .font(.appBodyMedium)
+                                    Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) : 
+                                         selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) : 
+                                         formatYear(selectedProgressDate))
+                                .font(.appBodyMedium)
                                         .foregroundColor(.text01)
                                     
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.text02)
-                                }
+                                .foregroundColor(.text02)
+                        }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
+                        .padding(.vertical, 8)
+                        .background(
                                     RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.surface)
+                .fill(Color.surface)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 20)
                                                 .stroke(Color.outline3, lineWidth: 1)
@@ -132,21 +137,21 @@ struct ProgressTabView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
                     }
                     
                     // Dynamic Content based on both filters
-                    VStack(spacing: 16) {
+        VStack(spacing: 16) {
                         Text("Progress Content")
                             .font(.appTitleMediumEmphasised)
                             .foregroundColor(.text01)
                         
                         Text("This is a \(getPeriodText()) progress about \(getHabitText()) \(getDateText())")
-                            .font(.appBodyMedium)
-                            .foregroundColor(.text02)
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.horizontal, 16)
@@ -180,11 +185,31 @@ struct ProgressTabView: View {
                         selectedProgressDate = newValue
                     }
                 }
+                
+                if showingYearPicker {
+                    YearPickerModal(
+                        selectedYear: Binding(
+                            get: { Calendar.current.component(.year, from: selectedProgressDate) },
+                            set: { newYear in
+        let calendar = Calendar.current
+                                let currentComponents = calendar.dateComponents([.month, .day], from: selectedProgressDate)
+                                var newComponents = DateComponents()
+                                newComponents.year = newYear
+                                newComponents.month = currentComponents.month ?? 1
+                                newComponents.day = currentComponents.day ?? 1
+                                selectedProgressDate = calendar.date(from: newComponents) ?? selectedProgressDate
+                            }
+                        ),
+                        isPresented: $showingYearPicker
+                    )
+                }
             }
         )
     }
     
     
+    
+
     
     // MARK: - Helper Functions for Dynamic Content
     private func getPeriodText() -> String {
@@ -238,6 +263,12 @@ struct ProgressTabView: View {
         let endString = formatter.string(from: weekEnd)
         
         return "\(startString) - \(endString)"
+    }
+    
+    private func formatYear(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
+        return formatter.string(from: date)
     }
 }
 
