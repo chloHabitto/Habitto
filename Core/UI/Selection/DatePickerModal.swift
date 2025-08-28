@@ -24,7 +24,7 @@ struct DatePickerModal: View {
                 }
             
             // Modal content
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -48,6 +48,7 @@ struct DatePickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
+                .padding(.bottom, 20)
                 
                 // Custom Calendar
                 VStack(spacing: 16) {
@@ -123,9 +124,12 @@ struct DatePickerModal: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 }
                 
-                // Selected date display
+                Spacer(minLength: 0)
+                
+                // Selected date display - always at bottom
                 Button(action: {
                     selectedDate = tempSelectedDate
                     isPresented = false
@@ -142,7 +146,7 @@ struct DatePickerModal: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.primary)
-                    .cornerRadius(12)
+                    .cornerRadius(20)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
@@ -152,7 +156,7 @@ struct DatePickerModal: View {
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
-            .frame(maxHeight: 480)
+            .frame(height: 520)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.95)))
         .onAppear {

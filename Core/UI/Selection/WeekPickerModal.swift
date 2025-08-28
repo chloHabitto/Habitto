@@ -29,7 +29,7 @@ struct WeekPickerModal: View {
                 }
             
             // Modal content
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -53,6 +53,7 @@ struct WeekPickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
+                .padding(.bottom, 20)
                 
                 // Custom Calendar
                 CustomWeekSelectionCalendar(
@@ -61,7 +62,6 @@ struct WeekPickerModal: View {
                 )
                 .frame(height: 300)
                 .padding(.horizontal, 20)
-                // .background(Color.red)
                 
                 // Reset button - only show if week is different from current week
                 if !isCurrentWeekSelected {
@@ -78,9 +78,12 @@ struct WeekPickerModal: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 }
                 
-                // Selected week display
+                Spacer(minLength: 0)
+                
+                // Selected week display - always at bottom
                 if let range = selectedDateRange {
                     Button(action: {
                         selectedWeekStartDate = tempSelectedWeekStartDate
@@ -98,20 +101,19 @@ struct WeekPickerModal: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.primary)
-                        .cornerRadius(12)
+                        .cornerRadius(20)
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
-                
-                Spacer()
             }
             .background(.surface)
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
-            .frame(maxHeight: 480)
+            .frame(height: 520)
             .onAppear {
                 // Update temporary state when modal appears to reflect current selection
                 tempSelectedWeekStartDate = selectedWeekStartDate
