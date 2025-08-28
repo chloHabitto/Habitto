@@ -67,10 +67,7 @@ struct CustomWeekSelectionCalendar: View {
             }
             .frame(maxWidth: .infinity)
             .id(monthYearString) // Force re-render when month changes
-            .transition(.asymmetric(
-                insertion: .move(edge: .trailing).combined(with: .opacity),
-                removal: .move(edge: .leading).combined(with: .opacity)
-            ))
+            // Removed transition animations for better responsiveness
         }
         // .background(Color.green)
         .onAppear {
@@ -130,18 +127,16 @@ struct CustomWeekSelectionCalendar: View {
         guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start,
               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return }
         
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0)) {
-            selectedWeekStartDate = weekStart
-            selectedDateRange = weekStart...weekEnd
-        }
+        // Immediate state update without blocking animation for better responsiveness
+        selectedWeekStartDate = weekStart
+        selectedDateRange = weekStart...weekEnd
     }
     
     private func changeMonth(by value: Int) {
         let calendar = Calendar.current
         if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.1)) {
-                currentMonth = newMonth
-            }
+            // Immediate month change without animation for better responsiveness
+            currentMonth = newMonth
         }
     }
     
@@ -201,7 +196,7 @@ struct CalendarDayView: View {
                 )
         }
         .opacity(isCurrentMonth ? 1.0 : 0.3)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0), value: weekPosition)
+        // Removed animation for better responsiveness
     }
     
     private var textColor: Color {
