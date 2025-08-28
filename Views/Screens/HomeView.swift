@@ -254,7 +254,7 @@ struct HomeView: View {
                             }
                         )
                     case .progress:
-                        ProgressTabView(habits: state.habits)
+                        ProgressTabView()
                     case .habits:
                         HabitsTabView(
                             habits: state.habits,
