@@ -371,16 +371,40 @@ struct ProgressTabView: View {
     
     private func getCompletedHabitsCount() -> Int {
         let scheduledHabits = getScheduledHabitsForDate(selectedProgressDate)
+        
         let completedHabits = scheduledHabits.filter { habit in
-            // Check if the habit is completed for the selected date
+            // Check if the habit is fully completed for the selected date
             let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
-            return progress > 0
+            let goalAmount = parseGoalAmount(from: habit.goal)
+            return progress >= goalAmount
         }
         
         return completedHabits.count
     }
     
     private func getProgressPercentage() -> Double {
+        let scheduledHabits = getScheduledHabitsForDate(selectedProgressDate)
+        if scheduledHabits.isEmpty {
+            return 0.0
+        }
+        
+        let totalProgress = scheduledHabits.reduce(into: 0.0) { total, habit in
+            let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
+            total += Double(progress)
+        }
+        
+        let totalGoal = scheduledHabits.reduce(into: 0.0) { total, habit in
+            total += Double(parseGoalAmount(from: habit.goal))
+        }
+        
+        if totalGoal == 0 {
+            return 0.0
+        }
+        
+        return totalProgress / totalGoal
+    }
+    
+    private func getCompletionPercentage() -> Double {
         let scheduledCount = getScheduledHabitsCount()
         guard scheduledCount > 0 else { return 0.0 }
         
@@ -405,7 +429,7 @@ struct ProgressTabView: View {
         } else if completedCount == scheduledCount {
             return "All habits completed! 🎉"
         } else if completedCount > 0 {
-            let percentage = Int(getProgressPercentage() * 100)
+            let percentage = Int(getCompletionPercentage() * 100)
             if percentage >= 80 {
                 return "Great progress! Almost there! 💪"
             } else if percentage >= 50 {
