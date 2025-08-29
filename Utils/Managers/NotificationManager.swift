@@ -161,6 +161,12 @@ class NotificationManager: ObservableObject {
             return false
         }
         
+        // Check if the habit is already completed for this date
+        if habit.isCompleted(for: date) {
+            print("🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Already completed for this date")
+            return false
+        }
+        
         // Check if the habit is scheduled for this weekday
         let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
         

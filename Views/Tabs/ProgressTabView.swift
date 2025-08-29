@@ -104,10 +104,14 @@ struct ProgressTabView: View {
                     // Third Filter - Date Selection (Daily, Weekly, and Yearly)
                     if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 { // Daily, Weekly, or Yearly tab
             HStack {
+                            // Date Selection Button
                             Button(action: {
-                                // Open appropriate picker based on period
+                                print("🔍 DEBUG: Button action triggered! selectedTimePeriod: \(selectedTimePeriod)")
+                                // Handle tap based on period
                                 if selectedTimePeriod == 0 { // Daily
+                                    print("🔍 DEBUG: Setting showingDatePicker to true")
                                     showingDatePicker = true
+                                    print("🔍 DEBUG: showingDatePicker is now: \(showingDatePicker)")
                                 } else if selectedTimePeriod == 1 { // Weekly
                                     showingWeekPicker = true
                                 } else if selectedTimePeriod == 2 { // Yearly
@@ -118,18 +122,18 @@ struct ProgressTabView: View {
                                     Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) : 
                                          selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) : 
                                          formatYear(selectedProgressDate))
-                                .font(.appBodyMedium)
+                                        .font(.appBodyMedium)
                                         .foregroundColor(.text01)
                                     
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.text02)
-                        }
+                                        .foregroundColor(.text02)
+                                }
                                 .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
+                                .padding(.vertical, 8)
+                                .background(
                                     RoundedRectangle(cornerRadius: 20)
-                .fill(Color.surface)
+                                        .fill(Color.surface)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 20)
                                                 .stroke(Color.outline3, lineWidth: 1)
@@ -141,6 +145,43 @@ struct ProgressTabView: View {
                 Spacer()
             }
             .padding(.horizontal, 16)
+                                        }
+                    
+                    // Today's Progress Card - Only show when "All habits" is selected and "Daily" tab is active
+                    if selectedHabit == nil && selectedTimePeriod == 0 {
+                        VStack(alignment: .leading, spacing: 20) {
+                                                        // Today's Progress Card
+        HStack(spacing: 20) {
+            // Left side: Text content (vertically centered)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Today's Progress")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primaryFocus)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Right side: Progress ring (vertically centered)
+            ProgressChartComponents.CircularProgressRing(
+                progress: getProgressPercentage(),
+                size: 52
+            )
+        }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                .background(
+                                Image("Light-gradient-BG@4x")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .clipped()
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .padding(.horizontal, 20)
                     }
                     
                     // Dynamic Content based on both filters
@@ -167,9 +208,10 @@ struct ProgressTabView: View {
                 selectedHabit: $selectedHabit
             )
         }
-                                        .overlay(
-            Group {
+        .overlay(
+            ZStack {
                 if showingDatePicker {
+                    print("🔍 DEBUG: Overlay showing DatePickerModal")
                     DatePickerModal(
                         selectedDate: $selectedProgressDate,
                         isPresented: $showingDatePicker
@@ -191,7 +233,7 @@ struct ProgressTabView: View {
                         selectedYear: Binding(
                             get: { Calendar.current.component(.year, from: selectedProgressDate) },
                             set: { newYear in
-        let calendar = Calendar.current
+                                let calendar = Calendar.current
                                 let currentComponents = calendar.dateComponents([.month, .day], from: selectedProgressDate)
                                 var newComponents = DateComponents()
                                 newComponents.year = newYear
@@ -269,6 +311,84 @@ struct ProgressTabView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy"
         return formatter.string(from: date)
+    }
+    
+    // MARK: - Progress Card Helper Functions
+    
+    /// Get the count of scheduled habits for the selected date
+    private func getScheduledHabitsCount() -> Int {
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: selectedProgressDate)
+        }.count
+    }
+    
+    /// Get the count of completed habits for the selected date
+    private func getCompletedHabitsCount() -> Int {
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: selectedProgressDate) && 
+            habit.isCompleted(for: selectedProgressDate)
+        }.count
+    }
+    
+    /// Get the actual progress percentage (0.0 to 1.0) based on progress, not just completion
+    private func getProgressPercentage() -> Double {
+        let scheduledHabits = getScheduledHabitsForDate(selectedProgressDate)
+        if scheduledHabits.isEmpty { return 0.0 }
+        
+        var totalProgress = 0.0
+        var totalGoal = 0.0
+        
+        for habit in scheduledHabits {
+            let goalAmount = parseGoalAmount(from: habit.goal)
+            let progress = habit.getProgress(for: selectedProgressDate)
+            
+            totalGoal += Double(goalAmount)
+            totalProgress += Double(progress)
+        }
+        
+        return totalGoal > 0 ? min(totalProgress / totalGoal, 1.0) : 0.0
+    }
+    
+    /// Parse goal amount from goal string (e.g., "8 times per day" -> 8)
+    private func parseGoalAmount(from goalString: String) -> Int {
+        let components = goalString.lowercased().components(separatedBy: " ")
+        for component in components {
+            if let amount = Int(component), amount > 0 {
+                return amount
+            }
+        }
+        return 1 // Default to 1 if no number found
+    }
+    
+    /// Get a motivational subtitle based on progress
+    private func getProgressSubtitle() -> String {
+        let percentage = getProgressPercentage()
+        let scheduledCount = getScheduledHabitsCount()
+        
+        if scheduledCount == 0 {
+            return "No habits scheduled for this date"
+        }
+        
+        if percentage == 1.0 {
+            return "Perfect! All habits completed! 🎉"
+        } else if percentage >= 0.8 {
+            return "Great progress! Almost there! 💪"
+        } else if percentage >= 0.5 {
+            return "Good progress! Keep going! ✨"
+        } else if percentage > 0 {
+            return "Getting started! Every step counts! 🌱"
+                                                } else {
+            return "Ready to start your habits! 🚀"
+        }
+    }
+    
+
+    
+    /// Get scheduled habits for a specific date
+    private func getScheduledHabitsForDate(_ date: Date) -> [Habit] {
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+        }
     }
 }
 
