@@ -25,26 +25,26 @@ struct ProgressTabView: View {
             WhiteSheetContainer(
             headerContent: {
                 AnyView(
-                    VStack(spacing: 0) {
+        VStack(spacing: 0) {
                         // First Filter - Habit Selection
-                        HStack {
-                            Button(action: {
+            HStack {
+                Button(action: {
                                 showingHabitSelector = true
-                            }) {
-                                HStack(spacing: 8) {
+                }) {
+                    HStack(spacing: 8) {
                                     Text(selectedHabit?.name ?? "All habits")
-                                        .font(.appTitleMediumEmphasised)
+                            .font(.appTitleMediumEmphasised)
                                         .foregroundColor(.onPrimaryContainer)
-                                    
-                                    Image(systemName: "chevron.down")
+                        
+                        Image(systemName: "chevron.down")
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.onPrimaryContainer)
-                                }
-                            }
-                            
-                            Spacer()
+                    }
+                }
+                
+                Spacer()
                         }
-                        .padding(.horizontal, 16)
+            .padding(.horizontal, 16)
                         .padding(.top, 12)
                         
                         // Second Filter - Period Selection
@@ -74,8 +74,8 @@ struct ProgressTabView: View {
                     VStack(spacing: 20) {
                         // Third Filter - Date Selection (only for Daily/Weekly/Yearly)
                         if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 {
-                            HStack {
-                                Button(action: {
+                HStack {
+                    Button(action: {
                                     print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                                     if selectedTimePeriod == 0 { // Daily
                                         showingDatePicker = true
@@ -85,12 +85,12 @@ struct ProgressTabView: View {
                                         showingYearPicker = true
                                     }
                                 }) {
-                                    HStack(spacing: 8) {
+                                        HStack(spacing: 8) {
                                         Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) :
                                              selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) :
                                              formatYear(selectedProgressDate))
                                             .font(.appBodyMedium)
-                                            .foregroundColor(.text01)
+                                                .foregroundColor(.text01)
                                         
                                         Image(systemName: "chevron.down")
                                             .font(.system(size: 12, weight: .medium))
@@ -122,12 +122,12 @@ struct ProgressTabView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Today's Progress")
                                             .font(.appTitleMediumEmphasised)
-                                            .foregroundColor(.onPrimaryContainer)
-                                        
+                        .foregroundColor(.onPrimaryContainer)
+                    
                                         Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
                                             .font(.appBodySmall)
-                                            .foregroundColor(.primaryFocus)
-                                            .multilineTextAlignment(.leading)
+                                .foregroundColor(.primaryFocus)
+                        .multilineTextAlignment(.leading)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     
@@ -137,12 +137,12 @@ struct ProgressTabView: View {
                                         size: 52
                                     )
                                 }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                                .background(
-                                    Image("Light-gradient-BG@4x")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                Image("Light-gradient-BG@4x")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
                                         .clipped()
                                         .allowsHitTesting(false)  // ← FIXED: Prevents touch interference
                                 )
@@ -151,8 +151,8 @@ struct ProgressTabView: View {
                             .padding(.horizontal, 20)
                         }
                         
-                        // Reminders Section
-                        VStack(alignment: .leading, spacing: 16) {
+                                                // Reminders Section
+                        VStack(alignment: .leading, spacing: 0) {
                             // Header
                             HStack {
                                 Text("Reminders")
@@ -160,56 +160,100 @@ struct ProgressTabView: View {
                                     .foregroundColor(.onPrimaryContainer)
                                 
                                 Spacer()
+                                
+                                HStack(spacing: 4) {
+                                    Text("See more")
+                                        .font(.appBodySmall)
+                                        .foregroundColor(.text02)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.text02)
+                                }
                             }
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
+                            .padding(.bottom, 16)
                             
                             // Reminders Carousel
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(0..<5) { index in
+                                    ForEach(getScheduledHabitsForDate(selectedProgressDate), id: \.id) { habit in
                                         VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
-                                                Image(systemName: "bell.fill")
-                                                    .font(.system(size: 16, weight: .medium))
-                                                    .foregroundColor(.primaryFocus)
-                                                
-                                                Spacer()
-                                                
-                                                Text("9:00 AM")
-                                                    .font(.appBodySmall)
-                                                    .foregroundColor(.text02)
-                                            }
+                                            // Top: Habit Icon
+                                            HabitIconView(habit: habit)
+                                                .frame(width: 30, height: 30)
                                             
-                                            Text("Morning Routine")
+                                            // Middle: Habit Name
+                                            Text(habit.name)
                                                 .font(.appBodyMedium)
                                                 .foregroundColor(.onPrimaryContainer)
                                                 .lineLimit(2)
                                             
-                                            Text("Daily")
-                                                .font(.appBodySmall)
-                                                .foregroundColor(.text02)
+                                            // Bottom: Time + Toggle (side by side)
+                                            HStack {
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "clock")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(.text02)
+                                                    
+                                                    Text(getHabitReminderTime(for: habit))
+                                                        .font(.appBodySmall)
+                                                        .foregroundColor(.text02)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                // Toggle Switch
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .fill(Color.primaryFocus)
+                                                    .frame(width: 32, height: 20)
+                                                    .overlay(
+                                                        Circle()
+                                                            .fill(Color.white)
+                                                            .frame(width: 16, height: 16)
+                                                            .offset(x: 6)
+                                                    )
+                                            }
                                         }
                                         .padding(16)
                                         .frame(width: 160)
-                                        .background(Color.surface)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.surface)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color.outline3, lineWidth: 1)
+                                                )
+                                        )
                                         .clipShape(RoundedRectangle(cornerRadius: 12))
                                     }
                                 }
                                 .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
                             }
                         }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.outline3, lineWidth: 1)
+                                )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 20)
                         
                         // Difficulty Section
-                        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
                             // Header
-                            HStack {
+            HStack {
                                 Text("Difficulty")
-                                    .font(.appTitleMediumEmphasised)
-                                    .foregroundColor(.onPrimaryContainer)
-                                
-                                Spacer()
-                            }
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+            }
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             
@@ -217,29 +261,29 @@ struct ProgressTabView: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     ForEach(0..<3) { index in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
                                                 Image(systemName: index == 0 ? "1.circle.fill" : index == 1 ? "2.circle.fill" : "3.circle.fill")
                                                     .font(.system(size: 20, weight: .medium))
                                                     .foregroundColor(index == 0 ? .green : index == 1 ? .orange : .red)
-                                            
-                                                Spacer()
-                                                
+                        
+                        Spacer()
+                    
                                                 Text("\(index + 1)")
-                                                    .font(.appBodySmall)
-                                                    .foregroundColor(.text02)
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
                                             }
                                             
                                             Text(index == 0 ? "Easy" : index == 1 ? "Medium" : "Hard")
-                                                .font(.appBodyMedium)
-                                                .foregroundColor(.onPrimaryContainer)
+                        .font(.appBodyMedium)
+                    .foregroundColor(.onPrimaryContainer)
                                                 .lineLimit(2)
                                             
                                             Text("\(Int.random(in: 1...5)) habits")
-                                                .font(.appBodySmall)
-                                                .foregroundColor(.text02)
-                                        }
-                                        .padding(16)
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+            }
+            .padding(16)
                                         .frame(width: 140)
                                         .background(Color.surface)
                                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -450,6 +494,18 @@ struct ProgressTabView: View {
             return StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
         }
     }
+    
+    private func getHabitReminderTime(for habit: Habit) -> String {
+        // Get the first active reminder time for the habit
+        if let firstReminder = habit.reminders.first(where: { $0.isActive }) {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            return formatter.string(from: firstReminder.time)
+        }
+        
+        // Fallback to a default time if no reminders
+        return "9:00 AM"
+    }
 }
 
 // MARK: - Date Extension
@@ -462,4 +518,4 @@ extension Date {
 #Preview {
     ProgressTabView()
         .environmentObject(CoreDataAdapter.shared)
-}
+} 
