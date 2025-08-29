@@ -27,16 +27,19 @@ struct UnifiedTabBarView: View {
     let selectedIndex: Int
     let style: TabStyle
     let onTabSelected: (Int) -> Void
+    let expandToFullWidth: Bool
     
     init(
         tabs: [TabItem],
         selectedIndex: Int,
         style: TabStyle = .underline,
+        expandToFullWidth: Bool = false,
         onTabSelected: @escaping (Int) -> Void
     ) {
         self.tabs = tabs
         self.selectedIndex = selectedIndex
         self.style = style
+        self.expandToFullWidth = expandToFullWidth
         self.onTabSelected = onTabSelected
     }
     
@@ -58,11 +61,13 @@ struct UnifiedTabBarView: View {
                 }
             }
             
-            // Spacer for both styles to push tabs to the left
-            Spacer()
-            
-            // Additional spacer on the right
-            Spacer()
+            if !expandToFullWidth {
+                // Spacer for both styles to push tabs to the left (only when not expanding to full width)
+                Spacer()
+                
+                // Additional spacer on the right (only when not expanding to full width)
+                Spacer()
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(style == .underline ? Color.white : Color.clear)
