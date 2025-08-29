@@ -406,7 +406,7 @@ struct ProgressTabView: View {
                 .padding(.bottom, 16)
                                 
                                 // Difficulty Content
-                                VStack(spacing: 20) {
+                                VStack(spacing: -140) {
                                     // Centered Difficulty Arc
                                     let averageDifficulty = getAverageDifficultyForDate(selectedProgressDate)
                                     
@@ -416,45 +416,48 @@ struct ProgressTabView: View {
                                     )
                                     .frame(maxWidth: .infinity, alignment: .center)
                                     
-                                    // Character below the arc
-                                    let difficultyLevel = getDifficultyLevel(from: averageDifficulty)
-                                    
-                                    Image("Difficulty-\(difficultyLevel.level.displayName)@4x")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(height: 80)
-                                    
-                                    // Difficulty Text below character
-                VStack(spacing: 8) {
-                                        Text(difficultyLevel.level.displayName)
-                                            .font(.appTitleMediumEmphasised)
-                                            .foregroundColor(.onPrimaryContainer)
+                                    // Content below the arc in nested VStack
+                                    VStack(spacing: 16) {
+                                        // Character below the arc
+                                        let difficultyLevel = getDifficultyLevel(from: averageDifficulty)
                                         
-                                        Text(getDifficultyMessage(for: difficultyLevel.level))
-                        .font(.appBodyMedium)
-                                            .foregroundColor(.text02)
-                        .multilineTextAlignment(.center)
-                                            .lineLimit(2)
-            }
-            .padding(.horizontal, 20)
-            
-                                    // Action Button
-                                    Button(action: {
-                                        // TODO: Show difficulty explanation modal
-                                    }) {
-                                        Text("What these stats mean?")
-                                            .font(.appBodySmall)
-                                            .foregroundColor(.text01)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
-                        .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(Color.surface2)
-                                            )
+                                        Image("Difficulty-\(difficultyLevel.level.displayName)@4x")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(height: 80)
+                                        
+                                        // Difficulty Text below character
+                                        VStack(spacing: 8) {
+                                            Text(difficultyLevel.level.displayName)
+                                                .font(.appTitleMediumEmphasised)
+                                                .foregroundColor(.onPrimaryContainer)
+                                            
+                                            Text(getDifficultyMessage(for: difficultyLevel.level))
+                                                .font(.appBodyMedium)
+                                                .foregroundColor(.text02)
+                                                .multilineTextAlignment(.center)
+                                                .lineLimit(2)
+                                        }
+                                        .padding(.horizontal, 20)
+                                        
+                                        // Action Button
+                                        Button(action: {
+                                            // TODO: Show difficulty explanation modal
+                                        }) {
+                                            Text("What these stats mean?")
+                                                .font(.appBodySmall)
+                                                .foregroundColor(.text01)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.surface2)
+                                                )
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.bottom, 20)
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.bottom, 20)
-            }
+                                }
         }
         .background(
                                 RoundedRectangle(cornerRadius: 16)
