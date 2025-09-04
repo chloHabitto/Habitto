@@ -37,8 +37,7 @@ struct WhiteSheetContainer<Content: View>: View {
             content
                 .background(contentBackground)
         }
-        // Temporarily commented out to test touch events
-        // .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
+        .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
     }
     
     private var headerSection: some View {

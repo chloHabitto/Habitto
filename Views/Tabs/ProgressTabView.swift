@@ -142,6 +142,7 @@ struct ProgressTabView: View {
     @State private var showingYearPicker = false
     @State private var selectedWeekStartDate: Date = Date()
     @State private var showingDifficultyExplanation = false
+    @State private var testDifficultyValue: Double = 3.0
     
     // MARK: - Environment
     @EnvironmentObject var coreDataAdapter: CoreDataAdapter
@@ -411,7 +412,7 @@ struct ProgressTabView: View {
                                     let averageDifficulty = getAverageDifficultyForDate(selectedProgressDate)
                                     
                                     DifficultyArcView(
-                                        currentDifficulty: averageDifficulty,
+                                        currentDifficulty: testDifficultyValue,
                                         size: 200
                                     )
                                     .frame(maxWidth: .infinity, alignment: .center)
@@ -419,9 +420,9 @@ struct ProgressTabView: View {
                                     // Content below the arc in nested VStack
                                     VStack(spacing: 16) {
                                         // Character below the arc
-                                        let difficultyLevel = getDifficultyLevel(from: averageDifficulty)
+                                        let difficultyLevel = getDifficultyLevel(from: testDifficultyValue)
                                         
-                                        Image("Difficulty-\(difficultyLevel.level.displayName)@4x")
+                                        Image("Difficulty-\(difficultyLevel.level.displayName.replacingOccurrences(of: " ", with: ""))@4x")
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
                                             .frame(height: 80)
@@ -456,6 +457,17 @@ struct ProgressTabView: View {
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.bottom, 20)
+                                        
+                                        // Test Slider
+                                        VStack(spacing: 12) {
+                                            Text("Slider to test")
+                                                .font(.appBodyMedium)
+                                                .foregroundColor(.text02)
+                                            
+                                            Slider(value: $testDifficultyValue, in: 1...5, step: 1)
+                                                .accentColor(.primary)
+                                        }
+                                        .padding(.horizontal, 20)
                                     }
                                 }
         }
