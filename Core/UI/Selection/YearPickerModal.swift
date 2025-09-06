@@ -168,11 +168,16 @@ struct YearPicker: View {
                         isSelected: year == selectedYear,
                         onTap: {
                             selectedYear = year
+                            currentYear = year // Update currentYear when a year is selected
                         }
                     )
                 }
             }
             .padding(.horizontal, 20)
+        }
+        .onChange(of: selectedYear) { newValue in
+            // Update currentYear when selectedYear changes externally
+            currentYear = newValue
         }
     }
     

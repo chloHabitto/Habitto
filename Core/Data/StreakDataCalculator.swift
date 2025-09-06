@@ -13,7 +13,7 @@ extension Calendar {
 class StreakDataCalculator {
     
     // MARK: - Performance Optimization: Caching
-    private static let cacheManager = CacheManager<UUID, [(intensity: Int, isScheduled: Bool, completionPercentage: Double)]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
+    private static let cacheManager = CacheManager<String, [(intensity: Int, isScheduled: Bool, completionPercentage: Double)]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
     
     // MARK: - Streak Statistics
     static func calculateStreakStatistics(from habits: [Habit]) -> StreakStatistics {
@@ -687,7 +687,10 @@ class StreakDataCalculator {
     }
     
     static func invalidateCacheForHabit(_ habitId: UUID) {
-        cacheManager.remove(forKey: habitId)
+        // Remove all cached data for this habit across all years
+        // Since we can't iterate through keys, we'll clear the entire cache
+        // This is a limitation of the current cache implementation
+        cacheManager.clear()
     }
     
     /// Async version of generateYearlyDataFromHabits for background processing
@@ -700,9 +703,9 @@ class StreakDataCalculator {
     ) async -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                // Performance optimization: Check cache first
+                // Performance optimization: Check cache first (year-specific)
                 let cachedData = habits.compactMap { habit in
-                    cacheManager.get(forKey: habit.id)
+                    cacheManager.get(forKey: "\(habit.id.uuidString)_\(year)")
                 }
                 
                 if !cachedData.isEmpty && cachedData.count == habits.count {
@@ -751,8 +754,8 @@ class StreakDataCalculator {
                     
                     yearlyData.append(habitYearlyData)
                     
-                    // Cache this habit's data for future use
-                    cacheManager.set(habitYearlyData, forKey: habit.id)
+                    // Cache this habit's data for future use (year-specific)
+                    cacheManager.set(habitYearlyData, forKey: "\(habit.id.uuidString)_\(year)")
                     
                     print("🔍 ASYNC YEARLY DATA DEBUG - Habit \(index): Generated \(habitYearlyData.count) days of data")
                     
