@@ -2,6 +2,12 @@ import Foundation
 import UserNotifications
 import SwiftUI
 
+// MARK: - Friendly Reminder Types
+enum FriendlyReminderType {
+    case oneHour
+    case threeHour
+}
+
 class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
@@ -141,6 +147,9 @@ class NotificationManager: ObservableObject {
                 }
             }
         }
+        
+        // Note: Friendly reminders are handled by the main scheduling system
+        // and will be updated when the entire notification system is refreshed
     }
     
     // Check if habit should be shown on a specific date
@@ -303,6 +312,137 @@ class NotificationManager: ObservableObject {
         print("✅ NotificationManager: Completed rescheduling all notifications for next 7 days")
     }
     
+    // MARK: - Friendly Reminder System
+    
+    // Get incomplete scheduled habits for a specific date
+    func getIncompleteScheduledHabits(for date: Date, habits: [Habit]) -> [Habit] {
+        return habits.filter { habit in
+            // Check if habit should be shown on this date
+            guard shouldShowHabitOnDate(habit, date: date) else { return false }
+            
+            // Check if habit is not completed for this date
+            return !habit.isCompleted(for: date)
+        }
+    }
+    
+    // Schedule friendly reminder notifications for incomplete habits
+    func scheduleFriendlyReminders(for date: Date, habits: [Habit]) {
+        let incompleteHabits = getIncompleteScheduledHabits(for: date, habits: habits)
+        
+        guard !incompleteHabits.isEmpty else {
+            print("✅ NotificationManager: All habits completed for \(date), no friendly reminders needed")
+            return
+        }
+        
+        // Schedule 1-hour reminder
+        scheduleFriendlyReminder(
+            for: incompleteHabits,
+            date: date,
+            hoursBefore: 1,
+            reminderType: .oneHour
+        )
+        
+        // Schedule 3-hour reminder
+        scheduleFriendlyReminder(
+            for: incompleteHabits,
+            date: date,
+            hoursBefore: 3,
+            reminderType: .threeHour
+        )
+    }
+    
+    // Schedule a specific friendly reminder
+    private func scheduleFriendlyReminder(
+        for habits: [Habit],
+        date: Date,
+        hoursBefore: Int,
+        reminderType: FriendlyReminderType
+    ) {
+        let calendar = Calendar.current
+        let currentTime = Date()
+        let targetTime = calendar.date(byAdding: .hour, value: -hoursBefore, to: calendar.startOfDay(for: date).addingTimeInterval(24 * 60 * 60)) ?? currentTime
+        
+        // Only schedule if the reminder time is in the future
+        guard targetTime > currentTime else {
+            print("⏰ NotificationManager: Reminder time for \(hoursBefore)h before has passed, skipping")
+            return
+        }
+        
+        let notificationId = "friendly_reminder_\(hoursBefore)h_\(DateUtils.dateKey(for: date))"
+        
+        // Create friendly content
+        let content = UNMutableNotificationContent()
+        content.title = getFriendlyReminderTitle(for: habits, reminderType: reminderType)
+        content.body = getFriendlyReminderMessage(for: habits, reminderType: reminderType)
+        content.sound = .default
+        content.badge = 1
+        
+        // Create date components for the reminder time
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: targetTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        
+        // Create request
+        let request = UNNotificationRequest(
+            identifier: notificationId,
+            content: content,
+            trigger: trigger
+        )
+        
+        // Schedule the notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Error scheduling friendly reminder: \(error)")
+            } else {
+                print("✅ Friendly reminder scheduled for \(hoursBefore)h before \(date) - \(habits.count) incomplete habits")
+            }
+        }
+    }
+    
+    // Get friendly reminder title based on habits and reminder type
+    private func getFriendlyReminderTitle(for habits: [Habit], reminderType: FriendlyReminderType) -> String {
+        let count = habits.count
+        
+        switch reminderType {
+        case .oneHour:
+            if count == 1 {
+                return "🌅 Almost there!"
+            } else {
+                return "🌅 You're doing great!"
+            }
+        case .threeHour:
+            if count == 1 {
+                return "💪 Keep going!"
+            } else {
+                return "💪 You've got this!"
+            }
+        }
+    }
+    
+    // Get friendly reminder message based on habits and reminder type
+    private func getFriendlyReminderMessage(for habits: [Habit], reminderType: FriendlyReminderType) -> String {
+        let count = habits.count
+        
+        if count == 1 {
+            let habit = habits[0]
+            switch reminderType {
+            case .oneHour:
+                return "Just one more hour to complete '\(habit.name)'. You're so close to success! 🎯"
+            case .threeHour:
+                return "You still have time to complete '\(habit.name)'. Every step counts! ✨"
+            }
+        } else {
+            let habitNames = habits.prefix(2).map { $0.name }.joined(separator: " and ")
+            let remainingText = count > 2 ? " and \(count - 2) more" : ""
+            
+            switch reminderType {
+            case .oneHour:
+                return "Almost there! Complete \(habitNames)\(remainingText) to finish strong today! 🚀"
+            case .threeHour:
+                return "You still have time for \(habitNames)\(remainingText). Every habit completed is progress! 🌟"
+            }
+        }
+    }
+    
     // Schedule notifications for a specific date (for daily rescheduling)
     func scheduleNotificationsForDate(_ date: Date, habits: [Habit]) {
         print("🔄 NotificationManager: Scheduling notifications for date: \(date)")
@@ -358,5 +498,8 @@ class NotificationManager: ObservableObject {
                 print("⚠️ NotificationManager: Habit '\(habit.name)' not scheduled for \(date)")
             }
         }
+        
+        // Schedule friendly reminders for incomplete habits
+        scheduleFriendlyReminders(for: date, habits: habits)
     }
 } 
