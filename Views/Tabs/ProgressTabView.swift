@@ -2,19 +2,19 @@ import SwiftUI
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
-        case veryEasy = 1
-        case easy = 2
-        case medium = 3
-        case hard = 4
-        case veryHard = 5
-        
-        var displayName: String {
-            switch self {
-            case .veryEasy: return "Very Easy"
-            case .easy: return "Easy"
-            case .medium: return "Medium"
-            case .hard: return "Hard"
-            case .veryHard: return "Very Hard"
+    case veryEasy = 1
+    case easy = 2
+    case medium = 3
+    case hard = 4
+    case veryHard = 5
+    
+    var displayName: String {
+        switch self {
+        case .veryEasy: return "Very Easy"
+        case .easy: return "Easy"
+        case .medium: return "Medium"
+        case .hard: return "Hard"
+        case .veryHard: return "Very Hard"
         }
     }
     
@@ -48,62 +48,16 @@ struct DifficultyArcView: View {
             
             // Difficulty segments - equal length with visible gaps (spanning exactly 180°)
             ForEach(0..<5) { index in
-                let totalGaps = 4.0 // 4 gaps between 5 segments
-                let gapSize = 10.0 // 10° gap between segments for very visible separation
-                let totalGapsWidth = totalGaps * gapSize // 4 × 10° = 40°
-                let availableWidth = 180.0 - totalGapsWidth // 180° - 40° = 140°
-                let segmentLength = availableWidth / 5.0 // 140° ÷ 5 = 28° per segment
-                let segmentStart = 180.0 + (Double(index) * (segmentLength + gapSize))
-                let segmentEnd = segmentStart + segmentLength
-                let difficulty = HabitDifficulty(rawValue: index + 1) ?? .medium
+                let startAngle = 180.0 + Double(index) * 36.0
+                let endAngle = startAngle + 36.0
                 
-                Arc(startAngle: .degrees(segmentStart), endAngle: .degrees(segmentEnd), clockwise: false)
-                    .stroke(difficulty.color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                Arc(startAngle: .degrees(startAngle), endAngle: .degrees(endAngle), clockwise: false)
+                    .stroke(
+                        index < difficultyLevel.rawValue ? difficultyLevel.color : Color.outline3.opacity(0.3),
+                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    )
                     .frame(width: size, height: size)
             }
-            
-            // Tick marks along the arc - positioned at segment boundaries
-            /*
-            ForEach(0..<6) { index in
-                let totalGaps = 6.0
-                let gapSize = 6.0
-                let availableWidth = 180.0 - (totalGaps * gapSize)
-                let segmentLength = availableWidth / 5.0
-                let tickAngle = 180.0 + (Double(index) * (segmentLength + gapSize))
-                let radius = size / 2 - 6 // Adjusted for thinner arc
-                
-                Rectangle()
-                    .fill(Color.outline3)
-                    .frame(width: 2, height: 8)
-                    .offset(
-                        x: radius * cos((tickAngle - 90) * .pi / 180),
-                        y: -radius * sin((tickAngle - 90) * .pi / 180)
-                    )
-            }
-            */
-            
-            // Current difficulty indicator - positioned at center of current segment
-            /*
-            let totalGaps = 6.0
-            let gapSize = 6.0
-            let availableWidth = 180.0 - (totalGaps * gapSize)
-            let segmentLength = availableWidth / 5.0
-            let segmentCenter = 180.0 + (Double(difficultyLevel.rawValue - 1) * (segmentLength + gapSize)) + (segmentLength / 2.0)
-            let radius = size / 2 - 6 // Adjusted for thinner arc
-            
-            Circle()
-                .fill(difficultyLevel.color)
-                .frame(width: 16, height: 16)
-                .overlay(
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 8, height: 8)
-                )
-                .offset(
-                    x: radius * cos((segmentCenter - 90) * .pi / 180),
-                    y: -radius * sin((segmentCenter - 90) * .pi / 180)
-                )
-            */
         }
     }
 }
@@ -153,439 +107,469 @@ struct ProgressTabView: View {
         coreDataAdapter.habits
     }
     
-    var body: some View {
-        ZStack {
-            WhiteSheetContainer(
-            headerContent: {
-                AnyView(
+    private var headerContent: some View {
         VStack(spacing: 0) {
-                        // First Filter - Habit Selection
+            // First Filter - Habit Selection
             HStack {
                 Button(action: {
-                                showingHabitSelector = true
+                    showingHabitSelector = true
                 }) {
                     HStack(spacing: 8) {
-                                    Text(selectedHabit?.name ?? "All habits")
+                        Text(selectedHabit?.name ?? "All habits")
                             .font(.appTitleMediumEmphasised)
-                                        .foregroundColor(.onPrimaryContainer)
+                            .foregroundColor(.onPrimaryContainer)
                         
                         Image(systemName: "chevron.down")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.onPrimaryContainer)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.onPrimaryContainer)
                     }
                 }
                 
                 Spacer()
-                        }
-            .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        
-                        // Second Filter - Period Selection
-                        UnifiedTabBarView(
-                            tabs: [
-                                TabItem(title: "Daily"),
-                                TabItem(title: "Weekly"),
-                                TabItem(title: "Yearly")
-                            ],
-                            selectedIndex: selectedTimePeriod,
-                            style: .underline,
-                            expandToFullWidth: true
-                        ) { index in
-                            selectedTimePeriod = index
-                            // Haptic feedback
-                            let impactFeedback = UISelectionFeedbackGenerator()
-                            impactFeedback.selectionChanged()
-                        }
-                        .padding(.top, 2)
-                        .padding(.bottom, 0)
-                    }
-                )
             }
-        ) {
-            // Content area
-            ScrollView {
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            
+            // Second Filter - Period Selection
+            UnifiedTabBarView(
+                tabs: [
+                    TabItem(title: "Daily"),
+                    TabItem(title: "Weekly"),
+                    TabItem(title: "Yearly")
+                ],
+                selectedIndex: selectedTimePeriod,
+                style: .underline,
+                expandToFullWidth: true
+            ) { index in
+                selectedTimePeriod = index
+                // Haptic feedback
+                let impactFeedback = UISelectionFeedbackGenerator()
+                impactFeedback.selectionChanged()
+            }
+            .padding(.top, 2)
+            .padding(.bottom, 0)
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            WhiteSheetContainer(
+                headerContent: {
+                    AnyView(headerContent)
+                }
+            ) {
+                ScrollView {
                     VStack(spacing: 20) {
-                        // Third Filter - Date Selection (only for Daily/Weekly/Yearly)
-                        if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 {
-                HStack {
-                    Button(action: {
-                                    print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
-                                    if selectedTimePeriod == 0 { // Daily
-                                        showingDatePicker = true
-                                    } else if selectedTimePeriod == 1 { // Weekly
-                                        showingWeekPicker = true
-                                    } else if selectedTimePeriod == 2 { // Yearly
-                                        showingYearPicker = true
-                                    }
-                                }) {
-                                        HStack(spacing: 8) {
-                                        Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) :
-                                             selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) :
-                                             formatYear(selectedProgressDate))
-                                            .font(.appBodyMedium)
-                                                .foregroundColor(.text01)
-                                        
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.text02)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color.surface)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .stroke(Color.outline3, lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                        }
+                        // Date Selection
+                        dateSelectionSection
                         
-                        // Today's Progress Card - Only show when "All habits" is selected and "Daily" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 0 {
-                            VStack(alignment: .leading, spacing: 20) {
-                                // Today's Progress Card
-                                HStack(spacing: 20) {
-                                    // Left side: Text content (vertically centered)
-                                VStack(alignment: .leading, spacing: 4) {
-                                        Text("Today's Progress")
-                                            .font(.appTitleMediumEmphasised)
-                                        .foregroundColor(.onPrimaryContainer)
-                                    
-                                        Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
-                                            .font(.appBodySmall)
-                                .foregroundColor(.primaryFocus)
-                        .multilineTextAlignment(.leading)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    
-                                    // Right side: Progress ring (vertically centered)
-                                    ProgressChartComponents.CircularProgressRing(
-                                        progress: getProgressPercentage(),
-                                        size: 52
-                                    )
-                                }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-                .background(
-                Image("Light-gradient-BG@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                                        .clipped()
-                                        .allowsHitTesting(false)  // ← FIXED: Prevents touch interference
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                            }
-                            .padding(.horizontal, 20)
-                        }
                         
-                                                // Reminders Section
+                        // Reminders Section
                         VStack(alignment: .leading, spacing: 0) {
                             // Header
-                HStack {
+                            HStack {
                                 Text("Reminders")
                                     .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                    
-                        HStack(spacing: 4) {
-                            Text("See more")
+                                    .foregroundColor(.onPrimaryContainer)
+                                
+                                Spacer()
+                                
+                                HStack(spacing: 4) {
+                                    Text("See more")
                                         .font(.appBodySmall)
                                         .foregroundColor(.text02)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(.text02)
-                        }
-                    }
+                                }
+                            }
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             .padding(.bottom, 16)
-            
+                            
                             // Reminders Carousel
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                                    ForEach(getScheduledHabitsForDate(selectedProgressDate), id: \.id) { habit in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            // Top: Habit Icon
-                                            HabitIconView(habit: habit)
-                            .frame(width: 30, height: 30)
-                        
-                                            // Middle: Habit Name
-                                            Text(habit.name)
-                                                .font(.appBodyMedium)
-                        .foregroundColor(.onPrimaryContainer)
-                        .lineLimit(2)
-                                            
-                                            // Bottom: Time + Toggle (side by side)
-                                            HStack {
-                                                HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 12, weight: .medium))
-                                                        .foregroundColor(.text02)
-                        
-                                                    Text(getHabitReminderTime(for: habit))
-                            .font(.appBodySmall)
-                            .foregroundColor(.text02)
-            }
-            
-            Spacer()
-                                                
-                                                // Toggle Switch
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .fill(Color.primaryFocus)
-                                                    .frame(width: 32, height: 20)
-                            .overlay(
-                        Circle()
-                                                            .fill(Color.white)
-                                                            .frame(width: 16, height: 16)
-                                                            .offset(x: 6)
-                                                    )
-                                            }
-                                        }
-                                        .padding(16)
-                                        .frame(width: 160)
-            .background(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.surface)
-            .overlay(
-                                                    RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.outline3, lineWidth: 1)
-            )
-                                        )
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(getAllRemindersForDate(selectedProgressDate), id: \.id) { reminder in
+                                        reminderCard(for: reminder)
                                     }
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 20)
-            }
-        }
-        .background(
+                            }
+                        }
+                        .background(
                             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.surface)
-                .overlay(
+                                .fill(Color.surface)
+                                .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.outline3, lineWidth: 1)
-                )
-        )
+                                        .stroke(Color.outline3, lineWidth: 1)
+                                )
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal, 20)
                         
-                        // Difficulty Section - Only show when "All habits" is selected and "Daily" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 0 {
-                            VStack(alignment: .leading, spacing: 0) {
-                                // Header
-                                HStack {
-                                    Text("Difficulty")
-                            .font(.appTitleMediumEmphasised)
-                                        .foregroundColor(.onPrimaryContainer)
+                        
+                    }
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+    }
+    
+    private var difficultyCard: some View {
+        let averageDifficulty = getAverageDifficultyForDate(selectedProgressDate)
+        let difficultyInfo = getDifficultyLevel(from: averageDifficulty)
+        
+        return VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Today's Difficulty")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("Based on your scheduled habits")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(difficultyInfo.level.displayName)
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(difficultyInfo.color)
+                    
+                    Text("Level \(difficultyInfo.level.rawValue)")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+            }
+            
+            // Difficulty arc and image
+            HStack(spacing: 20) {
+                // Half ring showing difficulty levels
+                DifficultyArcView(
+                    currentDifficulty: averageDifficulty,
+                    size: 80
+                )
+                
+                // Show image based on difficulty level
+                Group {
+                    switch difficultyInfo.level {
+                    case .veryEasy:
+                        Image("Difficulty-VeryEasy@4x")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 80)
+                    case .easy:
+                        Image("Difficulty-Easy@4x")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 80)
+                    case .medium:
+                        Image("Difficulty-Medium@4x")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 80)
+                    case .hard:
+                        Image("Difficulty-Hard@4x")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 80)
+                    case .veryHard:
+                        Image("Difficulty-VeryHard@4x")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 80)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(getDifficultyMessage(for: difficultyInfo.level))
+                        .font(.appBodyMedium)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("Keep up the great work!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.surface)
+        )
+        .padding(.horizontal, 20)
+    }
+    
+    // Date selection section
+    private var dateSelectionSection: some View {
+        Group {
+            if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 {
+                HStack {
+                    Button(action: {
+                        print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
+                        if selectedTimePeriod == 0 { // Daily
+                            showingDatePicker = true
+                        } else if selectedTimePeriod == 1 { // Weekly
+                            showingWeekPicker = true
+                        } else if selectedTimePeriod == 2 { // Yearly
+                            showingYearPicker = true
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) :
+                                 selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) :
+                                 formatYear(selectedProgressDate))
+                                .font(.appBodyMedium)
+                                .foregroundColor(.text01)
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.text02)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.outline3, lineWidth: 1)
+                                )
+                        )
+                    }
                     
                     Spacer()
-                                    
-                                    Button(action: {
-                                        showingDifficultyExplanation = true
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Text("See more")
-                            .font(.appBodySmall)
-                        .foregroundColor(.text02)
-                                            
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.text02)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 20)
-                .padding(.bottom, 16)
-                                
-                                // Difficulty Content
-                                VStack(spacing: -140) {
-                                    // Centered Difficulty Arc
-                                    let averageDifficulty = getAverageDifficultyForDate(selectedProgressDate)
-                                    
-                                    DifficultyArcView(
-                                        currentDifficulty: testDifficultyValue,
-                                        size: 200
-                                    )
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    
-                                    // Content below the arc in nested VStack
-                                    VStack(spacing: 16) {
-                                        // Character below the arc
-                                        let difficultyLevel = getDifficultyLevel(from: testDifficultyValue)
-                                        
-                                        Image("Difficulty-\(difficultyLevel.level.displayName.replacingOccurrences(of: " ", with: ""))@4x")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(height: 80)
-                                        
-                                        // Difficulty Text below character
-                                        VStack(spacing: 8) {
-                                            Text(difficultyLevel.level.displayName)
-                                                .font(.appTitleMediumEmphasised)
-                                                .foregroundColor(.onPrimaryContainer)
-                                            
-                                            Text(getDifficultyMessage(for: difficultyLevel.level))
-                                                .font(.appBodyMedium)
-                                                .foregroundColor(.text02)
-                                                .multilineTextAlignment(.center)
-                                                .lineLimit(2)
-                                        }
-                                        .padding(.horizontal, 20)
-                                        
-                                        // Action Button
-                                        Button(action: {
-                                            // TODO: Show difficulty explanation modal
-                                        }) {
-                                            Text("What these stats mean?")
-                                                .font(.appBodySmall)
-                                                .foregroundColor(.text01)
-                                                .padding(.horizontal, 16)
-                                                .padding(.vertical, 8)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(Color.surface2)
-                                                )
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.bottom, 20)
-                                        
-                                        // Test Slider
-                                        VStack(spacing: 12) {
-                                            Text("Slider to test")
-                                                .font(.appBodyMedium)
-                                                .foregroundColor(.text02)
-                                            
-                                            Slider(value: $testDifficultyValue, in: 1...5, step: 1)
-                                                .accentColor(.primary)
-                                        }
-                                        .padding(.horizontal, 20)
-                                    }
-                                }
+                }
+                .padding(.horizontal, 16)
+            }
         }
+    }
+    
+    // Today's progress section
+    
+    
+    
+    // Individual reminder card
+    private func reminderCard(for reminderWithHabit: ReminderWithHabit) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Top: Habit Icon
+            HabitIconView(habit: reminderWithHabit.habit)
+                .frame(width: 30, height: 30)
+            
+            // Middle: Habit Name
+            Text(reminderWithHabit.habit.name)
+                .font(.appBodyMedium)
+                .foregroundColor(.onPrimaryContainer)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            
+            // Bottom: Reminder Time
+            Text(formatReminderTime(reminderWithHabit.reminder.time))
+                .font(.appBodySmall)
+                .foregroundColor(.text02)
+        }
+        .padding(16)
+        .frame(width: 120, height: 100)
         .background(
-                                RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color.surface)
                 .overlay(
-                                        RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.outline3, lineWidth: 1)
                 )
         )
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Bottom spacing
-                        Spacer(minLength: 40)
-                        }
-                        .padding(.top, 20)
-            }
-        }
-        .sheet(isPresented: $showingHabitSelector) {
-                HabitSelectorView(
-                    selectedHabit: $selectedHabit
-                )
-            }
-            
-            // Overlay for modals
-            if showingDatePicker {
-            DatePickerModal(
-                selectedDate: $selectedProgressDate,
-                isPresented: $showingDatePicker
-            )
-            }
-            
-            if showingWeekPicker {
-                WeekPickerModal(
-                    selectedWeekStartDate: $selectedWeekStartDate,
-                    isPresented: $showingWeekPicker
-                )
-                .onChange(of: selectedWeekStartDate) { _, newValue in
-                    selectedProgressDate = newValue
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var mainContent: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Date Selection
+                dateSelectionSection
+                
+                
+                // Difficulty Card - Only show when "All habits" is selected and "Daily" tab is active
+                if selectedHabit == nil && selectedTimePeriod == 0 {
+                    difficultyCard
                 }
-            }
-            
-            if showingYearPicker {
-                YearPickerModal(
-                    selectedYear: Binding(
-                        get: { Calendar.current.component(.year, from: selectedProgressDate) },
-                        set: { newYear in
-                            let calendar = Calendar.current
-                            let currentComponents = calendar.dateComponents([.month, .day], from: selectedProgressDate)
-                            var newComponents = DateComponents()
-                            newComponents.year = newYear
-                            newComponents.month = currentComponents.month ?? 1
-                            newComponents.day = currentComponents.day ?? 1
-                            selectedProgressDate = calendar.date(from: newComponents) ?? selectedProgressDate
-                        }
-                    ),
-                    isPresented: $showingYearPicker
-                )
-            }
-            
-            // Difficulty Explanation Modal
-            if showingDifficultyExplanation {
-                Color.black.opacity(0.3)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showingDifficultyExplanation = false
-                    }
                 
-        VStack(spacing: 20) {
-                    Text("Difficulty Levels")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                
-        VStack(spacing: 16) {
-                        ForEach(HabitDifficulty.allCases, id: \.rawValue) { difficulty in
-            HStack {
-                                Circle()
-                                    .fill(difficulty.color)
-                                    .frame(width: 12, height: 12)
+                // Individual Habit Progress - Show when a specific habit is selected
+                if let selectedHabit = selectedHabit {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Habit Header
+                        HStack {
+                            HabitIconView(habit: selectedHabit)
+                                .frame(width: 40, height: 40)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(selectedHabit.name)
+                                    .font(.appTitleMediumEmphasised)
+                                    .foregroundColor(.onPrimaryContainer)
                                 
-                                Text(difficulty.displayName)
-                        .font(.appBodyMedium)
-                    .foregroundColor(.onPrimaryContainer)
-                
-                Spacer()
-            }
+                                Text("Progress for \(getDateText())")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text02)
+                            }
+                            
+                            Spacer()
                         }
-                    }
-                    
-                    Text("Your daily difficulty is calculated as the average of all scheduled habits' difficulty ratings for the selected date.")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text02)
-                        .multilineTextAlignment(.center)
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.surface)
+                        )
                         .padding(.horizontal, 20)
-                    
-                    Button("Got it") {
-                        showingDifficultyExplanation = false
+                        
+                        // Progress details
+                        VStack(alignment: .leading, spacing: 16) {
+                            // Progress bar
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Progress")
+                                        .font(.appBodyMedium)
+                                        .foregroundColor(.onPrimaryContainer)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(Int(getProgressPercentage() * 100))%")
+                                        .font(.appBodyMedium)
+                                        .foregroundColor(.primaryFocus)
+                                }
+                                
+                                ProgressView(value: getProgressPercentage())
+                                    .progressViewStyle(LinearProgressViewStyle(tint: .primaryFocus))
+                                    .scaleEffect(x: 1, y: 2, anchor: .center)
+                            }
+                            
+                            // Goal details
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Goal")
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.onPrimaryContainer)
+                                
+                                Text(selectedHabit.goal)
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text02)
+                            }
+                            
+                            // Reminders
+                            if !selectedHabit.reminders.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Reminders")
+                                        .font(.appBodyMedium)
+                                        .foregroundColor(.onPrimaryContainer)
+                                    
+                                    ForEach(selectedHabit.reminders.filter { $0.isActive }, id: \.id) { reminder in
+                                        HStack {
+                                            Image(systemName: "bell.fill")
+                                                .foregroundColor(.primaryFocus)
+                                                .font(.system(size: 12))
+                                            
+                                            Text(formatReminderTime(reminder.time))
+                                                .font(.appBodySmall)
+                                                .foregroundColor(.text02)
+                                            
+                                            Spacer()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.surface)
+                        )
+                        .padding(.horizontal, 20)
                     }
-                        .font(.appBodyMedium)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.primaryFocus)
-                    )
                 }
-                .padding(24)
-            .background(
-                    RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.surface)
-            )
-                .padding(.horizontal, 40)
+                
+                // Empty state
+                if habits.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "plus.circle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.text03)
+                        
+                        Text("No habits yet")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.text01)
+                        
+                        Text("Create your first habit to start tracking progress")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                            .multilineTextAlignment(.center)
+                        
+                        Button(action: {
+                            // Navigate to create habit
+                        }) {
+                            Text("Create Habit")
+                                .font(.appBodyMediumEmphasised)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.primaryFocus)
+                                )
+                        }
+                        .padding(.horizontal, 40)
+                    }
+                }
             }
         }
+        .padding(.top, 20)
+    }
+    
+    // MARK: - Helper Functions for Calendar
+    private func formatMonthYear(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func getFirstDayOfMonth(_ date: Date) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month], from: date)
+        return calendar.date(from: components) ?? date
+    }
+    
+    private func getDaysInMonth(_ date: Date) -> Int {
+        let calendar = Calendar.current
+        let range = calendar.range(of: .day, in: .month, for: date)
+        return range?.count ?? 30
+    }
+    
+    private func getProgressPercentageForDate(_ date: Date) -> Double {
+        let scheduledHabits = getScheduledHabitsForDate(date)
+        if scheduledHabits.isEmpty {
+            return 0.0
+        }
+        
+        let totalProgress = scheduledHabits.reduce(0.0) { total, habit in
+            let progress = Double(coreDataAdapter.getProgress(for: habit, date: date))
+            let goalAmount = parseGoalAmount(from: habit.goal)
+            return total + min(progress, Double(goalAmount))
+        }
+        
+        let totalGoal = scheduledHabits.reduce(0) { total, habit in
+            return total + parseGoalAmount(from: habit.goal)
+        }
+        
+        if totalGoal == 0 {
+            return 0.0
+        }
+        
+        return totalProgress / Double(totalGoal)
     }
     
     // MARK: - Helper Functions for Dynamic Content
@@ -626,13 +610,10 @@ struct ProgressTabView: View {
         // Use the same calendar and calculation as WeekPickerModal
         let calendar = AppDateFormatter.shared.getUserCalendar()
         
-        // Get the start of the week using user's preference
+        // Get the start of the week (Monday)
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? date
         
-        // Get the end of the week by adding 6 days (same as WeekPickerModal)
-        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        
-        // Format both dates using the same format as WeekPickerModal
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
         
@@ -662,7 +643,6 @@ struct ProgressTabView: View {
         let scheduledHabits = getScheduledHabitsForDate(selectedProgressDate)
         
         let completedHabits = scheduledHabits.filter { habit in
-            // Check if the habit is fully completed for the selected date
             let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
             let goalAmount = parseGoalAmount(from: habit.goal)
             return progress >= goalAmount
@@ -677,13 +657,14 @@ struct ProgressTabView: View {
             return 0.0
         }
         
-        let totalProgress = scheduledHabits.reduce(into: 0.0) { total, habit in
+        let totalProgress = scheduledHabits.reduce(0.0) { total, habit in
             let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
-            total += Double(progress)
+            return total + Double(progress)
         }
         
-        let totalGoal = scheduledHabits.reduce(into: 0.0) { total, habit in
-            total += Double(parseGoalAmount(from: habit.goal))
+        let totalGoal = scheduledHabits.reduce(0.0) { total, habit in
+            let goalAmount = parseGoalAmount(from: habit.goal)
+            return total + Double(goalAmount)
         }
         
         if totalGoal == 0 {
@@ -713,18 +694,11 @@ struct ProgressTabView: View {
         let scheduledCount = getScheduledHabitsCount()
         let completedCount = getCompletedHabitsCount()
         
-        if scheduledCount == 0 {
-            return "No habits scheduled for today"
-        } else if completedCount == scheduledCount {
-            return "All habits completed! 🎉"
-        } else if completedCount > 0 {
-            let percentage = Int(getCompletionPercentage() * 100)
-            if percentage >= 80 {
-                return "Great progress! Almost there! 💪"
-            } else if percentage >= 50 {
-                return "Good progress! Keep going! 🔥"
-            } else if percentage > 0 {
-                return "Getting started! Every step counts! 🌱"
+        if scheduledCount > 0 {
+            if completedCount == scheduledCount {
+                return "All habits completed! 🎉"
+            } else if completedCount > 0 {
+                return "\(completedCount) of \(scheduledCount) habits completed"
             } else {
                 return "Ready to start your habits! 🚀"
             }
@@ -752,6 +726,35 @@ struct ProgressTabView: View {
         return "9:00 AM"
     }
     
+    // MARK: - Helper Functions for All Reminders
+    private struct ReminderWithHabit: Identifiable {
+        let id = UUID()
+        let reminder: ReminderItem
+        let habit: Habit
+    }
+    
+    private func getAllRemindersForDate(_ date: Date) -> [ReminderWithHabit] {
+        let scheduledHabits = getScheduledHabitsForDate(date)
+        var allReminders: [ReminderWithHabit] = []
+        
+        for habit in scheduledHabits {
+            for reminder in habit.reminders {
+                if reminder.isActive {
+                    allReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
+                }
+            }
+        }
+        
+        // Sort reminders by time
+        return allReminders.sorted { $0.reminder.time < $1.reminder.time }
+    }
+    
+    private func formatReminderTime(_ time: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: time)
+    }
+    
     // MARK: - Difficulty Calculation Functions
     private func getAverageDifficultyForDate(_ date: Date) -> Double {
         let scheduledHabits = getScheduledHabitsForDate(date)
@@ -759,22 +762,21 @@ struct ProgressTabView: View {
             return 3.0 // Default to Medium
         }
         
-        var totalDifficulty = 0.0
-        var habitCount = 0
-        
-        for habit in scheduledHabits {
+        let totalDifficulty = scheduledHabits.reduce(0.0) { total, habit in
             let difficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
-            // Find difficulty log for the specific date
-            if let difficultyLog = difficultyLogs.first(where: { log in
-                guard let logDate = log.timestamp else { return false }
-                return Calendar.current.isDate(logDate, inSameDayAs: date)
-            }) {
-                totalDifficulty += Double(difficultyLog.difficulty)
-                habitCount += 1
+            let recentLogs = difficultyLogs.filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                return Calendar.current.isDate(timestamp, inSameDayAs: date)
+            }
+            
+            if let latestLog = recentLogs.last {
+                return total + Double(latestLog.difficulty)
+            } else {
+                return total + 3.0 // Default to Medium if no logs
             }
         }
         
-        // If no habits have difficulty ratings, return default
+        let habitCount = Double(scheduledHabits.count)
         if habitCount == 0 {
             return 3.0 // Default to Medium
         }
@@ -794,9 +796,9 @@ struct ProgressTabView: View {
         case .veryEasy:
             return "You're crushing it! 🚀"
         case .easy:
-            return "It's becoming easy! 💪"
+            return "Great job! 💪"
         case .medium:
-            return "You're making progress! 🌱"
+            return "You're doing well! 👍"
         case .hard:
             return "Keep pushing through! 🔥"
         case .veryHard:
@@ -815,4 +817,4 @@ extension Date {
 #Preview {
     ProgressTabView()
         .environmentObject(CoreDataAdapter.shared)
-} 
+}

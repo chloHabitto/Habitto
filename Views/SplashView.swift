@@ -1,5 +1,5 @@
 import SwiftUI
-import Lottie
+// import Lottie
 
 struct SplashView: View {
     @StateObject private var authManager = AuthenticationManager.shared
@@ -38,36 +38,24 @@ struct SplashView: View {
     }
 }
 
-// MARK: - Lottie View Wrapper
+// MARK: - Simple View Wrapper (Lottie disabled)
 struct LottieView: UIViewRepresentable {
     let name: String
     
-    func makeUIView(context: Context) -> LottieAnimationView {
-        let animationView = LottieAnimationView()
-        animationView.contentMode = .scaleAspectFill // Fill entire screen
-        animationView.loopMode = .playOnce
-        animationView.animationSpeed = 1.0
-        animationView.backgroundColor = .clear
-        animationView.isOpaque = false // Allow transparency
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.clipsToBounds = false
         
-        // Ensure the animation view fills the entire container
-        animationView.translatesAutoresizingMaskIntoConstraints = false
+        // Simple fallback - just return empty view
+        print("⚠️ Lottie animation disabled: \(name)")
         
-        // Set clipsToBounds to false to allow full screen coverage
-        animationView.clipsToBounds = false
-        
-        // Load and play the animation immediately
-        if let animation = LottieAnimation.named(name) {
-            animationView.animation = animation
-            animationView.play()
-        } else {
-            print("⚠️ Could not load Lottie animation: \(name)")
-        }
-        
-        return animationView
+        return view
     }
     
-    func updateUIView(_ uiView: LottieAnimationView, context: Context) {
+    func updateUIView(_ uiView: UIView, context: Context) {
         // No updates needed
     }
 }

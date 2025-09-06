@@ -1,10 +1,11 @@
 import UIKit
-import Lottie
+// import Lottie // Temporarily commented out due to package dependency issues
 
 class SplashViewController: UIViewController {
     
     // MARK: - Properties
-    private var animationView: LottieAnimationView?
+    // private var animationView: LottieAnimationView? // Temporarily disabled
+    private var animationView: UIView? // Temporary fallback
     private var logoImageView: UIImageView?
     private var titleLabel: UILabel?
     
@@ -70,31 +71,26 @@ class SplashViewController: UIViewController {
     
     // MARK: - Animation Setup
     private func setupAnimation() {
-        // Load the Lottie animation
-        if let animation = LottieAnimation.named("SplashAnimation") {
-            animationView = LottieAnimationView(animation: animation)
-            animationView?.contentMode = .scaleAspectFit
-            animationView?.translatesAutoresizingMaskIntoConstraints = false
-            animationView?.loopMode = .playOnce
-            animationView?.animationSpeed = 1.0
+        // Temporary fallback animation instead of Lottie
+        print("⚠️ Lottie package not available - using fallback animation")
+        
+        // Create a simple animated view as fallback
+        animationView = UIView()
+        animationView?.backgroundColor = UIColor.clear
+        animationView?.translatesAutoresizingMaskIntoConstraints = false
+        
+        if let animationView = animationView {
+            view.addSubview(animationView)
             
-            if let animationView = animationView {
-                view.addSubview(animationView)
-                
-                // Position animation view over the logo area
-                NSLayoutConstraint.activate([
-                    animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                    animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
-                    animationView.widthAnchor.constraint(equalToConstant: 200),
-                    animationView.heightAnchor.constraint(equalToConstant: 200)
-                ])
-                
-                // Initially hide the logo since animation will be displayed
-                logoImageView?.alpha = 0.0
-            }
-        } else {
-            print("⚠️ Could not load SplashAnimation.json - falling back to static logo")
-            // If animation fails to load, show the logo instead
+            // Position animation view over the logo area
+            NSLayoutConstraint.activate([
+                animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
+                animationView.widthAnchor.constraint(equalToConstant: 200),
+                animationView.heightAnchor.constraint(equalToConstant: 200)
+            ])
+            
+            // Show the logo since we don't have Lottie animation
             logoImageView?.alpha = 1.0
         }
     }
@@ -102,19 +98,10 @@ class SplashViewController: UIViewController {
     // MARK: - Animation Start
     private func startAnimation() {
         if let animationView = animationView {
-            // Start the Lottie animation
-            animationView.play { [weak self] finished in
-                if finished {
-                    self?.onAnimationComplete()
-                }
-            }
-            
-            // Fade in the title label
-            UIView.animate(withDuration: 0.8, delay: 0.3, options: .curveEaseInOut) {
-                self.titleLabel?.alpha = 1.0
-            }
+            // Use fallback animation instead of Lottie
+            fallbackAnimation()
         } else {
-            // Fallback animation if Lottie fails
+            // Fallback animation if animation view fails
             fallbackAnimation()
         }
     }
@@ -194,6 +181,8 @@ class SplashViewController: UIViewController {
 extension SplashViewController {
     // Helper method to check if animation file exists
     static func hasAnimationFile() -> Bool {
-        return LottieAnimation.named("SplashAnimation") != nil
+        // Temporarily return false since Lottie is not available
+        return false
+        // return LottieAnimation.named("SplashAnimation") != nil
     }
 }
