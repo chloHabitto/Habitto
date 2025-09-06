@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseAuth
+// import FirebaseAuth // Temporarily commented out due to package dependency issues
 
 struct SecurityView: View {
     @Environment(\.dismiss) private var dismiss
@@ -10,11 +10,13 @@ struct SecurityView: View {
     
     // Computed property to check if user can change password
     private var canChangePassword: Bool {
-        guard let firebaseUser = Auth.auth().currentUser,
-              let providerData = firebaseUser.providerData.first else {
-            return false
-        }
-        return providerData.providerID == "password"
+        // Temporarily disabled due to Firebase dependency issues
+        return false
+        // guard let firebaseUser = Auth.auth().currentUser,
+        //       let providerData = firebaseUser.providerData.first else {
+        //     return false
+        // }
+        // return providerData.providerID == "password"
     }
     
     var body: some View {
