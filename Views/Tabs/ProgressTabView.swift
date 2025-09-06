@@ -163,9 +163,47 @@ struct ProgressTabView: View {
                         // Date Selection
                         dateSelectionSection
                         
+                        // Today's Progress Card - Only show when "All habits" is selected and "Daily" tab is active
+                        if selectedHabit == nil && selectedTimePeriod == 0 {
+                            VStack(alignment: .leading, spacing: 20) {
+                                // Today's Progress Card
+                                HStack(spacing: 20) {
+                                    // Left side: Text content (vertically centered)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Today's Progress")
+                                            .font(.appTitleMediumEmphasised)
+                                            .foregroundColor(.onPrimaryContainer)
+                                        
+                                        Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
+                                            .font(.appBodySmall)
+                                            .foregroundColor(.primaryFocus)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    
+                                    // Right side: Progress ring (vertically centered)
+                                    ProgressChartComponents.CircularProgressRing(
+                                        progress: getProgressPercentage(),
+                                        size: 52
+                                    )
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(
+                                    Image("Light-gradient-BG@4x")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .clipped()
+                                        .allowsHitTesting(false)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                            .padding(.horizontal, 20)
+                        }
                         
-                        // Reminders Section
-                        VStack(alignment: .leading, spacing: 0) {
+                        // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
+                        if selectedHabit == nil && selectedTimePeriod == 0 {
+                            VStack(alignment: .leading, spacing: 0) {
                             // Header
                             HStack {
                                 Text("Reminders")
@@ -209,12 +247,195 @@ struct ProgressTabView: View {
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal, 20)
+                        }
                         
                         
                     }
                     .padding(.top, 20)
                     .padding(.bottom, 20)
                 }
+            }
+        }
+        .sheet(isPresented: $showingHabitSelector) {
+            habitSelectorSheet
+        }
+    }
+    
+    // MARK: - Habit Selector Sheet
+    private var habitSelectorSheet: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                habitSelectorHeader
+                allHabitsOption
+                habitList
+                Spacer()
+            }
+            .background(Color(.systemBackground))
+        }
+        .presentationDetents([.medium, .large])
+    }
+    
+    private var habitSelectorHeader: some View {
+        HStack {
+            Text("Select Habit")
+                .font(.appTitleLarge)
+                .foregroundColor(.onPrimaryContainer)
+            
+            Spacer()
+            
+            Button("Done") {
+                showingHabitSelector = false
+            }
+            .font(.appBodyMedium)
+            .foregroundColor(.primaryFocus)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 20)
+    }
+    
+    private var allHabitsOption: some View {
+        Button(action: {
+            selectedHabit = nil
+            showingHabitSelector = false
+        }) {
+            HStack(spacing: 16) {
+                // All habits icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.primaryFocus.opacity(0.15))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: "chart.bar.fill")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.primaryFocus)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("All habits")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("View progress for all habits")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+                
+                Spacer()
+                
+                if selectedHabit == nil {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primaryFocus)
+                            .frame(width: 24, height: 24)
+                        
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                } else {
+                    Circle()
+                        .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(selectedHabit == nil ? Color.primaryFocus.opacity(0.05) : Color.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(selectedHabit == nil ? Color.primaryFocus.opacity(0.2) : Color.outline3.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
+    }
+    
+    private var habitList: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(habits, id: \.id) { habit in
+                    habitOption(habit: habit)
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    private func habitOption(habit: Habit) -> some View {
+        Button(action: {
+            selectedHabit = habit
+            showingHabitSelector = false
+        }) {
+            HStack(spacing: 16) {
+                // Habit icon
+                habitIcon(for: habit)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(habit.name)
+                        .font(.appTitleMedium)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text("View progress for this habit")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
+                }
+                
+                Spacer()
+                
+                if selectedHabit?.id == habit.id {
+                    ZStack {
+                        Circle()
+                            .fill(habit.color)
+                            .frame(width: 24, height: 24)
+                        
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                } else {
+                    Circle()
+                        .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(selectedHabit?.id == habit.id ? habit.color.opacity(0.05) : Color.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(selectedHabit?.id == habit.id ? habit.color.opacity(0.2) : Color.outline3.opacity(0.3), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func habitIcon(for habit: Habit) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(habit.color.opacity(0.15))
+                .frame(width: 48, height: 48)
+            
+            if habit.icon.hasPrefix("Icon-") {
+                // Asset icon
+                Image(habit.icon)
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(habit.color)
+            } else if habit.icon == "None" {
+                // No icon selected - show colored rounded rectangle
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(habit.color)
+                    .frame(width: 20, height: 20)
+            } else {
+                // Emoji or system icon
+                Text(habit.icon)
+                    .font(.system(size: 20))
             }
         }
     }
