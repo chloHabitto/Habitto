@@ -54,7 +54,7 @@ struct WeeklyCalendarGridView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(.clear)
                             .frame(minWidth: 0, maxWidth: .infinity)
-                            .frame(height: 36)
+                            .frame(height: 32)
                             .padding(.leading, 12)
                             .background(Color.white)
                             .overlay(
@@ -66,8 +66,7 @@ struct WeeklyCalendarGridView: View {
                             Text(day)
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text04)
-                                .frame(width: 36)
-                                .frame(height: 36)
+                                .frame(width: 32, height: 32)
                                 .background(Color.white)
                                 .overlay(
                                     Rectangle()
@@ -94,7 +93,7 @@ struct WeeklyCalendarGridView: View {
                                         .padding(.trailing, 4)
                                 }
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                                .frame(height: 36)
+                                .frame(height: 32)
                                 .padding(.leading, 12)
                                 .background(Color.white)
                                 .overlay(
@@ -118,7 +117,7 @@ struct WeeklyCalendarGridView: View {
                                         isScheduled: heatmapData.isScheduled,
                                         completionPercentage: heatmapData.completionPercentage
                                     )
-                                    .frame(width: 36, height: 36)
+                                    .frame(width: 32, height: 32)
                                     .background(Color.white)
                                     .overlay(
                                         Rectangle()
@@ -137,7 +136,7 @@ struct WeeklyCalendarGridView: View {
                             .font(.appBodyMediumEmphasised)
                             .foregroundColor(.text01)
                             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                            .frame(height: 36)
+                            .frame(height: 32)
                             .padding(.leading, 12)
                             .background(Color.white)
                             .overlay(
@@ -160,7 +159,7 @@ struct WeeklyCalendarGridView: View {
                                 isScheduled: totalHeatmapData.isScheduled,
                                 completionPercentage: totalHeatmapData.completionPercentage
                             )
-                            .frame(width: 36, height: 36)
+                            .frame(width: 32, height: 32)
                             .background(Color.white)
                             .overlay(
                                 Rectangle()
@@ -171,9 +170,8 @@ struct WeeklyCalendarGridView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-//                .padding(.horizontal, 16)
-//                .background(.red)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
             }
         }
     }
