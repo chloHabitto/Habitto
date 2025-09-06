@@ -282,11 +282,24 @@ struct HomeTabView: View {
         print("🔍 DEBUG: habitsForSelectedDate - After date/schedule filtering: \(filteredHabits.count) habits")
         
         // Since tabs are hidden, show all habits (like the Total tab was doing)
-        let finalFilteredHabits = filteredHabits
+        // Sort habits so completed ones appear at the bottom
+        let finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
+            let habit1Completed = habit1.isCompleted(for: selectedDate)
+            let habit2Completed = habit2.isCompleted(for: selectedDate)
+            
+            // If one is completed and the other isn't, put the incomplete one first
+            if habit1Completed != habit2Completed {
+                return !habit1Completed && habit2Completed
+            }
+            
+            // If both have the same completion status, maintain original order
+            return false
+        }
         
         print("🔍 DEBUG: habitsForSelectedDate - Final filtered count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)")
         for (index, habit) in finalFilteredHabits.enumerated() {
-            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id))")
+            let isCompleted = habit.isCompleted(for: selectedDate)
+            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id)) - Completed: \(isCompleted)")
         }
         
         return finalFilteredHabits

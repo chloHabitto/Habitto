@@ -52,7 +52,7 @@ struct ScheduledHabitItem: View {
         HStack(spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(habit.color)
+                .fill(habit.color.opacity(0.7))
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             
@@ -83,7 +83,7 @@ struct ScheduledHabitItem: View {
                         
                         // Progress bar
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(habit.color)
+                            .fill(habit.color.opacity(0.7))
                             .frame(
                                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
                                 height: 6
