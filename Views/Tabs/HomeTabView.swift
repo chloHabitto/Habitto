@@ -36,6 +36,13 @@ struct HomeTabView: View {
                         weeklyCalendar
                         statsRowSection
                     }
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1)
+                            .foregroundColor(.grey200)
+                            .frame(maxWidth: .infinity),
+                        alignment: .bottom
+                    )
                 )
             },
             rightButton: {
@@ -123,10 +130,8 @@ struct HomeTabView: View {
     
     @ViewBuilder
     private var statsRowSection: some View {
-        statsTabBar
-            .padding(.horizontal, 0)
-            .padding(.top, 2)
-            .padding(.bottom, 0)
+        // Tabs are hidden as requested
+        EmptyView()
     }
     
     @ViewBuilder
@@ -276,28 +281,8 @@ struct HomeTabView: View {
         
         print("🔍 DEBUG: habitsForSelectedDate - After date/schedule filtering: \(filteredHabits.count) habits")
         
-        // Filter by completion status based on selected tab
-        let finalFilteredHabits = filteredHabits.filter { habit in
-            let isCompleted = habit.isCompleted(for: selectedDate)
-            print("🔍 DEBUG: Tab filtering - Habit '\(habit.name)' completed: \(isCompleted)")
-            
-            switch selectedStatsTab {
-            case 0: // Total tab - show all habits
-                print("  ✅ Total tab - including habit '\(habit.name)'")
-                return true
-            case 1: // Undone tab - show habits with 0 progress OR incomplete progress
-                let shouldShow = !isCompleted
-                print("  \(shouldShow ? "✅" : "❌") Undone tab - habit '\(habit.name)' should show: \(shouldShow)")
-                return shouldShow
-            case 2: // Done tab - show only habits that are actually completed
-                let shouldShow = isCompleted
-                print("  \(shouldShow ? "✅" : "❌") Done tab - habit '\(habit.name)' should show: \(shouldShow)")
-                return shouldShow
-            default:
-                print("  ✅ Default case - including habit '\(habit.name)'")
-                return true
-            }
-        }
+        // Since tabs are hidden, show all habits (like the Total tab was doing)
+        let finalFilteredHabits = filteredHabits
         
         print("🔍 DEBUG: habitsForSelectedDate - Final filtered count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)")
         for (index, habit) in finalFilteredHabits.enumerated() {

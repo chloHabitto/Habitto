@@ -95,7 +95,11 @@ struct ProgressTabView: View {
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
-    @State private var selectedWeekStartDate: Date = Date()
+    @State private var selectedWeekStartDate: Date = {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let today = Date()
+        return calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+    }()
     @State private var showingDifficultyExplanation = false
     @State private var testDifficultyValue: Double = 3.0
     @State private var showingAllReminders = false
@@ -751,7 +755,9 @@ struct ProgressTabView: View {
                     // This week button - Only show when "All habits" is selected, Weekly tab is active, and different week is selected
                     if selectedHabit == nil && selectedTimePeriod == 1 && !isThisWeekSelected {
                         Button(action: {
-                            selectedWeekStartDate = Date()
+                            let calendar = AppDateFormatter.shared.getUserCalendar()
+                            let today = Date()
+                            selectedWeekStartDate = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
                         }) {
                             HStack(spacing: 4) {
                                 Image(.iconReplay)
@@ -1141,7 +1147,7 @@ struct ProgressTabView: View {
     }
     
     private var isThisWeekSelected: Bool {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate)?.start ?? selectedWeekStartDate
         return calendar.isDate(currentWeekStart, inSameDayAs: selectedWeekStart)
