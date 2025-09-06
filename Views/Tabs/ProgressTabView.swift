@@ -100,6 +100,7 @@ struct ProgressTabView: View {
     @State private var testDifficultyValue: Double = 3.0
     @State private var showingAllReminders = false
     @State private var streakStatistics = StreakStatistics(currentStreak: 0, bestStreak: 0, averageStreak: 0, completionRate: 0, consistencyRate: 0)
+    @State private var currentHighlightPage = 0
     
     // Yearly view state variables
     @State private var yearlyHeatmapData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
@@ -179,18 +180,32 @@ struct ProgressTabView: View {
                         // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
                         if selectedHabit == nil && selectedTimePeriod == 1 {
                             VStack(spacing: 20) {
-                                // Weekly Calendar Grid
-                                WeeklyCalendarGridView(
-                                    userHabits: coreDataAdapter.habits,
-                                    selectedWeekStartDate: selectedWeekStartDate
-                                )
+                                // Weekly Progress Card
+                                weeklyProgressCard
                                 
-                                // Summary Statistics
-                                SummaryStatisticsView(
-                                    completionRate: streakStatistics.completionRate,
-                                    bestStreak: streakStatistics.bestStreak,
-                                    consistencyRate: streakStatistics.consistencyRate
-                                )
+                                // Weekly Analysis Card
+                                weeklyAnalysisCard
+                                
+                                // Weekly Calendar Grid and Stats Container
+                                VStack(spacing: 0) {
+                                    // Weekly Calendar Grid
+                                    WeeklyCalendarGridView(
+                                        userHabits: coreDataAdapter.habits,
+                                        selectedWeekStartDate: selectedWeekStartDate
+                                    )
+                                    
+                                    // Summary Statistics
+                                    SummaryStatisticsView(
+                                        completionRate: streakStatistics.completionRate,
+                                        bestStreak: streakStatistics.bestStreak,
+                                        consistencyRate: streakStatistics.consistencyRate
+                                    )
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 12)
+                                    .padding(.bottom, 16)
+                                }
+                                .background(Color.grey50)
+                                .cornerRadius(16)
                             }
                             .padding(.horizontal, 20)
                         }
@@ -291,14 +306,13 @@ struct ProgressTabView: View {
                             }
                         }
                         .background(
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: 24)
                                 .fill(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.outline3, lineWidth: 1)
-                                )
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(Color.outline3, lineWidth: 1.0)
+                        )
                         .padding(.horizontal, 20)
                         }
                         
@@ -852,10 +866,10 @@ struct ProgressTabView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.outline3, lineWidth: 1)
-                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.outline3, lineWidth: 1.0)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .opacity(isEnabled ? 1.0 : 0.6)
@@ -1266,6 +1280,321 @@ struct ProgressTabView: View {
         .padding(.horizontal, 20)
     }
     
+    // MARK: - Weekly Progress Card
+    private var weeklyProgressCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 20) {
+                // Left side: Text content (vertically centered)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("This Week's Progress")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Text(getWeeklyEncouragingMessage())
+                        .font(.appBodySmall)
+                        .foregroundColor(.primaryFocus)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Right side: Progress ring (vertically centered)
+                ProgressChartComponents.CircularProgressRing(
+                    progress: getWeeklyProgressPercentage(),
+                    size: 52
+                )
+            }
+            .padding(.horizontal, 0)
+            .padding(.vertical, 12)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            Image("Light-gradient-BG@4x")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipped()
+                .allowsHitTesting(false)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+    }
+    
+    // MARK: - Weekly Analysis Card
+    private var weeklyAnalysisCard: some View {
+        VStack(spacing: 0) {
+            // Header with title and page controls (inside the card)
+            HStack {
+                Text("This Week's Highlights")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
+                // Page controls (dots)
+                HStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentHighlightPage ? Color.primaryFocus : Color.outline3.opacity(0.3))
+                            .frame(width: 8, height: 8)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+            
+            // Swipeable content
+            TabView(selection: $currentHighlightPage) {
+                // Page 0: Habit Spotlight
+                habitSpotlightPage
+                    .tag(0)
+                
+                // Page 1: Weekly Stats
+                weeklyStatsPage
+                    .tag(1)
+                
+                // Page 2: Motivation & Tips
+                motivationTipsPage
+                    .tag(2)
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .frame(height: 200)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0)
+        )
+    }
+    
+    // MARK: - Weekly Analysis Card Pages
+    private var habitSpotlightPage: some View {
+        VStack(spacing: 0) {
+            if let topHabit = getTopPerformingHabit() {
+                // Main content
+                HStack(spacing: 20) {
+                    // Star icon with gradient background
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.yellow.opacity(0.25), Color.orange.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 64, height: 64)
+                        
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundColor(.yellow)
+                    }
+                    
+                    // Content with habit info
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Your Superstar Habit")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.text02)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.yellow.opacity(0.1))
+                            )
+                        
+                        Text(topHabit.name)
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                            .lineLimit(2)
+                        
+                        let rate = getWeeklyHabitCompletionRate(topHabit)
+                        Text("\(Int(rate))% completion rate")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.yellow)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+                
+                // Bottom motivational section
+                VStack(spacing: 8) {
+                    Divider()
+                        .background(Color.outline3.opacity(0.3))
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.yellow)
+                        
+                        Text("You're on fire! Keep this momentum going!")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text03)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+            } else {
+                // Empty state when no habits
+                VStack(spacing: 16) {
+                    Text("No habits to highlight yet")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Text("Complete some habits this week to see your superstar habit!")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+    
+    private var weeklyStatsPage: some View {
+        VStack(spacing: 16) {
+            // Weekly completion rate
+            HStack(spacing: 20) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.25), Color.purple.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "chart.pie.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Weekly Progress")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                        )
+                    
+                    Text("\(Int(streakStatistics.completionRate))% completion rate")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text01)
+                    
+                    Text("\(getWeeklyCompletedHabitsCount()) of \(getWeeklyScheduledHabitsCount()) habits completed")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.blue)
+                        .fontWeight(.semibold)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            
+            // Additional stats
+            HStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Best Streak")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                    Text("\(streakStatistics.bestStreak) days")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text01)
+                        .fontWeight(.semibold)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Consistency")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                    Text("\(Int(streakStatistics.consistencyRate))%")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text01)
+                        .fontWeight(.semibold)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+        }
+    }
+    
+    private var motivationTipsPage: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 20) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.green.opacity(0.25), Color.mint.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(.green)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Weekly Tip")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.text02)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.green.opacity(0.1))
+                        )
+                    
+                    Text(getWeeklyMotivationalTip())
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text01)
+                        .multilineTextAlignment(.leading)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            
+            // Motivational quote
+            VStack(spacing: 8) {
+                Divider()
+                    .background(Color.outline3.opacity(0.3))
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "quote.bubble.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.green)
+                    
+                    Text(getWeeklyMotivationalQuote())
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .italic()
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+        }
+    }
+    
     // MARK: - Progress Calculation Functions
     private func getScheduledHabitsCount() -> Int {
         if let selectedHabit = selectedHabit {
@@ -1346,6 +1675,158 @@ struct ProgressTabView: View {
         
         let completedCount = getCompletedHabitsCount()
         return Double(completedCount) / Double(scheduledCount)
+    }
+    
+    // MARK: - Weekly Progress Calculation Functions
+    private func getWeeklyScheduledHabitsCount() -> Int {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        let today = selectedProgressDate
+        
+        // Only count days from week start up to today (or selected date)
+        let daysToCount = min(7, calendar.dateComponents([.day], from: weekStart, to: today).day ?? 0) + 1
+        
+        var totalScheduled = 0
+        for dayOffset in 0..<daysToCount {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                let scheduledHabits = coreDataAdapter.habits.filter { habit in
+                    StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
+                }
+                totalScheduled += scheduledHabits.count
+            }
+        }
+        return totalScheduled
+    }
+    
+    private func getWeeklyCompletedHabitsCount() -> Int {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        let today = selectedProgressDate
+        
+        // Only count days from week start up to today (or selected date)
+        let daysToCount = min(7, calendar.dateComponents([.day], from: weekStart, to: today).day ?? 0) + 1
+        
+        var totalCompleted = 0
+        for dayOffset in 0..<daysToCount {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                let scheduledHabits = coreDataAdapter.habits.filter { habit in
+                    StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
+                }
+                
+                for habit in scheduledHabits {
+                    let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    if progress >= goalAmount {
+                        totalCompleted += 1
+                    }
+                }
+            }
+        }
+        return totalCompleted
+    }
+    
+    private func getWeeklyProgressPercentage() -> Double {
+        let scheduledCount = getWeeklyScheduledHabitsCount()
+        guard scheduledCount > 0 else { return 0.0 }
+        
+        let completedCount = getWeeklyCompletedHabitsCount()
+        return Double(completedCount) / Double(scheduledCount)
+    }
+    
+    private func getWeeklyEncouragingMessage() -> String {
+        let progressPercentage = getWeeklyProgressPercentage()
+        let completedCount = getWeeklyCompletedHabitsCount()
+        let scheduledCount = getWeeklyScheduledHabitsCount()
+        
+        // Handle edge cases
+        if scheduledCount == 0 {
+            return "No habits scheduled this week yet"
+        }
+        
+        if completedCount == 0 {
+            return "Ready to start your week strong! 💪"
+        }
+        
+        // Generate encouraging messages based on completion rate
+        switch progressPercentage {
+        case 0.9...1.0:
+            return ["You're absolutely crushing it! 🔥", "Incredible progress this week! ⭐", "You're on fire! Keep it up! 🚀", "Outstanding work this week! 💯"].randomElement() ?? "Amazing progress!"
+            
+        case 0.7..<0.9:
+            return ["Great job this week! 🌟", "You're doing fantastic! ✨", "Excellent progress! Keep going! 💪", "You're building great momentum! 🎯"].randomElement() ?? "Great progress!"
+            
+        case 0.5..<0.7:
+            return ["Good progress this week! 👍", "You're on the right track! 🎯", "Keep up the good work! 💪", "Every step counts! 🌱"].randomElement() ?? "Good progress!"
+            
+        case 0.3..<0.5:
+            return ["You're making progress! 🌱", "Every habit counts! 💪", "Keep pushing forward! 🎯", "You've got this! ✨"].randomElement() ?? "Keep going!"
+            
+        case 0.1..<0.3:
+            return ["Every small step matters! 🌱", "You're building momentum! 💪", "Progress is progress! 🎯", "Keep taking it one day at a time! ✨"].randomElement() ?? "Keep going!"
+            
+        default:
+            return ["Ready to make this week count! 💪", "Every journey starts with a single step! 🌱", "You've got this! Let's go! 🚀", "Time to build some great habits! ✨"].randomElement() ?? "Let's do this!"
+        }
+    }
+    
+    // MARK: - Habit Spotlight Helper Functions
+    private func getTopPerformingHabit() -> Habit? {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        
+        var habitCompletionRates: [(Habit, Double)] = []
+        
+        for habit in coreDataAdapter.habits {
+            var totalScheduled = 0
+            var totalCompleted = 0
+            
+            for dayOffset in 0..<7 {
+                if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                    if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                        totalScheduled += 1
+                        
+                        let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                        let goalAmount = parseGoalAmount(from: habit.goal)
+                        if progress >= goalAmount {
+                            totalCompleted += 1
+                        }
+                    }
+                }
+            }
+            
+            if totalScheduled > 0 {
+                let completionRate = Double(totalCompleted) / Double(totalScheduled)
+                habitCompletionRates.append((habit, completionRate))
+            }
+        }
+        
+        // Return the habit with the highest completion rate
+        return habitCompletionRates.max(by: { $0.1 < $1.1 })?.0
+    }
+    
+    private func getWeeklyHabitCompletionRate(_ habit: Habit) -> Double {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        
+        var totalScheduled = 0
+        var totalCompleted = 0
+        
+        for dayOffset in 0..<7 {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                    totalScheduled += 1
+                    
+                    let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    if progress >= goalAmount {
+                        totalCompleted += 1
+                    }
+                }
+            }
+        }
+        
+        guard totalScheduled > 0 else { return 0.0 }
+        return (Double(totalCompleted) / Double(totalScheduled)) * 100
     }
     
     // MARK: - Progress Subtitle Functions
@@ -1754,6 +2235,35 @@ struct ProgressTabView: View {
                 )
         )
         .opacity(isTimePassed ? 0.6 : 1.0)
+    }
+    
+    // MARK: - Motivational Content Functions
+    private func getWeeklyMotivationalTip() -> String {
+        let tips = [
+            "Try stacking your habits with existing routines for better consistency.",
+            "Set specific times for your habits to build stronger neural pathways.",
+            "Start with just 2 minutes - small wins lead to big changes.",
+            "Track your progress daily to stay motivated and accountable.",
+            "Celebrate small victories to reinforce positive behavior patterns.",
+            "Focus on one habit at a time until it becomes automatic.",
+            "Use habit triggers to remind yourself when to act.",
+            "Reflect on your 'why' when motivation feels low."
+        ]
+        return tips.randomElement() ?? tips[0]
+    }
+    
+    private func getWeeklyMotivationalQuote() -> String {
+        let quotes = [
+            "Success is the sum of small efforts repeated day in and day out.",
+            "The secret of getting ahead is getting started.",
+            "You don't have to be great to get started, but you have to get started to be great.",
+            "Consistency is the mother of mastery.",
+            "Small steps every day lead to big results.",
+            "The only impossible journey is the one you never begin.",
+            "Progress, not perfection, is the goal.",
+            "Your habits shape your identity, and your identity shapes your habits."
+        ]
+        return quotes.randomElement() ?? quotes[0]
     }
 }
 
