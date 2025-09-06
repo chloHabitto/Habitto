@@ -93,10 +93,15 @@ struct ProgressTabView: View {
     @State private var showingHabitSelector = false
     @State private var showingDatePicker = false
     @State private var showingWeekPicker = false
+    @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
     @State private var selectedWeekStartDate: Date = Date()
     @State private var showingDifficultyExplanation = false
     @State private var testDifficultyValue: Double = 3.0
+    @State private var showingAllReminders = false
+    
+    // Per-date reminder states: [dateKey: [reminderId: isEnabled]]
+    @State private var reminderStates: [String: [UUID: Bool]] = [:]
     
     // MARK: - Environment
     @EnvironmentObject var coreDataAdapter: CoreDataAdapter
@@ -120,7 +125,7 @@ struct ProgressTabView: View {
                             .foregroundColor(.onPrimaryContainer)
                         
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.onPrimaryContainer)
                     }
                 }
@@ -135,6 +140,7 @@ struct ProgressTabView: View {
                 tabs: [
                     TabItem(title: "Daily"),
                     TabItem(title: "Weekly"),
+                    TabItem(title: "Monthly"),
                     TabItem(title: "Yearly")
                 ],
                 selectedIndex: selectedTimePeriod,
@@ -146,7 +152,7 @@ struct ProgressTabView: View {
                 let impactFeedback = UISelectionFeedbackGenerator()
                 impactFeedback.selectionChanged()
             }
-            .padding(.top, 2)
+            .padding(.top, 16)
             .padding(.bottom, 0)
         }
     }
@@ -212,24 +218,28 @@ struct ProgressTabView: View {
                                 
                                 Spacer()
                                 
-                                HStack(spacing: 4) {
-                                    Text("See more")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.text02)
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.text02)
+                                Button(action: {
+                                    showingAllReminders = true
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Text("See more")
+                                            .font(.appBodySmall)
+                                            .foregroundColor(.text02)
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.text02)
+                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             .padding(.bottom, 16)
                             
-                            // Reminders Carousel
+                            // Reminders Carousel - Only show active reminders
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(getAllRemindersForDate(selectedProgressDate), id: \.id) { reminder in
+                                    ForEach(getActiveRemindersForDate(selectedProgressDate), id: \.id) { reminder in
                                         reminderCard(for: reminder)
                                     }
                                 }
@@ -259,6 +269,46 @@ struct ProgressTabView: View {
         .sheet(isPresented: $showingHabitSelector) {
             habitSelectorSheet
         }
+        .overlay(
+            // Date Picker Modal
+            showingDatePicker ? AnyView(
+                DatePickerModal(selectedDate: $selectedProgressDate, isPresented: $showingDatePicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Week Picker Modal
+            showingWeekPicker ? AnyView(
+                WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Month Picker Modal
+            showingMonthPicker ? AnyView(
+                MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Year Picker Modal
+            showingYearPicker ? AnyView(
+                YearPickerModal(selectedYear: .constant(selectedProgressDate.get(.year)), isPresented: $showingYearPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingYearPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // All Reminders Modal
+            showingAllReminders ? AnyView(
+                allRemindersModal
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingAllReminders)
+            ) : AnyView(EmptyView())
+        )
     }
     
     // MARK: - Habit Selector Sheet
@@ -533,7 +583,7 @@ struct ProgressTabView: View {
     // Date selection section
     private var dateSelectionSection: some View {
         Group {
-            if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 {
+            if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 || selectedTimePeriod == 3 {
                 HStack {
                     Button(action: {
                         print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
@@ -541,20 +591,24 @@ struct ProgressTabView: View {
                             showingDatePicker = true
                         } else if selectedTimePeriod == 1 { // Weekly
                             showingWeekPicker = true
-                        } else if selectedTimePeriod == 2 { // Yearly
+                        } else if selectedTimePeriod == 2 { // Monthly
+                            showingMonthPicker = true
+                        } else if selectedTimePeriod == 3 { // Yearly
                             showingYearPicker = true
                         }
                     }) {
                         HStack(spacing: 8) {
                             Text(selectedTimePeriod == 0 ? formatDate(selectedProgressDate) :
                                  selectedTimePeriod == 1 ? formatWeek(selectedWeekStartDate) :
+                                 selectedTimePeriod == 2 ? formatMonth(selectedProgressDate) :
                                  formatYear(selectedProgressDate))
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text01)
                             
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.text02)
+                                .foregroundColor(.primary)
+                                .opacity(0.7)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -566,6 +620,31 @@ struct ProgressTabView: View {
                                         .stroke(Color.outline3, lineWidth: 1)
                                 )
                         )
+                    }
+                    
+                    // Today button - Only show when "All habits" is selected, Daily tab is active, and different date is selected
+                    if selectedHabit == nil && selectedTimePeriod == 0 && !isTodaySelected {
+                        Button(action: {
+                            selectedProgressDate = Date()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(.iconReplay)
+                                    .resizable()
+                                    .frame(width: 12, height: 12)
+                                    .foregroundColor(.primaryFocus)
+                                Text("Today")
+                                    .font(.appLabelMedium)
+                                    .foregroundColor(.primaryFocus)
+                            }
+                            .padding(.leading, 12)
+                            .padding(.trailing, 8)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: .infinity)
+                                    .stroke(.primaryFocus, lineWidth: 1)
+                            )
+                        }
                     }
                     
                     Spacer()
@@ -581,7 +660,10 @@ struct ProgressTabView: View {
     
     // Individual reminder card
     private func reminderCard(for reminderWithHabit: ReminderWithHabit) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let isEnabled = isReminderEnabled(for: reminderWithHabit.reminder, on: selectedProgressDate)
+        let isTimePassed = isReminderTimePassed(for: reminderWithHabit.reminder, on: selectedProgressDate)
+        
+        return VStack(alignment: .leading, spacing: 8) {
             // Top: Habit Icon
             HabitIconView(habit: reminderWithHabit.habit)
                 .frame(width: 30, height: 30)
@@ -593,13 +675,25 @@ struct ProgressTabView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             
-            // Bottom: Reminder Time
-            Text(formatReminderTime(reminderWithHabit.reminder.time))
-                .font(.appBodySmall)
-                .foregroundColor(.text02)
+            // Bottom: Reminder Time with Toggle
+            HStack {
+                Text(formatReminderTime(reminderWithHabit.reminder.time))
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+                
+                Spacer()
+                
+                Toggle("", isOn: Binding(
+                    get: { isEnabled },
+                    set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }
+                ))
+                .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
+                .scaleEffect(0.6)
+                .disabled(isTimePassed) // Disable toggle if time has passed
+            }
         }
         .padding(16)
-        .frame(width: 120, height: 100)
+        .frame(width: 140, height: 120)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.surface)
@@ -609,6 +703,7 @@ struct ProgressTabView: View {
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .opacity(isEnabled ? 1.0 : 0.6)
     }
     
     private var mainContent: some View {
@@ -798,7 +893,8 @@ struct ProgressTabView: View {
         switch selectedTimePeriod {
         case 0: return "daily"
         case 1: return "weekly"
-        case 2: return "yearly"
+        case 2: return "monthly"
+        case 3: return "yearly"
         default: return "daily"
         }
     }
@@ -813,7 +909,9 @@ struct ProgressTabView: View {
             return "on \(formatDate(selectedProgressDate))"
         case 1: // Weekly
             return "for \(formatWeek(selectedWeekStartDate))"
-        case 2: // Yearly
+        case 2: // Monthly
+            return "for \(formatMonth(selectedProgressDate))"
+        case 3: // Yearly
             return "for \(Calendar.current.component(.year, from: selectedProgressDate))"
         default:
             return "on \(formatDate(selectedProgressDate))"
@@ -844,10 +942,54 @@ struct ProgressTabView: View {
         return "\(startString) - \(endString)"
     }
     
+    private func formatMonth(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+    
     private func formatYear(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy"
         return formatter.string(from: date)
+    }
+    
+    private var isTodaySelected: Bool {
+        Calendar.current.isDate(selectedProgressDate, inSameDayAs: Date())
+    }
+    
+    // MARK: - Reminder State Management
+    private func getDateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+    
+    private func isReminderEnabled(for reminder: ReminderItem, on date: Date) -> Bool {
+        let dateKey = getDateKey(for: date)
+        return reminderStates[dateKey]?[reminder.id] ?? reminder.isActive
+    }
+    
+    private func isReminderTimePassed(for reminder: ReminderItem, on date: Date) -> Bool {
+        let calendar = Calendar.current
+        let reminderDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: reminder.time),
+                                          minute: calendar.component(.minute, from: reminder.time),
+                                          second: 0,
+                                          of: date) ?? date
+        
+        return Date() > reminderDateTime
+    }
+    
+    private func toggleReminder(for reminder: ReminderItem, on date: Date) {
+        // Don't allow toggling if the reminder time has already passed
+        guard !isReminderTimePassed(for: reminder, on: date) else { return }
+        
+        let dateKey = getDateKey(for: date)
+        if reminderStates[dateKey] == nil {
+            reminderStates[dateKey] = [:]
+        }
+        let currentState = isReminderEnabled(for: reminder, on: date)
+        reminderStates[dateKey]?[reminder.id] = !currentState
     }
     
     // MARK: - Progress Calculation Functions
@@ -960,14 +1102,31 @@ struct ProgressTabView: View {
         
         for habit in scheduledHabits {
             for reminder in habit.reminders {
-                if reminder.isActive {
-                    allReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
-                }
+                // Show all reminders for the selected date, regardless of their enabled state
+                // The toggle will control whether they're actually sent as notifications
+                allReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
             }
         }
         
         // Sort reminders by time
         return allReminders.sorted { $0.reminder.time < $1.reminder.time }
+    }
+    
+    private func getActiveRemindersForDate(_ date: Date) -> [ReminderWithHabit] {
+        let scheduledHabits = getScheduledHabitsForDate(date)
+        var activeReminders: [ReminderWithHabit] = []
+        
+        for habit in scheduledHabits {
+            for reminder in habit.reminders {
+                // Check if reminder is enabled for this specific date AND time hasn't passed yet
+                if isReminderEnabled(for: reminder, on: date) && !isReminderTimePassed(for: reminder, on: date) {
+                    activeReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
+                }
+            }
+        }
+        
+        // Sort reminders by time
+        return activeReminders.sorted { $0.reminder.time < $1.reminder.time }
     }
     
     private func formatReminderTime(_ time: Date) -> String {
@@ -1025,6 +1184,109 @@ struct ProgressTabView: View {
         case .veryHard:
             return "You're building strength! 💎"
         }
+    }
+    
+    // MARK: - All Reminders Modal
+    private var allRemindersModal: some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showingAllReminders = false
+                }
+            
+            // Modal content
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("All Reminders")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        showingAllReminders = false
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.text02)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+                
+                // Reminders list
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(getAllRemindersForDate(selectedProgressDate), id: \.id) { reminder in
+                            allRemindersCard(for: reminder)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.surface)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+            )
+            .frame(maxWidth: 400, maxHeight: 600)
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    // Individual reminder card for "see more" modal
+    private func allRemindersCard(for reminderWithHabit: ReminderWithHabit) -> some View {
+        let isEnabled = isReminderEnabled(for: reminderWithHabit.reminder, on: selectedProgressDate)
+        let isTimePassed = isReminderTimePassed(for: reminderWithHabit.reminder, on: selectedProgressDate)
+        
+        return HStack(spacing: 12) {
+            // Habit Icon
+            HabitIconView(habit: reminderWithHabit.habit)
+                .frame(width: 40, height: 40)
+            
+            // Habit Name and Time
+            VStack(alignment: .leading, spacing: 4) {
+                Text(reminderWithHabit.habit.name)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.onPrimaryContainer)
+                    .lineLimit(1)
+                
+                Text(formatReminderTime(reminderWithHabit.reminder.time))
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+            }
+            
+            Spacer()
+            
+            // Toggle Button
+            Toggle("", isOn: Binding(
+                get: { isEnabled },
+                set: { _ in 
+                    if !isTimePassed {
+                        toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate)
+                    }
+                }
+            ))
+            .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
+            .scaleEffect(0.8)
+            .disabled(isTimePassed)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3, lineWidth: 1)
+                )
+        )
+        .opacity(isTimePassed ? 0.6 : 1.0)
     }
 }
 
