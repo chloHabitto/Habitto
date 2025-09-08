@@ -116,6 +116,7 @@ struct ProgressTabView: View {
     // Per-date reminder states: [dateKey: [reminderId: isEnabled]]
     @State private var reminderStates: [String: [UUID: Bool]] = [:]
     
+    
     // MARK: - Environment
     @EnvironmentObject var coreDataAdapter: CoreDataAdapter
     @StateObject private var calendarHelper = ProgressCalendarHelper()
@@ -401,6 +402,7 @@ struct ProgressTabView: View {
             
             // Load yearly data when view appears
             loadYearlyData()
+            
         }
         .onChange(of: coreDataAdapter.habits) { _ in
             // Recalculate streak statistics when habits change
@@ -1289,7 +1291,7 @@ struct ProgressTabView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Right side: Progress ring (vertically centered)
-                    ProgressChartComponents.CircularProgressRing(
+                    AnimatedCircularProgressRing(
                         progress: getProgressPercentage(),
                         size: 52
                     )
@@ -1329,7 +1331,7 @@ struct ProgressTabView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Right side: Progress ring (vertically centered)
-                ProgressChartComponents.CircularProgressRing(
+                AnimatedCircularProgressRing(
                     progress: getWeeklyProgressPercentage(),
                     size: 52
                 )
@@ -2425,7 +2427,7 @@ struct ProgressTabView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Right side: Progress ring (vertically centered)
-                ProgressChartComponents.CircularProgressRing(
+                AnimatedCircularProgressRing(
                     progress: getMonthlyProgressPercentage(),
                     size: 52
                 )
@@ -3989,6 +3991,57 @@ struct MonthlyDifficultyChart: View {
                         .frame(width: 18, height: 18)
                 }
                 .position(x: x, y: y)
+            }
+        }
+    }
+}
+
+// MARK: - Animated Circular Progress Ring
+struct AnimatedCircularProgressRing: View {
+    let progress: Double
+    let size: CGFloat
+    @State private var animatedProgress: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // Background circle (unfilled part)
+            Circle()
+                .stroke(Color.primaryContainer, lineWidth: 8)
+                .frame(width: size, height: size)
+            
+            // Progress circle (filled part)
+            Circle()
+                .trim(from: 0, to: animatedProgress)
+                .stroke(
+                    Color.primary,
+                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                )
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(-90))
+                .animation(.easeOut(duration: 0.8), value: animatedProgress)
+            
+            // Percentage text - always show actual progress, not animated value
+            VStack(spacing: 2) {
+                Text("\(Int(progress * 100))%")
+                    .font(.appLabelMediumEmphasised)
+                    .foregroundColor(.primaryFocus)
+            }
+        }
+        .onAppear {
+            // Always animate when the ring appears
+            print("🔄 AnimatedCircularProgressRing onAppear - progress: \(progress)")
+            animatedProgress = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeOut(duration: 0.8)) {
+                    animatedProgress = progress
+                    print("🔄 Animating to progress: \(progress)")
+                }
+            }
+        }
+        .onChange(of: progress) { _, newValue in
+            // Animate to new progress value
+            withAnimation(.easeOut(duration: 0.5)) {
+                animatedProgress = newValue
             }
         }
     }
