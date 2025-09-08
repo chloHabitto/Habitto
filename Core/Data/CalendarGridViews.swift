@@ -20,15 +20,15 @@ struct HabitIconInlineView: View {
             if habit.icon.hasPrefix("Icon-") {
                 Image(habit.icon)
                     .resizable()
-                    .frame(width: 20, height: 20)
+                    .frame(width: 16, height: 16)
                     .foregroundColor(habit.color)
             } else if habit.icon == "None" {
                 RoundedRectangle(cornerRadius: 5)
                     .fill(habit.color)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 16, height: 16)
             } else {
                 Text(habit.icon)
-                    .font(.system(size: 16))
+                    .font(.system(size: 12))
             }
         }
     }
@@ -66,7 +66,7 @@ struct WeeklyCalendarGridView: View {
                             Text(day)
                                 .font(.appBodyMedium)
                                 .foregroundColor(.text04)
-                                .frame(width: 32, height: 32)
+                                .frame(width: 24, height: 32)
                                 .background(Color.white)
                                 .overlay(
                                     Rectangle()
@@ -117,7 +117,7 @@ struct WeeklyCalendarGridView: View {
                                         isScheduled: heatmapData.isScheduled,
                                         completionPercentage: heatmapData.completionPercentage
                                     )
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 24, height: 32)
                                     .background(Color.white)
                                     .overlay(
                                         Rectangle()
@@ -151,15 +151,22 @@ struct WeeklyCalendarGridView: View {
                                 weekStartDate: selectedWeekStartDate
                             )
                             
-                            // Debug: Print total heatmap data for each day
-                            let _ = print("🔍 WEEKLY TOTAL DEBUG - Day \(dayIndex) | Total Data: \(totalHeatmapData)")
+                            // Calculate if this day is upcoming (future)
+                            let calendar = Calendar.current
+                            let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+                            let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+                            let today = calendar.startOfDay(for: Date())
+                            let isUpcoming = targetDate > today
                             
-                            HeatmapCellView(
-                                intensity: totalHeatmapData.intensity,
+                            // Debug: Print total heatmap data for each day
+                            let _ = print("🔍 WEEKLY TOTAL DEBUG - Day \(dayIndex) | Total Data: \(totalHeatmapData) | IsUpcoming: \(isUpcoming)")
+                            
+                            WeeklyTotalEmojiCell(
+                                completionPercentage: totalHeatmapData.completionPercentage,
                                 isScheduled: totalHeatmapData.isScheduled,
-                                completionPercentage: totalHeatmapData.completionPercentage
+                                isUpcoming: isUpcoming
                             )
-                            .frame(width: 32, height: 32)
+                            .frame(width: 24, height: 32)
                             .background(Color.white)
                             .overlay(
                                 Rectangle()
@@ -766,6 +773,52 @@ struct YearlyCalendarGridView: View {
     private func parseGoalAmount(from goalString: String) -> Int {
         return StreakDataCalculator.parseGoalAmount(from: goalString)
     }
-} 
+}
+
+// MARK: - Weekly Total Emoji Cell
+struct WeeklyTotalEmojiCell: View {
+    let completionPercentage: Double
+    let isScheduled: Bool
+    let isUpcoming: Bool
+    
+    var body: some View {
+        ZStack {
+            if isScheduled {
+                // Show emoji based on completion percentage or upcoming status
+                Image(emojiImageName(for: completionPercentage, isUpcoming: isUpcoming))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 20, height: 20)
+                    .opacity(isUpcoming ? 0.2 : 1.0)
+            } else {
+                // Show nothing when no habits are scheduled
+                EmptyView()
+            }
+        }
+        .frame(width: 32, height: 32)
+    }
+    
+    private func emojiImageName(for completionPercentage: Double, isUpcoming: Bool) -> String {
+        // For upcoming days, always show the upcoming emoji
+        if isUpcoming {
+            return "022-emoji@4x" // Upcoming day emoji
+        }
+        
+        // For past/present days, show completion-based emoji
+        let clampedPercentage = max(0.0, min(100.0, completionPercentage))
+        
+        if clampedPercentage >= 75.0 {
+            return "001-emoji@4x" // 75%+ completion
+        } else if clampedPercentage >= 55.0 {
+            return "012-emoji@4x" // 55-74% completion
+        } else if clampedPercentage >= 35.0 {
+            return "036-emoji@4x" // 35-54% completion
+        } else if clampedPercentage >= 10.0 {
+            return "030-emoji@4x" // 10-34% completion
+        } else {
+            return "030-emoji@4x" // 0-9% completion (same as 10-34% for very low completion)
+        }
+    }
+}
 
 
