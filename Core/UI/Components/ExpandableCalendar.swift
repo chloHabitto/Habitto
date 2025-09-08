@@ -40,11 +40,12 @@ struct ExpandableCalendar: View {
                         .foregroundColor(.primary)
                     
                     Image(isExpanded ? "Icon-arrowDropUp_Filled" : "Icon-arrowDropDown_Filled")
+                        .renderingMode(.template)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.primary)
-                        .opacity(0.7)
+                        .foregroundColor(.navy100)
+                        .opacity(1.0)
                         .rotationEffect(.degrees(isExpanded ? 0 : 0))
                 }
             }
@@ -92,8 +93,8 @@ struct ExpandableCalendar: View {
                 .buttonStyle(PlainButtonStyle())
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
         .padding(.bottom, 8)
     }
     
@@ -307,16 +308,9 @@ struct ExpandableCalendar: View {
         // Set selected date to today
         selectedDate = today
         
-        // Reset to current week (offset 0) - this should show the current week
-        // Use a longer delay to ensure the animation completes and TabView is ready
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            // Force a complete reset by temporarily changing to a different value
-            self.currentWeekOffset = -1
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.currentWeekOffset = 0
-                }
-            }
+        // Reset to current week (offset 0) - simplified approach
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentWeekOffset = 0
         }
         
         // Reset to current month
