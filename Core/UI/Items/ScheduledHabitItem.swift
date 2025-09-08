@@ -8,6 +8,7 @@ struct ScheduledHabitItem: View {
     var onProgressChange: ((Habit, Date, Int) -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
+    var onCompletionDismiss: (() -> Void)? = nil
     
     @State private var currentProgress: Int = 0
     @State private var dragOffset: CGFloat = 0
@@ -271,7 +272,10 @@ struct ScheduledHabitItem: View {
         .sheet(isPresented: $showingCompletionSheet) {
             HabitCompletionBottomSheet(
                 isPresented: $showingCompletionSheet,
-                habit: habit
+                habit: habit,
+                onDismiss: {
+                    onCompletionDismiss?()
+                }
             )
             .presentationDetents([.height(500)])
             .presentationDragIndicator(.hidden)
