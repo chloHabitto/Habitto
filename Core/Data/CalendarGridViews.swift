@@ -51,26 +51,53 @@ struct WeeklyCalendarGridView: View {
                 VStack(spacing: 0) {
                     // Header row with modern styling
                     HStack(spacing: 0) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.clear)
-                            .frame(minWidth: 0, maxWidth: .infinity)
-                            .frame(height: 32)
-                            .padding(.leading, 12)
-                            .background(Color.white)
+                        Text("")
+                            .font(.appBodyMediumEmphasised)
+                            .foregroundColor(.text01)
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                            .frame(height: 24)
+                            .padding(.leading, 16)
+                            .background(Color.grey50)
+                            .clipShape(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 12,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 0
+                                )
+                            )
                             .overlay(
-                                Rectangle()
-                                    .stroke(.outline3, lineWidth: 1)
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 12,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 0
+                                )
+                                .stroke(.outline3, lineWidth: 1)
                             )
                         
-                        ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+                        ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
                             Text(day)
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text04)
-                                .frame(width: 24, height: 32)
-                                .background(Color.white)
+                                .font(.appBodyMediumEmphasised)
+                                .foregroundColor(.text02)
+                                .frame(width: 24, height: 24)
+                                .background(Color.grey50)
+                                .clipShape(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 0,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: index == 6 ? 12 : 0
+                                    )
+                                )
                                 .overlay(
-                                    Rectangle()
-                                        .stroke(.outline3, lineWidth: 1)
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 0,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: index == 6 ? 12 : 0
+                                    )
+                                    .stroke(.outline3, lineWidth: 1)
                                 )
                         }
                     }
@@ -81,7 +108,7 @@ struct WeeklyCalendarGridView: View {
                         ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
                             HStack(spacing: 0) {
                                 // Habit name cell with modern styling
-                                HStack(spacing: 8) {
+                                HStack(spacing: 12) {
                                     HabitIconInlineView(habit: habit)
                                     
                                     Text(habit.name)
@@ -90,11 +117,11 @@ struct WeeklyCalendarGridView: View {
                                         .lineLimit(1)
                                         .truncationMode(.tail)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.trailing, 4)
+                                        .padding(.trailing, 8)
                                 }
                                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                                .frame(height: 32)
-                                .padding(.leading, 12)
+                                .frame(height: 36)
+                                .padding(.leading, 8)
                                 .background(Color.white)
                                 .overlay(
                                     Rectangle()
@@ -117,7 +144,7 @@ struct WeeklyCalendarGridView: View {
                                         isScheduled: heatmapData.isScheduled,
                                         completionPercentage: heatmapData.completionPercentage
                                     )
-                                    .frame(width: 24, height: 32)
+                                    .frame(width: 24, height: 36)
                                     .background(Color.white)
                                     .overlay(
                                         Rectangle()
@@ -137,11 +164,24 @@ struct WeeklyCalendarGridView: View {
                             .foregroundColor(.text01)
                             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                             .frame(height: 32)
-                            .padding(.leading, 12)
-                            .background(Color.white)
+                            .padding(.leading, 16)
+                            .background(Color.grey50)
+                            .clipShape(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 0,
+                                    bottomLeadingRadius: 12,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 0
+                                )
+                            )
                             .overlay(
-                                Rectangle()
-                                    .stroke(.outline3, lineWidth: 1)
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 0,
+                                    bottomLeadingRadius: 12,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 0
+                                )
+                                .stroke(.outline3, lineWidth: 1)
                             )
                         
                         ForEach(0..<7, id: \.self) { dayIndex in
@@ -167,10 +207,23 @@ struct WeeklyCalendarGridView: View {
                                 isUpcoming: isUpcoming
                             )
                             .frame(width: 24, height: 32)
-                            .background(Color.white)
+                            .background(Color.grey50)
+                            .clipShape(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 0,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                                    topTrailingRadius: 0
+                                )
+                            )
                             .overlay(
-                                Rectangle()
-                                    .stroke(.outline3, lineWidth: 1)
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 0,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                                    topTrailingRadius: 0
+                                )
+                                .stroke(.outline3, lineWidth: 1)
                             )
                         }
                     }
@@ -314,23 +367,49 @@ struct MonthlyCalendarGridView: View {
                 Rectangle()
                     .fill(.clear)
                     .frame(minWidth: 0, maxWidth: .infinity)
-                    .frame(height: 32)
-                    .background(Color.white)
+                    .frame(height: 24)
+                    .background(Color.grey50)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 12,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: 0,
+                            topTrailingRadius: 0
+                        )
+                    )
                     .overlay(
-                        Rectangle()
-                            .stroke(.outline3, lineWidth: 1)
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 12,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: 0,
+                            topTrailingRadius: 0
+                        )
+                        .stroke(.outline3, lineWidth: 1)
                     )
                 
                 // Day headers - must match heatmap cells exactly
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+                ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
                     Text(day)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text04)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white)
+                        .font(.appBodyMediumEmphasised)
+                        .foregroundColor(.text02)
+                        .frame(width: 24, height: 24)
+                        .background(Color.grey50)
+                        .clipShape(
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: 0,
+                                bottomLeadingRadius: 0,
+                                bottomTrailingRadius: 0,
+                                topTrailingRadius: index == 6 ? 12 : 0
+                            )
+                        )
                         .overlay(
-                            Rectangle()
-                                .stroke(.outline3, lineWidth: 1)
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: 0,
+                                bottomLeadingRadius: 0,
+                                bottomTrailingRadius: 0,
+                                topTrailingRadius: index == 6 ? 12 : 0
+                            )
+                            .stroke(.outline3, lineWidth: 1)
                         )
                 }
             }
@@ -342,9 +421,9 @@ struct MonthlyCalendarGridView: View {
                     // Week label cell - must match empty corner cell exactly
                     Text("Week \(weekIndex + 1)")
                         .font(.appBodyMedium)
-                        .foregroundColor(.text04)
+                        .foregroundColor(.text01)
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
-                        .frame(height: 32)
+                        .frame(height: 36)
                         .background(Color.white)
                         .overlay(
                             Rectangle()
@@ -363,7 +442,7 @@ struct MonthlyCalendarGridView: View {
                             isScheduled: heatmapData.isScheduled,
                             completionPercentage: heatmapData.completionPercentage
                         )
-                        .frame(width: 32, height: 32)
+                        .frame(width: 24, height: 36)
                         .background(Color.white)
                         .overlay(
                             Rectangle()
@@ -373,6 +452,62 @@ struct MonthlyCalendarGridView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            
+            // Total row with rounded bottom corners
+            HStack(spacing: 0) {
+                Text("Total")
+                    .font(.appBodyMediumEmphasised)
+                    .foregroundColor(.text01)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+                    .frame(height: 32)
+                    .background(Color.grey50)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 12,
+                            bottomTrailingRadius: 0,
+                            topTrailingRadius: 0
+                        )
+                    )
+                    .overlay(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 12,
+                            bottomTrailingRadius: 0,
+                            topTrailingRadius: 0
+                        )
+                        .stroke(.outline3, lineWidth: 1)
+                    )
+                
+                ForEach(0..<7, id: \.self) { dayIndex in
+                    MonthlyTotalEmojiCell(
+                        habit: habit,
+                        dayIndex: dayIndex,
+                        numberOfWeeks: numberOfWeeksInMonth,
+                        getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit
+                    )
+                    .frame(width: 24, height: 32)
+                    .background(Color.grey50)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                            topTrailingRadius: 0
+                        )
+                    )
+                    .overlay(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                            topTrailingRadius: 0
+                        )
+                        .stroke(.outline3, lineWidth: 1)
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 16)
     }
@@ -397,12 +532,12 @@ struct MonthlyCalendarGridView: View {
                 .fill(.outline3)
                 .frame(width: 1, height: 40)
             
-            // Completed days
+            // Best streak
             VStack(spacing: 4) {
-                Text(pluralizeDay(calculateHabitCompletedDays(for: habit)))
+                Text(pluralizeDay(calculateHabitBestStreak(for: habit)))
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
-                Text("Completed")
+                Text("Best Streak")
                     .font(.appBodySmall)
                     .foregroundColor(.text04)
             }
@@ -511,6 +646,36 @@ struct MonthlyCalendarGridView: View {
     
     private func parseGoalAmount(from goalString: String) -> Int {
         return StreakDataCalculator.parseGoalAmount(from: goalString)
+    }
+    
+    private func calculateHabitBestStreak(for habit: Habit) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Use selected month range
+        let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+        let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+        
+        var maxStreak = 0
+        var currentStreak = 0
+        var currentDate = startDate
+        
+        while currentDate <= endDate && currentDate <= today {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+                if habit.isCompleted(for: currentDate) {
+                    currentStreak += 1
+                    maxStreak = max(maxStreak, currentStreak)
+                } else {
+                    currentStreak = 0
+                }
+            } else {
+                // If habit is not scheduled on this day, reset streak
+                currentStreak = 0
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return maxStreak
     }
 }
 
@@ -645,12 +810,12 @@ struct YearlyCalendarGridView: View {
                 .fill(.outline3)
                 .frame(width: 1, height: 40)
             
-            // Completed days
+            // Best streak
             VStack(spacing: 4) {
-                Text(pluralizeDay(calculateHabitCompletedDays(for: habit)))
+                Text(pluralizeDay(calculateHabitBestStreak(for: habit)))
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
-                Text("Completed")
+                Text("Best Streak")
                     .font(.appBodySmall)
                     .foregroundColor(.text04)
             }
@@ -772,6 +937,66 @@ struct YearlyCalendarGridView: View {
     
     private func parseGoalAmount(from goalString: String) -> Int {
         return StreakDataCalculator.parseGoalAmount(from: goalString)
+    }
+    
+    private func calculateHabitBestStreak(for habit: Habit) -> Int {
+        return habit.calculateTrueStreak()
+    }
+}
+
+// MARK: - Monthly Total Emoji Cell
+struct MonthlyTotalEmojiCell: View {
+    let habit: Habit
+    let dayIndex: Int
+    let numberOfWeeks: Int
+    let getMonthlyHeatmapDataForHabit: (Habit, Int, Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
+    
+    var body: some View {
+        // Calculate total completion for this day across completed weeks only
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Only count weeks that have already occurred
+        let completedWeeks = (0..<numberOfWeeks).filter { weekIndex in
+            // Calculate the date for this week and day
+            let monthStart = calendar.dateInterval(of: .month, for: habit.startDate)?.start ?? habit.startDate
+            let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+            let daysFromMonday = (monthStartWeekday + 5) % 7
+            let firstMondayOfMonth = calendar.date(byAdding: .day, value: -daysFromMonday, to: monthStart) ?? monthStart
+            let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstMondayOfMonth) ?? monthStart
+            
+            // Check if this date is in the past or today
+            return targetDate <= today
+        }
+        
+        // Calculate average completion only for completed weeks
+        let totalCompletion = completedWeeks.reduce(0.0) { total, weekIndex in
+            let heatmapData = getMonthlyHeatmapDataForHabit(habit, weekIndex, dayIndex)
+            return total + heatmapData.completionPercentage
+        }
+        let averageCompletion = completedWeeks.isEmpty ? 0.0 : totalCompletion / Double(completedWeeks.count)
+        
+        // Show emoji based on average completion
+        let emojiImageName = emojiImageName(for: averageCompletion)
+        
+        Image(emojiImageName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 20, height: 20)
+    }
+    
+    private func emojiImageName(for completionPercentage: Double) -> String {
+        if completionPercentage >= 75.0 {
+            return "001-emoji@4x"
+        } else if completionPercentage >= 55.0 {
+            return "012-emoji@4x"
+        } else if completionPercentage >= 35.0 {
+            return "036-emoji@4x"
+        } else if completionPercentage >= 10.0 {
+            return "030-emoji@4x"
+        } else {
+            return "030-emoji@4x"
+        }
     }
 }
 

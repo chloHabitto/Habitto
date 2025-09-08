@@ -133,14 +133,18 @@ struct ProgressTabView: View {
                 Button(action: {
                                 showingHabitSelector = true
                 }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 0) {
                                     Text(selectedHabit?.name ?? "All habits")
                             .font(.appTitleMediumEmphasised)
-                                        .foregroundColor(.onPrimaryContainer)
+                            .lineSpacing(8)
+                                        .foregroundColor(.primary)
                         
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.onPrimaryContainer)
+                        Image("Icon-arrowDropDown_Filled")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.navy100)
                     }
                 }
                 
@@ -189,19 +193,16 @@ struct ProgressTabView: View {
                                 // Weekly Progress Card
                                 weeklyProgressCard
                                 
-                                // Weekly Analysis Card
-                                weeklyAnalysisCard
-                                
                                 // Weekly Calendar Grid and Stats Container
                                 VStack(spacing: 0) {
                                     // Weekly Calendar Grid
                                     WeeklyCalendarGridView(
-                                        userHabits: coreDataAdapter.habits,
+                                        userHabits: getActiveHabits(),
                                         selectedWeekStartDate: selectedWeekStartDate
                                     )
                                     
                                     // Summary Statistics
-                                    SummaryStatisticsView(
+                                    WeeklySummaryStatsView(
                                         completionRate: streakStatistics.completionRate,
                                         bestStreak: streakStatistics.bestStreak,
                                         consistencyRate: streakStatistics.consistencyRate
@@ -211,7 +212,10 @@ struct ProgressTabView: View {
                                     .padding(.bottom, 16)
                                 }
                                 .background(Color.grey50)
-                                .cornerRadius(16)
+                                .cornerRadius(24)
+                                
+                                // Weekly Analysis Card
+                                weeklyAnalysisCard
                             }
                             .padding(.horizontal, 20)
                         }
@@ -245,7 +249,7 @@ struct ProgressTabView: View {
                                 
                                 // Monthly Calendar Grid
                                 MonthlyCalendarGridView(
-                                    userHabits: coreDataAdapter.habits,
+                                    userHabits: getActiveHabitsForSelectedMonth(),
                                     selectedMonth: selectedProgressDate
                                     )
                                 }
@@ -257,7 +261,7 @@ struct ProgressTabView: View {
                             VStack(spacing: 20) {
                                 // Yearly Calendar Grid
                                 YearlyCalendarGridView(
-                                    userHabits: coreDataAdapter.habits,
+                                    userHabits: getActiveHabits(),
                                     selectedWeekStartDate: selectedWeekStartDate,
                                     yearlyHeatmapData: yearlyHeatmapData,
                                     isDataLoaded: isDataLoaded,
@@ -310,18 +314,26 @@ struct ProgressTabView: View {
                             // Reminders Carousel - Only show active reminders
                             if getActiveRemindersForDate(selectedProgressDate).isEmpty {
                                 // Empty state when no reminders
-                                VStack(spacing: 8) {
-                                    Text("No reminders for today")
-                                        .font(.appBodyMedium)
-                                        .foregroundColor(.text02)
+                                VStack(spacing: 16) {
+                                    Image("Today-Habit-List-Empty-State@4x")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 120, height: 120)
                                     
-                                    Text("You don't have any active reminders scheduled for this date")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.text03)
-                                        .multilineTextAlignment(.center)
+                                    VStack(spacing: 8) {
+                                        Text("No reminders for today")
+                                            .font(.appBodyMedium)
+                                            .foregroundColor(.text02)
+                                        
+                                        Text("You don't have any active reminders scheduled for this date")
+                                            .font(.appBodySmall)
+                                            .foregroundColor(.text03)
+                                            .multilineTextAlignment(.center)
+                                    }
                                 }
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 40)
+                                .padding(.top, 0)
+                                .padding(.bottom, 40)
                                 .padding(.horizontal, 20)
                             } else {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -398,7 +410,7 @@ struct ProgressTabView: View {
         )
         .onAppear {
             // Calculate streak statistics when view appears
-            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: coreDataAdapter.habits)
+            updateStreakStatistics()
             
             // Load yearly data when view appears
             loadYearlyData()
@@ -406,10 +418,14 @@ struct ProgressTabView: View {
         }
         .onChange(of: coreDataAdapter.habits) { _ in
             // Recalculate streak statistics when habits change
-            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: coreDataAdapter.habits)
+            updateStreakStatistics()
             
             // Reload yearly data when habits change
             loadYearlyData()
+        }
+        .onChange(of: selectedWeekStartDate) { _ in
+            // Recalculate streak statistics when week changes
+            updateStreakStatistics()
         }
         .onChange(of: selectedYear) { _ in
             // Reload yearly data when year changes
@@ -1046,6 +1062,56 @@ struct ProgressTabView: View {
             }
         }
         .padding(.top, 20)
+    }
+    
+    // MARK: - Helper Functions
+    private func getActiveHabits() -> [Habit] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        return coreDataAdapter.habits.filter { habit in
+            // Check if habit is currently active (within its period)
+            let startDate = calendar.startOfDay(for: habit.startDate)
+            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            // Habit is active if today is within its period
+            return today >= startDate && today <= endDate
+        }
+    }
+    
+    private func getActiveHabitsForSelectedWeek() -> [Habit] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = selectedWeekStartDate
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        
+        return coreDataAdapter.habits.filter { habit in
+            let habitStart = calendar.startOfDay(for: habit.startDate)
+            let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            // Habit is active if it overlaps with the selected week
+            return habitStart <= weekEnd && habitEnd >= weekStart
+        }
+    }
+    
+    private func getActiveHabitsForSelectedMonth() -> [Habit] {
+        let calendar = Calendar.current
+        let monthStart = calendar.dateInterval(of: .month, for: selectedProgressDate)?.start ?? selectedProgressDate
+        let monthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?.end ?? selectedProgressDate
+        
+        return coreDataAdapter.habits.filter { habit in
+            let habitStart = calendar.startOfDay(for: habit.startDate)
+            let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            // Habit is active if it overlaps with the selected month
+            return habitStart <= monthEnd && habitEnd >= monthStart
+        }
+    }
+    
+    private func updateStreakStatistics() {
+        // For weekly tab, use active habits for the selected week
+        // For other tabs, use all active habits
+        let habitsToUse = selectedTimePeriod == 1 ? getActiveHabitsForSelectedWeek() : getActiveHabits()
+        streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: habitsToUse)
     }
     
     // MARK: - Helper Functions for Calendar
@@ -4044,6 +4110,74 @@ struct AnimatedCircularProgressRing: View {
                 animatedProgress = newValue
             }
         }
+    }
+}
+
+// MARK: - Helper Functions
+private func pluralizeDay(_ count: Int) -> String {
+    if count == 0 {
+        return "0 day"
+    } else if count == 1 {
+        return "1 day"
+    } else {
+        return "\(count) days"
+    }
+}
+
+// MARK: - Weekly Summary Stats View
+struct WeeklySummaryStatsView: View {
+    let completionRate: Int
+    let bestStreak: Int
+    let consistencyRate: Int
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // Completion Rate
+            VStack(spacing: 4) {
+                Text("\(completionRate)%")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Completion")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Vertical divider
+            Rectangle()
+                .fill(.outline3)
+                .frame(width: 1, height: 40)
+            
+            // Best Streak
+            VStack(spacing: 4) {
+                Text(pluralizeDay(bestStreak))
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Best Streak")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+            
+            // Vertical divider
+            Rectangle()
+                .fill(.outline3)
+                .frame(width: 1, height: 40)
+            
+            // Consistency Rate
+            VStack(spacing: 4) {
+                Text("\(consistencyRate)%")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Text("Consistency")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 16)
+        .background(.surfaceContainer)
+        .cornerRadius(16)
     }
 }
 

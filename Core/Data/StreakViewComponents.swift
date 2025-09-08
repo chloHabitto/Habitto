@@ -434,8 +434,10 @@ struct HeatmapCellView: View {
                         .frame(width: cellSize, height: cellSize)
                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 } else {
-                    // Show nothing when not scheduled - better for accessibility
-                    // Empty space makes it clear the habit wasn't supposed to be done
+                    // Show empty circle outline when not scheduled
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.outline3, lineWidth: 1)
+                        .frame(width: cellSize, height: cellSize)
                 }
             }
         }

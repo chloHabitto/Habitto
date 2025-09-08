@@ -506,7 +506,7 @@ class StreakDataCalculator {
         }
         
         // Check if the habit is scheduled for this weekday
-        let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
+        let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday, targetDate: date)
         
         print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' | Date: \(dateKey) | Weekday: \(weekday) | Schedule: '\(habit.schedule)' | Scheduled for weekday: \(isScheduledForWeekday)")
         
@@ -550,7 +550,7 @@ class StreakDataCalculator {
         return 1
     }
     
-    private static func isHabitScheduledForWeekday(_ habit: Habit, weekday: Int) -> Bool {
+    private static func isHabitScheduledForWeekday(_ habit: Habit, weekday: Int, targetDate: Date) -> Bool {
         let schedule = habit.schedule.lowercased()
         
         print("🔍 WEEKDAY SCHEDULE DEBUG - Habit '\(habit.name)' | Weekday: \(weekday) | Schedule: '\(schedule)'")
@@ -573,10 +573,10 @@ class StreakDataCalculator {
             if let dayCount = extractDayCount(from: s) {
                 let calendar = Calendar.current
                 let startDate = calendar.startOfDay(for: habit.startDate)
-                let today = calendar.startOfDay(for: Date())
-                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
+                let targetDateStart = calendar.startOfDay(for: targetDate)
+                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: targetDateStart).day ?? 0
                 let isScheduled = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
-                print("🔍 WEEKDAY SCHEDULE DEBUG - Every \(dayCount) days schedule | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
+                print("🔍 WEEKDAY SCHEDULE DEBUG - Every \(dayCount) days schedule | Target date: \(targetDateStart) | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
                 return isScheduled
             }
             print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'every X days' schedule")
@@ -592,8 +592,8 @@ class StreakDataCalculator {
             if let timesPerWeek = extractTimesPerWeek(from: s) {
                 let calendar = Calendar.current
                 let startDate = calendar.startOfDay(for: habit.startDate)
-                let today = calendar.startOfDay(for: Date())
-                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: today).weekOfYear ?? 0
+                let targetDateStart = calendar.startOfDay(for: targetDate)
+                let weeksSinceStart = calendar.dateComponents([.weekOfYear], from: startDate, to: targetDateStart).weekOfYear ?? 0
                 let isScheduled = weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
                 print("🔍 WEEKDAY SCHEDULE DEBUG - \(timesPerWeek) times per week | Weeks since start: \(weeksSinceStart) | Scheduled: \(isScheduled)")
                 return isScheduled
@@ -605,8 +605,8 @@ class StreakDataCalculator {
             if let daysPerWeek = extractDaysPerWeek(from: s) {
                 let calendar = Calendar.current
                 let startDate = calendar.startOfDay(for: habit.startDate)
-                let today = calendar.startOfDay(for: Date())
-                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
+                let targetDateStart = calendar.startOfDay(for: targetDate)
+                let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: targetDateStart).day ?? 0
                 let isScheduled = daysSinceStart >= 0 && daysSinceStart % daysPerWeek == 0
                 print("🔍 WEEKDAY SCHEDULE DEBUG - \(daysPerWeek) days a week | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
                 return isScheduled
