@@ -4,12 +4,11 @@ struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
     @State private var currentWeekOffset: Int = 0
-    @State private var showingWeekPicker: Bool = false
-
 
     @State private var lastHapticWeek: Int = 0
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
+    @State private var showCelebration: Bool = false
     
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
@@ -32,8 +31,7 @@ struct HomeTabView: View {
             headerContent: {
                 AnyView(
                     VStack(spacing: 0) {
-                        dateSection
-                        weeklyCalendar
+                        ExpandableCalendar(selectedDate: $selectedDate)
                         statsRowSection
                     }
                     .overlay(
@@ -104,28 +102,24 @@ struct HomeTabView: View {
                 )
         }
         .overlay(
-            // Week Selection Modal
-            showingWeekPicker ? AnyView(
-                WeekPickerModal(
-                    selectedWeekStartDate: Binding(
-                        get: { selectedDate },
-                        set: { newDate in
-                            selectedDate = newDate
-                            // Update currentWeekOffset to match the selected week
-                            let calendar = Calendar.current
-                            let today = Date()
-                            let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-                            let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: newDate)?.start ?? newDate
-                            let weeksDifference = calendar.dateComponents([.weekOfYear], from: weekStart, to: selectedWeekStart).weekOfYear ?? 0
-                            currentWeekOffset = weeksDifference
+            Group {
+                if showCelebration {
+                    CelebrationView(
+                        isPresented: $showCelebration,
+                        onDismiss: {
+                            // Celebration dismissed, ready for next time
                         }
-                    ),
-                    isPresented: $showingWeekPicker
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
-            ) : AnyView(EmptyView())
+                    )
+                }
+            }
         )
+        .onChange(of: habitsForSelectedDate) { _, newHabits in
+            // Remove automatic celebration check - now triggered by bottom sheet dismissal
+        }
+        .onChange(of: selectedDate) { _, _ in
+            // Reset celebration when date changes
+            showCelebration = false
+        }
     }
     
     @ViewBuilder
@@ -258,6 +252,10 @@ struct HomeTabView: View {
             },
             onDelete: {
                 onDeleteHabit?(habit)
+            },
+            onCompletionDismiss: {
+                // Check for celebration after habit completion bottom sheet is dismissed
+                checkForAllHabitsCompleted()
             }
         )
     }
@@ -636,285 +634,6 @@ struct HomeTabView: View {
     
 
     
-             // MARK: - Date Section
-    private var dateSection: some View {
-        HStack {
-            // Date text with chevron down icon - acts as a button
-            Button(action: {
-                showingWeekPicker = true
-            }) {
-                HStack(spacing: 8) {
-                    Text(formattedCurrentDate)
-                        .font(.appTitleMediumEmphasised)
-                        .lineSpacing(8)
-                        .foregroundColor(.primary)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.primary)
-                        .opacity(0.7)
-                }
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Spacer()
-            
-            HStack(spacing: 4) {
-                // Today button (shown when not on current week or selected date is not today)
-                let calendar = Calendar.current
-                let today = Date()
-                let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
-                    calendar.isDate(date, inSameDayAs: today)
-                }
-                let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: today)
-                
-                if !isTodayInCurrentWeek || !isTodaySelected {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.08)) {
-                            selectedDate = Date()
-                            currentWeekOffset = 0
-                        }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(.iconReplay)
-                                .resizable()
-                                .frame(width: 12, height: 12)
-                                .foregroundColor(.primaryFocus)
-                            Text("Today")
-                                .font(.appLabelMedium)
-                                .foregroundColor(.primaryFocus)
-                        }
-                        .padding(.leading, 12)
-                        .padding(.trailing, 8)
-                        .padding(.top, 4)
-                        .padding(.bottom, 4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: .infinity)
-                                .stroke(.primaryFocus, lineWidth: 1)
-                        )
-                    }
-                }
-                
-                // Calendar icon button - hidden since date button now has same functionality
-                // Button(action: {
-                //     showingWeekPicker = true
-                // }) {
-                //     Image(.iconCalendar)
-                //         .resizable()
-                //         .frame(width: 20, height: 20)
-                //         .foregroundColor(.secondary)
-                // }
-                // .frame(width: 44, height: 44)
-                // .padding(.trailing, 4)
-            }
-            
-
-        }
-        .frame(height: 44)
-        .padding(.leading, 16)
-        .padding(.trailing, 8)
-        .padding(.top, 4)
-        .padding(.bottom, 0)
-    }
-    
-             // MARK: - Weekly Calendar
-    private var weeklyCalendar: some View {
-        TabView(selection: $currentWeekOffset) {
-            ForEach(-100...100, id: \.self) { weekOffset in
-                weekView(for: weekOffset, width: UIScreen.main.bounds.width - 16)
-                    .frame(width: UIScreen.main.bounds.width - 16)
-                    .tag(weekOffset)
-            }
-        }
-        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-        .animation(nil, value: currentWeekOffset) // Disable swipe animation
-        .onChange(of: currentWeekOffset) { oldValue, newValue in
-            
-            // Add haptic feedback when scrolling between weeks
-            if oldValue != newValue {
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
-            }
-        }
-        .onAppear {
-            currentWeekOffset = 0
-        }
-        .frame(height: 72)
-        .padding(.horizontal, 8)
-        .padding(.top, 2)
-        .padding(.bottom, 8)
-    }
-    
-    private func weekView(for weekOffset: Int, width: CGFloat) -> some View {
-        return HStack(spacing: 2) {
-            ForEach(daysOfWeek(for: weekOffset), id: \.timeIntervalSince1970) { date in
-                Button(action: {
-                    // Add haptic feedback when selecting a date
-                    let selectionFeedback = UISelectionFeedbackGenerator()
-                    selectionFeedback.selectionChanged()
-                    
-                    withAnimation(.easeInOut(duration: 0.08)) {
-                        selectedDate = date
-                    }
-                }) {
-                    VStack(spacing: 4) {
-                        Text(dayAbbreviation(for: date))
-                            .font(.appLabelSmall)
-                            .foregroundColor(dayLabelColor(for: date))
-                        
-                        Text("\(Calendar.current.component(.day, from: date))")
-                            .font(dateFont(for: date))
-                            .foregroundColor(dayNumberColor(for: date))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(backgroundColor(for: date))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .frame(width: width)
-        .padding(.horizontal, 20)
-    }
-    
-    private func backgroundColor(for date: Date) -> Color {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Normalize dates to start of day for comparison
-        let normalizedDate = calendar.startOfDay(for: date)
-        let normalizedToday = calendar.startOfDay(for: today)
-        let normalizedSelected = calendar.startOfDay(for: selectedDate)
-        
-        // Check for today's date (highest priority)
-        if normalizedDate == normalizedToday {
-            return .primary // Use primary color for today's date
-        }
-        
-        // Check if this is the selected date (but not today)
-        if normalizedDate == normalizedSelected {
-            return .secondary
-        }
-        
-        // Default - no background
-        return Color.clear
-    }
-    
-    private func dayLabelColor(for date: Date) -> Color {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Normalize dates to start of day for comparison
-        let normalizedDate = calendar.startOfDay(for: date)
-        let normalizedToday = calendar.startOfDay(for: today)
-        let normalizedSelected = calendar.startOfDay(for: selectedDate)
-        
-        // If this is today, use white text for contrast against primary background
-        if normalizedDate == normalizedToday {
-            return .white
-        }
-        
-        // If this is the selected date (but not today), use text01 for better contrast
-        if normalizedDate == normalizedSelected {
-            return .text01
-        }
-        
-        // For all other dates (past and future), use text04 for day labels
-        return .text04
-    }
-    
-    private func dayNumberColor(for date: Date) -> Color {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Normalize dates to start of day for comparison
-        let normalizedDate = calendar.startOfDay(for: date)
-        let normalizedToday = calendar.startOfDay(for: today)
-        let normalizedSelected = calendar.startOfDay(for: selectedDate)
-        
-        // If this is today, use white text for contrast against primary background
-        if normalizedDate == normalizedToday {
-            return .white
-        }
-        
-        // If this is the selected date (but not today), use text01 for better contrast
-        if normalizedDate == normalizedSelected {
-            return .text01
-        }
-        
-        // If this is a past date, use text06
-        if normalizedDate < normalizedToday {
-            return .text06
-        }
-        
-        // For future dates, use text04
-        return .text04
-    }
-    
-    private func dateFont(for date: Date) -> Font {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        // Normalize dates to start of day for comparison
-        let normalizedDate = calendar.startOfDay(for: date)
-        let normalizedToday = calendar.startOfDay(for: today)
-        let normalizedSelected = calendar.startOfDay(for: selectedDate)
-        
-        // If this is today or the selected date, use emphasized font
-        if normalizedDate == normalizedToday || normalizedDate == normalizedSelected {
-            return .appLabelLargeEmphasised
-        }
-        
-        // For all other dates, use regular font
-        return .appLabelLarge
-    }
-    
-    // MARK: - Helper Functions
-    private var formattedCurrentDate: String {
-        return AppDateFormatter.shared.formatDisplayDate(selectedDate)
-    }
-    
-    private func daysOfWeek(for weekOffset: Int) -> [Date] {
-        let calendar = AppDateFormatter.shared.getUserCalendar()
-        let today = Date()
-        
-        // For weekOffset 0, we want the current week that contains today
-        // For other offsets, we calculate relative to the current week
-        let targetWeekStart: Date
-        if weekOffset == 0 {
-            // Get today's weekday (1 = Sunday, 2 = Monday, etc.)
-            let weekday = calendar.component(.weekday, from: today)
-            // Calculate how many days to subtract to get to the user's preferred first day of the week
-            let daysToSubtract = (weekday - calendar.firstWeekday + 7) % 7
-            targetWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
-        } else {
-            // For other weeks, calculate relative to the current week
-            let weekday = calendar.component(.weekday, from: today)
-            let daysToSubtract = (weekday - calendar.firstWeekday + 7) % 7
-            let currentWeekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
-            targetWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: currentWeekStart)!
-        }
-        
-        // Generate 7 days starting from the target week start (using user's preference)
-        let dates = (0..<7).compactMap { dayOffset in
-            calendar.date(byAdding: .day, value: dayOffset, to: targetWeekStart)
-        }
-        
-        return dates
-    }
-    
-    private func dayAbbreviation(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: date).uppercased()
-    }
-    
-    private func isToday(_ date: Date) -> Bool {
-        Calendar.current.isDate(date, inSameDayAs: Date())
-    }
-    
     // Refresh habits data when user pulls down
     private func refreshHabits() async {
         // Add a small delay to make the refresh feel more responsive
@@ -932,6 +651,29 @@ struct HomeTabView: View {
             // Additional success feedback
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.success)
+        }
+    }
+    
+    // MARK: - Celebration Detection
+    private func checkForAllHabitsCompleted() {
+        // Only check for today's date
+        let today = DateUtils.today()
+        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else { return }
+        
+        // Get habits for today
+        let todayHabits = habitsForSelectedDate
+        
+        // Check if there are any habits for today
+        guard !todayHabits.isEmpty else { return }
+        
+        // Check if all habits are completed
+        let allCompleted = todayHabits.allSatisfy { habit in
+            habit.isCompleted(for: selectedDate)
+        }
+        
+        if allCompleted {
+            print("🎉 All habits completed for today! Showing celebration...")
+            showCelebration = true
         }
     }
 }

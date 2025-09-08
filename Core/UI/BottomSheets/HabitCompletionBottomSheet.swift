@@ -4,6 +4,7 @@ struct HabitCompletionBottomSheet: View {
     @Binding var isPresented: Bool
     let habit: Habit
     @State private var selectedDifficulty: HabitDifficulty?
+    let onDismiss: (() -> Void)?
     
     enum HabitDifficulty: Int, CaseIterable {
         case veryEasy = 1
@@ -169,27 +170,27 @@ struct HabitCompletionBottomSheet: View {
                             Image("Difficulty-VeryEasy@4x")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 160)
+                                .frame(height: 120)
                         case .easy:
                             Image("Difficulty-Easy@4x")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 160)
+                                .frame(height: 120)
                         case .medium:
                             Image("Difficulty-Medium@4x")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 160)
+                                .frame(height: 120)
                         case .hard:
                             Image("Difficulty-Hard@4x")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 160)
+                                .frame(height: 120)
                         case .veryHard:
                             Image("Difficulty-VeryHard@4x")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 160)
+                                .frame(height: 120)
                         }
                     }
                     .padding(.bottom, 8)
@@ -263,6 +264,7 @@ struct HabitCompletionBottomSheet: View {
             // Skip button
             Button(action: {
                 isPresented = false
+                onDismiss?()
             }) {
                 Text("Skip")
                     .font(.appButtonText1)
@@ -285,6 +287,7 @@ struct HabitCompletionBottomSheet: View {
                     saveDifficultyRating(difficulty)
                 }
                 isPresented = false
+                onDismiss?()
             }) {
                 Text("Submit")
                     .font(.appButtonText1)
@@ -338,7 +341,8 @@ extension View {
             endDate: nil,
             isCompleted: false,
             streak: 5
-        )
+        ),
+        onDismiss: {}
     )
     .background(.surface2)
 }

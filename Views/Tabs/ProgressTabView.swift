@@ -220,6 +220,18 @@ struct ProgressTabView: View {
                             VStack(spacing: 20) {
                                 // Weekly Difficulty Graph
                                 weeklyDifficultyGraph
+                                
+                                // Time Base Completion Chart
+                                timeBaseCompletionChart
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                        
+                        // Monthly Content - Only show when individual habit is selected and "Monthly" tab is active
+                        if selectedHabit != nil && selectedTimePeriod == 2 {
+                            VStack(spacing: 20) {
+                                // Monthly Difficulty Graph
+                                monthlyDifficultyGraph
                             }
                             .padding(.horizontal, 20)
                         }
@@ -2929,24 +2941,16 @@ struct ProgressTabView: View {
     private var weeklyDifficultyGraph: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Difficulty Trends")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Text("How challenging this habit felt this week")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text02)
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Difficulty Trends")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
                 
-                Spacer()
-                
-                // Difficulty icon
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.primaryFocus)
+                Text("How challenging this habit felt this week")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
             }
+            .padding(.bottom, 8)
             
             // Graph content
             if let habit = selectedHabit {
@@ -3007,11 +3011,174 @@ struct ProgressTabView: View {
         )
     }
     
+    // MARK: - Monthly Difficulty Graph
+    private var monthlyDifficultyGraph: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Difficulty Trends")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("How challenging this habit felt this month")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+            }
+            .padding(.bottom, 8)
+            
+            // Graph content
+            if let habit = selectedHabit {
+                let difficultyData = getMonthlyDifficultyData(for: habit)
+                
+                if difficultyData.isEmpty {
+                    // Empty state
+                    VStack(spacing: 12) {
+                        Image(systemName: "chart.line.downtrend.xyaxis")
+                            .font(.system(size: 32))
+                            .foregroundColor(.outline3)
+                        
+                        Text("No difficulty data yet")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                        
+                        Text("Complete this habit a few times to see your difficulty trends")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text03)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
+                } else {
+                    // Monthly difficulty chart
+                    MonthlyDifficultyChart(
+                        data: difficultyData,
+                        monthStartDate: selectedProgressDate
+                    )
+                    .frame(height: 200)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0)
+        )
+    }
+    
+    // MARK: - Time Base Completion Chart
+    private var timeBaseCompletionChart: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Time base completion")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Text("When you typically complete this habit")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text02)
+            }
+            .padding(.bottom, 8)
+            
+            // Chart content
+            if let habit = selectedHabit {
+                let timeData = getTimeBaseCompletionData(for: habit)
+                
+                if timeData.isEmpty {
+                    // Empty state
+                    VStack(spacing: 12) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 32))
+                            .foregroundColor(.outline3)
+                        
+                        Text("No completion data yet")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                        
+                        Text("Complete this habit a few times to see your time patterns")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text03)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(height: 200)
+                } else {
+                    TimeBaseCompletionChart(data: timeData)
+                        .frame(height: 320)
+                        .padding(.bottom, 20)
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0)
+        )
+    }
+    
+    // MARK: - Time Base Completion Data Helper
+    private func getTimeBaseCompletionData(for habit: Habit) -> [TimeCompletionData] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = selectedWeekStartDate
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        
+        // Get all habit completion records for this week
+        let habitLogs = coreDataAdapter.fetchCompletionRecordsWithTimestamps(for: habit)
+            .filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                return timestamp >= weekStart && timestamp <= weekEnd
+            }
+        
+        // Define time periods
+        let timePeriods = [
+            ("Morning", 6, 12),    // 6 AM - 12 PM
+            ("Lunch", 12, 14),     // 12 PM - 2 PM
+            ("Evening", 14, 20),   // 2 PM - 8 PM
+            ("Night", 20, 24)      // 8 PM - 12 AM
+        ]
+        
+        var timeData: [TimeCompletionData] = []
+        
+        for (periodName, startHour, endHour) in timePeriods {
+            // Count completions in this time period
+            let completionsInPeriod = habitLogs.filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                let hour = calendar.component(.hour, from: timestamp)
+                return hour >= startHour && hour < endHour
+            }.count
+            
+            // Calculate total possible completions (assuming daily habit)
+            let totalDays = calendar.dateComponents([.day], from: weekStart, to: weekEnd).day ?? 7
+            let completionRate = totalDays > 0 ? Double(completionsInPeriod) / Double(totalDays) : 0.0
+            
+            timeData.append(TimeCompletionData(
+                timePeriod: periodName,
+                completionRate: completionRate,
+                completionCount: completionsInPeriod,
+                totalDays: totalDays
+            ))
+        }
+        
+        return timeData
+    }
+    
     // MARK: - Weekly Difficulty Data Helper
     private func getWeeklyDifficultyData(for habit: Habit) -> [DifficultyDataPoint] {
         let calendar = AppDateFormatter.shared.getUserCalendar()
         let weekStart = selectedWeekStartDate
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        
+        // Ensure we include the current day if it's within the week
+        let today = Date()
+        let adjustedWeekEnd = max(weekEnd, today)
         
         var dataPoints: [DifficultyDataPoint] = []
         
@@ -3020,9 +3187,16 @@ struct ProgressTabView: View {
         let difficultyLogs = allDifficultyLogs
             .filter { log in
                 guard let timestamp = log.timestamp else { return false }
-                return timestamp >= weekStart && timestamp <= weekEnd
+                return timestamp >= weekStart && timestamp <= adjustedWeekEnd
             }
             .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        
+        // Debug: Print week range and found logs
+        print("🔍 Week range: \(weekStart) to \(adjustedWeekEnd)")
+        print("🔍 Found \(difficultyLogs.count) difficulty logs in this week")
+        for log in difficultyLogs {
+            print("🔍 Log: \(log.timestamp ?? Date()) - Difficulty: \(log.difficulty)")
+        }
         
         // Group by day and get average difficulty for each day
         let groupedByDay = Dictionary(grouping: difficultyLogs) { log in
@@ -3041,12 +3215,15 @@ struct ProgressTabView: View {
                 }
                 let averageDifficulty = Double(totalDifficulty) / Double(dayLogs.count)
                 
+                print("🔍 Day \(dayOffset): \(currentDay) - Has data: \(averageDifficulty)")
+                
                 dataPoints.append(DifficultyDataPoint(
                     date: currentDay,
                     difficulty: averageDifficulty,
                     hasData: true
                 ))
             } else {
+                print("🔍 Day \(dayOffset): \(currentDay) - No data")
                 dataPoints.append(DifficultyDataPoint(
                     date: currentDay,
                     difficulty: 0,
@@ -3055,7 +3232,250 @@ struct ProgressTabView: View {
             }
         }
         
+        print("🔍 Total data points created: \(dataPoints.count)")
         return dataPoints
+    }
+    
+    // MARK: - Monthly Difficulty Data Helper
+    private func getMonthlyDifficultyData(for habit: Habit) -> [MonthlyDifficultyDataPoint] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        
+        // Get the start and end of the current month
+        let monthStart = calendar.dateInterval(of: .month, for: selectedProgressDate)?.start ?? selectedProgressDate
+        let monthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?.end ?? selectedProgressDate
+        
+        // Ensure we include the current day if it's within the month
+        let today = Date()
+        let adjustedMonthEnd = min(monthEnd, today)
+        
+        var dataPoints: [MonthlyDifficultyDataPoint] = []
+        
+        // Get difficulty logs for the month using CoreDataAdapter
+        let allDifficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
+        let difficultyLogs = allDifficultyLogs
+            .filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                return timestamp >= monthStart && timestamp <= adjustedMonthEnd
+            }
+            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        
+        // Calculate the actual end of the month (not adjusted for today)
+        let actualMonthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?.end ?? selectedProgressDate
+        
+        // Debug: Print month range and found logs
+        print("🔍 Month range: \(monthStart) to \(adjustedMonthEnd)")
+        print("🔍 Actual month end: \(actualMonthEnd)")
+        print("🔍 Found \(difficultyLogs.count) difficulty logs in this month")
+        
+        // Get all weeks in the month - iterate through each week
+        var currentWeek = monthStart
+        var weekIndex = 0
+        
+        while currentWeek < actualMonthEnd && weekIndex < 6 { // Max 6 weeks in a month
+            let weekStart = calendar.startOfDay(for: currentWeek)
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+            
+            print("🔍 Processing week \(weekIndex + 1): currentWeek=\(currentWeek), weekStart=\(weekStart), weekEnd=\(weekEnd), actualMonthEnd=\(actualMonthEnd)")
+            
+            // Filter logs for this specific week
+            let weekLogs = difficultyLogs.filter { log in
+                guard let timestamp = log.timestamp else { return false }
+                return timestamp >= weekStart && timestamp <= weekEnd
+            }
+            
+            if !weekLogs.isEmpty {
+                // Calculate average difficulty for the week
+                let totalDifficulty = weekLogs.reduce(0) { sum, log in
+                    sum + Int(log.difficulty)
+                }
+                let averageDifficulty = Double(totalDifficulty) / Double(weekLogs.count)
+                
+                print("🔍 Week \(weekIndex + 1): \(weekStart) to \(weekEnd) - Has data: \(averageDifficulty) (from \(weekLogs.count) logs)")
+                
+                dataPoints.append(MonthlyDifficultyDataPoint(
+                    weekStartDate: weekStart,
+                    difficulty: averageDifficulty,
+                    hasData: true
+                ))
+            } else {
+                print("🔍 Week \(weekIndex + 1): \(weekStart) to \(weekEnd) - No data")
+                dataPoints.append(MonthlyDifficultyDataPoint(
+                    weekStartDate: weekStart,
+                    difficulty: 0,
+                    hasData: false
+                ))
+            }
+            
+            // Move to next week
+            currentWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: currentWeek) ?? currentWeek
+            weekIndex += 1
+        }
+        
+        print("🔍 Total monthly data points created: \(dataPoints.count)")
+        for (index, point) in dataPoints.enumerated() {
+            print("🔍 Monthly data point \(index): Week \(index + 1) - Difficulty: \(point.difficulty), HasData: \(point.hasData)")
+        }
+        return dataPoints
+    }
+}
+
+// MARK: - Time Completion Data Point
+struct TimeCompletionData: Identifiable {
+    let id = UUID()
+    let timePeriod: String
+    let completionRate: Double
+    let completionCount: Int
+    let totalDays: Int
+}
+
+// MARK: - Time Base Completion Chart
+struct TimeBaseCompletionChart: View {
+    let data: [TimeCompletionData]
+    
+    private var timeCompletionBanner: some View {
+        let bestTime = data.max(by: { $0.completionRate < $1.completionRate })
+        
+        guard let bestTime = bestTime else { return AnyView(EmptyView()) }
+        
+        let isDayTime = bestTime.timePeriod == "Morning" || bestTime.timePeriod == "Afternoon"
+        
+        return AnyView(
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(bestTime.timePeriod)!")
+                        .font(.appBodySmallEmphasised)
+                        .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Text("This habit tends to be more successful in the \(bestTime.timePeriod.lowercased())")
+                        .font(.appBodySmallEmphasised)
+                        .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(nil)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Image(bestTime.timePeriod)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: 150, maxHeight: 80)
+                    .clipped()
+                    .padding(.trailing, -20)
+            }
+                    .padding(.leading, 20)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color(hex: isDayTime ? "C9E5FF" : "121E3D"))
+            )
+        )
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .bottom, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .trailing, spacing: 0) {
+                    ForEach(0...4, id: \.self) { index in
+                        let percentage = 100 - (index * 25)
+                        Text("\(percentage)%")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 40)
+                    }
+                }
+                .frame(width: 40)
+                
+                // Chart area
+                GeometryReader { geometry in
+                    ZStack {
+                        // Background grid
+                        backgroundGrid(in: geometry)
+                        
+                        // Bars
+                        bars(in: geometry)
+                    }
+                }
+                .frame(height: 160)
+            }
+            
+            // X-axis labels
+            HStack {
+                Spacer().frame(width: 40) // Align with chart area
+                
+                ForEach(data, id: \.id) { item in
+                    Text(item.timePeriod)
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text02)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Spacer above banner
+            Spacer()
+                .frame(height: 16)
+            
+            // Time completion banner
+            timeCompletionBanner
+        }
+    }
+    
+    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        
+        return Path { path in
+            // Horizontal grid lines (0% at bottom, 100% at top)
+            // Align with Y-axis labels (40pt spacing, centered in each row)
+            for i in 0...4 {
+                let y = height - (CGFloat(4 - i) * 40.0) - 20.0 // 0% line at bottom
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: width, y: y))
+            }
+        }
+        .stroke(Color.outline3.opacity(0.3), lineWidth: 0.5)
+    }
+    
+    private func bars(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        let barWidth = width / CGFloat(data.count) * 0.7
+        
+        return ZStack {
+            ForEach(Array(data.enumerated()), id: \.offset) { index, item in
+                // Calculate bar height based on the same coordinate system as grid lines
+                // Each grid line is 40pt apart, so we need to scale the completion rate accordingly
+                let maxBarHeight = 40.0 * 4 // 4 grid intervals (0% to 100%)
+                let barHeight = maxBarHeight * item.completionRate
+                
+                // Position the bar so it starts exactly at the 0% line
+                // The 0% line is at y = height - 20.0 (from the grid calculation)
+                let zeroLineY = height - 20.0
+                let barY = zeroLineY - barHeight
+                
+                // Calculate horizontal position - center each bar in its column
+                let columnWidth = width / CGFloat(data.count)
+                let barX = columnWidth * CGFloat(index) + columnWidth / 2
+                
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.blue.opacity(0.8),
+                                Color.blue.opacity(0.6)
+                            ]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    )
+                    .frame(width: barWidth, height: barHeight)
+                    .position(x: barX, y: barY + barHeight / 2)
+            }
+        }
     }
 }
 
@@ -3063,6 +3483,14 @@ struct ProgressTabView: View {
 struct DifficultyDataPoint: Identifiable {
     let id = UUID()
     let date: Date
+    let difficulty: Double
+    let hasData: Bool
+}
+
+// MARK: - Monthly Difficulty Data Point
+struct MonthlyDifficultyDataPoint: Identifiable {
+    let id = UUID()
+    let weekStartDate: Date
     let difficulty: Double
     let hasData: Bool
 }
@@ -3076,47 +3504,69 @@ struct DifficultyLineChart: View {
     private let dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            // Y-axis labels
-            VStack(alignment: .trailing, spacing: 0) {
-                ForEach((1...5).reversed(), id: \.self) { level in
-                    Text(difficultyLabel(for: level))
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text03)
-                        .frame(height: 24)
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .top, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<5, id: \.self) { level in
+                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
+                        
+                        Text(difficultyLabel(for: difficultyLevel))
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 140/4, alignment: .center)
+                    }
                 }
-            }
-            .frame(width: 50)
-            
-            // Chart area
-            VStack(spacing: 12) {
+                .frame(width: 60, height: 140)
+                
+                // Main chart area
                 GeometryReader { geometry in
                     ZStack {
                         // Background grid
                         backgroundGrid(in: geometry)
                         
-                        // Difficulty line
+                        // Shaded area under the line
+                        shadedArea(in: geometry)
+                        
+                        // Difficulty line - drawn first so it appears behind the images
                         difficultyLine(in: geometry)
                         
-                        // Data points
+                        // Data points - drawn last so they appear on top of the line
                         dataPoints(in: geometry)
                     }
                 }
-                .frame(height: 120)
-                
-                // X-axis labels
+                .frame(height: 140)
+            }
+            
+            // X-axis labels
+            GeometryReader { labelGeometry in
                 HStack {
-                    ForEach(0..<7, id: \.self) { index in
-                        let dayDate = calendar.date(byAdding: .day, value: index, to: weekStartDate) ?? weekStartDate
-                        let dayName = getDayAbbreviation(for: dayDate)
-                        
-                        Text(dayName)
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text03)
-                            .frame(maxWidth: .infinity)
+                    // Spacer to align with chart area (accounting for Y-axis labels)
+                    Spacer()
+                        .frame(width: 60)
+                    
+                    ZStack {
+                        ForEach(0..<7, id: \.self) { index in
+                            let dayDate = calendar.date(byAdding: .day, value: index, to: weekStartDate) ?? weekStartDate
+                            let dayName = getDayAbbreviation(for: dayDate)
+                            
+                            // Use the same positioning logic as data points
+                            let availableWidth = labelGeometry.size.width - 60 // Subtract spacer width
+                            let stepX = availableWidth / CGFloat(6) // 6 steps for 7 days (0-6)
+                            let x = CGFloat(index) * stepX
+                            
+                            Text(dayName)
+                                .font(.appLabelSmall)
+                                .foregroundColor(.text02)
+                                .position(x: x, y: 0)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
+            .frame(height: 20)
+            .padding(.top, 16)
         }
     }
     
@@ -3141,7 +3591,7 @@ struct DifficultyLineChart: View {
         VStack(spacing: 0) {
             ForEach(0..<5, id: \.self) { level in
                 Rectangle()
-                    .fill(Color.outline3.opacity(0.1))
+                    .fill(Color.outline3.opacity(0.3))
                     .frame(height: 1)
                     .frame(maxWidth: .infinity)
                 
@@ -3150,6 +3600,51 @@ struct DifficultyLineChart: View {
                 }
             }
         }
+    }
+    
+    
+    private func shadedArea(in geometry: GeometryProxy) -> some View {
+        let validData = data.filter { $0.hasData }
+        
+        if validData.count < 2 {
+            return AnyView(EmptyView())
+        }
+        
+        let width = geometry.size.width
+        let height = geometry.size.height
+        let stepX = width / CGFloat(data.count - 1)
+        
+        var path = Path()
+        
+        // Start from bottom left
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        // Add line points
+        for (index, point) in validData.enumerated() {
+            let originalIndex = data.firstIndex { $0.date == point.date } ?? index
+            let x = CGFloat(originalIndex) * stepX
+            // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
+            let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
+            let gridSpacing = height / 4.0
+            let y = CGFloat(gridLevel) * gridSpacing
+            
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        
+        // Close the path to bottom right
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.closeSubpath()
+        
+        return AnyView(
+            path
+                .fill(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.15), Color.blue.opacity(0.03)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        )
     }
     
     private func difficultyLine(in geometry: GeometryProxy) -> some View {
@@ -3166,9 +3661,14 @@ struct DifficultyLineChart: View {
         var path = Path()
         
         for (index, point) in validData.enumerated() {
-            let x = CGFloat(index) * stepX
-            // Invert the y calculation: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
-            let y = (CGFloat(5 - point.difficulty) / 4.0) * height
+            // Find the original index in the full data array
+            let originalIndex = data.firstIndex { $0.date == point.date } ?? index
+            let x = CGFloat(originalIndex) * stepX
+            // Align with grid lines: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
+            // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
+            let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
+            let gridSpacing = height / 4.0 // 4 spacings between 5 grid lines
+            let y = CGFloat(gridLevel) * gridSpacing
             
             if index == 0 {
                 path.move(to: CGPoint(x: x, y: y))
@@ -3180,12 +3680,8 @@ struct DifficultyLineChart: View {
         return AnyView(
             path
                 .stroke(
-                    LinearGradient(
-                        colors: [.green, .mint, .orange, .red, .purple],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                    Color.blue.opacity(0.9),
+                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
                 )
         )
     }
@@ -3198,17 +3694,30 @@ struct DifficultyLineChart: View {
         return ForEach(Array(data.enumerated()), id: \.offset) { index, point in
             if point.hasData {
                 let x = CGFloat(index) * stepX
-                // Invert the y calculation: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
-                let y = (CGFloat(5 - point.difficulty) / 4.0) * height
+                // Align with grid lines: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
+                // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
+                let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
+                let gridSpacing = height / 4.0 // 4 spacings between 5 grid lines
+                let y = CGFloat(gridLevel) * gridSpacing
                 
-                Circle()
-                    .fill(difficultyColor(for: point.difficulty))
-                    .frame(width: 8, height: 8)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.surface, lineWidth: 2)
-                    )
-                    .position(x: x, y: y)
+                ZStack {
+                    // White background circle with subtle shadow
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 26, height: 26)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.grey300, lineWidth: 1.5)
+                        )
+                        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    
+                    // Difficulty image
+                    Image(difficultyImageName(for: point.difficulty))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                }
+                .position(x: x, y: y)
             }
         }
     }
@@ -3223,12 +3732,265 @@ struct DifficultyLineChart: View {
         default: return .grey500
         }
     }
+    
+    private func difficultyImageName(for difficulty: Double) -> String {
+        switch Int(round(difficulty)) {
+        case 1: return "Difficulty-VeryEasy@4x"
+        case 2: return "Difficulty-Easy@4x"
+        case 3: return "Difficulty-Medium@4x"
+        case 4: return "Difficulty-Hard@4x"
+        case 5: return "Difficulty-VeryHard@4x"
+        default: return "Difficulty-Medium@4x"
+        }
+    }
 }
 
 // MARK: - Date Extension
 extension Date {
     func get(_ component: Calendar.Component) -> Int {
         return Calendar.current.component(component, from: self)
+    }
+}
+
+// MARK: - Monthly Difficulty Chart
+struct MonthlyDifficultyChart: View {
+    let data: [MonthlyDifficultyDataPoint]
+    let monthStartDate: Date
+    
+    private let calendar = AppDateFormatter.shared.getUserCalendar()
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .top, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<5, id: \.self) { level in
+                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
+                        
+                        Text(difficultyLabel(for: difficultyLevel))
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 140/4, alignment: .center)
+                    }
+                }
+                .frame(width: 60, height: 140)
+                
+                // Main chart area
+                GeometryReader { geometry in
+                    ZStack {
+                        // Background grid
+                        backgroundGrid(in: geometry)
+                        
+                        // Shaded area under the line
+                        shadedArea(in: geometry)
+                        
+                        // Difficulty line - drawn first so it appears behind the images
+                        difficultyLine(in: geometry)
+                        
+                        // Data points - drawn last so they appear on top of the line
+                        dataPoints(in: geometry)
+                    }
+                }
+                .frame(height: 140)
+            }
+            
+            // X-axis labels
+            GeometryReader { labelGeometry in
+                HStack {
+                    // Spacer to align with chart area (accounting for Y-axis labels)
+                    Spacer()
+                        .frame(width: 60)
+                    
+                    ZStack {
+                        if data.count > 0 {
+                        ForEach(0..<data.count, id: \.self) { index in
+                            let weekLabel = "W\(index + 1)"
+                                
+                                // Apply padding to the chart area, then distribute labels evenly within that space
+                                let availableWidth = labelGeometry.size.width - 60 // Subtract spacer width
+                                let padding: CGFloat = 20
+                                let chartWidth = availableWidth - (padding * 2) // Subtract padding from both sides
+                                let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
+                                let x = padding + (CGFloat(index) * stepX) // Start from padding position
+                                
+                                Text(weekLabel)
+                                    .font(.appLabelSmall)
+                                    .foregroundColor(.text02)
+                                    .position(x: x, y: 10) // Position at bottom of the GeometryReader
+                            }
+                        } else {
+                            // Show placeholder when no data - always show at least one label
+                            Text("W1")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.text02)
+                                .position(x: (labelGeometry.size.width - 60) / 2, y: 10)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .frame(height: 20)
+            .padding(.top, 16)
+        }
+    }
+    
+    
+    private func difficultyLabel(for difficulty: Int) -> String {
+        switch difficulty {
+        case 1: return "Very Easy"
+        case 2: return "Easy"
+        case 3: return "Medium"
+        case 4: return "Hard"
+        case 5: return "Very Hard"
+        default: return ""
+        }
+    }
+    
+    private func difficultyImageName(for difficulty: Double) -> String {
+        switch Int(difficulty) {
+        case 1: return "Difficulty-VeryEasy@4x"
+        case 2: return "Difficulty-Easy@4x"
+        case 3: return "Difficulty-Medium@4x"
+        case 4: return "Difficulty-Hard@4x"
+        case 5: return "Difficulty-VeryHard@4x"
+        default: return "Difficulty-Medium@4x"
+        }
+    }
+    
+    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        
+        return Path { path in
+            // Horizontal grid lines
+            for i in 0...4 {
+                let y = CGFloat(i) * (height / 4.0)
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: width, y: y))
+            }
+        }
+        .stroke(Color.outline3.opacity(0.3), lineWidth: 0.5)
+    }
+    
+    private func shadedArea(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        let validData = data.filter { $0.hasData }
+        
+        guard validData.count > 1 else { 
+            return AnyView(EmptyView())
+        }
+        
+        // Use the same padding logic as X-axis labels and data points
+        let padding: CGFloat = 20
+        let chartWidth = width - (padding * 2)
+        let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
+        
+        return AnyView(
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: height))
+                
+                for (index, point) in validData.enumerated() {
+                    let originalIndex = data.firstIndex { $0.id == point.id } ?? 0
+                    let x = padding + (CGFloat(originalIndex) * stepX) // Start from padding position
+                    let gridLevel = 4 - (Int(point.difficulty) - 1)
+                    let gridSpacing = height / 4.0
+                    let y = CGFloat(gridLevel) * gridSpacing
+                    
+                    if index == 0 {
+                        path.addLine(to: CGPoint(x: x, y: y))
+                    } else {
+                        path.addLine(to: CGPoint(x: x, y: y))
+                    }
+                }
+                
+                path.addLine(to: CGPoint(x: width - padding, y: height))
+                path.closeSubpath()
+            }
+            .fill(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.blue.opacity(0.05)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+        )
+    }
+    
+    private func difficultyLine(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        let validData = data.filter { $0.hasData }
+        
+        guard validData.count > 1 else { 
+            return AnyView(EmptyView())
+        }
+        
+        // Use the same padding logic as X-axis labels and data points
+        let padding: CGFloat = 20
+        let chartWidth = width - (padding * 2)
+        let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
+        
+        return AnyView(
+            Path { path in
+                for (index, point) in validData.enumerated() {
+                    let originalIndex = data.firstIndex { $0.id == point.id } ?? 0
+                    let x = padding + (CGFloat(originalIndex) * stepX) // Start from padding position
+                    let gridLevel = 4 - (Int(point.difficulty) - 1)
+                    let gridSpacing = height / 4.0
+                    let y = CGFloat(gridLevel) * gridSpacing
+                    
+                    if index == 0 {
+                        path.move(to: CGPoint(x: x, y: y))
+                    } else {
+                        path.addLine(to: CGPoint(x: x, y: y))
+                    }
+                }
+            }
+            .stroke(
+                Color.blue.opacity(0.9),
+                style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
+            )
+        )
+    }
+    
+    private func dataPoints(in geometry: GeometryProxy) -> some View {
+        let width = geometry.size.width
+        let height = geometry.size.height
+        
+        // Use the same padding logic as X-axis labels
+        let padding: CGFloat = 20
+        let chartWidth = width - (padding * 2)
+        let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
+        
+        return ForEach(Array(data.enumerated()), id: \.offset) { index, point in
+            if point.hasData {
+                let x = padding + (CGFloat(index) * stepX) // Start from padding position
+                let gridLevel = 4 - (Int(point.difficulty) - 1)
+                let gridSpacing = height / 4.0
+                let y = CGFloat(gridLevel) * gridSpacing
+                
+                ZStack {
+                    // White background circle with subtle shadow
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 26, height: 26)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.grey300, lineWidth: 1.5)
+                        )
+                        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    
+                    // Difficulty image
+                    Image(difficultyImageName(for: point.difficulty))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                }
+                .position(x: x, y: y)
+            }
+        }
     }
 }
 
