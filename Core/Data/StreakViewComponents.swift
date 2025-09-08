@@ -409,7 +409,7 @@ struct HeatmapCellView: View {
     let completionPercentage: Double
     let rectangleSizePercentage: Double
     
-    init(intensity: Int, isScheduled: Bool, completionPercentage: Double, rectangleSizePercentage: Double = 0.6) {
+    init(intensity: Int, isScheduled: Bool, completionPercentage: Double, rectangleSizePercentage: Double = 0.5) {
         self.intensity = intensity
         self.isScheduled = isScheduled
         self.completionPercentage = completionPercentage
@@ -434,14 +434,8 @@ struct HeatmapCellView: View {
                         .frame(width: cellSize, height: cellSize)
                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                 } else {
-                    // Show subtle indicator when not scheduled
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.primaryContainer.opacity(0.3))
-                        .frame(width: cellSize, height: cellSize)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.outline3.opacity(0.2), lineWidth: 0.5)
-                        )
+                    // Show nothing when not scheduled - better for accessibility
+                    // Empty space makes it clear the habit wasn't supposed to be done
                 }
             }
         }
