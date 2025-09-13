@@ -124,15 +124,9 @@ class CoreDataAdapter: ObservableObject {
         // Try to convert each entity individually to catch any errors
         var recoveredHabits: [Habit] = []
         for (index, entity) in entities.enumerated() {
-            do {
-                let habit = entity.toHabit()
-                recoveredHabits.append(habit)
-                print("✅ Recovered habit \(index): \(habit.name)")
-            } catch {
-                print("❌ Failed to convert entity \(index): \(error)")
-                print("   Entity name: \(entity.name ?? "nil")")
-                print("   Entity ID: \(entity.id?.uuidString ?? "nil")")
-            }
+            let habit = entity.toHabit()
+            recoveredHabits.append(habit)
+            print("✅ Recovered habit \(index): \(habit.name)")
         }
         
         // Update the habits array

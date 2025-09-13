@@ -192,10 +192,10 @@ struct HomeTabView: View {
                     emptyStateViewForTab
                         .frame(maxWidth: .infinity, alignment: .center)
                 } else {
-                    ForEach(Array(habitsForSelectedDate.enumerated()), id: \.element.id) { index, habit in
+                    ForEach(habitsForSelectedDate, id: \.id) { habit in
                         habitRow(habit)
-                            .id("home-habit-\(habit.id)-\(index)") // Performance optimization: Stable ID
                     }
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: habitsForSelectedDate.map { "\($0.id)-\($0.isCompleted(for: selectedDate))" })
                 }
             }
             .padding(.horizontal, 20)
