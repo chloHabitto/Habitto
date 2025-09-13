@@ -6,6 +6,7 @@ struct PreferencesView: View {
     @State private var showingLanguage = false
     @State private var showingDateCalendar = false
     @State private var showingTheme = false
+    @State private var showingDailyReminders = false
     
     var body: some View {
         NavigationView {
@@ -55,6 +56,18 @@ struct PreferencesView: View {
                             showingTheme = true
                         }
                         .opacity(0.6)
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        AccountOptionRow(
+                            icon: "Icon-alarm_Filled",
+                            title: "Daily Reminders",
+                            subtitle: "Set up your daily habit reminders",
+                            hasChevron: true
+                        ) {
+                            showingDailyReminders = true
+                        }
                     }
                     .background(Color.surface)
                     .cornerRadius(16)
@@ -86,6 +99,9 @@ struct PreferencesView: View {
         }
         .sheet(isPresented: $showingTheme) {
             ThemeView()
+        }
+        .sheet(isPresented: $showingDailyReminders) {
+            DailyRemindersView()
         }
     }
 }

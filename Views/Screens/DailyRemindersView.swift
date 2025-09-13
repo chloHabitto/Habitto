@@ -1,0 +1,395 @@
+import SwiftUI
+
+struct DailyRemindersView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    // Plan Reminder State
+    @State private var originalPlanReminderEnabled = false
+    @State private var originalPlanReminderTime = Date().settingHour(8).settingMinute(0)
+    @State private var planReminderEnabled = false
+    @State private var planReminderTime = Date().settingHour(8).settingMinute(0)
+    
+    // Completion Reminder State
+    @State private var originalCompletionReminderEnabled = false
+    @State private var originalCompletionReminderTime = Date().settingHour(20).settingMinute(30)
+    @State private var originalSnoozeDuration = SnoozeDuration.none
+    @State private var completionReminderEnabled = false
+    @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
+    @State private var snoozeDuration = SnoozeDuration.none
+    
+    // Check if any changes were made
+    private var hasChanges: Bool {
+        return planReminderEnabled != originalPlanReminderEnabled ||
+               planReminderTime != originalPlanReminderTime ||
+               completionReminderEnabled != originalCompletionReminderEnabled ||
+               completionReminderTime != originalCompletionReminderTime ||
+               snoozeDuration != originalSnoozeDuration
+    }
+    
+    // Snooze Duration Options
+    enum SnoozeDuration: String, CaseIterable {
+        case none = "None"
+        case tenMinutes = "10 min"
+        case fifteenMinutes = "15 min"
+        case thirtyMinutes = "30 min"
+        
+        var minutes: Int {
+            switch self {
+            case .none: return 0
+            case .tenMinutes: return 10
+            case .fifteenMinutes: return 15
+            case .thirtyMinutes: return 30
+            }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Main content with save button
+                ZStack(alignment: .bottom) {
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Plan Reminder Section
+                            planReminderSection
+                            
+                            // Completion Reminder Section
+                            completionReminderSection
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 140) // Extra bottom padding for save button
+                    }
+                    
+                    // Save button at bottom
+                    saveButton
+                }
+            }
+            .background(Color.surface2)
+            .navigationTitle("Daily Reminders")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            loadReminderSettings()
+        }
+    }
+    
+    // MARK: - Plan Reminder Section
+    private var planReminderSection: some View {
+        VStack(spacing: 0) {
+            // Section header
+            HStack {
+                Text("Plan Reminder")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.text01)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 16)
+            
+            // Options container
+            VStack(spacing: 0) {
+                // Plan Reminder Toggle
+                planReminderToggleRow
+                
+                if planReminderEnabled {
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 20)
+                    
+                    planReminderTimeRow
+                }
+            }
+            .background(.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        }
+    }
+    
+    // MARK: - Completion Reminder Section
+    private var completionReminderSection: some View {
+        VStack(spacing: 0) {
+            // Section header
+            HStack {
+                Text("Completion Reminder")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.text01)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 16)
+            
+            // Options container
+            VStack(spacing: 0) {
+                // Completion Reminder Toggle
+                completionReminderToggleRow
+                
+                if completionReminderEnabled {
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 20)
+                    
+                    completionReminderTimeRow
+                    
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 20)
+                    
+                    snoozeDurationRow
+                }
+            }
+            .background(.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        }
+    }
+    
+    // MARK: - Plan Reminder Toggle Row
+    private var planReminderToggleRow: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Plan reminder")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                Text("At the time you choose, I'll let you know if you have goals scheduled today.")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text04)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $planReminderEnabled)
+                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                .scaleEffect(0.8)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Plan reminder toggle")
+        .accessibilityHint("Enables or disables daily plan reminders")
+    }
+    
+    // MARK: - Plan Reminder Time Row
+    private var planReminderTimeRow: some View {
+        HStack(spacing: 16) {
+            Text("Reminder time")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            Spacer()
+            
+            DatePicker(
+                "",
+                selection: $planReminderTime,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Plan reminder time")
+        .accessibilityHint("Set the time for daily plan reminders")
+    }
+    
+    // MARK: - Completion Reminder Toggle Row
+    private var completionReminderToggleRow: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Completion reminder")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                
+                Text("At the time you choose, I'll remind you about any goals you haven't finished today.")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text04)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $completionReminderEnabled)
+                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                .scaleEffect(0.8)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Completion reminder toggle")
+        .accessibilityHint("Enables or disables daily completion reminders")
+    }
+    
+    // MARK: - Completion Reminder Time Row
+    private var completionReminderTimeRow: some View {
+        HStack(spacing: 16) {
+            Text("Reminder time")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            Spacer()
+            
+            DatePicker(
+                "",
+                selection: $completionReminderTime,
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Completion reminder time")
+        .accessibilityHint("Set the time for daily completion reminders")
+    }
+    
+    // MARK: - Snooze Duration Row
+    private var snoozeDurationRow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Snooze duration")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+            }
+            
+            HStack(spacing: 8) {
+                ForEach(SnoozeDuration.allCases, id: \.self) { duration in
+                    Button(action: {
+                        snoozeDuration = duration
+                    }) {
+                        Text(duration.rawValue)
+                            .font(.appBodyMedium)
+                            .foregroundColor(snoozeDuration == duration ? .white : .text02)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(snoozeDuration == duration ? Color.primary : Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Snooze duration")
+        .accessibilityHint("Choose how long to snooze completion reminders")
+    }
+    
+    // MARK: - Save Button
+    private var saveButton: some View {
+        VStack(spacing: 0) {
+            // Gradient overlay to fade content behind button
+            LinearGradient(
+                gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 20)
+            
+            // Button container
+            HStack {
+                HabittoButton.largeFillPrimary(
+                    text: "Save",
+                    state: hasChanges ? .default : .disabled,
+                    action: saveChanges
+                )
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+            .background(Color.surface2)
+        }
+    }
+    
+    // MARK: - Save Action
+    private func saveChanges() {
+        // Update original values to reflect the new saved state
+        originalPlanReminderEnabled = planReminderEnabled
+        originalPlanReminderTime = planReminderTime
+        originalCompletionReminderEnabled = completionReminderEnabled
+        originalCompletionReminderTime = completionReminderTime
+        originalSnoozeDuration = snoozeDuration
+        
+        // Save to UserDefaults
+        UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
+        UserDefaults.standard.set(completionReminderEnabled, forKey: "completionReminderEnabled")
+        UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
+        UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
+        UserDefaults.standard.set(snoozeDuration.rawValue, forKey: "snoozeDuration")
+        
+        // Dismiss the view
+        dismiss()
+    }
+    
+    // MARK: - Data Persistence
+    private func loadReminderSettings() {
+        let planEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+        let completionEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+        
+        // Set both original and current values
+        originalPlanReminderEnabled = planEnabled
+        planReminderEnabled = planEnabled
+        
+        originalCompletionReminderEnabled = completionEnabled
+        completionReminderEnabled = completionEnabled
+        
+        // Load times
+        if let planTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date {
+            originalPlanReminderTime = planTime
+            planReminderTime = planTime
+        }
+        if let completionTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date {
+            originalCompletionReminderTime = completionTime
+            completionReminderTime = completionTime
+        }
+        
+        // Load snooze duration
+        if let snoozeRawValue = UserDefaults.standard.string(forKey: "snoozeDuration"),
+           let snooze = SnoozeDuration(rawValue: snoozeRawValue) {
+            originalSnoozeDuration = snooze
+            snoozeDuration = snooze
+        }
+    }
+}
+
+// MARK: - Date Extensions
+extension Date {
+    func settingHour(_ hour: Int) -> Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: self)
+        components.hour = hour
+        components.minute = 0
+        components.second = 0
+        return calendar.date(from: components) ?? self
+    }
+    
+    func settingMinute(_ minute: Int) -> Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents(in: .current, from: self)
+        components.minute = minute
+        components.second = 0
+        return calendar.date(from: components) ?? self
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    DailyRemindersView()
+}
