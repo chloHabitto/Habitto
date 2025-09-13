@@ -15,6 +15,8 @@ struct ScheduledHabitItem: View {
     @State private var showingActionSheet = false
     @State private var showingCompletionSheet = false
     @State private var isCompletingHabit = false
+    @State private var isCompletingAnimation = false
+    
     
     // Computed property for background color to simplify complex expression
     private var backgroundColor: Color {
@@ -46,6 +48,8 @@ struct ScheduledHabitItem: View {
                 .foregroundColor(isHabitCompleted() ? habit.color : .primaryContainerFocus)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
+                .scaleEffect(isCompletingAnimation ? 1.2 : 1.0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isCompletingAnimation)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -85,12 +89,13 @@ struct ScheduledHabitItem: View {
                         
                         // Progress bar
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(habit.color.opacity(0.7))
+                            .fill(habit.color.opacity(isCompletingAnimation ? 1.0 : 0.7))
                             .frame(
                                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
-                                height: 6
+                                height: isCompletingAnimation ? 8 : 6
                             )
-                            .animation(.easeInOut(duration: 0.3), value: currentProgress)
+                            .scaleEffect(isCompletingAnimation ? 1.05 : 1.0)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isCompletingAnimation)
                     }
                 }
                 .frame(height: 6)
@@ -173,6 +178,18 @@ struct ScheduledHabitItem: View {
                             // Check if habit is completed and show completion sheet
                             let goalAmount = extractNumericGoalAmount(from: habit.goal)
                             if newProgress >= goalAmount {
+                                // Fun completion animation for swipe
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
+                                    isCompletingAnimation = true
+                                }
+                                
+                                // Reset animation after completion
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                    withAnimation(.easeOut(duration: 0.3)) {
+                                        self.isCompletingAnimation = false
+                                    }
+                                }
+                                
                                 showingCompletionSheet = true
                             }
                             
@@ -241,68 +258,44 @@ struct ScheduledHabitItem: View {
             }
         }
         .onChange(of: habit.completionHistory) { oldHistory, newHistory in
-            // Skip if we're in the middle of completing a habit
-            guard !isCompletingHabit else {
-                print("🔄 ScheduledHabitItem: Skipping completionHistory update - completing habit")
-                return
-            }
-            
-            // Update local progress when the habit's completion history changes
+            guard !isCompletingHabit else { return }
             let newProgress = habit.getProgress(for: selectedDate)
-            print("🔄 ScheduledHabitItem: completionHistory changed for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
             currentProgress = newProgress
         }
         .onChange(of: habit) { oldHabit, newHabit in
-            // Skip if we're in the middle of completing a habit
-            guard !isCompletingHabit else {
-                print("🔄 ScheduledHabitItem: Skipping habit object update - completing habit")
-                return
-            }
-            
-            // Update local progress when the habit object itself changes
+            guard !isCompletingHabit else { return }
             let newProgress = newHabit.getProgress(for: selectedDate)
-            print("🔄 ScheduledHabitItem: habit object changed for \(newHabit.name), updating progress from \(currentProgress) to \(newProgress)")
-            print("🔄 ScheduledHabitItem: showingCompletionSheet is \(showingCompletionSheet)")
             currentProgress = newProgress
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("HabitProgressUpdated"))) { notification in
-            // Skip if we're in the middle of completing a habit
-            guard !isCompletingHabit else {
-                print("🔄 ScheduledHabitItem: Skipping progress notification update - completing habit")
-                return
-            }
-            
-            // Listen for progress update notifications to ensure UI stays in sync
-            if let habitId = notification.userInfo?["habitId"] as? UUID,
-               habitId == habit.id,
-               let date = notification.userInfo?["date"] as? Date,
-               let progress = notification.userInfo?["progress"] as? Int {
-                
-                // Only update if it's for the same date
-                let calendar = Calendar.current
-                let notificationDay = calendar.startOfDay(for: date)
-                let selectedDay = calendar.startOfDay(for: selectedDate)
-                
-                if notificationDay == selectedDay {
-                    print("🔄 ScheduledHabitItem: Progress update notification received for \(habit.name), updating from \(currentProgress) to \(progress)")
-                    currentProgress = progress
-                }
-            }
-        }
-        .sheet(isPresented: $showingCompletionSheet) {
-            print("🎯 ScheduledHabitItem: Sheet is being presented for habit: \(habit.name)")
-            return HabitCompletionBottomSheet(
-                isPresented: $showingCompletionSheet,
-                habit: habit,
-                onDismiss: {
-                    print("🎯 ScheduledHabitItem: Sheet dismissed for habit: \(habit.name)")
-                    isCompletingHabit = false
-                    onCompletionDismiss?()
-                }
-            )
+            .sheet(isPresented: $showingCompletionSheet) {
+                HabitCompletionBottomSheet(
+                    isPresented: $showingCompletionSheet,
+                    habit: habit,
+                    onDismiss: {
+                        print("🎯 ScheduledHabitItem: Sheet dismissed for habit: \(habit.name)")
+                        
+                        // Reset flag immediately
+                        isCompletingHabit = false
+                        
+                        // Save to data model after 0.5 second delay (visual is already updated)
+                        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            print("🎯 ScheduledHabitItem: Delayed data save after 0.5 seconds")
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1)) {
+                                self.onProgressChange?(self.habit, self.selectedDate, goalAmount)
+                            }
+                        }
+                        
+                        // Call the original completion dismiss handler
+                        onCompletionDismiss?()
+                    }
+                )
             .presentationDetents([.height(500)])
             .presentationDragIndicator(.hidden)
             .presentationCornerRadius(32)
+            .onDisappear {
+                print("🎯 ScheduledHabitItem: Sheet disappeared for habit: \(habit.name)")
+            }
         }
     }
     
@@ -351,39 +344,35 @@ struct ScheduledHabitItem: View {
         let isCompleted = isHabitCompleted()
         
         print("🎯 ScheduledHabitItem: completeHabit called for \(habit.name)")
-        print("🎯 ScheduledHabitItem: currentProgress: \(currentProgress), goalAmount: \(goalAmount), isCompleted: \(isCompleted)")
         
         if isCompleted {
             // If already completed, uncomplete it (set progress to 0)
-            let newProgress = 0
-            print("🔄 ScheduledHabitItem: Uncompleting habit \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
-            currentProgress = newProgress
-            
-            // Call the callback to save the progress
-            onProgressChange?(habit, selectedDate, newProgress)
+            currentProgress = 0
+            onProgressChange?(habit, selectedDate, 0)
             
             // Haptic feedback for uncompletion
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
             impactFeedback.impactOccurred()
         } else {
-            // If not completed, complete it (set progress to goal amount)
-            let newProgress = goalAmount
-            print("🔄 ScheduledHabitItem: Completing habit \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
-            
-            // Set flag to prevent onChange handlers from interfering
+            // If not completed, show completion sheet
+            print("🎯 ScheduledHabitItem: Showing completion sheet for \(habit.name)")
             isCompletingHabit = true
-            
-            // Show completion sheet first
-            print("🎯 ScheduledHabitItem: Setting showingCompletionSheet to true for habit: \(habit.name)")
             showingCompletionSheet = true
             
-            // Update progress after a short delay to allow sheet to present
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.currentProgress = newProgress
-                // Call the callback to save the progress
-                self.onProgressChange?(self.habit, self.selectedDate, newProgress)
-                // Reset the flag after updating
-                self.isCompletingHabit = false
+            // Show visual completion immediately (check mark filled)
+            let goalAmount = extractNumericGoalAmount(from: habit.goal)
+            
+            // Fun completion animation
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
+                currentProgress = goalAmount
+                isCompletingAnimation = true
+            }
+            
+            // Reset animation after completion
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    self.isCompletingAnimation = false
+                }
             }
             
             // Haptic feedback for completion

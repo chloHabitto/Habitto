@@ -1,5 +1,5 @@
 import SwiftUI
-// import Lottie
+// import Lottie // Temporarily commented out - package dependency issues
 
 struct SplashView: View {
     @StateObject private var authManager = AuthenticationManager.shared

@@ -1,5 +1,5 @@
 import UIKit
-// import Lottie // Temporarily commented out due to package dependency issues
+// import Lottie // Temporarily commented out - package dependency issues
 
 class SplashViewController: UIViewController {
     
