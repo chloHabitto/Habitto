@@ -251,6 +251,10 @@ struct HomeView: View {
                             onDeleteHabit: { habit in
                                 state.habitToDelete = habit
                                 state.showingDeleteConfirmation = true
+                            },
+                            onCompletionDismiss: {
+                                // Handle completion dismiss if needed
+                                print("🔄 HomeView: Habit completion bottom sheet dismissed")
                             }
                         )
                     case .progress:

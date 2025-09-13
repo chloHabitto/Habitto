@@ -48,6 +48,7 @@ struct HabitCompletionBottomSheet: View {
             actionButtons
         }
         .onAppear {
+            print("🎯 HabitCompletionBottomSheet: onAppear called for habit: \(habit.name)")
             // Set default difficulty to very easy
             selectedDifficulty = .veryEasy
             

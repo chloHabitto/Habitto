@@ -15,6 +15,7 @@ struct HomeTabView: View {
     let onUpdateHabit: ((Habit) -> Void)?
     let onSetProgress: ((Habit, Date, Int) -> Void)?
     let onDeleteHabit: ((Habit) -> Void)?
+    let onCompletionDismiss: (() -> Void)?
     
     // Performance optimization: Cached regex patterns
     private static let dayCountRegex = try? NSRegularExpression(pattern: "Every (\\d+) days?", options: .caseInsensitive)
@@ -256,6 +257,7 @@ struct HomeTabView: View {
             onCompletionDismiss: {
                 // Check for celebration after habit completion bottom sheet is dismissed
                 checkForAllHabitsCompleted()
+                onCompletionDismiss?()
             }
         )
     }
