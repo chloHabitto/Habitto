@@ -365,14 +365,14 @@ struct ProgressTabView: View {
                                         .aspectRatio(contentMode: .fit)
                                         .frame(width: 120, height: 120)
                                     
-                                    VStack(spacing: 8) {
+                                    VStack(spacing: 4) {
                                         Text("No reminders for today")
-                                            .font(.appBodyMedium)
-                                            .foregroundColor(.text02)
+                                            .font(.appTitleLargeEmphasised)
+                                            .foregroundColor(.text04)
                                         
                                         Text("You don't have any active reminders scheduled for this date")
-                                            .font(.appBodySmall)
-                                            .foregroundColor(.text03)
+                                            .font(.appTitleSmall)
+                                            .foregroundColor(.text06)
                                             .multilineTextAlignment(.center)
                                     }
                                 }
@@ -1826,7 +1826,7 @@ struct ProgressTabView: View {
     
     // MARK: - Weekly Progress Calculation Functions
     private func getWeeklyScheduledHabitsCount() -> Int {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let weekStart = selectedWeekStartDate
         let today = selectedProgressDate
         
@@ -1846,7 +1846,7 @@ struct ProgressTabView: View {
     }
     
     private func getWeeklyCompletedHabitsCount() -> Int {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let weekStart = selectedWeekStartDate
         let today = selectedProgressDate
         
@@ -2253,16 +2253,11 @@ struct ProgressTabView: View {
                     .padding(.bottom, 20)
                 } else {
                     // Empty state when no difficulty recorded
-                    VStack(spacing: 12) {
-                        Text("No Difficulty Recorded")
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.onPrimaryContainer)
-                        
-                        Text("Difficulty hasn't been recorded for \(selectedHabit.name) on \(formatDate(selectedProgressDate))")
-                            .font(.appBodySmall)
-                            .foregroundColor(.text02)
-                            .multilineTextAlignment(.center)
-                    }
+                    HabitEmptyStateView(
+                        imageName: "Habit-List-Empty-State@4x",
+                        title: "No Difficulty yet",
+                        subtitle: "You can record the difficulty once you complete the habit!"
+                    )
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 40)
