@@ -82,6 +82,7 @@ struct Habit: Identifiable, Codable, Equatable {
     var streak: Int = 0
     let createdAt: Date
     var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
+    var difficultyHistory: [String: Int] = [:] // Track daily difficulty: "yyyy-MM-dd" -> Int (1-10 scale)
     
     // Habit Breaking specific properties
     var baseline: Int = 0 // Current average usage
@@ -89,7 +90,7 @@ struct Habit: Identifiable, Codable, Equatable {
     var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
     
     // MARK: - Designated Initializer
-    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.description = description
@@ -108,6 +109,7 @@ struct Habit: Identifiable, Codable, Equatable {
         self.baseline = baseline
         self.target = target
         self.completionHistory = completionHistory
+        self.difficultyHistory = difficultyHistory
         self.actualUsage = actualUsage
     }
     
@@ -162,6 +164,20 @@ struct Habit: Identifiable, Codable, Equatable {
         
         // Debug: Print completion tracking
         print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
+    }
+    
+    // MARK: - Difficulty History Methods
+    mutating func recordDifficulty(_ difficulty: Int, for date: Date) {
+        let dateKey = Self.dateKey(for: date)
+        difficultyHistory[dateKey] = difficulty
+        
+        // Debug: Print difficulty tracking
+        print("🔍 DIFFICULTY DEBUG - Habit '\(name)' difficulty \(difficulty) recorded for \(dateKey)")
+    }
+    
+    func getDifficulty(for date: Date) -> Int? {
+        let dateKey = Self.dateKey(for: date)
+        return difficultyHistory[dateKey]
     }
     
     mutating func markIncomplete(for date: Date) {
