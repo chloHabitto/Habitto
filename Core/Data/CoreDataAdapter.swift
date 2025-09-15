@@ -2,6 +2,107 @@ import CoreData
 import SwiftUI
 import UserNotifications
 
+// MARK: - Temporary Core Data Entity Stubs (Missing from model)
+// These are temporary stubs until the Core Data model is restored
+
+class HabitEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var name: String?
+    @NSManaged var reminders: NSSet?
+    @NSManaged var completionHistory: NSSet?
+    @NSManaged var createdAt: Date?
+    @NSManaged var updatedAt: Date?
+    @NSManaged var lastCompleted: Date?
+    @NSManaged var isArchived: Bool
+    @NSManaged var color: String?
+    @NSManaged var emoji: String?
+    @NSManaged var streak: Int32
+    @NSManaged var frequency: String?
+    @NSManaged var targetAmount: Double
+    @NSManaged var unit: String?
+    @NSManaged var difficultyLevel: Int16
+    @NSManaged var notes: String?
+    @NSManaged var isActive: Bool
+    @NSManaged var reminderEnabled: Bool
+    @NSManaged var weekdays: String?
+    @NSManaged var scheduleDays: String?
+    @NSManaged var scheduleTime: Date?
+    @NSManaged var habitType: String?
+    @NSManaged var timeOfDay: String?
+    @NSManaged var category: String?
+    @NSManaged var difficultyLogs: NSSet?
+    @NSManaged var colorHex: String?
+    @NSManaged var habitDescription: String?
+    @NSManaged var icon: String?
+    @NSManaged var schedule: String?
+    @NSManaged var goal: String?
+    @NSManaged var reminder: String?
+    @NSManaged var startDate: Date?
+    @NSManaged var endDate: Date?
+    @NSManaged var isCompleted: Bool
+    @NSManaged var baseline: Double
+    @NSManaged var target: Double
+    @NSManaged var usageRecords: NSSet?
+    
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<HabitEntity> {
+        return NSFetchRequest<HabitEntity>(entityName: "HabitEntity")
+    }
+}
+
+class ReminderItemEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var time: Date?
+    @NSManaged var isActive: Bool
+    @NSManaged var message: String?
+    @NSManaged var habit: HabitEntity?
+}
+
+class CompletionRecordEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var timestamp: Date?
+    @NSManaged var progress: Double
+    @NSManaged var date: Date?
+    @NSManaged var habit: HabitEntity?
+    @NSManaged var notes: String?
+    @NSManaged var isCompleted: Bool
+    @NSManaged var dateKey: String?
+    @NSManaged var timeBlock: String?
+}
+
+class DifficultyLogEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var timestamp: Date?
+    @NSManaged var difficultyLevel: Int16
+    @NSManaged var difficulty: Int16  // Legacy property
+    @NSManaged var context: String?
+    @NSManaged var habit: HabitEntity?
+    @NSManaged var notes: String?
+    
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<DifficultyLogEntity> {
+        return NSFetchRequest<DifficultyLogEntity>(entityName: "DifficultyLogEntity")
+    }
+}
+
+class UsageRecordEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var timestamp: Date?
+    @NSManaged var action: String?
+    @NSManaged var habit: HabitEntity?
+    @NSManaged var dateKey: String?
+    @NSManaged var amount: Double
+}
+
+class NoteEntity: NSManagedObject {
+    @NSManaged var id: UUID?
+    @NSManaged var content: String?
+    @NSManaged var timestamp: Date?
+    @NSManaged var habit: HabitEntity?
+    @NSManaged var title: String?
+    @NSManaged var tags: String?
+    @NSManaged var createdAt: Date?
+    @NSManaged var updatedAt: Date?
+}
+
 // MARK: - Core Data Adapter
 class CoreDataAdapter: ObservableObject {
     static let shared = CoreDataAdapter()
@@ -206,7 +307,7 @@ class CoreDataAdapter: ObservableObject {
         
         // Create new DifficultyLogEntity
         let difficultyLog = DifficultyLogEntity(context: context)
-        difficultyLog.difficulty = difficulty
+        difficultyLog.difficulty = Int16(difficulty)
         difficultyLog.timestamp = date
         difficultyLog.context = "Daily completion rating"
         

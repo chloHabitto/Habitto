@@ -38,20 +38,16 @@ struct ScheduledHabitItem: View {
         return min(percentage, 1.0)
     }
     
-    // Computed property for completion button to simplify complex expression
+    // Computed property for completion button using animated checkbox
     private var completionButton: some View {
-        Button(action: {
-            completeHabit()
-        }) {
-            Image(systemName: isHabitCompleted() ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 24))
-                .foregroundColor(isHabitCompleted() ? habit.color : .primaryContainerFocus)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-                .scaleEffect(isCompletingAnimation ? 1.2 : 1.0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isCompletingAnimation)
-        }
-        .buttonStyle(PlainButtonStyle())
+        AnimatedCheckbox(
+            isChecked: isHabitCompleted(),
+            accentColor: habit.color,
+            isAnimating: isCompletingAnimation,
+            action: {
+                completeHabit()
+            }
+        )
     }
     
     var body: some View {
@@ -340,7 +336,6 @@ struct ScheduledHabitItem: View {
     
     // Helper function to toggle habit completion
     private func completeHabit() {
-        let goalAmount = extractNumericGoalAmount(from: habit.goal)
         let isCompleted = isHabitCompleted()
         
         print("🎯 ScheduledHabitItem: completeHabit called for \(habit.name)")

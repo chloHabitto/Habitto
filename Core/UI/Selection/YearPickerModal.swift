@@ -175,7 +175,7 @@ struct YearPicker: View {
             }
             .padding(.horizontal, 20)
         }
-        .onChange(of: selectedYear) { newValue in
+        .onChange(of: selectedYear) { oldValue, newValue in
             // Update currentYear when selectedYear changes externally
             currentYear = newValue
         }

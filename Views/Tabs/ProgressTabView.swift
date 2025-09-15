@@ -416,18 +416,18 @@ struct ProgressTabView: View {
             loadYearlyData()
             
         }
-        .onChange(of: coreDataAdapter.habits) { _ in
+        .onChange(of: coreDataAdapter.habits) {
             // Recalculate streak statistics when habits change
             updateStreakStatistics()
             
             // Reload yearly data when habits change
             loadYearlyData()
         }
-        .onChange(of: selectedWeekStartDate) { _ in
+        .onChange(of: selectedWeekStartDate) {
             // Recalculate streak statistics when week changes
             updateStreakStatistics()
         }
-        .onChange(of: selectedYear) { _ in
+        .onChange(of: selectedYear) {
             // Reload yearly data when year changes
             loadYearlyData()
         }
@@ -4104,7 +4104,7 @@ struct AnimatedCircularProgressRing: View {
                 }
             }
         }
-        .onChange(of: progress) { _, newValue in
+        .onChange(of: progress) { oldValue, newValue in
             // Animate to new progress value
             withAnimation(.easeOut(duration: 0.5)) {
                 animatedProgress = newValue

@@ -22,13 +22,6 @@
 /* Begin PBXFileReference section */
 		890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		891176D12E76FBD500009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		8911845E2E76FD7300009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		891187672E77043E00009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		89118A732E77052500009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		89118C022E77055700009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		89118D8A2E77056900009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
-		8911909C2E77059700009692 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89125F8F2E76CD250060E3E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		891261022E76CD4E0060E3E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		891269F12E76DCE90060E3E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -79,41 +72,6 @@
 				890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		891176D62E76FBD500009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		891184632E76FD7300009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		8911876C2E77043E00009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		89118A782E77052500009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		89118C062E77055700009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		89118D8F2E77056900009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
-			sourceTree = "<group>";
-		};
-		891190A12E77059700009692 /* Products */ = {
-			isa = PBXGroup;
-			name = Products;
 			sourceTree = "<group>";
 		};
 		89125F942E76CD250060E3E3 /* Products */ = {
@@ -253,8 +211,13 @@
 				89C17A392DF73D8A00B2480F /* Habitto */,
 			);
 			name = Habitto;
-			packageProductDependencies = (
-			);
+		packageProductDependencies = (
+			890C9EB32E4DF180006E28C7 /* Lottie */,
+			89DB7F662E4E1FB400C22CB9 /* FirebaseAuth */,
+			89DB7F6A2E4E1FB400C22CB9 /* FirebaseCore */,
+			89DB7F942E4E4B5D00C22CB9 /* GoogleSignIn */,
+			89DB7F962E4E4B5D00C22CB9 /* GoogleSignInSwift */,
+		);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
 			productType = "com.apple.product-type.application";
@@ -294,24 +257,8 @@
 					ProjectRef = 8970D0EB2E76C98300217C78 /* Habitto.xcodeproj */;
 				},
 				{
-					ProductGroup = 891184632E76FD7300009692 /* Products */;
-					ProjectRef = 8911845E2E76FD7300009692 /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 891190A12E77059700009692 /* Products */;
-					ProjectRef = 8911909C2E77059700009692 /* Habitto.xcodeproj */;
-				},
-				{
 					ProductGroup = 894AC2AA2E76ED1C0090008F /* Products */;
 					ProjectRef = 894AC2A52E76ED1C0090008F /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 89118D8F2E77056900009692 /* Products */;
-					ProjectRef = 89118D8A2E77056900009692 /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 89118A782E77052500009692 /* Products */;
-					ProjectRef = 89118A732E77052500009692 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 891269F62E76DCE90060E3E3 /* Products */;
@@ -334,10 +281,6 @@
 					ProjectRef = 89F103C62E76CBE30024AC3B /* Habitto.xcodeproj */;
 				},
 				{
-					ProductGroup = 8911876C2E77043E00009692 /* Products */;
-					ProjectRef = 891187672E77043E00009692 /* Habitto.xcodeproj */;
-				},
-				{
 					ProductGroup = 898CBB602E76FA39009A038B /* Products */;
 					ProjectRef = 898CBB5B2E76FA39009A038B /* Habitto.xcodeproj */;
 				},
@@ -358,10 +301,6 @@
 					ProjectRef = 89125F8F2E76CD250060E3E3 /* Habitto.xcodeproj */;
 				},
 				{
-					ProductGroup = 891176D62E76FBD500009692 /* Products */;
-					ProjectRef = 891176D12E76FBD500009692 /* Habitto.xcodeproj */;
-				},
-				{
 					ProductGroup = 89F590492E76EBC300007BFB /* Products */;
 					ProjectRef = 89F590442E76EBC300007BFB /* Habitto.xcodeproj */;
 				},
@@ -372,10 +311,6 @@
 				{
 					ProductGroup = 898CBCE02E76FA4C009A038B /* Products */;
 					ProjectRef = 898CBCDB2E76FA4C009A038B /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 89118C062E77055700009692 /* Products */;
-					ProjectRef = 89118C022E77055700009692 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 895FD3582E76F53E0091E179 /* Products */;
@@ -564,7 +499,7 @@
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Info-template.plist";
+				INFOPLIST_FILE = Info.pilst;
 				INFOPLIST_KEY_CFBundleDisplayName = Habitto;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -602,7 +537,7 @@
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = "Info-template.plist";
+				INFOPLIST_FILE = Info.pilst;
 				INFOPLIST_KEY_CFBundleDisplayName = Habitto;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

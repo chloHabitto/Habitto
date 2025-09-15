@@ -46,7 +46,7 @@ extension View {
     
     // Reduce view updates with equality check
     func equalityCheck<T: Equatable>(_ value: T, action: @escaping (T) -> Void) -> some View {
-        self.onChange(of: value) { _, newValue in
+        self.onChange(of: value) { oldValue, newValue in
             action(newValue)
         }
     }
