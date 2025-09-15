@@ -31,7 +31,7 @@ struct AnimatedCheckbox: View {
                 AnimatedCheckmarkShape()
                     .trim(from: 0, to: isChecked ? 1 : 0)
                     .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    .frame(width: 20, height: 15)
+                    .frame(width: 16, height: 12)
                     .opacity(isHovered && !isChecked ? 0.3 : (isChecked ? 1 : 0))
                     .animation(.easeInOut(duration: 0.6), value: isChecked)
                     .animation(.easeInOut(duration: 0.2), value: isHovered)
@@ -50,10 +50,10 @@ struct AnimatedCheckmarkShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         
-        // Create checkmark path with better proportions
-        let point1 = CGPoint(x: rect.width * 0.2, y: rect.height * 0.5)
-        let point2 = CGPoint(x: rect.width * 0.45, y: rect.height * 0.8)
-        let point3 = CGPoint(x: rect.width * 0.9, y: rect.height * 0.2)
+        // Create checkmark path centered in the frame
+        let point1 = CGPoint(x: rect.width * 0.25, y: rect.height * 0.5)
+        let point2 = CGPoint(x: rect.width * 0.45, y: rect.height * 0.75)
+        let point3 = CGPoint(x: rect.width * 0.85, y: rect.height * 0.25)
         
         path.move(to: point1)
         path.addLine(to: point2)
