@@ -251,22 +251,30 @@ class CoreDataAdapter: ObservableObject {
         let entities = coreDataManager.fetchHabits()
         print("🔍 CoreDataAdapter: Fetched \(entities.count) entities from Core Data")
         
-        // Debug each entity before conversion
-        for (index, entity) in entities.enumerated() {
-            print("🔍 Entity \(index): name=\(entity.name ?? "nil"), id=\(entity.id?.uuidString ?? "nil")")
-            if let reminders = entity.reminders as? Set<ReminderItemEntity> {
-                print("  📅 Has \(reminders.count) reminders")
-                for reminder in reminders {
-                    print("    - Reminder: id=\(reminder.id?.uuidString ?? "nil"), time=\(reminder.time?.description ?? "nil"), active=\(reminder.isActive)")
+        var loadedHabits: [Habit] = []
+        
+        if entities.isEmpty {
+            // If Core Data is empty, load from UserDefaults
+            print("⚠️ CoreDataAdapter: No habits found in Core Data, loading from UserDefaults...")
+            loadedHabits = HabitStorageManager.shared.loadHabits()
+            print("🔍 CoreDataAdapter: Loaded \(loadedHabits.count) habits from UserDefaults")
+        } else {
+            // Debug each entity before conversion
+            for (index, entity) in entities.enumerated() {
+                print("🔍 Entity \(index): name=\(entity.name ?? "nil"), id=\(entity.id?.uuidString ?? "nil")")
+                if let reminders = entity.reminders as? Set<ReminderItemEntity> {
+                    print("  📅 Has \(reminders.count) reminders")
+                    for reminder in reminders {
+                        print("    - Reminder: id=\(reminder.id?.uuidString ?? "nil"), time=\(reminder.time?.description ?? "nil"), active=\(reminder.isActive)")
+                    }
+                } else {
+                    print("  📅 No reminders or reminders is nil")
                 }
-            } else {
-                print("  📅 No reminders or reminders is nil")
             }
+            
+            loadedHabits = entities.map { $0.toHabit() }
+            print("🔍 CoreDataAdapter: Converted to \(loadedHabits.count) habits from Core Data")
         }
-        
-        let loadedHabits = entities.map { $0.toHabit() }
-        
-        print("🔍 CoreDataAdapter: Converted to \(loadedHabits.count) habits")
         
         // Debug each converted habit
         for (index, habit) in loadedHabits.enumerated() {
@@ -457,41 +465,19 @@ class CoreDataAdapter: ObservableObject {
         print("🔄 CoreDataAdapter: Creating habit: \(habit.name)")
         print("🔄 CoreDataAdapter: Current habits count before creation: \(habits.count)")
         
-        // Try to create in Core Data first
-        do {
-            let createdEntity = try coreDataManager.createHabit(from: habit)
-            print("🔄 CoreDataAdapter: Habit created in Core Data with ID: \(createdEntity.id?.uuidString ?? "nil")")
-            
-            // ✅ FIX: Immediately add the habit to the published array for instant UI update
-            // This ensures the UI shows the new habit immediately
-            DispatchQueue.main.async {
-                var updatedHabits = self.habits
-                updatedHabits.append(habit)
-                self.habits = updatedHabits
-                print("✅ CoreDataAdapter: Habit immediately added to published array, new count: \(self.habits.count)")
-                
-                // Also reload from Core Data to ensure consistency
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    print("🔄 CoreDataAdapter: Reloading habits from Core Data for consistency...")
-                    self.loadHabits(force: true)
-                }
-            }
-            
-        } catch {
-            print("❌ CoreDataAdapter: Failed to create habit in Core Data: \(error)")
-            print("🔄 CoreDataAdapter: Falling back to UserDefaults...")
-            
-            // Fallback to UserDefaults
-            var currentHabits = HabitStorageManager.shared.loadHabits()
-            currentHabits.append(habit)
-            HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-            
-            // Update the published habits on main thread
-            DispatchQueue.main.async {
-                self.habits = currentHabits
-                print("✅ CoreDataAdapter: Habit saved to UserDefaults, total: \(self.habits.count)")
-                self.objectWillChange.send()
-            }
+        // Skip Core Data entirely for now - use UserDefaults directly
+        print("🔄 CoreDataAdapter: Bypassing Core Data, using UserDefaults directly...")
+        
+        // Use UserDefaults directly
+        var currentHabits = HabitStorageManager.shared.loadHabits()
+        currentHabits.append(habit)
+        HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+        
+        // Update the published habits on main thread
+        DispatchQueue.main.async {
+            self.habits = currentHabits
+            print("✅ CoreDataAdapter: Habit saved to UserDefaults, total: \(self.habits.count)")
+            self.objectWillChange.send()
         }
     }
     
