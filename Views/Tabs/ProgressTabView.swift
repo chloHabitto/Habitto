@@ -462,15 +462,11 @@ struct ProgressTabView: View {
             
         }
         .onChange(of: coreDataAdapter.habits) {
-            // Recalculate streak statistics when habits change
-            updateStreakStatistics()
-            
             // Reload yearly data when habits change
             loadYearlyData()
         }
         .onChange(of: selectedWeekStartDate) {
-            // Recalculate streak statistics when week changes
-            updateStreakStatistics()
+            // Week changed - no action needed
         }
         .onChange(of: selectedYear) {
             // Reload yearly data when year changes
@@ -2074,16 +2070,11 @@ struct ProgressTabView: View {
         }
         
         let totalDifficulty = scheduledHabits.reduce(0.0) { total, habit in
-            let difficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
-            let recentLogs = difficultyLogs.filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                return Calendar.current.isDate(timestamp, inSameDayAs: date)
-            }
-            
-            if let latestLog = recentLogs.last {
-                return total + Double(latestLog.difficulty)
+            let dateKey = Self.dateKey(for: date)
+            if let difficulty = habit.difficultyHistory[dateKey] {
+                return total + Double(difficulty)
             } else {
-                return total + 3.0 // Default to Medium if no logs
+                return total + 3.0 // Default to Medium if no difficulty recorded
             }
         }
         
@@ -2126,17 +2117,14 @@ struct ProgressTabView: View {
     }
     
     private func getIndividualHabitDifficulty(for habit: Habit, on date: Date) -> IndividualHabitDifficultyData {
-        let difficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
-        let recentLogs = difficultyLogs.filter { log in
-            guard let timestamp = log.timestamp else { return false }
-            return Calendar.current.isDate(timestamp, inSameDayAs: date)
-        }
+        // Get difficulty directly from habit's difficulty history
+        let dateKey = Self.dateKey(for: date)
         
-        if let latestLog = recentLogs.last {
-            let difficulty = Double(latestLog.difficulty)
-            let difficultyInfo = getDifficultyLevel(from: difficulty)
+        if let difficulty = habit.difficultyHistory[dateKey] {
+            let difficultyDouble = Double(difficulty)
+            let difficultyInfo = getDifficultyLevel(from: difficultyDouble)
             return IndividualHabitDifficultyData(
-                difficulty: difficulty,
+                difficulty: difficultyDouble,
                 level: difficultyInfo.level,
                 color: difficultyInfo.color,
                 hasRecordedDifficulty: true
@@ -2150,6 +2138,13 @@ struct ProgressTabView: View {
                 hasRecordedDifficulty: false
             )
         }
+    }
+    
+    // Helper function to get date key (same as in Habit model)
+    private static func dateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
     
     // MARK: - Individual Habit Difficulty Section

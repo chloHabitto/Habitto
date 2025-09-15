@@ -311,10 +311,19 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Save Difficulty Rating
     func saveDifficultyRating(habitId: UUID, date: Date, difficulty: Int32) {
-        // Skip Core Data for difficulty rating to prevent crashes
-        print("⚠️ CoreDataAdapter: Skipping difficulty rating save (Core Data disabled)")
-        print("🔄 CoreDataAdapter: Would save difficulty \(difficulty) for habit \(habitId) on \(date)")
-        // TODO: Implement UserDefaults storage for difficulty ratings when needed
+        // Find the habit and update its difficulty history
+        if let habitIndex = habits.firstIndex(where: { $0.id == habitId }) {
+            var updatedHabit = habits[habitIndex]
+            updatedHabit.recordDifficulty(Int(difficulty), for: date)
+            habits[habitIndex] = updatedHabit
+            
+            // Save the updated habits array
+            Habit.saveHabits(habits, immediate: true)
+            
+            print("✅ CoreDataAdapter: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
+        } else {
+            print("❌ CoreDataAdapter: Habit not found for ID: \(habitId)")
+        }
     }
     
     // MARK: - Fetch Difficulty Data
@@ -690,25 +699,37 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Fetch Difficulty Logs for Habit
     func fetchDifficultyLogs(for habit: Habit) -> [DifficultyLogEntity] {
-        let habitEntities = coreDataManager.fetchHabits()
-        guard let entity = habitEntities.first(where: { $0.id == habit.id }) else {
-            print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
-            return []
+        // Convert habit's difficulty history to DifficultyLogEntity objects
+        var difficultyLogs: [DifficultyLogEntity] = []
+        
+        for (dateKey, difficulty) in habit.difficultyHistory {
+            // Parse the date key (format: "yyyy-MM-dd")
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let date = formatter.date(from: dateKey) else { continue }
+            
+            // Create a stub DifficultyLogEntity using the context
+            let context = coreDataManager.persistentContainer.viewContext
+            let logEntity = DifficultyLogEntity(context: context)
+            logEntity.difficulty = Int16(difficulty)
+            logEntity.timestamp = date
+            logEntity.id = UUID()
+            logEntity.context = ""
+            logEntity.notes = ""
+            
+            difficultyLogs.append(logEntity)
         }
         
-        if let difficultyLogs = entity.difficultyLogs as? Set<DifficultyLogEntity> {
-            let sortedLogs = difficultyLogs.sorted { log1, log2 in
-                guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
-                    return false
-                }
-                return timestamp1 > timestamp2
+        // Sort by timestamp (most recent first)
+        difficultyLogs.sort { log1, log2 in
+            guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
+                return false
             }
-            print("✅ CoreDataAdapter: Fetched \(sortedLogs.count) difficulty logs for habit '\(habit.name)'")
-            return sortedLogs
+            return timestamp1 > timestamp2
         }
         
-        print("⚠️ CoreDataAdapter: No difficulty logs found for habit: \(habit.name)")
-        return []
+        print("✅ CoreDataAdapter: Fetched \(difficultyLogs.count) difficulty logs for habit '\(habit.name)'")
+        return difficultyLogs
     }
     
     // MARK: - Fetch All Difficulty Logs
