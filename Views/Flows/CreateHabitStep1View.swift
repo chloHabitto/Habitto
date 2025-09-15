@@ -205,7 +205,8 @@ struct CreateHabitStep1View: View {
                         
                         FormInputComponents.CustomTextField(
                             placeholder: "Habit name",
-                            text: $name
+                            text: $name,
+                            externalFocus: $isNameFieldFocused
                         )
                     }
                     .padding(.horizontal, 20)
@@ -226,7 +227,8 @@ struct CreateHabitStep1View: View {
                         
                         FormInputComponents.CustomTextField(
                             placeholder: "Description (Optional)",
-                            text: $description
+                            text: $description,
+                            externalFocus: $isDescriptionFieldFocused
                         )
                     }
                     .padding(.horizontal, 20)
@@ -237,6 +239,9 @@ struct CreateHabitStep1View: View {
                             .stroke(.outline3, lineWidth: 1.5)
                     )
                     .cornerRadius(16)
+                    .onTapGesture {
+                        isDescriptionFieldFocused = true
+                    }
                     
                     // Colour selection
                     HStack(spacing: 12) {
