@@ -71,29 +71,14 @@ class CoreDataManager: ObservableObject {
     }
     
     func createHabit(from habit: Habit) throws -> HabitEntity {
-        // Create a temporary entity with proper context initialization
-        let entity = HabitEntity(context: context)
+        // Skip Core Data entity creation entirely to prevent crashes
+        print("⚠️ CoreDataManager: Skipping Core Data entity creation (bypassed)")
+        print("🔄 CoreDataManager: Would create habit: \(habit.name)")
         
-        // Set basic properties to prevent crashes
-        entity.id = habit.id
-        entity.name = habit.name
-        entity.habitDescription = habit.description
-        entity.icon = habit.icon
-        entity.schedule = habit.schedule
-        entity.goal = habit.goal
-        entity.reminder = habit.reminder
-        entity.startDate = habit.startDate
-        entity.endDate = habit.endDate
-        entity.isCompleted = habit.isCompleted
-        entity.baseline = Double(habit.baseline)
-        entity.target = Double(habit.target)
-        entity.createdAt = habit.createdAt
-        
-        // Save the context to prevent crashes
-        try save()
-        
-        print("✅ CoreDataManager: Created habit entity with ID: \(entity.id?.uuidString ?? "nil")")
-        return entity
+        // Throw an error instead of creating an entity to prevent Core Data crashes
+        throw NSError(domain: "CoreDataManager", code: 1, userInfo: [
+            NSLocalizedDescriptionKey: "Core Data entity creation bypassed - using UserDefaults instead"
+        ])
     }
     
     func updateHabit(_ entity: HabitEntity, with habit: Habit) throws {

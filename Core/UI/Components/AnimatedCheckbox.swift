@@ -13,19 +13,19 @@ struct AnimatedCheckbox: View {
             ZStack {
                 // Background circle
                 Circle()
-                    .fill(isChecked ? accentColor : Color.outline3)
-                    .frame(width: 35.6, height: 35.6)
+                    .fill(isChecked ? accentColor : Color.white)
+                    .frame(width: 30, height: 30)
                     .animation(.easeInOut(duration: 0.6), value: isChecked)
                     .scaleEffect(isAnimating ? 1.2 : 1.0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isAnimating)
                 
-                // Stroke circle (white inner border when checked)
+                // Stroke circle
                 Circle()
-                    .stroke(Color.white, lineWidth: 2)
-                    .frame(width: 28.74, height: 28.74)
-                    .opacity(isChecked ? 1 : 0)
-                    .scaleEffect(isChecked ? 1 : 0.8)
+                    .stroke(isChecked ? Color.white : Color.outline3, lineWidth: 2)
+                    .frame(width: 30, height: 30)
+                    .scaleEffect(isAnimating ? 1.2 : 1.0)
                     .animation(.easeInOut(duration: 0.6), value: isChecked)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isAnimating)
                 
                 // Checkmark
                 AnimatedCheckmarkShape()
