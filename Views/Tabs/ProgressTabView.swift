@@ -189,35 +189,51 @@ struct ProgressTabView: View {
                         
                         // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
                         if selectedHabit == nil && selectedTimePeriod == 1 {
-                            VStack(spacing: 20) {
-                                // Weekly Progress Card
-                                weeklyProgressCard
-                                
-                                // Weekly Calendar Grid and Stats Container
-                                VStack(spacing: 0) {
-                                    // Weekly Calendar Grid
-                                    WeeklyCalendarGridView(
-                                        userHabits: getActiveHabits(),
-                                        selectedWeekStartDate: selectedWeekStartDate
-                                    )
+                            if getActiveHabits().isEmpty {
+                                // Show empty state when no habits exist
+                                VStack(spacing: 20) {
+                                    // Weekly Progress Card (still show this)
+                                    weeklyProgressCard
                                     
-                                    // Summary Statistics
-                                    WeeklySummaryStatsView(
-                                        completionRate: streakStatistics.completionRate,
-                                        bestStreak: streakStatistics.bestStreak,
-                                        consistencyRate: streakStatistics.consistencyRate
-                                    )
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 12)
-                                    .padding(.bottom, 16)
+                                    // Empty state instead of calendar grid and analysis card
+                                    HabitEmptyStateView.noHabitsYet()
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(.top, 40)
+                                        .padding(.bottom, 60)
                                 }
-                                .background(Color.grey50)
-                                .cornerRadius(24)
-                                
-                                // Weekly Analysis Card
-                                weeklyAnalysisCard
+                                .padding(.horizontal, 20)
+                            } else {
+                                // Show normal content when habits exist
+                                VStack(spacing: 20) {
+                                    // Weekly Progress Card
+                                    weeklyProgressCard
+                                    
+                                    // Weekly Calendar Grid and Stats Container
+                                    VStack(spacing: 0) {
+                                        // Weekly Calendar Grid
+                                        WeeklyCalendarGridView(
+                                            userHabits: getActiveHabits(),
+                                            selectedWeekStartDate: selectedWeekStartDate
+                                        )
+                                        
+                                        // Summary Statistics
+                                        WeeklySummaryStatsView(
+                                            completionRate: streakStatistics.completionRate,
+                                            bestStreak: streakStatistics.bestStreak,
+                                            consistencyRate: streakStatistics.consistencyRate
+                                        )
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 12)
+                                        .padding(.bottom, 16)
+                                    }
+                                    .background(Color.grey50)
+                                    .cornerRadius(24)
+                                    
+                                    // Weekly Analysis Card
+                                    weeklyAnalysisCard
+                                }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
                         }
                         
                         // Weekly Content - Only show when individual habit is selected and "Weekly" tab is active
@@ -243,33 +259,62 @@ struct ProgressTabView: View {
                         
                         // Monthly Content - Only show when "All habits" is selected and "Monthly" tab is active
                         if selectedHabit == nil && selectedTimePeriod == 2 {
-                            VStack(spacing: 20) {
-                                // Monthly Progress Card
-                                monthlyProgressCard
-                                
-                                // Monthly Calendar Grid
-                                MonthlyCalendarGridView(
-                                    userHabits: getActiveHabitsForSelectedMonth(),
-                                    selectedMonth: selectedProgressDate
-                                    )
+                            if getActiveHabitsForSelectedMonth().isEmpty {
+                                // Show empty state when no habits exist
+                                VStack(spacing: 20) {
+                                    // Monthly Progress Card (still show this)
+                                    monthlyProgressCard
+                                    
+                                    // Empty state instead of calendar grid
+                                    HabitEmptyStateView.noHabitsYet()
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(.top, 40)
+                                        .padding(.bottom, 60)
                                 }
-            .padding(.horizontal, 20)
+                                .padding(.horizontal, 20)
+                            } else {
+                                // Show normal content when habits exist
+                                VStack(spacing: 20) {
+                                    // Monthly Progress Card
+                                    monthlyProgressCard
+                                    
+                                    // Monthly Calendar Grid
+                                    MonthlyCalendarGridView(
+                                        userHabits: getActiveHabitsForSelectedMonth(),
+                                        selectedMonth: selectedProgressDate
+                                        )
+                                    }
+                .padding(.horizontal, 20)
+                            }
                         }
                         
                         // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
                         if selectedHabit == nil && selectedTimePeriod == 3 {
-                            VStack(spacing: 20) {
-                                // Yearly Calendar Grid
-                                YearlyCalendarGridView(
-                                    userHabits: getActiveHabits(),
-                                    selectedWeekStartDate: selectedWeekStartDate,
-                                    yearlyHeatmapData: yearlyHeatmapData,
-                                    isDataLoaded: isDataLoaded,
-                                    isLoadingProgress: isLoadingProgress,
-                                    selectedYear: selectedYear
-                                )
+                            if getActiveHabits().isEmpty {
+                                // Show empty state when no habits exist
+                                VStack(spacing: 20) {
+                                    // Empty state for yearly view
+                                    HabitEmptyStateView.noHabitsYet()
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                        .padding(.top, 40)
+                                        .padding(.bottom, 60)
+                                }
+                                .padding(.horizontal, 20)
+                            } else {
+                                // Show normal content when habits exist
+                                VStack(spacing: 20) {
+                                    // Yearly Calendar Grid
+                                    YearlyCalendarGridView(
+                                        userHabits: getActiveHabits(),
+                                        selectedWeekStartDate: selectedWeekStartDate,
+                                        yearlyHeatmapData: yearlyHeatmapData,
+                                        isDataLoaded: isDataLoaded,
+                                        isLoadingProgress: isLoadingProgress,
+                                        selectedYear: selectedYear
+                                    )
+                                }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
                         }
                         
                         // Today's Progress Card - Show when "Daily" tab is active (both "All habits" and individual habits)
