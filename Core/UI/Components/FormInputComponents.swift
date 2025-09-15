@@ -18,6 +18,9 @@ struct FormInputComponents {
         let submitLabel: SubmitLabel
         @FocusState var isFocused: Bool
         
+        // Optional external focus state binding
+        var externalFocusBinding: FocusState<Bool>.Binding?
+        
         init(
             placeholder: String,
             text: Binding<String>,
@@ -29,7 +32,8 @@ struct FormInputComponents {
             lineWidth: CGFloat = 1.5,
             minHeight: CGFloat = 48,
             horizontalPadding: CGFloat = 16,
-            submitLabel: SubmitLabel = .done
+            submitLabel: SubmitLabel = .done,
+            externalFocus: FocusState<Bool>.Binding? = nil
         ) {
             self.placeholder = placeholder
             self._text = text
@@ -42,6 +46,7 @@ struct FormInputComponents {
             self.minHeight = minHeight
             self.horizontalPadding = horizontalPadding
             self.submitLabel = submitLabel
+            self.externalFocusBinding = externalFocus
         }
         
         var body: some View {
@@ -59,6 +64,18 @@ struct FormInputComponents {
                         .stroke(borderColor, lineWidth: lineWidth)
                 )
                 .cornerRadius(cornerRadius)
+                .onChange(of: isFocused) { oldValue, newValue in
+                    // Sync internal focus state with external focus state
+                    if let externalBinding = externalFocusBinding {
+                        externalBinding.wrappedValue = newValue
+                    }
+                }
+                .onChange(of: externalFocusBinding?.wrappedValue ?? false) { oldValue, newValue in
+                    // Sync external focus state with internal focus state
+                    if newValue != isFocused {
+                        isFocused = newValue
+                    }
+                }
         }
     }
     
