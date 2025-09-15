@@ -40,13 +40,13 @@ struct UnifiedInputElement: View {
                     .multilineTextAlignment(.center)
                     .frame(width: 40)
                     .inputFieldStyle()
-                    .onChange(of: internalIsFocused) { _, newValue in
+                    .onChange(of: internalIsFocused) { oldValue, newValue in
                         // Debounce focus changes to prevent UI hangs
                         DispatchQueue.main.async {
                             isFocused = newValue
                         }
                     }
-                    .onChange(of: isFocused) { _, newValue in
+                    .onChange(of: isFocused) { oldValue, newValue in
                         // Debounce focus changes to prevent UI hangs
                         DispatchQueue.main.async {
                             internalIsFocused = newValue

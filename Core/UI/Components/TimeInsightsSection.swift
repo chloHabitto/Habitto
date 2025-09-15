@@ -1,4 +1,7 @@
 import SwiftUI
+import CoreData
+
+// MARK: - Note: Core Data type aliases are defined in CoreDataAdapter.swift
 
 struct TimeInsightsSection: View {
     let habit: Habit?
@@ -228,5 +231,5 @@ struct TimeInsightsSection: View {
 }
 
 #Preview {
-    TimeInsightsSection(habit: nil, completionRecords: [])
+    TimeInsightsSection(habit: nil as Habit?, completionRecords: [] as [CompletionRecordEntity])
 }

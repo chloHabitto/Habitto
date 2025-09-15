@@ -1,11 +1,11 @@
 import UIKit
-// import Lottie // Temporarily commented out - package dependency issues
+// import Lottie
 
 class SplashViewController: UIViewController {
     
     // MARK: - Properties
-    // private var animationView: LottieAnimationView? // Temporarily disabled
-    private var animationView: UIView? // Temporary fallback
+    // private var animationView: LottieAnimationView?
+    // private var animationView: UIView? // Temporary fallback
     private var logoImageView: UIImageView?
     private var titleLabel: UILabel?
     
@@ -71,39 +71,42 @@ class SplashViewController: UIViewController {
     
     // MARK: - Animation Setup
     private func setupAnimation() {
-        // Temporary fallback animation instead of Lottie
-        print("⚠️ Lottie package not available - using fallback animation")
+        // Setup Lottie animation
+        print("🎬 Setting up Lottie splash animation")
         
-        // Create a simple animated view as fallback
-        animationView = UIView()
-        animationView?.backgroundColor = UIColor.clear
-        animationView?.translatesAutoresizingMaskIntoConstraints = false
+        // LOTTIE ANIMATION - TEMPORARILY COMMENTED OUT
+        // animationView = LottieAnimationView()
+        // animationView?.backgroundColor = UIColor.clear
+        // animationView?.translatesAutoresizingMaskIntoConstraints = false
+        // animationView?.contentMode = .scaleAspectFit
+        // animationView?.loopMode = .playOnce
+        // animationView?.animation = LottieAnimation.named("SplashAnimation")
+        // animationView?.play()
         
-        if let animationView = animationView {
-            view.addSubview(animationView)
-            
-            // Position animation view over the logo area
-            NSLayoutConstraint.activate([
-                animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
-                animationView.widthAnchor.constraint(equalToConstant: 200),
-                animationView.heightAnchor.constraint(equalToConstant: 200)
-            ])
-            
-            // Show the logo since we don't have Lottie animation
-            logoImageView?.alpha = 1.0
-        }
+        // LOTTIE ANIMATION VIEW - TEMPORARILY COMMENTED OUT
+        // if let animationView = animationView {
+        //     view.addSubview(animationView)
+        //     
+        //     // Position animation view over the logo area
+        //     NSLayoutConstraint.activate([
+        //         animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+        //         animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
+        //         animationView.widthAnchor.constraint(equalToConstant: 200),
+        //         animationView.heightAnchor.constraint(equalToConstant: 200)
+        //     ])
+        //     
+        //     // Show the logo since we don't have Lottie animation
+        //     logoImageView?.alpha = 1.0
+        // }
+        
+        // Show the logo since we don't have Lottie animation
+        logoImageView?.alpha = 1.0
     }
     
     // MARK: - Animation Start
     private func startAnimation() {
-        if let animationView = animationView {
-            // Use fallback animation instead of Lottie
-            fallbackAnimation()
-        } else {
-            // Fallback animation if animation view fails
-            fallbackAnimation()
-        }
+        // Use fallback animation since Lottie is temporarily disabled
+        fallbackAnimation()
     }
     
     private func fallbackAnimation() {

@@ -1,5 +1,5 @@
 import SwiftUI
-// import Lottie // Temporarily commented out - package dependency issues
+// import Lottie
 
 struct SplashView: View {
     @StateObject private var authManager = AuthenticationManager.shared
@@ -9,10 +9,27 @@ struct SplashView: View {
     var body: some View {
         GeometryReader { geometry in
             // Ensure animation fills entire screen without white space
-            LottieView(name: "SplashAnimation")
-                .frame(width: geometry.size.width, height: geometry.size.height)
-                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                .ignoresSafeArea(.all, edges: .all) // Fill entire screen including safe areas
+            // LottieView(name: "SplashAnimation")
+            //     .frame(width: geometry.size.width, height: geometry.size.height)
+            //     .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            //     .ignoresSafeArea(.all, edges: .all) // Fill entire screen including safe areas
+            
+            // Temporary placeholder while Lottie is disabled
+            ZStack {
+                Color.primary
+                    .ignoresSafeArea(.all, edges: .all)
+                
+                VStack(spacing: 20) {
+                    Text("Habitto")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Text("Building Better Habits")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+            }
                 .onAppear {
                     // Animation plays automatically
                 }
@@ -38,7 +55,8 @@ struct SplashView: View {
     }
 }
 
-// MARK: - Simple View Wrapper (Lottie disabled)
+// MARK: - Lottie Animation View (Disabled)
+/*
 struct LottieView: UIViewRepresentable {
     let name: String
     
@@ -49,8 +67,23 @@ struct LottieView: UIViewRepresentable {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.clipsToBounds = false
         
-        // Simple fallback - just return empty view
+        // Create Lottie animation view
+        let animationView = LottieAnimationView(name: name)
         print("⚠️ Lottie animation disabled: \(name)")
+        
+        animationView.contentMode = .scaleAspectFit
+        animationView.loopMode = .playOnce
+        animationView.animationSpeed = 1.0
+        animationView.play()
+        
+        view.addSubview(animationView)
+        animationView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            animationView.widthAnchor.constraint(equalTo: view.widthAnchor),
+            animationView.heightAnchor.constraint(equalTo: view.heightAnchor)
+        ])
         
         return view
     }
@@ -59,6 +92,7 @@ struct LottieView: UIViewRepresentable {
         // No updates needed
     }
 }
+*/
 
 #Preview {
     SplashView()

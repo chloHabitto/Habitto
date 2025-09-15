@@ -186,7 +186,7 @@ struct NotificationsView: View {
         }
         
         // Calculate effective volume (system sounds have limited volume control)
-        let effectiveVolume = min(volume * baseVolume, 1.0)
+        let _ = min(volume * baseVolume, 1.0)
         
         // Play the system sound
         AudioServicesPlaySystemSoundWithCompletion(soundID) { }

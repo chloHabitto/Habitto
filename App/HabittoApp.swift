@@ -1,43 +1,38 @@
 import SwiftUI
-// import FirebaseCore // Temporarily commented out due to package dependency issues
-// import GoogleSignIn // Temporarily commented out due to package dependency issues
+// import FirebaseCore
+// import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
-        // Configure Firebase - Temporarily disabled due to package dependency issues
-        print("⚠️ Firebase configuration temporarily disabled")
+        // Configure Firebase (Disabled - Package Dependencies)
+        print("🔥 Firebase configuration disabled (package dependencies)")
         // FirebaseApp.configure()
         
-        // Configure Google Sign-In - Temporarily disabled due to package dependency issues
-        print("⚠️ Google Sign-In configuration temporarily disabled")
+        // Configure Google Sign-In (Disabled - Package Dependencies)
+        print("🔐 Google Sign-In configuration disabled (package dependencies)")
         // let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
-        // print("🔐 AppDelegate: Setting Google Sign-In client ID: \(clientID)")
-        // 
         // GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         // print("✅ AppDelegate: Google Sign-In configuration set successfully")
         // 
-        // // Configure Google Sign-In
         // GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
-        //     if let error = error {
-        //         print("❌ Google Sign-In restore error: \(error.localizedDescription)")
-        //     } else if let user = user {
-        //         print("✅ Google Sign-In restored previous sign-in for user: \(user.profile?.email ?? "No email")")
-        //     }
+        // if let error = error {
+        //     print("❌ Google Sign-In restore error: \(error.localizedDescription)")
+        // } else if let user = user {
+        //     print("✅ Google Sign-In restored previous sign-in for user: \(user.profile?.email ?? "No email")")
+        // }
         // }
         
         return true
     }
     
-    // Handle Google Sign-In URL callback
+    // Handle Google Sign-In URL callback (Disabled - Package Dependencies)
     func application(_ app: UIApplication,
                      open url: URL,
                      options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Temporarily disabled due to package dependency issues
-        print("⚠️ Google Sign-In URL handling temporarily disabled")
-        return false
         // return GIDSignIn.sharedInstance.handle(url)
+        return false
     }
 }
 

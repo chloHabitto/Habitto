@@ -105,7 +105,7 @@ struct MainStreakDisplayView: View {
         .onAppear {
             startAnimations()
         }
-        .onChange(of: currentStreak) { _, newStreak in
+        .onChange(of: currentStreak) { oldStreak, newStreak in
             if newStreak > 0 {
                 celebrateNewStreak()
             }

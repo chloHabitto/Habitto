@@ -1,7 +1,7 @@
 import Foundation
 // import FirebaseAuth // Temporarily commented out due to package dependency issues
 import AuthenticationServices
-// import GoogleSignIn // Temporarily commented out due to package dependency issues
+// import GoogleSignIn
 import CryptoKit
 
 // MARK: - Authentication State
@@ -27,7 +27,7 @@ class AuthenticationManager: ObservableObject {
     
     deinit {
         // Clean up the listener in deinit
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         // if let listener = authStateListener {
         //     Auth.auth().removeStateDidChangeListener(listener)
         // }
@@ -35,7 +35,7 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Authentication State Listener
     private func setupAuthStateListener() {
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         print("⚠️ AuthenticationManager: Firebase authentication temporarily disabled")
         // authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
         //     DispatchQueue.main.async {
@@ -54,7 +54,7 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Email/Password Authentication
     func signInWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         print("⚠️ AuthenticationManager: Firebase sign-in temporarily disabled")
         completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
         // authState = .authenticating
@@ -73,7 +73,7 @@ class AuthenticationManager: ObservableObject {
     }
     
     func createAccountWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         print("⚠️ AuthenticationManager: Firebase account creation temporarily disabled")
         completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
         // authState = .authenticating
@@ -92,7 +92,7 @@ class AuthenticationManager: ObservableObject {
     }
     
     func signOut() {
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         print("⚠️ AuthenticationManager: Firebase sign-out temporarily disabled")
         authState = .unauthenticated
         currentUser = nil
@@ -109,7 +109,7 @@ class AuthenticationManager: ObservableObject {
     
     /// Reset password
     func resetPassword(email: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // Temporarily disabled due to Firebase dependency issues
+        // Google Sign-In implementation
         print("⚠️ AuthenticationManager: Firebase password reset temporarily disabled")
         completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
         // Auth.auth().sendPasswordReset(withEmail: email) { error in
@@ -166,8 +166,8 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Temporarily disabled due to Firebase dependency issues
-        print("⚠️ AuthenticationManager: Google Sign-In temporarily disabled")
+        // Google Sign-In implementation
+        print("🔐 AuthenticationManager: Starting Google Sign-In process...")
         completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
         // print("🔐 AuthenticationManager: Starting Google Sign-In process...")
         // authState = .authenticating

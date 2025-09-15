@@ -1,4 +1,7 @@
 import Foundation
+import CoreData
+
+// MARK: - Note: Core Data type aliases are defined in CoreDataAdapter.swift
 
 class TimePatternAnalyzer {
     

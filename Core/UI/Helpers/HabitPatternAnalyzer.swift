@@ -1,4 +1,7 @@
 import Foundation
+import CoreData
+
+// MARK: - Note: Core Data type aliases are defined in CoreDataAdapter.swift
 
 class HabitPatternAnalyzer {
     
@@ -218,13 +221,13 @@ class HabitPatternAnalyzer {
         
         for log in difficultyLogs {
             let dateKey = createDateKey(for: log.timestamp ?? Date())
-            difficultyByDate[dateKey] = Double(log.difficulty)
+            difficultyByDate[dateKey] = Double(log.difficultyLevel)
         }
         
         var successByDifficulty: [Int: (success: Int, total: Int)] = [:]
         
         for record in completionRecords {
-            let dateKey = record.dateKey ?? ""
+            let dateKey = createDateKey(for: record.timestamp ?? Date())
             let difficulty = Int(difficultyByDate[dateKey] ?? 5) // Default to medium difficulty
             let isSuccess = record.progress > 0
             
@@ -530,7 +533,7 @@ class HabitPatternAnalyzer {
             }
             
             let goalAmount = parseGoalAmount(from: habit.goal)
-            let achieved = habitRecords.filter { $0.progress >= goalAmount }.count
+            let achieved = habitRecords.filter { $0.progress >= Double(goalAmount) }.count
             let total = habitRecords.count
             
             let goalKey = habit.goal
