@@ -616,11 +616,8 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Get Progress
     func getProgress(for habit: Habit, date: Date) -> Int {
-        let habitEntities = coreDataManager.fetchHabits()
-        if let entity = habitEntities.first(where: { $0.id == habit.id }) {
-            return coreDataManager.getProgress(for: entity, date: date)
-        }
-        return 0
+        // Use the Habit model's getProgress method directly since we're not using Core Data
+        return habit.getProgress(for: date)
     }
     
     // MARK: - Fetch Completion Records with Timestamps
