@@ -39,6 +39,15 @@ struct WeeklyCalendarGridView: View {
     let userHabits: [Habit]
     let selectedWeekStartDate: Date
     
+    private var weeklyDayHeaders: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["S", "M", "T", "W", "T", "F", "S"]
+        } else { // Monday
+            return ["M", "T", "W", "T", "F", "S", "S"]
+        }
+    }
+    
     var body: some View {
         Group {
             if userHabits.isEmpty {
@@ -76,7 +85,7 @@ struct WeeklyCalendarGridView: View {
                                 .stroke(.outline3, lineWidth: 1)
                             )
                         
-                        ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
+                        ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
                             Text(day)
                                 .font(.appBodyMediumEmphasised)
                                 .foregroundColor(.text02)
@@ -192,7 +201,7 @@ struct WeeklyCalendarGridView: View {
                             )
                             
                             // Calculate if this day is upcoming (future)
-                            let calendar = Calendar.current
+                            let calendar = AppDateFormatter.shared.getUserCalendar()
                             let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
                             let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
                             let today = calendar.startOfDay(for: Date())
@@ -204,7 +213,9 @@ struct WeeklyCalendarGridView: View {
                             WeeklyTotalEmojiCell(
                                 completionPercentage: totalHeatmapData.completionPercentage,
                                 isScheduled: totalHeatmapData.isScheduled,
-                                isUpcoming: isUpcoming
+                                isUpcoming: isUpcoming,
+                                dayIndex: dayIndex,
+                                weekStartDate: selectedWeekStartDate
                             )
                             .frame(width: 24, height: 32)
                             .background(Color.grey50)
@@ -242,9 +253,18 @@ struct MonthlyCalendarGridView: View {
     let userHabits: [Habit]
     let selectedMonth: Date
     
+    private var dayHeaders: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["S", "M", "T", "W", "T", "F", "S"]
+        } else { // Monday
+            return ["M", "T", "W", "T", "F", "S", "S"]
+        }
+    }
+    
     // Calculate the number of weeks in the selected month
     private var numberOfWeeksInMonth: Int {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth)
         let startDate = monthInterval?.start ?? selectedMonth
         let endDate = monthInterval?.end ?? selectedMonth
@@ -263,23 +283,23 @@ struct MonthlyCalendarGridView: View {
     
     // Calculate heatmap data for a specific habit, week, and day in the selected month
     private func getMonthlyHeatmapDataForHabit(habit: Habit, weekIndex: Int, dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double) {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
         
-        // Calculate the first Monday of the month (or Monday of the week containing month start)
-        // This ensures consistent Monday-Sunday alignment with the weekly view
+        // Calculate the first day of the week that contains the month start
+        // This respects the user's preferred first day of the week setting
         let monthStartWeekday = calendar.component(.weekday, from: monthStart)
-        let daysFromMonday = (monthStartWeekday + 5) % 7 // Convert Sunday=1 to Monday=0
-        let firstMondayOfMonth = calendar.date(byAdding: .day, value: -daysFromMonday, to: monthStart) ?? monthStart
+        let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+        let firstWeekdayOfMonth = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: monthStart) ?? monthStart
         
-        // Calculate the target date based on week and day indices, starting from the first Monday
-        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstMondayOfMonth) ?? monthStart
+        // Calculate the target date based on week and day indices, starting from the first weekday
+        let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstWeekdayOfMonth) ?? monthStart
         
         // Debug: Print monthly heatmap calculation details
         let dateKey = DateUtils.dateKey(for: targetDate)
         let weekday = calendar.component(.weekday, from: targetDate)
         let weekdayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][weekday - 1]
-        print("🔍 MONTHLY HEATMAP DEBUG - Habit: '\(habit.name)' | Week: \(weekIndex) | Day: \(dayIndex) | Date: \(dateKey) | Weekday: \(weekdayName) | MonthStart: \(DateUtils.dateKey(for: monthStart)) | FirstMonday: \(DateUtils.dateKey(for: firstMondayOfMonth))")
+        print("🔍 MONTHLY HEATMAP DEBUG - Habit: '\(habit.name)' | Week: \(weekIndex) | Day: \(dayIndex) | Date: \(dateKey) | Weekday: \(weekdayName) | MonthStart: \(DateUtils.dateKey(for: monthStart)) | FirstWeekday: \(DateUtils.dateKey(for: firstWeekdayOfMonth))")
         
         // Check if the target date is within the selected month
         let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
@@ -388,7 +408,7 @@ struct MonthlyCalendarGridView: View {
                     )
                 
                 // Day headers - must match heatmap cells exactly
-                ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
+                ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
                     Text(day)
                         .font(.appBodyMediumEmphasised)
                         .foregroundColor(.text02)
@@ -760,7 +780,7 @@ struct YearlyCalendarGridView: View {
     private func yearlyHeatmapTable(for habit: Habit, index: Int) -> some View {
         VStack(spacing: 8) {
             // Calculate date components outside of @ViewBuilder
-            let calendar = Calendar.current
+            let calendar = AppDateFormatter.shared.getUserCalendar()
             let daysInYear = calendar.isLeapYear(selectedYear) ? 366 : 365
             
             // Main heatmap grid - compact grid that respects container padding
@@ -953,49 +973,71 @@ struct MonthlyTotalEmojiCell: View {
     
     var body: some View {
         // Calculate total completion for this day across completed weeks only
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = calendar.startOfDay(for: Date())
         
-        // Only count weeks that have already occurred
-        let completedWeeks = (0..<numberOfWeeks).filter { weekIndex in
-            // Calculate the date for this week and day
+        // Check if ALL weeks have passed for this day column
+        let allWeeksPassedForThisDay = (0..<numberOfWeeks).allSatisfy { weekIndex in
+            // Calculate the date for this week and day using the same logic as the monthly heatmap
             let monthStart = calendar.dateInterval(of: .month, for: habit.startDate)?.start ?? habit.startDate
             let monthStartWeekday = calendar.component(.weekday, from: monthStart)
-            let daysFromMonday = (monthStartWeekday + 5) % 7
-            let firstMondayOfMonth = calendar.date(byAdding: .day, value: -daysFromMonday, to: monthStart) ?? monthStart
-            let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstMondayOfMonth) ?? monthStart
+            let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+            let firstWeekdayOfMonth = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: monthStart) ?? monthStart
+            let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstWeekdayOfMonth) ?? monthStart
             
             // Check if this date is in the past or today
             return targetDate <= today
         }
         
-        // Calculate average completion only for completed weeks
-        let totalCompletion = completedWeeks.reduce(0.0) { total, weekIndex in
-            let heatmapData = getMonthlyHeatmapDataForHabit(habit, weekIndex, dayIndex)
-            return total + heatmapData.completionPercentage
+        // If any week is still upcoming, show upcoming emoji
+        if !allWeeksPassedForThisDay {
+            Image("022-emoji@4x") // Upcoming day emoji
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+                .opacity(0.2) // Same opacity as upcoming days
+        } else {
+            // All weeks have passed, calculate average completion
+            let completedWeeks = (0..<numberOfWeeks).filter { weekIndex in
+                // Calculate the date for this week and day using the same logic
+                let monthStart = calendar.dateInterval(of: .month, for: habit.startDate)?.start ?? habit.startDate
+                let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+                let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+                let firstWeekdayOfMonth = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: monthStart) ?? monthStart
+                let targetDate = calendar.date(byAdding: .day, value: (weekIndex * 7) + dayIndex, to: firstWeekdayOfMonth) ?? monthStart
+                
+                // Check if this date is in the past or today
+                return targetDate <= today
+            }
+            
+            // Calculate average completion only for completed weeks
+            let totalCompletion = completedWeeks.reduce(0.0) { total, weekIndex in
+                let heatmapData = getMonthlyHeatmapDataForHabit(habit, weekIndex, dayIndex)
+                return total + heatmapData.completionPercentage
+            }
+            let averageCompletion = completedWeeks.isEmpty ? 0.0 : totalCompletion / Double(completedWeeks.count)
+            
+            // Show emoji based on average completion
+            let emojiImageName = emojiImageName(for: averageCompletion)
+            
+            Image(emojiImageName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
         }
-        let averageCompletion = completedWeeks.isEmpty ? 0.0 : totalCompletion / Double(completedWeeks.count)
-        
-        // Show emoji based on average completion
-        let emojiImageName = emojiImageName(for: averageCompletion)
-        
-        Image(emojiImageName)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 20, height: 20)
     }
     
     private func emojiImageName(for completionPercentage: Double) -> String {
         if completionPercentage >= 75.0 {
-            return "001-emoji@4x"
+            return "004-emoji@4x"
         } else if completionPercentage >= 55.0 {
-            return "012-emoji@4x"
+            return "021-emoji@4x"
         } else if completionPercentage >= 35.0 {
-            return "036-emoji@4x"
+            return "001-emoji@4x"
         } else if completionPercentage >= 10.0 {
-            return "030-emoji@4x"
+            return "024-emoji@4x"
         } else {
-            return "030-emoji@4x"
+            return "008-emoji@4x"
         }
     }
 }
@@ -1005,12 +1047,14 @@ struct WeeklyTotalEmojiCell: View {
     let completionPercentage: Double
     let isScheduled: Bool
     let isUpcoming: Bool
+    let dayIndex: Int
+    let weekStartDate: Date
     
     var body: some View {
         ZStack {
             if isScheduled {
                 // Show emoji based on completion percentage or upcoming status
-                Image(emojiImageName(for: completionPercentage, isUpcoming: isUpcoming))
+                Image(emojiImageName(for: completionPercentage, isUpcoming: isUpcoming, dayIndex: dayIndex, weekStartDate: weekStartDate))
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 20, height: 20)
@@ -1023,25 +1067,37 @@ struct WeeklyTotalEmojiCell: View {
         .frame(width: 32, height: 32)
     }
     
-    private func emojiImageName(for completionPercentage: Double, isUpcoming: Bool) -> String {
+    private func emojiImageName(for completionPercentage: Double, isUpcoming: Bool, dayIndex: Int, weekStartDate: Date) -> String {
         // For upcoming days, always show the upcoming emoji
         if isUpcoming {
             return "022-emoji@4x" // Upcoming day emoji
+        }
+        
+        // Check if this specific day is today
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = calendar.startOfDay(for: weekStartDate)
+        let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+        let today = calendar.startOfDay(for: Date())
+        let isToday = calendar.isDate(targetDate, inSameDayAs: today)
+        
+        // For today specifically: if no habits completed yet, show moderate emoji as "pending"
+        if isToday && completionPercentage == 0.0 {
+            return "036-emoji@4x" // Show moderate emoji for today when no habits completed yet
         }
         
         // For past/present days, show completion-based emoji
         let clampedPercentage = max(0.0, min(100.0, completionPercentage))
         
         if clampedPercentage >= 75.0 {
-            return "001-emoji@4x" // 75%+ completion
+            return "004-emoji@4x" // 75%+ completion
         } else if clampedPercentage >= 55.0 {
-            return "012-emoji@4x" // 55-74% completion
+            return "021-emoji@4x" // 55-74% completion
         } else if clampedPercentage >= 35.0 {
-            return "036-emoji@4x" // 35-54% completion
+            return "001-emoji@4x" // 35-54% completion
         } else if clampedPercentage >= 10.0 {
-            return "030-emoji@4x" // 10-34% completion
+            return "024-emoji@4x" // 10-34% completion
         } else {
-            return "030-emoji@4x" // 0-9% completion (same as 10-34% for very low completion)
+            return "008-emoji@4x" // 0-9% completion
         }
     }
 }

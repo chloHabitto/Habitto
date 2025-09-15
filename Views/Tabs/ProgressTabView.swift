@@ -3614,7 +3614,14 @@ struct DifficultyLineChart: View {
     let weekStartDate: Date
     
     private let calendar = AppDateFormatter.shared.getUserCalendar()
-    private let dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    private var dayNames: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        } else { // Monday
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        }
+    }
     
     var body: some View {
         VStack(spacing: 12) {

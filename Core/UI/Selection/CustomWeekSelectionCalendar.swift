@@ -11,6 +11,15 @@ struct CustomWeekSelectionCalendar: View {
     @Binding var selectedDateRange: ClosedRange<Date>?
     @State private var currentMonth: Date = Date()
     
+    private var weekdayNames: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        } else { // Monday
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 16) {
             // Month navigation
@@ -39,7 +48,7 @@ struct CustomWeekSelectionCalendar: View {
             // Calendar grid
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 // Day headers
-                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                ForEach(weekdayNames, id: \.self) { day in
                     Text(day)
                         .font(.appLabelMedium)
                         .foregroundColor(.text04)
@@ -52,8 +61,8 @@ struct CustomWeekSelectionCalendar: View {
                         CalendarDayView(
                             date: date,
                             isSelected: isDateInSelectedWeek(date),
-                            isToday: Calendar.current.isDate(date, inSameDayAs: Date()),
-                            isCurrentMonth: Calendar.current.isDate(date, equalTo: currentMonth, toGranularity: .month),
+                            isToday: AppDateFormatter.shared.getUserCalendar().isDate(date, inSameDayAs: Date()),
+                            isCurrentMonth: AppDateFormatter.shared.getUserCalendar().isDate(date, equalTo: currentMonth, toGranularity: .month),
                             weekPosition: getWeekPosition(for: date)
                         )
                         .onTapGesture {
@@ -112,7 +121,7 @@ struct CustomWeekSelectionCalendar: View {
     private func getWeekPosition(for date: Date) -> WeekPosition {
         guard let range = selectedDateRange, range.contains(date) else { return .none }
         
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         if calendar.isDate(date, inSameDayAs: range.lowerBound) {
             return .start
         } else if calendar.isDate(date, inSameDayAs: range.upperBound) {
@@ -133,7 +142,7 @@ struct CustomWeekSelectionCalendar: View {
     }
     
     private func changeMonth(by value: Int) {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
             // Immediate month change without animation for better responsiveness
             currentMonth = newMonth
@@ -183,7 +192,7 @@ struct CalendarDayView: View {
             }
             
             // Main day view
-            Text("\(Calendar.current.component(.day, from: date))")
+            Text("\(AppDateFormatter.shared.getUserCalendar().component(.day, from: date))")
                 .font(.appBodyMedium)
                 .foregroundColor(textColor)
                 .frame(maxWidth: .infinity)

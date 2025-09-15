@@ -5,12 +5,9 @@ import SwiftUI
 class DateCalendarLogic {
     
     // MARK: - Calendar Configuration
-    private static let calendar: Calendar = {
-        var calendar = Calendar.current
-        calendar.locale = Locale(identifier: "en_US") // Ensure English locale
-        calendar.timeZone = TimeZone.current
-        return calendar
-    }()
+    private static var calendar: Calendar {
+        return AppDateFormatter.shared.getUserCalendar()
+    }
     
     // MARK: - Month Navigation
     static func monthYearString(from date: Date) -> String {
@@ -28,11 +25,13 @@ class DateCalendarLogic {
         }
         
         // Get the weekday of the first day (1 = Sunday, 2 = Monday, etc.)
-        let weekday = calendar.component(.weekday, from: firstDayOfMonth)
+        let weekdayOfFirstDay = calendar.component(.weekday, from: firstDayOfMonth)
         
-        // Convert to 0-based index (Sunday = 0, Monday = 1, etc.)
-        // This is correct - if August 1st is Friday (weekday 6), we need 5 empty cells
-        return weekday - 1
+        // Calculate how many empty cells we need at the start
+        // Using user's preferred first day of the week:
+        let emptyCells = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
+        
+        return emptyCells
     }
     
     static func daysInMonth(from date: Date) -> Int {

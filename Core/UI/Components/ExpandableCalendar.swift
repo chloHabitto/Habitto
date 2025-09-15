@@ -7,6 +7,15 @@ struct ExpandableCalendar: View {
     @State private var currentWeekOffset: Int = 0
     @State private var currentMonth: Date = Date()
     
+    private var weekdayNames: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        } else { // Monday
+            return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Header with date and chevron
@@ -54,7 +63,7 @@ struct ExpandableCalendar: View {
             Spacer()
             
             // Today button (shown when not on current week or selected date is not today)
-            let calendar = Calendar.current
+            let calendar = AppDateFormatter.shared.getUserCalendar()
             let today = Date()
             let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
                 calendar.isDate(date, inSameDayAs: today)
@@ -155,7 +164,7 @@ struct ExpandableCalendar: View {
             // Calendar grid
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
                 // Day headers
-                ForEach(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], id: \.self) { day in
+                ForEach(weekdayNames, id: \.self) { day in
                     Text(day)
                         .font(.appLabelMedium)
                         .foregroundColor(.text04)
@@ -167,9 +176,9 @@ struct ExpandableCalendar: View {
                     if let date = date {
                         MonthlyCalendarDayView(
                             date: date,
-                            isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                            isToday: Calendar.current.isDate(date, inSameDayAs: Date()),
-                            isCurrentMonth: Calendar.current.isDate(date, equalTo: currentMonth, toGranularity: .month)
+                            isSelected: AppDateFormatter.shared.getUserCalendar().isDate(date, inSameDayAs: selectedDate),
+                            isToday: AppDateFormatter.shared.getUserCalendar().isDate(date, inSameDayAs: Date()),
+                            isCurrentMonth: AppDateFormatter.shared.getUserCalendar().isDate(date, equalTo: currentMonth, toGranularity: .month)
                         )
                         .onTapGesture {
                             selectDate(date)
@@ -289,7 +298,7 @@ struct ExpandableCalendar: View {
         }
         
         // Update week offset to match selected date
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
         let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
