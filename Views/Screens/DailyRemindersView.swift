@@ -75,8 +75,8 @@ struct DailyRemindersView: View {
                         dismiss()
                     }) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.text01)
                     }
                 }
             }
@@ -138,24 +138,24 @@ struct DailyRemindersView: View {
     
     // MARK: - Plan Reminder Toggle Row
     private var planReminderToggleRow: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Plan reminder")
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
                 
-                Text("At the time you choose, I'll let you know if you have goals scheduled today.")
+                Text("We’ll let you know how many habits you have today.")
                     .font(.appBodyMedium)
                     .foregroundColor(.text04)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             Toggle("", isOn: $planReminderEnabled)
                 .toggleStyle(SwitchToggleStyle(tint: .primary))
                 .scaleEffect(0.8)
-                .padding(.trailing, -12)
+                .padding(.trailing, 0)
+                .fixedSize()
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -188,23 +188,24 @@ struct DailyRemindersView: View {
     
     // MARK: - Completion Reminder Toggle Row
     private var completionReminderToggleRow: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Completion reminder")
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
                 
-                Text("At the time you choose, I'll remind you about any goals you haven't finished today.")
+                Text("We’ll remind you of any habits you haven’t completed today.")
                     .font(.appBodyMedium)
                     .foregroundColor(.text04)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             Toggle("", isOn: $completionReminderEnabled)
                 .toggleStyle(SwitchToggleStyle(tint: .primary))
                 .scaleEffect(0.8)
+                .padding(.trailing, 0)
+                .fixedSize()
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

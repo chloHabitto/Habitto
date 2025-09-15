@@ -23,7 +23,7 @@ struct ScreenHeader: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.bottom, 16)
             
             // Title section - left aligned
@@ -41,7 +41,7 @@ struct ScreenHeader: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
             .padding(.top, 16)
         }
         .padding(.top, 24)
