@@ -79,7 +79,7 @@ class ProgressCalendarHelper: ObservableObject {
     }
     
     func daysInMonth() -> Int {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let range = calendar.range(of: .day, in: .month, for: currentDate)
         let days = range?.count ?? 0
         
@@ -93,7 +93,7 @@ class ProgressCalendarHelper: ObservableObject {
     }
     
     func isToday(day: Int) -> Bool {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
         
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)

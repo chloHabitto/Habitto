@@ -188,9 +188,18 @@ struct ProgressCalendarTodayButton: View {
 
 // MARK: - Days Header
 struct ProgressCalendarDaysHeader: View {
+    private var weekdayNames: [String] {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        if calendar.firstWeekday == 1 { // Sunday
+            return ["S", "M", "T", "W", "T", "F", "S"]
+        } else { // Monday
+            return ["M", "T", "W", "T", "F", "S", "S"]
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { index, day in
+            ForEach(Array(weekdayNames.enumerated()), id: \.offset) { index, day in
                 Text(day)
                     .font(.appLabelSmall)
                     .foregroundColor(.text02)
