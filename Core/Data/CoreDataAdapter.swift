@@ -1044,7 +1044,7 @@ extension NoteEntity {
             id: self.id ?? UUID(),
             title: self.title ?? "",
             content: self.content ?? "",
-            tags: (self.tags as? [String]) ?? [],
+            tags: (self.tags?.components(separatedBy: ",").compactMap { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }) ?? [],
             createdAt: self.createdAt ?? Date(),
             updatedAt: self.updatedAt ?? Date()
         )
