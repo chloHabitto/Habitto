@@ -89,16 +89,6 @@ struct DailyRemindersView: View {
     // MARK: - Plan Reminder Section
     private var planReminderSection: some View {
         VStack(spacing: 0) {
-            // Section header
-            HStack {
-                Text("Plan Reminder")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.text01)
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 16)
-            
             // Options container
             VStack(spacing: 0) {
                 // Plan Reminder Toggle
@@ -121,16 +111,6 @@ struct DailyRemindersView: View {
     // MARK: - Completion Reminder Section
     private var completionReminderSection: some View {
         VStack(spacing: 0) {
-            // Section header
-            HStack {
-                Text("Completion Reminder")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.text01)
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 16)
-            
             // Options container
             VStack(spacing: 0) {
                 // Completion Reminder Toggle
@@ -175,6 +155,7 @@ struct DailyRemindersView: View {
             Toggle("", isOn: $planReminderEnabled)
                 .toggleStyle(SwitchToggleStyle(tint: .primary))
                 .scaleEffect(0.8)
+                .padding(.trailing, -12)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
