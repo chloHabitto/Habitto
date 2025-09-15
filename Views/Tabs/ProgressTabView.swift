@@ -288,6 +288,22 @@ struct ProgressTabView: View {
                             }
                         }
                         
+                        // Yearly Content - Only show when individual habit is selected and "Yearly" tab is active
+                        if selectedHabit != nil && selectedTimePeriod == 3 {
+                            VStack(spacing: 20) {
+                                // Yearly Calendar Grid for individual habit
+                                YearlyCalendarGridView(
+                                    userHabits: [selectedHabit!],
+                                    selectedWeekStartDate: selectedWeekStartDate,
+                                    yearlyHeatmapData: yearlyHeatmapData,
+                                    isDataLoaded: isDataLoaded,
+                                    isLoadingProgress: isLoadingProgress,
+                                    selectedYear: selectedYear
+                                )
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                        
                         // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
                         if selectedHabit == nil && selectedTimePeriod == 3 {
                             if getActiveHabits().isEmpty {
@@ -3285,25 +3301,32 @@ struct ProgressTabView: View {
         
         var dataPoints: [DifficultyDataPoint] = []
         
-        // Get difficulty logs for the week using CoreDataAdapter
-        let allDifficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
-        let difficultyLogs = allDifficultyLogs
-            .filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                return timestamp >= weekStart && timestamp <= adjustedWeekEnd
+        // Get difficulty logs for the week directly from habit's difficulty history
+        var difficultyLogs: [(date: Date, difficulty: Int)] = []
+        
+        for (dateKey, difficulty) in habit.difficultyHistory {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let date = formatter.date(from: dateKey) else { continue }
+            
+            if date >= weekStart && date <= adjustedWeekEnd {
+                difficultyLogs.append((date: date, difficulty: difficulty))
             }
-            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        }
+        
+        // Sort by date
+        difficultyLogs.sort { $0.date < $1.date }
         
         // Debug: Print week range and found logs
         print("🔍 Week range: \(weekStart) to \(adjustedWeekEnd)")
         print("🔍 Found \(difficultyLogs.count) difficulty logs in this week")
         for log in difficultyLogs {
-            print("🔍 Log: \(log.timestamp ?? Date()) - Difficulty: \(log.difficulty)")
+            print("🔍 Log: \(log.date) - Difficulty: \(log.difficulty)")
         }
         
         // Group by day and get average difficulty for each day
         let groupedByDay = Dictionary(grouping: difficultyLogs) { log in
-            calendar.startOfDay(for: log.timestamp ?? Date())
+            calendar.startOfDay(for: log.date)
         }
         
         // Create data points for each day of the week
@@ -3314,7 +3337,7 @@ struct ProgressTabView: View {
             if let dayLogs = groupedByDay[dayStart], !dayLogs.isEmpty {
                 // Calculate average difficulty for the day
                 let totalDifficulty = dayLogs.reduce(0) { sum, log in
-                    sum + Int(log.difficulty)
+                    sum + log.difficulty
                 }
                 let averageDifficulty = Double(totalDifficulty) / Double(dayLogs.count)
                 
@@ -3353,14 +3376,21 @@ struct ProgressTabView: View {
         
         var dataPoints: [MonthlyDifficultyDataPoint] = []
         
-        // Get difficulty logs for the month using CoreDataAdapter
-        let allDifficultyLogs = coreDataAdapter.fetchDifficultyLogs(for: habit)
-        let difficultyLogs = allDifficultyLogs
-            .filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                return timestamp >= monthStart && timestamp <= adjustedMonthEnd
+        // Get difficulty logs for the month directly from habit's difficulty history
+        var difficultyLogs: [(date: Date, difficulty: Int)] = []
+        
+        for (dateKey, difficulty) in habit.difficultyHistory {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let date = formatter.date(from: dateKey) else { continue }
+            
+            if date >= monthStart && date <= adjustedMonthEnd {
+                difficultyLogs.append((date: date, difficulty: difficulty))
             }
-            .sorted { ($0.timestamp ?? Date.distantPast) < ($1.timestamp ?? Date.distantPast) }
+        }
+        
+        // Sort by date
+        difficultyLogs.sort { $0.date < $1.date }
         
         // Calculate the actual end of the month (not adjusted for today)
         let actualMonthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?.end ?? selectedProgressDate
@@ -3382,14 +3412,13 @@ struct ProgressTabView: View {
             
             // Filter logs for this specific week
             let weekLogs = difficultyLogs.filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                return timestamp >= weekStart && timestamp <= weekEnd
+                return log.date >= weekStart && log.date <= weekEnd
             }
             
             if !weekLogs.isEmpty {
                 // Calculate average difficulty for the week
                 let totalDifficulty = weekLogs.reduce(0) { sum, log in
-                    sum + Int(log.difficulty)
+                    sum + log.difficulty
                 }
                 let averageDifficulty = Double(totalDifficulty) / Double(weekLogs.count)
                 

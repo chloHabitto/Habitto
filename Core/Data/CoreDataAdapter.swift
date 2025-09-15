@@ -699,37 +699,10 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Fetch Difficulty Logs for Habit
     func fetchDifficultyLogs(for habit: Habit) -> [DifficultyLogEntity] {
-        // Convert habit's difficulty history to DifficultyLogEntity objects
-        var difficultyLogs: [DifficultyLogEntity] = []
-        
-        for (dateKey, difficulty) in habit.difficultyHistory {
-            // Parse the date key (format: "yyyy-MM-dd")
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            guard let date = formatter.date(from: dateKey) else { continue }
-            
-            // Create a stub DifficultyLogEntity using the context
-            let context = coreDataManager.persistentContainer.viewContext
-            let logEntity = DifficultyLogEntity(context: context)
-            logEntity.difficulty = Int16(difficulty)
-            logEntity.timestamp = date
-            logEntity.id = UUID()
-            logEntity.context = ""
-            logEntity.notes = ""
-            
-            difficultyLogs.append(logEntity)
-        }
-        
-        // Sort by timestamp (most recent first)
-        difficultyLogs.sort { log1, log2 in
-            guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
-                return false
-            }
-            return timestamp1 > timestamp2
-        }
-        
-        print("✅ CoreDataAdapter: Fetched \(difficultyLogs.count) difficulty logs for habit '\(habit.name)'")
-        return difficultyLogs
+        // This function is deprecated - use habit.difficultyHistory directly instead
+        // Return empty array to prevent crashes
+        print("⚠️ CoreDataAdapter: fetchDifficultyLogs is deprecated - use habit.difficultyHistory directly")
+        return []
     }
     
     // MARK: - Fetch All Difficulty Logs
