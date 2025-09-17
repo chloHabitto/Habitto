@@ -57,22 +57,6 @@ struct StreakView: View {
             // White sheet that expands to bottom (with its own internal scrolling)
             GeometryReader { geometry in
                 WhiteSheetContainer(
-                    title: "Habit Streak",
-                    rightButton: {
-                        AnyView(
-                            Button(action: {
-                                // More button action
-                            }) {
-                                Image(.iconMoreDots)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 20, height: 20)
-                                    .foregroundColor(.primary)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(PlainButtonStyle())
-                        )
-                    },
                     showGrabber: true
                 ) {
                     // Completely empty white sheet - all content removed

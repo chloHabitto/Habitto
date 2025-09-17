@@ -15,6 +15,31 @@ class StreakDataCalculator {
     // MARK: - Performance Optimization: Caching
     private static let cacheManager = CacheManager<String, [(intensity: Int, isScheduled: Bool, completionPercentage: Double)]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
     
+    // MARK: - Best Streak Calculation
+    static func calculateBestStreakFromHistory(for habit: Habit) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let startDate = habit.startDate
+        
+        var maxStreak = 0
+        var currentStreak = 0
+        var currentDate = startDate
+        
+        // Iterate through all dates from habit start to today
+        while currentDate <= today {
+            if habit.isCompleted(for: currentDate) {
+                currentStreak += 1
+                maxStreak = max(maxStreak, currentStreak)
+            } else {
+                currentStreak = 0
+            }
+            
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return maxStreak
+    }
+    
     // MARK: - Streak Statistics
     static func calculateStreakStatistics(from habits: [Habit]) -> StreakStatistics {
         guard !habits.isEmpty else {
@@ -34,12 +59,12 @@ class StreakDataCalculator {
         let totalCurrentStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
         let currentStreak = totalCurrentStreak / habits.count
         
-        // Calculate best streak
-        let bestStreak = habits.map { $0.calculateTrueStreak() }.max() ?? 0
+        // Calculate best streak - find the longest consecutive streak in history
+        let bestStreak = habits.map { calculateBestStreakFromHistory(for: $0) }.max() ?? 0
         
-        // Calculate average streak
-        let totalStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
-        let averageStreak = totalStreak / habits.count
+        // Calculate average streak - average of best streaks from each habit
+        let totalBestStreak = habits.reduce(0) { $0 + calculateBestStreakFromHistory(for: $1) }
+        let averageStreak = totalBestStreak / habits.count
         
         // Calculate completion rate
         let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
@@ -802,16 +827,16 @@ class StreakDataCalculator {
                     progress(0.2)
                 }
                 
-                // Calculate best streak
-                let bestStreak = habits.map { $0.calculateTrueStreak() }.max() ?? 0
+                // Calculate best streak - find the longest consecutive streak in history
+                let bestStreak = habits.map { calculateBestStreakFromHistory(for: $0) }.max() ?? 0
                 
                 DispatchQueue.main.async {
                     progress(0.4)
                 }
                 
-                // Calculate average streak
-                let totalStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
-                let averageStreak = totalStreak / habits.count
+                // Calculate average streak - average of best streaks from each habit
+                let totalBestStreak = habits.reduce(0) { $0 + calculateBestStreakFromHistory(for: $1) }
+                let averageStreak = totalBestStreak / habits.count
                 
                 DispatchQueue.main.async {
                     progress(0.6)
