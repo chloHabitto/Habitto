@@ -86,7 +86,7 @@ struct WhiteSheetContainer<Content: View>: View {
         }
         .padding(.horizontal, 0)
         .padding(.bottom, 0)
-        .frame(alignment: .top)
+        .frame(maxWidth: .infinity, minHeight: showGrabber ? 20 : 0, alignment: .top)
     }
 
 }
