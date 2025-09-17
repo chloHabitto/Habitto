@@ -49,7 +49,7 @@ struct HabittoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            SplashView()
+            HomeView()
                 .preferredColorScheme(.light) // Force light mode only
                 .environment(\.managedObjectContext, coreDataManager.context)
                 .environmentObject(coreDataManager)
