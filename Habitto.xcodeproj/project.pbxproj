@@ -635,6 +635,9 @@
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				"com.apple.developer.applesignin" = (
+					"$(PRODUCT_BUNDLE_IDENTIFIER)"
+				);
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
@@ -674,6 +677,9 @@
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				"com.apple.developer.applesignin" = (
+					"$(PRODUCT_BUNDLE_IDENTIFIER)"
+				);
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				ENABLE_PREVIEWS = YES;
