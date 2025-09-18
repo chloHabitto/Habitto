@@ -11,15 +11,16 @@ struct LottieSplashView: View {
                 .ignoresSafeArea()
             
             // Full screen Lottie Animation
-            LottieView(animation: nil)
-                .ignoresSafeArea()
-                .scaleEffect(showMainApp ? 0.8 : 1.0)
-                .opacity(showMainApp ? 0.0 : 1.0)
+            LottieView(animation: nil, onAnimationComplete: {
+                // Transition immediately when animation completes
+                showMainApp = true
+            })
+            .ignoresSafeArea()
         }
         .onAppear {
-            // Auto-hide after 3 seconds
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                withAnimation(.easeInOut(duration: 0.8)) {
+            // Fallback: Auto-hide after 4 seconds if animation doesn't complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                if !showMainApp {
                     showMainApp = true
                 }
             }
@@ -31,13 +32,16 @@ struct LottieSplashView: View {
 struct LottieView: UIViewRepresentable {
     let animationName: String
     let loopMode: LottieLoopMode
+    let onAnimationComplete: (() -> Void)?
     
     init(
         animation: LottieAnimation?,
-        loopMode: LottieLoopMode = .playOnce
+        loopMode: LottieLoopMode = .playOnce,
+        onAnimationComplete: (() -> Void)? = nil
     ) {
         self.animationName = "SplashAnimation"
         self.loopMode = loopMode
+        self.onAnimationComplete = onAnimationComplete
     }
     
     func makeUIView(context: Context) -> UIView {
@@ -58,7 +62,16 @@ struct LottieView: UIViewRepresentable {
             animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        animationView.play()
+        // Set up completion handler
+        animationView.animationSpeed = 1.0
+        animationView.play { completed in
+            if completed {
+                // Animation completed successfully
+                DispatchQueue.main.async {
+                    onAnimationComplete?()
+                }
+            }
+        }
         
         return view
     }

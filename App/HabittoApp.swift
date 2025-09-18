@@ -1,39 +1,39 @@
 import SwiftUI
 import UIKit
-// import FirebaseCore
-// import GoogleSignIn
+import FirebaseCore
+import GoogleSignIn
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
-        // Configure Firebase (Disabled - Package Dependencies)
-        print("🔥 Firebase configuration disabled (package dependencies)")
-        // FirebaseApp.configure()
+        // Configure Firebase
+        print("🔥 Configuring Firebase...")
+        FirebaseApp.configure()
+        print("✅ Firebase configured successfully")
         
-        // Configure Google Sign-In (Disabled - Package Dependencies)
-        print("🔐 Google Sign-In configuration disabled (package dependencies)")
-        // let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
-        // GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
-        // print("✅ AppDelegate: Google Sign-In configuration set successfully")
-        // 
-        // GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
-        // if let error = error {
-        //     print("❌ Google Sign-In restore error: \(error.localizedDescription)")
-        // } else if let user = user {
-        //     print("✅ Google Sign-In restored previous sign-in for user: \(user.profile?.email ?? "No email")")
-        // }
-        // }
+        // Configure Google Sign-In
+        print("🔐 Configuring Google Sign-In...")
+        let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
+        print("✅ AppDelegate: Google Sign-In configuration set successfully")
+        
+        GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+            if let error = error {
+                print("❌ Google Sign-In restore error: \(error.localizedDescription)")
+            } else if let user = user {
+                print("✅ Google Sign-In restored previous sign-in for user: \(user.profile?.email ?? "No email")")
+            }
+        }
         
         return true
     }
     
-    // Handle Google Sign-In URL callback (Disabled - Package Dependencies)
+    // Handle Google Sign-In URL callback
     func application(_ app: UIApplication,
                      open url: URL,
                      options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // return GIDSignIn.sharedInstance.handle(url)
-        return false
+        return GIDSignIn.sharedInstance.handle(url)
     }
 }
 
