@@ -137,12 +137,9 @@ struct HabittoApp: App {
             queue: .main
         ) { _ in
             print("🔄 HabittoApp: App going to background, saving data...")
-            do {
-                try coreDataManager.save()
-                print("✅ HabittoApp: Data saved before background")
-            } catch {
-                print("❌ HabittoApp: Failed to save data before background: \(error)")
-            }
+            // Save habits to UserDefaults
+            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            print("✅ HabittoApp: Data saved before background")
         }
 
         // Monitor app lifecycle to save data when app terminates
@@ -152,12 +149,9 @@ struct HabittoApp: App {
             queue: .main
         ) { _ in
             print("🔄 HabittoApp: App terminating, saving data...")
-            do {
-                try coreDataManager.save()
-                print("✅ HabittoApp: Data saved before termination")
-            } catch {
-                print("❌ HabittoApp: Failed to save data before termination: \(error)")
-            }
+            // Save habits to UserDefaults
+            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            print("✅ HabittoApp: Data saved before termination")
         }
 
         // Monitor app lifecycle to save data when app enters background
@@ -167,12 +161,9 @@ struct HabittoApp: App {
             queue: .main
         ) { _ in
             print("🔄 HabittoApp: App entering background, saving data...")
-            do {
-                try coreDataManager.save()
-                print("✅ HabittoApp: Data saved before entering background")
-            } catch {
-                print("❌ HabittoApp: Failed to save data before entering background: \(error)")
-            }
+            // Save habits to UserDefaults
+            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            print("✅ HabittoApp: Data saved before entering background")
         }
         
         // Monitor app lifecycle to save data when app enters foreground
@@ -182,13 +173,9 @@ struct HabittoApp: App {
             queue: .main
         ) { _ in
             print("🔄 HabittoApp: App entering foreground, saving data...")
-            // Force save the Core Data context
-            do {
-                try coreDataManager.save()
-                print("✅ HabittoApp: Core Data context saved before entering foreground")
-            } catch {
-                print("❌ HabittoApp: Failed to save Core Data context: \(error)")
-            }
+            // Save habits to UserDefaults
+            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            print("✅ HabittoApp: Data saved before entering foreground")
         }
     }
 }
