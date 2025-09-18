@@ -42,7 +42,7 @@ struct HabittoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
-    @StateObject private var coreDataAdapter = CoreDataAdapter.shared
+    @StateObject private var habitRepository = HabitRepository.shared
     @StateObject private var tutorialManager = TutorialManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
@@ -72,9 +72,9 @@ struct HabittoApp: App {
                 } else {
                     HomeView()
                         .preferredColorScheme(.light) // Force light mode only
-                        .environment(\.managedObjectContext, coreDataManager.context)
-                        .environmentObject(coreDataManager)
-                        .environmentObject(coreDataAdapter)
+                               .environment(\.managedObjectContext, coreDataManager.context)
+                               .environmentObject(coreDataManager)
+                               .environmentObject(habitRepository)
                         .environmentObject(tutorialManager)
                         .environmentObject(authManager)
                         .environmentObject(vacationManager)
@@ -82,15 +82,15 @@ struct HabittoApp: App {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
                             
-                            // Force reload habits after a short delay to ensure data is loaded
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                print("🔄 HabittoApp: Force reloading habits after app start...")
-                                coreDataAdapter.loadHabits(force: true)
+                   // Force reload habits after a short delay to ensure data is loaded
+                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                       print("🔄 HabittoApp: Force reloading habits after app start...")
+                       habitRepository.loadHabits(force: true)
                                 
                                 // Reschedule notifications after habits are loaded
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     print("🔄 HabittoApp: Rescheduling notifications after app start...")
-                                    let habits = coreDataAdapter.habits
+                                    let habits = habitRepository.habits
                                     NotificationManager.shared.rescheduleAllNotifications(for: habits)
                                 }
                             }
@@ -104,28 +104,28 @@ struct HabittoApp: App {
         // Check if migration is needed
         let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataMigrationCompleted")
         
-        if !hasMigrated {
-            print("🔄 Starting Core Data migration...")
-            coreDataAdapter.migrateFromUserDefaults()
-            UserDefaults.standard.set(true, forKey: "CoreDataMigrationCompleted")
-            print("✅ Core Data migration completed")
-        } else {
-            print("✅ Core Data already migrated")
-        }
+               if !hasMigrated {
+                   print("🔄 Starting Core Data migration...")
+                   habitRepository.migrateFromUserDefaults()
+                   UserDefaults.standard.set(true, forKey: "CoreDataMigrationCompleted")
+                   print("✅ Core Data migration completed")
+               } else {
+                   print("✅ Core Data already migrated")
+               }
         
         // Monitor app lifecycle to reload data when app becomes active
         NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            print("🔄 HabittoApp: App became active, reloading habits...")
-            coreDataAdapter.loadHabits(force: true)
+               ) { _ in
+                   print("🔄 HabittoApp: App became active, reloading habits...")
+                   habitRepository.loadHabits(force: true)
             
             // Reschedule notifications after a short delay to ensure habits are loaded
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 print("🔄 HabittoApp: Rescheduling notifications after app became active...")
-                let habits = coreDataAdapter.habits
+                let habits = habitRepository.habits
                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
             }
         }
@@ -138,7 +138,7 @@ struct HabittoApp: App {
         ) { _ in
             print("🔄 HabittoApp: App going to background, saving data...")
             // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
             print("✅ HabittoApp: Data saved before background")
         }
 
@@ -150,7 +150,7 @@ struct HabittoApp: App {
         ) { _ in
             print("🔄 HabittoApp: App terminating, saving data...")
             // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
             print("✅ HabittoApp: Data saved before termination")
         }
 
@@ -162,7 +162,7 @@ struct HabittoApp: App {
         ) { _ in
             print("🔄 HabittoApp: App entering background, saving data...")
             // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
             print("✅ HabittoApp: Data saved before entering background")
         }
         
@@ -174,7 +174,7 @@ struct HabittoApp: App {
         ) { _ in
             print("🔄 HabittoApp: App entering foreground, saving data...")
             // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(coreDataAdapter.habits, immediate: true)
+            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
             print("✅ HabittoApp: Data saved before entering foreground")
         }
     }

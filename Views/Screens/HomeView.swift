@@ -37,7 +37,7 @@ class HomeViewState: ObservableObject {
     }
     
     // Core Data adapter
-    let coreDataAdapter = CoreDataAdapter.shared
+    let habitRepository = HabitRepository.shared
     
     // Store cancellables for proper memory management
     private var cancellables = Set<AnyCancellable>()
@@ -48,10 +48,10 @@ class HomeViewState: ObservableObject {
         selectedDate = today
         print("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
         
-        // Subscribe to CoreDataAdapter changes
-        coreDataAdapter.$habits
+        // Subscribe to HabitRepository changes
+        habitRepository.$habits
             .sink { [weak self] habits in
-                print("🔄 HomeViewState: Received \(habits.count) habits from CoreDataAdapter")
+                print("🔄 HomeViewState: Received \(habits.count) habits from HabitRepository")
                 self?.habits = habits
                 self?.objectWillChange.send()
             }
@@ -61,13 +61,13 @@ class HomeViewState: ObservableObject {
     func updateHabits(_ newHabits: [Habit]) {
         // This method is used for bulk updates like streak validation
         // For individual habit operations, use createHabit, updateHabit, or deleteHabit
-        coreDataAdapter.saveHabits(newHabits)
+        habitRepository.saveHabits(newHabits)
         lastHabitsUpdate = Date()
     }
     
     func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) {
         let targetDate = date ?? Calendar.current.startOfDay(for: Date())
-        coreDataAdapter.toggleHabitCompletion(habit, for: targetDate)
+        habitRepository.toggleHabitCompletion(habit, for: targetDate)
     }
     
     func deleteHabit(_ habit: Habit) {
@@ -83,17 +83,17 @@ class HomeViewState: ObservableObject {
         }
         
         // Then delete from Core Data
-        coreDataAdapter.deleteHabit(habit)
+        habitRepository.deleteHabit(habit)
         habitToDelete = nil
         print("🗑️ HomeViewState: Delete completed")
     }
     
     func updateHabit(_ updatedHabit: Habit) {
-        coreDataAdapter.updateHabit(updatedHabit)
+        habitRepository.updateHabit(updatedHabit)
     }
     
     func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) {
-        coreDataAdapter.setProgress(for: habit, date: date, progress: progress)
+        habitRepository.setProgress(for: habit, date: date, progress: progress)
     }
     
     func createHabit(_ habit: Habit) {
@@ -101,14 +101,14 @@ class HomeViewState: ObservableObject {
         print("🔍 HomeViewState: Habit ID: \(habit.id)")
         print("🔍 HomeViewState: Current habits count: \(habits.count)")
         
-        coreDataAdapter.createHabit(habit)
+        habitRepository.createHabit(habit)
         
-        print("🔍 HomeViewState: coreDataAdapter.createHabit completed")
+        print("🔍 HomeViewState: habitRepository.createHabit completed")
         print("🔍 HomeViewState: Waiting for Core Data update notification...")
     }
     
     func backupHabits() {
-        coreDataAdapter.backupToUserDefaults()
+        habitRepository.backupToUserDefaults()
     }
     
     func loadHabits() {
@@ -118,7 +118,7 @@ class HomeViewState: ObservableObject {
     
     func cleanupDuplicateHabits() {
         print("🔄 HomeView: Cleaning up duplicate habits...")
-        coreDataAdapter.cleanupDuplicateHabits()
+        habitRepository.cleanupDuplicateHabits()
     }
     
     func updateAllStreaks() {
@@ -146,7 +146,7 @@ class HomeViewState: ObservableObject {
     
     func refreshHabits() {
         print("🔄 HomeViewState: Manual refresh requested")
-        coreDataAdapter.loadHabits(force: true)
+        habitRepository.loadHabits(force: true)
         
         // Also validate streaks
         if !habits.isEmpty {
@@ -158,7 +158,7 @@ class HomeViewState: ObservableObject {
     func debugCurrentState() {
         print("🔍 HomeViewState: === DEBUG STATE ===")
         print("🔍 HomeViewState: Current habits count: \(habits.count)")
-        print("🔍 HomeViewState: CoreDataAdapter habits count: \(coreDataAdapter.habits.count)")
+        print("🔍 HomeViewState: HabitRepository habits count: \(habitRepository.habits.count)")
         print("🔍 HomeViewState: Current selectedDate: \(selectedDate)")
         
         for (index, habit) in habits.enumerated() {
@@ -297,10 +297,10 @@ struct HomeView: View {
             
             // Add additional debugging
             print("🔍 HomeView: Current habits count: \(state.habits.count)")
-            print("🔍 HomeView: CoreDataAdapter habits count: \(CoreDataAdapter.shared.habits.count)")
+            print("🔍 HomeView: HabitRepository habits count: \(HabitRepository.shared.habits.count)")
             
             // Debug Core Data state
-            CoreDataAdapter.shared.debugHabitsState()
+            HabitRepository.shared.debugHabitsState()
             
             // Debug current state
             state.debugCurrentState()
@@ -368,10 +368,10 @@ struct HomeView: View {
     
     // MARK: - Lifecycle
     private func loadHabits() {
-        print("🏠 HomeView: Loading habits from CoreDataAdapter...")
-        // Use CoreDataAdapter instead of direct Habit.loadHabits()
-        // The CoreDataAdapter already loads habits in its init()
-        print("🏠 HomeView: Habits loaded from CoreDataAdapter - total: \(state.habits.count)")
+        print("🏠 HomeView: Loading habits from HabitRepository...")
+        // Use HabitRepository instead of direct Habit.loadHabits()
+        // The HabitRepository already loads habits in its init()
+        print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
         
         // Validate and correct streaks to ensure accuracy
         print("🏠 HomeView: Validating streaks...")
@@ -380,10 +380,10 @@ struct HomeView: View {
     }
     
     private func loadHabitsOptimized() {
-        print("🏠 HomeView: Loading habits from CoreDataAdapter...")
+        print("🏠 HomeView: Loading habits from HabitRepository...")
         // Force reload from Core Data to ensure we have the latest state
-        CoreDataAdapter.shared.loadHabits(force: true)
-        print("🏠 HomeView: Habits loaded from CoreDataAdapter - total: \(state.habits.count)")
+        HabitRepository.shared.loadHabits(force: true)
+        print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
         
         // Only validate streaks if we have habits and haven't validated recently
         if !state.habits.isEmpty {

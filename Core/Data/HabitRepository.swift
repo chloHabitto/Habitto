@@ -103,9 +103,9 @@ class NoteEntity: NSManagedObject {
     @NSManaged var updatedAt: Date?
 }
 
-// MARK: - Core Data Adapter
-class CoreDataAdapter: ObservableObject {
-    static let shared = CoreDataAdapter()
+// MARK: - Habit Repository
+class HabitRepository: ObservableObject {
+    static let shared = HabitRepository()
     
     @Published var habits: [Habit] = []
     
@@ -116,13 +116,13 @@ class CoreDataAdapter: ObservableObject {
         initializeSync()
         
         // Always use UserDefaults for data persistence (simpler and more reliable)
-        print("✅ CoreDataAdapter: Using UserDefaults for data persistence...")
+        print("✅ HabitRepository: Using UserDefaults for data persistence...")
         loadHabits(force: true)
         
         // Clean up any existing duplicate habits
         cleanupDuplicateHabits()
         
-        print("✅ CoreDataAdapter: Loaded \(habits.count) habits from UserDefaults")
+        print("✅ HabitRepository: Loaded \(habits.count) habits from UserDefaults")
     }
     
     // MARK: - Initialize Sync
@@ -141,7 +141,7 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - App Lifecycle Handling
     @objc private func appDidBecomeActive() {
-        print("🔄 CoreDataAdapter: App became active, reloading habits...")
+        print("🔄 HabitRepository: App became active, reloading habits...")
         
         // Force reload habits from Core Data
         loadHabits(force: true)
@@ -149,12 +149,12 @@ class CoreDataAdapter: ObservableObject {
         // Also check for any pending changes
         // Note: CoreDataManager doesn't have saveIfNeeded method
         
-        print("✅ CoreDataAdapter: Habits reloaded after app became active")
+        print("✅ HabitRepository: Habits reloaded after app became active")
     }
     
     // MARK: - Debug Methods
     func debugHabitsState() {
-        print("🔍 CoreDataAdapter: Debug - Current habits state:")
+        print("🔍 HabitRepository: Debug - Current habits state:")
         print("  - Published habits count: \(habits.count)")
         print("  - Core Data entities count: \(coreDataManager.fetchHabits().count)")
         
@@ -175,7 +175,7 @@ class CoreDataAdapter: ObservableObject {
         // Check for any habits without IDs
         let invalidHabits = habits.filter { $0.id == UUID() }
         if !invalidHabits.isEmpty {
-            print("⚠️ CoreDataAdapter: Found \(invalidHabits.count) habits with default UUIDs")
+            print("⚠️ HabitRepository: Found \(invalidHabits.count) habits with default UUIDs")
         }
         
         // Check for duplicate IDs
@@ -190,18 +190,18 @@ class CoreDataAdapter: ObservableObject {
         }
         
         if !duplicates.isEmpty {
-            print("⚠️ CoreDataAdapter: Found \(duplicates.count) duplicate habits:")
+            print("⚠️ HabitRepository: Found \(duplicates.count) duplicate habits:")
             for duplicate in duplicates {
                 print("    - \(duplicate.name) (ID: \(duplicate.id))")
             }
         }
         
-        print("✅ CoreDataAdapter: Debug completed")
+        print("✅ HabitRepository: Debug completed")
     }
     
     // Emergency recovery method
     func recoverMissingHabits() {
-        print("🚨 CoreDataAdapter: Starting emergency habit recovery...")
+        print("🚨 HabitRepository: Starting emergency habit recovery...")
         
         // Force reload all entities from Core Data
         let entities = coreDataManager.fetchHabits()
@@ -225,17 +225,17 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Load Habits
     func loadHabits(force: Bool = false) {
-        print("🔄 CoreDataAdapter: loadHabits called (force: \(force))")
+        print("🔄 HabitRepository: loadHabits called (force: \(force))")
         
         // Always load if force is true, or if habits is empty
         if !force && !habits.isEmpty {
-            print("ℹ️ CoreDataAdapter: Skipping load - habits not empty and not forced")
+            print("ℹ️ HabitRepository: Skipping load - habits not empty and not forced")
             return
         }
         
         // Always load from UserDefaults (simpler and more reliable)
         let loadedHabits = HabitStorageManager.shared.loadHabits()
-        print("🔍 CoreDataAdapter: Loaded \(loadedHabits.count) habits from UserDefaults")
+        print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from UserDefaults")
         
         // Debug each loaded habit
         for (index, habit) in loadedHabits.enumerated() {
@@ -251,14 +251,14 @@ class CoreDataAdapter: ObservableObject {
                 uniqueHabits.append(habit)
                 seenIds.insert(habit.id)
             } else {
-                print("⚠️ CoreDataAdapter: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+                print("⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
             }
         }
         
         // Always update on main thread and notify observers
         DispatchQueue.main.async {
             self.habits = uniqueHabits
-            print("✅ CoreDataAdapter: Updated habits array with \(uniqueHabits.count) unique habits")
+            print("✅ HabitRepository: Updated habits array with \(uniqueHabits.count) unique habits")
             
             // Debug final habits array
             for (index, habit) in uniqueHabits.enumerated() {
@@ -281,9 +281,9 @@ class CoreDataAdapter: ObservableObject {
             // Save the updated habits array
             Habit.saveHabits(habits, immediate: true)
             
-            print("✅ CoreDataAdapter: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
+            print("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
         } else {
-            print("❌ CoreDataAdapter: Habit not found for ID: \(habitId)")
+            print("❌ HabitRepository: Habit not found for ID: \(habitId)")
         }
     }
     
@@ -326,7 +326,7 @@ class CoreDataAdapter: ObservableObject {
             let results = try context.fetch(request)
             return results.map { Double($0.difficulty) }
         } catch {
-            print("❌ CoreDataAdapter: Failed to fetch difficulties: \(error)")
+            print("❌ HabitRepository: Failed to fetch difficulties: \(error)")
             return []
         }
     }
@@ -368,15 +368,15 @@ class CoreDataAdapter: ObservableObject {
             let results = try context.fetch(request)
             return results.map { Double($0.difficulty) }
         } catch {
-            print("❌ CoreDataAdapter: Failed to fetch all difficulties: \(error)")
+            print("❌ HabitRepository: Failed to fetch all difficulties: \(error)")
             return []
         }
     }
     
     // MARK: - Save Habits
     func saveHabits(_ habits: [Habit]) {
-        print("🔄 CoreDataAdapter: saveHabits called with \(habits.count) habits")
-        print("⚠️ CoreDataAdapter: Skipping Core Data sync - using UserDefaults only")
+        print("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
+        print("⚠️ HabitRepository: Skipping Core Data sync - using UserDefaults only")
         
         // Save directly to UserDefaults instead of Core Data
         HabitStorageManager.shared.saveHabits(habits, immediate: true)
@@ -390,8 +390,8 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Create Habit
     func createHabit(_ habit: Habit) {
-        print("🔄 CoreDataAdapter: Creating habit: \(habit.name)")
-        print("🔄 CoreDataAdapter: Current habits count before creation: \(habits.count)")
+        print("🔄 HabitRepository: Creating habit: \(habit.name)")
+        print("🔄 HabitRepository: Current habits count before creation: \(habits.count)")
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -401,15 +401,15 @@ class CoreDataAdapter: ObservableObject {
         // Update the published habits on main thread
         DispatchQueue.main.async {
             self.habits = currentHabits
-            print("✅ CoreDataAdapter: Habit saved to UserDefaults, total: \(self.habits.count)")
+            print("✅ HabitRepository: Habit saved to UserDefaults, total: \(self.habits.count)")
             self.objectWillChange.send()
         }
     }
     
     // MARK: - Update Habit
     func updateHabit(_ habit: Habit) {
-        print("🔄 CoreDataAdapter: updateHabit called for: \(habit.name) (ID: \(habit.id))")
-        print("🔄 CoreDataAdapter: Habit has \(habit.reminders.count) reminders")
+        print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
+        print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -420,12 +420,12 @@ class CoreDataAdapter: ObservableObject {
             // Update the published habits on main thread
             DispatchQueue.main.async {
                 self.habits = currentHabits
-                print("✅ CoreDataAdapter: Habit updated in UserDefaults")
+                print("✅ HabitRepository: Habit updated in UserDefaults")
                 self.objectWillChange.send()
             }
         } else {
-            print("❌ CoreDataAdapter: No matching habit found for ID: \(habit.id)")
-            print("🔄 CoreDataAdapter: Creating new habit in UserDefaults...")
+            print("❌ HabitRepository: No matching habit found for ID: \(habit.id)")
+            print("🔄 HabitRepository: Creating new habit in UserDefaults...")
             
             // Create new habit in UserDefaults
             currentHabits.append(habit)
@@ -434,7 +434,7 @@ class CoreDataAdapter: ObservableObject {
             // Update the published habits on main thread
             DispatchQueue.main.async {
                 self.habits = currentHabits
-                print("✅ CoreDataAdapter: New habit created in UserDefaults")
+                print("✅ HabitRepository: New habit created in UserDefaults")
                 self.objectWillChange.send()
             }
         }
@@ -442,11 +442,11 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
-        print("🗑️ CoreDataAdapter: Starting delete for habit: \(habit.name)")
+        print("🗑️ HabitRepository: Starting delete for habit: \(habit.name)")
         
         // Remove all notifications for this habit first
         NotificationManager.shared.removeAllNotifications(for: habit)
-        print("🗑️ CoreDataAdapter: Removed all notifications for habit: \(habit.name)")
+        print("🗑️ HabitRepository: Removed all notifications for habit: \(habit.name)")
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -456,7 +456,7 @@ class CoreDataAdapter: ObservableObject {
         // Update the published habits on main thread
         DispatchQueue.main.async {
             self.habits = currentHabits
-            print("✅ CoreDataAdapter: Habit deleted from UserDefaults, new count: \(self.habits.count)")
+            print("✅ HabitRepository: Habit deleted from UserDefaults, new count: \(self.habits.count)")
             self.objectWillChange.send()
         }
     }
@@ -464,7 +464,7 @@ class CoreDataAdapter: ObservableObject {
     // MARK: - Toggle Habit Completion
     func toggleHabitCompletion(_ habit: Habit, for date: Date) {
         // Skip Core Data and handle completion directly in UserDefaults
-        print("⚠️ CoreDataAdapter: Bypassing Core Data for toggleHabitCompletion")
+        print("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
         
         let dateKey = CoreDataManager.dateKey(for: date)
         let currentProgress = habit.completionHistory[dateKey] ?? 0
@@ -475,29 +475,29 @@ class CoreDataAdapter: ObservableObject {
     
     // MARK: - Force Save All Changes
     func forceSaveAllChanges() {
-        print("🔄 CoreDataAdapter: Force saving all changes...")
+        print("🔄 HabitRepository: Force saving all changes...")
         
         // Force save Core Data
         do {
             try coreDataManager.save()
-            print("✅ CoreDataAdapter: Core Data changes saved")
+            print("✅ HabitRepository: Core Data changes saved")
         } catch {
-            print("❌ CoreDataAdapter: Failed to save Core Data: \(error)")
+            print("❌ HabitRepository: Failed to save Core Data: \(error)")
         }
         
         // Also backup to UserDefaults as a safety measure
         backupToUserDefaults()
         
-        print("✅ CoreDataAdapter: All changes saved")
+        print("✅ HabitRepository: All changes saved")
     }
     
     // MARK: - Set Progress
     func setProgress(for habit: Habit, date: Date, progress: Int) {
         let dateKey = CoreDataManager.dateKey(for: date)
-        print("🔄 CoreDataAdapter: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+        print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
         
         // Skip Core Data and update UserDefaults directly
-        print("⚠️ CoreDataAdapter: Bypassing Core Data, updating UserDefaults directly...")
+        print("⚠️ HabitRepository: Bypassing Core Data, updating UserDefaults directly...")
         
         // Update the local habits array immediately
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
@@ -506,15 +506,15 @@ class CoreDataAdapter: ObservableObject {
             
             DispatchQueue.main.async {
                 self.habits = updatedHabits
-                print("✅ CoreDataAdapter: Progress updated in memory for habit '\(habit.name)' on \(dateKey)")
+                print("✅ HabitRepository: Progress updated in memory for habit '\(habit.name)' on \(dateKey)")
                 self.objectWillChange.send()
                 
                 // Save to UserDefaults
                 HabitStorageManager.shared.saveHabits(updatedHabits, immediate: true)
-                print("✅ CoreDataAdapter: Progress saved to UserDefaults")
+                print("✅ HabitRepository: Progress saved to UserDefaults")
             }
         } else {
-            print("❌ CoreDataAdapter: Habit not found in local array: \(habit.name)")
+            print("❌ HabitRepository: Habit not found in local array: \(habit.name)")
         }
     }
     
@@ -528,7 +528,7 @@ class CoreDataAdapter: ObservableObject {
     func fetchCompletionRecordsWithTimestamps(for habit: Habit) -> [CompletionRecordEntity] {
         let habitEntities = coreDataManager.fetchHabits()
         guard let entity = habitEntities.first(where: { $0.id == habit.id }) else {
-            print("❌ CoreDataAdapter: No matching entity found for habit: \(habit.name)")
+            print("❌ HabitRepository: No matching entity found for habit: \(habit.name)")
             return []
         }
         
@@ -539,11 +539,11 @@ class CoreDataAdapter: ObservableObject {
                 }
                 return timestamp1 > timestamp2
             }
-            print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) completion records with timestamps for habit '\(habit.name)'")
+            print("✅ HabitRepository: Fetched \(sortedRecords.count) completion records with timestamps for habit '\(habit.name)'")
             return sortedRecords
         }
         
-        print("⚠️ CoreDataAdapter: No completion records found for habit: \(habit.name)")
+        print("⚠️ HabitRepository: No completion records found for habit: \(habit.name)")
         return []
     }
     
@@ -565,7 +565,7 @@ class CoreDataAdapter: ObservableObject {
             return timestamp1 > timestamp2
         }
         
-        print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) total completion records with timestamps")
+        print("✅ HabitRepository: Fetched \(sortedRecords.count) total completion records with timestamps")
         return sortedRecords
     }
     
@@ -588,7 +588,7 @@ class CoreDataAdapter: ObservableObject {
             return timestamp1 > timestamp2
         }
         
-        print("✅ CoreDataAdapter: Fetched \(sortedRecords.count) completion records with timestamps for habit type: \(habitType)")
+        print("✅ HabitRepository: Fetched \(sortedRecords.count) completion records with timestamps for habit type: \(habitType)")
         return sortedRecords
     }
     
@@ -596,7 +596,7 @@ class CoreDataAdapter: ObservableObject {
     func fetchDifficultyLogs(for habit: Habit) -> [DifficultyLogEntity] {
         // This function is deprecated - use habit.difficultyHistory directly instead
         // Return empty array to prevent crashes
-        print("⚠️ CoreDataAdapter: fetchDifficultyLogs is deprecated - use habit.difficultyHistory directly")
+        print("⚠️ HabitRepository: fetchDifficultyLogs is deprecated - use habit.difficultyHistory directly")
         return []
     }
     
@@ -618,13 +618,13 @@ class CoreDataAdapter: ObservableObject {
             return timestamp1 > timestamp2
         }
         
-        print("✅ CoreDataAdapter: Fetched \(sortedLogs.count) total difficulty logs")
+        print("✅ HabitRepository: Fetched \(sortedLogs.count) total difficulty logs")
         return sortedLogs
     }
     
     // MARK: - Clean Up Duplicates
     func cleanupDuplicateHabits() {
-        print("🔄 CoreDataAdapter: Starting duplicate cleanup...")
+        print("🔄 HabitRepository: Starting duplicate cleanup...")
         
         let entities = coreDataManager.fetchHabits()
         var seenIds: Set<UUID> = []
@@ -634,7 +634,7 @@ class CoreDataAdapter: ObservableObject {
             if let id = entity.id {
                 if seenIds.contains(id) {
                     duplicatesToRemove.append(entity)
-                    print("⚠️ CoreDataAdapter: Found duplicate habit entity with ID: \(id), name: \(entity.name ?? "Unknown") - will be removed")
+                    print("⚠️ HabitRepository: Found duplicate habit entity with ID: \(id), name: \(entity.name ?? "Unknown") - will be removed")
                 } else {
                     seenIds.insert(id)
                 }
@@ -642,31 +642,31 @@ class CoreDataAdapter: ObservableObject {
         }
         
         if !duplicatesToRemove.isEmpty {
-            print("🔄 CoreDataAdapter: Removing \(duplicatesToRemove.count) duplicate habits...")
+            print("🔄 HabitRepository: Removing \(duplicatesToRemove.count) duplicate habits...")
             
             for duplicate in duplicatesToRemove {
                 do {
                     try coreDataManager.deleteHabit(duplicate)
-                    print("✅ CoreDataAdapter: Removed duplicate habit: \(duplicate.name ?? "Unknown")")
+                    print("✅ HabitRepository: Removed duplicate habit: \(duplicate.name ?? "Unknown")")
                 } catch {
-                    print("❌ CoreDataAdapter: Failed to remove duplicate habit: \(error)")
+                    print("❌ HabitRepository: Failed to remove duplicate habit: \(error)")
                 }
             }
             
             // Reload habits after cleanup
             loadHabits(force: true)
-            print("✅ CoreDataAdapter: Duplicate cleanup completed, total habits: \(habits.count)")
+            print("✅ HabitRepository: Duplicate cleanup completed, total habits: \(habits.count)")
         } else {
-            print("✅ CoreDataAdapter: No duplicate habits found")
+            print("✅ HabitRepository: No duplicate habits found")
         }
     }
     
     // MARK: - Migrate from UserDefaults
     func migrateFromUserDefaults() {
-        print("🔄 CoreDataAdapter: Starting migration from UserDefaults...")
+        print("🔄 HabitRepository: Starting migration from UserDefaults...")
         
         let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
-        print("🔄 CoreDataAdapter: Found \(userDefaultsHabits.count) habits in UserDefaults")
+        print("🔄 HabitRepository: Found \(userDefaultsHabits.count) habits in UserDefaults")
         
         // Check for existing habits in Core Data to avoid duplicates
         let existingEntities = coreDataManager.fetchHabits()
@@ -678,29 +678,29 @@ class CoreDataAdapter: ObservableObject {
         for habit in userDefaultsHabits {
             // Skip if habit already exists in Core Data
             if existingIds.contains(habit.id) {
-                print("⚠️ CoreDataAdapter: Habit '\(habit.name)' already exists in Core Data, skipping migration")
+                print("⚠️ HabitRepository: Habit '\(habit.name)' already exists in Core Data, skipping migration")
                 skippedCount += 1
                 continue
             }
             
             do {
                 _ = try coreDataManager.createHabit(from: habit)
-                print("✅ CoreDataAdapter: Migrated habit: \(habit.name)")
+                print("✅ HabitRepository: Migrated habit: \(habit.name)")
                 migratedCount += 1
             } catch {
-                print("❌ CoreDataAdapter: Failed to migrate habit '\(habit.name)': \(error)")
+                print("❌ HabitRepository: Failed to migrate habit '\(habit.name)': \(error)")
             }
         }
         
         // Reload habits after migration
         loadHabits(force: true)
-        print("✅ CoreDataAdapter: Migration completed - \(migratedCount) habits migrated, \(skippedCount) skipped, total habits: \(habits.count)")
+        print("✅ HabitRepository: Migration completed - \(migratedCount) habits migrated, \(skippedCount) skipped, total habits: \(habits.count)")
     }
     
     // MARK: - Backup to UserDefaults
     func backupToUserDefaults() {
         HabitStorageManager.shared.saveHabits(habits, immediate: true)
-        print("✅ CoreDataAdapter: Habits backed up to UserDefaults")
+        print("✅ HabitRepository: Habits backed up to UserDefaults")
     }
 }
 
@@ -712,10 +712,10 @@ extension HabitEntity {
         
         // Convert completion history
         var completionHistory: [String: Int] = [:]
-        print("🔍 CoreDataAdapter: Raw completionHistory property: \(String(describing: self.completionHistory))")
+        print("🔍 HabitRepository: Raw completionHistory property: \(String(describing: self.completionHistory))")
         
         if let completionRecords = self.completionHistory as? Set<CompletionRecordEntity> {
-            print("🔍 CoreDataAdapter: Converting \(completionRecords.count) completion records for habit '\(self.name ?? "Unknown")'")
+            print("🔍 HabitRepository: Converting \(completionRecords.count) completion records for habit '\(self.name ?? "Unknown")'")
             for record in completionRecords {
                 if let dateKey = record.dateKey {
                     let progress = Int(record.progress)
@@ -724,9 +724,9 @@ extension HabitEntity {
                 }
             }
         } else {
-            print("🔍 CoreDataAdapter: No completion records found for habit '\(self.name ?? "Unknown")'")
-            print("🔍 CoreDataAdapter: completionHistory type: \(type(of: self.completionHistory))")
-            print("🔍 CoreDataAdapter: completionHistory is NSSet: \(self.completionHistory != nil)")
+            print("🔍 HabitRepository: No completion records found for habit '\(self.name ?? "Unknown")'")
+            print("🔍 HabitRepository: completionHistory type: \(type(of: self.completionHistory))")
+            print("🔍 HabitRepository: completionHistory is NSSet: \(self.completionHistory != nil)")
         }
         
         // Convert actual usage

@@ -3,7 +3,7 @@ import SwiftUI
 struct HabitSelectorView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedHabit: Habit?
-    @EnvironmentObject var coreDataAdapter: CoreDataAdapter
+    @EnvironmentObject var coreDataAdapter: HabitRepository
     
     var body: some View {
         NavigationView {
@@ -313,5 +313,5 @@ struct HabitSelectorView: View {
 
 #Preview {
     HabitSelectorView(selectedHabit: .constant(nil))
-        .environmentObject(CoreDataAdapter.shared)
+        .environmentObject(HabitRepository.shared)
 }

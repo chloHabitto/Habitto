@@ -8,7 +8,7 @@ This document outlines the Core Data + CloudKit implementation for Habitto, prov
 
 ### 1. Core Data Stack
 - **CoreDataManager**: Manages the Core Data stack and provides CRUD operations
-- **CoreDataAdapter**: Bridges between existing `Habit` structs and Core Data entities
+- **HabitRepository**: Manages habit data and provides CRUD operations
 - **CloudKitManager**: Handles CloudKit sync and user authentication
 
 ### 2. Data Model
@@ -61,7 +61,7 @@ coreDataManager.updateHabit(habitEntity, with: updatedHabit)
 coreDataManager.deleteHabit(habitEntity)
 ```
 
-### 2. Core Data Adapter (`CoreDataAdapter.swift`)
+### 2. Habit Repository (`HabitRepository.swift`)
 
 **Purpose:** Provides a clean interface between existing code and Core Data
 
@@ -73,18 +73,18 @@ coreDataManager.deleteHabit(habitEntity)
 
 **Usage:**
 ```swift
-let adapter = CoreDataAdapter.shared
+let repository = HabitRepository.shared
 
 // Subscribe to changes
-adapter.$habits
+repository.$habits
     .receive(on: DispatchQueue.main)
     .assign(to: &$habits)
 
 // CRUD operations
-adapter.createHabit(habit)
-adapter.updateHabit(habit)
-adapter.deleteHabit(habit)
-adapter.toggleHabitCompletion(habit, for: date)
+repository.createHabit(habit)
+repository.updateHabit(habit)
+repository.deleteHabit(habit)
+repository.toggleHabitCompletion(habit, for: date)
 ```
 
 ### 3. CloudKit Manager (`CloudKitManager.swift`)
@@ -159,7 +159,7 @@ cloudKitManager.saveCustomRecord(record) { result in
    ```swift
    // In HabittoApp.swift
    @StateObject private var coreDataManager = CoreDataManager.shared
-   @StateObject private var coreDataAdapter = CoreDataAdapter.shared
+   @StateObject private var habitRepository = HabitRepository.shared
    ```
 
 2. **Update Views:**

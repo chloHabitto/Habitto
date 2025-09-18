@@ -616,10 +616,10 @@ struct HabitsTabView: View {
         // Refresh habits data from Core Data
         await MainActor.run {
             // Force reload habits from Core Data
-            CoreDataAdapter.shared.loadHabits(force: true)
+            HabitRepository.shared.loadHabits(force: true)
             
             // Update the local habits order to match the refreshed data
-            let refreshedHabits = CoreDataAdapter.shared.habits
+            let refreshedHabits = HabitRepository.shared.habits
             habitsOrder = refreshedHabits
             
             // Provide haptic feedback for successful refresh
