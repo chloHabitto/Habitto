@@ -225,22 +225,22 @@ class CoreDataStorage: HabitStorageProtocol {
         entity.target = Double(habit.target)
         
         // Convert completion history
-        if let historyData = try? JSONEncoder().encode(habit.completionHistory) {
+        if (try? JSONEncoder().encode(habit.completionHistory)) != nil {
             entity.completionHistory = NSSet(array: []) // TODO: Implement proper completion history storage
         }
         
         // Convert difficulty history
-        if let difficultyData = try? JSONEncoder().encode(habit.difficultyHistory) {
+        if (try? JSONEncoder().encode(habit.difficultyHistory)) != nil {
             entity.difficultyLogs = NSSet(array: []) // TODO: Implement proper difficulty history storage
         }
         
         // Convert actual usage
-        if let usageData = try? JSONEncoder().encode(habit.actualUsage) {
+        if (try? JSONEncoder().encode(habit.actualUsage)) != nil {
             entity.usageRecords = NSSet(array: []) // TODO: Implement proper usage records storage
         }
         
         // Convert reminders
-        if let remindersData = try? JSONEncoder().encode(habit.reminders) {
+        if (try? JSONEncoder().encode(habit.reminders)) != nil {
             entity.reminders = NSSet(array: []) // TODO: Implement proper reminders storage
         }
     }
