@@ -43,6 +43,7 @@ struct HabittoApp: App {
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
     @StateObject private var habitRepository = HabitRepository.shared
+    @StateObject private var migrationService = MigrationService.shared
     @StateObject private var tutorialManager = TutorialManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
@@ -79,9 +80,16 @@ struct HabittoApp: App {
                         .environmentObject(tutorialManager)
                         .environmentObject(authManager)
                         .environmentObject(vacationManager)
+                        .environmentObject(migrationService)
                         .onAppear {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
+                            
+                            // Check and execute migrations
+                            Task { @MainActor in
+                                print("🔄 HabittoApp: Checking for data migrations...")
+                                await migrationService.checkAndExecuteMigrations()
+                            }
                             
                             // Force reload habits after a short delay to ensure data is loaded
                             Task { @MainActor in
