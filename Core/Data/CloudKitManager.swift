@@ -1,13 +1,25 @@
 import CloudKit
 import SwiftUI
 
+// MARK: - CloudKit Error
+enum CloudKitError: Error, LocalizedError {
+    case notConfigured
+    
+    var errorDescription: String? {
+        switch self {
+        case .notConfigured:
+            return "CloudKit is not configured for this app"
+        }
+    }
+}
+
 // MARK: - CloudKit Manager
 class CloudKitManager: ObservableObject {
     static let shared = CloudKitManager()
     
-    private let container = CKContainer(identifier: "iCloud.com.chloe-lee.Habitto")
-    private let privateDatabase: CKDatabase
-    private let publicDatabase: CKDatabase
+    private let container: CKContainer?
+    private let privateDatabase: CKDatabase?
+    private let publicDatabase: CKDatabase?
     
     @Published var isSignedIn = false
     @Published var syncStatus: SyncStatus = .idle
@@ -21,13 +33,24 @@ class CloudKitManager: ObservableObject {
     }
     
     private init() {
-        self.privateDatabase = container.privateCloudDatabase
-        self.publicDatabase = container.publicCloudDatabase
-        checkAuthenticationStatus()
+        // Temporarily disable CloudKit initialization to prevent app crashes
+        print("⚠️ CloudKitManager: CloudKit initialization disabled to prevent app crashes")
+        self.container = nil
+        self.privateDatabase = nil
+        self.publicDatabase = nil
+        self.isSignedIn = false
+        self.syncStatus = .failed("CloudKit disabled")
     }
     
     // MARK: - Authentication
     func checkAuthenticationStatus() {
+        guard let container = container else {
+            print("❌ CloudKitManager: No CloudKit container available")
+            isSignedIn = false
+            syncStatus = .failed("CloudKit not configured")
+            return
+        }
+        
         container.accountStatus { [weak self] status, error in
             DispatchQueue.main.async {
                 switch status {
@@ -63,6 +86,11 @@ class CloudKitManager: ObservableObject {
     }
     
     private func fetchUserRecordID() {
+        guard let container = container else {
+            print("❌ CloudKitManager: No CloudKit container available for fetching user record ID")
+            return
+        }
+        
         container.fetchUserRecordID { [weak self] recordID, error in
             DispatchQueue.main.async {
                 if let recordID = recordID {
@@ -108,6 +136,11 @@ class CloudKitManager: ObservableObject {
     // MARK: - Integration with Core Data
     func initializeCloudKitSync() {
         // This method can be called to ensure CloudKit sync is properly initialized
+        guard container != nil else {
+            print("⚠️ CloudKitManager: CloudKit not available, skipping sync initialization")
+            return
+        }
+        
         checkAuthenticationStatus()
         
         // Subscribe to CloudKit changes
@@ -132,21 +165,35 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Custom Record Operations (for future features)
     func saveCustomRecord(_ record: CKRecord) async throws -> CKRecord {
+        guard let privateDatabase = privateDatabase else {
+            throw CloudKitError.notConfigured
+        }
         return try await privateDatabase.save(record)
     }
     
     func fetchCustomRecords(ofType type: String) async throws -> [CKRecord] {
+        guard let privateDatabase = privateDatabase else {
+            throw CloudKitError.notConfigured
+        }
         let query = CKQuery(recordType: type, predicate: NSPredicate(value: true))
         let result = try await privateDatabase.records(matching: query)
         return result.matchResults.compactMap { try? $0.1.get() }
     }
     
     func deleteCustomRecord(_ recordID: CKRecord.ID) async throws {
+        guard let privateDatabase = privateDatabase else {
+            throw CloudKitError.notConfigured
+        }
         try await privateDatabase.deleteRecord(withID: recordID)
     }
     
     // MARK: - Subscription Management (for real-time updates)
     func subscribeToChanges() async {
+        guard let privateDatabase = privateDatabase else {
+            print("❌ CloudKitManager: No private database available for subscriptions")
+            return
+        }
+        
         let subscription = CKDatabaseSubscription(subscriptionID: "habitto-changes")
         let notificationInfo = CKSubscription.NotificationInfo()
         notificationInfo.shouldSendContentAvailable = true

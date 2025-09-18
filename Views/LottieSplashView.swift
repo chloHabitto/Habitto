@@ -2,33 +2,89 @@ import SwiftUI
 import Lottie
 
 struct LottieSplashView: View {
-    @State private var showMainApp = false
+    @State private var animationFailed = false
+    @State private var shouldDismiss = false
+    let onAnimationComplete: (() -> Void)?
+    
+    init(onAnimationComplete: (() -> Void)? = nil) {
+        self.onAnimationComplete = onAnimationComplete
+    }
     
     var body: some View {
-        ZStack {
-            // Background color matching your app theme
-            Color.primary
+        Group {
+            if shouldDismiss {
+                // Animation completed - don't show anything
+                EmptyView()
+            } else if animationFailed {
+                // Fallback: Show nothing - just empty background
+                EmptyView()
+            } else {
+                // Full screen Lottie Animation
+                LottieView(animation: nil, onAnimationComplete: {
+                    print("✅ LottieSplashView: Animation completed")
+                    shouldDismiss = true
+                    onAnimationComplete?()
+                })
                 .ignoresSafeArea()
-            
-            // Full screen Lottie Animation
-            LottieView(animation: nil, onAnimationComplete: {
-                // Transition immediately when animation completes
-                showMainApp = true
-            })
-            .ignoresSafeArea()
+            }
         }
         .onAppear {
-            // Fallback: Auto-hide after 4 seconds if animation doesn't complete
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                if !showMainApp {
-                    showMainApp = true
+            // Fallback: Auto-complete after 3 seconds if animation doesn't finish
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                if !shouldDismiss {
+                    print("⚠️ LottieSplashView: Animation timeout, completing")
+                    shouldDismiss = true
+                    onAnimationComplete?()
                 }
             }
         }
     }
 }
 
-// MARK: - LottieView Wrapper
+// Alternative approach - better solution
+struct LottieSplashView2: View {
+    @State private var isVisible = true
+    let onAnimationComplete: (() -> Void)?
+    
+    init(onAnimationComplete: (() -> Void)? = nil) {
+        self.onAnimationComplete = onAnimationComplete
+    }
+    
+    var body: some View {
+        Group {
+            if isVisible {
+                LottieView(animation: nil, onAnimationComplete: {
+                    print("✅ LottieSplashView: Animation completed")
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        isVisible = false
+                    }
+                    // Small delay to ensure smooth transition
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onAnimationComplete?()
+                    }
+                })
+                .ignoresSafeArea()
+                .transition(.opacity)
+            }
+        }
+        .onAppear {
+            // Fallback timeout
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                if isVisible {
+                    print("⚠️ LottieSplashView: Animation timeout")
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        isVisible = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onAnimationComplete?()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - LottieView Wrapper (unchanged)
 struct LottieView: UIViewRepresentable {
     let animationName: String
     let loopMode: LottieLoopMode
@@ -49,9 +105,21 @@ struct LottieView: UIViewRepresentable {
         let animationView = LottieAnimationView()
         
         // Load animation by name
-        animationView.animation = LottieAnimation.named(animationName)
+        if let path = Bundle.main.path(forResource: animationName, ofType: "json") {
+            animationView.animation = LottieAnimation.filepath(path)
+            print("✅ LottieSplashView: Successfully loaded animation from path: \(path)")
+        } else {
+            print("❌ LottieSplashView: Failed to find animation file: \(animationName).json")
+            animationView.animation = LottieAnimation.named(animationName)
+            if animationView.animation == nil {
+                print("❌ LottieSplashView: Also failed to load animation by name: \(animationName)")
+            } else {
+                print("✅ LottieSplashView: Successfully loaded animation by name: \(animationName)")
+            }
+        }
+        
         animationView.loopMode = loopMode
-        animationView.contentMode = .scaleAspectFill  // Changed to fill the entire screen
+        animationView.contentMode = .scaleAspectFill
         animationView.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(animationView)
@@ -62,14 +130,20 @@ struct LottieView: UIViewRepresentable {
             animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        // Set up completion handler
         animationView.animationSpeed = 1.0
-        animationView.play { completed in
-            if completed {
-                // Animation completed successfully
-                DispatchQueue.main.async {
-                    onAnimationComplete?()
+        
+        if animationView.animation != nil {
+            animationView.play { completed in
+                if completed {
+                    DispatchQueue.main.async {
+                        onAnimationComplete?()
+                    }
                 }
+            }
+        } else {
+            print("❌ LottieSplashView: Animation failed to load, triggering completion")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                onAnimationComplete?()
             }
         }
         
@@ -82,5 +156,5 @@ struct LottieView: UIViewRepresentable {
 }
 
 #Preview {
-    LottieSplashView()
+    LottieSplashView2()
 }

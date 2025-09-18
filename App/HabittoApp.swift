@@ -52,15 +52,23 @@ struct HabittoApp: App {
         WindowGroup {
             ZStack {
                 if showSplash {
-                    LottieSplashView()
-                        .onAppear {
-                            // Hide splash after animation completes
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                                withAnimation(.easeInOut(duration: 0.5)) {
+                    LottieSplashView(onAnimationComplete: {
+                        // Hide splash immediately when animation completes
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSplash = false
+                        }
+                    })
+                    .onAppear {
+                        // Fallback: Hide splash after 5 seconds if animation doesn't complete
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                            if showSplash {
+                                print("⚠️ HabittoApp: Animation timeout, forcing transition")
+                                withAnimation(.easeInOut(duration: 0.3)) {
                                     showSplash = false
                                 }
                             }
                         }
+                    }
                 } else {
                     HomeView()
                         .preferredColorScheme(.light) // Force light mode only
