@@ -126,6 +126,7 @@ class HabitRepository: ObservableObject {
     
     private let coreDataManager = CoreDataManager.shared
     private let cloudKitManager = CloudKitManager.shared
+    private let validationService = DataValidationService()
     
     private init() {
         initializeSync()
@@ -394,6 +395,22 @@ class HabitRepository: ObservableObject {
         print("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
         print("⚠️ HabitRepository: Skipping Core Data sync - using UserDefaults only")
         
+        // Validate habits before saving
+        let validationResult = validationService.validateHabits(habits)
+        if !validationResult.isValid {
+            print("⚠️ HabitRepository: Validation failed with \(validationResult.errors.count) errors")
+            for error in validationResult.errors {
+                print("  - \(error.field): \(error.message)")
+            }
+            
+            // If there are critical errors, don't save
+            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
+            if !criticalErrors.isEmpty {
+                print("❌ HabitRepository: Critical validation errors found, aborting save")
+                return
+            }
+        }
+        
         // Save directly to UserDefaults instead of Core Data
         OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
         
@@ -408,6 +425,22 @@ class HabitRepository: ObservableObject {
     func createHabit(_ habit: Habit) {
         print("🔄 HabitRepository: Creating habit: \(habit.name)")
         print("🔄 HabitRepository: Current habits count before creation: \(habits.count)")
+        
+        // Validate habit before creating
+        let validationResult = validationService.validateHabit(habit)
+        if !validationResult.isValid {
+            print("⚠️ HabitRepository: Validation failed for new habit")
+            for error in validationResult.errors {
+                print("  - \(error.field): \(error.message)")
+            }
+            
+            // If there are critical errors, don't create the habit
+            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
+            if !criticalErrors.isEmpty {
+                print("❌ HabitRepository: Critical validation errors found, aborting habit creation")
+                return
+            }
+        }
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -426,6 +459,22 @@ class HabitRepository: ObservableObject {
     func updateHabit(_ habit: Habit) {
         print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
         print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
+        
+        // Validate habit before updating
+        let validationResult = validationService.validateHabit(habit)
+        if !validationResult.isValid {
+            print("⚠️ HabitRepository: Validation failed for updated habit")
+            for error in validationResult.errors {
+                print("  - \(error.field): \(error.message)")
+            }
+            
+            // If there are critical errors, don't update the habit
+            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
+            if !criticalErrors.isEmpty {
+                print("❌ HabitRepository: Critical validation errors found, aborting habit update")
+                return
+            }
+        }
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
