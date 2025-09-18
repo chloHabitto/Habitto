@@ -217,12 +217,46 @@ class AuthenticationManager: ObservableObject {
         let email = credential.email ?? "apple_user_\(userID)"
         let fullName = credential.fullName
         
+        // Debug: Print what information is available from Apple
+        print("🍎 Apple Sign-In Debug Info:")
+        print("   - User ID: \(userID)")
+        print("   - Email: \(email)")
+        print("   - Full Name: \(fullName?.description ?? "nil")")
+        print("   - Given Name: \(fullName?.givenName ?? "nil")")
+        print("   - Family Name: \(fullName?.familyName ?? "nil")")
+        
         // Create a display name from Apple's full name
         var displayName = "Apple User"
-        if let givenName = fullName?.givenName, let familyName = fullName?.familyName {
-            displayName = "\(givenName) \(familyName)"
-        } else if let givenName = fullName?.givenName {
-            displayName = givenName
+        
+        // Apple only provides name information on the FIRST sign-in attempt
+        // On subsequent sign-ins, fullName will be nil for privacy reasons
+        if let fullName = fullName {
+            if let givenName = fullName.givenName, let familyName = fullName.familyName {
+                displayName = "\(givenName) \(familyName)"
+                print("🍎 Using full name: \(displayName)")
+            } else if let givenName = fullName.givenName {
+                displayName = givenName
+                print("🍎 Using given name only: \(displayName)")
+            } else if let familyName = fullName.familyName {
+                displayName = familyName
+                print("🍎 Using family name only: \(displayName)")
+            }
+        } else {
+            // On subsequent sign-ins, try to retrieve stored name from UserDefaults
+            let storedName = UserDefaults.standard.string(forKey: "AppleUserDisplayName_\(userID)")
+            if let storedName = storedName, !storedName.isEmpty {
+                displayName = storedName
+                print("🍎 Using stored name: \(displayName)")
+            } else {
+                print("🍎 No name information available, using default: \(displayName)")
+            }
+        }
+        
+        // Store the name for future use (only if we got a name from Apple)
+        if let fullName = fullName, let givenName = fullName.givenName {
+            let nameToStore = fullName.familyName != nil ? "\(givenName) \(fullName.familyName!)" : givenName
+            UserDefaults.standard.set(nameToStore, forKey: "AppleUserDisplayName_\(userID)")
+            print("🍎 Stored name for future use: \(nameToStore)")
         }
         
         // Create a mock Firebase user object for Apple Sign-In
@@ -234,7 +268,7 @@ class AuthenticationManager: ObservableObject {
             isEmailVerified: true
         )
         
-        print("✅ AuthenticationManager: Apple Sign-In successful for user: \(userID)")
+        print("✅ AuthenticationManager: Apple Sign-In successful for user: \(userID) with display name: \(displayName)")
         DispatchQueue.main.async {
             self.authState = .authenticated(mockUser)
             self.currentUser = mockUser
