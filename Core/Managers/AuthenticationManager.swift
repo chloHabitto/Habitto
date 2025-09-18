@@ -1,7 +1,7 @@
 import Foundation
-// import FirebaseAuth // Temporarily commented out due to package dependency issues
+import FirebaseAuth
 import AuthenticationServices
-// import GoogleSignIn
+import GoogleSignIn
 import CryptoKit
 
 // MARK: - Authentication State
@@ -19,7 +19,7 @@ class AuthenticationManager: ObservableObject {
     @Published var authState: AuthenticationState = .unauthenticated
     @Published var currentUser: UserProtocol?
     
-    private var authStateListener: Any? // AuthStateDidChangeListenerHandle?
+    private var authStateListener: NSObjectProtocol?
     
     private init() {
         setupAuthStateListener()
@@ -27,100 +27,89 @@ class AuthenticationManager: ObservableObject {
     
     deinit {
         // Clean up the listener in deinit
-        // Google Sign-In implementation
-        // if let listener = authStateListener {
-        //     Auth.auth().removeStateDidChangeListener(listener)
-        // }
+        if let listener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(listener)
+        }
     }
     
     // MARK: - Authentication State Listener
     private func setupAuthStateListener() {
-        // Google Sign-In implementation
-        print("⚠️ AuthenticationManager: Firebase authentication temporarily disabled")
-        // authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-        //     DispatchQueue.main.async {
-        //         if let user = user {
-        //             self?.authState = .authenticated(user)
-        //             self?.currentUser = user
-        //             print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
-        //         } else {
-        //             self?.authState = .unauthenticated
-        //             self?.currentUser = nil
-        //             print("ℹ️ AuthenticationManager: User in guest mode - no authentication required")
-        //         }
-        //     }
-        // }
+        print("🔐 AuthenticationManager: Setting up Firebase authentication state listener")
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            DispatchQueue.main.async {
+                if let user = user {
+                    self?.authState = .authenticated(user)
+                    self?.currentUser = user
+                    print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
+                } else {
+                    self?.authState = .unauthenticated
+                    self?.currentUser = nil
+                    print("ℹ️ AuthenticationManager: User in guest mode - no authentication required")
+                }
+            }
+        }
     }
     
     // MARK: - Email/Password Authentication
     func signInWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Google Sign-In implementation
-        print("⚠️ AuthenticationManager: Firebase sign-in temporarily disabled")
-        completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
-        // authState = .authenticating
-        // Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
-        //     DispatchQueue.main.async {
-        //         if let error = error {
-        //             self?.authState = .error(error.localizedDescription)
-        //             completion(.failure(error))
-        //         } else if let user = result?.user {
-        //             self?.authState = .authenticated(user)
-        //             self?.currentUser = user
-        //             completion(.success(user))
-        //         }
-        //     }
-        // }
+        print("🔐 AuthenticationManager: Starting email/password sign-in")
+        authState = .authenticating
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.authState = .error(error.localizedDescription)
+                    completion(.failure(error))
+                } else if let user = result?.user {
+                    self?.authState = .authenticated(user)
+                    self?.currentUser = user
+                    completion(.success(user))
+                }
+            }
+        }
     }
     
     func createAccountWithEmail(email: String, password: String, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Google Sign-In implementation
-        print("⚠️ AuthenticationManager: Firebase account creation temporarily disabled")
-        completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
-        // authState = .authenticating
-        // Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
-        //     DispatchQueue.main.async {
-        //         if let error = error {
-        //             self?.authState = .error(error.localizedDescription)
-        //             completion(.failure(error))
-        //         } else if let user = result?.user {
-        //             self?.authState = .authenticated(user)
-        //             self?.currentUser = user
-        //             completion(.success(user))
-        //         }
-        //     }
-        // }
+        print("🔐 AuthenticationManager: Starting email/password account creation")
+        authState = .authenticating
+        Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.authState = .error(error.localizedDescription)
+                    completion(.failure(error))
+                } else if let user = result?.user {
+                    self?.authState = .authenticated(user)
+                    self?.currentUser = user
+                    completion(.success(user))
+                }
+            }
+        }
     }
     
     func signOut() {
-        // Google Sign-In implementation
-        print("⚠️ AuthenticationManager: Firebase sign-out temporarily disabled")
-        authState = .unauthenticated
-        currentUser = nil
-        // do {
-        //     try Auth.auth().signOut()
-        //     authState = .unauthenticated
-        //     currentUser = nil
-        //     print("✅ AuthenticationManager: User signed out successfully")
-        // } catch {
-        //     authState = .error(error.localizedDescription)
-        //     print("❌ AuthenticationManager: Failed to sign out: \(error.localizedDescription)")
-        // }
+        print("🔐 AuthenticationManager: Starting sign out")
+        do {
+            try Auth.auth().signOut()
+            authState = .unauthenticated
+            currentUser = nil
+            print("✅ AuthenticationManager: User signed out successfully")
+        } catch {
+            authState = .error(error.localizedDescription)
+            print("❌ AuthenticationManager: Failed to sign out: \(error.localizedDescription)")
+        }
     }
     
     /// Reset password
     func resetPassword(email: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // Google Sign-In implementation
-        print("⚠️ AuthenticationManager: Firebase password reset temporarily disabled")
-        completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
-        // Auth.auth().sendPasswordReset(withEmail: email) { error in
-        //     DispatchQueue.main.async {
-        //         if let error = error {
-        //             completion(.failure(error))
-        //         } else {
-        //             completion(.success(()))
-        //         }
-        //     }
-        // }
+        print("🔐 AuthenticationManager: Starting password reset")
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
     }
     
     // MARK: - Apple Sign In Nonce (Security) - Simplified
@@ -166,12 +155,46 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        // Google Sign-In implementation
         print("🔐 AuthenticationManager: Starting Google Sign-In process...")
-        completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication temporarily disabled"])))
-        // print("🔐 AuthenticationManager: Starting Google Sign-In process...")
-        // authState = .authenticating
-        // ... rest of Google Sign-In implementation commented out
+        authState = .authenticating
+        
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let presentingViewController = windowScene.windows.first?.rootViewController else {
+            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller found"])))
+            return
+        }
+        
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] result, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self?.authState = .error(error.localizedDescription)
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let user = result?.user,
+                      let idToken = user.idToken?.tokenString else {
+                    self?.authState = .error("Failed to get Google ID token")
+                    completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get Google ID token"])))
+                    return
+                }
+                
+                let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: user.accessToken.tokenString)
+                
+                Auth.auth().signIn(with: credential) { authResult, error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            self?.authState = .error(error.localizedDescription)
+                            completion(.failure(error))
+                        } else if let user = authResult?.user {
+                            self?.authState = .authenticated(user)
+                            self?.currentUser = user
+                            completion(.success(user))
+                        }
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Apple Sign In
@@ -198,16 +221,40 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - User Profile Management
     func updateUserProfile(displayName: String?, photoURL: URL?, completion: @escaping (Result<Void, Error>) -> Void) {
-        // Firebase disabled - return error
-        DispatchQueue.main.async {
-            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication is currently disabled"])))
+        guard let user = Auth.auth().currentUser else {
+            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user"])))
+            return
+        }
+        
+        let changeRequest = user.createProfileChangeRequest()
+        changeRequest.displayName = displayName
+        changeRequest.photoURL = photoURL
+        
+        changeRequest.commitChanges { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
         }
     }
     
     func updateUserEmail(newEmail: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // Firebase disabled - return error
-        DispatchQueue.main.async {
-            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Firebase authentication is currently disabled"])))
+        guard let user = Auth.auth().currentUser else {
+            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user"])))
+            return
+        }
+        
+        user.sendEmailVerification(beforeUpdatingEmail: newEmail) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
         }
     }
     
@@ -240,5 +287,5 @@ protocol UserProtocol {
     var displayName: String? { get }
 }
 
-// MARK: - Firebase User Extension (disabled)
-// extension User: UserProtocol {}
+// MARK: - Firebase User Extension
+extension User: UserProtocol {}
