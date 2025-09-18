@@ -318,15 +318,15 @@ struct Habit: Identifiable, Codable, Equatable {
     
     // MARK: - Persistence Methods (Optimized)
     static func saveHabits(_ habits: [Habit], immediate: Bool = false) {
-        HabitStorageManager.shared.saveHabits(habits, immediate: immediate)
+        OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: immediate)
     }
     
     static func loadHabits() -> [Habit] {
-        return HabitStorageManager.shared.loadHabits()
+        return OptimizedHabitStorageManager.shared.loadHabits()
     }
     
     static func clearCache() {
-        HabitStorageManager.shared.clearCache()
+        OptimizedHabitStorageManager.shared.clearCache()
     }
 }
 

@@ -248,9 +248,10 @@ class HabitRepository: ObservableObject {
             return
         }
         
-        // Always load from UserDefaults (simpler and more reliable)
-        let loadedHabits = HabitStorageManager.shared.loadHabits()
-        print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from UserDefaults")
+        // Use optimized storage manager for better performance
+        OptimizedHabitStorageManager.shared.migrateIfNeeded()
+        let loadedHabits = OptimizedHabitStorageManager.shared.loadHabits()
+        print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from optimized storage")
         
         // Debug each loaded habit
         for (index, habit) in loadedHabits.enumerated() {
@@ -294,7 +295,7 @@ class HabitRepository: ObservableObject {
             habits[habitIndex] = updatedHabit
             
             // Save the updated habits array
-            Habit.saveHabits(habits, immediate: true)
+            OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
             
             print("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
         } else {
@@ -394,7 +395,7 @@ class HabitRepository: ObservableObject {
         print("⚠️ HabitRepository: Skipping Core Data sync - using UserDefaults only")
         
         // Save directly to UserDefaults instead of Core Data
-        HabitStorageManager.shared.saveHabits(habits, immediate: true)
+        OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
         
         // Update the local habits array
         DispatchQueue.main.async {
@@ -411,7 +412,7 @@ class HabitRepository: ObservableObject {
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
         currentHabits.append(habit)
-        HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+        OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
         
         // Update the published habits on main thread
         DispatchQueue.main.async {
@@ -430,7 +431,7 @@ class HabitRepository: ObservableObject {
         var currentHabits = HabitStorageManager.shared.loadHabits()
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
             currentHabits[index] = habit
-            HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+            OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
             
             // Update the published habits on main thread
             DispatchQueue.main.async {
@@ -444,7 +445,7 @@ class HabitRepository: ObservableObject {
             
             // Create new habit in UserDefaults
             currentHabits.append(habit)
-            HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+            OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
             
             // Update the published habits on main thread
             DispatchQueue.main.async {
@@ -466,7 +467,7 @@ class HabitRepository: ObservableObject {
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
         currentHabits.removeAll { $0.id == habit.id }
-        HabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
+        OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
         
         // Update the published habits on main thread
         DispatchQueue.main.async {
@@ -525,7 +526,7 @@ class HabitRepository: ObservableObject {
                 self.objectWillChange.send()
                 
                 // Save to UserDefaults
-                HabitStorageManager.shared.saveHabits(updatedHabits, immediate: true)
+                OptimizedHabitStorageManager.shared.saveHabits(updatedHabits, immediate: true)
                 print("✅ HabitRepository: Progress saved to UserDefaults")
             }
         } else {
@@ -714,7 +715,7 @@ class HabitRepository: ObservableObject {
     
     // MARK: - Backup to UserDefaults
     func backupToUserDefaults() {
-        HabitStorageManager.shared.saveHabits(habits, immediate: true)
+        OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
         print("✅ HabitRepository: Habits backed up to UserDefaults")
     }
 }
