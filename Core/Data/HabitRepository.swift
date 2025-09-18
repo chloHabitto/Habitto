@@ -104,6 +104,21 @@ class NoteEntity: NSManagedObject {
 }
 
 // MARK: - Habit Repository
+//
+// This repository manages all habit data and user content.
+// It does NOT handle authentication - that's handled by AuthenticationManager.
+//
+// Data Storage:
+// - Habit definitions → UserDefaults (current) → Core Data (future)
+// - Completion records → UserDefaults (current) → Core Data (future)
+// - User preferences → UserDefaults
+// - Streak calculations → Computed from local data
+//
+// Authentication:
+// - User login → AuthenticationManager (Firebase Auth)
+// - User tokens → Keychain (via KeychainManager)
+// - User profile → Firebase Auth
+//
 class HabitRepository: ObservableObject {
     static let shared = HabitRepository()
     

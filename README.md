@@ -94,6 +94,7 @@ Assets/
 ```
 Documentation/
 ├── CORE_DATA_IMPLEMENTATION.md
+├── FIREBASE_ARCHITECTURE.md    # Firebase usage and data architecture
 ├── HABIT_EDITING_SUMMARY.md
 └── PROJECT_STRUCTURE.md     # Detailed project structure documentation
 ```
