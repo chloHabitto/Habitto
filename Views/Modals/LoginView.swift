@@ -296,7 +296,7 @@ struct LoginView: View {
         let delegate = AppleSignInDelegate(
             onSuccess: { credential in
                 DispatchQueue.main.async {
-                    self.authManager.signInWithApple(credential: credential) { result in
+                    self.authManager.signInWithApple(credential: credential, nonce: nonce) { result in
                         DispatchQueue.main.async {
                             self.isLoading = false
                             switch result {
