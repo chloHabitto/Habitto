@@ -10,6 +10,7 @@ enum Tab {
 }
 
 // MARK: - HomeView State Manager
+@MainActor
 class HomeViewState: ObservableObject {
     @Published var selectedDate = Calendar.current.startOfDay(for: Date())
     @Published var scrollPosition: Int? = 0
@@ -189,6 +190,7 @@ class HomeViewState: ObservableObject {
     }
 }
 
+@MainActor
 struct HomeView: View {
     @StateObject private var state = HomeViewState()
     @EnvironmentObject var tutorialManager: TutorialManager

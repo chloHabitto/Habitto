@@ -60,7 +60,8 @@ struct HabittoApp: App {
                     })
                     .onAppear {
                         // Fallback: Hide splash after 5 seconds if animation doesn't complete
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 5_000_000_000)
                             if showSplash {
                                 print("⚠️ HabittoApp: Animation timeout, forcing transition")
                                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -82,17 +83,17 @@ struct HabittoApp: App {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
                             
-                   // Force reload habits after a short delay to ensure data is loaded
-                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                       print("🔄 HabittoApp: Force reloading habits after app start...")
-                       habitRepository.loadHabits(force: true)
+                            // Force reload habits after a short delay to ensure data is loaded
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 500_000_000)
+                                print("🔄 HabittoApp: Force reloading habits after app start...")
+                                habitRepository.loadHabits(force: true)
                                 
                                 // Reschedule notifications after habits are loaded
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    print("🔄 HabittoApp: Rescheduling notifications after app start...")
-                                    let habits = habitRepository.habits
-                                    NotificationManager.shared.rescheduleAllNotifications(for: habits)
-                                }
+                                try? await Task.sleep(nanoseconds: 500_000_000)
+                                print("🔄 HabittoApp: Rescheduling notifications after app start...")
+                                let habits = habitRepository.habits
+                                NotificationManager.shared.rescheduleAllNotifications(for: habits)
                             }
                         }
                 }
@@ -118,12 +119,15 @@ struct HabittoApp: App {
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
-               ) { _ in
-                   print("🔄 HabittoApp: App became active, reloading habits...")
-                   habitRepository.loadHabits(force: true)
+        ) { [weak habitRepository] _ in
+            guard let habitRepository = habitRepository else { return }
             
-            // Reschedule notifications after a short delay to ensure habits are loaded
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            Task { @MainActor in
+                print("🔄 HabittoApp: App became active, reloading habits...")
+                habitRepository.loadHabits(force: true)
+                
+                // Reschedule notifications after a short delay to ensure habits are loaded
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
                 print("🔄 HabittoApp: Rescheduling notifications after app became active...")
                 let habits = habitRepository.habits
                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
@@ -135,11 +139,15 @@ struct HabittoApp: App {
             forName: UIApplication.willResignActiveNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            print("🔄 HabittoApp: App going to background, saving data...")
-            // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
-            print("✅ HabittoApp: Data saved before background")
+        ) { [weak habitRepository] _ in
+            guard let habitRepository = habitRepository else { return }
+            
+            Task { @MainActor in
+                print("🔄 HabittoApp: App going to background, saving data...")
+                let habits = habitRepository.habits
+                HabitStorageManager.shared.saveHabits(habits, immediate: true)
+                print("✅ HabittoApp: Data saved before background")
+            }
         }
 
         // Monitor app lifecycle to save data when app terminates
@@ -147,11 +155,15 @@ struct HabittoApp: App {
             forName: UIApplication.willTerminateNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            print("🔄 HabittoApp: App terminating, saving data...")
-            // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
-            print("✅ HabittoApp: Data saved before termination")
+        ) { [weak habitRepository] _ in
+            guard let habitRepository = habitRepository else { return }
+            
+            Task { @MainActor in
+                print("🔄 HabittoApp: App terminating, saving data...")
+                let habits = habitRepository.habits
+                HabitStorageManager.shared.saveHabits(habits, immediate: true)
+                print("✅ HabittoApp: Data saved before termination")
+            }
         }
 
         // Monitor app lifecycle to save data when app enters background
@@ -159,11 +171,15 @@ struct HabittoApp: App {
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            print("🔄 HabittoApp: App entering background, saving data...")
-            // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
-            print("✅ HabittoApp: Data saved before entering background")
+        ) { [weak habitRepository] _ in
+            guard let habitRepository = habitRepository else { return }
+            
+            Task { @MainActor in
+                print("🔄 HabittoApp: App entering background, saving data...")
+                let habits = habitRepository.habits
+                HabitStorageManager.shared.saveHabits(habits, immediate: true)
+                print("✅ HabittoApp: Data saved before entering background")
+            }
         }
         
         // Monitor app lifecycle to save data when app enters foreground
@@ -171,11 +187,15 @@ struct HabittoApp: App {
             forName: UIApplication.willEnterForegroundNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            print("🔄 HabittoApp: App entering foreground, saving data...")
-            // Save habits to UserDefaults
-            HabitStorageManager.shared.saveHabits(habitRepository.habits, immediate: true)
-            print("✅ HabittoApp: Data saved before entering foreground")
+        ) { [weak habitRepository] _ in
+            guard let habitRepository = habitRepository else { return }
+            
+            Task { @MainActor in
+                print("🔄 HabittoApp: App entering foreground, saving data...")
+                let habits = habitRepository.habits
+                HabitStorageManager.shared.saveHabits(habits, immediate: true)
+                print("✅ HabittoApp: Data saved before entering foreground")
+            }
         }
     }
 }

@@ -97,7 +97,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         let dateKey = DateUtils.dateKey(for: date)
         habit.completionHistory[dateKey] = Int(progress * 100) // Store as percentage
         
-        try await update(habit)
+        _ = try await update(habit)
     }
     
     func getHabitCompletion(habitId: UUID, date: Date) async throws -> Double {

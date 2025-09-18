@@ -2,6 +2,7 @@ import Foundation
 
 // MARK: - UserDefaults Storage Implementation
 /// UserDefaults implementation of the data storage protocol
+@MainActor
 class UserDefaultsStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
@@ -24,11 +25,10 @@ class UserDefaultsStorage: HabitStorageProtocol {
         
         let now = Date()
         if now.timeIntervalSince(lastSaveTime) < saveDebounceInterval {
-            // Schedule a delayed save
-            DispatchQueue.main.asyncAfter(deadline: .now() + saveDebounceInterval) {
-                Task {
-                    try? await self.performSave(data, forKey: key)
-                }
+            // Schedule a delayed save - no weak self needed since we're @MainActor
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(saveDebounceInterval * 1_000_000_000))
+                try? await self.performSave(data, forKey: key)
             }
             return
         }
