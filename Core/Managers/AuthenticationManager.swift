@@ -153,6 +153,16 @@ class AuthenticationManager: ObservableObject {
         return result
     }
     
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            return String(format: "%02x", $0)
+        }.joined()
+        
+        return hashString
+    }
+    
     // MARK: - Google Sign In
     func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
         print("🔐 AuthenticationManager: Starting Google Sign-In process...")
@@ -199,23 +209,62 @@ class AuthenticationManager: ObservableObject {
     
     // MARK: - Apple Sign In
     func signInWithApple(credential: ASAuthorizationAppleIDCredential, completion: @escaping (Result<UserProtocol, Error>) -> Void) {
-        authState = .authenticating
+        print("🍎 AuthenticationManager: Starting Apple Sign-In...")
         
-        // For now, create a mock user since Firebase OAuth is not available in this SDK version
-        // TODO: Update Firebase SDK to enable proper Apple Sign-In integration
-        let mockUser = CustomUser(
-            uid: "apple_\(UUID().uuidString)",
-            email: credential.email ?? "apple_user@example.com",
-            displayName: [credential.fullName?.givenName, credential.fullName?.familyName]
-                .compactMap { $0 }
-                .joined(separator: " ")
-        )
+        guard credential.identityToken != nil else {
+            print("❌ AuthenticationManager: Failed to get identity token from Apple")
+            let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get identity token from Apple"])
+            DispatchQueue.main.async {
+                completion(.failure(error))
+            }
+            return
+        }
         
-        DispatchQueue.main.async {
-            self.authState = .authenticated(mockUser)
-            self.currentUser = mockUser
-            self.currentNonce = nil // Clear nonce after successful use
-            completion(.success(mockUser))
+        // Create OAuth provider for Apple
+        let provider = OAuthProvider(providerID: "apple.com")
+        
+        // Sign in with Firebase using the Apple provider
+        provider.getCredentialWith(nil) { [weak self] credential, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    print("❌ AuthenticationManager: Apple Sign-In failed: \(error.localizedDescription)")
+                    self?.authState = .error("Apple Sign-In failed: \(error.localizedDescription)")
+                    completion(.failure(error))
+                }
+                return
+            }
+            
+            guard let credential = credential else {
+                DispatchQueue.main.async {
+                    print("❌ AuthenticationManager: Apple Sign-In failed - no credential")
+                    let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In failed - no credential"])
+                    self?.authState = .error("Apple Sign-In failed - no credential")
+                    completion(.failure(error))
+                }
+                return
+            }
+            
+            // Sign in with Firebase using the Apple credential
+            Auth.auth().signIn(with: credential) { [weak self] result, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ AuthenticationManager: Apple Sign-In failed: \(error.localizedDescription)")
+                        self?.authState = .error("Apple Sign-In failed: \(error.localizedDescription)")
+                        completion(.failure(error))
+                    } else if let result = result {
+                        print("✅ AuthenticationManager: Apple Sign-In successful for user: \(result.user.uid)")
+                        let user = result.user
+                        self?.authState = .authenticated(user)
+                        self?.currentUser = user
+                        completion(.success(user))
+                    } else {
+                        print("❌ AuthenticationManager: Apple Sign-In failed - no result")
+                        let error = NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In failed - no result"])
+                        self?.authState = .error("Apple Sign-In failed - no result")
+                        completion(.failure(error))
+                    }
+                }
+            }
         }
     }
     
