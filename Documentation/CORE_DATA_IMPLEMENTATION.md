@@ -295,8 +295,16 @@ For issues or questions:
 ### Current Implementation
 - **Keychain**: Sensitive data (auth tokens, user IDs, personal info) stored in iOS Keychain
 - **UserDefaults**: Non-sensitive app preferences and user content
-- **Authentication**: Secure user login with Firebase
+- **Authentication**: Secure user login with Firebase (Google, Apple, Email/Password)
 - **Privacy**: Auth via Firebase; habit data local today; future sync via CloudKit
+
+### Firebase Usage Clarification
+- **Firebase Auth Only**: Used exclusively for user authentication (Google, Apple, Email/Password)
+- **No Data Storage**: Firebase does NOT store habit data, completion records, or user preferences
+- **Local Data**: All habit data is stored locally on device (UserDefaults → Core Data)
+- **Future Sync**: Planned CloudKit integration for cross-device synchronization
+
+> **See**: [Firebase Architecture Documentation](FIREBASE_ARCHITECTURE.md) for detailed explanation
 
 ### Security Principles
 - **Secrets → Keychain**: Authentication tokens, user identifiers, personal information

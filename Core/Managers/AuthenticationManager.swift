@@ -12,6 +12,22 @@ enum AuthenticationState {
     case error(String)
 }
 
+// MARK: - Authentication Manager
+// 
+// This manager handles user authentication via Firebase Auth only.
+// It does NOT store or manage habit data - that's handled by HabitRepository.
+// 
+// Firebase Usage:
+// - Google Sign-In authentication
+// - Apple Sign-In authentication  
+// - Email/Password authentication
+// - Session management and token storage
+//
+// Data Storage:
+// - Authentication tokens → Keychain
+// - User profile info → Firebase Auth
+// - Habit data → HabitRepository (UserDefaults → Core Data)
+//
 @MainActor
 class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
