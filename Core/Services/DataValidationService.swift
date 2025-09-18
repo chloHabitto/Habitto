@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Data Validation Service
+@MainActor
 class DataValidationService: ObservableObject {
     @Published var isEnabled = true
     @Published var validationMode: ValidationMode = .strict
@@ -147,6 +148,7 @@ class ValidationMiddleware {
         self.validationService = validationService
     }
     
+    @MainActor
     func validateBeforeSave<T>(_ data: T) -> ValidationResult where T: Codable {
         if let habit = data as? Habit {
             return validationService.validateHabit(habit)
@@ -157,6 +159,7 @@ class ValidationMiddleware {
         return .valid
     }
     
+    @MainActor
     func validateAfterLoad<T>(_ data: T) -> ValidationResult where T: Codable {
         if let habit = data as? Habit {
             return validationService.validateHabit(habit)

@@ -17,6 +17,7 @@ class StorageFactory {
     /// Create a habit storage implementation based on the specified type
     /// - Parameter type: The storage type to create
     /// - Returns: A habit storage implementation
+    @MainActor
     func createHabitStorage(type: StorageType) -> any HabitStorageProtocol {
         switch type {
         case .userDefaults:
@@ -32,6 +33,7 @@ class StorageFactory {
     /// Create a habit repository with the specified storage type
     /// - Parameter type: The storage type to use
     /// - Returns: A habit repository implementation
+    @MainActor
     func createHabitRepository(type: StorageType) -> any HabitRepositoryProtocol {
         let storage = createHabitStorage(type: type)
         return HabitRepositoryImpl(storage: storage)

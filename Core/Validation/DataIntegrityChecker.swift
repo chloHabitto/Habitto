@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Data Integrity Checker
+@MainActor
 class DataIntegrityChecker: ObservableObject {
     @Published var isChecking = false
     @Published var lastCheckTime: Date?
@@ -13,15 +14,11 @@ class DataIntegrityChecker: ObservableObject {
     // MARK: - Public Methods
     
     func checkDataIntegrity(habits: [Habit]) async -> DataIntegrityReport {
-        await MainActor.run {
-            isChecking = true
-            lastCheckTime = Date()
-        }
+        isChecking = true
+        lastCheckTime = Date()
         
         defer {
-            Task { @MainActor in
-                isChecking = false
-            }
+            isChecking = false
         }
         
         var issues: [DataIntegrityIssue] = []
@@ -352,37 +349,37 @@ struct DataIntegrityReport {
 }
 
 // MARK: - Data Integrity Monitor
+@MainActor
 class DataIntegrityMonitor: ObservableObject {
     @Published var isMonitoring = false
     @Published var lastReport: DataIntegrityReport?
     
     private let checker = DataIntegrityChecker()
-    private var monitoringTimer: Timer?
+    private var monitoringTask: Task<Void, Never>?
     
-    func startMonitoring(habits: [Habit], interval: TimeInterval = 300) { // 5 minutes
+    func startMonitoring(habits: @escaping @MainActor () -> [Habit], interval: TimeInterval = 300) { // 5 minutes
         stopMonitoring()
         
         isMonitoring = true
-        monitoringTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-        Task { [weak self] in
-            let report = await self?.checker.checkDataIntegrity(habits: habits)
-            await MainActor.run {
-                self?.lastReport = report
+        monitoringTask = Task { @MainActor in
+            while !Task.isCancelled {
+                let currentHabits = habits()
+                let report = await checker.checkDataIntegrity(habits: currentHabits)
+                lastReport = report
+                
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
-        }
         }
     }
     
     func stopMonitoring() {
-        monitoringTimer?.invalidate()
-        monitoringTimer = nil
+        monitoringTask?.cancel()
+        monitoringTask = nil
         isMonitoring = false
     }
     
     func performManualCheck(habits: [Habit]) async {
         let report = await checker.checkDataIntegrity(habits: habits)
-        await MainActor.run {
-            self.lastReport = report
-        }
+        lastReport = report
     }
 }

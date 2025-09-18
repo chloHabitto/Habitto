@@ -119,6 +119,7 @@ class NoteEntity: NSManagedObject {
 // - User tokens → Keychain (via KeychainManager)
 // - User profile → Firebase Auth
 //
+@MainActor
 class HabitRepository: ObservableObject {
     static let shared = HabitRepository()
     

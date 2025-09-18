@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - New Habit Repository (Protocol-Based)
 /// New HabitRepository implementation using the protocol pattern
+@MainActor
 class HabitRepositoryNew: HabitRepositoryProtocol, ObservableObject {
     typealias DataType = Habit
     
