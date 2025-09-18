@@ -308,8 +308,8 @@ struct HabitCompletionBottomSheet: View {
         // Convert difficulty to integer (1-5 scale)
         let difficultyValue: Int32 = Int32(difficulty.rawValue)
         
-        // Save to Core Data using CoreDataAdapter
-        CoreDataAdapter.shared.saveDifficultyRating(
+        // Save to Core Data using HabitRepository
+        HabitRepository.shared.saveDifficultyRating(
             habitId: habit.id,
             date: Date(),
             difficulty: difficultyValue

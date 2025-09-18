@@ -1,7 +1,7 @@
 import Foundation
 import CoreData
 
-// MARK: - Note: Core Data type aliases are defined in CoreDataAdapter.swift
+// MARK: - Note: Core Data type aliases are defined in HabitRepository.swift
 
 // MARK: - Time Block Helper
 struct TimeBlockHelper {

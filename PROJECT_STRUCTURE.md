@@ -24,7 +24,7 @@ The core layer contains all fundamental app components:
 
 #### Core/Data
 - **CloudKitManager.swift** - CloudKit integration
-- **CoreDataAdapter.swift** - Core Data adapter layer
+- **HabitRepository.swift** - Habit data repository layer
 - **CoreDataManager.swift** - Core Data management
 - **HabittoDataModel.xcdatamodeld/** - Core Data model
 

@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreData
 
-// MARK: - Note: Core Data type aliases are defined in CoreDataAdapter.swift
+// MARK: - Note: Core Data type aliases are defined in HabitRepository.swift
 
 struct PatternInsightsSection: View {
     let habit: Habit?

@@ -52,7 +52,7 @@ struct YearPickerModal: View {
                 YearPicker(selectedYear: $tempSelectedYear)
                     .frame(height: 300)
                     .padding(.horizontal, 20)
-                    .environmentObject(CoreDataAdapter.shared)
+                    .environmentObject(HabitRepository.shared)
                 
                 // Reset button - always reserve space for consistent height
                 VStack {
@@ -127,7 +127,7 @@ struct YearPickerModal: View {
 struct YearPicker: View {
     @Binding var selectedYear: Int
     @State private var currentYear: Int
-    @EnvironmentObject var coreDataAdapter: CoreDataAdapter
+    @EnvironmentObject var coreDataAdapter: HabitRepository
     
     init(selectedYear: Binding<Int>) {
         self._selectedYear = selectedYear

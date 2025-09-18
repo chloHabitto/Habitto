@@ -17,7 +17,7 @@ App/
 Core/
 ├── Data/                    # Data management and persistence
 │   ├── CoreDataManager.swift
-│   ├── CoreDataAdapter.swift
+│   ├── HabitRepository.swift
 │   ├── CloudKitManager.swift
 │   └── HabittoDataModel.xcdatamodeld/
 ├── Models/                  # Data models

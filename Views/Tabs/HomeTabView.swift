@@ -644,7 +644,7 @@ struct HomeTabView: View {
         // Refresh habits data from Core Data
         await MainActor.run {
             // Force reload habits from Core Data
-            CoreDataAdapter.shared.loadHabits(force: true)
+            HabitRepository.shared.loadHabits(force: true)
             
             // Provide haptic feedback for successful refresh
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

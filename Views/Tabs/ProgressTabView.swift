@@ -118,12 +118,12 @@ struct ProgressTabView: View {
     
     
     // MARK: - Environment
-    @EnvironmentObject var coreDataAdapter: CoreDataAdapter
+    @EnvironmentObject var habitRepository: HabitRepository
     @StateObject private var calendarHelper = ProgressCalendarHelper()
     
     // MARK: - Computed Properties
     private var habits: [Habit] {
-        coreDataAdapter.habits
+        habitRepository.habits
     }
     
     private var headerContent: some View {
@@ -477,7 +477,7 @@ struct ProgressTabView: View {
             loadYearlyData()
             
         }
-        .onChange(of: coreDataAdapter.habits) {
+        .onChange(of: habitRepository.habits) {
             // Reload yearly data when habits change
             loadYearlyData()
         }
@@ -1126,7 +1126,7 @@ struct ProgressTabView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        return coreDataAdapter.habits.filter { habit in
+        return habitRepository.habits.filter { habit in
             // Check if habit is currently active (within its period)
             let startDate = calendar.startOfDay(for: habit.startDate)
             let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
@@ -1141,7 +1141,7 @@ struct ProgressTabView: View {
         let weekStart = selectedWeekStartDate
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
-        return coreDataAdapter.habits.filter { habit in
+        return habitRepository.habits.filter { habit in
             let habitStart = calendar.startOfDay(for: habit.startDate)
             let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
             
@@ -1155,7 +1155,7 @@ struct ProgressTabView: View {
         let monthStart = calendar.dateInterval(of: .month, for: selectedProgressDate)?.start ?? selectedProgressDate
         let monthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?.end ?? selectedProgressDate
         
-        return coreDataAdapter.habits.filter { habit in
+        return habitRepository.habits.filter { habit in
             let habitStart = calendar.startOfDay(for: habit.startDate)
             let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
             
@@ -1197,7 +1197,7 @@ struct ProgressTabView: View {
         }
         
         let totalProgress = scheduledHabits.reduce(0.0) { total, habit in
-            let progress = Double(coreDataAdapter.getProgress(for: habit, date: date))
+            let progress = Double(habitRepository.getProgress(for: habit, date: date))
             let goalAmount = parseGoalAmount(from: habit.goal)
             return total + min(progress, Double(goalAmount))
         }
@@ -1341,7 +1341,7 @@ struct ProgressTabView: View {
     
     // MARK: - Yearly Data Management
     private func loadYearlyData() {
-        guard !coreDataAdapter.habits.isEmpty else {
+        guard !habitRepository.habits.isEmpty else {
             yearlyHeatmapData = []
             isDataLoaded = true
             return
@@ -1353,9 +1353,9 @@ struct ProgressTabView: View {
         // Calculate yearly heatmap data asynchronously
         Task {
             let data = await StreakDataCalculator.generateYearlyDataFromHabitsAsync(
-                coreDataAdapter.habits,
+                habitRepository.habits,
                 startIndex: 0,
-                itemsPerPage: coreDataAdapter.habits.count,
+                itemsPerPage: habitRepository.habits.count,
                 forYear: selectedYear
             ) { progress in
                 // Update UI on main thread
@@ -1761,7 +1761,7 @@ struct ProgressTabView: View {
             return StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate) ? 1 : 0
         } else {
             // For all habits, count all scheduled habits
-        let scheduledHabits = coreDataAdapter.habits.filter { habit in
+        let scheduledHabits = habitRepository.habits.filter { habit in
             return StreakDataCalculator.shouldShowHabitOnDate(habit, date: selectedProgressDate)
         }
         return scheduledHabits.count
@@ -1774,7 +1774,7 @@ struct ProgressTabView: View {
             if !StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate) {
                 return 0 // Not scheduled, so not completed
             }
-            let progress = coreDataAdapter.getProgress(for: selectedHabit, date: selectedProgressDate)
+            let progress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
             let goalAmount = parseGoalAmount(from: selectedHabit.goal)
             return progress >= goalAmount ? 1 : 0
         } else {
@@ -1782,7 +1782,7 @@ struct ProgressTabView: View {
         let scheduledHabits = getScheduledHabitsForDate(selectedProgressDate)
         
         let completedHabits = scheduledHabits.filter { habit in
-            let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
+            let progress = habitRepository.getProgress(for: habit, date: selectedProgressDate)
             let goalAmount = parseGoalAmount(from: habit.goal)
             return progress >= goalAmount
         }
@@ -1797,7 +1797,7 @@ struct ProgressTabView: View {
             if !StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate) {
                 return 0.0 // Not scheduled, so no progress
             }
-            let progress = coreDataAdapter.getProgress(for: selectedHabit, date: selectedProgressDate)
+            let progress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
             let goalAmount = parseGoalAmount(from: selectedHabit.goal)
             if goalAmount == 0 {
                 return 0.0
@@ -1811,7 +1811,7 @@ struct ProgressTabView: View {
         }
         
             let totalProgress = scheduledHabits.reduce(0.0) { total, habit in
-            let progress = coreDataAdapter.getProgress(for: habit, date: selectedProgressDate)
+            let progress = habitRepository.getProgress(for: habit, date: selectedProgressDate)
                 return total + Double(progress)
         }
         
@@ -1848,7 +1848,7 @@ struct ProgressTabView: View {
         var totalScheduled = 0
         for dayOffset in 0..<daysToCount {
             if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
-                let scheduledHabits = coreDataAdapter.habits.filter { habit in
+                let scheduledHabits = habitRepository.habits.filter { habit in
                     StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
                 }
                 totalScheduled += scheduledHabits.count
@@ -1868,12 +1868,12 @@ struct ProgressTabView: View {
         var totalCompleted = 0
         for dayOffset in 0..<daysToCount {
             if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
-                let scheduledHabits = coreDataAdapter.habits.filter { habit in
+                let scheduledHabits = habitRepository.habits.filter { habit in
                     StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
                 }
                 
                 for habit in scheduledHabits {
-                    let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                    let progress = habitRepository.getProgress(for: habit, date: currentDay)
                     let goalAmount = parseGoalAmount(from: habit.goal)
                     if progress >= goalAmount {
                         totalCompleted += 1
@@ -1935,7 +1935,7 @@ struct ProgressTabView: View {
         
         var habitCompletionRates: [(Habit, Double)] = []
         
-        for habit in coreDataAdapter.habits {
+        for habit in habitRepository.habits {
             var totalScheduled = 0
             var totalCompleted = 0
             
@@ -1944,7 +1944,7 @@ struct ProgressTabView: View {
                     if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
                         totalScheduled += 1
                         
-                        let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                        let progress = habitRepository.getProgress(for: habit, date: currentDay)
                         let goalAmount = parseGoalAmount(from: habit.goal)
                         if progress >= goalAmount {
                             totalCompleted += 1
@@ -1975,7 +1975,7 @@ struct ProgressTabView: View {
                 if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
                     totalScheduled += 1
                     
-                    let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                    let progress = habitRepository.getProgress(for: habit, date: currentDay)
                     let goalAmount = parseGoalAmount(from: habit.goal)
                     if progress >= goalAmount {
                         totalCompleted += 1
@@ -2015,7 +2015,7 @@ struct ProgressTabView: View {
     
     // MARK: - Helper Functions for Scheduled Habits
     private func getScheduledHabitsForDate(_ date: Date) -> [Habit] {
-        return coreDataAdapter.habits.filter { habit in
+        return habitRepository.habits.filter { habit in
             return StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
         }
     }
@@ -2426,7 +2426,7 @@ struct ProgressTabView: View {
         
         var habitCompletionRates: [(Habit, Double)] = []
         
-        for habit in coreDataAdapter.habits {
+        for habit in habitRepository.habits {
             var totalScheduled = 0
             var totalCompleted = 0
             
@@ -2435,7 +2435,7 @@ struct ProgressTabView: View {
                     if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
                         totalScheduled += 1
                         
-                        let progress = coreDataAdapter.getProgress(for: habit, date: currentDay)
+                        let progress = habitRepository.getProgress(for: habit, date: currentDay)
                         let goalAmount = parseGoalAmount(from: habit.goal)
                         if progress >= goalAmount {
                             totalCompleted += 1
@@ -2865,7 +2865,7 @@ struct ProgressTabView: View {
         }
         
         var totalScheduled = 0
-        for habit in coreDataAdapter.habits {
+        for habit in habitRepository.habits {
             var currentDate = monthStart
             while currentDate <= monthEnd {
                 if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
@@ -2886,7 +2886,7 @@ struct ProgressTabView: View {
         }
         
         var totalCompleted = 0
-        for habit in coreDataAdapter.habits {
+        for habit in habitRepository.habits {
             var currentDate = monthStart
             while currentDate <= monthEnd {
                 if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
@@ -3098,7 +3098,7 @@ struct ProgressTabView: View {
                             let today = Date()
                             for i in 0..<3 {
                                 if let testDate = calendar.date(byAdding: .day, value: -i, to: today) {
-                                    coreDataAdapter.saveDifficultyRating(habitId: habit.id, date: testDate, difficulty: Int32(3 + i))
+                                    habitRepository.saveDifficultyRating(habitId: habit.id, date: testDate, difficulty: Int32(3 + i))
                                 }
                             }
                         }
@@ -3250,7 +3250,7 @@ struct ProgressTabView: View {
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
         // Get all habit completion records for this week
-        let habitLogs = coreDataAdapter.fetchCompletionRecordsWithTimestamps(for: habit)
+        let habitLogs = habitRepository.fetchCompletionRecordsWithTimestamps(for: habit)
             .filter { log in
                 guard let timestamp = log.timestamp else { return false }
                 return timestamp >= weekStart && timestamp <= weekEnd
@@ -4254,5 +4254,5 @@ struct WeeklySummaryStatsView: View {
 
 #Preview {
     ProgressTabView()
-        .environmentObject(CoreDataAdapter.shared)
+        .environmentObject(HabitRepository.shared)
 } 
