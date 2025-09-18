@@ -290,6 +290,29 @@ For issues or questions:
 3. Test with minimal data set
 4. Review CloudKit dashboard for sync issues
 
+## Data Security & Privacy
+
+### Current Implementation
+- **Keychain**: Sensitive data (auth tokens, user IDs, personal info) stored in iOS Keychain
+- **UserDefaults**: Non-sensitive app preferences and user content
+- **Authentication**: Secure user login with Firebase
+- **Privacy**: Auth via Firebase; habit data local today; future sync via CloudKit
+
+### Security Principles
+- **Secrets → Keychain**: Authentication tokens, user identifiers, personal information
+- **Prefs & State → UserDefaults**: App preferences, tutorial state, non-sensitive user content
+- **Structured Data → Core Data/SwiftData**: Complex relationships, future CloudKit sync
+
+### Data Classification
+| Data Type | Storage Location | Reason |
+|-----------|------------------|--------|
+| Auth Tokens | Keychain | High security required |
+| User IDs/Emails | Keychain | Personal identifiers |
+| Apple Display Names | Keychain | Personal information |
+| Habit Data | UserDefaults | User content, not sensitive |
+| App Preferences | UserDefaults | Non-sensitive settings |
+| Progress Data | UserDefaults | User content, not sensitive |
+
 ---
 
 **Note:** This implementation provides a solid foundation for Habitto's future growth while maintaining backward compatibility with existing features.

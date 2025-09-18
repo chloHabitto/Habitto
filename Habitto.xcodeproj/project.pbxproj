@@ -36,6 +36,7 @@
 		891269F12E76DCE90060E3E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8921B76D2E7B1F9E00E210F3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8935E4F92E7C21CE004BF684 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		8935F4F52E7C3813004BF684 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894AC2A52E76ED1C0090008F /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894D1C6E2E7C1C9E00C599CA /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		895FD3532E76F53E0091E179 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -123,6 +124,11 @@
 			sourceTree = "<group>";
 		};
 		8935E4FD2E7C21CE004BF684 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8935F4F92E7C3813004BF684 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -366,8 +372,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 8935E4FD2E7C21CE004BF684 /* Products */;
-					ProjectRef = 8935E4F92E7C21CE004BF684 /* Habitto.xcodeproj */;
+					ProductGroup = 895FD4D62E76F8520091E179 /* Products */;
+					ProjectRef = 895FD4D12E76F8520091E179 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 8970D0F02E76C98300217C78 /* Products */;
@@ -408,6 +414,10 @@
 				{
 					ProductGroup = 8921B7712E7B1F9E00E210F3 /* Products */;
 					ProjectRef = 8921B76D2E7B1F9E00E210F3 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 8935F4F92E7C3813004BF684 /* Products */;
+					ProjectRef = 8935F4F52E7C3813004BF684 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 894D1C722E7C1C9E00C599CA /* Products */;
@@ -466,16 +476,16 @@
 					ProjectRef = 89F105362E76CCE10024AC3B /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 8935E4FD2E7C21CE004BF684 /* Products */;
+					ProjectRef = 8935E4F92E7C21CE004BF684 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 891261072E76CD4E0060E3E3 /* Products */;
 					ProjectRef = 891261022E76CD4E0060E3E3 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89B447E52E76EDD900374845 /* Products */;
 					ProjectRef = 89B447E02E76EDD900374845 /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 895FD4D62E76F8520091E179 /* Products */;
-					ProjectRef = 895FD4D12E76F8520091E179 /* Habitto.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -635,9 +645,6 @@
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				"com.apple.developer.applesignin" = (
-					"$(PRODUCT_BUNDLE_IDENTIFIER)"
-				);
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
@@ -666,6 +673,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				com.apple.developer.applesignin = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 			};
 			name = Debug;
 		};
@@ -677,9 +685,6 @@
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				"com.apple.developer.applesignin" = (
-					"$(PRODUCT_BUNDLE_IDENTIFIER)"
-				);
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				ENABLE_PREVIEWS = YES;
@@ -707,6 +712,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				com.apple.developer.applesignin = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 			};
 			name = Release;
 		};

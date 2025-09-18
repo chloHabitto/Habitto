@@ -91,6 +91,11 @@ class AuthenticationManager: ObservableObject {
             try Auth.auth().signOut()
             authState = .unauthenticated
             currentUser = nil
+            
+            // Clear sensitive data from Keychain
+            KeychainManager.shared.clearAuthenticationData()
+            print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
+            
             print("✅ AuthenticationManager: User signed out successfully")
         } catch {
             authState = .error(error.localizedDescription)
@@ -242,11 +247,11 @@ class AuthenticationManager: ObservableObject {
                 print("🍎 Using family name only: \(displayName)")
             }
         } else {
-            // On subsequent sign-ins, try to retrieve stored name from UserDefaults
-            let storedName = UserDefaults.standard.string(forKey: "AppleUserDisplayName_\(userID)")
+            // On subsequent sign-ins, try to retrieve stored name from Keychain
+            let storedName = KeychainManager.shared.retrieveAppleUserDisplayName(for: userID)
             if let storedName = storedName, !storedName.isEmpty {
                 displayName = storedName
-                print("🍎 Using stored name: \(displayName)")
+                print("🍎 Using stored name from Keychain: \(displayName)")
             } else {
                 print("🍎 No name information available, using default: \(displayName)")
             }
@@ -255,8 +260,8 @@ class AuthenticationManager: ObservableObject {
         // Store the name for future use (only if we got a name from Apple)
         if let fullName = fullName, let givenName = fullName.givenName {
             let nameToStore = fullName.familyName != nil ? "\(givenName) \(fullName.familyName!)" : givenName
-            UserDefaults.standard.set(nameToStore, forKey: "AppleUserDisplayName_\(userID)")
-            print("🍎 Stored name for future use: \(nameToStore)")
+            _ = KeychainManager.shared.storeAppleUserDisplayName(nameToStore, for: userID)
+            print("🍎 Stored name for future use in Keychain: \(nameToStore)")
         }
         
         // Create a mock Firebase user object for Apple Sign-In
