@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 // import FirebaseCore
 // import GoogleSignIn
 
@@ -38,7 +39,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct HabittoApp: App {
-    // register app delegate for Firebase setup
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
@@ -46,34 +46,49 @@ struct HabittoApp: App {
     @StateObject private var tutorialManager = TutorialManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
+    @State private var showSplash = true
     
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .preferredColorScheme(.light) // Force light mode only
-                .environment(\.managedObjectContext, coreDataManager.context)
-                .environmentObject(coreDataManager)
-                .environmentObject(coreDataAdapter)
-                .environmentObject(tutorialManager)
-                .environmentObject(authManager)
-                .environmentObject(vacationManager)
-                .onAppear {
-                    print("🚀 HabittoApp: App started!")
-                    setupCoreData()
-                    
-                    // Force reload habits after a short delay to ensure data is loaded
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        print("🔄 HabittoApp: Force reloading habits after app start...")
-                        coreDataAdapter.loadHabits(force: true)
-                        
-                        // Reschedule notifications after habits are loaded
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            print("🔄 HabittoApp: Rescheduling notifications after app start...")
-                            let habits = coreDataAdapter.habits
-                            NotificationManager.shared.rescheduleAllNotifications(for: habits)
+            ZStack {
+                if showSplash {
+                    LottieSplashView()
+                        .onAppear {
+                            // Hide splash after animation completes
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    showSplash = false
+                                }
+                            }
                         }
-                    }
+                } else {
+                    HomeView()
+                        .preferredColorScheme(.light) // Force light mode only
+                        .environment(\.managedObjectContext, coreDataManager.context)
+                        .environmentObject(coreDataManager)
+                        .environmentObject(coreDataAdapter)
+                        .environmentObject(tutorialManager)
+                        .environmentObject(authManager)
+                        .environmentObject(vacationManager)
+                        .onAppear {
+                            print("🚀 HabittoApp: App started!")
+                            setupCoreData()
+                            
+                            // Force reload habits after a short delay to ensure data is loaded
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                print("🔄 HabittoApp: Force reloading habits after app start...")
+                                coreDataAdapter.loadHabits(force: true)
+                                
+                                // Reschedule notifications after habits are loaded
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    print("🔄 HabittoApp: Rescheduling notifications after app start...")
+                                    let habits = coreDataAdapter.habits
+                                    NotificationManager.shared.rescheduleAllNotifications(for: habits)
+                                }
+                            }
+                        }
                 }
+            }
         }
     }
     
@@ -168,4 +183,4 @@ struct HabittoApp: App {
             }
         }
     }
-} 
+}
