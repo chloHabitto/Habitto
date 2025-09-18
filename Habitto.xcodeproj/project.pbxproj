@@ -286,6 +286,9 @@
 				89C17A392DF73D8A00B2480F /* . */,
 			);
 			name = Habitto;
+			packageProductDependencies = (
+				890C9EB32E4DF180006E28C7 /* Lottie */,
+			);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
 			productType = "com.apple.product-type.application";
@@ -315,6 +318,7 @@
 			mainGroup = 89C17A2E2DF73D8A00B2480F;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				890C9EB22E4DF180006E28C7 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 89C17A382DF73D8A00B2480F /* Products */;
@@ -672,5 +676,22 @@
 		};
 /* End XCConfigurationList section */
 	};
+/* Begin XCRemoteSwiftPackageReference section */
+		890C9EB22E4DF180006E28C7 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+/* Begin XCSwiftPackageProductDependency section */
+		890C9EB32E4DF180006E28C7 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 890C9EB22E4DF180006E28C7 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	rootObject = 89C17A2F2DF73D8A00B2480F /* Project object */;
 }
