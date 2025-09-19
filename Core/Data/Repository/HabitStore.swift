@@ -25,6 +25,9 @@ final actor HabitStore {
     private let cloudKitSyncManager = CloudKitSyncManager.shared
     private let conflictResolver = ConflictResolutionManager.shared
     
+    // Backup and recovery
+    private let backupManager = BackupManager.shared
+    
     // Performance monitoring - these are safe to use from any context
     private let performanceMetrics = PerformanceMetrics.shared
     private let dataUsageAnalytics = DataUsageAnalytics.shared
@@ -126,6 +129,11 @@ final actor HabitStore {
         
         // Record data usage analytics
         await dataUsageAnalytics.recordDataOperation(.habitSave, size: Int64(habits.count * 1000))
+        
+        // Create backup if needed (run in background)
+        Task {
+            await backupManager.createBackupIfNeeded()
+        }
     }
     
     // MARK: - Create Habit
