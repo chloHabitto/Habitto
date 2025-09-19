@@ -202,4 +202,19 @@ struct HabitEditTest {
 // Usage example:
 // HabitEditTest.testHabitEditing()
 // HabitEditTest.testIdPreservation()
-// HabitEditTest.testDataPersistence() 
+// HabitEditTest.testDataPersistence()
+
+// MARK: - Test Runner
+extension HabitEditTest {
+    static func runAllTests() {
+        print("🧪 Running Habit Edit Tests")
+        print(String(repeating: "=", count: 40))
+        
+        testHabitEditing()
+        testIdPreservation()
+        testDataPersistence()
+        
+        print("✅ All Habit Edit Tests Completed")
+        print(String(repeating: "=", count: 40))
+    }
+}
