@@ -349,6 +349,38 @@ class AuthenticationManager: ObservableObject {
         let passwordPredicate = NSPredicate(format: "SELF MATCHES %@", passwordRegex)
         return passwordPredicate.evaluate(with: password)
     }
+    
+    // MARK: - Account Deletion
+    func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🗑️ AuthenticationManager: Starting account deletion")
+        
+        guard let user = Auth.auth().currentUser else {
+            completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user to delete"])))
+            return
+        }
+        
+        // Delete the Firebase user account
+        user.delete { [weak self] error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ AuthenticationManager: Failed to delete account: \(error.localizedDescription)")
+                    completion(.failure(error))
+                } else {
+                    print("✅ AuthenticationManager: Account deleted successfully")
+                    
+                    // Clear local state
+                    self?.authState = .unauthenticated
+                    self?.currentUser = nil
+                    
+                    // Clear sensitive data from Keychain
+                    KeychainManager.shared.clearAuthenticationData()
+                    print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
+                    
+                    completion(.success(()))
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Custom User for Apple Sign-In

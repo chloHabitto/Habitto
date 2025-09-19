@@ -508,6 +508,25 @@ class HabitRepository: ObservableObject {
         }
     }
     
+    // MARK: - Clear All Habits
+    func clearAllHabits() async throws {
+        print("🗑️ HabitRepository: Clearing all habits")
+        
+        // Remove all notifications
+        NotificationManager.shared.removeAllPendingNotifications()
+        
+        // Use the HabitStore actor for data operations
+        try await habitStore.clearAllHabits()
+        
+        // Update local state
+        await MainActor.run {
+            self.habits = []
+            self.objectWillChange.send()
+        }
+        
+        print("✅ HabitRepository: All habits cleared")
+    }
+    
     // MARK: - Toggle Habit Completion
     func toggleHabitCompletion(_ habit: Habit, for date: Date) {
         // Skip Core Data and handle completion directly in UserDefaults
