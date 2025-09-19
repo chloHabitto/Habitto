@@ -244,6 +244,9 @@ class HabitRepository: ObservableObject {
     func loadHabits(force: Bool = false) {
         print("🔄 HabitRepository: loadHabits called (force: \(force))")
         
+        // Record performance timing
+        let startTime = Date()
+        
         // Always load if force is true, or if habits is empty
         if !force && !habits.isEmpty {
             print("ℹ️ HabitRepository: Skipping load - habits not empty and not forced")
@@ -254,6 +257,21 @@ class HabitRepository: ObservableObject {
         OptimizedHabitStorageManager.shared.migrateIfNeeded()
         let loadedHabits = OptimizedHabitStorageManager.shared.loadHabits()
         print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from optimized storage")
+        
+        // Record performance metrics
+        let duration = Date().timeIntervalSince(startTime)
+        PerformanceMetrics.shared.recordTiming("dataLoad", duration: duration)
+        PerformanceMetrics.shared.recordEvent(PerformanceEvent(
+            type: .dataLoad,
+            description: "Loaded \(loadedHabits.count) habits",
+            metadata: [
+                "habit_count": "\(loadedHabits.count)",
+                "force": "\(force)"
+            ]
+        ))
+        
+        // Record data usage analytics
+        DataUsageAnalytics.shared.recordDataOperation(.habitLoad, size: Int64(loadedHabits.count * 1000)) // Rough estimate
         
         // Debug each loaded habit
         for (index, habit) in loadedHabits.enumerated() {
@@ -396,6 +414,9 @@ class HabitRepository: ObservableObject {
         print("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
         print("⚠️ HabitRepository: Skipping Core Data sync - using UserDefaults only")
         
+        // Record performance timing
+        let startTime = Date()
+        
         // Validate habits before saving
         let validationResult = validationService.validateHabits(habits)
         if !validationResult.isValid {
@@ -420,6 +441,21 @@ class HabitRepository: ObservableObject {
             self.habits = habits
             self.objectWillChange.send()
         }
+        
+        // Record performance metrics
+        let duration = Date().timeIntervalSince(startTime)
+        PerformanceMetrics.shared.recordTiming("dataSave", duration: duration)
+        PerformanceMetrics.shared.recordEvent(PerformanceEvent(
+            type: .dataSave,
+            description: "Saved \(habits.count) habits",
+            metadata: [
+                "habit_count": "\(habits.count)",
+                "validation_errors": "\(validationResult.errors.count)"
+            ]
+        ))
+        
+        // Record data usage analytics
+        DataUsageAnalytics.shared.recordDataOperation(.habitSave, size: Int64(habits.count * 1000)) // Rough estimate
     }
     
     // MARK: - Create Habit
@@ -442,6 +478,12 @@ class HabitRepository: ObservableObject {
                 return
             }
         }
+        
+        // Record user analytics
+        UserAnalytics.shared.recordEvent(.habitCreated, metadata: [
+            "habit_name": habit.name,
+            "habit_type": habit.habitType.rawValue
+        ])
         
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
@@ -477,6 +519,13 @@ class HabitRepository: ObservableObject {
             }
         }
         
+        // Record user analytics
+        UserAnalytics.shared.recordEvent(.featureUsed, metadata: [
+            "action": "habit_edited",
+            "habit_name": habit.name,
+            "habit_id": habit.id.uuidString
+        ])
+        
         // Use UserDefaults directly for reliable persistence
         var currentHabits = HabitStorageManager.shared.loadHabits()
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
@@ -509,6 +558,13 @@ class HabitRepository: ObservableObject {
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
         print("🗑️ HabitRepository: Starting delete for habit: \(habit.name)")
+        
+        // Record user analytics
+        UserAnalytics.shared.recordEvent(.featureUsed, metadata: [
+            "action": "habit_deleted",
+            "habit_name": habit.name,
+            "habit_id": habit.id.uuidString
+        ])
         
         // Remove all notifications for this habit first
         NotificationManager.shared.removeAllNotifications(for: habit)
@@ -561,6 +617,15 @@ class HabitRepository: ObservableObject {
     func setProgress(for habit: Habit, date: Date, progress: Int) {
         let dateKey = CoreDataManager.dateKey(for: date)
         print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+        
+        // Record user analytics for habit completion
+        if progress > 0 {
+            UserAnalytics.shared.recordEvent(.habitCompleted, metadata: [
+                "habit_name": habit.name,
+                "habit_id": habit.id.uuidString,
+                "date": dateKey
+            ])
+        }
         
         // Skip Core Data and update UserDefaults directly
         print("⚠️ HabitRepository: Bypassing Core Data, updating UserDefaults directly...")
