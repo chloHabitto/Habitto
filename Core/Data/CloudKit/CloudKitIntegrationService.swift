@@ -94,7 +94,14 @@ class CloudKitIntegrationService: ObservableObject {
         syncStatus = .syncing
         
         do {
-            await syncManager.sync()
+            // Check if CloudKit is available before attempting sync
+            guard syncManager.isCloudKitAvailable() else {
+                syncStatus = .completed
+                print("ℹ️ CloudKitIntegrationService: CloudKit not available, skipping sync")
+                return
+            }
+            
+            _ = try await syncManager.sync()
             lastSyncDate = Date()
             syncStatus = .completed
             print("✅ CloudKitIntegrationService: CloudKit sync completed")

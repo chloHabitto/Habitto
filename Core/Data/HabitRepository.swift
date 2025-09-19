@@ -123,6 +123,14 @@ class NoteEntity: NSManagedObject {
 class HabitRepository: ObservableObject {
     static let shared = HabitRepository()
     
+    // Debug method to check if repository is working
+    func debugRepositoryState() {
+        print("🔍 HabitRepository: Debug State")
+        print("  - habits.count: \(habits.count)")
+        print("  - habits: \(habits.map { "\($0.name) (ID: \($0.id))" })")
+        print("  - habitStore: \(habitStore)")
+    }
+    
     @Published var habits: [Habit] = []
     
     // Use the new HabitStore actor for all data operations
@@ -135,11 +143,15 @@ class HabitRepository: ObservableObject {
     private init() {
         // Initialize basic functionality first
         print("✅ HabitRepository: Initializing...")
+        print("✅ HabitRepository: Starting with \(habits.count) habits")
         
         // Load habits using the new actor
         print("✅ HabitRepository: Using HabitStore actor for data operations...")
+        
+        // Load habits synchronously to ensure they're available immediately
         Task {
             await loadHabits(force: true)
+            print("✅ HabitRepository: Initial habit loading completed with \(habits.count) habits")
         }
         
         // Defer CloudKit initialization to avoid crashes
@@ -221,6 +233,13 @@ class HabitRepository: ObservableObject {
         print("✅ HabitRepository: Debug completed")
     }
     
+    func debugCreateHabitFlow(_ habit: Habit) {
+        print("🔍 HabitRepository: Debug Create Habit Flow")
+        print("  - Habit to create: \(habit.name) (ID: \(habit.id))")
+        print("  - Current habits count: \(habits.count)")
+        print("  - Current habits: \(habits.map { $0.name })")
+    }
+    
     // Emergency recovery method
     func recoverMissingHabits() {
         print("🚨 HabitRepository: Starting emergency habit recovery...")
@@ -266,16 +285,10 @@ class HabitRepository: ObservableObject {
             }
             
             // Update on main thread and notify observers
-            self.habits = uniqueHabits
-            print("✅ HabitRepository: Updated habits array with \(uniqueHabits.count) unique habits")
-            
-            // Debug final habits array
-            for (index, habit) in uniqueHabits.enumerated() {
-                print("🔍 Final Habit \(index): name=\(habit.name), id=\(habit.id)")
+            await MainActor.run {
+                self.habits = uniqueHabits
+                self.objectWillChange.send()
             }
-            
-            // Notify observers that habits have changed
-            self.objectWillChange.send()
             
         } catch {
             print("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
@@ -354,22 +367,28 @@ class HabitRepository: ObservableObject {
     }
     
     // MARK: - Create Habit
-    func createHabit(_ habit: Habit) {
+    func createHabit(_ habit: Habit) async {
         print("🔄 HabitRepository: Creating habit: \(habit.name)")
         print("🔄 HabitRepository: Current habits count before creation: \(habits.count)")
         
-        Task {
-            do {
-                // Use the HabitStore actor for data operations
-                try await habitStore.createHabit(habit)
-                
-                // Reload habits to get the updated list
-                await loadHabits(force: true)
-                
-                print("✅ HabitRepository: Successfully created habit: \(habit.name)")
-                
-            } catch {
-                print("❌ HabitRepository: Failed to create habit: \(error.localizedDescription)")
+        // Debug the create habit flow
+        debugCreateHabitFlow(habit)
+        
+        do {
+            // Use the HabitStore actor for data operations
+            print("🔄 HabitRepository: Calling habitStore.createHabit...")
+            try await habitStore.createHabit(habit)
+            print("✅ HabitRepository: habitStore.createHabit completed")
+            
+            // Reload habits to get the updated list
+            await loadHabits(force: true)
+            print("✅ HabitRepository: Successfully created habit: \(habit.name)")
+            
+        } catch {
+            print("❌ HabitRepository: Failed to create habit: \(error.localizedDescription)")
+            print("❌ HabitRepository: Error type: \(type(of: error))")
+            if let dataError = error as? DataError {
+                print("❌ HabitRepository: DataError details: \(dataError)")
             }
         }
     }
@@ -398,6 +417,7 @@ class HabitRepository: ObservableObject {
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
         print("🗑️ HabitRepository: Starting delete for habit: \(habit.name)")
+        print("🗑️ HabitRepository: Current habits count before delete: \(habits.count)")
         
         // Remove all notifications for this habit first
         NotificationManager.shared.removeAllNotifications(for: habit)
@@ -406,10 +426,15 @@ class HabitRepository: ObservableObject {
         Task {
             do {
                 // Use the HabitStore actor for data operations
+                print("🗑️ HabitRepository: Calling habitStore.deleteHabit...")
                 try await habitStore.deleteHabit(habit)
+                print("✅ HabitRepository: habitStore.deleteHabit completed")
                 
                 // Reload habits to get the updated list
+                print("🗑️ HabitRepository: Calling loadHabits(force: true)...")
                 await loadHabits(force: true)
+                print("✅ HabitRepository: loadHabits completed")
+                print("🗑️ HabitRepository: After reload, habits count is now: \(habits.count)")
                 
                 print("✅ HabitRepository: Successfully deleted habit: \(habit.name)")
                 

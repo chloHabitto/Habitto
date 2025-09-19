@@ -1,290 +1,238 @@
 import Foundation
 import CloudKit
+import OSLog
 import SwiftUI
 
 // MARK: - CloudKit Sync Manager
-/// Manages synchronization between local data and CloudKit
-@MainActor
-class CloudKitSyncManager: ObservableObject {
+final class CloudKitSyncManager {
     static let shared = CloudKitSyncManager()
     
-    // MARK: - Published Properties
-    @Published var isSyncing = false
-    @Published var lastSyncDate: Date?
+    private let logger = Logger(subsystem: "com.habitto.app", category: "CloudKitSyncManager")
+    private let conflictResolver = ConflictResolutionManager.shared
+    private var _container: CKContainer?
+    
     @Published var syncStatus: CloudKitSyncStatus = .idle
-    @Published var conflictCount = 0
-    @Published var errorMessage: String?
+    @Published var lastSyncDate: Date?
+    @Published var syncError: Error?
     
-    // MARK: - Private Properties
-    private let cloudKitManager = CloudKitManager.shared
-    private let privateDatabase: CKDatabase?
-    private let syncQueue = DispatchQueue(label: "com.habitto.cloudkit.sync", qos: .userInitiated)
-    private var syncTimer: Timer?
-    
-    // Sync configuration
-    private let batchSize = 50
-    private let maxRetries = 3
-    private let syncInterval: TimeInterval = 300 // 5 minutes
-    
-    // MARK: - Initialization
     private init() {
-        self.privateDatabase = cloudKitManager.privateDatabase
-        setupSyncTimer()
+        logger.info("CloudKitSyncManager initialized (CloudKit disabled for now)")
     }
     
-    deinit {
-        syncTimer?.invalidate()
+    /// Lazy initialization of CloudKit container
+    private var container: CKContainer? {
+        // CloudKit is disabled for now to prevent crashes
+        return nil
     }
     
-    // MARK: - Public Methods
-    
-    /// Start automatic sync
-    func startAutoSync() {
-        guard cloudKitManager.isSignedIn else {
-            print("⚠️ CloudKitSyncManager: Cannot start auto sync - user not signed in")
-            return
+    func performFullSync() async throws -> SyncResult {
+        logger.info("Starting full CloudKit sync")
+        
+        // Check if CloudKit is available
+        guard let container = container else {
+            let error = CloudKitError.notConfigured
+            syncStatus = .error(error)
+            syncError = error
+            logger.error("CloudKit not available for sync")
+            throw error
         }
         
-        syncTimer?.invalidate()
-        syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.sync()
-            }
-        }
-        
-        print("✅ CloudKitSyncManager: Auto sync started")
-    }
-    
-    /// Stop automatic sync
-    func stopAutoSync() {
-        syncTimer?.invalidate()
-        syncTimer = nil
-        print("✅ CloudKitSyncManager: Auto sync stopped")
-    }
-    
-    /// Manual sync trigger
-    func sync() async {
-        guard !isSyncing else {
-            print("⚠️ CloudKitSyncManager: Sync already in progress")
-            return
-        }
-        
-        guard cloudKitManager.isSignedIn else {
-            print("❌ CloudKitSyncManager: Cannot sync - user not signed in")
-            syncStatus = .error(CloudKitError.notConfigured)
-            return
-        }
-        
-        isSyncing = true
         syncStatus = .syncing
-        errorMessage = nil
+        syncError = nil
+        
+        let startTime = Date()
+        var result = SyncResult()
         
         do {
-            // Sync habits
-            await syncHabits()
+            try await checkCloudKitAvailability()
             
-            // Sync reminders
-            await syncReminders()
+            let remoteChanges = try await fetchRemoteChanges()
+            result.remoteChangesCount = remoteChanges.count
             
-            // Sync analytics (if enabled)
-            await syncAnalytics()
+            let localChanges = try await fetchLocalChanges()
+            result.localChangesCount = localChanges.count
             
-            lastSyncDate = Date()
+            let conflicts = try await resolveConflicts(remoteChanges: remoteChanges, localChanges: localChanges)
+            result.conflictsResolved = conflicts.count
+            
             syncStatus = .completed
-            print("✅ CloudKitSyncManager: Sync completed successfully")
+            lastSyncDate = Date()
+            
+            let duration = Date().timeIntervalSince(startTime)
+            result.duration = duration
+            result.success = true
+            
+            logger.info("Full sync completed in \(String(format: "%.2f", duration))s")
             
         } catch {
             syncStatus = .error(error)
-            errorMessage = error.localizedDescription
-            print("❌ CloudKitSyncManager: Sync failed - \(error.localizedDescription)")
-        }
-        
-        isSyncing = false
-    }
-    
-    /// Force sync all data
-    func forceSync() async {
-        print("🔄 CloudKitSyncManager: Starting force sync...")
-        await sync()
-    }
-    
-    /// Resolve conflicts
-    func resolveConflicts(using resolution: CloudKitSyncMetadata.ConflictResolution) async {
-        // Implementation for conflict resolution
-        print("🔄 CloudKitSyncManager: Resolving conflicts using \(resolution)")
-    }
-    
-    // MARK: - Private Methods
-    
-    private func setupSyncTimer() {
-        // Timer setup is handled in startAutoSync()
-    }
-    
-    private func syncHabits() async {
-        guard let privateDatabase = privateDatabase else {
-            print("❌ CloudKitSyncManager: No private database available for habit sync")
-            return
-        }
-        
-        print("🔄 CloudKitSyncManager: Starting habit sync...")
-        
-        // Load local habits
-        let localHabits = HabitStorageManager.shared.loadHabits()
-        let localCloudKitHabits = localHabits.map { habit in
-            CloudKitHabit(
-                id: habit.id,
-                name: habit.name,
-                description: habit.description,
-                icon: habit.icon,
-                colorHex: habit.color.toHex(),
-                habitType: habit.habitType.rawValue,
-                schedule: habit.schedule,
-                goal: habit.goal,
-                reminder: habit.reminder,
-                startDate: habit.startDate,
-                endDate: habit.endDate,
-                isCompleted: habit.isCompleted,
-                streak: habit.streak,
-                createdAt: habit.createdAt,
-                completionHistory: [:],
-                difficultyHistory: [:],
-                baseline: habit.baseline,
-                target: habit.target,
-                actualUsage: [:],
-                cloudKitRecordID: nil,
-                lastModified: habit.createdAt,
-                isDeleted: false
-            )
-        }
-        
-        // Fetch remote habits
-        let remoteHabits = await fetchRemoteHabits(from: privateDatabase)
-        
-        // Merge and resolve conflicts
-        let mergedHabits = await mergeHabits(local: localCloudKitHabits, remote: remoteHabits)
-        
-        // Save merged habits locally
-        let finalHabits = mergedHabits.map { $0.toHabit() }
-        HabitStorageManager.shared.saveHabits(finalHabits, immediate: true)
-        
-        // Upload changes to CloudKit
-        await uploadHabits(mergedHabits, to: privateDatabase)
-        
-        print("✅ CloudKitSyncManager: Habit sync completed")
-    }
-    
-    private func syncReminders() async {
-        // Implementation for reminder sync
-        print("🔄 CloudKitSyncManager: Starting reminder sync...")
-        // TODO: Implement reminder sync
-        print("✅ CloudKitSyncManager: Reminder sync completed")
-    }
-    
-    private func syncAnalytics() async {
-        // Implementation for analytics sync
-        print("🔄 CloudKitSyncManager: Starting analytics sync...")
-        // TODO: Implement analytics sync
-        print("✅ CloudKitSyncManager: Analytics sync completed")
-    }
-    
-    private func fetchRemoteHabits(from database: CKDatabase) async -> [CloudKitHabit] {
-        let query = CKQuery(recordType: "Habit", predicate: NSPredicate(value: true))
-        
-        do {
-            let result = try await database.records(matching: query)
-            let habits = result.matchResults.compactMap { try? $0.1.get() }
-                .compactMap { CloudKitHabit.fromCloudKitRecord($0) }
+            syncError = error
+            result.success = false
+            result.error = error
             
-            print("📥 CloudKitSyncManager: Fetched \(habits.count) remote habits")
-            return habits
-            
-        } catch {
-            print("❌ CloudKitSyncManager: Error fetching remote habits - \(error.localizedDescription)")
-            return []
+            logger.error("Full sync failed: \(error.localizedDescription)")
+            throw error
+        }
+        
+        return result
+    }
+    
+    /// Performs a sync (alias for performFullSync)
+    func sync() async throws -> SyncResult {
+        return try await performFullSync()
+    }
+    
+    /// Starts automatic syncing
+    func startAutoSync() {
+        logger.info("Starting automatic CloudKit sync")
+        // TODO: Implement automatic sync scheduling
+    }
+    
+    /// Stops automatic syncing
+    func stopAutoSync() {
+        logger.info("Stopping automatic CloudKit sync")
+        // TODO: Implement automatic sync cancellation
+    }
+    
+    /// Checks if CloudKit is available
+    func isCloudKitAvailable() -> Bool {
+        // CloudKit is disabled for now to prevent crashes
+        return false
+    }
+    
+    private func checkCloudKitAvailability() async throws {
+        guard let container = container else {
+            throw CloudKitError.notConfigured
+        }
+        
+        let status = try await container.accountStatus()
+        
+        switch status {
+        case .available:
+            logger.debug("CloudKit is available")
+        case .noAccount:
+            throw CloudKitError.authenticationFailed
+        case .restricted:
+            throw CloudKitError.authenticationFailed
+        case .couldNotDetermine:
+            throw CloudKitError.authenticationFailed
+        case .temporarilyUnavailable:
+            throw CloudKitError.networkError(NSError(domain: "CloudKit", code: -1, userInfo: [NSLocalizedDescriptionKey: "CloudKit temporarily unavailable"]))
+        @unknown default:
+            throw CloudKitError.authenticationFailed
         }
     }
     
-    private func mergeHabits(local: [CloudKitHabit], remote: [CloudKitHabit]) async -> [CloudKitHabit] {
-        var mergedHabits: [CloudKitHabit] = []
-        var conflictCount = 0
+    private func fetchRemoteChanges(since date: Date = Date.distantPast) async throws -> [CloudKitChange] {
+        logger.debug("Fetching remote changes since \(date)")
         
-        // Create lookup dictionaries
-        let localDict = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
-        let remoteDict = Dictionary(uniqueKeysWithValues: remote.map { ($0.id, $0) })
+        guard let container = container else {
+            throw CloudKitError.notConfigured
+        }
         
-        // Get all unique IDs
-        let allIds = Set(localDict.keys).union(Set(remoteDict.keys))
+        let database = container.privateCloudDatabase
+        let query = CKQuery(recordType: "Habit", predicate: NSPredicate(format: "modificationDate > %@", date as NSDate))
+        query.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: true)]
         
-        for id in allIds {
-            let localHabit = localDict[id]
-            let remoteHabit = remoteDict[id]
-            
-            if let local = localHabit, let remote = remoteHabit {
-                // Both exist - check for conflicts
-                if local.lastModified > remote.lastModified {
-                    // Local is newer
-                    mergedHabits.append(local)
-                } else if remote.lastModified > local.lastModified {
-                    // Remote is newer
-                    mergedHabits.append(remote)
-                } else {
-                    // Same timestamp - use local (or implement more sophisticated conflict resolution)
-                    mergedHabits.append(local)
-                    conflictCount += 1
-                }
-            } else if let local = localHabit {
-                // Only local exists
-                mergedHabits.append(local)
-            } else if let remote = remoteHabit {
-                // Only remote exists
-                mergedHabits.append(remote)
+        let (records, _) = try await database.records(matching: query)
+        
+        let changes = records.compactMap { (_, result) -> CloudKitChange? in
+            switch result {
+            case .success(let record):
+                return CloudKitChange(record: record, changeType: .modified)
+            case .failure(let error):
+                logger.error("Failed to fetch record: \(error.localizedDescription)")
+                return nil
             }
         }
         
-        self.conflictCount = conflictCount
-        print("🔄 CloudKitSyncManager: Merged \(mergedHabits.count) habits, \(conflictCount) conflicts")
-        
-        return mergedHabits
+        logger.debug("Fetched \(changes.count) remote changes")
+        return changes
     }
     
-    private func uploadHabits(_ habits: [CloudKitHabit], to database: CKDatabase) async {
-        let batches = habits.chunked(into: batchSize)
+    private func fetchLocalChanges(since date: Date = Date.distantPast) async throws -> [LocalChange] {
+        logger.debug("Fetching local changes since \(date)")
+        let changes: [LocalChange] = []
+        logger.debug("Fetched \(changes.count) local changes")
+        return changes
+    }
+    
+    private func resolveConflicts(remoteChanges: [CloudKitChange], localChanges: [LocalChange]) async throws -> [ConflictResolutionResult] {
+        logger.debug("Resolving conflicts between \(remoteChanges.count) remote and \(localChanges.count) local changes")
         
-        for batch in batches {
-            let records = batch.map { $0.toCloudKitRecord() }
-            
-            do {
-                let result = try await database.modifyRecords(saving: records, deleting: [])
-                print("📤 CloudKitSyncManager: Uploaded batch of \(records.count) habits")
-                
-                // Handle any errors
-                for (recordID, result) in result.saveResults {
-                    switch result {
-                    case .success(let record):
-                        print("✅ CloudKitSyncManager: Successfully saved habit \(recordID.recordName)")
-                    case .failure(let error):
-                        print("❌ CloudKitSyncManager: Failed to save habit \(recordID.recordName) - \(error.localizedDescription)")
-                    }
-                }
-                
-            } catch {
-                print("❌ CloudKitSyncManager: Error uploading habit batch - \(error.localizedDescription)")
+        var resolutions: [ConflictResolutionResult] = []
+        
+        for remoteChange in remoteChanges {
+            if let localChange = localChanges.first(where: { $0.recordID == remoteChange.record.recordID }) {
+                let resolution = try await resolveConflict(remoteChange: remoteChange, localChange: localChange)
+                resolutions.append(resolution)
             }
         }
+        
+        logger.debug("Resolved \(resolutions.count) conflicts")
+        return resolutions
     }
-}
-
-// MARK: - Array Extension for Batching
-extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
-            Array(self[$0..<Swift.min($0 + size, count)])
+    
+    private func resolveConflict(remoteChange: CloudKitChange, localChange: LocalChange) async throws -> ConflictResolutionResult {
+        logger.debug("Resolving conflict for record: \(remoteChange.record.recordID)")
+        
+        let remoteHabit = try habitFromCloudKitRecord(remoteChange.record)
+        let localHabit = localChange.habit
+        let resolvedHabit = conflictResolver.resolveHabitConflict(localHabit, remoteHabit)
+        
+        let resolution = ConflictResolutionResult(
+            recordID: remoteChange.record.recordID,
+            localHabit: localHabit,
+            remoteHabit: remoteHabit,
+            resolvedHabit: resolvedHabit,
+            resolutionMethod: "field_level_last_writer_wins"
+        )
+        
+        logger.debug("Conflict resolved for record: \(remoteChange.record.recordID)")
+        return resolution
+    }
+    
+    private func habitFromCloudKitRecord(_ record: CKRecord) throws -> Habit {
+        guard let name = record["name"] as? String,
+              let description = record["description"] as? String,
+              let icon = record["icon"] as? String,
+              let colorString = record["color"] as? String,
+              let habitTypeString = record["habitType"] as? String,
+              let habitType = HabitType(rawValue: habitTypeString),
+              let schedule = record["schedule"] as? String,
+              let goal = record["goal"] as? String,
+              let reminder = record["reminder"] as? String,
+              let startDate = record["startDate"] as? Date,
+              let isCompleted = record["isCompleted"] as? Bool,
+              let streak = record["streak"] as? Int,
+              let createdAt = record["createdAt"] as? Date else {
+            throw CloudKitError.invalidRecord
         }
+        
+        let endDate = record["endDate"] as? Date
+        let color = Color.fromHex(colorString) ?? Color.blue
+        
+        return Habit(
+            id: UUID(uuidString: record.recordID.recordName) ?? UUID(),
+            name: name,
+            description: description,
+            icon: icon,
+            color: color,
+            habitType: habitType,
+            schedule: schedule,
+            goal: goal,
+            reminder: reminder,
+            startDate: startDate,
+            endDate: endDate,
+            isCompleted: isCompleted,
+            streak: streak,
+            createdAt: createdAt,
+            reminders: [],
+            baseline: 0,
+            target: 1,
+            completionHistory: [:],
+            difficultyHistory: [:],
+            actualUsage: [:]
+        )
     }
-}
-
-
-// MARK: - CloudKit Error Extensions
-extension CloudKitError {
-    static let syncFailed = CloudKitError.notConfigured // Placeholder for sync-specific errors
 }

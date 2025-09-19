@@ -264,8 +264,6 @@ struct HomeTabView: View {
     
     private var habitsForSelectedDate: [Habit] {
         // Calculate filtered habits for the selected date
-        print("🔍 DEBUG: habitsForSelectedDate - Starting with \(habits.count) total habits")
-        print("🔍 DEBUG: Selected stats tab: \(selectedStatsTab)")
         
         let filteredHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
@@ -278,8 +276,6 @@ struct HomeTabView: View {
             
             return shouldShowHabitOnDate(habit, date: selectedDate)
         }
-        
-        print("🔍 DEBUG: habitsForSelectedDate - After date/schedule filtering: \(filteredHabits.count) habits")
         
         // Since tabs are hidden, show all habits (like the Total tab was doing)
         // Sort habits so completed ones appear at the bottom
@@ -294,12 +290,6 @@ struct HomeTabView: View {
             
             // If both have the same completion status, maintain original order
             return false
-        }
-        
-        print("🔍 DEBUG: habitsForSelectedDate - Final filtered count: \(finalFilteredHabits.count) for tab \(selectedStatsTab)")
-        for (index, habit) in finalFilteredHabits.enumerated() {
-            let isCompleted = habit.isCompleted(for: selectedDate)
-            print("  - Final habit \(index): '\(habit.name)' (ID: \(habit.id)) - Completed: \(isCompleted)")
         }
         
         return finalFilteredHabits
