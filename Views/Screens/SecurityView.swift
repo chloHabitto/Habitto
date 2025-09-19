@@ -5,7 +5,7 @@ struct SecurityView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingPersonalInformation = false
-    @State private var showingDeleteAccountAlert = false
+    @State private var showingDeleteAccountConfirmation = false
     @State private var showingSignOutAlert = false
     
     // Computed property to check if user can change password
@@ -122,7 +122,7 @@ struct SecurityView: View {
                             style: .fillDestructive,
                             content: .text("Delete Account"),
                             action: {
-                                showingDeleteAccountAlert = true
+                                showingDeleteAccountConfirmation = true
                             }
                         )
                     }
@@ -137,17 +137,11 @@ struct SecurityView: View {
         .sheet(isPresented: $showingPersonalInformation) {
             PersonalInformationView()
         }
+        .sheet(isPresented: $showingDeleteAccountConfirmation) {
+            AccountDeletionConfirmationView()
+        }
         .background(Color.surface2)
         .navigationBarHidden(true)
-        .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                // TODO: Implement account deletion
-                print("Account deletion requested")
-            }
-        } message: {
-            Text("This action cannot be undone. All your data, habits, and progress will be permanently deleted.")
-        }
         .alert("Sign Out", isPresented: $showingSignOutAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) {

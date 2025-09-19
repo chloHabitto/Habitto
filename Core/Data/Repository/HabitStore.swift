@@ -524,4 +524,22 @@ final actor HabitStore {
     func validateConflictResolutionRules() -> [String] {
         return conflictResolver.validateRules()
     }
+    
+    // MARK: - Account Deletion
+    
+    /// Clears all habits and associated data (for account deletion)
+    func clearAllHabits() async throws {
+        logger.info("Clearing all habits for account deletion")
+        
+        // Clear from UserDefaults storage
+        try await userDefaultsStorage.clearAllHabits()
+        
+        // Clear from SwiftData storage
+        try await swiftDataStorage.clearAllHabits()
+        
+        // Clear any cached data
+        // Note: The storage implementations will handle their own cache clearing
+        
+        logger.info("All habits cleared successfully")
+    }
 }
