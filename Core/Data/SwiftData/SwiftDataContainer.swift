@@ -14,21 +14,14 @@ final class SwiftDataContainer: ObservableObject {
     
     private init() {
         do {
-            // Create the model container with all entities
+            // Create the model container with basic entities only
             let schema = Schema([
-                HabitData.self,
-                CompletionRecord.self,
-                DifficultyRecord.self,
-                UsageRecord.self,
-                HabitNote.self,
-                StorageHeader.self,
-                MigrationRecord.self
+                SimpleHabitData.self
             ])
             
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .private("iCloud.com.chloe-lee.Habitto")
+                isStoredInMemoryOnly: false
             )
             
             self.modelContainer = try ModelContainer(
@@ -39,9 +32,6 @@ final class SwiftDataContainer: ObservableObject {
             self.modelContext = ModelContext(modelContainer)
             
             logger.info("SwiftData container initialized successfully")
-            
-            // Initialize storage header if needed
-            initializeStorageHeader()
             
         } catch {
             logger.error("Failed to initialize SwiftData container: \(error.localizedDescription)")

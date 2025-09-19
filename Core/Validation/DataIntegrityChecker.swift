@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 
 // MARK: - Data Integrity Checker
-@MainActor
 class DataIntegrityChecker: ObservableObject {
     @Published var isChecking = false
     @Published var lastCheckTime: Date?

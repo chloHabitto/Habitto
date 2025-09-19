@@ -109,7 +109,8 @@ class HomeViewState: ObservableObject {
     }
     
     func backupHabits() {
-        habitRepository.backupToUserDefaults()
+        // Backup is now handled automatically by the HabitStore
+        print("✅ HomeView: Habits are automatically backed up by HabitStore")
     }
     
     func loadHabits() {
@@ -147,11 +148,13 @@ class HomeViewState: ObservableObject {
     
     func refreshHabits() {
         print("🔄 HomeViewState: Manual refresh requested")
-        habitRepository.loadHabits(force: true)
-        
-        // Also validate streaks
-        if !habits.isEmpty {
-            validateAllStreaks()
+        Task {
+            await habitRepository.loadHabits(force: true)
+            
+            // Also validate streaks
+            if !habits.isEmpty {
+                validateAllStreaks()
+            }
         }
     }
     
@@ -384,14 +387,16 @@ struct HomeView: View {
     private func loadHabitsOptimized() {
         print("🏠 HomeView: Loading habits from HabitRepository...")
         // Force reload from Core Data to ensure we have the latest state
-        HabitRepository.shared.loadHabits(force: true)
-        print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
+        Task {
+            await HabitRepository.shared.loadHabits(force: true)
+            print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
+        }
         
         // Only validate streaks if we have habits and haven't validated recently
         if !state.habits.isEmpty {
             print("🏠 HomeView: Validating streaks...")
-            // Use async to prevent UI blocking
-            DispatchQueue.global(qos: .background).async {
+            // Use Task to prevent UI blocking
+            Task {
                 var updatedHabits = state.habits
                 for i in 0..<updatedHabits.count {
                     if !updatedHabits[i].validateStreak() {
@@ -401,7 +406,7 @@ struct HomeView: View {
                 }
                 
                 // Update on main thread
-                DispatchQueue.main.async {
+                await MainActor.run {
                     state.updateHabits(updatedHabits)
                     print("🏠 HomeView: Streak validation completed")
                 }

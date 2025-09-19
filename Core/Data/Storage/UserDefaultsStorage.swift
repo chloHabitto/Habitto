@@ -2,7 +2,6 @@ import Foundation
 
 // MARK: - UserDefaults Storage Implementation
 /// UserDefaults implementation of the data storage protocol
-@MainActor
 class UserDefaultsStorage: HabitStorageProtocol {
     typealias DataType = Habit
     

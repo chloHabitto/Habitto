@@ -614,18 +614,16 @@ struct HabitsTabView: View {
     // Refresh habits data when user pulls down
     private func refreshHabits() async {
         // Refresh habits data from Core Data
-        await MainActor.run {
-            // Force reload habits from Core Data
-            HabitRepository.shared.loadHabits(force: true)
-            
-            // Update the local habits order to match the refreshed data
-            let refreshedHabits = HabitRepository.shared.habits
-            habitsOrder = refreshedHabits
-            
-            // Provide haptic feedback for successful refresh
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
-        }
+        // Force reload habits from Core Data
+        await HabitRepository.shared.loadHabits(force: true)
+        
+        // Update the local habits order to match the refreshed data
+        let refreshedHabits = HabitRepository.shared.habits
+        habitsOrder = refreshedHabits
+        
+        // Provide haptic feedback for successful refresh
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
     }
     
     // Debug method to check for duplicate habits
