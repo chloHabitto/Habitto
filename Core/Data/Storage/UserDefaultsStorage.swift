@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - UserDefaults Storage Implementation
-/// UserDefaults implementation of the data storage protocol
+/// UserDefaults implementation of the data storage protocol with atomic writes
 class UserDefaultsStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
@@ -9,6 +9,7 @@ class UserDefaultsStorage: HabitStorageProtocol {
     private let habitsKey = "SavedHabits"
     private let individualHabitKeyPrefix = "Habit_"
     private let backgroundQueue = BackgroundQueueManager.shared
+    private let atomicWriter = AtomicFileWriter()
     
     // Performance optimization: Cache loaded habits
     private var cachedHabits: [Habit]?
@@ -19,7 +20,7 @@ class UserDefaultsStorage: HabitStorageProtocol {
     
     func save<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
         if immediate {
-            try await performSave(data, forKey: key)
+            try await performAtomicSave(data, forKey: key)
             return
         }
         
@@ -28,12 +29,27 @@ class UserDefaultsStorage: HabitStorageProtocol {
             // Schedule a delayed save - no weak self needed since we're @MainActor
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: UInt64(saveDebounceInterval * 1_000_000_000))
-                try? await self.performSave(data, forKey: key)
+                try? await self.performAtomicSave(data, forKey: key)
             }
             return
         }
         
-        try await performSave(data, forKey: key)
+        try await performAtomicSave(data, forKey: key)
+    }
+    
+    private func performAtomicSave<T: Codable>(_ data: T, forKey key: String) async throws {
+        try await backgroundQueue.executeSerial {
+            // Use atomic file writer for critical data
+            let fileURL = self.getFileURL(for: key)
+            try self.atomicWriter.writeAtomically(data, to: fileURL)
+            
+            // Also update UserDefaults for backward compatibility
+            try self.userDefaults.setCodable(data, forKey: key)
+            
+            Task { @MainActor in
+                self.lastSaveTime = Date()
+            }
+        }
     }
     
     private func performSave<T: Codable>(_ data: T, forKey key: String) async throws {
@@ -47,12 +63,26 @@ class UserDefaultsStorage: HabitStorageProtocol {
     
     func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
         return try await backgroundQueue.execute {
+            // First try to load from atomic file
+            let fileURL = self.getFileURL(for: key)
+            if let data = try? self.atomicWriter.readObject(type, from: fileURL) {
+                return data
+            }
+            
+            // Fallback to UserDefaults
             return try self.userDefaults.getCodable(type, forKey: key)
         }
     }
     
     func delete(forKey key: String) async throws {
         try await backgroundQueue.execute {
+            // Delete from atomic file
+            let fileURL = self.getFileURL(for: key)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+            
+            // Also remove from UserDefaults
             self.userDefaults.remove(forKey: key)
         }
     }
@@ -182,5 +212,18 @@ class UserDefaultsStorage: HabitStorageProtocol {
     
     func getCacheStatus() -> (isCached: Bool, count: Int) {
         return (cachedHabits != nil, cachedHabits?.count ?? 0)
+    }
+    
+    // MARK: - Private Helper Methods
+    
+    /// Gets the file URL for atomic storage
+    private func getFileURL(for key: String) -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let atomicStorageDirectory = documentsPath.appendingPathComponent("AtomicStorage")
+        
+        // Ensure directory exists
+        try? FileManager.default.createDirectory(at: atomicStorageDirectory, withIntermediateDirectories: true)
+        
+        return atomicStorageDirectory.appendingPathComponent("\(key).json")
     }
 }
