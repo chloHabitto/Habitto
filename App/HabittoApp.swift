@@ -72,15 +72,25 @@ struct HabittoApp: App {
                         }
                     }
                 } else {
-                    HomeView()
-                        .preferredColorScheme(.light) // Force light mode only
-                               .environment(\.managedObjectContext, coreDataManager.context)
-                               .environmentObject(coreDataManager)
-                               .environmentObject(habitRepository)
-                        .environmentObject(tutorialManager)
-                        .environmentObject(authManager)
-                        .environmentObject(vacationManager)
-                        .environmentObject(migrationService)
+                    ZStack {
+                        HomeView()
+                            .preferredColorScheme(.light) // Force light mode only
+                                   .environment(\.managedObjectContext, coreDataManager.context)
+                                   .environmentObject(coreDataManager)
+                                   .environmentObject(habitRepository)
+                            .environmentObject(tutorialManager)
+                            .environmentObject(authManager)
+                            .environmentObject(vacationManager)
+                            .environmentObject(migrationService)
+                        
+                        // Show migration view if needed
+                        if habitRepository.shouldShowMigrationView {
+                            NavigationView {
+                                GuestDataMigrationView()
+                            }
+                            .zIndex(1)
+                        }
+                    }
                         .onAppear {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()

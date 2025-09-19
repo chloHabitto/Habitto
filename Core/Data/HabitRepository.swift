@@ -143,6 +143,12 @@ class HabitRepository: ObservableObject {
     // Combine cancellables for subscriptions
     private var cancellables = Set<AnyCancellable>()
     
+    // Guest data migration
+    private let guestDataMigration = GuestDataMigration()
+    
+    // Published properties for UI
+    @Published var shouldShowMigrationView = false
+    
     // Defer CloudKit initialization to avoid crashes
     private lazy var cloudKitManager = CloudKitManager.shared
     private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
@@ -210,7 +216,15 @@ class HabitRepository: ObservableObject {
     private func handleUserChange(_ authState: AuthenticationState) async {
         switch authState {
         case .authenticated(let user):
-            print("🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), reloading data...")
+            print("🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
+            
+            // Check if there's guest data to migrate
+            if guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData() {
+                print("🔄 HabitRepository: Found guest data, showing migration view...")
+                shouldShowMigrationView = true
+            }
+            
+            // Load user data
             await loadHabits(force: true)
             print("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
             
@@ -224,6 +238,24 @@ class HabitRepository: ObservableObject {
             
         case .error(let error):
             print("❌ HabitRepository: Authentication error: \(error)")
+        }
+    }
+    
+    // MARK: - Guest Data Migration
+    
+    /// Handle guest data migration completion
+    func handleMigrationCompleted() {
+        shouldShowMigrationView = false
+        Task {
+            await loadHabits(force: true)
+        }
+    }
+    
+    /// Handle starting fresh (no migration)
+    func handleStartFresh() {
+        shouldShowMigrationView = false
+        Task {
+            await loadHabits(force: true)
         }
     }
     
