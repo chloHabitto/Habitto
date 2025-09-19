@@ -138,7 +138,12 @@ class UserDefaultsStorage: HabitStorageProtocol {
         
         // Use background queue for heavy operations
         let habits = try await backgroundQueue.execute {
-            // Try to load individual habits first (newer approach)
+            // Always prioritize the complete array as the source of truth
+            if let habits: [Habit] = try? self.userDefaults.getCodable([Habit].self, forKey: self.habitsKey) {
+                return habits
+            }
+            
+            // Fallback to loading individual habits (for migration purposes)
             let individualKeys = self.userDefaults.getKeys(withPrefix: self.individualHabitKeyPrefix)
             
             if !individualKeys.isEmpty {
@@ -148,11 +153,6 @@ class UserDefaultsStorage: HabitStorageProtocol {
                         habits.append(habit)
                     }
                 }
-                return habits
-            }
-            
-            // Fallback to loading the complete array (legacy approach)
-            if let habits: [Habit] = try? self.userDefaults.getCodable([Habit].self, forKey: self.habitsKey) {
                 return habits
             }
             

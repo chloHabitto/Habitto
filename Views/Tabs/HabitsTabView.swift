@@ -318,13 +318,16 @@ struct HabitsTabView: View {
             print("🔄 HabitsTabView: habitsOrder updated to \(habitsOrder.count)")
         }
         .onChange(of: habitsOrder) { oldOrder, newOrder in
-            // Notify parent when habits are reordered
-            if oldOrder != newOrder && onUpdateHabit != nil {
+            // Notify parent when habits are reordered, but only if the count hasn't decreased
+            // This prevents restoring deleted habits
+            if oldOrder != newOrder && newOrder.count >= oldOrder.count && onUpdateHabit != nil {
                 print("🔄 HabitsTabView: Habits reordered, notifying parent")
                 // Update each habit in the new order to trigger parent updates
                 for habit in newOrder {
                     onUpdateHabit?(habit)
                 }
+            } else if newOrder.count < oldOrder.count {
+                print("🔄 HabitsTabView: Habit count decreased (likely deletion), skipping reorder notification")
             }
         }
         .onDisappear {
