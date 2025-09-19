@@ -3250,11 +3250,12 @@ struct ProgressTabView: View {
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
         // Get all habit completion records for this week
-        let habitLogs = habitRepository.fetchCompletionRecordsWithTimestamps(for: habit)
-            .filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                return timestamp >= weekStart && timestamp <= weekEnd
-            }
+        let habitLogs = habit.completionHistory.compactMap { (dateString, progress) -> (timestamp: Date, progress: Int)? in
+            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return nil }
+            return (timestamp: date, progress: progress)
+        }.filter { log in
+            return log.timestamp >= weekStart && log.timestamp <= weekEnd
+        }
         
         // Define time periods
         let timePeriods = [
@@ -3269,8 +3270,7 @@ struct ProgressTabView: View {
         for (periodName, startHour, endHour) in timePeriods {
             // Count completions in this time period
             let completionsInPeriod = habitLogs.filter { log in
-                guard let timestamp = log.timestamp else { return false }
-                let hour = calendar.component(.hour, from: timestamp)
+                let hour = calendar.component(.hour, from: log.timestamp)
                 return hour >= startHour && hour < endHour
             }.count
             

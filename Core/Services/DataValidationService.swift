@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 
 // MARK: - Data Validation Service
-@MainActor
 class DataValidationService: ObservableObject {
     @Published var isEnabled = true
     @Published var validationMode: ValidationMode = .strict

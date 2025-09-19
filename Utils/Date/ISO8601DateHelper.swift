@@ -1,7 +1,6 @@
 import Foundation
 
 /// ISO 8601 date formatting utilities for consistent date handling across the app
-@MainActor
 class ISO8601DateHelper {
     static let shared = ISO8601DateHelper()
     
@@ -110,19 +109,16 @@ class ISO8601DateHelper {
 
 extension Date {
     /// Convert Date to ISO 8601 string using the shared helper
-    @MainActor
     var iso8601String: String {
         return ISO8601DateHelper.shared.string(from: self)
     }
     
     /// Convert Date to ISO 8601 string with fractional seconds
-    @MainActor
     var iso8601StringWithFractionalSeconds: String {
         return ISO8601DateHelper.shared.stringWithFractionalSeconds(from: self)
     }
     
     /// Convert Date to ISO 8601 string for storage (UTC)
-    @MainActor
     var iso8601StorageString: String {
         return ISO8601DateHelper.shared.storageString(from: self)
     }
@@ -130,13 +126,11 @@ extension Date {
 
 extension String {
     /// Convert ISO 8601 string to Date using the shared helper
-    @MainActor
     var iso8601Date: Date? {
         return ISO8601DateHelper.shared.dateWithFallback(from: self)
     }
     
     /// Check if string is a valid ISO 8601 date
-    @MainActor
     var isValidISO8601Date: Bool {
         return ISO8601DateHelper.shared.isValidISO8601Date(self)
     }

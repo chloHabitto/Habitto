@@ -95,7 +95,7 @@ struct HabittoApp: App {
                             Task { @MainActor in
                                 try? await Task.sleep(nanoseconds: 500_000_000)
                                 print("🔄 HabittoApp: Force reloading habits after app start...")
-                                habitRepository.loadHabits(force: true)
+                                await habitRepository.loadHabits(force: true)
                                 
                                 // Reschedule notifications after habits are loaded
                                 try? await Task.sleep(nanoseconds: 500_000_000)
@@ -114,12 +114,11 @@ struct HabittoApp: App {
         let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataMigrationCompleted")
         
                if !hasMigrated {
-                   print("🔄 Starting Core Data migration...")
-                   habitRepository.migrateFromUserDefaults()
+                   print("🔄 Data migration handled by HabitStore...")
                    UserDefaults.standard.set(true, forKey: "CoreDataMigrationCompleted")
-                   print("✅ Core Data migration completed")
+                   print("✅ Data migration completed")
                } else {
-                   print("✅ Core Data already migrated")
+                   print("✅ Data already migrated")
                }
         
         // Monitor app lifecycle to reload data when app becomes active
@@ -132,7 +131,7 @@ struct HabittoApp: App {
             
             Task { @MainActor in
                 print("🔄 HabittoApp: App became active, reloading habits...")
-                habitRepository.loadHabits(force: true)
+                await habitRepository.loadHabits(force: true)
                 
                 // Reschedule notifications after a short delay to ensure habits are loaded
                 try? await Task.sleep(nanoseconds: 1_000_000_000)

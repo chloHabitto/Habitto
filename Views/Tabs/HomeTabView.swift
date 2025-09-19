@@ -642,18 +642,16 @@ struct HomeTabView: View {
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
         
         // Refresh habits data from Core Data
-        await MainActor.run {
-            // Force reload habits from Core Data
-            HabitRepository.shared.loadHabits(force: true)
-            
-            // Provide haptic feedback for successful refresh
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-            
-            // Additional success feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
-        }
+        // Force reload habits from Core Data
+        await HabitRepository.shared.loadHabits(force: true)
+        
+        // Provide haptic feedback for successful refresh
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // Additional success feedback
+        let notificationFeedback = UINotificationFeedbackGenerator()
+        notificationFeedback.notificationOccurred(.success)
     }
     
     // MARK: - Celebration Detection

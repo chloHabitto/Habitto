@@ -105,12 +105,12 @@ class NoteEntity: NSManagedObject {
 
 // MARK: - Habit Repository
 //
-// This repository manages all habit data and user content.
-// It does NOT handle authentication - that's handled by AuthenticationManager.
+// This repository acts as a @MainActor facade for UI compatibility.
+// All actual data operations are handled by the HabitStore actor.
 //
 // Data Storage:
-// - Habit definitions → UserDefaults (current) → Core Data (future)
-// - Completion records → UserDefaults (current) → Core Data (future)
+// - Habit definitions → SwiftData (primary) → UserDefaults (fallback)
+// - Completion records → SwiftData (primary) → UserDefaults (fallback)
 // - User preferences → UserDefaults
 // - Streak calculations → Computed from local data
 //
@@ -125,8 +125,8 @@ class HabitRepository: ObservableObject {
     
     @Published var habits: [Habit] = []
     
-    private let coreDataManager = CoreDataManager.shared
-    private let validationService = DataValidationService()
+    // Use the new HabitStore actor for all data operations
+    private let habitStore = HabitStore.shared
     
     // Defer CloudKit initialization to avoid crashes
     private lazy var cloudKitManager = CloudKitManager.shared
@@ -136,19 +136,18 @@ class HabitRepository: ObservableObject {
         // Initialize basic functionality first
         print("✅ HabitRepository: Initializing...")
         
-        // Always use UserDefaults for data persistence (simpler and more reliable)
-        print("✅ HabitRepository: Using UserDefaults for data persistence...")
-        loadHabits(force: true)
-        
-        // Clean up any existing duplicate habits
-        cleanupDuplicateHabits()
+        // Load habits using the new actor
+        print("✅ HabitRepository: Using HabitStore actor for data operations...")
+        Task {
+            await loadHabits(force: true)
+        }
         
         // Defer CloudKit initialization to avoid crashes
         Task { @MainActor in
             await self.initializeCloudKitSafely()
         }
         
-        print("✅ HabitRepository: Loaded \(habits.count) habits from UserDefaults")
+        print("✅ HabitRepository: Initialization completed")
     }
     
     // MARK: - Safe CloudKit Initialization
@@ -177,33 +176,22 @@ class HabitRepository: ObservableObject {
     @objc private func appDidBecomeActive() {
         print("🔄 HabitRepository: App became active, reloading habits...")
         
-        // Force reload habits from Core Data
-        loadHabits(force: true)
-        
-        // Also check for any pending changes
-        // Note: CoreDataManager doesn't have saveIfNeeded method
-        
-        print("✅ HabitRepository: Habits reloaded after app became active")
+        // Force reload habits from storage
+        Task {
+            await loadHabits(force: true)
+            print("✅ HabitRepository: Habits reloaded after app became active")
+        }
     }
     
     // MARK: - Debug Methods
     func debugHabitsState() {
         print("🔍 HabitRepository: Debug - Current habits state:")
         print("  - Published habits count: \(habits.count)")
-        print("  - Core Data entities count: \(coreDataManager.fetchHabits().count)")
         
         // List all published habits
         print("📋 Published habits:")
         for (index, habit) in habits.enumerated() {
             print("  \(index): \(habit.name) (ID: \(habit.id), reminders: \(habit.reminders.count))")
-        }
-        
-        // List all Core Data entities
-        let entities = coreDataManager.fetchHabits()
-        print("📋 Core Data entities:")
-        for (index, entity) in entities.enumerated() {
-            let remindersCount = (entity.reminders as? Set<ReminderItemEntity>)?.count ?? 0
-            print("  \(index): \(entity.name ?? "nil") (ID: \(entity.id?.uuidString ?? "nil"), reminders: \(remindersCount))")
         }
         
         // Check for any habits without IDs
@@ -237,32 +225,16 @@ class HabitRepository: ObservableObject {
     func recoverMissingHabits() {
         print("🚨 HabitRepository: Starting emergency habit recovery...")
         
-        // Force reload all entities from Core Data
-        let entities = coreDataManager.fetchHabits()
-        print("🔍 Found \(entities.count) entities in Core Data")
-        
-        // Try to convert each entity individually to catch any errors
-        var recoveredHabits: [Habit] = []
-        for (index, entity) in entities.enumerated() {
-            let habit = entity.toHabit()
-            recoveredHabits.append(habit)
-            print("✅ Recovered habit \(index): \(habit.name)")
-        }
-        
-        // Update the habits array
-        DispatchQueue.main.async {
-            self.habits = recoveredHabits
-            self.objectWillChange.send()
-            print("🚨 Recovery complete: \(recoveredHabits.count) habits recovered")
+        // Force reload habits from storage
+        Task {
+            await loadHabits(force: true)
+            print("🚨 Recovery complete: \(habits.count) habits recovered")
         }
     }
     
     // MARK: - Load Habits
-    func loadHabits(force: Bool = false) {
+    func loadHabits(force: Bool = false) async {
         print("🔄 HabitRepository: loadHabits called (force: \(force))")
-        
-        // Record performance timing
-        let startTime = Date()
         
         // Always load if force is true, or if habits is empty
         if !force && !habits.isEmpty {
@@ -270,46 +242,30 @@ class HabitRepository: ObservableObject {
             return
         }
         
-        // Use optimized storage manager for better performance
-        OptimizedHabitStorageManager.shared.migrateIfNeeded()
-        let loadedHabits = OptimizedHabitStorageManager.shared.loadHabits()
-        print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from optimized storage")
-        
-        // Record performance metrics
-        let duration = Date().timeIntervalSince(startTime)
-        PerformanceMetrics.shared.recordTiming("dataLoad", duration: duration)
-        PerformanceMetrics.shared.recordEvent(PerformanceEvent(
-            type: .dataLoad,
-            description: "Loaded \(loadedHabits.count) habits",
-            metadata: [
-                "habit_count": "\(loadedHabits.count)",
-                "force": "\(force)"
-            ]
-        ))
-        
-        // Record data usage analytics
-        DataUsageAnalytics.shared.recordDataOperation(.habitLoad, size: Int64(loadedHabits.count * 1000)) // Rough estimate
-        
-        // Debug each loaded habit
-        for (index, habit) in loadedHabits.enumerated() {
-            print("🔍 Habit \(index): name=\(habit.name), id=\(habit.id), reminders=\(habit.reminders.count)")
-        }
-        
-        // Deduplicate habits by ID to prevent duplicates
-        var uniqueHabits: [Habit] = []
-        var seenIds: Set<UUID> = []
-        
-        for habit in loadedHabits {
-            if !seenIds.contains(habit.id) {
-                uniqueHabits.append(habit)
-                seenIds.insert(habit.id)
-            } else {
-                print("⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+        do {
+            // Use the HabitStore actor for data operations
+            let loadedHabits = try await habitStore.loadHabits()
+            print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from HabitStore")
+            
+            // Debug each loaded habit
+            for (index, habit) in loadedHabits.enumerated() {
+                print("🔍 Habit \(index): name=\(habit.name), id=\(habit.id), reminders=\(habit.reminders.count)")
             }
-        }
-        
-        // Always update on main thread and notify observers
-        DispatchQueue.main.async {
+            
+            // Deduplicate habits by ID to prevent duplicates
+            var uniqueHabits: [Habit] = []
+            var seenIds: Set<UUID> = []
+            
+            for habit in loadedHabits {
+                if !seenIds.contains(habit.id) {
+                    uniqueHabits.append(habit)
+                    seenIds.insert(habit.id)
+                } else {
+                    print("⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+                }
+            }
+            
+            // Update on main thread and notify observers
             self.habits = uniqueHabits
             print("✅ HabitRepository: Updated habits array with \(uniqueHabits.count) unique habits")
             
@@ -320,108 +276,51 @@ class HabitRepository: ObservableObject {
             
             // Notify observers that habits have changed
             self.objectWillChange.send()
+            
+        } catch {
+            print("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
+            // Keep existing habits if loading fails
         }
     }
     
     // MARK: - Save Difficulty Rating
     func saveDifficultyRating(habitId: UUID, date: Date, difficulty: Int32) {
-        // Find the habit and update its difficulty history
-        if let habitIndex = habits.firstIndex(where: { $0.id == habitId }) {
-            var updatedHabit = habits[habitIndex]
-            updatedHabit.recordDifficulty(Int(difficulty), for: date)
-            habits[habitIndex] = updatedHabit
-            
-            // Save the updated habits array
-            OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
-            
-            print("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
-        } else {
-            print("❌ HabitRepository: Habit not found for ID: \(habitId)")
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.saveDifficultyRating(habitId: habitId, date: date, difficulty: difficulty)
+                
+                // Update the local habits array immediately for UI responsiveness
+                if let habitIndex = habits.firstIndex(where: { $0.id == habitId }) {
+                    habits[habitIndex].recordDifficulty(Int(difficulty), for: date)
+                    objectWillChange.send()
+                }
+                
+                print("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to save difficulty: \(error.localizedDescription)")
+            }
         }
     }
     
     // MARK: - Fetch Difficulty Data
-    func fetchDifficultiesForHabit(_ habitId: UUID, month: Int, year: Int) -> [Double] {
-        let context = coreDataManager.persistentContainer.viewContext
-        let request: NSFetchRequest<DifficultyLogEntity> = DifficultyLogEntity.fetchRequest()
-        
-        // Create date range for the specified month and year
-        let calendar = Calendar.current
-        var startDateComponents = DateComponents()
-        startDateComponents.year = year
-        startDateComponents.month = month
-        startDateComponents.day = 1
-        startDateComponents.hour = 0
-        startDateComponents.minute = 0
-        startDateComponents.second = 0
-        
-        guard let startDate = calendar.date(from: startDateComponents) else { return [] }
-        
-        var endDateComponents = DateComponents()
-        endDateComponents.year = year
-        endDateComponents.month = month + 1
-        endDateComponents.day = 1
-        endDateComponents.hour = 0
-        endDateComponents.minute = 0
-        endDateComponents.second = 0
-        
-        guard let endDate = calendar.date(from: endDateComponents) else { return [] }
-        
-        // Filter by habit ID and date range
-        request.predicate = NSPredicate(
-            format: "habit.id == %@ AND timestamp >= %@ AND timestamp < %@",
-            habitId as CVarArg,
-            startDate as NSDate,
-            endDate as NSDate
-        )
-        
+    func fetchDifficultiesForHabit(_ habitId: UUID, month: Int, year: Int) async -> [Double] {
         do {
-            let results = try context.fetch(request)
-            return results.map { Double($0.difficulty) }
+            // Use the HabitStore actor for data operations
+            return try await habitStore.fetchDifficultiesForHabit(habitId, month: month, year: year)
         } catch {
-            print("❌ HabitRepository: Failed to fetch difficulties: \(error)")
+            print("❌ HabitRepository: Failed to fetch difficulties: \(error.localizedDescription)")
             return []
         }
     }
     
-    func fetchAllDifficulties(month: Int, year: Int) -> [Double] {
-        let context = coreDataManager.persistentContainer.viewContext
-        let request: NSFetchRequest<DifficultyLogEntity> = DifficultyLogEntity.fetchRequest()
-        
-        // Create date range for the specified month and year
-        let calendar = Calendar.current
-        var startDateComponents = DateComponents()
-        startDateComponents.year = year
-        startDateComponents.month = month
-        startDateComponents.day = 1
-        startDateComponents.hour = 0
-        startDateComponents.minute = 0
-        startDateComponents.second = 0
-        
-        guard let startDate = calendar.date(from: startDateComponents) else { return [] }
-        
-        var endDateComponents = DateComponents()
-        endDateComponents.year = year
-        endDateComponents.month = month + 1
-        endDateComponents.day = 1
-        endDateComponents.hour = 0
-        endDateComponents.minute = 0
-        endDateComponents.second = 0
-        
-        guard let endDate = calendar.date(from: endDateComponents) else { return [] }
-        
-        // Filter by date range
-        request.predicate = NSPredicate(
-            format: "timestamp >= %@ AND timestamp < %@",
-            startDate as NSDate,
-            endDate as NSDate
-        )
-        
+    func fetchAllDifficulties(month: Int, year: Int) async -> [Double] {
         do {
-            let results = try context.fetch(request)
-            return results.map { Double($0.difficulty) }
+            // Use the HabitStore actor for data operations
+            return try await habitStore.fetchAllDifficulties(month: month, year: year)
         } catch {
-            print("❌ HabitRepository: Failed to fetch all difficulties: \(error)")
+            print("❌ HabitRepository: Failed to fetch all difficulties: \(error.localizedDescription)")
             return []
         }
     }
@@ -429,57 +328,29 @@ class HabitRepository: ObservableObject {
     // MARK: - Save Habits
     func saveHabits(_ habits: [Habit]) {
         print("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
-        print("⚠️ HabitRepository: Skipping Core Data sync - using UserDefaults only")
         
-        // Record performance timing
-        let startTime = Date()
-        
-        // Validate habits before saving
-        let validationResult = validationService.validateHabits(habits)
-        if !validationResult.isValid {
-            print("⚠️ HabitRepository: Validation failed with \(validationResult.errors.count) errors")
-            for error in validationResult.errors {
-                print("  - \(error.field): \(error.message)")
-            }
-            
-            // If there are critical errors, don't save
-            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
-            if !criticalErrors.isEmpty {
-                print("❌ HabitRepository: Critical validation errors found, aborting save")
-                return
-            }
-        }
-        
-        // Save directly to UserDefaults instead of Core Data
-        OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
-        
-        // Update the local habits array
-        DispatchQueue.main.async {
-            self.habits = habits
-            self.objectWillChange.send()
-        }
-        
-        // Trigger CloudKit sync if enabled
-        if cloudKitIntegration.isEnabled {
-            Task {
-                await cloudKitIntegration.startSync()
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.saveHabits(habits)
+                
+                // Update the local habits array on main thread
+                await MainActor.run {
+                    self.habits = habits
+                    self.objectWillChange.send()
+                }
+                
+                // Trigger CloudKit sync if enabled
+                if cloudKitIntegration.isEnabled {
+                    await cloudKitIntegration.startSync()
+                }
+                
+                print("✅ HabitRepository: Successfully saved \(habits.count) habits")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
             }
         }
-        
-        // Record performance metrics
-        let duration = Date().timeIntervalSince(startTime)
-        PerformanceMetrics.shared.recordTiming("dataSave", duration: duration)
-        PerformanceMetrics.shared.recordEvent(PerformanceEvent(
-            type: .dataSave,
-            description: "Saved \(habits.count) habits",
-            metadata: [
-                "habit_count": "\(habits.count)",
-                "validation_errors": "\(validationResult.errors.count)"
-            ]
-        ))
-        
-        // Record data usage analytics
-        DataUsageAnalytics.shared.recordDataOperation(.habitSave, size: Int64(habits.count * 1000)) // Rough estimate
     }
     
     // MARK: - Create Habit
@@ -487,38 +358,19 @@ class HabitRepository: ObservableObject {
         print("🔄 HabitRepository: Creating habit: \(habit.name)")
         print("🔄 HabitRepository: Current habits count before creation: \(habits.count)")
         
-        // Validate habit before creating
-        let validationResult = validationService.validateHabit(habit)
-        if !validationResult.isValid {
-            print("⚠️ HabitRepository: Validation failed for new habit")
-            for error in validationResult.errors {
-                print("  - \(error.field): \(error.message)")
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.createHabit(habit)
+                
+                // Reload habits to get the updated list
+                await loadHabits(force: true)
+                
+                print("✅ HabitRepository: Successfully created habit: \(habit.name)")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to create habit: \(error.localizedDescription)")
             }
-            
-            // If there are critical errors, don't create the habit
-            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
-            if !criticalErrors.isEmpty {
-                print("❌ HabitRepository: Critical validation errors found, aborting habit creation")
-                return
-            }
-        }
-        
-        // Record user analytics
-        UserAnalytics.shared.recordEvent(.habitCreated, metadata: [
-            "habit_name": habit.name,
-            "habit_type": habit.habitType.rawValue
-        ])
-        
-        // Use UserDefaults directly for reliable persistence
-        var currentHabits = HabitStorageManager.shared.loadHabits()
-        currentHabits.append(habit)
-        OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-        
-        // Update the published habits on main thread
-        DispatchQueue.main.async {
-            self.habits = currentHabits
-            print("✅ HabitRepository: Habit saved to UserDefaults, total: \(self.habits.count)")
-            self.objectWillChange.send()
         }
     }
     
@@ -527,54 +379,18 @@ class HabitRepository: ObservableObject {
         print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
         print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
         
-        // Validate habit before updating
-        let validationResult = validationService.validateHabit(habit)
-        if !validationResult.isValid {
-            print("⚠️ HabitRepository: Validation failed for updated habit")
-            for error in validationResult.errors {
-                print("  - \(error.field): \(error.message)")
-            }
-            
-            // If there are critical errors, don't update the habit
-            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
-            if !criticalErrors.isEmpty {
-                print("❌ HabitRepository: Critical validation errors found, aborting habit update")
-                return
-            }
-        }
-        
-        // Record user analytics
-        UserAnalytics.shared.recordEvent(.featureUsed, metadata: [
-            "action": "habit_edited",
-            "habit_name": habit.name,
-            "habit_id": habit.id.uuidString
-        ])
-        
-        // Use UserDefaults directly for reliable persistence
-        var currentHabits = HabitStorageManager.shared.loadHabits()
-        if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-            currentHabits[index] = habit
-            OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-            
-            // Update the published habits on main thread
-            DispatchQueue.main.async {
-                self.habits = currentHabits
-                print("✅ HabitRepository: Habit updated in UserDefaults")
-                self.objectWillChange.send()
-            }
-        } else {
-            print("❌ HabitRepository: No matching habit found for ID: \(habit.id)")
-            print("🔄 HabitRepository: Creating new habit in UserDefaults...")
-            
-            // Create new habit in UserDefaults
-            currentHabits.append(habit)
-            OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-            
-            // Update the published habits on main thread
-            DispatchQueue.main.async {
-                self.habits = currentHabits
-                print("✅ HabitRepository: New habit created in UserDefaults")
-                self.objectWillChange.send()
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.updateHabit(habit)
+                
+                // Reload habits to get the updated list
+                await loadHabits(force: true)
+                
+                print("✅ HabitRepository: Successfully updated habit: \(habit.name)")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
             }
         }
     }
@@ -583,27 +399,23 @@ class HabitRepository: ObservableObject {
     func deleteHabit(_ habit: Habit) {
         print("🗑️ HabitRepository: Starting delete for habit: \(habit.name)")
         
-        // Record user analytics
-        UserAnalytics.shared.recordEvent(.featureUsed, metadata: [
-            "action": "habit_deleted",
-            "habit_name": habit.name,
-            "habit_id": habit.id.uuidString
-        ])
-        
         // Remove all notifications for this habit first
         NotificationManager.shared.removeAllNotifications(for: habit)
         print("🗑️ HabitRepository: Removed all notifications for habit: \(habit.name)")
         
-        // Use UserDefaults directly for reliable persistence
-        var currentHabits = HabitStorageManager.shared.loadHabits()
-        currentHabits.removeAll { $0.id == habit.id }
-        OptimizedHabitStorageManager.shared.saveHabits(currentHabits, immediate: true)
-        
-        // Update the published habits on main thread
-        DispatchQueue.main.async {
-            self.habits = currentHabits
-            print("✅ HabitRepository: Habit deleted from UserDefaults, new count: \(self.habits.count)")
-            self.objectWillChange.send()
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.deleteHabit(habit)
+                
+                // Reload habits to get the updated list
+                await loadHabits(force: true)
+                
+                print("✅ HabitRepository: Successfully deleted habit: \(habit.name)")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -623,16 +435,8 @@ class HabitRepository: ObservableObject {
     func forceSaveAllChanges() {
         print("🔄 HabitRepository: Force saving all changes...")
         
-        // Force save Core Data
-        do {
-            try coreDataManager.save()
-            print("✅ HabitRepository: Core Data changes saved")
-        } catch {
-            print("❌ HabitRepository: Failed to save Core Data: \(error)")
-        }
-        
-        // Also backup to UserDefaults as a safety measure
-        backupToUserDefaults()
+        // Save current habits
+        saveHabits(habits)
         
         print("✅ HabitRepository: All changes saved")
     }
@@ -642,34 +446,22 @@ class HabitRepository: ObservableObject {
         let dateKey = CoreDataManager.dateKey(for: date)
         print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
         
-        // Record user analytics for habit completion
-        if progress > 0 {
-            UserAnalytics.shared.recordEvent(.habitCompleted, metadata: [
-                "habit_name": habit.name,
-                "habit_id": habit.id.uuidString,
-                "date": dateKey
-            ])
-        }
-        
-        // Skip Core Data and update UserDefaults directly
-        print("⚠️ HabitRepository: Bypassing Core Data, updating UserDefaults directly...")
-        
-        // Update the local habits array immediately
-        if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            var updatedHabits = habits
-            updatedHabits[index].completionHistory[dateKey] = progress
-            
-            DispatchQueue.main.async {
-                self.habits = updatedHabits
-                print("✅ HabitRepository: Progress updated in memory for habit '\(habit.name)' on \(dateKey)")
-                self.objectWillChange.send()
+        Task {
+            do {
+                // Use the HabitStore actor for data operations
+                try await habitStore.setProgress(for: habit, date: date, progress: progress)
                 
-                // Save to UserDefaults
-                OptimizedHabitStorageManager.shared.saveHabits(updatedHabits, immediate: true)
-                print("✅ HabitRepository: Progress saved to UserDefaults")
+                // Update the local habits array immediately for UI responsiveness
+                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+                    habits[index].completionHistory[dateKey] = progress
+                    objectWillChange.send()
+                }
+                
+                print("✅ HabitRepository: Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
+                
+            } catch {
+                print("❌ HabitRepository: Failed to update progress: \(error.localizedDescription)")
             }
-        } else {
-            print("❌ HabitRepository: Habit not found in local array: \(habit.name)")
         }
     }
     
@@ -677,74 +469,6 @@ class HabitRepository: ObservableObject {
     func getProgress(for habit: Habit, date: Date) -> Int {
         // Use the Habit model's getProgress method directly since we're not using Core Data
         return habit.getProgress(for: date)
-    }
-    
-    // MARK: - Fetch Completion Records with Timestamps
-    func fetchCompletionRecordsWithTimestamps(for habit: Habit) -> [CompletionRecordEntity] {
-        let habitEntities = coreDataManager.fetchHabits()
-        guard let entity = habitEntities.first(where: { $0.id == habit.id }) else {
-            print("❌ HabitRepository: No matching entity found for habit: \(habit.name)")
-            return []
-        }
-        
-        if let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
-            let sortedRecords = completionRecords.sorted { record1, record2 in
-                guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
-                    return false
-                }
-                return timestamp1 > timestamp2
-            }
-            print("✅ HabitRepository: Fetched \(sortedRecords.count) completion records with timestamps for habit '\(habit.name)'")
-            return sortedRecords
-        }
-        
-        print("⚠️ HabitRepository: No completion records found for habit: \(habit.name)")
-        return []
-    }
-    
-    // MARK: - Fetch All Completion Records with Timestamps
-    func fetchAllCompletionRecordsWithTimestamps() -> [CompletionRecordEntity] {
-        let habitEntities = coreDataManager.fetchHabits()
-        var allRecords: [CompletionRecordEntity] = []
-        
-        for entity in habitEntities {
-            if let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
-                allRecords.append(contentsOf: completionRecords)
-            }
-        }
-        
-        let sortedRecords = allRecords.sorted { record1, record2 in
-            guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
-                return false
-            }
-            return timestamp1 > timestamp2
-        }
-        
-        print("✅ HabitRepository: Fetched \(sortedRecords.count) total completion records with timestamps")
-        return sortedRecords
-    }
-    
-    // MARK: - Fetch Completion Records by Habit Type
-    func fetchCompletionRecordsByHabitType(_ habitType: HabitType) -> [CompletionRecordEntity] {
-        let habitEntities = coreDataManager.fetchHabits()
-        var typeRecords: [CompletionRecordEntity] = []
-        
-        for entity in habitEntities {
-            if entity.habitType == habitType.rawValue,
-               let completionRecords = entity.completionHistory as? Set<CompletionRecordEntity> {
-                typeRecords.append(contentsOf: completionRecords)
-            }
-        }
-        
-        let sortedRecords = typeRecords.sorted { record1, record2 in
-            guard let timestamp1 = record1.timestamp, let timestamp2 = record2.timestamp else {
-                return false
-            }
-            return timestamp1 > timestamp2
-        }
-        
-        print("✅ HabitRepository: Fetched \(sortedRecords.count) completion records with timestamps for habit type: \(habitType)")
-        return sortedRecords
     }
     
     // MARK: - Fetch Difficulty Logs for Habit
@@ -755,107 +479,37 @@ class HabitRepository: ObservableObject {
         return []
     }
     
-    // MARK: - Fetch All Difficulty Logs
-    func fetchAllDifficultyLogs() -> [DifficultyLogEntity] {
-        let habitEntities = coreDataManager.fetchHabits()
-        var allLogs: [DifficultyLogEntity] = []
-        
-        for entity in habitEntities {
-            if let difficultyLogs = entity.difficultyLogs as? Set<DifficultyLogEntity> {
-                allLogs.append(contentsOf: difficultyLogs)
-            }
-        }
-        
-        let sortedLogs = allLogs.sorted { log1, log2 in
-            guard let timestamp1 = log1.timestamp, let timestamp2 = log2.timestamp else {
-                return false
-            }
-            return timestamp1 > timestamp2
-        }
-        
-        print("✅ HabitRepository: Fetched \(sortedLogs.count) total difficulty logs")
-        return sortedLogs
-    }
-    
     // MARK: - Clean Up Duplicates
     func cleanupDuplicateHabits() {
         print("🔄 HabitRepository: Starting duplicate cleanup...")
         
-        let entities = coreDataManager.fetchHabits()
+        // Check for duplicate IDs in current habits
         var seenIds: Set<UUID> = []
-        var duplicatesToRemove: [HabitEntity] = []
+        var duplicatesToRemove: [Habit] = []
         
-        for entity in entities {
-            if let id = entity.id {
-                if seenIds.contains(id) {
-                    duplicatesToRemove.append(entity)
-                    print("⚠️ HabitRepository: Found duplicate habit entity with ID: \(id), name: \(entity.name ?? "Unknown") - will be removed")
-                } else {
-                    seenIds.insert(id)
-                }
+        for habit in habits {
+            if seenIds.contains(habit.id) {
+                duplicatesToRemove.append(habit)
+                print("⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - will be removed")
+            } else {
+                seenIds.insert(habit.id)
             }
         }
         
         if !duplicatesToRemove.isEmpty {
             print("🔄 HabitRepository: Removing \(duplicatesToRemove.count) duplicate habits...")
             
-            for duplicate in duplicatesToRemove {
-                do {
-                    try coreDataManager.deleteHabit(duplicate)
-                    print("✅ HabitRepository: Removed duplicate habit: \(duplicate.name ?? "Unknown")")
-                } catch {
-                    print("❌ HabitRepository: Failed to remove duplicate habit: \(error)")
-                }
+            // Remove duplicates from habits array
+            habits.removeAll { habit in
+                duplicatesToRemove.contains { $0.id == habit.id }
             }
             
-            // Reload habits after cleanup
-            loadHabits(force: true)
+            // Save updated habits
+            saveHabits(habits)
             print("✅ HabitRepository: Duplicate cleanup completed, total habits: \(habits.count)")
         } else {
             print("✅ HabitRepository: No duplicate habits found")
         }
-    }
-    
-    // MARK: - Migrate from UserDefaults
-    func migrateFromUserDefaults() {
-        print("🔄 HabitRepository: Starting migration from UserDefaults...")
-        
-        let userDefaultsHabits = HabitStorageManager.shared.loadHabits()
-        print("🔄 HabitRepository: Found \(userDefaultsHabits.count) habits in UserDefaults")
-        
-        // Check for existing habits in Core Data to avoid duplicates
-        let existingEntities = coreDataManager.fetchHabits()
-        let existingIds = Set(existingEntities.compactMap { $0.id })
-        
-        var migratedCount = 0
-        var skippedCount = 0
-        
-        for habit in userDefaultsHabits {
-            // Skip if habit already exists in Core Data
-            if existingIds.contains(habit.id) {
-                print("⚠️ HabitRepository: Habit '\(habit.name)' already exists in Core Data, skipping migration")
-                skippedCount += 1
-                continue
-            }
-            
-            do {
-                _ = try coreDataManager.createHabit(from: habit)
-                print("✅ HabitRepository: Migrated habit: \(habit.name)")
-                migratedCount += 1
-            } catch {
-                print("❌ HabitRepository: Failed to migrate habit '\(habit.name)': \(error)")
-            }
-        }
-        
-        // Reload habits after migration
-        loadHabits(force: true)
-        print("✅ HabitRepository: Migration completed - \(migratedCount) habits migrated, \(skippedCount) skipped, total habits: \(habits.count)")
-    }
-    
-    // MARK: - Backup to UserDefaults
-    func backupToUserDefaults() {
-        OptimizedHabitStorageManager.shared.saveHabits(habits, immediate: true)
-        print("✅ HabitRepository: Habits backed up to UserDefaults")
     }
 }
 

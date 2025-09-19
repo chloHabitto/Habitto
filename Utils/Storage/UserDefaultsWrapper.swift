@@ -1,7 +1,6 @@
 import Foundation
 
 /// Safe wrapper for UserDefaults operations with type safety and error handling
-@MainActor
 class UserDefaultsWrapper {
     static let shared = UserDefaultsWrapper()
     
