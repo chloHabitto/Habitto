@@ -10,6 +10,7 @@ class UserDefaultsStorage: HabitStorageProtocol {
     private let individualHabitKeyPrefix = "Habit_"
     private let backgroundQueue = BackgroundQueueManager.shared
     private let atomicWriter = AtomicFileWriter()
+    private let migrationManager = DataMigrationManager.shared
     
     // Performance optimization: Cache loaded habits
     private var cachedHabits: [Habit]?
@@ -45,6 +46,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
             
             // Also update UserDefaults for backward compatibility
             try self.userDefaults.setCodable(data, forKey: key)
+            
+            // Data saved successfully
             
             Task { @MainActor in
                 self.lastSaveTime = Date()
@@ -126,6 +129,11 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func loadHabits() async throws -> [Habit] {
+        // Check if migration is needed
+        if await migrationManager.needsMigration() {
+            try await migrationManager.executeMigrations()
+        }
+        
         // Performance optimization: Return cached result if available
         if let cached = cachedHabits {
             return cached
