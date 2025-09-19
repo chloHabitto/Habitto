@@ -126,11 +126,15 @@ class HabitRepository: ObservableObject {
     @Published var habits: [Habit] = []
     
     private let coreDataManager = CoreDataManager.shared
-    private let cloudKitManager = CloudKitManager.shared
     private let validationService = DataValidationService()
     
+    // Defer CloudKit initialization to avoid crashes
+    private lazy var cloudKitManager = CloudKitManager.shared
+    private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
+    
     private init() {
-        initializeSync()
+        // Initialize basic functionality first
+        print("✅ HabitRepository: Initializing...")
         
         // Always use UserDefaults for data persistence (simpler and more reliable)
         print("✅ HabitRepository: Using UserDefaults for data persistence...")
@@ -139,13 +143,26 @@ class HabitRepository: ObservableObject {
         // Clean up any existing duplicate habits
         cleanupDuplicateHabits()
         
+        // Defer CloudKit initialization to avoid crashes
+        Task { @MainActor in
+            await self.initializeCloudKitSafely()
+        }
+        
         print("✅ HabitRepository: Loaded \(habits.count) habits from UserDefaults")
     }
     
-    // MARK: - Initialize Sync
-    private func initializeSync() {
-        // Initialize CloudKit sync
-        cloudKitManager.initializeCloudKitSync()
+    // MARK: - Safe CloudKit Initialization
+    private func initializeCloudKitSafely() async {
+        // Initialize CloudKit integration safely
+        await cloudKitIntegration.initialize()
+        print("✅ HabitRepository: CloudKit integration initialized safely")
+        
+        // Initialize CloudKit sync safely
+        if cloudKitManager.isCloudKitAvailable() {
+            cloudKitManager.initializeCloudKitSync()
+        } else {
+            print("ℹ️ HabitRepository: CloudKit not available, skipping sync initialization")
+        }
         
         // Monitor app lifecycle to reload data when app becomes active
         NotificationCenter.default.addObserver(
@@ -440,6 +457,13 @@ class HabitRepository: ObservableObject {
         DispatchQueue.main.async {
             self.habits = habits
             self.objectWillChange.send()
+        }
+        
+        // Trigger CloudKit sync if enabled
+        if cloudKitIntegration.isEnabled {
+            Task {
+                await cloudKitIntegration.startSync()
+            }
         }
         
         // Record performance metrics
