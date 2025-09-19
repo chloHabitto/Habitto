@@ -416,27 +416,16 @@ class HabitRepository: ObservableObject {
     
     // MARK: - Delete Habit
     func deleteHabit(_ habit: Habit) {
-        print("🗑️ HabitRepository: Starting delete for habit: \(habit.name)")
-        print("🗑️ HabitRepository: Current habits count before delete: \(habits.count)")
-        
         // Remove all notifications for this habit first
         NotificationManager.shared.removeAllNotifications(for: habit)
-        print("🗑️ HabitRepository: Removed all notifications for habit: \(habit.name)")
         
         Task {
             do {
                 // Use the HabitStore actor for data operations
-                print("🗑️ HabitRepository: Calling habitStore.deleteHabit...")
                 try await habitStore.deleteHabit(habit)
-                print("✅ HabitRepository: habitStore.deleteHabit completed")
                 
                 // Reload habits to get the updated list
-                print("🗑️ HabitRepository: Calling loadHabits(force: true)...")
                 await loadHabits(force: true)
-                print("✅ HabitRepository: loadHabits completed")
-                print("🗑️ HabitRepository: After reload, habits count is now: \(habits.count)")
-                
-                print("✅ HabitRepository: Successfully deleted habit: \(habit.name)")
                 
             } catch {
                 print("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")

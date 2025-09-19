@@ -201,7 +201,6 @@ final actor HabitStore {
     
     func deleteHabit(_ habit: Habit) async throws {
         logger.info("Deleting habit: \(habit.name)")
-        print("🗑️ HabitStore: Starting delete for habit: \(habit.name)")
         
         // Record user analytics
         await userAnalytics.recordEvent(.featureUsed, metadata: [
@@ -212,19 +211,15 @@ final actor HabitStore {
         
         // Load current habits
         var currentHabits = try await loadHabits()
-        print("🗑️ HabitStore: Loaded \(currentHabits.count) habits before deletion")
-        
-        let originalCount = currentHabits.count
         currentHabits.removeAll { $0.id == habit.id }
-        let newCount = currentHabits.count
-        print("🗑️ HabitStore: Removed habit, count changed from \(originalCount) to \(newCount)")
         
-        // Save updated habits
+        // Save updated habits (complete array)
         try await saveHabits(currentHabits)
-        print("🗑️ HabitStore: Saved \(currentHabits.count) habits to storage")
+        
+        // Also delete the individual habit item from UserDefaults
+        try await userDefaultsStorage.deleteHabit(id: habit.id)
         
         logger.info("Successfully deleted habit: \(habit.name)")
-        print("✅ HabitStore: Successfully deleted habit: \(habit.name)")
     }
     
     // MARK: - Set Progress

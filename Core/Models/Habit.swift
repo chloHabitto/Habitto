@@ -305,6 +305,17 @@ struct Habit: Identifiable, Codable, Equatable {
         streak = calculateTrueStreak()
     }
     
+    /// Recalculates completion status after editing habit properties
+    /// This preserves historical data but updates current completion status based on new goal
+    mutating func recalculateCompletionStatus() {
+        // Update current completion status based on today's progress and new goal
+        let today = Calendar.current.startOfDay(for: Date())
+        isCompleted = isCompleted(for: today)
+        
+        // Recalculate streak based on new goal
+        correctStreak()
+    }
+    
     /// Debug function to print streak information
     func debugStreakInfo() {
         let trueStreak = calculateTrueStreak()

@@ -77,21 +77,16 @@ class HomeViewState: ObservableObject {
     }
     
     func deleteHabit(_ habit: Habit) {
-        print("🗑️ HomeViewState: Starting delete for habit: \(habit.name)")
-        print("🗑️ HomeViewState: Current habits count: \(habits.count)")
-        
         // Immediately remove from local state for instant UI update
         DispatchQueue.main.async {
             var updatedHabits = self.habits
             updatedHabits.removeAll { $0.id == habit.id }
             self.habits = updatedHabits
-            print("🗑️ HomeViewState: Immediately removed habit, new count: \(self.habits.count)")
         }
         
-        // Then delete from Core Data
+        // Then delete from storage
         habitRepository.deleteHabit(habit)
         habitToDelete = nil
-        print("🗑️ HomeViewState: Delete completed")
     }
     
     func updateHabit(_ updatedHabit: Habit) {

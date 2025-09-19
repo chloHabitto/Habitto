@@ -1005,7 +1005,7 @@ struct HabitEditView: View {
             )
         }
         
-        // Create a new habit with the original ID
+        // Create a new habit with the original ID, preserving all existing completion data
         updatedHabit = Habit(
             id: habit.id,
             name: updatedHabit.name,
@@ -1018,15 +1018,19 @@ struct HabitEditView: View {
             reminder: updatedHabit.reminder,
             startDate: updatedHabit.startDate,
             endDate: endDate,
-            isCompleted: updatedHabit.isCompleted,
-            streak: updatedHabit.streak,
-            createdAt: updatedHabit.createdAt,
+            isCompleted: habit.isCompleted, // Preserve original completion status
+            streak: habit.streak, // Preserve original streak
+            createdAt: habit.createdAt, // Preserve original creation date
             reminders: updatedHabit.reminders,
             baseline: updatedHabit.baseline,
             target: updatedHabit.target,
-            completionHistory: updatedHabit.completionHistory,
-            actualUsage: updatedHabit.actualUsage
+            completionHistory: habit.completionHistory, // Preserve original completion history
+            difficultyHistory: habit.difficultyHistory, // Preserve original difficulty history
+            actualUsage: habit.actualUsage // Preserve original usage data
         )
+        
+        // Recalculate completion status based on new goal while preserving historical data
+        updatedHabit.recalculateCompletionStatus()
         
         // Update notifications for the habit
         NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
