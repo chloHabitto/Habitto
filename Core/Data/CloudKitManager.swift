@@ -4,11 +4,32 @@ import SwiftUI
 // MARK: - CloudKit Error
 enum CloudKitError: Error, LocalizedError {
     case notConfigured
+    case syncFailed(Error)
+    case conflictDetected
+    case authenticationFailed
+    case networkError(Error)
+    case quotaExceeded
+    case recordNotFound
+    case invalidRecord
     
     var errorDescription: String? {
         switch self {
         case .notConfigured:
             return "CloudKit is not configured for this app"
+        case .syncFailed(let error):
+            return "CloudKit sync failed: \(error.localizedDescription)"
+        case .conflictDetected:
+            return "Data conflicts detected during sync"
+        case .authenticationFailed:
+            return "CloudKit authentication failed"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .quotaExceeded:
+            return "CloudKit storage quota exceeded"
+        case .recordNotFound:
+            return "CloudKit record not found"
+        case .invalidRecord:
+            return "Invalid CloudKit record format"
         }
     }
 }
@@ -17,9 +38,13 @@ enum CloudKitError: Error, LocalizedError {
 class CloudKitManager: ObservableObject {
     static let shared = CloudKitManager()
     
-    private let container: CKContainer?
-    private let privateDatabase: CKDatabase?
-    private let publicDatabase: CKDatabase?
+    private var container: CKContainer?
+    var privateDatabase: CKDatabase? {
+        return container?.privateCloudDatabase
+    }
+    private var publicDatabase: CKDatabase? {
+        return container?.publicCloudDatabase
+    }
     
     @Published var isSignedIn = false
     @Published var syncStatus: SyncStatus = .idle
@@ -33,21 +58,43 @@ class CloudKitManager: ObservableObject {
     }
     
     private init() {
-        // Temporarily disable CloudKit initialization to prevent app crashes
-        print("⚠️ CloudKitManager: CloudKit initialization disabled to prevent app crashes")
-        self.container = nil
-        self.privateDatabase = nil
-        self.publicDatabase = nil
+        // Don't initialize CloudKit immediately to avoid crashes
+        // CloudKit will be initialized lazily when needed
+        print("ℹ️ CloudKitManager: CloudKit initialization deferred for safety")
+        
         self.isSignedIn = false
-        self.syncStatus = .failed("CloudKit disabled")
+        self.syncStatus = .idle
+    }
+    
+    // MARK: - CloudKit Availability
+    func isCloudKitAvailable() -> Bool {
+        // For now, return false to disable CloudKit functionality
+        // This prevents crashes when CloudKit isn't properly configured
+        print("ℹ️ CloudKitManager: CloudKit functionality disabled for safety")
+        return false
+    }
+    
+    // MARK: - Safe CloudKit Initialization
+    private func initializeCloudKitIfNeeded() -> Bool {
+        guard container == nil else { return true }
+        
+        // Try to initialize CloudKit safely
+        // CKContainer.default() doesn't throw, so we don't need a do-catch
+        self.container = CKContainer.default()
+        print("✅ CloudKitManager: CloudKit container initialized safely")
+        return true
     }
     
     // MARK: - Authentication
     func checkAuthenticationStatus() {
+        // Check if CloudKit is available before proceeding
+        guard isCloudKitAvailable() else {
+            print("ℹ️ CloudKitManager: CloudKit not available, skipping authentication check")
+            return
+        }
+        
         guard let container = container else {
-            print("❌ CloudKitManager: No CloudKit container available")
-            isSignedIn = false
-            syncStatus = .failed("CloudKit not configured")
+            print("ℹ️ CloudKitManager: CloudKit container not initialized")
             return
         }
         
@@ -86,8 +133,14 @@ class CloudKitManager: ObservableObject {
     }
     
     private func fetchUserRecordID() {
+        // Check if CloudKit is available before proceeding
+        guard isCloudKitAvailable() else {
+            print("ℹ️ CloudKitManager: CloudKit not available, skipping user record ID fetch")
+            return
+        }
+        
         guard let container = container else {
-            print("❌ CloudKitManager: No CloudKit container available for fetching user record ID")
+            print("ℹ️ CloudKitManager: CloudKit container not initialized")
             return
         }
         
@@ -136,11 +189,7 @@ class CloudKitManager: ObservableObject {
     // MARK: - Integration with Core Data
     func initializeCloudKitSync() {
         // This method can be called to ensure CloudKit sync is properly initialized
-        guard container != nil else {
-            print("⚠️ CloudKitManager: CloudKit not available, skipping sync initialization")
-            return
-        }
-        
+        // Container is always available, so we can proceed directly
         checkAuthenticationStatus()
         
         // Subscribe to CloudKit changes

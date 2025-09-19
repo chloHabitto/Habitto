@@ -4,11 +4,13 @@ import SwiftUI
 
 // MARK: - Core Data Storage Implementation
 /// Core Data implementation of the habit storage protocol
+@MainActor
 class CoreDataStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
     private let coreDataManager: CoreDataManager
     private let context: NSManagedObjectContext
+    private let backgroundQueue = BackgroundQueueManager.shared
     
     init(coreDataManager: CoreDataManager = CoreDataManager.shared) {
         self.coreDataManager = coreDataManager
@@ -50,156 +52,120 @@ class CoreDataStorage: HabitStorageProtocol {
     // MARK: - Habit-Specific Storage Methods
     
     func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.executeSerial {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    // Clear existing habits
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    let existingHabits = try self.context.fetch(fetchRequest)
-                    for habit in existingHabits {
-                        self.context.delete(habit)
-                    }
-                    
-                    // Create new habit entities
-                    for habit in habits {
-                        let entity = HabitEntity(context: self.context)
-                        self.updateEntity(entity, with: habit)
-                    }
-                    
-                    // Save context
-                    try self.context.save()
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
+                // Clear existing habits
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                let existingHabits = try self.context.fetch(fetchRequest)
+                for habit in existingHabits {
+                    self.context.delete(habit)
                 }
+                
+                // Create new habit entities
+                for habit in habits {
+                    let entity = HabitEntity(context: self.context)
+                    self.updateEntity(entity, with: habit)
+                }
+                
+                // Save context
+                try self.context.save()
             }
         }
     }
     
     func loadHabits() async throws -> [Habit] {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[Habit], Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.execute {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    let entities = try self.context.fetch(fetchRequest)
-                    let habits = entities.compactMap { self.habit(from: $0) }
-                    continuation.resume(returning: habits)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                let entities = try self.context.fetch(fetchRequest)
+                return entities.compactMap { self.habit(from: $0) }
             }
         }
     }
     
     func saveHabit(_ habit: Habit, immediate: Bool = false) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.executeSerial {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    // Find existing entity or create new one
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    fetchRequest.predicate = NSPredicate(format: "id == %@", habit.id as CVarArg)
-                    let entities = try self.context.fetch(fetchRequest)
-                    
-                    let entity = entities.first ?? HabitEntity(context: self.context)
-                    self.updateEntity(entity, with: habit)
-                    
-                    try self.context.save()
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+                // Find existing entity or create new one
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id == %@", habit.id as CVarArg)
+                let entities = try self.context.fetch(fetchRequest)
+                
+                let entity = entities.first ?? HabitEntity(context: self.context)
+                self.updateEntity(entity, with: habit)
+                
+                try self.context.save()
             }
         }
     }
     
     func loadHabit(id: UUID) async throws -> Habit? {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Habit?, Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.execute {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-                    let entities = try self.context.fetch(fetchRequest)
-                    
-                    if let entity = entities.first {
-                        let habit = self.habit(from: entity)
-                        continuation.resume(returning: habit)
-                    } else {
-                        continuation.resume(returning: nil)
-                    }
-                } catch {
-                    continuation.resume(throwing: error)
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+                let entities = try self.context.fetch(fetchRequest)
+                
+                if let entity = entities.first {
+                    return self.habit(from: entity)
+                } else {
+                    return nil
                 }
             }
         }
     }
     
     func deleteHabit(id: UUID) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.executeSerial {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
-                    let entities = try self.context.fetch(fetchRequest)
-                    
-                    for entity in entities {
-                        self.context.delete(entity)
-                    }
-                    
-                    try self.context.save()
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+                let entities = try self.context.fetch(fetchRequest)
+                
+                for entity in entities {
+                    self.context.delete(entity)
                 }
+                
+                try self.context.save()
             }
         }
     }
     
     func clearAllHabits() async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            context.perform { [weak self] in
+        try await backgroundQueue.executeSerial {
+            try self.context.performAndWait { [weak self] in
                 guard let self = self else {
-                    continuation.resume(throwing: DataStorageError.contextUnavailable)
-                    return
+                    throw DataStorageError.contextUnavailable
                 }
                 
-                do {
-                    let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
-                    let entities = try self.context.fetch(fetchRequest)
-                    
-                    for entity in entities {
-                        self.context.delete(entity)
-                    }
-                    
-                    try self.context.save()
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
+                let fetchRequest: NSFetchRequest<HabitEntity> = HabitEntity.fetchRequest()
+                let entities = try self.context.fetch(fetchRequest)
+                
+                for entity in entities {
+                    self.context.delete(entity)
                 }
+                
+                try self.context.save()
             }
         }
     }

@@ -26,7 +26,7 @@ class UserDefaultsToCoreDataMigration: MigrationStep {
         print("📊 UserDefaultsToCoreDataMigration: Found \(habits.count) habits to migrate")
         
         // Migrate to Core Data
-        let coreDataStorage = CoreDataStorage()
+        let coreDataStorage = await CoreDataStorage()
         try await coreDataStorage.saveHabits(habits, immediate: true)
         
         // Mark migration as completed
@@ -44,7 +44,7 @@ class UserDefaultsToCoreDataMigration: MigrationStep {
         print("🔄 UserDefaultsToCoreDataMigration: Rolling back...")
         
         // Clear Core Data storage
-        let coreDataStorage = CoreDataStorage()
+        let coreDataStorage = await CoreDataStorage()
         // Note: CoreDataStorage doesn't have deleteAllHabits method yet
         // For now, we'll just log that rollback was attempted
         print("⚠️ UserDefaultsToCoreDataMigration: Core Data rollback not fully implemented")
@@ -78,7 +78,7 @@ class CoreDataToCloudKitMigration: MigrationStep {
         }
         
         // Load habits from Core Data
-        let coreDataStorage = CoreDataStorage()
+        let coreDataStorage = await CoreDataStorage()
         let habits = try await coreDataStorage.loadHabits()
         
         guard !habits.isEmpty else {
