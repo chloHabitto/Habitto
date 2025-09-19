@@ -1,0 +1,3 @@
+# Exclude Info.plist files from being treated as resource files
+*.plist
+!GoogleService-Info.plist
