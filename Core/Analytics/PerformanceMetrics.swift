@@ -216,7 +216,7 @@ class PerformanceMetrics: ObservableObject {
                 totalSize += data.count
             } else if let string = value as? String {
                 totalSize += string.utf8.count
-            } else if let number = value as? NSNumber {
+            } else if value is NSNumber {
                 totalSize += MemoryLayout<NSNumber>.size
             }
         }
@@ -252,7 +252,7 @@ struct AppMetrics: Codable {
 
 // MARK: - Performance Event
 struct PerformanceEvent: Codable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     let type: EventType
     let description: String
     let timestamp: Date
@@ -278,7 +278,7 @@ enum EventType: String, Codable, CaseIterable {
 
 // MARK: - Performance Timing
 struct PerformanceTiming: Codable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     let operation: String
     let duration: TimeInterval
     let timestamp: Date
