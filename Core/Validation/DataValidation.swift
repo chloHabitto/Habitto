@@ -84,6 +84,15 @@ class HabitValidator: DataValidator {
         // Habit-specific validation
         if habit.habitType == .breaking {
             errors.append(contentsOf: validateHabitBreaking(habit))
+        } else {
+            // For habit formation, validate that baseline is 0 (not used)
+            if habit.baseline != 0 {
+                errors.append(ValidationError(
+                    field: "baseline",
+                    message: "Baseline should be 0 for habit formation",
+                    severity: .warning
+                ))
+            }
         }
         
         // Data integrity validation
@@ -113,11 +122,11 @@ class HabitValidator: DataValidator {
             ))
         }
         
-        if name.count < 2 {
+        if name.count < 1 {
             errors.append(ValidationError(
                 field: "name",
-                message: "Habit name should be at least 2 characters",
-                severity: .warning
+                message: "Habit name cannot be empty",
+                severity: .error
             ))
         }
         
@@ -390,16 +399,14 @@ class HabitValidator: DataValidator {
     }
     
     private func isValidSchedule(_ schedule: String) -> Bool {
-        // Basic schedule validation
-        let validFrequencies = ["daily", "weekly", "monthly", "yearly"]
-        let components = schedule.lowercased().components(separatedBy: " ")
+        // Basic schedule validation - accept common schedule formats
+        let validSchedules = [
+            "Everyday", "Weekdays", "Weekends",
+            "daily", "weekly", "monthly", "yearly",
+            "Every 2 days", "Every 3 days", "Every 4 days", "Every 5 days", "Every 6 days", "Every 7 days"
+        ]
         
-        if components.count >= 2 {
-            let frequency = components.last ?? ""
-            return validFrequencies.contains(frequency)
-        }
-        
-        return false
+        return validSchedules.contains(schedule) || schedule.isEmpty
     }
     
     private func parseDate(from dateKey: String) -> Date? {

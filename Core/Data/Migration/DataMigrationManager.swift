@@ -100,6 +100,12 @@ class DataMigrationManager: ObservableObject {
             return
         }
         
+        // Prevent multiple simultaneous migrations
+        guard !isMigrating else {
+            print("⚠️ DataMigrationManager: Migration already in progress, skipping")
+            return
+        }
+        
         isMigrating = true
         migrationProgress = 0.0
         
@@ -121,6 +127,11 @@ class DataMigrationManager: ObservableObject {
                 case .success:
                     print("✅ DataMigrationManager: \(step.description) completed successfully")
                     logMigration(step: step, result: .success, error: nil)
+                    // Update version after successful migration
+                    currentVersion = step.version
+                    userDefaults.set(currentVersion.stringValue, forKey: versionKey)
+                    print("✅ DataMigrationManager: Updated to version \(currentVersion.stringValue)")
+                    print("🔍 DataMigrationManager: Version saved to UserDefaults: \(userDefaults.string(forKey: versionKey) ?? "nil")")
                     
                 case .failure(let error):
                     print("❌ DataMigrationManager: \(step.description) failed: \(error.localizedDescription)")
@@ -130,11 +141,17 @@ class DataMigrationManager: ObservableObject {
                         throw DataMigrationError.requiredStepFailed(step: step.description, error: error)
                     } else {
                         print("⚠️ DataMigrationManager: Non-required step failed, continuing...")
+                        // Update version even for failed non-required steps
+                        currentVersion = step.version
+                        userDefaults.set(currentVersion.stringValue, forKey: versionKey)
                     }
                     
                 case .skipped(let reason):
                     print("⏭️ DataMigrationManager: \(step.description) skipped: \(reason)")
                     logMigration(step: step, result: .skipped(reason: reason), error: nil)
+                    // Update version even for skipped steps
+                    currentVersion = step.version
+                    userDefaults.set(currentVersion.stringValue, forKey: versionKey)
                 }
                 
             } catch {
@@ -147,12 +164,7 @@ class DataMigrationManager: ObservableObject {
             }
         }
         
-        // Update to latest version
-        if let latestVersion = availableMigrations.last?.version {
-            currentVersion = latestVersion
-            userDefaults.set(currentVersion.stringValue, forKey: versionKey)
-            print("✅ DataMigrationManager: Updated to version \(currentVersion.stringValue)")
-        }
+        // Version is already updated after each step
         
         migrationProgress = 1.0
         isMigrating = false
@@ -207,13 +219,14 @@ class DataMigrationManager: ObservableObject {
     private func loadCurrentVersion() {
         let versionString = userDefaults.string(forKey: versionKey) ?? "1.0.0"
         currentVersion = MigrationVersion(versionString)
+        print("🔍 DataMigrationManager: Loaded current version: \(currentVersion.stringValue)")
     }
     
     private func setupMigrationSteps() {
         migrationSteps = [
-            // Storage migrations
-            UserDefaultsToCoreDataMigration(),
-            CoreDataToCloudKitMigration(),
+            // Storage migrations - Core Data disabled for now
+            // UserDefaultsToCoreDataMigration(),
+            // CoreDataToCloudKitMigration(),
             
             // Data format migrations
             AddHabitCreationDateMigration(),

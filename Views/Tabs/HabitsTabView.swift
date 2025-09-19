@@ -112,6 +112,7 @@ struct DropViewDelegate: DropDelegate {
 }
 
 struct HabitsTabView: View {
+    @ObservedObject var state: HomeViewState
     @State private var selectedStatsTab: Int = 0
     @State private var selectedHabit: Habit? = nil
     @State private var isEditMode: Bool = false
@@ -123,7 +124,6 @@ struct HabitsTabView: View {
     // Debounce timer for drag state updates
     @State private var dragUpdateTimer: Timer?
 
-    let habits: [Habit]
     let onDeleteHabit: (Habit) -> Void
     let onEditHabit: (Habit) -> Void
     let onCreateHabit: () -> Void
@@ -131,18 +131,28 @@ struct HabitsTabView: View {
     
     // Custom initializer with default value for onUpdateHabit
     init(
-        habits: [Habit],
+        state: HomeViewState,
         onDeleteHabit: @escaping (Habit) -> Void,
         onEditHabit: @escaping (Habit) -> Void,
         onCreateHabit: @escaping () -> Void,
         onUpdateHabit: ((Habit) -> Void)? = nil
     ) {
-        self.habits = habits
+        self.state = state
         self.onDeleteHabit = onDeleteHabit
         self.onEditHabit = onEditHabit
         self.onCreateHabit = onCreateHabit
         self.onUpdateHabit = onUpdateHabit
-        self._habitsOrder = State(initialValue: habits)
+        self._habitsOrder = State(initialValue: state.habits)
+    }
+    
+    // Computed property for habits
+    private var habits: [Habit] {
+        state.habits
+    }
+    
+    // Update habitsOrder when state.habits changes
+    private func updateHabitsOrder() {
+        habitsOrder = state.habits
     }
     
     var body: some View {
@@ -696,37 +706,40 @@ struct HabitsTabView: View {
 }
 
 #Preview {
-    HabitsTabView(
-        habits: [
-            Habit(
-                name: "Read Books",
-                description: "Read at least one chapter every day",
-                icon: "📚",
-                color: .blue,
-                habitType: .formation,
-                schedule: "Everyday",
-                goal: "1 chapter",
-                reminder: "No reminder",
-                startDate: Date(),
-                endDate: nil,
-                isCompleted: false,
-                streak: 5
-            ),
-            Habit(
-                name: "Exercise",
-                description: "Work out for 30 minutes",
-                icon: "🏃‍♂️",
-                color: .green,
-                habitType: .formation,
-                schedule: "Weekdays",
-                goal: "30 minutes",
-                reminder: "No reminder",
-                startDate: Date().addingTimeInterval(-7*24*60*60), // 7 days ago
-                endDate: Date().addingTimeInterval(7*24*60*60), // 7 days from now
-                isCompleted: false,
-                streak: 3
-            )
-        ],
+    let mockState = HomeViewState()
+    mockState.habits = [
+        Habit(
+            name: "Read Books",
+            description: "Read at least one chapter every day",
+            icon: "📚",
+            color: .blue,
+            habitType: .formation,
+            schedule: "Everyday",
+            goal: "1 chapter",
+            reminder: "No reminder",
+            startDate: Date(),
+            endDate: nil,
+            isCompleted: false,
+            streak: 5
+        ),
+        Habit(
+            name: "Exercise",
+            description: "Work out for 30 minutes",
+            icon: "🏃‍♂️",
+            color: .green,
+            habitType: .formation,
+            schedule: "Weekdays",
+            goal: "30 minutes",
+            reminder: "No reminder",
+            startDate: Date().addingTimeInterval(-7*24*60*60), // 7 days ago
+            endDate: Date().addingTimeInterval(7*24*60*60), // 7 days from now
+            isCompleted: false,
+            streak: 3
+        )
+    ]
+    
+    return HabitsTabView(
+        state: mockState,
         onDeleteHabit: { _ in },
         onEditHabit: { _ in },
         onCreateHabit: { },

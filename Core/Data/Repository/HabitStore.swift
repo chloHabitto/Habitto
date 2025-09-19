@@ -21,6 +21,10 @@ final actor HabitStore {
     private let retentionManager = DataRetentionManager.shared
     private let historyCapper = HistoryCapper.shared
     
+    // CloudKit and conflict resolution
+    private let cloudKitSyncManager = CloudKitSyncManager.shared
+    private let conflictResolver = ConflictResolutionManager.shared
+    
     // Performance monitoring - these are safe to use from any context
     private let performanceMetrics = PerformanceMetrics.shared
     private let dataUsageAnalytics = DataUsageAnalytics.shared
@@ -46,37 +50,25 @@ final actor HabitStore {
             try? await retentionManager.performCleanup()
         }
         
-        do {
-            // Try SwiftData first, fallback to UserDefaults
-            let habits = try await swiftDataStorage.loadHabits()
-            
-            let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-            logger.info("Successfully loaded \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
-            
-            // Record performance metrics
-            await performanceMetrics.recordTiming("dataLoad", duration: timeElapsed)
-            await performanceMetrics.recordEvent(PerformanceEvent(
-                type: .dataLoad,
-                description: "Loaded \(habits.count) habits",
-                metadata: ["habit_count": "\(habits.count)"]
-            ))
-            
-            // Record data usage analytics
-            await dataUsageAnalytics.recordDataOperation(.habitLoad, size: Int64(habits.count * 1000))
-            
-            return habits
-            
-        } catch {
-            logger.warning("SwiftData failed, falling back to UserDefaults: \(error.localizedDescription)")
-            
-            // Fallback to UserDefaults
-            let habits = try await userDefaultsStorage.loadHabits()
-            
-            let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-            logger.info("Successfully loaded \(habits.count) habits from UserDefaults in \(String(format: "%.3f", timeElapsed))s")
-            
-            return habits
-        }
+        // Use UserDefaults directly since SwiftData/CoreData is not working
+        logger.info("HabitStore: Using UserDefaults storage directly...")
+        let habits = try await userDefaultsStorage.loadHabits()
+        
+        let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+        logger.info("Successfully loaded \(habits.count) habits from UserDefaults in \(String(format: "%.3f", timeElapsed))s")
+        
+        // Record performance metrics
+        await performanceMetrics.recordTiming("dataLoad", duration: timeElapsed)
+        await performanceMetrics.recordEvent(PerformanceEvent(
+            type: .dataLoad,
+            description: "Loaded \(habits.count) habits",
+            metadata: ["habit_count": "\(habits.count)"]
+        ))
+        
+        // Record data usage analytics
+        await dataUsageAnalytics.recordDataOperation(.habitLoad, size: Int64(habits.count * 1000))
+        
+        return habits
     }
     
     // MARK: - Save Habits
@@ -101,26 +93,22 @@ final actor HabitStore {
             let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
             if !criticalErrors.isEmpty {
                 logger.error("Critical validation errors found, aborting save")
+                logger.error("Critical errors: \(criticalErrors.map { "\($0.field): \($0.message)" })")
                 throw DataError.validation(ValidationError(
                     field: "habits",
                     message: "Critical validation errors found",
                     severity: .critical
                 ))
+            } else {
+                logger.info("Non-critical validation errors found, proceeding with save")
             }
+        } else {
+            logger.info("All habits passed validation")
         }
         
-        do {
-            // Try SwiftData first
-            try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
-            logger.info("Successfully saved to SwiftData")
-            
-        } catch {
-            logger.warning("SwiftData failed, falling back to UserDefaults: \(error.localizedDescription)")
-            
-            // Fallback to UserDefaults
-            try await userDefaultsStorage.saveHabits(cappedHabits, immediate: true)
-            logger.info("Successfully saved to UserDefaults")
-        }
+        // Use UserDefaults directly since SwiftData/CoreData is not working
+        try await userDefaultsStorage.saveHabits(cappedHabits, immediate: true)
+        logger.info("Successfully saved to UserDefaults")
         
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         logger.info("Successfully saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
@@ -144,26 +132,7 @@ final actor HabitStore {
     
     func createHabit(_ habit: Habit) async throws {
         logger.info("Creating habit: \(habit.name)")
-        
-        // Validate habit before creating
-        let validationResult = validationService.validateHabit(habit)
-        if !validationResult.isValid {
-            logger.warning("Validation failed for new habit")
-            for error in validationResult.errors {
-                logger.warning("  - \(error.field): \(error.message)")
-            }
-            
-            // If there are critical errors, don't create the habit
-            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
-            if !criticalErrors.isEmpty {
-                logger.error("Critical validation errors found, aborting habit creation")
-                throw DataError.validation(ValidationError(
-                    field: "habit",
-                    message: "Critical validation errors found",
-                    severity: .critical
-                ))
-            }
-        }
+        logger.info("Habit details - name: '\(habit.name)', goal: '\(habit.goal)', schedule: '\(habit.schedule)'")
         
         // Record user analytics
         await userAnalytics.recordEvent(.habitCreated, metadata: [
@@ -232,6 +201,7 @@ final actor HabitStore {
     
     func deleteHabit(_ habit: Habit) async throws {
         logger.info("Deleting habit: \(habit.name)")
+        print("🗑️ HabitStore: Starting delete for habit: \(habit.name)")
         
         // Record user analytics
         await userAnalytics.recordEvent(.featureUsed, metadata: [
@@ -242,12 +212,19 @@ final actor HabitStore {
         
         // Load current habits
         var currentHabits = try await loadHabits()
+        print("🗑️ HabitStore: Loaded \(currentHabits.count) habits before deletion")
+        
+        let originalCount = currentHabits.count
         currentHabits.removeAll { $0.id == habit.id }
+        let newCount = currentHabits.count
+        print("🗑️ HabitStore: Removed habit, count changed from \(originalCount) to \(newCount)")
         
         // Save updated habits
         try await saveHabits(currentHabits)
+        print("🗑️ HabitStore: Saved \(currentHabits.count) habits to storage")
         
         logger.info("Successfully deleted habit: \(habit.name)")
+        print("✅ HabitStore: Successfully deleted habit: \(habit.name)")
     }
     
     // MARK: - Set Progress
@@ -496,5 +473,48 @@ final actor HabitStore {
     /// Caps history for a specific habit
     func capHabitHistory(_ habit: Habit) -> Habit {
         return historyCapper.capHabitHistory(habit, using: retentionManager.currentPolicy)
+    }
+    
+    // MARK: - CloudKit Conflict Resolution
+    
+    /// Performs CloudKit sync with conflict resolution
+    func performCloudKitSync() async throws -> SyncResult {
+        logger.info("Starting CloudKit sync with conflict resolution")
+        
+        // Check if CloudKit is available
+        guard cloudKitSyncManager.isCloudKitAvailable() else {
+            logger.warning("CloudKit not available, skipping sync")
+            throw CloudKitError.notConfigured
+        }
+        
+        return try await cloudKitSyncManager.performFullSync()
+    }
+    
+    /// Resolves conflicts between two habits using field-level resolution
+    func resolveHabitConflict(_ localHabit: Habit, _ remoteHabit: Habit) -> Habit {
+        logger.info("Resolving conflict between local and remote habit: \(localHabit.name)")
+        return conflictResolver.resolveHabitConflict(localHabit, remoteHabit)
+    }
+    
+    /// Gets conflict resolution rules summary
+    func getConflictResolutionRules() -> String {
+        return conflictResolver.getRulesSummary()
+    }
+    
+    /// Adds a custom conflict resolution rule
+    func addConflictResolutionRule(_ rule: FieldConflictRule) {
+        conflictResolver.addCustomRule(rule)
+        logger.info("Added custom conflict resolution rule for field: \(rule.fieldName)")
+    }
+    
+    /// Removes a custom conflict resolution rule
+    func removeConflictResolutionRule(for fieldName: String) {
+        conflictResolver.removeCustomRule(for: fieldName)
+        logger.info("Removed custom conflict resolution rule for field: \(fieldName)")
+    }
+    
+    /// Validates conflict resolution rules
+    func validateConflictResolutionRules() -> [String] {
+        return conflictResolver.validateRules()
     }
 }

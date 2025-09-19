@@ -200,6 +200,24 @@ struct MoreTabView: View {
                 ]
             )
             
+            // Debug Section (only in debug builds)
+            #if DEBUG
+            settingsGroup(
+                title: "Debug",
+                items: [
+                    SettingItem(title: "Create Test Habit", value: nil, hasChevron: false, action: {
+                        state.createTestHabit()
+                    }),
+                    SettingItem(title: "Create Simple Test", value: nil, hasChevron: false, action: {
+                        state.createSimpleTestHabit()
+                    }),
+                    SettingItem(title: "Debug State", value: nil, hasChevron: false, action: {
+                        state.debugCurrentState()
+                    })
+                ]
+            )
+            #endif
+            
             // Version Information
             VStack(spacing: 0) {
                 Spacer()

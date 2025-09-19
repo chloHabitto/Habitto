@@ -49,14 +49,19 @@ class HomeViewState: ObservableObject {
         selectedDate = today
         print("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
         
+        // Debug the repository state
+        habitRepository.debugRepositoryState()
+        
+        
         // Subscribe to HabitRepository changes
         habitRepository.$habits
+            .receive(on: DispatchQueue.main) // Ensure UI updates on main thread
             .sink { [weak self] habits in
-                print("🔄 HomeViewState: Received \(habits.count) habits from HabitRepository")
                 self?.habits = habits
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+        
     }
     
     func updateHabits(_ newHabits: [Habit]) {
@@ -102,10 +107,14 @@ class HomeViewState: ObservableObject {
         print("🔍 HomeViewState: Habit ID: \(habit.id)")
         print("🔍 HomeViewState: Current habits count: \(habits.count)")
         
-        habitRepository.createHabit(habit)
+        debugHabitUpdate("Before creating habit")
         
-        print("🔍 HomeViewState: habitRepository.createHabit completed")
-        print("🔍 HomeViewState: Waiting for Core Data update notification...")
+        Task {
+            await habitRepository.createHabit(habit)
+            print("🔍 HomeViewState: habitRepository.createHabit completed")
+            
+            debugHabitUpdate("After creating habit")
+        }
     }
     
     func backupHabits() {
@@ -170,6 +179,72 @@ class HomeViewState: ObservableObject {
         }
         
         print("🔍 HomeViewState: === END DEBUG ===")
+    }
+    
+    // Debug method to track habit updates
+    func debugHabitUpdate(_ context: String) {
+        print("🔄 HomeViewState: \(context)")
+        print("  - Current habits count: \(habits.count)")
+        print("  - HabitRepository habits count: \(habitRepository.habits.count)")
+        print("  - Habits match: \(habits.count == habitRepository.habits.count)")
+    }
+    
+    // Test method to create a sample habit
+    func createTestHabit() {
+        print("🧪 HomeViewState: Creating test habit...")
+        let testHabit = Habit(
+            name: "Test Habit",
+            description: "This is a test habit",
+            icon: "🧪",
+            color: .blue,
+            habitType: .formation,
+            schedule: "Everyday",
+            goal: "1 time",
+            reminder: "No reminder",
+            startDate: Date(),
+            endDate: nil,
+            isCompleted: false,
+            streak: 0
+        )
+        
+        createHabit(testHabit)
+    }
+    
+    // Simple test method that bypasses validation
+    func createSimpleTestHabit() {
+        print("🧪 HomeViewState: Creating simple test habit...")
+        let testHabit = Habit(
+            name: "Simple Test",
+            description: "Simple test habit",
+            icon: "🧪",
+            color: .blue,
+            habitType: .formation,
+            schedule: "Everyday",
+            goal: "1 time",
+            reminder: "No reminder",
+            startDate: Date(),
+            endDate: nil,
+            isCompleted: false,
+            streak: 0
+        )
+        
+        print("🧪 HomeViewState: Created habit: \(testHabit.name) (ID: \(testHabit.id))")
+        
+        // Try to save directly to UserDefaults as a test
+        Task {
+            do {
+                let userDefaults = UserDefaults.standard
+                let encoded = try JSONEncoder().encode([testHabit])
+                userDefaults.set(encoded, forKey: "habits")
+                print("🧪 HomeViewState: Saved to UserDefaults directly")
+                
+                // Try to reload
+                await habitRepository.loadHabits(force: true)
+                print("🧪 HomeViewState: Reloaded habits, count: \(habitRepository.habits.count)")
+            } catch {
+                print("❌ HomeViewState: Failed to save simple test habit: \(error)")
+            }
+        }
     }
     
     // Force update selectedDate to today
@@ -266,7 +341,7 @@ struct HomeView: View {
                         ProgressTabView()
                     case .habits:
                         HabitsTabView(
-                            habits: state.habits,
+                            state: state,
                             onDeleteHabit: { habit in
                                 state.habitToDelete = habit
                                 state.showingDeleteConfirmation = true
@@ -298,6 +373,7 @@ struct HomeView: View {
         }
         .onAppear {
             print("🚀 HomeView: onAppear called!")
+            print("🚀 HomeView: This is a test log - if you see this, logging is working!")
             loadHabitsOptimized()
             
             // Add additional debugging

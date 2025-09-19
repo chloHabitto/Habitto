@@ -90,9 +90,15 @@ class HabitFormLogic {
         reminders: [ReminderItem]
     ) -> Habit {
         
+        print("🔍 HabitFormLogic: createHabit called")
+        print("🔍 HabitFormLogic: step1Data = \(step1Data)")
+        print("🔍 HabitFormLogic: goalNumber = \(goalNumber), goalUnit = \(goalUnit), goalFrequency = \(goalFrequency)")
+        
         // For habit building, use goal frequency; for habit breaking, use target frequency
         let scheduleFrequency = step1Data.4 == .formation ? goalFrequency : targetFrequency
         let calendarSchedule = convertGoalFrequencyToSchedule(scheduleFrequency)
+        
+        print("🔍 HabitFormLogic: scheduleFrequency = \(scheduleFrequency), calendarSchedule = \(calendarSchedule)")
         
         if step1Data.4 == .formation {
             // Habit Building
@@ -100,7 +106,7 @@ class HabitFormLogic {
             let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
             let goalString = "\(goalNumber) \(pluralizedUnit) on \(goalFrequency)"
             
-            return Habit(
+            let habit = Habit(
                 name: step1Data.0,
                 description: step1Data.1,
                 icon: step1Data.2,
@@ -113,13 +119,16 @@ class HabitFormLogic {
                 endDate: endDate,
                 reminders: reminders
             )
+            
+            print("🔍 HabitFormLogic: Created formation habit - name: \(habit.name), id: \(habit.id)")
+            return habit
         } else {
             // Habit Breaking
             let targetInt = Int(targetNumber) ?? 1
             let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
             let goalString = "\(targetNumber) \(targetPluralizedUnit) on \(targetFrequency)"
             
-            return Habit(
+            let habit = Habit(
                 name: step1Data.0,
                 description: step1Data.1,
                 icon: step1Data.2,
@@ -134,6 +143,9 @@ class HabitFormLogic {
                 baseline: Int(baselineNumber) ?? 0,
                 target: Int(targetNumber) ?? 0
             )
+            
+            print("🔍 HabitFormLogic: Created breaking habit - name: \(habit.name), id: \(habit.id)")
+            return habit
         }
     }
     

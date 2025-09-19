@@ -129,10 +129,7 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func loadHabits() async throws -> [Habit] {
-        // Check if migration is needed
-        if await migrationManager.needsMigration() {
-            try await migrationManager.executeMigrations()
-        }
+        // Migration is handled by HabitStore, not here
         
         // Performance optimization: Return cached result if available
         if let cached = cachedHabits {
