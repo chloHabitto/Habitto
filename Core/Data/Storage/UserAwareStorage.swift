@@ -192,4 +192,43 @@ class UserAwareStorage: HabitStorageProtocol {
         // For now, just log the request
         print("🔄 UserAwareStorage: Data migration requested from \(oldUserId) to \(newUserId)")
     }
+    
+    // MARK: - Guest Data Management
+    
+    /// Get the storage key for guest data
+    private func getGuestKey(_ baseKey: String) -> String {
+        return "guest_\(baseKey)"
+    }
+    
+    /// Save data as guest data (when user is not authenticated)
+    func saveAsGuest<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
+        let guestKey = getGuestKey(key)
+        try await baseStorage.save(data, forKey: guestKey, immediate: immediate)
+    }
+    
+    /// Load guest data
+    func loadGuestData<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
+        let guestKey = getGuestKey(key)
+        return try await baseStorage.load(type, forKey: guestKey)
+    }
+    
+    /// Check if guest data exists
+    func hasGuestData(forKey key: String) async throws -> Bool {
+        let guestKey = getGuestKey(key)
+        return try await baseStorage.exists(forKey: guestKey)
+    }
+    
+    /// Get all guest data keys
+    func getGuestDataKeys() async throws -> [String] {
+        return try await baseStorage.keys(withPrefix: "guest_")
+    }
+    
+    /// Clear all guest data
+    func clearGuestData() async throws {
+        let guestKeys = try await getGuestDataKeys()
+        for key in guestKeys {
+            try await baseStorage.delete(forKey: key)
+        }
+        print("🗑️ UserAwareStorage: Cleared all guest data")
+    }
 }
