@@ -13,8 +13,12 @@ final actor HabitStore {
     private lazy var validationService = DataValidationService()
     
     // Storage implementations
-    private let userDefaultsStorage = UserDefaultsStorage()
-    private let swiftDataStorage = SwiftDataStorage()
+    private let baseUserDefaultsStorage = UserDefaultsStorage()
+    private let baseSwiftDataStorage = SwiftDataStorage()
+    
+    // User-aware storage wrappers
+    private lazy var userDefaultsStorage = UserAwareStorage(baseStorage: baseUserDefaultsStorage)
+    private lazy var swiftDataStorage = UserAwareStorage(baseStorage: baseSwiftDataStorage)
     
     // Migration and retention
     private let migrationManager = DataMigrationManager.shared
