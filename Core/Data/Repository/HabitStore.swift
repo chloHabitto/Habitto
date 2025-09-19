@@ -16,6 +16,9 @@ final actor HabitStore {
     private let userDefaultsStorage = UserDefaultsStorage()
     private let swiftDataStorage = SwiftDataStorage()
     
+    // Migration
+    private let migrationManager = DataMigrationManager.shared
+    
     // Performance monitoring - these are safe to use from any context
     private let performanceMetrics = PerformanceMetrics.shared
     private let dataUsageAnalytics = DataUsageAnalytics.shared
@@ -30,6 +33,11 @@ final actor HabitStore {
     func loadHabits() async throws -> [Habit] {
         let startTime = CFAbsoluteTimeGetCurrent()
         logger.info("Loading habits from storage")
+        
+        // Check if migration is needed
+        if await migrationManager.needsMigration() {
+            try await migrationManager.executeMigrations()
+        }
         
         do {
             // Try SwiftData first, fallback to UserDefaults
