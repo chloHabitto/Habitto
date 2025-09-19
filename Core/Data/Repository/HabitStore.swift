@@ -16,8 +16,10 @@ final actor HabitStore {
     private let userDefaultsStorage = UserDefaultsStorage()
     private let swiftDataStorage = SwiftDataStorage()
     
-    // Migration
+    // Migration and retention
     private let migrationManager = DataMigrationManager.shared
+    private let retentionManager = DataRetentionManager.shared
+    private let historyCapper = HistoryCapper.shared
     
     // Performance monitoring - these are safe to use from any context
     private let performanceMetrics = PerformanceMetrics.shared
@@ -37,6 +39,11 @@ final actor HabitStore {
         // Check if migration is needed
         if await migrationManager.needsMigration() {
             try await migrationManager.executeMigrations()
+        }
+        
+        // Check if data retention cleanup is needed
+        if retentionManager.currentPolicy.autoCleanupEnabled {
+            try? await retentionManager.performCleanup()
         }
         
         do {
@@ -78,8 +85,12 @@ final actor HabitStore {
         let startTime = CFAbsoluteTimeGetCurrent()
         logger.info("Saving \(habits.count) habits to storage")
         
+        // Cap history data to prevent unlimited growth
+        let cappedHabits = historyCapper.capAllHabits(habits, using: retentionManager.currentPolicy)
+        logger.debug("History capping applied to \(habits.count) habits")
+        
         // Validate habits before saving
-        let validationResult = validationService.validateHabits(habits)
+        let validationResult = validationService.validateHabits(cappedHabits)
         if !validationResult.isValid {
             logger.warning("Validation failed with \(validationResult.errors.count) errors")
             for error in validationResult.errors {
@@ -100,14 +111,14 @@ final actor HabitStore {
         
         do {
             // Try SwiftData first
-            try await swiftDataStorage.saveHabits(habits, immediate: true)
+            try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
             logger.info("Successfully saved to SwiftData")
             
         } catch {
             logger.warning("SwiftData failed, falling back to UserDefaults: \(error.localizedDescription)")
             
             // Fallback to UserDefaults
-            try await userDefaultsStorage.saveHabits(habits, immediate: true)
+            try await userDefaultsStorage.saveHabits(cappedHabits, immediate: true)
             logger.info("Successfully saved to UserDefaults")
         }
         
@@ -449,5 +460,41 @@ final actor HabitStore {
         }
         
         logger.info("Cleanup completed")
+    }
+    
+    // MARK: - Data Retention Management
+    
+    /// Performs data retention cleanup
+    func performDataRetentionCleanup() async throws -> CleanupResult {
+        logger.info("Starting data retention cleanup")
+        return try await retentionManager.performCleanup()
+    }
+    
+    /// Updates the data retention policy
+    func updateRetentionPolicy(_ policy: DataRetentionPolicy) async throws {
+        logger.info("Updating data retention policy")
+        try await retentionManager.updatePolicy(policy)
+    }
+    
+    /// Gets the current data retention policy
+    func getRetentionPolicy() -> DataRetentionPolicy {
+        return retentionManager.currentPolicy
+    }
+    
+    /// Gets data size information for all habits
+    func getDataSizeInfo() async throws -> [UUID: DataSizeInfo] {
+        let habits = try await loadHabits()
+        var sizeInfo: [UUID: DataSizeInfo] = [:]
+        
+        for habit in habits {
+            sizeInfo[habit.id] = historyCapper.getHabitDataSize(habit)
+        }
+        
+        return sizeInfo
+    }
+    
+    /// Caps history for a specific habit
+    func capHabitHistory(_ habit: Habit) -> Habit {
+        return historyCapper.capHabitHistory(habit, using: retentionManager.currentPolicy)
     }
 }
