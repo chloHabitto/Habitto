@@ -16,6 +16,7 @@ class BackupManager: ObservableObject {
     private let logger = Logger(subsystem: "com.habitto.app", category: "BackupManager")
     private let fileManager = FileManager.default
     private let userDefaults = UserDefaults.standard
+    private let authManager = AuthenticationManager.shared
     
     // MARK: - Configuration
     private let maxBackups = 10 // Keep last 10 backups
@@ -26,10 +27,24 @@ class BackupManager: ObservableObject {
     private let lastBackupKey = "LastBackupDate"
     private let backupCountKey = "BackupCount"
     
+    // MARK: - User-Specific Keys
+    private func getUserSpecificKey(_ baseKey: String) -> String {
+        let userId = getCurrentUserId()
+        return "\(userId)_\(baseKey)"
+    }
+    
+    private func getCurrentUserId() -> String {
+        if let user = authManager.currentUser {
+            return user.uid
+        }
+        return "guest_user"
+    }
+    
     private init() {
-        // Create backup directory
+        // Create user-specific backup directory
         let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        backupDirectory = documentsPath.appendingPathComponent("Backups")
+        let userId = authManager.currentUser?.uid ?? "guest_user"
+        backupDirectory = documentsPath.appendingPathComponent("Backups").appendingPathComponent(userId)
         
         // Ensure backup directory exists
         try? fileManager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
@@ -51,8 +66,12 @@ class BackupManager: ObservableObject {
         // Update metadata
         lastBackupDate = snapshot.createdAt
         backupCount += 1
-        userDefaults.set(lastBackupDate, forKey: lastBackupKey)
-        userDefaults.set(backupCount, forKey: backupCountKey)
+        
+        let userLastBackupKey = getUserSpecificKey(lastBackupKey)
+        let userBackupCountKey = getUserSpecificKey(backupCountKey)
+        
+        userDefaults.set(lastBackupDate, forKey: userLastBackupKey)
+        userDefaults.set(backupCount, forKey: userBackupCountKey)
         
         // Clean up old backups
         try await cleanupOldBackups()
@@ -169,7 +188,8 @@ class BackupManager: ObservableObject {
         
         // Update backup info
         lastBackupDate = snapshot.createdAt
-        userDefaults.set(lastBackupDate, forKey: lastBackupKey)
+        let userLastBackupKey = getUserSpecificKey(lastBackupKey)
+        userDefaults.set(lastBackupDate, forKey: userLastBackupKey)
     }
     
     private func cleanupOldBackups() async throws {
@@ -185,8 +205,11 @@ class BackupManager: ObservableObject {
     }
     
     private func loadBackupInfo() {
-        lastBackupDate = userDefaults.object(forKey: lastBackupKey) as? Date
-        backupCount = userDefaults.integer(forKey: backupCountKey)
+        let userLastBackupKey = getUserSpecificKey(lastBackupKey)
+        let userBackupCountKey = getUserSpecificKey(backupCountKey)
+        
+        lastBackupDate = userDefaults.object(forKey: userLastBackupKey) as? Date
+        backupCount = userDefaults.integer(forKey: userBackupCountKey)
     }
     
     private func loadAvailableBackups() {

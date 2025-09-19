@@ -1,6 +1,7 @@
 import CoreData
 import SwiftUI
 import UserNotifications
+import Combine
 
 // MARK: - Temporary Core Data Entity Stubs (Missing from model)
 // These are temporary stubs until the Core Data model is restored
@@ -136,6 +137,12 @@ class HabitRepository: ObservableObject {
     // Use the new HabitStore actor for all data operations
     private let habitStore = HabitStore.shared
     
+    // Authentication manager for user change monitoring
+    private let authManager = AuthenticationManager.shared
+    
+    // Combine cancellables for subscriptions
+    private var cancellables = Set<AnyCancellable>()
+    
     // Defer CloudKit initialization to avoid crashes
     private lazy var cloudKitManager = CloudKitManager.shared
     private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
@@ -158,6 +165,9 @@ class HabitRepository: ObservableObject {
         Task { @MainActor in
             await self.initializeCloudKitSafely()
         }
+        
+        // Monitor authentication state changes
+        setupUserChangeMonitoring()
         
         print("✅ HabitRepository: Initialization completed")
     }
@@ -182,6 +192,39 @@ class HabitRepository: ObservableObject {
             name: UIApplication.didBecomeActiveNotification,
             object: nil
         )
+    }
+    
+    // MARK: - User Change Monitoring
+    private func setupUserChangeMonitoring() {
+        // Monitor authentication state changes
+        authManager.$authState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] authState in
+                Task { @MainActor in
+                    await self?.handleUserChange(authState)
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleUserChange(_ authState: AuthenticationState) async {
+        switch authState {
+        case .authenticated(let user):
+            print("🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), reloading data...")
+            await loadHabits(force: true)
+            print("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
+            
+        case .unauthenticated:
+            print("🔄 HabitRepository: User signed out, clearing data...")
+            habits = []
+            print("✅ HabitRepository: Data cleared for signed out user")
+            
+        case .authenticating:
+            print("🔄 HabitRepository: User authenticating, keeping current data...")
+            
+        case .error(let error):
+            print("❌ HabitRepository: Authentication error: \(error)")
+        }
     }
     
     // MARK: - App Lifecycle Handling
