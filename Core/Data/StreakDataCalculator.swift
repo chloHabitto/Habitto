@@ -16,10 +16,12 @@ class StreakDataCalculator {
     private static let cacheManager = CacheManager<String, [(intensity: Int, isScheduled: Bool, completionPercentage: Double)]>(maxCacheSize: 50, expirationInterval: 300, cleanupInterval: 60)
     
     // MARK: - Best Streak Calculation
+    /// Calculates the best streak from habit history, excluding vacation days
     static func calculateBestStreakFromHistory(for habit: Habit) -> Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let startDate = habit.startDate
+        let vacationManager = VacationManager.shared
         
         var maxStreak = 0
         var currentStreak = 0
@@ -27,6 +29,13 @@ class StreakDataCalculator {
         
         // Iterate through all dates from habit start to today
         while currentDate <= today {
+            // Skip vacation days - they don't count toward or break streaks
+            if vacationManager.isVacationDay(currentDate) {
+                // Move to next day without affecting streak
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+                continue
+            }
+            
             if habit.isCompleted(for: currentDate) {
                 currentStreak += 1
                 maxStreak = max(maxStreak, currentStreak)
@@ -66,8 +75,11 @@ class StreakDataCalculator {
         let totalBestStreak = habits.reduce(0) { $0 + calculateBestStreakFromHistory(for: $1) }
         let averageStreak = totalBestStreak / habits.count
         
-        // Calculate completion rate
-        let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
+        // Calculate completion rate (exclude vacation days)
+        let vacationManager = VacationManager.shared
+        let completedHabitsToday = habits.filter { 
+            !vacationManager.isVacationDay(today) && $0.isCompleted(for: today) 
+        }.count
         let completionRate = (completedHabitsToday * 100) / habits.count
         
         // Calculate consistency rate
@@ -83,15 +95,20 @@ class StreakDataCalculator {
     }
     
     private static func calculateConsistencyRate(for habits: [Habit], calendar: Calendar, today: Date) -> Int {
+        let vacationManager = VacationManager.shared
         let last7Days = (0..<7).compactMap { dayOffset in
             calendar.date(byAdding: .day, value: -dayOffset, to: today)
         }
         
-        let totalCompletions = last7Days.reduce(0) { total, date in
+        // Filter out vacation days from the calculation
+        let nonVacationDays = last7Days.filter { !vacationManager.isVacationDay($0) }
+        
+        let totalCompletions = nonVacationDays.reduce(0) { total, date in
             total + habits.filter { $0.isCompleted(for: date) }.count
         }
         
-        let totalPossible = habits.count * 7
+        // Only count non-vacation days in the total possible
+        let totalPossible = habits.count * nonVacationDays.count
         return totalPossible > 0 ? (totalCompletions * 100) / totalPossible : 0
     }
     
