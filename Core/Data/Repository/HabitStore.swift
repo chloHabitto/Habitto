@@ -57,12 +57,12 @@ final actor HabitStore {
             try? await retentionManager.performCleanup()
         }
         
-        // Use UserDefaults directly since SwiftData/CoreData is not working
-        logger.info("HabitStore: Using UserDefaults storage directly...")
-        let habits = try await userDefaultsStorage.loadHabits()
+        // Use SwiftData for modern persistence
+        logger.info("HabitStore: Using SwiftData storage...")
+        let habits = try await swiftDataStorage.loadHabits()
         
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-        logger.info("Successfully loaded \(habits.count) habits from UserDefaults in \(String(format: "%.3f", timeElapsed))s")
+        logger.info("Successfully loaded \(habits.count) habits from SwiftData in \(String(format: "%.3f", timeElapsed))s")
         
         // Record performance metrics
         await performanceMetrics.recordTiming("dataLoad", duration: timeElapsed)
@@ -113,9 +113,9 @@ final actor HabitStore {
             logger.info("All habits passed validation")
         }
         
-        // Use UserDefaults directly since SwiftData/CoreData is not working
-        try await userDefaultsStorage.saveHabits(cappedHabits, immediate: true)
-        logger.info("Successfully saved to UserDefaults")
+        // Use SwiftData for modern persistence
+        try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
+        logger.info("Successfully saved to SwiftData")
         
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         logger.info("Successfully saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
@@ -228,8 +228,8 @@ final actor HabitStore {
         // Save updated habits (complete array)
         try await saveHabits(currentHabits)
         
-        // Also delete the individual habit item from UserDefaults
-        try await userDefaultsStorage.deleteHabit(id: habit.id)
+        // Also delete the individual habit item from SwiftData
+        try await swiftDataStorage.deleteHabit(id: habit.id)
         
         logger.info("Successfully deleted habit: \(habit.name)")
     }
@@ -530,9 +530,6 @@ final actor HabitStore {
     /// Clears all habits and associated data (for account deletion)
     func clearAllHabits() async throws {
         logger.info("Clearing all habits for account deletion")
-        
-        // Clear from UserDefaults storage
-        try await userDefaultsStorage.clearAllHabits()
         
         // Clear from SwiftData storage
         try await swiftDataStorage.clearAllHabits()

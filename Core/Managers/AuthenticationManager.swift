@@ -359,24 +359,40 @@ class AuthenticationManager: ObservableObject {
             return
         }
         
-        // Delete the Firebase user account
-        user.delete { [weak self] error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("❌ AuthenticationManager: Failed to delete account: \(error.localizedDescription)")
-                    completion(.failure(error))
-                } else {
-                    print("✅ AuthenticationManager: Account deleted successfully")
-                    
-                    // Clear local state
-                    self?.authState = .unauthenticated
-                    self?.currentUser = nil
-                    
-                    // Clear sensitive data from Keychain
-                    KeychainManager.shared.clearAuthenticationData()
-                    print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
-                    
-                    completion(.success(()))
+        // First, try to re-authenticate the user to ensure we have a fresh token
+        print("🔐 AuthenticationManager: Re-authenticating user before account deletion")
+        user.reload { [weak self] error in
+            if let error = error {
+                print("❌ AuthenticationManager: Failed to reload user: \(error.localizedDescription)")
+                // Continue with deletion attempt anyway - some errors might not prevent deletion
+            }
+            
+            // Delete the Firebase user account
+            user.delete { [weak self] deleteError in
+                DispatchQueue.main.async {
+                    if let deleteError = deleteError {
+                        print("❌ AuthenticationManager: Failed to delete account: \(deleteError.localizedDescription)")
+                        
+                        // Check if it's an authentication error
+                        let nsError = deleteError as NSError
+                        if nsError.code == 17014 || nsError.localizedDescription.contains("requires recent authentication") {
+                            completion(.failure(NSError(domain: "AuthenticationManager", code: 17014, userInfo: [NSLocalizedDescriptionKey: "This operation requires recent authentication. Please sign out and sign in again, then try deleting your account."])))
+                        } else {
+                            completion(.failure(deleteError))
+                        }
+                    } else {
+                        print("✅ AuthenticationManager: Account deleted successfully")
+                        
+                        // Clear local state
+                        self?.authState = .unauthenticated
+                        self?.currentUser = nil
+                        
+                        // Clear sensitive data from Keychain
+                        KeychainManager.shared.clearAuthenticationData()
+                        print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
+                        
+                        completion(.success(()))
+                    }
                 }
             }
         }

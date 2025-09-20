@@ -122,7 +122,9 @@ struct SecurityView: View {
                             style: .fillDestructive,
                             content: .text("Delete Account"),
                             action: {
+                                print("🗑️ SecurityView: Delete Account button tapped")
                                 showingDeleteAccountConfirmation = true
+                                print("🗑️ SecurityView: showingDeleteAccountConfirmation set to \(showingDeleteAccountConfirmation)")
                             }
                         )
                     }
@@ -138,7 +140,8 @@ struct SecurityView: View {
             PersonalInformationView()
         }
         .sheet(isPresented: $showingDeleteAccountConfirmation) {
-            AccountDeletionConfirmationView()
+            print("🗑️ SecurityView: Presenting AccountDeletionConfirmationView")
+            return AccountDeletionConfirmationView()
         }
         .background(Color.surface2)
         .navigationBarHidden(true)

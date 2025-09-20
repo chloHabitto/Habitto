@@ -4,6 +4,7 @@ import Foundation
 enum StorageType {
     case userDefaults
     case coreData
+    case swiftData
     case cloudKit
 }
 
@@ -24,6 +25,8 @@ class StorageFactory {
             return UserDefaultsStorage()
         case .coreData:
             return CoreDataStorage()
+        case .swiftData:
+            return SwiftDataStorage()
         case .cloudKit:
             // For now, return UserDefaults as CloudKit is not fully implemented
             return UserDefaultsStorage()
@@ -42,9 +45,13 @@ class StorageFactory {
     /// Get the recommended storage type based on app configuration
     /// - Returns: The recommended storage type
     func getRecommendedStorageType() -> StorageType {
-        // For now, always use UserDefaults as it's the most stable
-        // In the future, this could check for Core Data availability, user preferences, etc.
-        return .userDefaults
+        // Use SwiftData as the recommended storage type for modern iOS apps
+        // Fall back to UserDefaults if SwiftData is not available
+        if isStorageTypeAvailable(.swiftData) {
+            return .swiftData
+        } else {
+            return .userDefaults
+        }
     }
     
     /// Check if a storage type is available
@@ -56,6 +63,8 @@ class StorageFactory {
             return true // UserDefaults is always available
         case .coreData:
             return CoreDataManager.shared.checkCoreDataHealth()
+        case .swiftData:
+            return true // SwiftData is available on iOS 17+
         case .cloudKit:
             return true // For now, assume CloudKit is available
         }
@@ -111,6 +120,8 @@ extension StorageType: CaseIterable {
             return "userDefaults"
         case .coreData:
             return "coreData"
+        case .swiftData:
+            return "swiftData"
         case .cloudKit:
             return "cloudKit"
         }
@@ -122,6 +133,8 @@ extension StorageType: CaseIterable {
             self = .userDefaults
         case "coreData":
             self = .coreData
+        case "swiftData":
+            self = .swiftData
         case "cloudKit":
             self = .cloudKit
         default:
@@ -135,6 +148,8 @@ extension StorageType: CaseIterable {
             return "UserDefaults"
         case .coreData:
             return "Core Data"
+        case .swiftData:
+            return "SwiftData"
         case .cloudKit:
             return "CloudKit"
         }
@@ -146,6 +161,8 @@ extension StorageType: CaseIterable {
             return "Simple key-value storage, good for small amounts of data"
         case .coreData:
             return "Advanced object graph persistence, good for complex relationships"
+        case .swiftData:
+            return "Modern Swift-native persistence framework with type safety"
         case .cloudKit:
             return "Cloud-based storage with automatic sync across devices"
         }
