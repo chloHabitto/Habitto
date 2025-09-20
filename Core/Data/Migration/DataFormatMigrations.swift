@@ -15,7 +15,7 @@ struct AddHabitCreationDateMigration: MigrationStep {
             return .skipped(reason: "Migration already completed")
         }
 
-        let userDefaultsStorage = await UserDefaultsStorage()
+        let userDefaultsStorage = UserDefaultsStorage()
 
         let habits = try await userDefaultsStorage.loadHabits()
         var updatedHabits: [Habit] = []
@@ -62,7 +62,7 @@ struct NormalizeHabitGoalMigration: MigrationStep {
             return .skipped(reason: "Migration already completed")
         }
 
-        let userDefaultsStorage = await UserDefaultsStorage()
+        let userDefaultsStorage = UserDefaultsStorage()
         var updatedCount = 0
 
         let habits = try await userDefaultsStorage.loadHabits()
@@ -138,7 +138,7 @@ struct CleanUpInvalidDataMigration: MigrationStep {
             return .skipped(reason: "Cleanup already completed")
         }
 
-        let userDefaultsStorage = await UserDefaultsStorage()
+        let userDefaultsStorage = UserDefaultsStorage()
         var habits = try await userDefaultsStorage.loadHabits()
         let originalCount = habits.count
         
