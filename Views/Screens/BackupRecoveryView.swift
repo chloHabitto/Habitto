@@ -1,13 +1,22 @@
 import SwiftUI
+import Foundation
 
 struct BackupRecoveryView: View {
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var backupManager = BackupManager.shared
+    @StateObject private var backupScheduler = BackupScheduler.shared
+    @StateObject private var backupCoordinator = BackupStorageCoordinator.shared
+    @StateObject private var notificationService = BackupNotificationService.shared
+    @StateObject private var settingsManager = BackupSettingsManager.shared
+    
     @State private var isAutomaticBackupEnabled = false
     @State private var backupFrequency = "Daily"
-    @State private var includePhotos = false
     @State private var wifiOnlyBackup = true
+    @State private var isBackingUp = false
+    @State private var showingBackupList = false
     
     let backupFrequencies = ["Daily", "Weekly", "Monthly", "Manual Only"]
+    @State private var showingTestingView = false
     
     var body: some View {
         NavigationView {
@@ -42,90 +51,100 @@ struct BackupRecoveryView: View {
                                         .font(.system(size: 14, weight: .regular))
                                         .foregroundColor(.text03)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                                 
-                                HStack {
-                                    Toggle("", isOn: $isAutomaticBackupEnabled)
-                                        .toggleStyle(SwitchToggleStyle(tint: .green500))
-                                }
-                                .fixedSize(horizontal: true, vertical: false)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
+                                Toggle("", isOn: $isAutomaticBackupEnabled)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .onChange(of: isAutomaticBackupEnabled) {
+                                        Task {
+                                            await saveBackupSettings()
+                                        }
+                                    }
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)
-                            .background(Color.surface)
+                            .background(Color.white)
+                            .cornerRadius(12)
                             
+                            // Backup Frequency (shown when automatic backup is enabled)
                             if isAutomaticBackupEnabled {
-                                Divider()
-                                    .padding(.leading, 56)
-                                
-                                // Backup Frequency
-                                HStack {
-                                    Image("Icon-Clock_Filled")
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.navy200)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Backup Frequency")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.text01)
-                                        Text("How often to backup your data")
-                                            .font(.system(size: 14, weight: .regular))
-                                            .foregroundColor(.text03)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Picker("Frequency", selection: $backupFrequency) {
-                                        ForEach(backupFrequencies, id: \.self) { frequency in
-                                            Text(frequency).tag(frequency)
+                                VStack(spacing: 0) {
+                                    HStack {
+                                        Image("Icon-Calendar_Filled")
+                                            .renderingMode(.template)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 24, height: 24)
+                                            .foregroundColor(.navy200)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Backup Frequency")
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.text01)
+                                            Text("How often to backup your data")
+                                                .font(.system(size: 14, weight: .regular))
+                                                .foregroundColor(.text03)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Picker("Frequency", selection: $backupFrequency) {
+                                            ForEach(backupFrequencies, id: \.self) { frequency in
+                                                Text(frequency).tag(frequency)
+                                            }
+                                        }
+                                        .pickerStyle(MenuPickerStyle())
+                                        .onChange(of: backupFrequency) {
+                                            Task {
+                                                await saveBackupSettings()
+                                            }
                                         }
                                     }
-                                    .pickerStyle(MenuPickerStyle())
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
                                 }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                
-                                Divider()
-                                    .padding(.leading, 56)
-                                
-                                // WiFi Only Backup
-                                HStack {
-                                    Image("Icon-Wifi_Filled")
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 24, height: 24)
-                                        .foregroundColor(.navy200)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("WiFi Only")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.text01)
-                                        Text("Only backup when connected to WiFi")
-                                            .font(.system(size: 14, weight: .regular))
-                                            .foregroundColor(.text03)
+                                .padding(.top, 12)
+                            }
+                            
+                            // WiFi Only Toggle (shown when automatic backup is enabled)
+                            if isAutomaticBackupEnabled {
+                                VStack(spacing: 0) {
+                                    HStack {
+                                        Image(systemName: "wifi")
+                                            .renderingMode(.template)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 24, height: 24)
+                                            .foregroundColor(.navy200)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("WiFi Only")
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.text01)
+                                            Text("Only backup when connected to WiFi")
+                                                .font(.system(size: 14, weight: .regular))
+                                                .foregroundColor(.text03)
+                                        }
+                                        
+                                        Toggle("", isOn: $wifiOnlyBackup)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .onChange(of: wifiOnlyBackup) {
+                                                Task {
+                                                    await saveBackupSettings()
+                                                }
+                                            }
                                     }
-                                    
-                                    Spacer()
-                                    
-                                    Toggle("", isOn: $wifiOnlyBackup)
-                                        .toggleStyle(SwitchToggleStyle(tint: .green500))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
                                 }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
+                                .padding(.top, 12)
                             }
                         }
-                        .cornerRadius(16)
-                        .padding(.horizontal, 20)
                         
-                        // Backup Status
+                        // Backup Status Section
                         VStack(spacing: 0) {
                             HStack {
                                 Image("Icon-Archive_Filled")
@@ -139,33 +158,152 @@ struct BackupRecoveryView: View {
                                     Text("Last Backup")
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.text01)
-                                    Text("Never backed up")
+                                    Text(backupManager.lastBackupDate?.formatted() ?? "Never")
                                         .font(.system(size: 14, weight: .regular))
                                         .foregroundColor(.text03)
                                 }
                                 
                                 Spacer()
                                 
-                                Text("Backup Now")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.green500)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.green500.opacity(0.1))
-                                    .cornerRadius(8)
+                                Button("View All") {
+                                    showingBackupList = true
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.navy200)
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)
-                            .background(Color.surface)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            
+                            // Backup Now Button
+                            Button(action: {
+                                Task {
+                                    await performBackup()
+                                }
+                            }) {
+                                HStack {
+                                    if isBackingUp {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Image("Icon-RefreshSquare2_Filled")
+                                            .renderingMode(.template)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.white)
+                                    }
+                                    
+                                    Text(isBackingUp ? "Backing Up..." : "Backup Now")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.primary)
+                                .cornerRadius(12)
+                            }
+                            .disabled(isBackingUp)
+                            .padding(.top, 12)
+                            
+                            // Testing Section
+                            VStack(spacing: 0) {
+                                HStack {
+                                    Image(systemName: "testtube.2")
+                                        .foregroundColor(.blue)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("System Testing")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.text01)
+                                        
+                                        Text("Run comprehensive backup system tests")
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(.text03)
+                                    }
+                                    
+                                    Button("Test") {
+                                        showingTestingView = true
+                                    }
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.navy200)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                            }
+                            .padding(.top, 12)
                         }
-                        .cornerRadius(16)
-                        .padding(.horizontal, 20)
                     }
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100)
                 }
-                .background(Color.surface2)
             }
+            .navigationBarHidden(true)
+            .onAppear {
+                loadBackupSettings()
+            }
+            .sheet(isPresented: $showingBackupList) {
+                BackupListView()
+            }
+            .sheet(isPresented: $showingTestingView) {
+                BackupTestingView()
+            }
+            .backupNotifications()
             .background(Color.surface2)
+        }
+    }
+    
+    private func loadBackupSettings() {
+        let config = BackupScheduler.loadScheduleConfig()
+        isAutomaticBackupEnabled = config.isEnabled
+        backupFrequency = config.frequency.displayName
+        wifiOnlyBackup = config.networkCondition == NetworkCondition.wifiOnly
+    }
+    
+    private func saveBackupSettings() async {
+        let frequency: BackupFrequency = {
+            switch backupFrequency {
+            case "Daily": return .daily
+            case "Weekly": return .weekly
+            case "Monthly": return .monthly
+            default: return .manual
+            }
+        }()
+        
+        backupScheduler.updateSchedule(
+            isEnabled: isAutomaticBackupEnabled,
+            frequency: frequency,
+            networkCondition: wifiOnlyBackup ? NetworkCondition.wifiOnly : NetworkCondition.any
+        )
+        
+        // Show notification for settings change
+        notificationService.showSettingsChanged()
+    }
+    
+    private func performBackup() async {
+        isBackingUp = true
+        
+        do {
+            let result = try await backupManager.createBackup()
+            
+            await MainActor.run {
+                notificationService.showBackupSuccess(
+                    backupSize: result.formattedSize,
+                    habitCount: result.habitCount
+                )
+            }
+        } catch {
+            await MainActor.run {
+                notificationService.showBackupFailure(error: error)
+            }
+        }
+        
+        await MainActor.run {
+            isBackingUp = false
         }
     }
 }
