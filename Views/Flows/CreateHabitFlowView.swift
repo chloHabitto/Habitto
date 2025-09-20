@@ -34,7 +34,71 @@ struct CreateHabitFlowView: View {
     
     var body: some View {
         Group {
-            if currentStep == 1 {
+            if VacationManager.shared.isActive {
+                // Vacation mode blocking view with enhanced feedback
+                VStack(spacing: 24) {
+                    // Animated vacation icon
+                    Image("Icon-Vacation_Filled")
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.blue)
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: VacationManager.shared.isActive)
+                        .onAppear {
+                            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                                // Animation will be handled by the scaleEffect
+                            }
+                        }
+                    
+                    VStack(spacing: 12) {
+                        Text("Vacation Mode Active")
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                        
+                        Text("Habit creation is paused during vacation mode. You can create new habits when vacation mode ends.")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                    
+                    // Enhanced close button with haptic feedback
+                    Button(action: {
+                        // Add haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        dismiss()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("Close")
+                                .font(.appBodyMediumEmphasised)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.blue, Color.blue.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(Capsule())
+                        .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [Color.surface, Color.surface.opacity(0.8)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            } else if currentStep == 1 {
                 CreateHabitStep1View(
                     name: $name,
                     description: $description,

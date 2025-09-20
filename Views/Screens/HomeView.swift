@@ -98,6 +98,12 @@ class HomeViewState: ObservableObject {
     }
     
     func createHabit(_ habit: Habit) {
+        // Check if vacation mode is active
+        if VacationManager.shared.isActive {
+            print("🚫 HomeViewState: Cannot create habit during vacation mode")
+            return
+        }
+        
         print("🔍 HomeViewState: createHabit called for habit: \(habit.name)")
         print("🔍 HomeViewState: Habit ID: \(habit.id)")
         print("🔍 HomeViewState: Current habits count: \(habits.count)")
