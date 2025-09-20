@@ -151,7 +151,7 @@ final class AtomicStorageWrapper<T: HabitStorageProtocol>: HabitStorageProtocol,
     
     // MARK: - HabitStorageProtocol Implementation
     
-    func save<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
+    func save<U: Codable>(_ data: U, forKey key: String, immediate: Bool = false) async throws {
         logger.debug("Saving data atomically for key: \(key)")
         
         do {
@@ -166,7 +166,7 @@ final class AtomicStorageWrapper<T: HabitStorageProtocol>: HabitStorageProtocol,
         }
     }
     
-    func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
+    func load<U: Codable>(_ type: U.Type, forKey key: String) async throws -> U? {
         logger.debug("Loading data for key: \(key)")
         
         do {
