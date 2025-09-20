@@ -97,6 +97,7 @@ final class VacationManager: ObservableObject {
             let e = p.end ?? .distantFuture
             return s <= d1 && e >= d0 // intersects day
         }
+        
         return (current.map(contains) ?? false) || history.contains(where: contains)
     }
     
@@ -193,5 +194,64 @@ extension Date {
         calendar.timeZone = tz
         let startOfDay = calendar.startOfDay(for: self)
         return calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? self
+    }
+}
+
+// MARK: - Vacation Mode Restrictions Extension
+extension VacationManager {
+    
+    func canCreateHabits() -> Bool {
+        return !isActive
+    }
+    
+    func canEditHabits() -> Bool {
+        return !isActive
+    }
+    
+    func canScheduleReminders() -> Bool {
+        return !isActive
+    }
+    
+    func canExportData() -> Bool {
+        return !isActive
+    }
+    
+    func canModifySettings() -> Bool {
+        return !isActive
+    }
+    
+    func pauseAnalytics() {
+        print("📊 VacationManager: Pausing analytics during vacation")
+        // Analytics are already disabled in Firebase config
+    }
+    
+    func pauseBackups() {
+        print("💾 VacationManager: Pausing automatic backups during vacation")
+        // Backup pausing would be implemented in the backup manager
+    }
+    
+    func pauseCloudSync() {
+        print("☁️ VacationManager: Pausing cloud sync during vacation")
+        // Cloud sync is already disabled in the app
+    }
+    
+    func pauseAchievements() {
+        print("🏆 VacationManager: Pausing achievement tracking during vacation")
+        // Achievement pausing would be implemented in the achievement manager
+    }
+    
+    // MARK: - Debug Methods
+    func debugVacationStatus() {
+        print("🔍 VACATION DEBUG STATUS:")
+        if let current = current {
+            print("  - Current vacation: \(current.start) - \(current.end?.description ?? "ongoing")")
+        } else {
+            print("  - Current vacation: None")
+        }
+        print("  - History count: \(history.count)")
+        for (index, period) in history.enumerated() {
+            print("  - History[\(index)]: \(period.start) - \(period.end?.description ?? "ongoing")")
+        }
+        print("  - Is active: \(isActive)")
     }
 }

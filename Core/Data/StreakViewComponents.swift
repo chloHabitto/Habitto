@@ -430,13 +430,13 @@ struct HeatmapCellView: View {
                     .frame(width: size, height: size)
                 
                 if isVacationDay {
-                    // Show vacation day styling
+                    // Show vacation day styling - prominent blue fill
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.blue.opacity(0.3))
+                        .fill(Color.blue.opacity(0.4))
                         .frame(width: cellSize, height: cellSize)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.blue.opacity(0.6), lineWidth: 2)
+                                .stroke(Color.blue.opacity(0.7), lineWidth: 1)
                                 .frame(width: cellSize, height: cellSize)
                         )
                 } else if isScheduled {
