@@ -309,11 +309,21 @@ class AuthenticationManager: ObservableObject {
         changeRequest.displayName = displayName
         changeRequest.photoURL = photoURL
         
-        changeRequest.commitChanges { error in
+        changeRequest.commitChanges { [weak self] error in
             DispatchQueue.main.async {
                 if let error = error {
                     completion(.failure(error))
                 } else {
+                    // Profile updated successfully, refresh the current user
+                    user.reload { [weak self] error in
+                        if let error = error {
+                            print("⚠️ AuthenticationManager: Failed to reload user after profile update: \(error.localizedDescription)")
+                        } else {
+                            print("✅ AuthenticationManager: Successfully reloaded user after profile update")
+                            // Update our currentUser property with the refreshed user data
+                            self?.currentUser = user
+                        }
+                    }
                     completion(.success(()))
                 }
             }

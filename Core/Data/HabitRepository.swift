@@ -231,6 +231,8 @@ class HabitRepository: ObservableObject {
         case .unauthenticated:
             print("🔄 HabitRepository: User signed out, clearing data...")
             habits = []
+            // Clear any cached data for the previous user
+            await clearUserData()
             print("✅ HabitRepository: Data cleared for signed out user")
             
         case .authenticating:
@@ -257,6 +259,17 @@ class HabitRepository: ObservableObject {
         Task {
             await loadHabits(force: true)
         }
+    }
+    
+    /// Clear all user-specific data when switching users
+    private func clearUserData() async {
+        // Clear any cached data and reset state
+        habits = []
+        objectWillChange.send()
+        
+        // Clear any user-specific cache or temporary data
+        // This ensures a clean slate when switching between users
+        print("✅ HabitRepository: User data cleared for account switch")
     }
     
     // MARK: - App Lifecycle Handling

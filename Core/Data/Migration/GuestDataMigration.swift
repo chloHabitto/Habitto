@@ -79,20 +79,25 @@ final class GuestDataMigration: ObservableObject {
             // Step 1: Migrate habits data
             migrationStatus = "Migrating habits..."
             migrationProgress = 0.2
-            try await migrateGuestHabits(to: currentUser.uid)
+            let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
             
             // Step 2: Migrate backup files
             migrationStatus = "Migrating backups..."
-            migrationProgress = 0.6
+            migrationProgress = 0.4
             try await migrateGuestBackups(to: currentUser.uid)
             
-            // Step 3: Mark migration as complete
+            // Step 3: Save to cloud storage for cross-device sync
+            migrationStatus = "Syncing to cloud..."
+            migrationProgress = 0.6
+            try await syncMigratedDataToCloud(migratedHabits)
+            
+            // Step 4: Mark migration as complete
             migrationStatus = "Finalizing migration..."
             migrationProgress = 0.9
             let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
             userDefaults.set(true, forKey: migrationKey)
             
-            // Step 4: Clean up guest data (optional - we'll keep it for safety)
+            // Step 5: Migration complete
             migrationStatus = "Migration complete!"
             migrationProgress = 1.0
             
@@ -142,11 +147,11 @@ final class GuestDataMigration: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func migrateGuestHabits(to userId: String) async throws {
+    private func migrateGuestHabits(to userId: String) async throws -> [Habit] {
         guard let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
               let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData) else {
             print("ℹ️ GuestDataMigration: No guest habits to migrate")
-            return
+            return []
         }
         
         print("🔄 GuestDataMigration: Migrating \(guestHabits.count) guest habits to user \(userId)")
@@ -181,11 +186,14 @@ final class GuestDataMigration: ObservableObject {
             }
         }
         
-        // Save merged habits
+        // Save merged habits to UserDefaults (for backward compatibility)
         let mergedHabitsData = try JSONEncoder().encode(mergedHabits)
         userDefaults.set(mergedHabitsData, forKey: userHabitsKey)
         
         print("✅ GuestDataMigration: Migrated \(migratedCount) habits to user \(userId)")
+        
+        // Return the newly migrated habits for cloud sync
+        return Array(mergedHabits.suffix(migratedCount))
     }
     
     private func migrateGuestBackups(to userId: String) async throws {
@@ -229,6 +237,22 @@ final class GuestDataMigration: ObservableObject {
         userDefaults.set(userBackupCount + guestBackupCount, forKey: userBackupCountKey)
         
         print("✅ GuestDataMigration: Migrated guest backups to user \(userId)")
+    }
+    
+    /// Sync migrated habits to cloud storage for cross-device access
+    private func syncMigratedDataToCloud(_ migratedHabits: [Habit]) async throws {
+        guard !migratedHabits.isEmpty else {
+            print("ℹ️ GuestDataMigration: No habits to sync to cloud")
+            return
+        }
+        
+        print("🔄 GuestDataMigration: Syncing \(migratedHabits.count) migrated habits to cloud storage...")
+        
+        // Use SwiftDataStorage to save habits to cloud storage
+        let swiftDataStorage = SwiftDataStorage()
+        try await swiftDataStorage.saveHabits(migratedHabits, immediate: true)
+        
+        print("✅ GuestDataMigration: Successfully synced migrated habits to cloud storage")
     }
 }
 

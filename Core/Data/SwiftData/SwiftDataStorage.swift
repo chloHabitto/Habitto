@@ -9,6 +9,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
     private let container = SwiftDataContainer.shared
     private let logger = Logger(subsystem: "com.habitto.app", category: "SwiftDataStorage")
     
+    // Helper method to get current user ID for data isolation
+    private func getCurrentUserId() async -> String? {
+        return await MainActor.run {
+            return AuthenticationManager.shared.currentUser?.uid
+        }
+    }
+    
     // MARK: - Generic Data Storage Methods
     
     func save<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
@@ -63,9 +70,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     // Update existing habit
                     existingHabitData.updateFromHabit(habit)
                 } else {
-                    // Create new habit
+                    // Create new habit with user ID
                     let habitData = HabitData(
                         id: habit.id,
+                        userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
                         name: habit.name,
                         habitDescription: habit.description,
                         icon: habit.icon,
@@ -128,14 +136,28 @@ final class SwiftDataStorage: HabitStorageProtocol {
     }
     
     func loadHabits() async throws -> [Habit] {
-        logger.info("Loading habits from SwiftData")
+        let currentUserId = await getCurrentUserId()
+        logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
         
         let startTime = CFAbsoluteTimeGetCurrent()
         
         do {
-            let descriptor = FetchDescriptor<HabitData>(
+            // Create user-specific fetch descriptor
+            var descriptor = FetchDescriptor<HabitData>(
                 sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
             )
+            
+            // Filter by current user ID if authenticated, otherwise show guest data
+            if let userId = currentUserId {
+                descriptor.predicate = #Predicate<HabitData> { habitData in
+                    habitData.userId == userId
+                }
+            } else {
+                // For guest users, show data with empty userId
+                descriptor.predicate = #Predicate<HabitData> { habitData in
+                    habitData.userId == ""
+                }
+            }
             
             let habitDataArray = try container.modelContext.fetch(descriptor)
             let habits = await MainActor.run {
@@ -143,7 +165,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             }
             
             let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-            logger.info("Successfully loaded \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+            logger.info("Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
             
             return habits
             
@@ -189,6 +211,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 // Create new habit
                 let habitData = HabitData(
                     id: habit.id,
+                    userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
                     name: habit.name,
                     habitDescription: habit.description,
                     icon: habit.icon,
@@ -278,11 +301,27 @@ final class SwiftDataStorage: HabitStorageProtocol {
         }
     }
     
+    /// Clear all habits for the current user
     func clearAllHabits() async throws {
-        logger.info("Clearing all habits from SwiftData")
+        let currentUserId = await getCurrentUserId()
+        logger.info("Clearing all habits from SwiftData for user: \(currentUserId ?? "guest")")
         
         do {
-            let descriptor = FetchDescriptor<HabitData>()
+            // Create user-specific fetch descriptor
+            var descriptor = FetchDescriptor<HabitData>()
+            
+            // Filter by current user ID if authenticated, otherwise clear guest data
+            if let userId = currentUserId {
+                descriptor.predicate = #Predicate<HabitData> { habitData in
+                    habitData.userId == userId
+                }
+            } else {
+                // For guest users, clear data with empty userId
+                descriptor.predicate = #Predicate<HabitData> { habitData in
+                    habitData.userId == ""
+                }
+            }
+            
             let habitDataArray = try container.modelContext.fetch(descriptor)
             
             for habitData in habitDataArray {
@@ -290,7 +329,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             }
             
             try container.modelContext.save()
-            logger.info("Successfully cleared all habits")
+            logger.info("Successfully cleared \(habitDataArray.count) habits for user: \(currentUserId ?? "guest")")
             
         } catch {
             logger.error("Failed to clear all habits: \(error.localizedDescription)")

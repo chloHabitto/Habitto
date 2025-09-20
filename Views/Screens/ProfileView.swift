@@ -54,6 +54,14 @@ struct ProfileView: View {
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
+                            
+                            // Email display below profile image
+                            if !email.isEmpty {
+                                Text(email)
+                                    .font(.appBodyLarge)
+                                    .foregroundColor(.text02)
+                                    .multilineTextAlignment(.center)
+                            }
                         }
                         .padding(.top, 20)
                         
@@ -99,28 +107,6 @@ struct ProfileView: View {
                                     .disabled(!isLoggedIn)
                             }
                             
-                            // Email Field
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Email")
-                                    .font(.appBodyMedium)
-                                    .foregroundColor(.text01)
-                                
-                                TextField("Enter email", text: $email)
-                                    .font(.appBodyLarge)
-                                    .foregroundColor(.text01)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 16)
-                                    .background(Color.surface)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.outline3, lineWidth: 1.5)
-                                    )
-                                    .cornerRadius(12)
-                                    .disabled(!isLoggedIn)
-                                    .keyboardType(.emailAddress)
-                                    .autocapitalization(.none)
-                                    .autocorrectionDisabled()
-                            }
                         }
                         .padding(.horizontal, 20)
                         
@@ -219,7 +205,8 @@ struct ProfileView: View {
     }
     
     private var hasChanges: Bool {
-        return firstName != originalFirstName || lastName != originalLastName || email != originalEmail
+        return firstName != originalFirstName || lastName != originalLastName
+        // Email is no longer editable, so we don't check for email changes
     }
     
     private func loadUserData() {
@@ -260,39 +247,15 @@ struct ProfileView: View {
         // Update the user's display name in Firebase
         let newDisplayName = [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " ")
         
-        // Check if email has changed
-        let hasEmailChanged = email != originalEmail
-        
-        // Update display name first
+        // Update display name only (email is no longer editable)
         authManager.updateUserProfile(displayName: newDisplayName.isEmpty ? nil : newDisplayName, photoURL: nil) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    // If email also changed, update it
-                    if hasEmailChanged {
-                        self.authManager.updateUserEmail(newEmail: self.email) { emailResult in
-                            DispatchQueue.main.async {
-                                switch emailResult {
-                                case .success:
-                                    // Update all original values to reflect saved state
-                                    self.originalFirstName = self.firstName
-                                    self.originalLastName = self.lastName
-                                    self.originalEmail = self.email
-                                    print("✅ Profile and email updated successfully")
-                                case .failure(let emailError):
-                                    print("❌ Failed to update email: \(emailError.localizedDescription)")
-                                    // Still update name values since that succeeded
-                                    self.originalFirstName = self.firstName
-                                    self.originalLastName = self.lastName
-                                }
-                            }
-                        }
-                    } else {
-                        // Only name was updated
-                        self.originalFirstName = self.firstName
-                        self.originalLastName = self.lastName
-                        print("✅ Profile updated successfully")
-                    }
+                    // Update original values to reflect saved state
+                    self.originalFirstName = self.firstName
+                    self.originalLastName = self.lastName
+                    print("✅ Profile updated successfully")
                 case .failure(let error):
                     print("❌ Failed to update profile: \(error.localizedDescription)")
                 }

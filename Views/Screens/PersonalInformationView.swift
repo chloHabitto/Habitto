@@ -10,132 +10,150 @@ struct PersonalInformationView: View {
     @State private var originalFirstName: String = ""
     @State private var originalLastName: String = ""
     @State private var originalEmail: String = ""
+    @State private var isSaving: Bool = false
+    @State private var showingSuccessAlert: Bool = false
+    @State private var showingErrorAlert: Bool = false
+    @State private var errorMessage: String = ""
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header with close button and left-aligned title
-                    ScreenHeader(
-                        title: "Personal Information",
-                        description: "Manage your personal details"
-                    ) {
-                        dismiss()
-                    }
-                    
-                    // Profile Picture
-                    VStack(spacing: 16) {
-                        Image("Default-Profile@4x")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.primaryContainer, lineWidth: 3)
-                            )
-                    }
-                    .padding(.top, 16)
-                    
-                    // Name and Email Fields
-                    VStack(spacing: 16) {
-                        // First Name Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("First Name")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter first name", text: $firstName)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.outline3, lineWidth: 1.5)
-                                )
-                                .cornerRadius(12)
-                        }
-                        
-                        // Last Name Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Last Name")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter last name", text: $lastName)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.outline3, lineWidth: 1.5)
-                                )
-                                .cornerRadius(12)
-                        }
-                        
-                        // Email Field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Email")
-                                .font(.appBodyMedium)
-                                .foregroundColor(.text01)
-                            
-                            TextField("Enter email", text: $email)
-                                .font(.appBodyLarge)
-                                .foregroundColor(.text01)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(Color.surface)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.outline3, lineWidth: 1.5)
-                                )
-                                .cornerRadius(12)
-                                .keyboardType(.emailAddress)
-                                .autocapitalization(.none)
-                                .autocorrectionDisabled()
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    
-                    Spacer()
-                    
-                    // Save Button
-                    VStack(spacing: 16) {
-                        HabittoButton(
-                            size: .large,
-                            style: .fillPrimary,
-                            content: .text("Save"),
-                            hugging: false
-                        ) {
-                            saveChanges()
-                        }
-                        .disabled(!hasChanges)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-                .padding(.horizontal, 0)
-                .padding(.top, 0)
-                .padding(.bottom, 20)
-            }
-            .background(Color.surface2)
-            .onAppear {
-                loadUserData()
-            }
+            contentView
         }
         .background(Color.surface2)
         .navigationBarHidden(true)
+        .alert("Success", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your profile has been updated successfully.")
+        }
+        .alert("Error", isPresented: $showingErrorAlert) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage)
+        }
+    }
+    
+    private var contentView: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                headerSection
+                profilePictureSection
+                formSection
+                Spacer()
+                saveButtonSection
+            }
+            .padding(.horizontal, 0)
+            .padding(.top, 0)
+            .padding(.bottom, 20)
+        }
+        .background(Color.surface2)
+        .onAppear {
+            loadUserData()
+        }
+    }
+    
+    private var headerSection: some View {
+        ScreenHeader(
+            title: "Personal Information",
+            description: "Manage your personal details"
+        ) {
+            dismiss()
+        }
+    }
+    
+    private var profilePictureSection: some View {
+        VStack(spacing: 16) {
+            Image("Default-Profile@4x")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.primaryContainer, lineWidth: 3)
+                )
+            
+            // Email display below profile image
+            Text(email)
+                .font(.appBodyLarge)
+                .foregroundColor(.text02)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top, 16)
+    }
+    
+    private var formSection: some View {
+        VStack(spacing: 16) {
+            firstNameField
+            lastNameField
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    private var firstNameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("First Name")
+                .font(.appBodyMedium)
+                .foregroundColor(.text01)
+            
+            TextField("Enter first name", text: $firstName)
+                .font(.appBodyLarge)
+                .foregroundColor(.text01)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3, lineWidth: 1.5)
+                )
+                .cornerRadius(12)
+        }
+    }
+    
+    private var lastNameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Last Name")
+                .font(.appBodyMedium)
+                .foregroundColor(.text01)
+            
+            TextField("Enter last name", text: $lastName)
+                .font(.appBodyLarge)
+                .foregroundColor(.text01)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(Color.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3, lineWidth: 1.5)
+                )
+                .cornerRadius(12)
+        }
+    }
+    
+    
+    private var saveButtonSection: some View {
+        VStack(spacing: 16) {
+            HabittoButton(
+                size: .large,
+                style: .fillPrimary,
+                content: .text(isSaving ? "Saving..." : "Save"),
+                hugging: false
+            ) {
+                saveChanges()
+            }
+            .disabled(!hasChanges || isSaving)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
     }
     
     // MARK: - Helper Properties
     private var hasChanges: Bool {
         firstName != originalFirstName || 
-        lastName != originalLastName || 
-        email != originalEmail
+        lastName != originalLastName
+        // Email is disabled, so we don't check for email changes
     }
     
     // MARK: - Helper Functions
@@ -153,13 +171,38 @@ struct PersonalInformationView: View {
     }
     
     private func saveChanges() {
-        // TODO: Implement save functionality
-        print("Saving changes: \(firstName) \(lastName), \(email)")
+        guard hasChanges else { return }
         
-        // Update original values after save
-        originalFirstName = firstName
-        originalLastName = lastName
-        originalEmail = email
+        isSaving = true
+        
+        // Create display name from first and last name
+        let displayName = "\(firstName.trimmingCharacters(in: .whitespacesAndNewlines)) \(lastName.trimmingCharacters(in: .whitespacesAndNewlines))".trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Update user profile via AuthenticationManager
+        authManager.updateUserProfile(displayName: displayName.isEmpty ? nil : displayName, photoURL: nil) { result in
+            DispatchQueue.main.async {
+                isSaving = false
+                
+                switch result {
+                case .success:
+                    // Update original values after successful save
+                    originalFirstName = firstName
+                    originalLastName = lastName
+                    
+                    // Show success alert
+                    showingSuccessAlert = true
+                    
+                    print("✅ PersonalInformationView: Profile updated successfully")
+                    
+                case .failure(let error):
+                    // Show error alert
+                    errorMessage = error.localizedDescription
+                    showingErrorAlert = true
+                    
+                    print("❌ PersonalInformationView: Failed to update profile: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 
