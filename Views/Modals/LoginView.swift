@@ -97,6 +97,35 @@ struct LoginView: View {
                             )
                         }
                         
+                        // Password Requirements (only for sign up)
+                        if isSignUp {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Password Requirements:")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.text02)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    PasswordRequirementRow(
+                                        text: "At least 8 characters",
+                                        isMet: password.count >= 8
+                                    )
+                                    PasswordRequirementRow(
+                                        text: "One uppercase letter",
+                                        isMet: password.range(of: "[A-Z]", options: .regularExpression) != nil
+                                    )
+                                    PasswordRequirementRow(
+                                        text: "One lowercase letter",
+                                        isMet: password.range(of: "[a-z]", options: .regularExpression) != nil
+                                    )
+                                    PasswordRequirementRow(
+                                        text: "One number",
+                                        isMet: password.range(of: "\\d", options: .regularExpression) != nil
+                                    )
+                                }
+                            }
+                            .padding(.top, 8)
+                        }
+                        
                         // Forgot Password (only for sign in)
                         if !isSignUp {
                             HStack {
@@ -436,6 +465,24 @@ class AppleSignInPresentationContextProvider: NSObject, ASAuthorizationControlle
         
         // Final fallback
         return UIWindow()
+    }
+}
+
+// MARK: - Password Requirement Row
+struct PasswordRequirementRow: View {
+    let text: String
+    let isMet: Bool
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isMet ? .green : .gray)
+                .font(.system(size: 14))
+            
+            Text(text)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundColor(isMet ? .text01 : .text04)
+        }
     }
 }
 
