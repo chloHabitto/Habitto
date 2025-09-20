@@ -436,6 +436,7 @@ struct HabitDetailView: View {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.primary)
                         .frame(width: geometry.size.width * min(CGFloat(todayProgress) / CGFloat(extractGoalNumber(from: habit.goal)), 1.0), height: 4)
+                        .opacity(VacationManager.shared.isVacationDay(Date()) ? 0.6 : 1.0)
                 }
             }
             .frame(height: 4)

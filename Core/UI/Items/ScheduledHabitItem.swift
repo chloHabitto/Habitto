@@ -38,10 +38,13 @@ struct ScheduledHabitItem: View {
         return min(percentage, 1.0)
     }
     
+    // Computed property to check if it's a vacation day
+    private var isVacationDay: Bool {
+        VacationManager.shared.isVacationDay(selectedDate)
+    }
+    
     // Computed property for completion button using animated checkbox
     private var completionButton: some View {
-        let vacationManager = VacationManager.shared
-        let isVacationDay = vacationManager.isVacationDay(selectedDate)
         
         return AnimatedCheckbox(
             isChecked: isHabitCompleted(),
@@ -97,6 +100,7 @@ struct ScheduledHabitItem: View {
                                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
                                 height: isCompletingAnimation ? 8 : 6
                             )
+                            .opacity(isVacationDay ? 0.6 : 1.0)
                             .scaleEffect(isCompletingAnimation ? 1.05 : 1.0)
                             .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: isCompletingAnimation)
                     }
