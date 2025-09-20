@@ -428,7 +428,7 @@ class BackupScheduler: ObservableObject {
     }
     
     /// Save schedule configuration
-    private func saveScheduleConfig() {
+    func saveScheduleConfig() {
         let userKey = getUserSpecificKey(scheduleConfigKey)
         if let data = try? JSONEncoder().encode(scheduleConfig) {
             userDefaults.set(data, forKey: userKey)
@@ -436,7 +436,7 @@ class BackupScheduler: ObservableObject {
     }
     
     /// Load schedule configuration
-    private static func loadScheduleConfig() -> BackupScheduleConfig {
+    static func loadScheduleConfig() -> BackupScheduleConfig {
         let userDefaults = UserDefaults.standard
         let userId = AuthenticationManager.shared.currentUser?.uid ?? "guest_user"
         let userKey = "\(userId)_BackupScheduleConfig"

@@ -99,7 +99,7 @@ final class HabitData {
         return try! NSKeyedArchiver.archivedData(withRootObject: colorComponents, requiringSecureCoding: true)
     }
     
-    private static func decodeColor(_ data: Data) -> Color {
+    static func decodeColor(_ data: Data) -> Color {
         guard let components = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: data) as? [CGFloat],
               components.count == 4 else {
             return .blue // Default color

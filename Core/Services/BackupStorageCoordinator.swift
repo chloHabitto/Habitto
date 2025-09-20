@@ -331,14 +331,9 @@ final class BackupStorageCoordinator: ObservableObject {
         }
         
         // Perform restore using BackupManager
-        let restoredItemsCount = try await backupManager.restoreFromData(backupData)
+        let result = try await backupManager.restoreFromData(backupData)
         
-        return RestoreResult(
-            backupFile: backupFile,
-            restoreSuccess: true,
-            restoredItems: restoredItemsCount,
-            timestamp: Date()
-        )
+        return result
     }
     
     // MARK: - Configuration Management
@@ -463,12 +458,6 @@ struct BackupStorageFileInfo {
     let provider: StorageProvider
 }
 
-struct RestoreResult {
-    let backupFile: BackupStorageFileInfo
-    let restoreSuccess: Bool
-    let restoredItems: Int
-    let timestamp: Date
-}
 
 struct BackupStorageConfiguration {
     let preferredProvider: StorageProvider

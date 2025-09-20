@@ -162,49 +162,6 @@ struct BackupSettingsView: View {
     }
 }
 
-// MARK: - Backup Row View
-struct BackupRowView: View {
-    let backup: BackupSnapshot
-    let onRestore: () -> Void
-    let onDelete: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(backup.formattedDate)
-                        .font(.headline)
-                    
-                    Text("\(backup.habitCount) habits • \(backup.formattedSize)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    Button("Restore") {
-                        onRestore()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    
-                    Button("Delete") {
-                        onDelete()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .foregroundColor(.red)
-                }
-            }
-            
-            Text("Version \(backup.appVersion)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-        .padding(.vertical, 4)
-    }
-}
 
 // MARK: - Repair Results View
 struct RepairResultsView: View {
