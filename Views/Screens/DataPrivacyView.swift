@@ -20,7 +20,8 @@ struct DataPrivacyView: View {
                         
                         // Privacy Options
                         VStack(spacing: 0) {
-                            // Data Collection
+                            // Data Collection (COMMENTED OUT)
+                            /*
                             VStack(spacing: 0) {
                                 AccountOptionRow(
                                     icon: "Icon-Cloud_Filled",
@@ -45,7 +46,11 @@ struct DataPrivacyView: View {
                                 
                                 Divider()
                                     .padding(.leading, 56)
-                                
+                            }
+                            */
+                            
+                            // Essential Privacy Options
+                            VStack(spacing: 0) {
                                 AccountOptionRow(
                                     icon: "Icon-Export_Filled",
                                     title: "Export Data",
