@@ -408,12 +408,14 @@ struct HeatmapCellView: View {
     let isScheduled: Bool
     let completionPercentage: Double
     let rectangleSizePercentage: Double
+    let isVacationDay: Bool
     
-    init(intensity: Int, isScheduled: Bool, completionPercentage: Double, rectangleSizePercentage: Double = 0.5) {
+    init(intensity: Int, isScheduled: Bool, completionPercentage: Double, rectangleSizePercentage: Double = 0.5, isVacationDay: Bool = false) {
         self.intensity = intensity
         self.isScheduled = isScheduled
         self.completionPercentage = completionPercentage
         self.rectangleSizePercentage = rectangleSizePercentage
+        self.isVacationDay = isVacationDay
     }
     
     var body: some View {
@@ -427,7 +429,17 @@ struct HeatmapCellView: View {
                     .fill(.clear)
                     .frame(width: size, height: size)
                 
-                if isScheduled {
+                if isVacationDay {
+                    // Show vacation day styling
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue.opacity(0.3))
+                        .frame(width: cellSize, height: cellSize)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.blue.opacity(0.6), lineWidth: 2)
+                                .frame(width: cellSize, height: cellSize)
+                        )
+                } else if isScheduled {
                     // Show heatmap when scheduled with modern rounded design
                     RoundedRectangle(cornerRadius: 12)
                         .fill(heatmapColor(for: completionPercentage))

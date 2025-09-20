@@ -36,31 +36,50 @@ struct ProgressCalendarHeader: View {
     let selectedHabit: Habit?
     
     var body: some View {
-        Button(action: {
-            // Action handled by parent
-        }) {
-            HStack(spacing: 0) {
-                ProgressCalendarIcon(selectedHabit: selectedHabit)
-                
-                Spacer()
-                    .frame(width: 8)
-                
-                Text(selectedHabit?.name ?? "Overall")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.onPrimaryContainer)
-                
-                Spacer()
-                    .frame(width: 12)
-                
-                Image(systemName: "chevron.down")
-                    .font(.appLabelMedium)
-                    .foregroundColor(.primaryFocus)
-                
-                Spacer()
+        VStack(spacing: 8) {
+            Button(action: {
+                // Action handled by parent
+            }) {
+                HStack(spacing: 0) {
+                    ProgressCalendarIcon(selectedHabit: selectedHabit)
+                    
+                    Spacer()
+                        .frame(width: 8)
+                    
+                    Text(selectedHabit?.name ?? "Overall")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.onPrimaryContainer)
+                    
+                    Spacer()
+                        .frame(width: 12)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.appLabelMedium)
+                        .foregroundColor(.primaryFocus)
+                    
+                    Spacer()
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 20)
+            
+            // Vacation status indicator
+            if VacationManager.shared.isActive {
+                HStack(spacing: 6) {
+                    Image("Icon-Vacation_Filled")
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(.blue)
+                    Text("Vacation Mode Active")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(Color.blue.opacity(0.1))
+                .clipShape(Capsule())
             }
         }
-        .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal, 20)
     }
 }
 
