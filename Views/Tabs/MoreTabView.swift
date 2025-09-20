@@ -28,7 +28,6 @@ struct MoreTabView: View {
     @State private var showingTermsConditionsView = false
     @State private var showingAboutUsView = false
     @State private var showingSignOutAlert = false
-    @State private var showingBackupSettings = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -118,9 +117,6 @@ struct MoreTabView: View {
         .sheet(isPresented: $showingAboutUsView) {
             AboutUsView()
         }
-        .sheet(isPresented: $showingBackupSettings) {
-            BackupSettingsView()
-        }
         .alert(isPresented: $showingSignOutAlert) {
             Alert(
                 title: Text("Sign Out"),
@@ -178,9 +174,6 @@ struct MoreTabView: View {
                     }),
                     SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
                         showingPreferences = true
-                    }),
-                    SettingItem(title: "Backup & Recovery", value: nil, hasChevron: true, action: {
-                        showingBackupSettings = true
                     })
                 ]
             )
@@ -207,23 +200,6 @@ struct MoreTabView: View {
                 ]
             )
             
-            // Debug Section (only in debug builds)
-            #if DEBUG
-            settingsGroup(
-                title: "Debug",
-                items: [
-                    SettingItem(title: "Create Test Habit", value: nil, hasChevron: false, action: {
-                        state.createTestHabit()
-                    }),
-                    SettingItem(title: "Create Simple Test", value: nil, hasChevron: false, action: {
-                        state.createSimpleTestHabit()
-                    }),
-                    SettingItem(title: "Debug State", value: nil, hasChevron: false, action: {
-                        state.debugCurrentState()
-                    })
-                ]
-            )
-            #endif
             
             // Version Information
             VStack(spacing: 0) {
@@ -334,7 +310,7 @@ struct MoreTabView: View {
         case "Preferences":
             return "Icon-Setting_Filled"
         case "Backup & Recovery":
-            return "Icon-Cloud_Filled"
+            return "Icon-RefreshSquare2_Filled"
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":

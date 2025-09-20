@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DataPrivacyView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showingBackupRecovery = false
     
     var body: some View {
         NavigationView {
@@ -34,7 +35,7 @@ struct DataPrivacyView: View {
                                     .padding(.leading, 56)
                                 
                                 AccountOptionRow(
-                                    icon: "Icon-Shield_Filled",
+                                    icon: "Icon-ShieldKeyhole_Filled",
                                     title: "Privacy Settings",
                                     subtitle: "Manage your privacy preferences",
                                     hasChevron: true
@@ -46,7 +47,7 @@ struct DataPrivacyView: View {
                                     .padding(.leading, 56)
                                 
                                 AccountOptionRow(
-                                    icon: "Icon-Download_Filled",
+                                    icon: "Icon-Export_Filled",
                                     title: "Export Data",
                                     subtitle: "Download your personal data",
                                     hasChevron: true
@@ -58,7 +59,19 @@ struct DataPrivacyView: View {
                                     .padding(.leading, 56)
                                 
                                 AccountOptionRow(
-                                    icon: "Icon-Trash_Filled",
+                                    icon: "Icon-RefreshSquare2_Filled",
+                                    title: "Backup & Recovery",
+                                    subtitle: "Backup and restore your data",
+                                    hasChevron: true
+                                ) {
+                                    showingBackupRecovery = true
+                                }
+                                
+                                Divider()
+                                    .padding(.leading, 56)
+                                
+                                AccountOptionRow(
+                                    icon: "Icon-TrashBin2_Filled",
                                     title: "Delete Data",
                                     subtitle: "Permanently remove your data",
                                     hasChevron: true
@@ -74,22 +87,11 @@ struct DataPrivacyView: View {
                     .padding(.bottom, 24)
                 }
                 .background(Color.surface2)
-                
-                // Reset App Button at bottom
-                VStack(spacing: 16) {
-                    HabittoButton(
-                        size: .large,
-                        style: .fillTertiary,
-                        content: .text("Reset App")
-                    ) {
-                        // TODO: Implement app reset
-                    }
-                    .padding(.horizontal, 20)
-                }
-                .padding(.bottom, 20)
-                .background(Color.surface2)
             }
             .background(Color.surface2)
+        }
+        .sheet(isPresented: $showingBackupRecovery) {
+            BackupRecoveryView()
         }
     }
 }
