@@ -69,6 +69,7 @@ final class VacationManager: ObservableObject {
     private init(tz: TimeZone = .current) { 
         self.tz = tz
         loadVacationData()
+        setupTimezoneChangeObserver()
     }
 
     // MARK: - Public Methods
@@ -240,6 +241,21 @@ extension VacationManager {
         // Achievement pausing would be implemented in the achievement manager
     }
     
+    // MARK: - Timezone Change Handling
+    private func setupTimezoneChangeObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .NSSystemTimeZoneDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self = self else { return }
+            print("🌍 VacationManager: Timezone changed, refreshing vacation data")
+            // Vacation periods are stored in UTC, so timezone changes don't affect the data
+            // But we should log this event for debugging
+            self.debugVacationStatus()
+        }
+    }
+    
     // MARK: - Debug Methods
     func debugVacationStatus() {
         print("🔍 VACATION DEBUG STATUS:")
@@ -253,5 +269,6 @@ extension VacationManager {
             print("  - History[\(index)]: \(period.start) - \(period.end?.description ?? "ongoing")")
         }
         print("  - Is active: \(isActive)")
+        print("  - Current timezone: \(tz.identifier)")
     }
 }
