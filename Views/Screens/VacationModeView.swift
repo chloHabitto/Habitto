@@ -5,6 +5,11 @@ struct VacationModeView: View {
     @EnvironmentObject var vacationManager: VacationManager
     @State private var startDate = Date()
     @State private var endDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+    
+    // Computed property to ensure end date is after start date
+    private var validEndDate: Date {
+        return max(endDate, Calendar.current.date(byAdding: .day, value: 1, to: startDate) ?? startDate)
+    }
 
     
     var body: some View {
@@ -25,6 +30,10 @@ struct VacationModeView: View {
                     if !vacationManager.isActive {
                         // Start Vacation button (blue styling)
                         Button(action: {
+                            // Add haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                            
                             vacationManager.startVacation(now: startDate)
                         }) {
                             HStack {
@@ -47,9 +56,15 @@ struct VacationModeView: View {
                             .padding(.horizontal, 20)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 0.2), value: vacationManager.isActive)
                     } else {
                         // End Vacation button (red styling)
                         Button(action: {
+                            // Add haptic feedback
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+                            impactFeedback.impactOccurred()
+                            
                             vacationManager.endVacation()
                         }) {
                             HStack {
@@ -71,6 +86,8 @@ struct VacationModeView: View {
                             .padding(.horizontal, 20)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .scaleEffect(1.0)
+                        .animation(.easeInOut(duration: 0.2), value: vacationManager.isActive)
                     }
                     
                     // Status text below the button
@@ -132,8 +149,14 @@ struct VacationModeView: View {
                             
                             Spacer()
                             
-                            DatePicker("", selection: $endDate, displayedComponents: .date)
+                            DatePicker("", selection: $endDate, in: startDate..., displayedComponents: .date)
                                 .labelsHidden()
+                                .onChange(of: startDate) { _, newStartDate in
+                                    // Ensure end date is always after start date
+                                    if endDate <= newStartDate {
+                                        endDate = Calendar.current.date(byAdding: .day, value: 1, to: newStartDate) ?? newStartDate
+                                    }
+                                }
                         }
                     }
                 }
