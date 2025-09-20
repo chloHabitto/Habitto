@@ -385,7 +385,8 @@ class AuthenticationManager: ObservableObject {
             GIDSignIn.sharedInstance.configuration = config
             
             // Perform fresh Google Sign-In
-            GIDSignIn.sharedInstance.signIn(withPresenting: UIApplication.shared.windows.first?.rootViewController ?? UIViewController()) { result, error in
+            let presentingViewController = self.getTopViewController() ?? UIViewController()
+            GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { result, error in
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ AuthenticationManager: Google re-authentication failed: \(error.localizedDescription)")
@@ -483,6 +484,17 @@ class AuthenticationManager: ObservableObject {
             // Even if sign out fails, we've cleared local data, so consider it successful
             completion(.success(()))
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Gets the top view controller using modern UIWindowScene API
+    private func getTopViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return nil
+        }
+        return window.rootViewController
     }
 }
 
