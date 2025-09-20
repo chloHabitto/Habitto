@@ -3,19 +3,14 @@ import SwiftData
 import OSLog
 
 // MARK: - SwiftData Storage Implementation
+@MainActor
 final class SwiftDataStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
-    private var _container: SwiftDataContainer?
-    private var container: SwiftDataContainer {
-        get async {
-            if let existing = _container { return existing }
-            let container = await MainActor.run { SwiftDataContainer.shared }
-            _container = container
-            return container
-        }
-    }
+    private lazy var container = SwiftDataContainer.shared
     private let logger = Logger(subsystem: "com.habitto.app", category: "SwiftDataStorage")
+    
+    nonisolated init() {}
     
     // Helper method to get current user ID for data isolation
     private func getCurrentUserId() async -> String? {
@@ -168,9 +163,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             }
             
             let habitDataArray = try container.modelContext.fetch(descriptor)
-            let habits = await MainActor.run {
-                habitDataArray.map { $0.toHabit() }
-            }
+            let habits = habitDataArray.map { $0.toHabit() }
             
             let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
             logger.info("Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
@@ -277,9 +270,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 return nil
             }
             
-            let habit = await MainActor.run {
-                habitData.toHabit()
-            }
+            let habit = habitData.toHabit()
             logger.info("Successfully loaded habit: \(habit.name)")
             return habit
             
@@ -352,7 +343,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             predicate: #Predicate { $0.id == id }
         )
         
-        let results = try await container.modelContext.fetch(descriptor)
+        let results = try container.modelContext.fetch(descriptor)
         return results.first
     }
     
