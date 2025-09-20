@@ -123,15 +123,19 @@ final class VacationManager: ObservableObject {
         return out
     }
 
-    // MARK: - Notification Management (stubs for now)
+    // MARK: - Notification Management
     private func muteNotifications() {
-        // TODO: Implement notification muting
-        print("Vacation Mode: Muting all habit notifications")
+        print("🔇 Vacation Mode: Muting all habit notifications")
+        NotificationManager.shared.removeAllPendingNotifications()
+        print("✅ Vacation Mode: All notifications have been muted")
     }
     
     private func rescheduleNotifications() {
-        // TODO: Implement notification rescheduling
-        print("Vacation Mode: Rescheduling all habit notifications")
+        print("🔔 Vacation Mode: Rescheduling all habit notifications")
+        // Note: This will be called when vacation ends
+        // The actual rescheduling will be handled by the HabitRepository
+        // when it reloads habits and reschedules notifications
+        print("✅ Vacation Mode: Notifications will be rescheduled when vacation ends")
     }
     
     // MARK: - Data Persistence

@@ -188,6 +188,32 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     func isCompleted(for date: Date) -> Bool {
+        // If it's a vacation day, treat it as neutral (neither completed nor missed)
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            // For vacation days, we need to determine if the habit would have been completed
+            // based on the previous non-vacation day's completion status
+            let calendar = Calendar.current
+            var checkDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+            
+            // Look back to find the last non-vacation day
+            while vacationManager.isVacationDay(checkDate) {
+                guard let prevDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else {
+                    break
+                }
+                checkDate = prevDate
+            }
+            
+            // Return the completion status of the last non-vacation day
+            return isCompletedInternal(for: checkDate)
+        }
+        
+        // For non-vacation days, use the normal completion logic
+        return isCompletedInternal(for: date)
+    }
+    
+    /// Internal completion check that doesn't consider vacation days
+    private func isCompletedInternal(for date: Date) -> Bool {
         let dateKey = Self.dateKey(for: date)
         let progress = completionHistory[dateKey] ?? 0
         

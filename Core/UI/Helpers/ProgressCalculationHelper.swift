@@ -308,6 +308,7 @@ class ProgressCalculationHelper {
     /// Get total opportunities this month for a specific habit
     static func getHabitTotalOpportunitiesThisMonth(for habit: Habit, currentDate: Date) -> Int {
         let calendar = Calendar.current
+        let vacationManager = VacationManager.shared
         let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
         guard let monthStart = calendar.date(from: monthComponents),
               let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
@@ -317,7 +318,8 @@ class ProgressCalculationHelper {
         var totalOpportunities = 0
         var currentDate = monthStart
         while currentDate <= monthEnd {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+            // Only count non-vacation days as opportunities
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) && !vacationManager.isVacationDay(currentDate) {
                 totalOpportunities += 1
             }
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
