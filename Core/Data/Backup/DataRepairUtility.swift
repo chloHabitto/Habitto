@@ -145,7 +145,7 @@ class DataRepairUtility: ObservableObject {
     
     private func validateHabitData(_ habits: [Habit]) async -> RepairResult {
         var issuesFound = 0
-        var issuesFixed = 0
+        let issuesFixed = 0
         
         for habit in habits {
             // Check for empty name
@@ -177,13 +177,14 @@ class DataRepairUtility: ObservableObject {
     
     private func repairCorruptedHabits(_ habits: [Habit]) async -> RepairResult {
         var issuesFound = 0
-        let issuesFixed = 0
+        var issuesFixed = 0
         var repairedHabits: [Habit] = []
         
         for var habit in habits {
             // Fix invalid start date
             if habit.startDate > Date() {
                 issuesFound += 1
+                issuesFixed += 1
                 habit = Habit(
                     id: habit.id,
                     name: habit.name,
@@ -228,7 +229,7 @@ class DataRepairUtility: ObservableObject {
         var issuesFound = 0
         
         for habit in habits {
-            for (dateKey, progress) in habit.completionHistory {
+            for (_, progress) in habit.completionHistory {
                 if progress < 0 {
                     issuesFound += 1
                 }

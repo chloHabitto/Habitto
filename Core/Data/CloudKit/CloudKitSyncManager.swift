@@ -29,7 +29,7 @@ final class CloudKitSyncManager {
         logger.info("Starting full CloudKit sync")
         
         // Check if CloudKit is available
-        guard let container = container else {
+        guard container != nil else {
             let error = CloudKitError.notConfigured
             syncStatus = .error(error)
             syncError = error
@@ -210,7 +210,7 @@ final class CloudKitSyncManager {
         }
         
         let endDate = record["endDate"] as? Date
-        let color = Color.fromHex(colorString) ?? Color.blue
+        let color = Color.fromHex(colorString)
         
         return Habit(
             id: UUID(uuidString: record.recordID.recordName) ?? UUID(),
