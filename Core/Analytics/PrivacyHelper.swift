@@ -181,7 +181,7 @@ struct PrivacyHelper {
     
     /// Create a safe analytics identifier from user data
     static func safeAnalyticsId(from user: Any?) -> String {
-        guard let user = user else {
+        guard user != nil else {
             return "guest_user"
         }
         

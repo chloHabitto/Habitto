@@ -1,3 +1,5 @@
 # Exclude Info.plist files from being treated as resource files
 *.plist
 !GoogleService-Info.plist
+# Specifically exclude App-Info.plist from resources since it's used as INFOPLIST_FILE
+Config/App-Info.plist

@@ -389,10 +389,17 @@ enum UserEvent: String, Codable, CaseIterable {
 
 // MARK: - User Event Data
 struct UserEventData: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let type: UserEvent
     let timestamp: Date
     let metadata: [String: String]
+    
+    init(type: UserEvent, timestamp: Date, metadata: [String: String] = [:]) {
+        self.id = UUID()
+        self.type = type
+        self.timestamp = timestamp
+        self.metadata = metadata
+    }
 }
 
 // MARK: - Habit Action
@@ -406,11 +413,19 @@ enum HabitAction: String, Codable, CaseIterable {
 
 // MARK: - Habit Interaction
 struct HabitInteraction: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let habitId: UUID
     let action: HabitAction
     let timestamp: Date
     let metadata: [String: String]
+    
+    init(habitId: UUID, action: HabitAction, timestamp: Date, metadata: [String: String] = [:]) {
+        self.id = UUID()
+        self.habitId = habitId
+        self.action = action
+        self.timestamp = timestamp
+        self.metadata = metadata
+    }
 }
 
 // MARK: - Screen Name
@@ -432,10 +447,17 @@ enum ScreenName: String, Codable, CaseIterable {
 
 // MARK: - Screen View
 struct ScreenView: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let screen: ScreenName
     let timestamp: Date
     let metadata: [String: String]
+    
+    init(screen: ScreenName, timestamp: Date, metadata: [String: String] = [:]) {
+        self.id = UUID()
+        self.screen = screen
+        self.timestamp = timestamp
+        self.metadata = metadata
+    }
 }
 
 // MARK: - Engagement Type
@@ -449,11 +471,19 @@ enum EngagementType: String, Codable, CaseIterable {
 
 // MARK: - Engagement Event
 struct EngagementEvent: Codable, Identifiable {
-    let id = UUID()
+    let id: UUID
     let type: EngagementType
     let value: Double
     let timestamp: Date
     let metadata: [String: String]
+    
+    init(type: EngagementType, value: Double, timestamp: Date, metadata: [String: String] = [:]) {
+        self.id = UUID()
+        self.type = type
+        self.value = value
+        self.timestamp = timestamp
+        self.metadata = metadata
+    }
 }
 
 // MARK: - Habit Metrics
