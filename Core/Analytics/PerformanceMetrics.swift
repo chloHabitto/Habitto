@@ -54,6 +54,12 @@ class PerformanceMetrics: ObservableObject {
     
     /// Record a specific event
     func recordEvent(_ event: PerformanceEvent) {
+        // Skip performance monitoring during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 PerformanceMetrics: Skipping event during vacation mode - \(event.type.rawValue): \(event.description)")
+            return
+        }
+        
         currentMetrics.events.append(event)
         
         // Update relevant counters
@@ -77,6 +83,12 @@ class PerformanceMetrics: ObservableObject {
     
     /// Record timing for a specific operation
     func recordTiming(_ operation: String, duration: TimeInterval) {
+        // Skip performance monitoring during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 PerformanceMetrics: Skipping timing during vacation mode - \(operation): \(String(format: "%.3f", duration))s")
+            return
+        }
+        
         let timing = PerformanceTiming(operation: operation, duration: duration)
         currentMetrics.timings.append(timing)
         
@@ -88,6 +100,12 @@ class PerformanceMetrics: ObservableObject {
     
     /// Record memory usage
     func recordMemoryUsage() {
+        // Skip performance monitoring during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 PerformanceMetrics: Skipping memory monitoring during vacation mode")
+            return
+        }
+        
         let memoryInfo = getMemoryInfo()
         currentMetrics.memoryUsage = memoryInfo.used
         currentMetrics.peakMemoryUsage = max(currentMetrics.peakMemoryUsage, memoryInfo.used)
@@ -97,6 +115,12 @@ class PerformanceMetrics: ObservableObject {
     
     /// Record storage usage
     func recordStorageUsage() {
+        // Skip performance monitoring during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 PerformanceMetrics: Skipping storage monitoring during vacation mode")
+            return
+        }
+        
         let storageInfo = getStorageInfo()
         currentMetrics.storageUsage = storageInfo.used
         currentMetrics.habitsCount = storageInfo.habitsCount

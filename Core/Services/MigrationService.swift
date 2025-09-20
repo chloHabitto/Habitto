@@ -24,6 +24,12 @@ class MigrationService: ObservableObject {
     
     /// Check if migration is needed and execute if necessary
     func checkAndExecuteMigrations() async {
+        // Skip migration operations during vacation mode
+        if VacationManager.shared.isActive {
+            print("⚠️ MigrationService: Skipping migrations during vacation mode")
+            return
+        }
+        
         guard !isRunning else {
             print("⚠️ MigrationService: Migration already in progress")
             return
@@ -39,6 +45,12 @@ class MigrationService: ObservableObject {
     
     /// Execute migrations manually
     func executeMigrations() async {
+        // Skip migration operations during vacation mode
+        if VacationManager.shared.isActive {
+            print("⚠️ MigrationService: Skipping manual migrations during vacation mode")
+            return
+        }
+        
         isRunning = true
         migrationStatus = .running
         
