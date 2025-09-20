@@ -6,7 +6,15 @@ import OSLog
 final class SwiftDataStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
-    private lazy var container = SwiftDataContainer.shared
+    private var _container: SwiftDataContainer?
+    private var container: SwiftDataContainer {
+        get async {
+            if let existing = _container { return existing }
+            let container = await MainActor.run { SwiftDataContainer.shared }
+            _container = container
+            return container
+        }
+    }
     private let logger = Logger(subsystem: "com.habitto.app", category: "SwiftDataStorage")
     
     // Helper method to get current user ID for data isolation
