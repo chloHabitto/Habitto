@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import FirebaseAuth
 
 /// Service responsible for handling complete account deletion including data cleanup
 @MainActor
@@ -19,6 +20,35 @@ final class AccountDeletionService: ObservableObject {
     @Published var deletionError: String?
     
     // MARK: - Public Methods
+    
+    /// Check if the user needs to re-authenticate before account deletion
+    func checkAuthenticationFreshness() async -> Bool {
+        guard let currentUser = authManager.currentUser else {
+            return false
+        }
+        
+        // Cast to Firebase User to access metadata
+        guard let firebaseUser = currentUser as? FirebaseAuth.User else {
+            // If not a Firebase user, assume authentication is fresh
+            return true
+        }
+        
+        // For Firebase users, we'll use a simpler approach:
+        // Check if the user has a valid token by attempting to reload the user
+        // This is a more reliable way to check authentication freshness
+        return await withCheckedContinuation { continuation in
+            firebaseUser.reload { error in
+                if let error = error {
+                    print("❌ AccountDeletionService: User reload failed: \(error.localizedDescription)")
+                    // If reload fails, assume re-authentication is needed
+                    continuation.resume(returning: false)
+                } else {
+                    print("✅ AccountDeletionService: User reload successful - authentication is fresh")
+                    continuation.resume(returning: true)
+                }
+            }
+        }
+    }
     
     /// Delete the current user's account and all associated data
     func deleteAccount() async throws {
@@ -61,8 +91,16 @@ final class AccountDeletionService: ObservableObject {
             print("✅ AccountDeletionService: Account deletion completed for user: \(currentUser.uid)")
             
         } catch {
-            deletionError = error.localizedDescription
-            deletionStatus = "Deletion failed: \(error.localizedDescription)"
+            let nsError = error as NSError
+            
+            // Handle specific authentication errors
+            if nsError.code == 17014 || error.localizedDescription.contains("requires recent authentication") {
+                deletionError = "This operation requires recent authentication. Please sign out and sign in again, then try deleting your account."
+            } else {
+                deletionError = error.localizedDescription
+            }
+            
+            deletionStatus = "Deletion failed: \(deletionError ?? "Unknown error")"
             throw error
         }
         

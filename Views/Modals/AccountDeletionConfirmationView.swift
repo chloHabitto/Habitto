@@ -5,7 +5,10 @@ struct AccountDeletionConfirmationView: View {
     
     // MARK: - Properties
     
-    @StateObject private var deletionService = AccountDeletionService()
+    @StateObject private var deletionService = {
+        print("🗑️ AccountDeletionConfirmationView: Creating AccountDeletionService")
+        return AccountDeletionService()
+    }()
     @Environment(\.dismiss) private var dismiss
     @State private var showingFinalConfirmation = false
     @State private var isDeleting = false
@@ -13,7 +16,8 @@ struct AccountDeletionConfirmationView: View {
     // MARK: - Body
     
     var body: some View {
-        NavigationView {
+        print("🗑️ AccountDeletionConfirmationView: Body rendered")
+        return NavigationView {
             VStack(spacing: 0) {
                 // Header
                 ScreenHeader(
@@ -168,6 +172,16 @@ struct AccountDeletionConfirmationView: View {
     
     private func performAccountDeletion() async {
         isDeleting = true
+        
+        // Check if re-authentication is needed
+        let isAuthFresh = await deletionService.checkAuthenticationFreshness()
+        if !isAuthFresh {
+            DispatchQueue.main.async {
+                self.deletionService.deletionError = "Your authentication session has expired. Please sign out and sign in again, then try deleting your account."
+                self.isDeleting = false
+            }
+            return
+        }
         
         do {
             try await deletionService.deleteAccount()

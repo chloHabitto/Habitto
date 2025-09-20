@@ -168,7 +168,7 @@ struct MoreTabView: View {
                         showingVacationMode = true
                     }),
                     SettingItem(title: "Account", value: nil, hasChevron: true, action: {
-                        showingSecurity = true
+                        showingAccountView = true
                     }),
                     SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
                         showingDataPrivacy = true

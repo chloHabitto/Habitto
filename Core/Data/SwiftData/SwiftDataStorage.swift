@@ -59,29 +59,48 @@ final class SwiftDataStorage: HabitStorageProtocol {
             let existingHabitIds = Set(existingHabits.map { $0.id })
             
             for habit in habits {
-                if let existingSimpleHabitData = try await loadSimpleHabitData(by: habit.id) {
+                if let existingHabitData = try await loadHabitData(by: habit.id) {
                     // Update existing habit
-                    existingSimpleHabitData.updateFromHabit(habit)
+                    existingHabitData.updateFromHabit(habit)
                 } else {
                     // Create new habit
-                    let habitData = SimpleHabitData(
+                    let habitData = HabitData(
                         id: habit.id,
                         name: habit.name,
                         habitDescription: habit.description,
                         icon: habit.icon,
-                        colorString: habit.color.toHexString(),
-                        habitType: habit.habitType.rawValue,
+                        color: habit.color,
+                        habitType: habit.habitType,
                         schedule: habit.schedule,
                         goal: habit.goal,
                         reminder: habit.reminder,
                         startDate: habit.startDate,
                         endDate: habit.endDate,
                         isCompleted: habit.isCompleted,
-                        streak: habit.streak,
-                        completionHistoryJSON: encodeCompletionHistory(habit.completionHistory),
-                        difficultyHistoryJSON: encodeDifficultyHistory(habit.difficultyHistory),
-                        usageHistoryJSON: encodeUsageHistory(habit.actualUsage)
+                        streak: habit.streak
                     )
+                    
+                    // Add completion history
+                    for (dateString, isCompleted) in habit.completionHistory {
+                        if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                            let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                            habitData.completionHistory.append(completionRecord)
+                        }
+                    }
+                    
+                    // Add difficulty history
+                    for (dateString, difficulty) in habit.difficultyHistory {
+                        if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                            let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                            habitData.difficultyHistory.append(difficultyRecord)
+                        }
+                    }
+                    
+                    // Add usage history
+                    for (key, value) in habit.actualUsage {
+                        let usageRecord = UsageRecord(key: key, value: value)
+                        habitData.usageHistory.append(usageRecord)
+                    }
                     
                     container.modelContext.insert(habitData)
                 }
@@ -92,7 +111,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             let habitsToRemove = existingHabitIds.subtracting(currentHabitIds)
             
             for habitId in habitsToRemove {
-                if let habitData = try await loadSimpleHabitData(by: habitId) {
+                if let habitData = try await loadHabitData(by: habitId) {
                     container.modelContext.delete(habitData)
                 }
             }
@@ -114,7 +133,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         let startTime = CFAbsoluteTimeGetCurrent()
         
         do {
-            let descriptor = FetchDescriptor<SimpleHabitData>(
+            let descriptor = FetchDescriptor<HabitData>(
                 sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
             )
             
@@ -138,29 +157,73 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("Saving single habit: \(habit.name)")
         
         do {
-            if let existingSimpleHabitData = try await loadSimpleHabitData(by: habit.id) {
+            if let existingHabitData = try await loadHabitData(by: habit.id) {
                 // Update existing habit
-                existingSimpleHabitData.updateFromHabit(habit)
+                existingHabitData.updateFromHabit(habit)
+                
+                // Update completion history
+                existingHabitData.completionHistory.removeAll()
+                for (dateString, isCompleted) in habit.completionHistory {
+                    if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                        let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                        existingHabitData.completionHistory.append(completionRecord)
+                    }
+                }
+                
+                // Update difficulty history
+                existingHabitData.difficultyHistory.removeAll()
+                for (dateString, difficulty) in habit.difficultyHistory {
+                    if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                        let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                        existingHabitData.difficultyHistory.append(difficultyRecord)
+                    }
+                }
+                
+                // Update usage history
+                existingHabitData.usageHistory.removeAll()
+                for (key, value) in habit.actualUsage {
+                    let usageRecord = UsageRecord(key: key, value: value)
+                    existingHabitData.usageHistory.append(usageRecord)
+                }
             } else {
                 // Create new habit
-                let habitData = SimpleHabitData(
+                let habitData = HabitData(
                     id: habit.id,
                     name: habit.name,
                     habitDescription: habit.description,
                     icon: habit.icon,
-                    colorString: habit.color.toHexString(),
-                    habitType: habit.habitType.rawValue,
+                    color: habit.color,
+                    habitType: habit.habitType,
                     schedule: habit.schedule,
                     goal: habit.goal,
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: habit.endDate,
                     isCompleted: habit.isCompleted,
-                    streak: habit.streak,
-                    completionHistoryJSON: encodeCompletionHistory(habit.completionHistory),
-                    difficultyHistoryJSON: encodeDifficultyHistory(habit.difficultyHistory),
-                    usageHistoryJSON: encodeUsageHistory(habit.actualUsage)
+                    streak: habit.streak
                 )
+                
+                // Add completion history
+                for (dateString, isCompleted) in habit.completionHistory {
+                    if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                        let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                        habitData.completionHistory.append(completionRecord)
+                    }
+                }
+                
+                // Add difficulty history
+                for (dateString, difficulty) in habit.difficultyHistory {
+                    if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+                        let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                        habitData.difficultyHistory.append(difficultyRecord)
+                    }
+                }
+                
+                // Add usage history
+                for (key, value) in habit.actualUsage {
+                    let usageRecord = UsageRecord(key: key, value: value)
+                    habitData.usageHistory.append(usageRecord)
+                }
                 
                 container.modelContext.insert(habitData)
             }
@@ -178,7 +241,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("Loading habit with ID: \(id)")
         
         do {
-            guard let habitData = try await loadSimpleHabitData(by: id) else {
+            guard let habitData = try await loadHabitData(by: id) else {
                 logger.info("Habit not found with ID: \(id)")
                 return nil
             }
@@ -199,7 +262,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("Deleting habit with ID: \(id)")
         
         do {
-            guard let habitData = try await loadSimpleHabitData(by: id) else {
+            guard let habitData = try await loadHabitData(by: id) else {
                 logger.warning("Habit not found for deletion: \(id)")
                 return
             }
@@ -219,7 +282,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("Clearing all habits from SwiftData")
         
         do {
-            let descriptor = FetchDescriptor<SimpleHabitData>()
+            let descriptor = FetchDescriptor<HabitData>()
             let habitDataArray = try container.modelContext.fetch(descriptor)
             
             for habitData in habitDataArray {
@@ -237,8 +300,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
     
     // MARK: - Private Helper Methods
     
-    private func loadSimpleHabitData(by id: UUID) async throws -> SimpleHabitData? {
-        let descriptor = FetchDescriptor<SimpleHabitData>(
+    private func loadHabitData(by id: UUID) async throws -> HabitData? {
+        let descriptor = FetchDescriptor<HabitData>(
             predicate: #Predicate { $0.id == id }
         )
         
@@ -246,66 +309,4 @@ final class SwiftDataStorage: HabitStorageProtocol {
         return results.first
     }
     
-    
-    // MARK: - Helper Methods for SimpleSimpleHabitData
-    
-    private func encodeCompletionHistory(_ history: [String: Int]) -> String {
-        do {
-            let data = try JSONEncoder().encode(history)
-            return String(data: data, encoding: .utf8) ?? "{}"
-        } catch {
-            logger.error("Failed to encode completion history: \(error)")
-            return "{}"
-        }
-    }
-    
-    private func encodeDifficultyHistory(_ history: [String: Int]) -> String {
-        do {
-            let data = try JSONEncoder().encode(history)
-            return String(data: data, encoding: .utf8) ?? "{}"
-        } catch {
-            logger.error("Failed to encode difficulty history: \(error)")
-            return "{}"
-        }
-    }
-    
-    private func encodeUsageHistory(_ history: [String: Int]) -> String {
-        do {
-            let data = try JSONEncoder().encode(history)
-            return String(data: data, encoding: .utf8) ?? "{}"
-        } catch {
-            logger.error("Failed to encode usage history: \(error)")
-            return "{}"
-        }
-    }
-    
-    private func decodeCompletionHistory(_ jsonString: String) -> [String: Int] {
-        guard let data = jsonString.data(using: .utf8) else { return [:] }
-        do {
-            return try JSONDecoder().decode([String: Int].self, from: data)
-        } catch {
-            logger.error("Failed to decode completion history: \(error)")
-            return [:]
-        }
-    }
-    
-    private func decodeDifficultyHistory(_ jsonString: String) -> [String: Int] {
-        guard let data = jsonString.data(using: .utf8) else { return [:] }
-        do {
-            return try JSONDecoder().decode([String: Int].self, from: data)
-        } catch {
-            logger.error("Failed to decode difficulty history: \(error)")
-            return [:]
-        }
-    }
-    
-    private func decodeUsageHistory(_ jsonString: String) -> [String: Int] {
-        guard let data = jsonString.data(using: .utf8) else { return [:] }
-        do {
-            return try JSONDecoder().decode([String: Int].self, from: data)
-        } catch {
-            logger.error("Failed to decode usage history: \(error)")
-            return [:]
-        }
-    }
 }

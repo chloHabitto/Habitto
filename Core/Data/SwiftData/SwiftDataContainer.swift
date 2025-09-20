@@ -14,9 +14,15 @@ final class SwiftDataContainer: ObservableObject {
     
     private init() {
         do {
-            // Create the model container with basic entities only
+            // Create the model container with comprehensive entities
             let schema = Schema([
-                SimpleHabitData.self
+                HabitData.self,
+                CompletionRecord.self,
+                DifficultyRecord.self,
+                UsageRecord.self,
+                HabitNote.self,
+                StorageHeader.self,
+                MigrationRecord.self
             ])
             
             let modelConfiguration = ModelConfiguration(
