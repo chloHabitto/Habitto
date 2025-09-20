@@ -8,9 +8,25 @@ class UserDefaultsStorage: HabitStorageProtocol {
     private let userDefaults = UserDefaultsWrapper.shared
     private let habitsKey = "SavedHabits"
     private let individualHabitKeyPrefix = "Habit_"
-    private lazy var backgroundQueue = BackgroundQueueManager.shared
+    private var _backgroundQueue: BackgroundQueueManager?
+    private var backgroundQueue: BackgroundQueueManager {
+        get async {
+            if let existing = _backgroundQueue { return existing }
+            let queue = await MainActor.run { BackgroundQueueManager.shared }
+            _backgroundQueue = queue
+            return queue
+        }
+    }
     private let atomicWriter = AtomicFileWriter()
-    private lazy var migrationManager = DataMigrationManager.shared
+    private var _migrationManager: DataMigrationManager?
+    private var migrationManager: DataMigrationManager {
+        get async {
+            if let existing = _migrationManager { return existing }
+            let manager = await MainActor.run { DataMigrationManager.shared }
+            _migrationManager = manager
+            return manager
+        }
+    }
     
     // Performance optimization: Cache loaded habits
     private var cachedHabits: [Habit]?
@@ -39,7 +55,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     private func performAtomicSave<T: Codable>(_ data: T, forKey key: String) async throws {
-        try await backgroundQueue.executeSerial {
+        let queue = await backgroundQueue
+        try await queue.executeSerial {
             // Use atomic file writer for critical data
             let fileURL = self.getFileURL(for: key)
             try self.atomicWriter.writeAtomically(data, to: fileURL)
@@ -56,7 +73,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     private func performSave<T: Codable>(_ data: T, forKey key: String) async throws {
-        try await backgroundQueue.executeSerial {
+        let queue = await backgroundQueue
+        try await queue.executeSerial {
             try self.userDefaults.setCodable(data, forKey: key)
             Task { @MainActor in
                 self.lastSaveTime = Date()
@@ -65,7 +83,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
-        return try await backgroundQueue.execute {
+        let queue = await backgroundQueue
+        return try await queue.execute {
             // First try to load from atomic file
             let fileURL = self.getFileURL(for: key)
             if let data = try? self.atomicWriter.readObject(type, from: fileURL) {
@@ -78,7 +97,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func delete(forKey key: String) async throws {
-        try await backgroundQueue.execute {
+        let queue = await backgroundQueue
+        try await queue.execute {
             // Delete from atomic file
             let fileURL = self.getFileURL(for: key)
             if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -91,13 +111,15 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func exists(forKey key: String) async throws -> Bool {
-        return try await backgroundQueue.execute {
+        let queue = await backgroundQueue
+        return try await queue.execute {
             self.userDefaults.exists(forKey: key)
         }
     }
     
     func keys(withPrefix prefix: String) async throws -> [String] {
-        return try await backgroundQueue.execute {
+        let queue = await backgroundQueue
+        return try await queue.execute {
             self.userDefaults.getKeys(withPrefix: prefix)
         }
     }
@@ -111,7 +133,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
         }
         
         // Use background queue for heavy operations
-        try await backgroundQueue.executeSerial {
+        let queue = await backgroundQueue
+        try await queue.executeSerial {
             // Save habits as individual items for better performance
             for habit in habits {
                 let key = "\(self.individualHabitKeyPrefix)\(habit.id.uuidString)"
@@ -137,7 +160,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
         }
         
         // Use background queue for heavy operations
-        let habits = try await backgroundQueue.execute {
+        let queue = await backgroundQueue
+        let habits = try await queue.execute {
             // Always prioritize the complete array as the source of truth
             if let habits: [Habit] = try? self.userDefaults.getCodable([Habit].self, forKey: self.habitsKey) {
                 return habits
@@ -196,7 +220,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
     }
     
     func clearAllHabits() async throws {
-        try await backgroundQueue.executeSerial {
+        let queue = await backgroundQueue
+        try await queue.executeSerial {
             let individualKeys = self.userDefaults.getKeys(withPrefix: self.individualHabitKeyPrefix)
             
             for key in individualKeys {
