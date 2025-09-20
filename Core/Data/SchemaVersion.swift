@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // MARK: - Schema Version Management
 /// Centralized schema versioning for data migrations and compatibility
@@ -84,7 +85,7 @@ struct SchemaInfo {
     let version: Int
     let description: String
     let breakingChanges: [String]
-    let migrationSteps: [MigrationStep]
+    let migrationSteps: [SchemaMigrationStep]
     let releaseDate: Date?
     let notes: String?
     
@@ -92,7 +93,7 @@ struct SchemaInfo {
         version: Int,
         description: String,
         breakingChanges: [String] = [],
-        migrationSteps: [MigrationStep] = [],
+        migrationSteps: [SchemaMigrationStep] = [],
         releaseDate: Date? = nil,
         notes: String? = nil
     ) {
@@ -105,7 +106,7 @@ struct SchemaInfo {
     }
 }
 
-struct MigrationStep {
+struct SchemaMigrationStep {
     let step: Int
     let description: String
     let operation: MigrationOperation
@@ -124,7 +125,7 @@ struct MigrationStep {
 struct MigrationInfo {
     let from: SchemaInfo
     let to: SchemaInfo
-    let steps: [MigrationStep]
+    let steps: [SchemaMigrationStep]
     let breakingChanges: [String]
     
     var isBreakingChange: Bool {
@@ -145,7 +146,7 @@ class SchemaMigrationExecutor {
     /// Execute migration from one version to another
     func executeMigration(from fromVersion: Int, to toVersion: Int) async throws {
         guard let migrationInfo = SchemaVersion.getMigrationInfo(from: fromVersion, to: toVersion) else {
-            throw MigrationError.unsupportedMigration(from: fromVersion, to: toVersion)
+            throw SchemaMigrationError.unsupportedMigration(from: fromVersion, to: toVersion)
         }
         
         logger.info("🔄 Starting migration from v\(fromVersion) to v\(toVersion)")
@@ -155,7 +156,7 @@ class SchemaMigrationExecutor {
         }
         
         // Execute migration steps
-        for (index, step) in migrationInfo.steps.enumerated() {
+        for (_, step) in migrationInfo.steps.enumerated() {
             logger.info("📋 Step \(step.step): \(step.description)")
             
             do {
@@ -164,7 +165,7 @@ class SchemaMigrationExecutor {
             } catch {
                 if step.isRequired {
                     logger.error("❌ Required step \(step.step) failed: \(error)")
-                    throw MigrationError.stepFailed(step: step.step, error: error)
+                    throw SchemaMigrationError.stepFailed(step: step.step, error: error)
                 } else {
                     logger.warning("⚠️ Optional step \(step.step) failed: \(error)")
                 }
@@ -177,7 +178,7 @@ class SchemaMigrationExecutor {
         logger.info("✅ Migration from v\(fromVersion) to v\(toVersion) completed successfully")
     }
     
-    private func executeMigrationStep(_ step: MigrationStep) async throws {
+    private func executeMigrationStep(_ step: SchemaMigrationStep) async throws {
         switch step.operation {
         case .dataTransform(let transform):
             // Execute data transformation
@@ -193,7 +194,7 @@ class SchemaMigrationExecutor {
             await performDataCleanup(cleanup)
         case .custom(let operation):
             // Execute custom operation
-            await operation()
+            operation()
         }
     }
     
@@ -209,27 +210,27 @@ class SchemaMigrationExecutor {
     
     private func performSchemaUpdate(_ update: () -> Void) async {
         // Implementation would update schema
-        await update()
+        update()
         logger.info("📋 Executing schema update")
     }
     
     private func performDataCleanup(_ cleanup: () -> Void) async {
         // Implementation would clean up old data
-        await cleanup()
+        cleanup()
         logger.info("🧹 Executing data cleanup")
     }
     
     private func updateSchemaVersion(to version: Int) async throws {
         // Update the schema version in storage
-        let container = SwiftDataContainer.shared
-        container.updateSchemaVersion(to: version)
+        let container = await SwiftDataContainer.shared
+        await container.updateSchemaVersion(to: version)
         logger.info("📝 Updated schema version to \(version)")
     }
 }
 
 // MARK: - Migration Errors
 
-enum MigrationError: Error, LocalizedError {
+enum SchemaMigrationError: Error, LocalizedError {
     case unsupportedMigration(from: Int, to: Int)
     case stepFailed(step: Int, error: Error)
     case validationFailed(step: Int, reason: String)
