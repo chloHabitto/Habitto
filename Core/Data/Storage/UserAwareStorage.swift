@@ -6,7 +6,15 @@ class UserAwareStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
     private let baseStorage: any HabitStorageProtocol
-    private lazy var authManager = AuthenticationManager.shared
+    private var _authManager: AuthenticationManager?
+    private var authManager: AuthenticationManager {
+        get async {
+            if let existing = _authManager { return existing }
+            let manager = await MainActor.run { AuthenticationManager.shared }
+            _authManager = manager
+            return manager
+        }
+    }
     
     // Cache for current user's data
     private var cachedHabits: [Habit]?
@@ -19,9 +27,10 @@ class UserAwareStorage: HabitStorageProtocol {
     // MARK: - User ID Management
     
     @MainActor
-    private func getCurrentUserId() -> String {
+    private func getCurrentUserId() async -> String {
         // Get current user ID from authentication manager
-        if let user = authManager.currentUser {
+        let manager = await authManager
+        if let user = manager.currentUser {
             return user.uid
         }
         
