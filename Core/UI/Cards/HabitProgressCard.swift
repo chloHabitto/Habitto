@@ -54,6 +54,7 @@ struct HabitProgressCard: View {
                 ProgressView(value: habitProgress.completionPercentage, total: 100)
                     .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                     .scaleEffect(x: 1, y: 2, anchor: .center)
+                    .opacity(VacationManager.shared.isVacationDay(Date()) ? 0.6 : 1.0)
                 
                 // Bottom row: Progress percentage and streak
                 HStack {
