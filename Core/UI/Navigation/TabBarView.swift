@@ -7,6 +7,23 @@ struct TabBarView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Vacation mode banner
+            if VacationManager.shared.isActive {
+                HStack(spacing: 6) {
+                    Image("Icon-Vacation_Filled")
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.blue)
+                    Text("Vacation Mode")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.blue.opacity(0.1))
+                .frame(maxWidth: .infinity)
+            }
+            
             Rectangle()
                 .fill(Color(red: 0.93, green: 0.93, blue: 0.94)) // #ECECEF
                 .frame(height: 1)

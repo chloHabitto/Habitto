@@ -10,6 +10,7 @@ struct CalendarGridComponents {
         let isToday: Bool
         let isSelected: Bool
         let isCurrentMonth: Bool
+        let isVacationDay: Bool
         let onTap: () -> Void
         
         // Animation states
@@ -32,7 +33,15 @@ struct CalendarGridComponents {
             }) {
                 ZStack {
                     // Enhanced background with gradients
-                    if isToday {
+                    if isVacationDay {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            )
+                    } else if isToday {
                         Circle()
                             .fill(
                                 LinearGradient(
@@ -286,7 +295,8 @@ struct CalendarGridComponents {
                         progress: 0.0,
                         isToday: false,
                         isSelected: false,
-                        isCurrentMonth: false
+                        isCurrentMonth: false,
+                        isVacationDay: false
                     ) {
                         // No action for overflow days
                     }
@@ -299,13 +309,15 @@ struct CalendarGridComponents {
                     let progress = getDayProgress(day)
                     let isToday = CalendarGridComponents.isToday(day: day, currentDate: currentDate)
                     let isSelected = CalendarGridComponents.isSelected(day: day, currentDate: currentDate, selectedDate: selectedDate)
+                    let isVacationDay = VacationManager.shared.isVacationDay(CalendarGridComponents.getDateForDay(day: day, currentDate: currentDate))
                     
                     CalendarDayCell(
                         day: day,
                         progress: progress,
                         isToday: isToday,
                         isSelected: isSelected,
-                        isCurrentMonth: true
+                        isCurrentMonth: true,
+                        isVacationDay: isVacationDay
                     ) {
                         onDayTap(day)
                     }
@@ -331,7 +343,8 @@ struct CalendarGridComponents {
                         progress: 0.0,
                         isToday: false,
                         isSelected: false,
-                        isCurrentMonth: false
+                        isCurrentMonth: false,
+                        isVacationDay: false
                     ) {
                         // No action for overflow days
                     }
@@ -423,6 +436,13 @@ struct CalendarGridComponents {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: date)
+    }
+    
+    static func getDateForDay(day: Int, currentDate: Date) -> Date {
+        let calendar = Calendar.current
+        let year = calendar.component(.year, from: currentDate)
+        let month = calendar.component(.month, from: currentDate)
+        return calendar.date(from: DateComponents(year: year, month: month, day: day)) ?? currentDate
     }
     
     static func getPreviousMonthDay(index: Int, firstDayOfMonth: Int, currentDate: Date) -> Int {
