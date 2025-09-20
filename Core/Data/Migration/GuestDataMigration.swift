@@ -158,7 +158,7 @@ final class GuestDataMigration: ObservableObject {
         
         // Load existing user habits
         let userHabitsKey = "\(userId)_habits"
-        var existingHabits: [Habit] = {
+        let existingHabits: [Habit] = {
             guard let userHabitsData = userDefaults.data(forKey: userHabitsKey),
                   let habits = try? JSONDecoder().decode([Habit].self, from: userHabitsData) else {
                 return []
