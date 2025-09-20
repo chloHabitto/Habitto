@@ -23,7 +23,7 @@ final class AccountDeletionService: ObservableObject {
     
     /// Check if the user needs to re-authenticate before account deletion
     func checkAuthenticationFreshness() async -> Bool {
-        guard let currentUser = authManager.currentUser else {
+        guard authManager.currentUser != nil else {
             print("❌ AccountDeletionService: No current user found")
             return false
         }
