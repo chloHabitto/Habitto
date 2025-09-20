@@ -69,6 +69,12 @@ class UserAnalytics: ObservableObject {
     
     /// Record a user event
     func recordEvent(_ event: UserEvent, metadata: [String: String] = [:]) {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 UserAnalytics: Skipping event during vacation mode - \(event.rawValue)")
+            return
+        }
+        
         let eventData = UserEventData(
             type: event,
             timestamp: Date(),
@@ -83,6 +89,12 @@ class UserAnalytics: ObservableObject {
     
     /// Record habit interaction
     func recordHabitInteraction(_ habitId: UUID, action: HabitAction, metadata: [String: String] = [:]) {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 UserAnalytics: Skipping habit interaction during vacation mode - \(action.rawValue) for habit \(habitId)")
+            return
+        }
+        
         let interaction = HabitInteraction(
             habitId: habitId,
             action: action,
@@ -100,6 +112,12 @@ class UserAnalytics: ObservableObject {
     
     /// Record screen view
     func recordScreenView(_ screen: ScreenName, metadata: [String: String] = [:]) {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 UserAnalytics: Skipping screen view during vacation mode - \(screen.rawValue)")
+            return
+        }
+        
         let screenView = ScreenView(
             screen: screen,
             timestamp: Date(),
@@ -116,6 +134,12 @@ class UserAnalytics: ObservableObject {
     
     /// Record user engagement
     func recordEngagement(_ type: EngagementType, value: Double, metadata: [String: String] = [:]) {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 UserAnalytics: Skipping engagement tracking during vacation mode - \(type.rawValue): \(value)")
+            return
+        }
+        
         let engagement = EngagementEvent(
             type: type,
             value: value,

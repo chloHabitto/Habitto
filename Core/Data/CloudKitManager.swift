@@ -171,6 +171,13 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Sync Operations
     func sync() {
+        // Skip cloud sync during vacation mode
+        if VacationManager.shared.isActive {
+            print("☁️ CloudKitManager: Skipping cloud sync during vacation mode")
+            syncStatus = .failed("Cloud sync paused during vacation mode")
+            return
+        }
+        
         guard isSignedIn else {
             syncStatus = .failed("User not signed in to iCloud")
             return
@@ -214,6 +221,12 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Custom Record Operations (for future features)
     func saveCustomRecord(_ record: CKRecord) async throws -> CKRecord {
+        // Skip cloud operations during vacation mode
+        if VacationManager.shared.isActive {
+            print("☁️ CloudKitManager: Skipping custom record save during vacation mode")
+            throw CloudKitError.syncFailed(NSError(domain: "VacationMode", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cloud operations paused during vacation mode"]))
+        }
+        
         guard let privateDatabase = privateDatabase else {
             throw CloudKitError.notConfigured
         }
@@ -221,6 +234,12 @@ class CloudKitManager: ObservableObject {
     }
     
     func fetchCustomRecords(ofType type: String) async throws -> [CKRecord] {
+        // Skip cloud operations during vacation mode
+        if VacationManager.shared.isActive {
+            print("☁️ CloudKitManager: Skipping custom record fetch during vacation mode")
+            throw CloudKitError.syncFailed(NSError(domain: "VacationMode", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cloud operations paused during vacation mode"]))
+        }
+        
         guard let privateDatabase = privateDatabase else {
             throw CloudKitError.notConfigured
         }
@@ -230,6 +249,12 @@ class CloudKitManager: ObservableObject {
     }
     
     func deleteCustomRecord(_ recordID: CKRecord.ID) async throws {
+        // Skip cloud operations during vacation mode
+        if VacationManager.shared.isActive {
+            print("☁️ CloudKitManager: Skipping custom record delete during vacation mode")
+            throw CloudKitError.syncFailed(NSError(domain: "VacationMode", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cloud operations paused during vacation mode"]))
+        }
+        
         guard let privateDatabase = privateDatabase else {
             throw CloudKitError.notConfigured
         }

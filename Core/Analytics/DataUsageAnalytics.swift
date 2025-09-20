@@ -23,6 +23,23 @@ class DataUsageAnalytics: ObservableObject {
     
     /// Take a simple storage snapshot on-demand
     func takeStorageSnapshot() async -> StorageSnapshot {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 DataUsageAnalytics: Skipping storage snapshot during vacation mode")
+            // Return cached snapshot if available, otherwise create minimal snapshot
+            if let cached = lastSnapshot {
+                return cached
+            }
+            return StorageSnapshot(
+                id: UUID(),
+                totalSize: 0,
+                habitCount: 0,
+                cacheSize: 0,
+                lastCleanupDate: nil,
+                timestamp: Date()
+            )
+        }
+        
         let snapshot = await createSnapshot()
         
         // Update UI on main actor
@@ -36,6 +53,12 @@ class DataUsageAnalytics: ObservableObject {
     
     /// Analyze storage and generate actionable suggestions
     func analyzeStorageOnDemand() async -> [OptimizationSuggestion] {
+        // Skip analytics during vacation mode
+        if VacationManager.shared.isActive {
+            print("📊 DataUsageAnalytics: Skipping storage analysis during vacation mode")
+            return []
+        }
+        
         let snapshot = await takeStorageSnapshot()
         let suggestions = generateActionableSuggestions(from: snapshot)
         

@@ -120,6 +120,12 @@ final class DataRetentionManager {
     
     /// Performs data cleanup based on the current policy
     func performCleanup() async throws -> CleanupResult {
+        // Skip cleanup operations during vacation mode
+        if VacationManager.shared.isActive {
+            logger.info("Skipping data cleanup during vacation mode")
+            return CleanupResult()
+        }
+        
         logger.info("Starting data cleanup")
         
         let startTime = Date()

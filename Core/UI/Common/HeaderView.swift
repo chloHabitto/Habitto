@@ -13,7 +13,6 @@ struct HeaderView: View {
     @EnvironmentObject var vacationManager: VacationManager
     @State private var showingLoginView = false
     @State private var showingProfileView = false
-    @State private var showingVacationModeSettings = false
     
     var body: some View {
         HStack(spacing: 0) {
@@ -102,44 +101,15 @@ struct HeaderView: View {
             Spacer()
             
             if showProfile {
-                HStack(spacing: 12) {
-                    // Vacation mode toggle button
-                    Button(action: {
-                        showingVacationModeSettings = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image("Icon-Vacation_Filled")
-                                .resizable()
-                                .frame(width: 16, height: 16)
-                                .foregroundColor(vacationManager.isActive ? .blue : .grey400)
-                            
-                            Text(vacationManager.isActive ? "Vacation" : "Vacation")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(vacationManager.isActive ? .blue : .grey400)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(vacationManager.isActive ? Color.blue.opacity(0.1) : Color.grey100)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(vacationManager.isActive ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Only show Login button when user is not signed in
-                    if !isLoggedIn {
-                        HabittoButton(
-                            size: .small,
-                            style: .fillNeutral,
-                            content: .text("Login"),
-                            hugging: true
-                        ) {
-                            showingLoginView = true
-                        }
+                // Only show Login button when user is not signed in
+                if !isLoggedIn {
+                    HabittoButton(
+                        size: .small,
+                        style: .fillNeutral,
+                        content: .text("Login"),
+                        hugging: true
+                    ) {
+                        showingLoginView = true
                     }
                 }
             } else {
@@ -163,9 +133,6 @@ struct HeaderView: View {
         }
         .sheet(isPresented: $showingProfileView) {
             ProfileView()
-        }
-        .sheet(isPresented: $showingVacationModeSettings) {
-            VacationModeSettingsView()
         }
     }
     

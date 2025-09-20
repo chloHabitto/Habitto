@@ -1,6 +1,30 @@
 import Foundation
 import OSLog
 
+// MARK: - Backup Error
+enum BackupError: Error, LocalizedError {
+    case vacationModeActive
+    case backupFailed(Error)
+    case restoreFailed(Error)
+    case invalidBackup
+    case fileNotFound
+    
+    var errorDescription: String? {
+        switch self {
+        case .vacationModeActive:
+            return "Backup operations are paused during vacation mode"
+        case .backupFailed(let error):
+            return "Backup failed: \(error.localizedDescription)"
+        case .restoreFailed(let error):
+            return "Restore failed: \(error.localizedDescription)"
+        case .invalidBackup:
+            return "Invalid backup file"
+        case .fileNotFound:
+            return "Backup file not found"
+        }
+    }
+}
+
 // MARK: - Backup Manager
 /// Manages automatic and manual backups with rotating snapshots
 @MainActor
@@ -57,6 +81,12 @@ class BackupManager: ObservableObject {
     
     /// Create a backup snapshot of current data
     func createBackup() async throws -> BackupSnapshot {
+        // Skip backup operations during vacation mode
+        if VacationManager.shared.isActive {
+            logger.info("Skipping backup creation during vacation mode")
+            throw BackupError.vacationModeActive
+        }
+        
         logger.info("Starting backup creation")
         isBackingUp = true
         defer { isBackingUp = false }
@@ -111,6 +141,12 @@ class BackupManager: ObservableObject {
     
     /// Create backup if needed
     func createBackupIfNeeded() async {
+        // Skip automatic backups during vacation mode
+        if VacationManager.shared.isActive {
+            logger.info("Skipping automatic backup during vacation mode")
+            return
+        }
+        
         guard shouldCreateBackup() else { return }
         
         do {
