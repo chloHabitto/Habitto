@@ -17,8 +17,11 @@ final class HabitData {
     var reminder: String
     var startDate: Date
     var endDate: Date?
-    var isCompleted: Bool
-    var streak: Int
+    // MARK: - Denormalized Fields (Computed from completionHistory)
+    // WARNING: These fields are cached/denormalized for performance
+    // Use recomputeCompletionStatus() and recomputeStreak() to refresh them
+    var isCompleted: Bool // ⚠️ DENORMALIZED - use isCompleted(for:) for truth
+    var streak: Int // ⚠️ DENORMALIZED - use calculateTrueStreak() for truth
     var createdAt: Date
     var updatedAt: Date
     
@@ -126,6 +129,53 @@ final class HabitData {
         self.isCompleted = habit.isCompleted
         self.streak = habit.streak
         self.updatedAt = Date()
+    }
+    
+    // MARK: - Denormalized Field Recompute Methods
+    
+    /// Recomputes the isCompleted field from completionHistory
+    /// Call this after modifying completionHistory to keep denormalized field in sync
+    func recomputeCompletionStatus() {
+        let today = Calendar.current.startOfDay(for: Date())
+        self.isCompleted = isCompleted(for: today)
+    }
+    
+    /// Recomputes the streak field from completionHistory
+    /// Call this after modifying completionHistory to keep denormalized field in sync
+    func recomputeStreak() {
+        self.streak = calculateTrueStreak()
+    }
+    
+    /// Recomputes both denormalized fields
+    /// Call this after bulk completionHistory changes
+    func recomputeDenormalizedFields() {
+        recomputeCompletionStatus()
+        recomputeStreak()
+    }
+    
+    /// Check if habit is completed for a specific date (source of truth)
+    func isCompleted(for date: Date) -> Bool {
+        let dateKey = ISO8601DateHelper.shared.string(from: date)
+        let completionRecord = completionHistory.first { record in
+            ISO8601DateHelper.shared.string(from: record.date) == dateKey
+        }
+        return completionRecord?.isCompleted ?? false
+    }
+    
+    /// Calculate true streak from completionHistory (source of truth)
+    func calculateTrueStreak() -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var streak = 0
+        var currentDate = today
+        
+        // Count consecutive completed days backwards from today
+        while isCompleted(for: currentDate) {
+            streak += 1
+            currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+        }
+        
+        return streak
     }
     
     @MainActor

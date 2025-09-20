@@ -9,18 +9,23 @@ class KeychainManager {
     
     // MARK: - Keychain Operations
     
-    /// Store sensitive data in Keychain
+    /// Store sensitive data in Keychain with proper accessibility settings
     func store(key: String, data: Data) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
-            kSecValueData as String: data
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ]
         
         // Delete any existing item first
-        SecItemDelete(query as CFDictionary)
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
         
-        // Add the new item
+        // Add the new item with security settings
         let status = SecItemAdd(query as CFDictionary, nil)
         return status == errSecSuccess
     }
