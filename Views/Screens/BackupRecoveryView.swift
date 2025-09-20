@@ -52,6 +52,8 @@ struct BackupRecoveryView: View {
                                         .foregroundColor(.text03)
                                 }
                                 
+                                Spacer()
+                                
                                 Toggle("", isOn: $isAutomaticBackupEnabled)
                                     .fixedSize(horizontal: true, vertical: false)
                                     .onChange(of: isAutomaticBackupEnabled) {
@@ -126,6 +128,8 @@ struct BackupRecoveryView: View {
                                                 .font(.system(size: 14, weight: .regular))
                                                 .foregroundColor(.text03)
                                         }
+                                        
+                                        Spacer()
                                         
                                         Toggle("", isOn: $wifiOnlyBackup)
                                             .fixedSize(horizontal: true, vertical: false)
