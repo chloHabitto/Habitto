@@ -40,14 +40,21 @@ struct ScheduledHabitItem: View {
     
     // Computed property for completion button using animated checkbox
     private var completionButton: some View {
-        AnimatedCheckbox(
+        let vacationManager = VacationManager.shared
+        let isVacationDay = vacationManager.isVacationDay(selectedDate)
+        
+        return AnimatedCheckbox(
             isChecked: isHabitCompleted(),
-            accentColor: habit.color,
+            accentColor: isVacationDay ? .grey400 : habit.color,
             isAnimating: isCompletingAnimation,
             action: {
-                completeHabit()
+                if !isVacationDay {
+                    completeHabit()
+                }
             }
         )
+        .disabled(isVacationDay)
+        .opacity(isVacationDay ? 0.6 : 1.0)
     }
     
     var body: some View {

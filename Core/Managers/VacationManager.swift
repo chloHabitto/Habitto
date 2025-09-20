@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Notification Names
+extension Notification.Name {
+    static let vacationModeEnded = Notification.Name("vacationModeEnded")
+}
+
 // MARK: - Vacation Period Model
 struct VacationPeriod: Codable, Hashable, Identifiable {
     let id: UUID
@@ -132,10 +137,18 @@ final class VacationManager: ObservableObject {
     
     private func rescheduleNotifications() {
         print("🔔 Vacation Mode: Rescheduling all habit notifications")
-        // Note: This will be called when vacation ends
-        // The actual rescheduling will be handled by the HabitRepository
-        // when it reloads habits and reschedules notifications
-        print("✅ Vacation Mode: Notifications will be rescheduled when vacation ends")
+        
+        // Trigger notification rescheduling through the HabitRepository
+        // This will be handled automatically when the app detects vacation mode has ended
+        // and reloads habits, which will trigger notification rescheduling
+        
+        // For immediate rescheduling, we can also trigger it directly
+        DispatchQueue.main.async {
+            // Post notification to trigger habit reload and notification rescheduling
+            NotificationCenter.default.post(name: .vacationModeEnded, object: nil)
+        }
+        
+        print("✅ Vacation Mode: Notifications rescheduling triggered")
     }
     
     // MARK: - Data Persistence

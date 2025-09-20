@@ -183,6 +183,25 @@ struct HomeTabView: View {
     private var habitsListSection: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
+                // Vacation status indicator - first item in scrollable view
+                if VacationManager.shared.isVacationDay(selectedDate) {
+                    HStack(spacing: 8) {
+                        Image("Icon-Vacation_Filled")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(.onSecondary)
+                        Text("On Vacation")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.onSecondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.secondaryContainer)
+                    .clipShape(Capsule())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 8)
+                }
+                
                 if habits.isEmpty {
                     // No habits created in the app at all
                     HabitEmptyStateView.noHabitsYet()
