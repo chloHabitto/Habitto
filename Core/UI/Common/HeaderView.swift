@@ -73,9 +73,16 @@ struct HeaderView: View {
                 // Streak pill
                 Button(action: onStreakTap) {
                     HStack(spacing: 6) {
-                        Image(.iconFire)
-                            .resizable()
-                            .frame(width: 32, height: 32)
+                        // Show frozen fire icon when vacation mode is active
+                        if VacationManager.shared.isVacationDay(Date()) {
+                            Image("Icon-fire-frozen")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                        } else {
+                            Image(.iconFire)
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                        }
                         Text(pluralizeStreak(currentStreak))
                             .font(.appButtonText1)
                             .foregroundColor(.black)

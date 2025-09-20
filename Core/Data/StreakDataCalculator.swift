@@ -547,6 +547,13 @@ class StreakDataCalculator {
             return false
         }
         
+        // Check if it's a vacation day - habits should not be shown on vacation days
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Vacation day")
+            return false
+        }
+        
         // Check if the habit is scheduled for this weekday
         let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday, targetDate: date)
         

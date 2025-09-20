@@ -30,6 +30,13 @@ class NotificationManager: ObservableObject {
     
     // Schedule a notification for a habit reminder
     func scheduleHabitReminder(for habit: Habit, reminderTime: Date, reminderId: String) {
+        // Check if vacation mode is active - don't schedule notifications during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(reminderTime) {
+            print("🔇 NotificationManager: Skipping notification for \(habit.name) - vacation day")
+            return
+        }
+        
         let content = UNMutableNotificationContent()
         content.title = "Habit Reminder"
         content.body = "Time to complete: \(habit.name)"
@@ -327,6 +334,13 @@ class NotificationManager: ObservableObject {
     
     // Schedule friendly reminder notifications for incomplete habits
     func scheduleFriendlyReminders(for date: Date, habits: [Habit]) {
+        // Check if vacation mode is active - don't schedule friendly reminders during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔇 NotificationManager: Skipping friendly reminders for \(date) - vacation day")
+            return
+        }
+        
         let incompleteHabits = getIncompleteScheduledHabits(for: date, habits: habits)
         
         guard !incompleteHabits.isEmpty else {
@@ -446,6 +460,13 @@ class NotificationManager: ObservableObject {
     // Schedule notifications for a specific date (for daily rescheduling)
     func scheduleNotificationsForDate(_ date: Date, habits: [Habit]) {
         print("🔄 NotificationManager: Scheduling notifications for date: \(date)")
+        
+        // Check if vacation mode is active - don't schedule notifications during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔇 NotificationManager: Skipping all notifications for \(date) - vacation day")
+            return
+        }
         
         for habit in habits {
             // Only schedule if habit should be shown on this date
