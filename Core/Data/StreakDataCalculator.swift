@@ -29,8 +29,8 @@ class StreakDataCalculator {
         
         // Iterate through all dates from habit start to today
         while currentDate <= today {
-            // Skip vacation days - they don't count toward or break streaks
-            if vacationManager.isVacationDay(currentDate) {
+            // Skip vacation days during active vacation - they don't count toward or break streaks
+            if vacationManager.isActive && vacationManager.isVacationDay(currentDate) {
                 // Move to next day without affecting streak
                 currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
                 continue
@@ -78,7 +78,7 @@ class StreakDataCalculator {
         // Calculate completion rate (exclude vacation days)
         let vacationManager = VacationManager.shared
         let completedHabitsToday = habits.filter { 
-            !vacationManager.isVacationDay(today) && $0.isCompleted(for: today) 
+            !(vacationManager.isActive && vacationManager.isVacationDay(today)) && $0.isCompleted(for: today) 
         }.count
         let completionRate = (completedHabitsToday * 100) / habits.count
         
@@ -100,8 +100,8 @@ class StreakDataCalculator {
             calendar.date(byAdding: .day, value: -dayOffset, to: today)
         }
         
-        // Filter out vacation days from the calculation
-        let nonVacationDays = last7Days.filter { !vacationManager.isVacationDay($0) }
+        // Filter out vacation days during active vacation from the calculation
+        let nonVacationDays = last7Days.filter { !(vacationManager.isActive && vacationManager.isVacationDay($0)) }
         
         let totalCompletions = nonVacationDays.reduce(0) { total, date in
             total + habits.filter { $0.isCompleted(for: date) }.count
@@ -547,10 +547,10 @@ class StreakDataCalculator {
             return false
         }
         
-        // Check if it's a vacation day - habits should not be shown on vacation days
+        // Check if it's a vacation day AND vacation is currently active - habits should not be shown during active vacation
         let vacationManager = VacationManager.shared
-        if vacationManager.isVacationDay(date) {
-            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Vacation day")
+        if vacationManager.isActive && vacationManager.isVacationDay(date) {
+            print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Active vacation day")
             return false
         }
         

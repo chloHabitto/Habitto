@@ -152,7 +152,7 @@ struct WeeklyCalendarGridView: View {
                                         intensity: heatmapData.intensity,
                                         isScheduled: heatmapData.isScheduled,
                                         completionPercentage: heatmapData.completionPercentage,
-                                        isVacationDay: VacationManager.shared.isVacationDay(Calendar.current.date(byAdding: .day, value: dayIndex, to: selectedWeekStartDate) ?? selectedWeekStartDate)
+                                        isVacationDay: VacationManager.shared.isActive && VacationManager.shared.isVacationDay(Calendar.current.date(byAdding: .day, value: dayIndex, to: selectedWeekStartDate) ?? selectedWeekStartDate)
                                     )
                                     .frame(width: 24, height: 36)
                                     .background(Color.white)

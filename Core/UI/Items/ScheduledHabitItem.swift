@@ -38,9 +38,9 @@ struct ScheduledHabitItem: View {
         return min(percentage, 1.0)
     }
     
-    // Computed property to check if it's a vacation day
+    // Computed property to check if it's a vacation day and vacation is currently active
     private var isVacationDay: Bool {
-        VacationManager.shared.isVacationDay(selectedDate)
+        VacationManager.shared.isActive && VacationManager.shared.isVacationDay(selectedDate)
     }
     
     // Computed property for completion button using animated checkbox

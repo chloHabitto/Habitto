@@ -79,6 +79,7 @@ final class VacationManager: ObservableObject {
         current = VacationPeriod(start: start)
         muteNotifications()
         saveVacationData()
+        print("🏖️ VACATION MODE DEBUG: Started vacation mode - isActive: \(isActive)")
     }
 
     func endVacation(now: Date = .now) {
@@ -88,6 +89,27 @@ final class VacationManager: ObservableObject {
         appendAndCoalesce(cur)
         rescheduleNotifications()
         saveVacationData()
+        print("🏖️ VACATION MODE DEBUG: Ended vacation mode - isActive: \(isActive)")
+    }
+    
+    func cancelVacationForDate(_ date: Date) {
+        let targetDate = date.startOfDay(in: tz)
+        let today = Date().startOfDay(in: tz)
+        
+        print("🏖️ VACATION MODE DEBUG: cancelVacationForDate called for: \(targetDate)")
+        print("🏖️ VACATION MODE DEBUG: Today is: \(today)")
+        print("🏖️ VACATION MODE DEBUG: Current vacation active: \(isActive)")
+        
+        // If vacation is currently active, end it completely
+        // This is the most user-friendly approach - when they click cancel, vacation ends now
+        if isActive {
+            endVacation(now: today)
+            print("🏖️ VACATION MODE DEBUG: Ended vacation completely - vacation was active")
+            return
+        }
+        
+        // If no current vacation is active, just log it
+        print("🏖️ VACATION MODE DEBUG: No active vacation to cancel")
     }
 
     func isVacationDay(_ day: Date) -> Bool {
@@ -99,7 +121,17 @@ final class VacationManager: ObservableObject {
             return s <= d1 && e >= d0 // intersects day
         }
         
-        return (current.map(contains) ?? false) || history.contains(where: contains)
+        let isCurrentVacationDay = current.map(contains) ?? false
+        let isHistoricalVacationDay = history.contains(where: contains)
+        let result = isCurrentVacationDay || isHistoricalVacationDay
+        
+        // Debug logging for vacation day detection
+        let dateKey = ISO8601DateHelper.shared.string(from: day)
+        if result {
+            print("🏖️ VACATION DAY DEBUG: \(dateKey) is a vacation day - Current: \(isCurrentVacationDay), Historical: \(isHistoricalVacationDay)")
+        }
+        
+        return result
     }
     
     // MARK: - Private Methods
@@ -168,11 +200,16 @@ final class VacationManager: ObservableObject {
     private func loadVacationData() {
         guard let data = UserDefaults.standard.data(forKey: "VacationData"),
               let vacationData = try? JSONDecoder().decode(VacationData.self, from: data) else {
+            print("🏖️ VACATION MODE DEBUG: No vacation data found in UserDefaults")
             return
         }
         
         self.current = vacationData.current
         self.history = vacationData.history
+        print("🏖️ VACATION MODE DEBUG: Loaded vacation data - isActive: \(isActive), History count: \(history.count)")
+        if let current = current {
+            print("🏖️ VACATION MODE DEBUG: Current vacation period: \(current.start) - \(current.end?.description ?? "ongoing")")
+        }
     }
 }
 
@@ -270,5 +307,15 @@ extension VacationManager {
         }
         print("  - Is active: \(isActive)")
         print("  - Current timezone: \(tz.identifier)")
+        print("  - Today is vacation day: \(isVacationDay(Date()))")
+    }
+    
+    // MARK: - Debug Helper Methods
+    func clearAllVacationData() {
+        print("🏖️ VACATION MODE DEBUG: Clearing all vacation data")
+        current = nil
+        history = []
+        saveVacationData()
+        print("🏖️ VACATION MODE DEBUG: All vacation data cleared - isActive: \(isActive)")
     }
 }
