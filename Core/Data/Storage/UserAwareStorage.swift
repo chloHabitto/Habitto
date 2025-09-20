@@ -6,7 +6,7 @@ class UserAwareStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
     private let baseStorage: any HabitStorageProtocol
-    private let authManager = AuthenticationManager.shared
+    private lazy var authManager = AuthenticationManager.shared
     
     // Cache for current user's data
     private var cachedHabits: [Habit]?

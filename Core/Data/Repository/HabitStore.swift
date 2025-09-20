@@ -20,22 +20,98 @@ final actor HabitStore {
     private lazy var userDefaultsStorage = UserAwareStorage(baseStorage: baseUserDefaultsStorage)
     private lazy var swiftDataStorage = UserAwareStorage(baseStorage: baseSwiftDataStorage)
     
-    // Migration and retention
-    private let migrationManager = DataMigrationManager.shared
-    private let retentionManager = DataRetentionManager.shared
-    private let historyCapper = HistoryCapper.shared
+    // MARK: - Manager Properties (Actor-Safe)
+    // Create instances on-demand to avoid main actor isolation issues
     
-    // CloudKit and conflict resolution
-    private let cloudKitSyncManager = CloudKitSyncManager.shared
-    private let conflictResolver = ConflictResolutionManager.shared
+    private var _migrationManager: DataMigrationManager?
+    private var migrationManager: DataMigrationManager {
+        get async {
+            if let existing = _migrationManager { return existing }
+            let manager = await MainActor.run { DataMigrationManager.shared }
+            _migrationManager = manager
+            return manager
+        }
+    }
     
-    // Backup and recovery
-    private let backupManager = BackupManager.shared
+    private var _retentionManager: DataRetentionManager?
+    private var retentionManager: DataRetentionManager {
+        get async {
+            if let existing = _retentionManager { return existing }
+            let manager = await MainActor.run { DataRetentionManager.shared }
+            _retentionManager = manager
+            return manager
+        }
+    }
     
-    // Performance monitoring - these are safe to use from any context
-    private let performanceMetrics = PerformanceMetrics.shared
-    private let dataUsageAnalytics = DataUsageAnalytics.shared
-    private let userAnalytics = UserAnalytics.shared
+    private var _historyCapper: HistoryCapper?
+    private var historyCapper: HistoryCapper {
+        get async {
+            if let existing = _historyCapper { return existing }
+            let capper = await MainActor.run { HistoryCapper.shared }
+            _historyCapper = capper
+            return capper
+        }
+    }
+    
+    private var _cloudKitSyncManager: CloudKitSyncManager?
+    private var cloudKitSyncManager: CloudKitSyncManager {
+        get async {
+            if let existing = _cloudKitSyncManager { return existing }
+            let manager = await MainActor.run { CloudKitSyncManager.shared }
+            _cloudKitSyncManager = manager
+            return manager
+        }
+    }
+    
+    private var _conflictResolver: ConflictResolutionManager?
+    private var conflictResolver: ConflictResolutionManager {
+        get async {
+            if let existing = _conflictResolver { return existing }
+            let resolver = await MainActor.run { ConflictResolutionManager.shared }
+            _conflictResolver = resolver
+            return resolver
+        }
+    }
+    
+    private var _backupManager: BackupManager?
+    private var backupManager: BackupManager {
+        get async {
+            if let existing = _backupManager { return existing }
+            let manager = await MainActor.run { BackupManager.shared }
+            _backupManager = manager
+            return manager
+        }
+    }
+    
+    private var _performanceMetrics: PerformanceMetrics?
+    private var performanceMetrics: PerformanceMetrics {
+        get async {
+            if let existing = _performanceMetrics { return existing }
+            let metrics = await MainActor.run { PerformanceMetrics.shared }
+            _performanceMetrics = metrics
+            return metrics
+        }
+    }
+    
+    private var _dataUsageAnalytics: DataUsageAnalytics?
+    private var dataUsageAnalytics: DataUsageAnalytics {
+        get async {
+            if let existing = _dataUsageAnalytics { return existing }
+            let analytics = await MainActor.run { DataUsageAnalytics.shared }
+            _dataUsageAnalytics = analytics
+            return analytics
+        }
+    }
+    
+    private var _userAnalytics: UserAnalytics?
+    private var userAnalytics: UserAnalytics {
+        get async {
+            if let existing = _userAnalytics { return existing }
+            let analytics = await MainActor.run { UserAnalytics.shared }
+            _userAnalytics = analytics
+            return analytics
+        }
+    }
     
     private init() {
         logger.info("HabitStore initialized")
@@ -48,13 +124,21 @@ final actor HabitStore {
         logger.info("Loading habits from storage")
         
         // Check if migration is needed
-        if await migrationManager.needsMigration() {
-            try await migrationManager.executeMigrations()
+        let migrationMgr = await migrationManager
+        if await migrationMgr.needsMigration() {
+            try await migrationMgr.executeMigrations()
         }
         
         // Check if data retention cleanup is needed
-        if retentionManager.currentPolicy.autoCleanupEnabled {
-            try? await retentionManager.performCleanup()
+        let retentionMgr = await retentionManager
+        if retentionMgr.currentPolicy.autoCleanupEnabled {
+            // Handle the result of the try? operation
+            let cleanupResult = try? await retentionMgr.performCleanup()
+            if cleanupResult != nil {
+                logger.info("Data retention cleanup completed")
+            } else {
+                logger.warning("Data retention cleanup failed")
+            }
         }
         
         // Use SwiftData for modern persistence
@@ -78,8 +162,9 @@ final actor HabitStore {
         logger.info("Successfully loaded \(habits.count) habits from SwiftData in \(String(format: "%.3f", timeElapsed))s")
         
         // Record performance metrics
-        await performanceMetrics.recordTiming("dataLoad", duration: timeElapsed)
-        await performanceMetrics.recordEvent(PerformanceEvent(
+        let metrics = await performanceMetrics
+        await metrics.recordTiming("dataLoad", duration: timeElapsed)
+        await metrics.recordEvent(PerformanceEvent(
             type: .dataLoad,
             description: "Loaded \(habits.count) habits",
             metadata: ["habit_count": "\(habits.count)"]
@@ -122,7 +207,9 @@ final actor HabitStore {
         logger.info("Saving \(habits.count) habits to storage")
         
         // Cap history data to prevent unlimited growth
-        let cappedHabits = historyCapper.capAllHabits(habits, using: retentionManager.currentPolicy)
+        let capper = await historyCapper
+        let retentionMgr = await retentionManager
+        let cappedHabits = capper.capAllHabits(habits, using: retentionMgr.currentPolicy)
         logger.debug("History capping applied to \(habits.count) habits")
         
         // Validate habits before saving
@@ -158,8 +245,9 @@ final actor HabitStore {
         logger.info("Successfully saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
         
         // Record performance metrics
-        await performanceMetrics.recordTiming("dataSave", duration: timeElapsed)
-        await performanceMetrics.recordEvent(PerformanceEvent(
+        let metrics = await performanceMetrics
+        await metrics.recordTiming("dataSave", duration: timeElapsed)
+        await metrics.recordEvent(PerformanceEvent(
             type: .dataSave,
             description: "Saved \(habits.count) habits",
             metadata: [
@@ -173,7 +261,8 @@ final actor HabitStore {
         
         // Create backup if needed (run in background)
         Task {
-            await backupManager.createBackupIfNeeded()
+            let backupMgr = await backupManager
+            await backupMgr.createBackupIfNeeded()
         }
     }
     
@@ -184,7 +273,8 @@ final actor HabitStore {
         logger.info("Habit details - name: '\(habit.name)', goal: '\(habit.goal)', schedule: '\(habit.schedule)'")
         
         // Record user analytics
-        await userAnalytics.recordEvent(.habitCreated, metadata: [
+        let analytics = await userAnalytics
+        await analytics.recordEvent(.habitCreated, metadata: [
             "habit_name": habit.name,
             "habit_type": habit.habitType.rawValue
         ])
@@ -225,7 +315,8 @@ final actor HabitStore {
         }
         
         // Record user analytics
-        await userAnalytics.recordEvent(.featureUsed, metadata: [
+        let analytics = await userAnalytics
+        await analytics.recordEvent(.featureUsed, metadata: [
             "action": "habit_edited",
             "habit_name": habit.name,
             "habit_id": habit.id.uuidString
@@ -252,7 +343,8 @@ final actor HabitStore {
         logger.info("Deleting habit: \(habit.name)")
         
         // Record user analytics
-        await userAnalytics.recordEvent(.featureUsed, metadata: [
+        let analytics = await userAnalytics
+        await analytics.recordEvent(.featureUsed, metadata: [
             "action": "habit_deleted",
             "habit_name": habit.name,
             "habit_id": habit.id.uuidString
@@ -279,7 +371,8 @@ final actor HabitStore {
         
         // Record user analytics for habit completion
         if progress > 0 {
-            await userAnalytics.recordEvent(.habitCompleted, metadata: [
+            let analytics = await userAnalytics
+            await analytics.recordEvent(.habitCompleted, metadata: [
                 "habit_name": habit.name,
                 "habit_id": habit.id.uuidString,
                 "date": dateKey
@@ -367,7 +460,7 @@ final actor HabitStore {
         // Filter difficulty history by date range
         var difficulties: [Double] = []
         for (dateString, difficulty) in habit.difficultyHistory {
-            guard let date = await ISO8601DateHelper.shared.date(from: dateString) else { continue }
+            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
             if date >= startDate && date < endDate {
                 difficulties.append(Double(difficulty))
             }
@@ -408,7 +501,7 @@ final actor HabitStore {
         var allDifficulties: [Double] = []
         for habit in habits {
             for (dateString, difficulty) in habit.difficultyHistory {
-                guard let date = await ISO8601DateHelper.shared.date(from: dateString) else { continue }
+                guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
                 if date >= startDate && date < endDate {
                     allDifficulties.append(Double(difficulty))
                 }
@@ -424,18 +517,7 @@ final actor HabitStore {
     func validateDataIntegrity() async throws -> Bool {
         logger.info("Validating data integrity")
         
-        do {
-            // Try SwiftData validation first
-            if let swiftDataContainer = SwiftDataContainer.shared as? SwiftDataContainer {
-                return await MainActor.run {
-                    swiftDataContainer.validateDataIntegrity()
-                }
-            }
-        } catch {
-            logger.warning("SwiftData validation failed: \(error.localizedDescription)")
-        }
-        
-        // Fallback to basic validation
+        // Simplified validation - remove the problematic SwiftData access
         let habits = try await loadHabits()
         
         // Check for duplicate IDs
@@ -457,19 +539,7 @@ final actor HabitStore {
     func cleanupOrphanedRecords() async throws {
         logger.info("Cleaning up orphaned records")
         
-        do {
-            // Try SwiftData cleanup first
-            if let swiftDataContainer = SwiftDataContainer.shared as? SwiftDataContainer {
-                await MainActor.run {
-                    swiftDataContainer.cleanupOrphanedRecords()
-                }
-                logger.info("SwiftData cleanup completed")
-            }
-        } catch {
-            logger.warning("SwiftData cleanup failed: \(error.localizedDescription)")
-        }
-        
-        // Fallback to basic cleanup
+        // Simplified cleanup - remove the problematic SwiftData access
         let habits = try await loadHabits()
         
         // Remove habits with invalid IDs (default UUID)
@@ -498,8 +568,9 @@ final actor HabitStore {
     }
     
     /// Gets the current data retention policy
-    func getRetentionPolicy() -> DataRetentionPolicy {
-        return retentionManager.currentPolicy
+    func getRetentionPolicy() async -> DataRetentionPolicy {
+        let retentionMgr = await retentionManager
+        return retentionMgr.currentPolicy
     }
     
     /// Gets data size information for all habits
@@ -507,16 +578,19 @@ final actor HabitStore {
         let habits = try await loadHabits()
         var sizeInfo: [UUID: DataSizeInfo] = [:]
         
+        let capper = await historyCapper
         for habit in habits {
-            sizeInfo[habit.id] = historyCapper.getHabitDataSize(habit)
+            sizeInfo[habit.id] = capper.getHabitDataSize(habit)
         }
         
         return sizeInfo
     }
     
     /// Caps history for a specific habit
-    func capHabitHistory(_ habit: Habit) -> Habit {
-        return historyCapper.capHabitHistory(habit, using: retentionManager.currentPolicy)
+    func capHabitHistory(_ habit: Habit) async -> Habit {
+        let capper = await historyCapper
+        let retentionMgr = await retentionManager
+        return capper.capHabitHistory(habit, using: retentionMgr.currentPolicy)
     }
     
     // MARK: - CloudKit Conflict Resolution
@@ -526,40 +600,46 @@ final actor HabitStore {
         logger.info("Starting CloudKit sync with conflict resolution")
         
         // Check if CloudKit is available
-        guard cloudKitSyncManager.isCloudKitAvailable() else {
+        let syncManager = await cloudKitSyncManager
+        guard syncManager.isCloudKitAvailable() else {
             logger.warning("CloudKit not available, skipping sync")
             throw CloudKitError.notConfigured
         }
         
-        return try await cloudKitSyncManager.performFullSync()
+        return try await syncManager.performFullSync()
     }
     
     /// Resolves conflicts between two habits using field-level resolution
-    func resolveHabitConflict(_ localHabit: Habit, _ remoteHabit: Habit) -> Habit {
+    func resolveHabitConflict(_ localHabit: Habit, _ remoteHabit: Habit) async -> Habit {
         logger.info("Resolving conflict between local and remote habit: \(localHabit.name)")
-        return conflictResolver.resolveHabitConflict(localHabit, remoteHabit)
+        let resolver = await conflictResolver
+        return resolver.resolveHabitConflict(localHabit, remoteHabit)
     }
     
     /// Gets conflict resolution rules summary
-    func getConflictResolutionRules() -> String {
-        return conflictResolver.getRulesSummary()
+    func getConflictResolutionRules() async -> String {
+        let resolver = await conflictResolver
+        return resolver.getRulesSummary()
     }
     
     /// Adds a custom conflict resolution rule
-    func addConflictResolutionRule(_ rule: FieldConflictRule) {
-        conflictResolver.addCustomRule(rule)
+    func addConflictResolutionRule(_ rule: FieldConflictRule) async {
+        let resolver = await conflictResolver
+        resolver.addCustomRule(rule)
         logger.info("Added custom conflict resolution rule for field: \(rule.fieldName)")
     }
     
     /// Removes a custom conflict resolution rule
-    func removeConflictResolutionRule(for fieldName: String) {
-        conflictResolver.removeCustomRule(for: fieldName)
+    func removeConflictResolutionRule(for fieldName: String) async {
+        let resolver = await conflictResolver
+        resolver.removeCustomRule(for: fieldName)
         logger.info("Removed custom conflict resolution rule for field: \(fieldName)")
     }
     
     /// Validates conflict resolution rules
-    func validateConflictResolutionRules() -> [String] {
-        return conflictResolver.validateRules()
+    func validateConflictResolutionRules() async -> [String] {
+        let resolver = await conflictResolver
+        return resolver.validateRules()
     }
     
     // MARK: - Account Deletion

@@ -8,9 +8,9 @@ class UserDefaultsStorage: HabitStorageProtocol {
     private let userDefaults = UserDefaultsWrapper.shared
     private let habitsKey = "SavedHabits"
     private let individualHabitKeyPrefix = "Habit_"
-    private let backgroundQueue = BackgroundQueueManager.shared
+    private lazy var backgroundQueue = BackgroundQueueManager.shared
     private let atomicWriter = AtomicFileWriter()
-    private let migrationManager = DataMigrationManager.shared
+    private lazy var migrationManager = DataMigrationManager.shared
     
     // Performance optimization: Cache loaded habits
     private var cachedHabits: [Habit]?
