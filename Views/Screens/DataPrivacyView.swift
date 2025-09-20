@@ -3,6 +3,7 @@ import SwiftUI
 struct DataPrivacyView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingBackupRecovery = false
+    @State private var showingExportData = false
     
     var body: some View {
         NavigationView {
@@ -57,7 +58,7 @@ struct DataPrivacyView: View {
                                     subtitle: "Download your personal data",
                                     hasChevron: true
                                 ) {
-                                    // TODO: Implement data export
+                                    showingExportData = true
                                 }
                                 
                                 Divider()
@@ -97,6 +98,9 @@ struct DataPrivacyView: View {
         }
         .sheet(isPresented: $showingBackupRecovery) {
             BackupRecoveryView()
+        }
+        .sheet(isPresented: $showingExportData) {
+            ExportDataView()
         }
     }
 }
