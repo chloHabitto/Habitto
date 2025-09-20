@@ -5,39 +5,58 @@ import Foundation
 /// Prevents forgetting to scope queries by providing a single source of truth
 
 struct CurrentUser {
-    private let authManager = AuthenticationManager.shared
     
     /// Get the current user ID, or guest identifier if not authenticated
     var id: String {
-        if let user = authManager.currentUser {
-            return user.uid
+        get async {
+            await MainActor.run {
+                if let user = AuthenticationManager.shared.currentUser {
+                    return user.uid
+                }
+                return Self.guestId
+            }
         }
-        return Self.guestId
     }
     
     /// Get the current user ID or guest identifier (alias for id)
     var idOrGuest: String {
-        return id
+        get async {
+            return await id
+        }
     }
     
     /// Check if current user is authenticated
     var isAuthenticated: Bool {
-        return authManager.currentUser != nil
+        get async {
+            await MainActor.run {
+                return AuthenticationManager.shared.currentUser != nil
+            }
+        }
     }
     
     /// Check if current user is in guest mode
     var isGuest: Bool {
-        return !isAuthenticated
+        get async {
+            return !(await isAuthenticated)
+        }
     }
     
     /// Get user email if authenticated, nil otherwise
     var email: String? {
-        return authManager.currentUser?.email
+        get async {
+            await MainActor.run {
+                return AuthenticationManager.shared.currentUser?.email
+            }
+        }
     }
     
     /// Get display name if authenticated, nil otherwise
     var displayName: String? {
-        return authManager.currentUser?.displayName
+        get async {
+            await MainActor.run {
+                return AuthenticationManager.shared.currentUser?.displayName
+            }
+        }
     }
     
     // MARK: - Constants
@@ -60,8 +79,7 @@ struct CurrentUser {
 
 extension CurrentUser {
     /// Create a predicate for filtering by current user (including guest mode)
-    static func currentUserPredicate<T>() -> Predicate<T> where T: AnyObject {
-        let currentUserId = CurrentUser().idOrGuest
+    static func currentUserPredicate<T>(currentUserId: String) -> Predicate<T> where T: AnyObject {
         return #Predicate<T> { item in
             // This assumes the model has a userId property
             // The actual implementation would depend on the model
@@ -70,11 +88,11 @@ extension CurrentUser {
     }
     
     /// Create a predicate for filtering by authenticated users only
-    static func authenticatedUserPredicate<T>() -> Predicate<T> where T: AnyObject {
-        let currentUserId = CurrentUser().idOrGuest
+    static func authenticatedUserPredicate<T>(currentUserId: String) -> Predicate<T> where T: AnyObject {
         return #Predicate<T> { item in
             // Only return items for authenticated users (non-guest)
-            return !CurrentUser.isGuestId(currentUserId)
+            // Check if userId is not empty (non-guest)
+            return currentUserId != "" && !currentUserId.isEmpty
         }
     }
 }
@@ -85,15 +103,13 @@ extension CurrentUser {
  Usage Examples:
  
  // ✅ Correct usage - always scoped to current user
- let currentUserId = CurrentUser().idOrGuest
+ let currentUserId = await CurrentUser().idOrGuest
  let descriptor = FetchDescriptor<HabitData>(
-     predicate: #Predicate<HabitData> { habit in
-         habit.userId == currentUserId
-     }
+     predicate: CurrentUser.currentUserPredicate(currentUserId: currentUserId)
  )
  
  // ✅ Guest mode handling
- if CurrentUser().isGuest {
+ if await CurrentUser().isGuest {
      // Show guest-specific UI
  }
  

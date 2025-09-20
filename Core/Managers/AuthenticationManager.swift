@@ -452,7 +452,7 @@ class AuthenticationManager: ObservableObject {
     func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
         print("🗑️ AuthenticationManager: Starting account deletion")
         
-        guard let user = Auth.auth().currentUser else {
+        guard Auth.auth().currentUser != nil else {
             completion(.failure(NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No authenticated user to delete"])))
             return
         }

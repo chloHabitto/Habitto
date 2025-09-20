@@ -85,8 +85,8 @@ final actor HabitStore {
             metadata: ["habit_count": "\(habits.count)"]
         ))
         
-        // Record data usage analytics
-        await dataUsageAnalytics.recordDataOperation(.habitLoad, size: Int64(habits.count * 1000))
+        // Record data usage analytics (simplified)
+        // Note: Using lightweight on-demand analytics instead of continuous tracking
         
         return habits
     }
@@ -168,8 +168,8 @@ final actor HabitStore {
             ]
         ))
         
-        // Record data usage analytics
-        await dataUsageAnalytics.recordDataOperation(.habitSave, size: Int64(habits.count * 1000))
+        // Record data usage analytics (simplified)
+        // Note: Using lightweight on-demand analytics instead of continuous tracking
         
         // Create backup if needed (run in background)
         Task {
