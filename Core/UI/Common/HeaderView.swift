@@ -75,7 +75,7 @@ struct HeaderView: View {
                 Button(action: onStreakTap) {
                     HStack(spacing: 6) {
                         // Show frozen fire icon when vacation mode is active
-                        if VacationManager.shared.isVacationDay(Date()) {
+                        if VacationManager.shared.isActive {
                             Image("Icon-fire-frozen")
                                 .resizable()
                                 .frame(width: 32, height: 32)

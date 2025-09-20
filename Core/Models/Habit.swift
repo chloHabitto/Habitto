@@ -188,16 +188,16 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     func isCompleted(for date: Date) -> Bool {
-        // If it's a vacation day, treat it as neutral (neither completed nor missed)
+        // If it's a vacation day AND vacation is currently active, treat it as neutral
         let vacationManager = VacationManager.shared
-        if vacationManager.isVacationDay(date) {
-            // For vacation days, we need to determine if the habit would have been completed
+        if vacationManager.isActive && vacationManager.isVacationDay(date) {
+            // For vacation days during active vacation, we need to determine if the habit would have been completed
             // based on the previous non-vacation day's completion status
             let calendar = Calendar.current
             var checkDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
             
             // Look back to find the last non-vacation day
-            while vacationManager.isVacationDay(checkDate) {
+            while vacationManager.isActive && vacationManager.isVacationDay(checkDate) {
                 guard let prevDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else {
                     break
                 }
@@ -208,7 +208,7 @@ struct Habit: Identifiable, Codable, Equatable {
             return isCompletedInternal(for: checkDate)
         }
         
-        // For non-vacation days, use the normal completion logic
+        // For non-vacation days or historical vacation days, use the normal completion logic
         return isCompletedInternal(for: date)
     }
     
@@ -294,8 +294,8 @@ struct Habit: Identifiable, Codable, Equatable {
         var currentDate = today
         
         // Count consecutive completed days backwards from today
-        // Skip vacation days to preserve streaks during vacation periods
-        while isCompleted(for: currentDate) || vacationManager.isVacationDay(currentDate) {
+        // Skip vacation days only during active vacation periods
+        while isCompleted(for: currentDate) || (vacationManager.isActive && vacationManager.isVacationDay(currentDate)) {
             // Only increment streak for actually completed days (not vacation days)
             if isCompleted(for: currentDate) {
                 streak += 1
@@ -315,14 +315,14 @@ struct Habit: Identifiable, Codable, Equatable {
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
         let vacationManager = VacationManager.shared
         
-        // If today is a vacation day, preserve the current streak
-        if vacationManager.isVacationDay(today) {
-            // Don't change the streak during vacation - it remains frozen
+        // If today is a vacation day AND vacation is active, preserve the current streak
+        if vacationManager.isActive && vacationManager.isVacationDay(today) {
+            // Don't change the streak during active vacation - it remains frozen
             return
         }
         
         if isCompleted(for: today) {
-            if isCompleted(for: yesterday) || vacationManager.isVacationDay(yesterday) {
+            if isCompleted(for: yesterday) || (vacationManager.isActive && vacationManager.isVacationDay(yesterday)) {
                 // Continue streak - increment (yesterday could be vacation day)
                 streak += 1
             } else {

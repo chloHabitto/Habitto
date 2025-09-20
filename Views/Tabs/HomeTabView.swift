@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct HomeTabView: View {
     @Binding var selectedDate: Date
@@ -9,6 +10,7 @@ struct HomeTabView: View {
     @State private var isDragging: Bool = false
     @State private var selectedHabit: Habit? = nil
     @State private var showCelebration: Bool = false
+    @State private var showingCancelVacationAlert: Bool = false
     
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
@@ -121,6 +123,26 @@ struct HomeTabView: View {
             // Reset celebration when date changes
             showCelebration = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vacationModeEnded)) { _ in
+            // Refresh UI when vacation mode ends
+            print("🏖️ VACATION MODE DEBUG: HomeTabView received vacationModeEnded notification")
+            print("🏖️ VACATION MODE DEBUG: Vacation active after notification: \(VacationManager.shared.isActive)")
+            // This will trigger a view update to reflect the new vacation state
+        }
+        .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("End Vacation", role: .destructive) {
+                // End vacation mode for the selected date
+                print("🏖️ VACATION MODE DEBUG: User clicked End Vacation for date: \(selectedDate)")
+                print("🏖️ VACATION MODE DEBUG: Current vacation active: \(VacationManager.shared.isActive)")
+                print("🏖️ VACATION MODE DEBUG: Is vacation day: \(VacationManager.shared.isVacationDay(selectedDate))")
+                VacationManager.shared.cancelVacationForDate(selectedDate)
+                print("🏖️ VACATION MODE DEBUG: After cancellation - vacation active: \(VacationManager.shared.isActive)")
+                print("🏖️ VACATION MODE DEBUG: After cancellation - is vacation day: \(VacationManager.shared.isVacationDay(selectedDate))")
+            }
+        } message: {
+            Text("Are you sure you want to end vacation mode for this date? This will resume all habit tracking.")
+        }
     }
     
     @ViewBuilder
@@ -184,7 +206,7 @@ struct HomeTabView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
                 // Vacation status indicator - first item in scrollable view
-                if VacationManager.shared.isVacationDay(selectedDate) {
+                if VacationManager.shared.isActive && VacationManager.shared.isVacationDay(selectedDate) {
                     HStack(spacing: 8) {
                         Image("Icon-Vacation_Filled")
                             .resizable()
@@ -193,6 +215,16 @@ struct HomeTabView: View {
                         Text("On Vacation")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.onSecondary)
+                        
+                        // Cancel vacation button
+                        Button(action: {
+                            showingCancelVacationAlert = true
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.onSecondary.opacity(0.4))
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
