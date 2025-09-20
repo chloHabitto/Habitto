@@ -100,16 +100,16 @@ final class HabitData {
     }
     
     private static func decodeColor(_ data: Data) -> Color {
-        guard let colorComponents = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [CGFloat],
-              colorComponents.count == 4 else {
+        guard let components = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSArray.self, from: data) as? [CGFloat],
+              components.count == 4 else {
             return .blue // Default color
         }
         
         return Color(
-            red: Double(colorComponents[0]),
-            green: Double(colorComponents[1]),
-            blue: Double(colorComponents[2]),
-            opacity: Double(colorComponents[3])
+            red: Double(components[0]),
+            green: Double(components[1]),
+            blue: Double(components[2]),
+            opacity: Double(components[3])
         )
     }
     
