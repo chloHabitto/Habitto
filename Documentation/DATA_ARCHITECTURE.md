@@ -1,8 +1,16 @@
 # 🗄️ Habitto Data Architecture
 
+## Overview
+
+**Today**: Offline-first. SwiftData is the primary store for all habit data, scoped by userId (guest = ""). UI talks to a HabitRepository on the main actor; a background HabitStore actor handles validation, retention, backups, and persistence. Non-sensitive prefs live in UserDefaults; secrets (auth tokens) live in Keychain with device-only accessibility. Streaks and "completed today" are derived from day-level logs.
+
+**Planned**: Flip on CloudKit (private DB, custom zone per user) with day-level conflict resolution; recompute denormalized fields post-merge. No UI changes required.
+
 ## Persistence (Current Implementation)
 
 Habitto is **offline-first**. All habit data is stored in SwiftData (`@Model` entities), scoped by `userId` (guest = `""`). UI reads/writes go through a Repository on the main actor, which delegates to a background actor (`HabitStore`) for validation, retention, and persistence. UserDefaults stores non-sensitive preferences and legacy flags; Keychain stores auth secrets (Firebase/Apple/Google tokens).
+
+**⚠️ IMPORTANT**: Denormalized fields (`isCompleted`, `streak`) are non-authoritative; recomputed from logs on merge/migration. Always use source-of-truth methods for critical operations.
 
 ### Data Flow
 ```
@@ -13,7 +21,7 @@ UI Layer → HabitRepository (@MainActor) → HabitStore (Actor) → SwiftDataSt
 1. **SwiftData** (Primary) - Habit data, relationships, user isolation
 2. **UserDefaults** (Legacy/Settings) - App preferences, migration flags
 3. **Keychain** (Security) - Authentication tokens, user secrets
-4. **CloudKit** (Future) - Cross-device sync (currently disabled)
+4. **CloudKit** (PLANNED/DISABLED) - Cross-device sync infrastructure ready but disabled
 
 ## Data Models
 
@@ -24,7 +32,9 @@ final class HabitData {
     @Attribute(.unique) var id: UUID
     var userId: String // User isolation
     var name: String
-    var schedule: String // TODO: Migrate to typed Schedule enum
+    var schedule: Schedule // ✅ Typed enum (v2 migration)
+    var habitType: HabitType // ✅ Typed enum (v2 migration)
+    var themeKey: String // ✅ Design token (was colorData: Data)
     // ⚠️ DENORMALIZED FIELDS (use recompute methods):
     var isCompleted: Bool // Use isCompleted(for:) for truth
     var streak: Int // Use calculateTrueStreak() for truth
@@ -33,6 +43,18 @@ final class HabitData {
     @Relationship(deleteRule: .cascade) var difficultyHistory: [DifficultyRecord]
     @Relationship(deleteRule: .cascade) var usageHistory: [UsageRecord]
 }
+
+// ✅ V2 Migration: Typed Schedule Enum
+enum Schedule: Codable, Equatable {
+    case daily
+    case weekly(Set<DayOfWeek>)
+    case specificDays([Date])
+    case custom(String) // Fallback for complex logic
+}
+
+enum HabitType: String, Codable, CaseIterable {
+    case build, break, quit, start, improve, other
+}
 ```
 
 ### Derived Fields
@@ -40,6 +62,8 @@ Streaks and "completed today" are **derived from per-day records**; they may be 
 - `habit.isCompleted(for: date)` for completion status
 - `habit.calculateTrueStreak()` for streak calculation
 - `habit.recomputeDenormalizedFields()` to refresh cached values
+
+**On sync/migration, cached streak/isCompleted are invalidated and recomputed from CompletionRecord.**
 
 ## Day Boundary Handling
 
@@ -104,9 +128,9 @@ Simplified to sign-out + local data clearing (Firebase account remains but user 
 ## Analytics & Monitoring
 
 ### Privacy-First Analytics
-- **No PII**: All personal data redacted before logging
-- **PrivacyHelper**: Automatic PII detection and redaction
-- **Safe logging**: `PrivacyHelper.safeAnalyticsLog()` for all events
+- **No PII**: Analytics events pass through a single `PrivacyHelper.redact()`; we never log UID, email, or tokens
+- **PrivacyHelper**: Automatic PII detection and redaction for all analytics events
+- **Safe logging**: `PrivacyHelper.safeAnalyticsLog()` for all events with automatic redaction
 
 ### Performance Monitoring
 - **PerformanceMetrics**: Timing, events, memory usage
@@ -131,20 +155,34 @@ if storedVersion < SchemaVersion.current {
 }
 ```
 
-## Sync (Planned)
+## Sync (PLANNED/DISABLED)
 
-### CloudKit Integration
-- **Private Database**: User-specific data zones
-- **Conflict Resolution**: Day-level conflict unit
-- **Last-write-wins**: Per-day completion records
-- **Streak Recalculation**: Recompute after merge
-- **Repository Mediation**: All sync operations through Repository
+### CloudKit Integration (Infrastructure Ready)
+- **Private Database**: User-specific data zones (PLANNED)
+- **Conflict Resolution**: Day-level conflict unit (PLANNED)
+- **Last-write-wins**: Per-day completion records (PLANNED)
+- **Streak Recalculation**: Recompute after merge (PLANNED)
+- **Repository Mediation**: All sync operations through Repository (PLANNED)
 
-### Sync Strategy
+### Sync Strategy (PLANNED)
 ```
 Local Changes → Repository → CloudKit Sync Manager → CloudKit Private DB
 Remote Changes → CloudKit → Conflict Resolution → Repository → UI Update
 ```
+
+## Risk Checks & Edge Cases
+
+### Day Boundary & DST Handling
+**Risk**: Day boundaries and DST transitions can cause data inconsistency.  
+**Solution**: "Day" is defined as local time with consistent cutoff. Persist UTC timestamps; render in local timezone. All date operations use `Calendar.current` for timezone-aware calculations. Test DST transitions (spring forward/fall back) to ensure streak calculations remain accurate.
+
+### Single ModelContainer Strategy
+**Risk**: Multiple ModelContainer instances can cause data inconsistency.  
+**Solution**: Affirm there's one container/context strategy app-wide. Saves are debounced (0.5s) and lifecycle-flushed (app background/foreground). All SwiftData operations go through the single `HabitStore` actor for thread safety.
+
+### Guest→Auth Migration Decision Rule
+**Risk**: Unclear data ownership when guest users sign up.  
+**Solution**: Guest data merges (not forks) when user signs up. User gets choice: "Keep My Data" or "Start Fresh". If keeping data, guest habits are migrated to authenticated user's `userId` and synced to cloud storage. Migration is one-way and irreversible.
 
 ## Production Checklist
 
@@ -210,10 +248,10 @@ Remote Changes → CloudKit → Conflict Resolution → Repository → UI Update
 │                            💾 STORAGE LAYER                                    │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  SwiftData (Primary)  │  UserDefaults (Legacy)  │  Keychain (Security)  │  CK* │
-│  • HabitData          │  • App Settings         │  • Auth Tokens        │  Off │
-│  • Relationships      │  • Migration Flags      │  • User Secrets       │      │
-│  • User Isolation     │  • Cache Data           │  • Biometric          │      │
-│  • SQLite Backend     │  • JSON Storage         │  • iOS Keychain       │      │
+│  • HabitData          │  • App Settings         │  • Auth Tokens        │DISAB│
+│  • Relationships      │  • Migration Flags      │  • User Secrets       │     │
+│  • User Isolation     │  • Cache Data           │  • Biometric          │     │
+│  • SQLite Backend     │  • JSON Storage         │  • iOS Keychain       │     │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
