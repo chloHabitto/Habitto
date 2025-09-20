@@ -44,7 +44,7 @@ class UserDefaultsToCoreDataMigration: MigrationStep {
         print("🔄 UserDefaultsToCoreDataMigration: Rolling back...")
         
         // Clear Core Data storage
-        let coreDataStorage = await CoreDataStorage()
+        let _ = await CoreDataStorage()
         // Note: CoreDataStorage doesn't have deleteAllHabits method yet
         // For now, we'll just log that rollback was attempted
         print("⚠️ UserDefaultsToCoreDataMigration: Core Data rollback not fully implemented")
@@ -70,29 +70,6 @@ class CoreDataToCloudKitMigration: MigrationStep {
         // Note: CloudKitManager doesn't have isCloudKitAvailable method yet
         // For now, we'll assume CloudKit is not available
         return .skipped(reason: "CloudKit not available (not fully implemented)")
-        
-        // Check if migration is needed
-        let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataToCloudKitMigrationCompleted")
-        if hasMigrated {
-            return .skipped(reason: "Migration already completed")
-        }
-        
-        // Load habits from Core Data
-        let coreDataStorage = await CoreDataStorage()
-        let habits = try await coreDataStorage.loadHabits()
-        
-        guard !habits.isEmpty else {
-            return .skipped(reason: "No habits found in Core Data")
-        }
-        
-        print("📊 CoreDataToCloudKitMigration: Found \(habits.count) habits to migrate")
-        
-        // For now, we'll just mark as completed since CloudKit implementation is not ready
-        // In a real implementation, this would sync data to CloudKit
-        UserDefaults.standard.set(true, forKey: "CoreDataToCloudKitMigrationCompleted")
-        
-        print("✅ CoreDataToCloudKitMigration: Migration marked as completed (CloudKit not fully implemented)")
-        return .success
     }
     
     func canRollback() -> Bool {
@@ -134,7 +111,7 @@ class OptimizeUserDefaultsStorageMigration: MigrationStep {
         print("📊 OptimizeUserDefaultsStorageMigration: Found \(habits.count) habits to optimize")
         
         // Store habits individually for better performance
-        let userDefaultsStorage = await UserDefaultsStorage()
+        let userDefaultsStorage = UserDefaultsStorage()
         try await userDefaultsStorage.saveHabits(habits, immediate: true)
         
         // Mark optimization as completed
