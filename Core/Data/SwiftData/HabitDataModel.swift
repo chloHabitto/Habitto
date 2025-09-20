@@ -6,6 +6,7 @@ import SwiftUI
 @Model
 final class HabitData {
     @Attribute(.unique) var id: UUID
+    var userId: String // User ID for data isolation
     var name: String
     var habitDescription: String
     var icon: String
@@ -29,6 +30,7 @@ final class HabitData {
     
     init(
         id: UUID = UUID(),
+        userId: String,
         name: String,
         habitDescription: String,
         icon: String,
@@ -43,6 +45,7 @@ final class HabitData {
         streak: Int = 0
     ) {
         self.id = id
+        self.userId = userId
         self.name = name
         self.habitDescription = habitDescription
         self.icon = icon

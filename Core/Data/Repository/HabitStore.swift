@@ -59,7 +59,20 @@ final actor HabitStore {
         
         // Use SwiftData for modern persistence
         logger.info("HabitStore: Using SwiftData storage...")
-        let habits = try await swiftDataStorage.loadHabits()
+        var habits = try await swiftDataStorage.loadHabits()
+        
+        // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
+        if habits.isEmpty {
+            logger.info("No habits found in SwiftData, checking UserDefaults for migration...")
+            let legacyHabits = try await checkForLegacyHabits()
+            if !legacyHabits.isEmpty {
+                logger.info("Found \(legacyHabits.count) habits in UserDefaults, migrating to SwiftData...")
+                habits = legacyHabits
+                // Save the migrated habits to SwiftData
+                try await swiftDataStorage.saveHabits(legacyHabits, immediate: true)
+                logger.info("Successfully migrated habits to SwiftData")
+            }
+        }
         
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         logger.info("Successfully loaded \(habits.count) habits from SwiftData in \(String(format: "%.3f", timeElapsed))s")
@@ -76,6 +89,30 @@ final actor HabitStore {
         await dataUsageAnalytics.recordDataOperation(.habitLoad, size: Int64(habits.count * 1000))
         
         return habits
+    }
+    
+    /// Check for habits stored in UserDefaults (legacy storage)
+    private func checkForLegacyHabits() async throws -> [Habit] {
+        logger.info("Checking UserDefaults for legacy habits...")
+        
+        // Check for habits in various UserDefaults keys
+        let possibleKeys = [
+            "SavedHabits",
+            "guest_habits",
+            "habits"
+        ]
+        
+        for key in possibleKeys {
+            if let habitsData = UserDefaults.standard.data(forKey: key),
+               let habits = try? JSONDecoder().decode([Habit].self, from: habitsData),
+               !habits.isEmpty {
+                logger.info("Found \(habits.count) habits in UserDefaults key: \(key)")
+                return habits
+            }
+        }
+        
+        logger.info("No legacy habits found in UserDefaults")
+        return []
     }
     
     // MARK: - Save Habits

@@ -270,7 +270,13 @@ struct LoginView: View {
     
     // MARK: - Computed Properties
     private var isFormValid: Bool {
-        !email.isEmpty && !password.isEmpty && authManager.isValidEmail(email) && (isSignUp ? authManager.isValidPassword(password) : true)
+        if isSignUp {
+            // For sign up: require email format validation and password requirements
+            return !email.isEmpty && !password.isEmpty && authManager.isValidEmail(email) && authManager.isValidPassword(password)
+        } else {
+            // For sign in: only require both fields to be filled and valid email format
+            return !email.isEmpty && !password.isEmpty && authManager.isValidEmail(email)
+        }
     }
     
     // MARK: - Authentication Handlers
