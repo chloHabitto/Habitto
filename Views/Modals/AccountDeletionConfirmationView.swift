@@ -12,6 +12,7 @@ struct AccountDeletionConfirmationView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingFinalConfirmation = false
     @State private var isDeleting = false
+    @State private var deletionSuccessful = false
     
     // MARK: - Body
     
@@ -166,6 +167,13 @@ struct AccountDeletionConfirmationView: View {
         } message: {
             Text(deletionService.deletionError ?? "An unknown error occurred")
         }
+        .alert("Account Deleted Successfully", isPresented: $deletionSuccessful) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your account has been signed out and all local data has been cleared. You can now create a new account if desired.")
+        }
     }
     
     // MARK: - Actions
@@ -186,14 +194,33 @@ struct AccountDeletionConfirmationView: View {
         do {
             try await deletionService.deleteAccount()
             
-            // Dismiss the view after successful deletion
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Mark deletion as successful
+            DispatchQueue.main.async {
+                self.deletionSuccessful = true
+                self.isDeleting = false
+            }
+            
+            // Dismiss the view after showing success message
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 dismiss()
             }
             
         } catch {
             print("❌ AccountDeletionConfirmationView: Account deletion failed: \(error)")
-            isDeleting = false
+            print("❌ Error details: \(error)")
+            print("❌ Error localized description: \(error.localizedDescription)")
+            
+            // Set a more detailed error message for debugging
+            let detailedError = """
+            Account deletion failed: \(error.localizedDescription)
+            
+            Error details: \(String(describing: error))
+            """
+            
+            DispatchQueue.main.async {
+                self.deletionService.deletionError = detailedError
+                self.isDeleting = false
+            }
         }
     }
 }

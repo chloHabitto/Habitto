@@ -24,30 +24,12 @@ final class AccountDeletionService: ObservableObject {
     /// Check if the user needs to re-authenticate before account deletion
     func checkAuthenticationFreshness() async -> Bool {
         guard let currentUser = authManager.currentUser else {
+            print("❌ AccountDeletionService: No current user found")
             return false
         }
         
-        // Cast to Firebase User to access metadata
-        guard let firebaseUser = currentUser as? FirebaseAuth.User else {
-            // If not a Firebase user, assume authentication is fresh
-            return true
-        }
-        
-        // For Firebase users, we'll use a simpler approach:
-        // Check if the user has a valid token by attempting to reload the user
-        // This is a more reliable way to check authentication freshness
-        return await withCheckedContinuation { continuation in
-            firebaseUser.reload { error in
-                if let error = error {
-                    print("❌ AccountDeletionService: User reload failed: \(error.localizedDescription)")
-                    // If reload fails, assume re-authentication is needed
-                    continuation.resume(returning: false)
-                } else {
-                    print("✅ AccountDeletionService: User reload successful - authentication is fresh")
-                    continuation.resume(returning: true)
-                }
-            }
-        }
+        print("✅ AccountDeletionService: User found, re-authentication will be handled by AuthenticationManager")
+        return true
     }
     
     /// Delete the current user's account and all associated data
@@ -65,32 +47,44 @@ final class AccountDeletionService: ObservableObject {
             // Step 1: Delete user data from storage
             deletionStatus = "Clearing user data..."
             deletionProgress = 0.2
+            print("🗑️ AccountDeletionService: Step 1 - Deleting user data")
             try await deleteUserData(for: currentUser.uid)
+            print("✅ AccountDeletionService: Step 1 completed")
             
             // Step 2: Delete user backups
             deletionStatus = "Clearing backups..."
             deletionProgress = 0.4
+            print("🗑️ AccountDeletionService: Step 2 - Deleting backups")
             try await deleteUserBackups(for: currentUser.uid)
+            print("✅ AccountDeletionService: Step 2 completed")
             
             // Step 3: Clear app data
             deletionStatus = "Clearing app data..."
             deletionProgress = 0.6
+            print("🗑️ AccountDeletionService: Step 3 - Clearing app data")
             try await clearAppData()
+            print("✅ AccountDeletionService: Step 3 completed")
             
             // Step 4: Delete Firebase account
             deletionStatus = "Deleting account..."
             deletionProgress = 0.8
+            print("🗑️ AccountDeletionService: Step 4 - Deleting Firebase account")
             try await deleteFirebaseAccount()
+            print("✅ AccountDeletionService: Step 4 completed")
             
             // Step 5: Final cleanup
             deletionStatus = "Finalizing deletion..."
             deletionProgress = 1.0
+            print("🗑️ AccountDeletionService: Step 5 - Finalizing deletion")
             try await finalizeDeletion()
+            print("✅ AccountDeletionService: Step 5 completed")
             
             deletionStatus = "Account deleted successfully!"
             print("✅ AccountDeletionService: Account deletion completed for user: \(currentUser.uid)")
             
         } catch {
+            print("❌ AccountDeletionService: Account deletion failed at step with error: \(error)")
+            print("❌ AccountDeletionService: Error details: \(String(describing: error))")
             let nsError = error as NSError
             
             // Handle specific authentication errors
