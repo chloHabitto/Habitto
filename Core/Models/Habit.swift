@@ -282,21 +282,29 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     /// Updates streak with proper reset logic based on consecutive day completion
+    /// Preserves streaks during vacation periods to avoid penalizing users
     mutating func updateStreakWithReset() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let vacationManager = VacationManager.shared
+        
+        // If today is a vacation day, preserve the current streak
+        if vacationManager.isVacationDay(today) {
+            // Don't change the streak during vacation - it remains frozen
+            return
+        }
         
         if isCompleted(for: today) {
-            if isCompleted(for: yesterday) {
-                // Continue streak - increment
+            if isCompleted(for: yesterday) || vacationManager.isVacationDay(yesterday) {
+                // Continue streak - increment (yesterday could be vacation day)
                 streak += 1
             } else {
                 // Start new streak - reset to 1
                 streak = 1
             }
         } else {
-            // Reset streak if not completed today
+            // Reset streak if not completed today (and today is not a vacation day)
             streak = 0
         }
     }
