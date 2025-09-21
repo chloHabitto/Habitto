@@ -186,7 +186,8 @@ struct MoreTabView: View {
                         showingAboutUs = true
                     }),
                     SettingItem(title: "Tutorial & Tips", value: nil, hasChevron: true, action: {
-                        tutorialManager.resetTutorial()
+                        // Show tutorial directly instead of resetting it
+                        tutorialManager.shouldShowTutorial = true
                     }),
                     SettingItem(title: "FAQ", value: nil, hasChevron: true, action: {
                         showingFAQ = true
