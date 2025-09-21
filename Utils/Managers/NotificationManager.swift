@@ -527,6 +527,7 @@ class NotificationManager: ObservableObject {
     // MARK: - Daily Reminders System
     
     /// Schedule daily plan reminders based on user settings
+    @MainActor
     func scheduleDailyPlanReminders() {
         print("📅 NotificationManager: Scheduling daily plan reminders...")
         
@@ -543,13 +544,17 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Get habits from HabitRepository
+        let habits = HabitRepository.shared.habits
+        print("📅 NotificationManager: Found \(habits.count) habits for plan reminders")
+        
         // Schedule plan reminders for the next 7 days
         let calendar = Calendar.current
         let today = Date()
         
         for dayOffset in 0..<7 {
             if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
-                schedulePlanReminderForDate(targetDate, reminderTime: planReminderTime)
+                schedulePlanReminderForDate(targetDate, reminderTime: planReminderTime, habits: habits)
             }
         }
         
@@ -557,6 +562,7 @@ class NotificationManager: ObservableObject {
     }
     
     /// Schedule daily completion reminders based on user settings
+    @MainActor
     func scheduleDailyCompletionReminders() {
         print("📅 NotificationManager: Scheduling daily completion reminders...")
         
@@ -573,13 +579,17 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Get habits from HabitRepository
+        let habits = HabitRepository.shared.habits
+        print("📅 NotificationManager: Found \(habits.count) habits for completion reminders")
+        
         // Schedule completion reminders for the next 7 days
         let calendar = Calendar.current
         let today = Date()
         
         for dayOffset in 0..<7 {
             if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
-                scheduleCompletionReminderForDate(targetDate, reminderTime: completionReminderTime)
+                scheduleCompletionReminderForDate(targetDate, reminderTime: completionReminderTime, habits: habits)
             }
         }
         
@@ -587,7 +597,7 @@ class NotificationManager: ObservableObject {
     }
     
     /// Schedule a plan reminder for a specific date
-    private func schedulePlanReminderForDate(_ date: Date, reminderTime: Date) {
+    private func schedulePlanReminderForDate(_ date: Date, reminderTime: Date, habits: [Habit]) {
         // Check if vacation mode is active - don't schedule notifications during vacation
         let vacationManager = VacationManager.shared
         if vacationManager.isVacationDay(date) {
@@ -595,14 +605,34 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Count habits scheduled for this date
+        let scheduledHabits = habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+        }
+        
+        let habitCount = scheduledHabits.count
+        
+        // Don't schedule reminder if no habits are scheduled for this date
+        guard habitCount > 0 else {
+            print("ℹ️ NotificationManager: No habits scheduled for \(date), skipping plan reminder")
+            return
+        }
+        
         let calendar = Calendar.current
         let dateKey = DateUtils.dateKey(for: date)
         let notificationId = "daily_plan_reminder_\(dateKey)"
         
-        // Create notification content
+        // Create dynamic notification content based on habit count
         let content = UNMutableNotificationContent()
         content.title = "Daily Plan"
-        content.body = "Check your habits for today!"
+        
+        // Generate personalized message based on habit count
+        if habitCount == 1 {
+            content.body = "You have 1 habit planned for today. Let's make it happen! 💪"
+        } else {
+            content.body = "You have \(habitCount) habits planned for today. Ready to tackle them? 🎯"
+        }
+        
         content.sound = .default
         content.badge = 1
         
@@ -633,13 +663,13 @@ class NotificationManager: ObservableObject {
             if let error = error {
                 print("❌ Error scheduling plan reminder for \(date): \(error)")
             } else {
-                print("✅ Plan reminder scheduled for \(date) at \(reminderTime)")
+                print("✅ Plan reminder scheduled for \(date) at \(reminderTime) - \(habitCount) habits")
             }
         }
     }
     
     /// Schedule a completion reminder for a specific date
-    private func scheduleCompletionReminderForDate(_ date: Date, reminderTime: Date) {
+    private func scheduleCompletionReminderForDate(_ date: Date, reminderTime: Date, habits: [Habit]) {
         // Check if vacation mode is active - don't schedule notifications during vacation
         let vacationManager = VacationManager.shared
         if vacationManager.isVacationDay(date) {
@@ -647,14 +677,33 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Get incomplete habits for this date
+        let incompleteHabits = getIncompleteScheduledHabits(for: date, habits: habits)
+        let incompleteCount = incompleteHabits.count
+        
+        // Don't schedule reminder if no incomplete habits for this date
+        guard incompleteCount > 0 else {
+            print("ℹ️ NotificationManager: No incomplete habits for \(date), skipping completion reminder")
+            return
+        }
+        
         let calendar = Calendar.current
         let dateKey = DateUtils.dateKey(for: date)
         let notificationId = "daily_completion_reminder_\(dateKey)"
         
-        // Create notification content
+        // Create dynamic notification content based on incomplete habits
         let content = UNMutableNotificationContent()
         content.title = "Daily Check-in"
-        content.body = "Don't forget to complete your habits today!"
+        
+        // Generate personalized message based on incomplete habit count
+        if incompleteCount == 1 {
+            content.body = "You have 1 habit left to complete today. Almost there! 🌟"
+        } else if incompleteCount <= 3 {
+            content.body = "You have \(incompleteCount) habits left to complete today. Keep going! 💪"
+        } else {
+            content.body = "You have \(incompleteCount) habits left to complete today. Don't give up! 🎯"
+        }
+        
         content.sound = .default
         content.badge = 1
         
@@ -685,7 +734,7 @@ class NotificationManager: ObservableObject {
             if let error = error {
                 print("❌ Error scheduling completion reminder for \(date): \(error)")
             } else {
-                print("✅ Completion reminder scheduled for \(date) at \(reminderTime)")
+                print("✅ Completion reminder scheduled for \(date) at \(reminderTime) - \(incompleteCount) incomplete habits")
             }
         }
     }
@@ -735,6 +784,7 @@ class NotificationManager: ObservableObject {
     }
     
     /// Reschedule all daily reminders (useful when settings change)
+    @MainActor
     func rescheduleDailyReminders() {
         print("🔄 NotificationManager: Rescheduling all daily reminders...")
         
