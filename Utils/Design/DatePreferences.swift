@@ -93,6 +93,28 @@ enum DateFormatOption: String, CaseIterable {
             return "yyyy/MM/dd"      // 2025-08-09
         }
     }
+    
+    // Month year format (for display like "August 2025")
+    var monthYearFormat: String {
+        return "MMMM yyyy"  // Always same format for month/year
+    }
+    
+    // Short date for week ranges (for display like "9 Aug" or "Aug 9")
+    var shortDateForWeekRange: String {
+        switch self {
+        case .dayMonthYear:
+            return "d MMM"     // 9 Aug
+        case .monthDayYear:
+            return "MMM d"     // Aug 9
+        case .yearMonthDay:
+            return "MMM d"     // Aug 9 (same as month/day for consistency)
+        }
+    }
+    
+    // Year format (always same)
+    var yearFormat: String {
+        return "yyyy"
+    }
 }
 
 // MARK: - First Day Options (Updated)
@@ -154,6 +176,34 @@ struct AppDateFormatter {
     // Format date for create habit period section
     func formatCreateHabitDate(_ date: Date) -> String {
         return createHabitDateFormatter.string(from: date)
+    }
+    
+    // Format month and year (e.g., "August 2025")
+    func formatMonthYear(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.monthYearFormat
+        return formatter.string(from: date)
+    }
+    
+    // Format short date for week ranges (e.g., "9 Aug" or "Aug 9")
+    func formatShortDateForWeekRange(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.shortDateForWeekRange
+        return formatter.string(from: date)
+    }
+    
+    // Format year only (e.g., "2025")
+    func formatYear(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = DatePreferences.shared.dateFormat.yearFormat
+        return formatter.string(from: date)
+    }
+    
+    // Format week range (e.g., "9 Aug - 15 Aug")
+    func formatWeekRange(startDate: Date, endDate: Date) -> String {
+        let startString = formatShortDateForWeekRange(startDate)
+        let endString = formatShortDateForWeekRange(endDate)
+        return "\(startString) - \(endString)"
     }
     
     // Get calendar with user's preferred first day

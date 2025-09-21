@@ -231,7 +231,7 @@ struct DateCalendarView: View {
         
         // Update original values to reflect the new saved state
         originalDateFormat = selectedDateFormat
-        originalFirstDay = originalFirstDay
+        originalFirstDay = selectedFirstDay
         
         // Dismiss the view
         dismiss()

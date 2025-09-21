@@ -433,9 +433,7 @@ struct CalendarGridComponents {
     }
     
     static func monthYearString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatMonthYear(date)
     }
     
     static func getDateForDay(day: Int, currentDate: Date) -> Date {

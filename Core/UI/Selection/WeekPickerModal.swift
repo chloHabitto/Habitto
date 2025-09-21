@@ -128,13 +128,7 @@ struct WeekPickerModal: View {
     }
     
     private func weekRangeText(from range: ClosedRange<Date>) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM dd"
-        
-        let startText = formatter.string(from: range.lowerBound)
-        let endText = formatter.string(from: range.upperBound)
-        
-        return "\(startText) - \(endText)"
+        return AppDateFormatter.shared.formatWeekRange(startDate: range.lowerBound, endDate: range.upperBound)
     }
     
     // MARK: - Helper Properties and Functions

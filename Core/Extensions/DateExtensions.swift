@@ -2,16 +2,10 @@ import Foundation
 
 extension Date {
     func weekRangeText() -> String {
-        let calendar = Calendar.current
+        let calendar = AppDateFormatter.shared.getUserCalendar()
         let weekEndDate = calendar.date(byAdding: .day, value: 6, to: self) ?? self
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM dd"
-        
-        let startText = formatter.string(from: self)
-        let endText = formatter.string(from: weekEndDate)
-        
-        return "\(startText) - \(endText)"
+        return AppDateFormatter.shared.formatWeekRange(startDate: self, endDate: weekEndDate)
     }
     
     static func currentWeekStartDate() -> Date {
@@ -31,8 +25,6 @@ extension Date {
     }
     
     func monthText() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: self)
+        return AppDateFormatter.shared.formatMonthYear(self)
     }
 } 

@@ -199,15 +199,11 @@ struct ExpandableCalendar: View {
     // MARK: - Helper Properties and Functions
     
     private var formattedCurrentDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM dd, yyyy"
-        return formatter.string(from: selectedDate)
+        return AppDateFormatter.shared.formatDisplayDate(selectedDate)
     }
     
     private var monthYearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: currentMonth)
+        return AppDateFormatter.shared.formatMonthYear(currentMonth)
     }
     
     private var calendarDays: [Date?] {
