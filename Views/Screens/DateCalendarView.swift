@@ -143,8 +143,7 @@ struct DateCalendarView: View {
                         .font(.appBodyMedium)
                         .foregroundColor(.text04)
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Radio button
                 ZStack {
@@ -162,6 +161,7 @@ struct DateCalendarView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(Color.clear)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -175,8 +175,7 @@ struct DateCalendarView: View {
                 Text(option.rawValue)
                     .font(.appTitleMedium)
                     .foregroundColor(.text01)
-                
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Radio button
                 ZStack {
@@ -194,6 +193,7 @@ struct DateCalendarView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(Color.clear)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
