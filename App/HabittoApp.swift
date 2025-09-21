@@ -157,6 +157,10 @@ struct HabittoApp: App {
                                 print("🔄 HabittoApp: Force reloading habits after app start...")
                                 await habitRepository.loadHabits(force: true)
                                 
+                                // Initialize notification categories first (for snooze functionality)
+                                print("🔧 HabittoApp: Initializing notification categories...")
+                                NotificationManager.shared.initializeNotificationCategories()
+                                
                                 // Reschedule notifications after habits are loaded
                                 try? await Task.sleep(nanoseconds: 500_000_000)
                                 print("🔄 HabittoApp: Rescheduling notifications after app start...")
@@ -197,6 +201,10 @@ struct HabittoApp: App {
             Task { @MainActor in
                 print("🔄 HabittoApp: App became active, reloading habits...")
                 await habitRepository.loadHabits(force: true)
+                
+                // Initialize notification categories first (for snooze functionality)
+                print("🔧 HabittoApp: Initializing notification categories after app became active...")
+                NotificationManager.shared.initializeNotificationCategories()
                 
                 // Reschedule notifications after a short delay to ensure habits are loaded
                 try? await Task.sleep(nanoseconds: 1_000_000_000)

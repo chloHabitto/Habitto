@@ -814,17 +814,20 @@ class NotificationManager: ObservableObject {
     func rescheduleDailyReminders() {
         print("🔄 NotificationManager: Rescheduling all daily reminders...")
         
-        // Step 1: Perform comprehensive cleanup first
+        // Step 1: Setup notification categories first (for snooze functionality)
+        setupNotificationCategories()
+        
+        // Step 2: Perform comprehensive cleanup
         performComprehensiveDailyRemindersCleanup()
         
-        // Step 2: Remove existing daily reminders
+        // Step 3: Remove existing daily reminders
         removeAllDailyReminders()
         
-        // Step 3: Schedule new ones based on current settings
+        // Step 4: Schedule new ones based on current settings
         scheduleDailyPlanReminders()
         scheduleDailyCompletionReminders()
         
-        // Step 4: Get final count for verification
+        // Step 5: Get final count for verification
         getPendingDailyRemindersCount { count in
             print("✅ NotificationManager: Daily reminders rescheduled. Total pending: \(count)")
         }
@@ -865,6 +868,8 @@ class NotificationManager: ObservableObject {
         // Only create snooze category if snooze is enabled
         guard snoozeDuration != .none else {
             print("ℹ️ NotificationManager: Snooze disabled, skipping category setup")
+            // Clear any existing categories when snooze is disabled
+            UNUserNotificationCenter.current().setNotificationCategories([])
             return
         }
         
@@ -914,9 +919,65 @@ class NotificationManager: ObservableObject {
         print("✅ NotificationManager: Notification categories set up with snooze duration: \(snoozeDuration.rawValue)")
     }
     
+    /// Initialize notification categories at app startup
+    func initializeNotificationCategories() {
+        print("🔧 NotificationManager: Initializing notification categories...")
+        setupNotificationCategories()
+    }
+    
+    /// Get snooze count for a specific date
+    private func getSnoozeCount(for dateKey: String) -> Int {
+        let key = "snooze_count_\(dateKey)"
+        return UserDefaults.standard.integer(forKey: key)
+    }
+    
+    /// Increment snooze count for a specific date
+    private func incrementSnoozeCount(for dateKey: String) {
+        let key = "snooze_count_\(dateKey)"
+        let currentCount = UserDefaults.standard.integer(forKey: key)
+        UserDefaults.standard.set(currentCount + 1, forKey: key)
+        print("📊 NotificationManager: Snooze count for \(dateKey): \(currentCount + 1)")
+    }
+    
+    /// Reset snooze count for a specific date (call when day changes)
+    private func resetSnoozeCount(for dateKey: String) {
+        let key = "snooze_count_\(dateKey)"
+        UserDefaults.standard.removeObject(forKey: key)
+        print("🔄 NotificationManager: Reset snooze count for \(dateKey)")
+    }
+    
+    /// Clean up old snooze counts (older than 7 days)
+    private func cleanupOldSnoozeCounts() {
+        let calendar = Calendar.current
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        
+        // Get all UserDefaults keys
+        let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
+        
+        for key in allKeys {
+            if key.hasPrefix("snooze_count_") {
+                let dateString = String(key.dropFirst("snooze_count_".count))
+                
+                // Parse date from key
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+                if let date = formatter.date(from: dateString), date < sevenDaysAgo {
+                    UserDefaults.standard.removeObject(forKey: key)
+                    print("🗑️ NotificationManager: Cleaned up old snooze count: \(key)")
+                }
+            }
+        }
+    }
+    
     /// Handle snooze action for completion reminders
     func handleSnoozeAction(for notificationId: String, snoozeMinutes: Int) {
         print("⏰ NotificationManager: Handling snooze action for \(notificationId) - \(snoozeMinutes) minutes")
+        
+        // Validate snooze minutes
+        guard snoozeMinutes > 0 && snoozeMinutes <= 60 else {
+            print("❌ NotificationManager: Invalid snooze duration: \(snoozeMinutes) minutes")
+            return
+        }
         
         // Extract date from notification ID
         let dateKey = notificationId.replacingOccurrences(of: "daily_completion_reminder_", with: "")
@@ -929,12 +990,25 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Check if this is already a snoozed notification to prevent infinite snoozing
+        let isSnoozeNotification = notificationId.contains("snooze_")
+        let snoozeCount = getSnoozeCount(for: dateKey)
+        
+        // Limit snooze attempts to prevent infinite snoozing (max 3 snoozes per day)
+        if isSnoozeNotification && snoozeCount >= 3 {
+            print("⚠️ NotificationManager: Maximum snooze limit reached for \(dateKey) (3 snoozes)")
+            return
+        }
+        
         // Calculate snooze time
         let calendar = Calendar.current
         let snoozeTime = calendar.date(byAdding: .minute, value: snoozeMinutes, to: Date()) ?? Date()
         
-        // Create snooze notification
+        // Create snooze notification with unique identifier
         let snoozeNotificationId = "daily_completion_reminder_snooze_\(dateKey)_\(Int(snoozeTime.timeIntervalSince1970))"
+        
+        // Increment snooze count
+        incrementSnoozeCount(for: dateKey)
         
         // Get habits from HabitRepository (need to do this on MainActor)
         Task { @MainActor in
@@ -955,9 +1029,9 @@ class NotificationManager: ObservableObject {
             content.sound = .default
             content.badge = 1
             
-            // Add snooze actions if snooze is still enabled
+            // Add snooze actions if snooze is still enabled and under limit
             let snoozeDuration = getSnoozeDuration()
-            if snoozeDuration != .none {
+            if snoozeDuration != .none && snoozeCount < 3 {
                 content.categoryIdentifier = "COMPLETION_REMINDER_CATEGORY"
             }
             
@@ -974,7 +1048,7 @@ class NotificationManager: ObservableObject {
             // Schedule the snooze notification
             do {
                 try await UNUserNotificationCenter.current().add(request)
-                print("✅ Snooze notification scheduled for \(snoozeMinutes) minutes from now")
+                print("✅ Snooze notification scheduled for \(snoozeMinutes) minutes from now (snooze count: \(snoozeCount + 1))")
             } catch {
                 print("❌ Error scheduling snooze notification: \(error)")
             }
@@ -1154,7 +1228,10 @@ class NotificationManager: ObservableObject {
         // Step 2: Remove expired reminders
         removeExpiredDailyReminders()
         
-        // Step 3: Get final count
+        // Step 3: Clean up old snooze counts
+        cleanupOldSnoozeCounts()
+        
+        // Step 4: Get final count
         getPendingDailyRemindersCount { count in
             print("📊 NotificationManager: Comprehensive cleanup completed. Remaining daily reminders: \(count)")
         }
