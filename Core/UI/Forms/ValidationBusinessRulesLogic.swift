@@ -205,6 +205,7 @@ class ValidationBusinessRulesLogic {
     }
     
     // MARK: - Business Rule Validation
+    @MainActor
     static func validateHabitCreation(name: String, description: String, icon: String, color: Color, habitType: HabitType) -> (isValid: Bool, errorMessage: String?) {
         // Name validation
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -213,6 +214,11 @@ class ValidationBusinessRulesLogic {
         
         if name.count > 50 {
             return (false, "Habit name cannot exceed 50 characters")
+        }
+        
+        // Check for duplicate habit names
+        if isDuplicateHabitName(name) {
+            return (false, "This habit name already exists. Please choose a different name.")
         }
         
         // Description validation
@@ -231,6 +237,22 @@ class ValidationBusinessRulesLogic {
         // No validation needed here
         
         return (true, nil)
+    }
+    
+    // MARK: - Duplicate Name Validation
+    @MainActor
+    static func isDuplicateHabitName(_ name: String) -> Bool {
+        // Access habits through HabitRepository (MainActor isolated)
+        let existingHabits = HabitRepository.shared.habits
+        
+        // Normalize the input name (trim and lowercase for comparison)
+        let normalizedInputName = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        
+        // Check if any existing habit has the same normalized name
+        return existingHabits.contains { habit in
+            let normalizedExistingName = habit.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return normalizedExistingName == normalizedInputName
+        }
     }
     
     static func validateHabitGoal(goalNumber: String, goalUnit: String, goalFrequency: String, habitType: HabitType) -> (isValid: Bool, errorMessage: String?) {
