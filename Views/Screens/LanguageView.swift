@@ -11,7 +11,11 @@ struct LanguageView: View {
     private let languages = [
         LanguageOption(name: "English", flag: "🇬🇧", code: "en"),
         LanguageOption(name: "Korean", flag: "🇰🇷", code: "ko"),
-        LanguageOption(name: "Japanese", flag: "🇯🇵", code: "ja")
+        LanguageOption(name: "Japanese", flag: "🇯🇵", code: "ja"),
+        LanguageOption(name: "Dutch", flag: "🇳🇱", code: "nl"),
+        LanguageOption(name: "German", flag: "🇩🇪", code: "de"),
+        LanguageOption(name: "Chinese", flag: "🇨🇳", code: "zh"),
+        LanguageOption(name: "Thai", flag: "🇹🇭", code: "th")
     ]
     
     var body: some View {
