@@ -93,7 +93,7 @@ class DataMigrationManager: ObservableObject {
         return migrationSteps.filter { $0.version > currentVersion }
     }
     
-    /// Execute all pending migrations
+    /// Execute all pending migrations with crash-safe, idempotent steps
     func executeMigrations() async throws {
         guard needsMigration() else {
             print("✅ DataMigrationManager: No migrations needed")
@@ -114,63 +114,86 @@ class DataMigrationManager: ObservableObject {
         
         print("🔄 DataMigrationManager: Starting migration from \(currentVersion.stringValue) to latest")
         
-        for (index, step) in availableMigrations.enumerated() {
-            currentMigrationStep = step.description
-            migrationProgress = Double(index) / Double(totalSteps)
-            
-            print("🔄 DataMigrationManager: Executing \(step.description) (v\(step.version.stringValue))")
-            
-            do {
-                let result = try await step.execute()
+        // Create pre-migration snapshot for rollback
+        let snapshotURL = try await createPreMigrationSnapshot()
+        
+        do {
+            for (index, step) in availableMigrations.enumerated() {
+                currentMigrationStep = step.description
+                migrationProgress = Double(index) / Double(totalSteps)
                 
-                switch result {
-                case .success:
-                    print("✅ DataMigrationManager: \(step.description) completed successfully")
-                    logMigration(step: step, result: .success, error: nil)
-                    // Update version after successful migration
+                print("🔄 DataMigrationManager: Executing \(step.description) (v\(step.version.stringValue))")
+                
+                // Check if step already completed (idempotent)
+                if isStepCompleted(step) {
+                    print("⏭️ DataMigrationManager: \(step.description) already completed, skipping")
+                    logMigration(step: step, result: .skipped(reason: "Already completed"), error: nil)
                     currentVersion = step.version
-                    userDefaults.set(currentVersion.stringValue, forKey: versionKey)
-                    print("✅ DataMigrationManager: Updated to version \(currentVersion.stringValue)")
-                    print("🔍 DataMigrationManager: Version saved to UserDefaults: \(userDefaults.string(forKey: versionKey) ?? "nil")")
+                    continue
+                }
+                
+                do {
+                    let result = try await step.execute()
                     
-                case .failure(let error):
-                    print("❌ DataMigrationManager: \(step.description) failed: \(error.localizedDescription)")
-                    logMigration(step: step, result: .failure(error), error: error)
-                    
-                    if step.isRequired {
-                        throw DataMigrationError.requiredStepFailed(step: step.description, error: error)
-                    } else {
-                        print("⚠️ DataMigrationManager: Non-required step failed, continuing...")
-                        // Update version even for failed non-required steps
+                    switch result {
+                    case .success:
+                        print("✅ DataMigrationManager: \(step.description) completed successfully")
+                        logMigration(step: step, result: .success, error: nil)
+                        
+                        // Mark step as completed (idempotent)
+                        try await markStepCompleted(step)
+                        
+                        // Update version after successful migration
+                        currentVersion = step.version
+                        userDefaults.set(currentVersion.stringValue, forKey: versionKey)
+                        print("✅ DataMigrationManager: Updated to version \(currentVersion.stringValue)")
+                        
+                    case .failure(let error):
+                        print("❌ DataMigrationManager: \(step.description) failed: \(error.localizedDescription)")
+                        logMigration(step: step, result: .failure(error), error: error)
+                        
+                        if step.isRequired {
+                            throw DataMigrationError.requiredStepFailed(step: step.description, error: error)
+                        } else {
+                            print("⚠️ DataMigrationManager: Non-required step failed, continuing...")
+                            // Update version even for failed non-required steps
+                            currentVersion = step.version
+                            userDefaults.set(currentVersion.stringValue, forKey: versionKey)
+                        }
+                        
+                    case .skipped(let reason):
+                        print("⏭️ DataMigrationManager: \(step.description) skipped: \(reason)")
+                        logMigration(step: step, result: .skipped(reason: reason), error: nil)
+                        // Update version even for skipped steps
                         currentVersion = step.version
                         userDefaults.set(currentVersion.stringValue, forKey: versionKey)
                     }
                     
-                case .skipped(let reason):
-                    print("⏭️ DataMigrationManager: \(step.description) skipped: \(reason)")
-                    logMigration(step: step, result: .skipped(reason: reason), error: nil)
-                    // Update version even for skipped steps
-                    currentVersion = step.version
-                    userDefaults.set(currentVersion.stringValue, forKey: versionKey)
-                }
-                
-            } catch {
-                print("❌ DataMigrationManager: Unexpected error in \(step.description): \(error.localizedDescription)")
-                logMigration(step: step, result: .failure(error), error: error)
-                
-                if step.isRequired {
-                    throw error
+                } catch {
+                    print("❌ DataMigrationManager: Unexpected error in \(step.description): \(error.localizedDescription)")
+                    logMigration(step: step, result: .failure(error), error: error)
+                    
+                    if step.isRequired {
+                        throw error
+                    }
                 }
             }
+            
+            // Post-migration validation
+            try await validatePostMigration()
+            
+            migrationProgress = 1.0
+            isMigrating = false
+            currentMigrationStep = "Migration completed successfully"
+            
+            print("🎉 DataMigrationManager: All migrations completed successfully")
+            
+        } catch {
+            // Rollback on failure
+            print("❌ DataMigrationManager: Migration failed, attempting rollback...")
+            try await rollbackFromSnapshot(snapshotURL)
+            throw error
         }
-        
-        // Version is already updated after each step
-        
-        migrationProgress = 1.0
-        isMigrating = false
-        currentMigrationStep = "Migration completed successfully"
-        
-        print("🎉 DataMigrationManager: All migrations completed successfully")
     }
     
     /// Rollback to a specific version
@@ -220,6 +243,49 @@ class DataMigrationManager: ObservableObject {
         let versionString = userDefaults.string(forKey: versionKey) ?? "1.0.0"
         currentVersion = MigrationVersion(versionString)
         print("🔍 DataMigrationManager: Loaded current version: \(currentVersion.stringValue)")
+    }
+    
+    private func createPreMigrationSnapshot() async throws -> URL {
+        let habitStore = CrashSafeHabitStore.shared
+        return try habitStore.createSnapshot()
+    }
+    
+    private func rollbackFromSnapshot(_ snapshotURL: URL) async throws {
+        let habitStore = CrashSafeHabitStore.shared
+        try habitStore.restoreFromSnapshot(snapshotURL)
+        
+        // Clean up snapshot file
+        try? FileManager.default.removeItem(at: snapshotURL)
+    }
+    
+    private func isStepCompleted(_ step: MigrationStep) -> Bool {
+        let habitStore = CrashSafeHabitStore.shared
+        let completedSteps = habitStore.getCompletedMigrationSteps()
+        return completedSteps.contains(step.description)
+    }
+    
+    private func markStepCompleted(_ step: MigrationStep) async throws {
+        let habitStore = CrashSafeHabitStore.shared
+        try habitStore.markMigrationStepCompleted(step.description)
+    }
+    
+    private func validatePostMigration() async throws {
+        let habitStore = CrashSafeHabitStore.shared
+        let habits = habitStore.loadHabits()
+        
+        // Basic validation invariants
+        let habitIds = Set(habits.map { $0.id })
+        if habitIds.count != habits.count {
+            throw DataMigrationError.postMigrationValidationFailed("Duplicate habit IDs detected")
+        }
+        
+        // Validate habit names are not empty
+        let emptyNames = habits.filter { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        if !emptyNames.isEmpty {
+            throw DataMigrationError.postMigrationValidationFailed("Habits with empty names detected")
+        }
+        
+        print("✅ DataMigrationManager: Post-migration validation passed")
     }
     
     private func setupMigrationSteps() {
@@ -327,18 +393,8 @@ enum DataMigrationError: LocalizedError {
     case requiredStepFailed(step: String, error: Error)
     case invalidRollbackVersion
     case rollbackFailed(step: String, error: Error)
+    case postMigrationValidationFailed(String)
+    case migrationDisabledByKillSwitch
+    case highFailureRateDetected
     case unknown
-    
-    var errorDescription: String? {
-        switch self {
-        case .requiredStepFailed(let step, let error):
-            return "Required migration step '\(step)' failed: \(error.localizedDescription)"
-        case .invalidRollbackVersion:
-            return "Cannot rollback to a version that is not older than current version"
-        case .rollbackFailed(let step, let error):
-            return "Failed to rollback step '\(step)': \(error.localizedDescription)"
-        case .unknown:
-            return "Unknown migration error"
-        }
-    }
 }
