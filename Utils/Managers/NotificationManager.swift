@@ -631,14 +631,8 @@ class NotificationManager: ObservableObject {
         
         // Create dynamic notification content based on habit count
         let content = UNMutableNotificationContent()
-        content.title = "Daily Plan"
-        
-        // Generate personalized message based on habit count
-        if habitCount == 1 {
-            content.body = "You have 1 habit planned for today. Let's make it happen! 💪"
-        } else {
-            content.body = "You have \(habitCount) habits planned for today. Ready to tackle them? 🎯"
-        }
+        content.title = generatePlanReminderTitle(habitCount: habitCount)
+        content.body = generatePlanReminderMessage(habitCount: habitCount)
         
         content.sound = .default
         content.badge = 1
@@ -700,16 +694,8 @@ class NotificationManager: ObservableObject {
         
         // Create dynamic notification content based on incomplete habits
         let content = UNMutableNotificationContent()
-        content.title = "Daily Check-in"
-        
-        // Generate personalized message based on incomplete habit count
-        if incompleteCount == 1 {
-            content.body = "You have 1 habit left to complete today. Almost there! 🌟"
-        } else if incompleteCount <= 3 {
-            content.body = "You have \(incompleteCount) habits left to complete today. Keep going! 💪"
-        } else {
-            content.body = "You have \(incompleteCount) habits left to complete today. Don't give up! 🎯"
-        }
+        content.title = generateCompletionReminderTitle(incompleteCount: incompleteCount)
+        content.body = generateCompletionReminderMessage(incompleteCount: incompleteCount)
         
         content.sound = .default
         content.badge = 1
@@ -931,16 +917,8 @@ class NotificationManager: ObservableObject {
             
             // Create snooze notification content
             let content = UNMutableNotificationContent()
-            content.title = "Daily Check-in (Snoozed)"
-            
-            // Generate personalized message based on incomplete habit count
-            if incompleteCount == 1 {
-                content.body = "You have 1 habit left to complete today. Almost there! 🌟"
-            } else if incompleteCount <= 3 {
-                content.body = "You have \(incompleteCount) habits left to complete today. Keep going! 💪"
-            } else {
-                content.body = "You have \(incompleteCount) habits left to complete today. Don't give up! 🎯"
-            }
+            content.title = generateSnoozeReminderTitle(incompleteCount: incompleteCount)
+            content.body = generateSnoozeReminderMessage(incompleteCount: incompleteCount)
             
             content.sound = .default
             content.badge = 1
@@ -987,6 +965,179 @@ class NotificationManager: ObservableObject {
             } else {
                 print("ℹ️ NotificationManager: No snoozed completion reminders to remove")
             }
+        }
+    }
+    
+    // MARK: - Notification Content Generation
+    
+    /// Generate dynamic titles for plan reminders
+    private func generatePlanReminderTitle(habitCount: Int) -> String {
+        let titles = [
+            "🌅 Good Morning!",
+            "📋 Daily Plan",
+            "🎯 Let's Get Started",
+            "✨ Today's Goals",
+            "🚀 Ready to Begin?",
+            "💪 Time to Shine"
+        ]
+        
+        // Use habit count to determine which title to use for variety
+        let index = habitCount % titles.count
+        return titles[index]
+    }
+    
+    /// Generate personalized messages for plan reminders
+    private func generatePlanReminderMessage(habitCount: Int) -> String {
+        switch habitCount {
+        case 1:
+            let messages = [
+                "You have 1 habit planned for today. Let's make it happen! 💪",
+                "One habit today = one step closer to your goals! 🌟",
+                "Your single habit is waiting for you. Time to shine! ✨",
+                "One focused habit can change everything. You've got this! 🎯"
+            ]
+            return messages[habitCount % messages.count]
+            
+        case 2...3:
+            let messages = [
+                "You have \(habitCount) habits planned for today. Ready to tackle them? 🎯",
+                "\(habitCount) habits = \(habitCount) opportunities to grow! 🌱",
+                "Your \(habitCount) habits are calling. Let's answer! 📞",
+                "Time to conquer your \(habitCount) daily habits! 💪"
+            ]
+            return messages[habitCount % messages.count]
+            
+        case 4...6:
+            let messages = [
+                "You have \(habitCount) habits planned for today. That's ambitious! 🚀",
+                "\(habitCount) habits ahead - you're building something amazing! 🏗️",
+                "Ready to tackle your \(habitCount) habits? You're unstoppable! ⚡",
+                "\(habitCount) habits today = incredible progress! Keep going! 🌟"
+            ]
+            return messages[habitCount % messages.count]
+            
+        default:
+            let messages = [
+                "You have \(habitCount) habits planned for today. You're a habit champion! 🏆",
+                "\(habitCount) habits? You're absolutely crushing it! 🔥",
+                "Wow! \(habitCount) habits today. You're building an empire! 👑",
+                "\(habitCount) habits planned - you're unstoppable! 💎"
+            ]
+            return messages[habitCount % messages.count]
+        }
+    }
+    
+    /// Generate dynamic titles for completion reminders
+    private func generateCompletionReminderTitle(incompleteCount: Int) -> String {
+        let titles = [
+            "📝 Daily Check-in",
+            "⏰ Time to Wrap Up",
+            "🎯 Almost There!",
+            "✨ Finish Strong",
+            "💪 Keep Going!",
+            "🌟 You're Close!"
+        ]
+        
+        // Use incomplete count to determine which title to use for variety
+        let index = incompleteCount % titles.count
+        return titles[index]
+    }
+    
+    /// Generate personalized messages for completion reminders
+    private func generateCompletionReminderMessage(incompleteCount: Int) -> String {
+        switch incompleteCount {
+        case 1:
+            let messages = [
+                "You have 1 habit left to complete today. Almost there! 🌟",
+                "Just 1 more habit to go! You're so close to victory! 🏆",
+                "One final push - your last habit is waiting! 💪",
+                "You're 99% there! Complete that last habit! ✨"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        case 2...3:
+            let messages = [
+                "You have \(incompleteCount) habits left to complete today. Keep going! 💪",
+                "Just \(incompleteCount) more habits to finish strong! 🎯",
+                "You're in the home stretch! \(incompleteCount) habits to go! 🏁",
+                "Almost there! \(incompleteCount) habits left to complete your day! ⚡"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        case 4...6:
+            let messages = [
+                "You have \(incompleteCount) habits left to complete today. Don't give up! 🎯",
+                "\(incompleteCount) habits remaining - you've got the power! 💥",
+                "Keep pushing forward! \(incompleteCount) habits left to conquer! 🚀",
+                "You're making progress! \(incompleteCount) habits to finish strong! 🌟"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        default:
+            let messages = [
+                "You have \(incompleteCount) habits left to complete today. Every step counts! 🎯",
+                "\(incompleteCount) habits remaining - you're building momentum! 🌊",
+                "Keep going! \(incompleteCount) habits left to complete your mission! 🎖️",
+                "You've got this! \(incompleteCount) habits to finish what you started! ⭐"
+            ]
+            return messages[incompleteCount % messages.count]
+        }
+    }
+    
+    /// Generate dynamic titles for snooze reminders
+    private func generateSnoozeReminderTitle(incompleteCount: Int) -> String {
+        let titles = [
+            "⏰ Reminder (Snoozed)",
+            "📝 Check-in Time!",
+            "🎯 Back to It!",
+            "💪 Ready Again?",
+            "✨ Let's Finish!",
+            "🌟 One More Try!"
+        ]
+        
+        // Use incomplete count to determine which title to use for variety
+        let index = incompleteCount % titles.count
+        return titles[index]
+    }
+    
+    /// Generate personalized messages for snooze reminders
+    private func generateSnoozeReminderMessage(incompleteCount: Int) -> String {
+        switch incompleteCount {
+        case 1:
+            let messages = [
+                "Time's up! You still have 1 habit left to complete today. Let's finish strong! 🌟",
+                "Break time over! Your last habit is still waiting. Almost there! 💪",
+                "Ready to complete that final habit? You're so close to victory! 🏆",
+                "One more push! Your last habit is calling. You've got this! ✨"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        case 2...3:
+            let messages = [
+                "Break's over! You have \(incompleteCount) habits left to complete today. Keep going! 💪",
+                "Time to get back to it! \(incompleteCount) habits are waiting for you! 🎯",
+                "Ready to finish strong? \(incompleteCount) habits left to complete your day! ⚡",
+                "Let's wrap this up! \(incompleteCount) habits to go and you're done! 🏁"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        case 4...6:
+            let messages = [
+                "Back to work! You have \(incompleteCount) habits left to complete today. Don't give up! 🎯",
+                "Time to push through! \(incompleteCount) habits remaining - you've got this! 💥",
+                "Let's finish what we started! \(incompleteCount) habits left to conquer! 🚀",
+                "Ready to complete your mission? \(incompleteCount) habits to go! 🌟"
+            ]
+            return messages[incompleteCount % messages.count]
+            
+        default:
+            let messages = [
+                "Time to get back on track! You have \(incompleteCount) habits left to complete today! 🎯",
+                "Let's build that momentum! \(incompleteCount) habits remaining - every step counts! 🌊",
+                "Ready to finish strong? \(incompleteCount) habits left to complete your day! 🎖️",
+                "You've got the power! \(incompleteCount) habits to finish what you started! ⭐"
+            ]
+            return messages[incompleteCount % messages.count]
         }
     }
 } 

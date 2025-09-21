@@ -162,6 +162,11 @@ struct HabittoApp: App {
                                 print("🔄 HabittoApp: Rescheduling notifications after app start...")
                                 let habits = habitRepository.habits
                                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
+                                
+                                // Schedule daily reminders after habits are loaded
+                                try? await Task.sleep(nanoseconds: 500_000_000)
+                                print("🔄 HabittoApp: Scheduling daily reminders after app start...")
+                                NotificationManager.shared.rescheduleDailyReminders()
                             }
                         }
                 }
@@ -198,6 +203,11 @@ struct HabittoApp: App {
                 print("🔄 HabittoApp: Rescheduling notifications after app became active...")
                 let habits = habitRepository.habits
                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
+                
+                // Schedule daily reminders when app becomes active
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                print("🔄 HabittoApp: Scheduling daily reminders after app became active...")
+                NotificationManager.shared.rescheduleDailyReminders()
             }
         }
         
