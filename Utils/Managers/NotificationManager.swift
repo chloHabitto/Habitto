@@ -523,4 +523,228 @@ class NotificationManager: ObservableObject {
         // Schedule friendly reminders for incomplete habits
         scheduleFriendlyReminders(for: date, habits: habits)
     }
+    
+    // MARK: - Daily Reminders System
+    
+    /// Schedule daily plan reminders based on user settings
+    func scheduleDailyPlanReminders() {
+        print("📅 NotificationManager: Scheduling daily plan reminders...")
+        
+        // Check if plan reminders are enabled
+        let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+        guard planReminderEnabled else {
+            print("ℹ️ NotificationManager: Plan reminders are disabled")
+            return
+        }
+        
+        // Get the reminder time from UserDefaults
+        guard let planReminderTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date else {
+            print("❌ NotificationManager: No plan reminder time set")
+            return
+        }
+        
+        // Schedule plan reminders for the next 7 days
+        let calendar = Calendar.current
+        let today = Date()
+        
+        for dayOffset in 0..<7 {
+            if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                schedulePlanReminderForDate(targetDate, reminderTime: planReminderTime)
+            }
+        }
+        
+        print("✅ NotificationManager: Daily plan reminders scheduled for next 7 days")
+    }
+    
+    /// Schedule daily completion reminders based on user settings
+    func scheduleDailyCompletionReminders() {
+        print("📅 NotificationManager: Scheduling daily completion reminders...")
+        
+        // Check if completion reminders are enabled
+        let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+        guard completionReminderEnabled else {
+            print("ℹ️ NotificationManager: Completion reminders are disabled")
+            return
+        }
+        
+        // Get the reminder time from UserDefaults
+        guard let completionReminderTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date else {
+            print("❌ NotificationManager: No completion reminder time set")
+            return
+        }
+        
+        // Schedule completion reminders for the next 7 days
+        let calendar = Calendar.current
+        let today = Date()
+        
+        for dayOffset in 0..<7 {
+            if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                scheduleCompletionReminderForDate(targetDate, reminderTime: completionReminderTime)
+            }
+        }
+        
+        print("✅ NotificationManager: Daily completion reminders scheduled for next 7 days")
+    }
+    
+    /// Schedule a plan reminder for a specific date
+    private func schedulePlanReminderForDate(_ date: Date, reminderTime: Date) {
+        // Check if vacation mode is active - don't schedule notifications during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔇 NotificationManager: Skipping plan reminder for \(date) - vacation day")
+            return
+        }
+        
+        let calendar = Calendar.current
+        let dateKey = DateUtils.dateKey(for: date)
+        let notificationId = "daily_plan_reminder_\(dateKey)"
+        
+        // Create notification content
+        let content = UNMutableNotificationContent()
+        content.title = "Daily Plan"
+        content.body = "Check your habits for today!"
+        content.sound = .default
+        content.badge = 1
+        
+        // Create date components for the reminder time on the specific date
+        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        
+        // Combine date and time components
+        var combinedComponents = DateComponents()
+        combinedComponents.year = dateComponents.year
+        combinedComponents.month = dateComponents.month
+        combinedComponents.day = dateComponents.day
+        combinedComponents.hour = reminderComponents.hour
+        combinedComponents.minute = reminderComponents.minute
+        
+        // Create trigger for specific date
+        let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+        
+        // Create request
+        let request = UNNotificationRequest(
+            identifier: notificationId,
+            content: content,
+            trigger: trigger
+        )
+        
+        // Schedule the notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Error scheduling plan reminder for \(date): \(error)")
+            } else {
+                print("✅ Plan reminder scheduled for \(date) at \(reminderTime)")
+            }
+        }
+    }
+    
+    /// Schedule a completion reminder for a specific date
+    private func scheduleCompletionReminderForDate(_ date: Date, reminderTime: Date) {
+        // Check if vacation mode is active - don't schedule notifications during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔇 NotificationManager: Skipping completion reminder for \(date) - vacation day")
+            return
+        }
+        
+        let calendar = Calendar.current
+        let dateKey = DateUtils.dateKey(for: date)
+        let notificationId = "daily_completion_reminder_\(dateKey)"
+        
+        // Create notification content
+        let content = UNMutableNotificationContent()
+        content.title = "Daily Check-in"
+        content.body = "Don't forget to complete your habits today!"
+        content.sound = .default
+        content.badge = 1
+        
+        // Create date components for the reminder time on the specific date
+        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        
+        // Combine date and time components
+        var combinedComponents = DateComponents()
+        combinedComponents.year = dateComponents.year
+        combinedComponents.month = dateComponents.month
+        combinedComponents.day = dateComponents.day
+        combinedComponents.hour = reminderComponents.hour
+        combinedComponents.minute = reminderComponents.minute
+        
+        // Create trigger for specific date
+        let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+        
+        // Create request
+        let request = UNNotificationRequest(
+            identifier: notificationId,
+            content: content,
+            trigger: trigger
+        )
+        
+        // Schedule the notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Error scheduling completion reminder for \(date): \(error)")
+            } else {
+                print("✅ Completion reminder scheduled for \(date) at \(reminderTime)")
+            }
+        }
+    }
+    
+    /// Remove all daily plan reminders
+    func removeDailyPlanReminders() {
+        print("🗑️ NotificationManager: Removing all daily plan reminders...")
+        
+        // Get all pending notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let planReminderIds = requests.compactMap { request in
+                request.identifier.hasPrefix("daily_plan_reminder_") ? request.identifier : nil
+            }
+            
+            if !planReminderIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: planReminderIds)
+                print("✅ NotificationManager: Removed \(planReminderIds.count) daily plan reminders")
+            } else {
+                print("ℹ️ NotificationManager: No daily plan reminders to remove")
+            }
+        }
+    }
+    
+    /// Remove all daily completion reminders
+    func removeDailyCompletionReminders() {
+        print("🗑️ NotificationManager: Removing all daily completion reminders...")
+        
+        // Get all pending notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let completionReminderIds = requests.compactMap { request in
+                request.identifier.hasPrefix("daily_completion_reminder_") ? request.identifier : nil
+            }
+            
+            if !completionReminderIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: completionReminderIds)
+                print("✅ NotificationManager: Removed \(completionReminderIds.count) daily completion reminders")
+            } else {
+                print("ℹ️ NotificationManager: No daily completion reminders to remove")
+            }
+        }
+    }
+    
+    /// Remove all daily reminders (both plan and completion)
+    func removeAllDailyReminders() {
+        removeDailyPlanReminders()
+        removeDailyCompletionReminders()
+    }
+    
+    /// Reschedule all daily reminders (useful when settings change)
+    func rescheduleDailyReminders() {
+        print("🔄 NotificationManager: Rescheduling all daily reminders...")
+        
+        // Remove existing daily reminders
+        removeAllDailyReminders()
+        
+        // Schedule new ones based on current settings
+        scheduleDailyPlanReminders()
+        scheduleDailyCompletionReminders()
+        
+        print("✅ NotificationManager: Daily reminders rescheduled")
+    }
 } 
