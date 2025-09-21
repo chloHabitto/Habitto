@@ -316,6 +316,12 @@ struct DailyRemindersView: View {
         UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
         UserDefaults.standard.set(snoozeDuration.rawValue, forKey: "snoozeDuration")
         
+        // Schedule daily reminders based on new settings
+        Task { @MainActor in
+            print("🔄 DailyRemindersView: Rescheduling daily reminders after settings change...")
+            NotificationManager.shared.rescheduleDailyReminders()
+        }
+        
         // Dismiss the view
         dismiss()
     }
