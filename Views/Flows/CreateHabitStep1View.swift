@@ -30,6 +30,11 @@ struct CreateHabitStep1View: View {
     @FocusState private var isNameFieldFocused: Bool
     @FocusState private var isDescriptionFieldFocused: Bool
     
+    // Validation state management
+    @State private var nameValidationError: String? = nil
+    @State private var isNameValid: Bool = true
+    @State private var validationInProgress: Bool = false
+    
 
     
     // Cache screen width to avoid repeated UIScreen.main.bounds.width access
@@ -46,7 +51,7 @@ struct CreateHabitStep1View: View {
     
     // Performance optimization: Pre-computed values to reduce view updates
     private var continueButtonDisabled: Bool {
-        name.isEmpty
+        name.isEmpty || !isNameValid || validationInProgress
     }
     
     private var continueButtonColor: Color {
@@ -97,6 +102,35 @@ struct CreateHabitStep1View: View {
     
     private func getIconDisplayValue(_ icon: String) -> String {
         return icon == "None" ? "None" : ""
+    }
+    
+    // MARK: - Validation Functions
+    @MainActor
+    private func validateHabitName() {
+        // Reset validation state
+        validationInProgress = true
+        nameValidationError = nil
+        isNameValid = true
+        
+        // Skip validation if name is empty (handled by continue button logic)
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            validationInProgress = false
+            return
+        }
+        
+        // Perform validation
+        let validationResult = ValidationBusinessRulesLogic.validateHabitCreation(
+            name: name,
+            description: description,
+            icon: icon,
+            color: color,
+            habitType: habitType
+        )
+        
+        // Update validation state
+        isNameValid = validationResult.isValid
+        nameValidationError = validationResult.errorMessage
+        validationInProgress = false
     }
     
     // Ultra-lightweight TextField for maximum initial load performance
@@ -208,13 +242,38 @@ struct CreateHabitStep1View: View {
                             text: $name,
                             externalFocus: $isNameFieldFocused
                         )
+                        .onChange(of: name) { _, newValue in
+                            // Debounce validation to avoid excessive calls
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 300_000_000) // 300ms delay
+                                if name == newValue { // Only validate if name hasn't changed during delay
+                                    validateHabitName()
+                                }
+                            }
+                        }
+                        
+                        // Error message display
+                        if let errorMessage = nameValidationError {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.error)
+                                
+                                Text(errorMessage)
+                                    .font(.appBodyMedium)
+                                    .foregroundColor(.error)
+                                
+                                Spacer()
+                            }
+                            .padding(.top, 4)
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
                     .background(.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(.outline3, lineWidth: 1.5)
+                            .stroke(isNameValid ? .outline3 : .error, lineWidth: 1.5)
                     )
                     .cornerRadius(16)
                     .onTapGesture {
