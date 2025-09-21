@@ -2,8 +2,9 @@ import SwiftUI
 import UIKit
 import FirebaseCore
 import GoogleSignIn
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
@@ -26,7 +27,48 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
         
+        // Configure notification center delegate
+        UNUserNotificationCenter.current().delegate = self
+        
         return true
+    }
+    
+    // MARK: - Notification Handling
+    
+    // Handle notification actions (snooze, dismiss, etc.)
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        let actionIdentifier = response.actionIdentifier
+        let notificationId = response.notification.request.identifier
+        
+        print("📱 AppDelegate: Received notification action: \(actionIdentifier) for notification: \(notificationId)")
+        
+        // Handle snooze actions
+        switch actionIdentifier {
+        case "SNOOZE_10_MIN":
+            NotificationManager.shared.handleSnoozeAction(for: notificationId, snoozeMinutes: 10)
+        case "SNOOZE_15_MIN":
+            NotificationManager.shared.handleSnoozeAction(for: notificationId, snoozeMinutes: 15)
+        case "SNOOZE_30_MIN":
+            NotificationManager.shared.handleSnoozeAction(for: notificationId, snoozeMinutes: 30)
+        case "DISMISS":
+            print("ℹ️ AppDelegate: User dismissed notification: \(notificationId)")
+        default:
+            print("ℹ️ AppDelegate: Unknown notification action: \(actionIdentifier)")
+        }
+        
+        completionHandler()
+    }
+    
+    // Handle notifications when app is in foreground
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        print("📱 AppDelegate: Received notification in foreground: \(notification.request.identifier)")
+        
+        // Show notification even when app is in foreground
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .badge, .sound])
+        } else {
+            completionHandler([.alert, .badge, .sound])
+        }
     }
     
     // Handle Google Sign-In URL callback
