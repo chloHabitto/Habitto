@@ -30,7 +30,6 @@ struct PreferencesView: View {
                         ) {
                             showingLanguage = true
                         }
-                        .opacity(0.6)
                         
                         Divider()
                             .padding(.leading, 56)
@@ -55,7 +54,6 @@ struct PreferencesView: View {
                         ) {
                             showingTheme = true
                         }
-                        .opacity(0.6)
                         
                         Divider()
                             .padding(.leading, 56)
