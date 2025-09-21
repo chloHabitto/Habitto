@@ -12,6 +12,9 @@ struct DateCalendarView: View {
     @State private var selectedDateFormat: DateFormatOption
     @State private var selectedFirstDay: FirstDayOption
     
+    // Toast state
+    @State private var showSuccessToast = false
+    
     init() {
         let currentDateFormat = DatePreferences.shared.dateFormat
         let currentFirstDay = DatePreferences.shared.firstDayOfWeek
@@ -64,6 +67,13 @@ struct DateCalendarView: View {
                     }
                 }
             }
+            .overlay(
+                // Success Toast
+                successToast
+                    .offset(y: showSuccessToast ? 10 : -190) // 10 points from top when visible
+                    .opacity(showSuccessToast ? 1 : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0), value: showSuccessToast)
+            )
         }
     }
     
@@ -223,6 +233,44 @@ struct DateCalendarView: View {
         }
     }
     
+    // MARK: - Success Toast
+    private var successToast: some View {
+        GeometryReader { geometry in
+            VStack {
+                HStack(spacing: 12) {
+                    // Check icon
+                    ZStack {
+                        Circle()
+                            .fill(Color.green500)
+                            .frame(width: 24, height: 24)
+                        
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    
+                    // Success text
+                    Text("Successfully saved")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.surface)
+                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                )
+                .frame(width: geometry.size.width - 40) // Screen width - 40
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
     // MARK: - Save Action
     private func saveChanges() {
         // Update the preferences with selected values
@@ -233,8 +281,18 @@ struct DateCalendarView: View {
         originalDateFormat = selectedDateFormat
         originalFirstDay = selectedFirstDay
         
-        // Dismiss the view
-        dismiss()
+        // Show success toast
+        showSuccessToast = true
+        
+        // Hide toast and dismiss after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            showSuccessToast = false
+            
+            // Dismiss the view after toast animation completes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                dismiss()
+            }
+        }
     }
 }
 
