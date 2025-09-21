@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
+    @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
@@ -330,7 +331,7 @@ struct MoreTabView: View {
     }
     
     private func iconColorForSetting(_ title: String) -> Color {
-        switch ThemeManager.shared.selectedTheme {
+        switch themeManager.selectedTheme {
         case .default:
             return Color("navy200")
         case .black:

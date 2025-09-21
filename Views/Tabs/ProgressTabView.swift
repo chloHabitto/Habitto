@@ -86,6 +86,7 @@ struct Arc: Shape {
 }
 
 struct ProgressTabView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     // MARK: - State
     @State private var selectedTimePeriod = 0
     @State private var selectedHabit: Habit?
@@ -137,14 +138,14 @@ struct ProgressTabView: View {
                                     Text(selectedHabit?.name ?? "All habits")
                             .font(.appTitleMediumEmphasised)
                             .lineSpacing(8)
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(.text02)
                         
                         Image("Icon-arrowDropDown_Filled")
                             .renderingMode(.template)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 24, height: 24)
-                            .foregroundColor(.navy100)
+                            .foregroundColor(.text04)
                     }
                 }
                 

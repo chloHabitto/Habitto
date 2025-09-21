@@ -70,7 +70,7 @@ struct UnifiedTabBarView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(style == .underline ? Color.white : Color.clear)
+        .background(style == .underline ? .surface : Color.clear)
         .overlay(
             // Bottom stroke for the entire tab bar - only for underline style
             VStack {

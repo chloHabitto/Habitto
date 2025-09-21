@@ -113,6 +113,7 @@ struct DropViewDelegate: DropDelegate {
 
 struct HabitsTabView: View {
     @ObservedObject var state: HomeViewState
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedStatsTab: Int = 0
     @State private var selectedHabit: Habit? = nil
     @State private var isEditMode: Bool = false

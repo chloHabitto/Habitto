@@ -4,6 +4,7 @@ import Combine
 struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var currentWeekOffset: Int = 0
 
     @State private var lastHapticWeek: Int = 0
@@ -40,7 +41,7 @@ struct HomeTabView: View {
                     .overlay(
                         Rectangle()
                             .frame(height: 1)
-                            .foregroundColor(.grey200)
+                            .foregroundColor(.outline3)
                             .frame(maxWidth: .infinity),
                         alignment: .bottom
                     )
