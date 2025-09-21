@@ -274,14 +274,15 @@ struct HomeView: View {
     @StateObject private var state = HomeViewState()
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var themeManager: ThemeManager
     
     var body: some View {
                     VStack(spacing: 0) {
             
             // Main content area
             ZStack(alignment: .top) {
-                // Dark blue background fills entire screen
-                Color(red: 0.11, green: 0.15, blue: 0.30)
+                // Dynamic theme background fills entire screen
+                Color.primary
                     .ignoresSafeArea(.all)
                 
                 VStack(spacing: 0) {

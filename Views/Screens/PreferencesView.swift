@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PreferencesView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var themeManager: ThemeManager
     
     @State private var showingLanguage = false
     @State private var showingDateCalendar = false
@@ -9,7 +10,7 @@ struct PreferencesView: View {
     @State private var showingDailyReminders = false
     
     private var iconColor: Color {
-        ThemeManager.shared.selectedTheme == .default ? Color("navy200") : Color("themeBlack200")
+        themeManager.selectedTheme == .default ? Color("navy200") : Color("themeBlack200")
     }
     
     var body: some View {

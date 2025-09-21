@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ThemeView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var themeManager = ThemeManager.shared
+    @EnvironmentObject var themeManager: ThemeManager
     
     // Track original values to detect changes
     @State private var originalTheme: AppTheme

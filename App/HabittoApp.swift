@@ -47,6 +47,7 @@ struct HabittoApp: App {
     @StateObject private var tutorialManager = TutorialManager()
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
+    @StateObject private var themeManager = ThemeManager.shared
     @State private var showSplash = true
     
     var body: some Scene {
@@ -82,6 +83,7 @@ struct HabittoApp: App {
                             .environmentObject(authManager)
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
+                            .environmentObject(themeManager)
                         
                         // DISABLED: Migration view completely disabled per user request
                         // if habitRepository.shouldShowMigrationView {
