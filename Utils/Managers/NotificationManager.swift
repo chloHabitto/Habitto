@@ -629,42 +629,50 @@ class NotificationManager: ObservableObject {
         let dateKey = DateUtils.dateKey(for: date)
         let notificationId = "daily_plan_reminder_\(dateKey)"
         
-        // Create dynamic notification content based on habit count
-        let content = UNMutableNotificationContent()
-        content.title = generatePlanReminderTitle(habitCount: habitCount)
-        content.body = generatePlanReminderMessage(habitCount: habitCount)
-        
-        content.sound = .default
-        content.badge = 1
-        
-        // Create date components for the reminder time on the specific date
-        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
-        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
-        
-        // Combine date and time components
-        var combinedComponents = DateComponents()
-        combinedComponents.year = dateComponents.year
-        combinedComponents.month = dateComponents.month
-        combinedComponents.day = dateComponents.day
-        combinedComponents.hour = reminderComponents.hour
-        combinedComponents.minute = reminderComponents.minute
-        
-        // Create trigger for specific date
-        let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
-        
-        // Create request
-        let request = UNNotificationRequest(
-            identifier: notificationId,
-            content: content,
-            trigger: trigger
-        )
-        
-        // Schedule the notification
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ Error scheduling plan reminder for \(date): \(error)")
-            } else {
-                print("✅ Plan reminder scheduled for \(date) at \(reminderTime) - \(habitCount) habits")
+        // Check if this reminder already exists to prevent duplicates
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let existingReminder = requests.first { $0.identifier == notificationId }
+            if existingReminder != nil {
+                print("⚠️ NotificationManager: Plan reminder already exists for \(date), skipping duplicate")
+                return
+            }
+            
+            // Create dynamic notification content based on habit count
+            let content = UNMutableNotificationContent()
+            content.title = self.generatePlanReminderTitle(habitCount: habitCount)
+            content.body = self.generatePlanReminderMessage(habitCount: habitCount)
+            content.sound = .default
+            content.badge = 1
+            
+            // Create date components for the reminder time on the specific date
+            let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+            
+            // Combine date and time components
+            var combinedComponents = DateComponents()
+            combinedComponents.year = dateComponents.year
+            combinedComponents.month = dateComponents.month
+            combinedComponents.day = dateComponents.day
+            combinedComponents.hour = reminderComponents.hour
+            combinedComponents.minute = reminderComponents.minute
+            
+            // Create trigger for specific date
+            let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+            
+            // Create request
+            let request = UNNotificationRequest(
+                identifier: notificationId,
+                content: content,
+                trigger: trigger
+            )
+            
+            // Schedule the notification
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Error scheduling plan reminder for \(date): \(error)")
+                } else {
+                    print("✅ Plan reminder scheduled for \(date) at \(reminderTime) - \(habitCount) habits")
+                }
             }
         }
     }
@@ -692,48 +700,56 @@ class NotificationManager: ObservableObject {
         let dateKey = DateUtils.dateKey(for: date)
         let notificationId = "daily_completion_reminder_\(dateKey)"
         
-        // Create dynamic notification content based on incomplete habits
-        let content = UNMutableNotificationContent()
-        content.title = generateCompletionReminderTitle(incompleteCount: incompleteCount)
-        content.body = generateCompletionReminderMessage(incompleteCount: incompleteCount)
-        
-        content.sound = .default
-        content.badge = 1
-        
-        // Add snooze actions if snooze is enabled
-        let snoozeDuration = getSnoozeDuration()
-        if snoozeDuration != .none {
-            content.categoryIdentifier = "COMPLETION_REMINDER_CATEGORY"
-        }
-        
-        // Create date components for the reminder time on the specific date
-        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
-        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
-        
-        // Combine date and time components
-        var combinedComponents = DateComponents()
-        combinedComponents.year = dateComponents.year
-        combinedComponents.month = dateComponents.month
-        combinedComponents.day = dateComponents.day
-        combinedComponents.hour = reminderComponents.hour
-        combinedComponents.minute = reminderComponents.minute
-        
-        // Create trigger for specific date
-        let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
-        
-        // Create request
-        let request = UNNotificationRequest(
-            identifier: notificationId,
-            content: content,
-            trigger: trigger
-        )
-        
-        // Schedule the notification
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ Error scheduling completion reminder for \(date): \(error)")
-            } else {
-                print("✅ Completion reminder scheduled for \(date) at \(reminderTime) - \(incompleteCount) incomplete habits")
+        // Check if this reminder already exists to prevent duplicates
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let existingReminder = requests.first { $0.identifier == notificationId }
+            if existingReminder != nil {
+                print("⚠️ NotificationManager: Completion reminder already exists for \(date), skipping duplicate")
+                return
+            }
+            
+            // Create dynamic notification content based on incomplete habits
+            let content = UNMutableNotificationContent()
+            content.title = self.generateCompletionReminderTitle(incompleteCount: incompleteCount)
+            content.body = self.generateCompletionReminderMessage(incompleteCount: incompleteCount)
+            content.sound = .default
+            content.badge = 1
+            
+            // Add snooze actions if snooze is enabled
+            let snoozeDuration = self.getSnoozeDuration()
+            if snoozeDuration != .none {
+                content.categoryIdentifier = "COMPLETION_REMINDER_CATEGORY"
+            }
+            
+            // Create date components for the reminder time on the specific date
+            let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+            
+            // Combine date and time components
+            var combinedComponents = DateComponents()
+            combinedComponents.year = dateComponents.year
+            combinedComponents.month = dateComponents.month
+            combinedComponents.day = dateComponents.day
+            combinedComponents.hour = reminderComponents.hour
+            combinedComponents.minute = reminderComponents.minute
+            
+            // Create trigger for specific date
+            let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+            
+            // Create request
+            let request = UNNotificationRequest(
+                identifier: notificationId,
+                content: content,
+                trigger: trigger
+            )
+            
+            // Schedule the notification
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Error scheduling completion reminder for \(date): \(error)")
+                } else {
+                    print("✅ Completion reminder scheduled for \(date) at \(reminderTime) - \(incompleteCount) incomplete habits")
+                }
             }
         }
     }
@@ -751,6 +767,11 @@ class NotificationManager: ObservableObject {
             if !planReminderIds.isEmpty {
                 UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: planReminderIds)
                 print("✅ NotificationManager: Removed \(planReminderIds.count) daily plan reminders")
+                
+                // Log the specific reminders that were removed for debugging
+                for id in planReminderIds {
+                    print("🗑️ NotificationManager: Removed plan reminder: \(id)")
+                }
             } else {
                 print("ℹ️ NotificationManager: No daily plan reminders to remove")
             }
@@ -770,6 +791,11 @@ class NotificationManager: ObservableObject {
             if !completionReminderIds.isEmpty {
                 UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: completionReminderIds)
                 print("✅ NotificationManager: Removed \(completionReminderIds.count) daily completion reminders")
+                
+                // Log the specific reminders that were removed for debugging
+                for id in completionReminderIds {
+                    print("🗑️ NotificationManager: Removed completion reminder: \(id)")
+                }
             } else {
                 print("ℹ️ NotificationManager: No daily completion reminders to remove")
             }
@@ -788,14 +814,20 @@ class NotificationManager: ObservableObject {
     func rescheduleDailyReminders() {
         print("🔄 NotificationManager: Rescheduling all daily reminders...")
         
-        // Remove existing daily reminders
+        // Step 1: Perform comprehensive cleanup first
+        performComprehensiveDailyRemindersCleanup()
+        
+        // Step 2: Remove existing daily reminders
         removeAllDailyReminders()
         
-        // Schedule new ones based on current settings
+        // Step 3: Schedule new ones based on current settings
         scheduleDailyPlanReminders()
         scheduleDailyCompletionReminders()
         
-        print("✅ NotificationManager: Daily reminders rescheduled")
+        // Step 4: Get final count for verification
+        getPendingDailyRemindersCount { count in
+            print("✅ NotificationManager: Daily reminders rescheduled. Total pending: \(count)")
+        }
     }
     
     // MARK: - Snooze Functionality
@@ -965,6 +997,166 @@ class NotificationManager: ObservableObject {
             } else {
                 print("ℹ️ NotificationManager: No snoozed completion reminders to remove")
             }
+        }
+    }
+    
+    // MARK: - Enhanced Notification Management
+    
+    /// Check for and remove duplicate daily reminders
+    func removeDuplicateDailyReminders() {
+        print("🔍 NotificationManager: Checking for duplicate daily reminders...")
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            var seenIdentifiers: Set<String> = []
+            var duplicateIds: [String] = []
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") {
+                    if seenIdentifiers.contains(request.identifier) {
+                        duplicateIds.append(request.identifier)
+                        print("⚠️ NotificationManager: Found duplicate reminder: \(request.identifier)")
+                    } else {
+                        seenIdentifiers.insert(request.identifier)
+                    }
+                }
+            }
+            
+            if !duplicateIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: duplicateIds)
+                print("✅ NotificationManager: Removed \(duplicateIds.count) duplicate daily reminders")
+            } else {
+                print("ℹ️ NotificationManager: No duplicate daily reminders found")
+            }
+        }
+    }
+    
+    /// Remove expired daily reminders (older than 7 days)
+    func removeExpiredDailyReminders() {
+        print("🗑️ NotificationManager: Checking for expired daily reminders...")
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let calendar = Calendar.current
+            let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+            var expiredIds: [String] = []
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") {
+                    
+                    // Extract date from identifier (format: daily_plan_reminder_YYYY-MM-DD)
+                    let components = request.identifier.components(separatedBy: "_")
+                    if components.count >= 4 {
+                        let dateString = components[3]
+                        // Parse date string back to Date using the same format as dateKey
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        if let requestDate = formatter.date(from: dateString) {
+                            if requestDate < sevenDaysAgo {
+                                expiredIds.append(request.identifier)
+                                print("🗑️ NotificationManager: Found expired reminder: \(request.identifier) (date: \(dateString))")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if !expiredIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: expiredIds)
+                print("✅ NotificationManager: Removed \(expiredIds.count) expired daily reminders")
+            } else {
+                print("ℹ️ NotificationManager: No expired daily reminders found")
+            }
+        }
+    }
+    
+    /// Remove daily reminders for specific dates
+    func removeDailyRemindersForDates(_ dates: [Date]) {
+        print("🗑️ NotificationManager: Removing daily reminders for \(dates.count) specific dates...")
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            var idsToRemove: [String] = []
+            let dateKeys = Set(dates.map { DateUtils.dateKey(for: $0) })
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") {
+                    
+                    // Extract date from identifier
+                    let components = request.identifier.components(separatedBy: "_")
+                    if components.count >= 4 {
+                        let dateString = components[3]
+                        if dateKeys.contains(dateString) {
+                            idsToRemove.append(request.identifier)
+                        }
+                    }
+                }
+            }
+            
+            if !idsToRemove.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: idsToRemove)
+                print("✅ NotificationManager: Removed \(idsToRemove.count) daily reminders for specified dates")
+                
+                for id in idsToRemove {
+                    print("🗑️ NotificationManager: Removed reminder: \(id)")
+                }
+            } else {
+                print("ℹ️ NotificationManager: No daily reminders found for specified dates")
+            }
+        }
+    }
+    
+    /// Get count of pending daily reminders
+    func getPendingDailyRemindersCount(completion: @escaping (Int) -> Void) {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let dailyReminderCount = requests.filter { request in
+                request.identifier.hasPrefix("daily_plan_reminder_") || 
+                request.identifier.hasPrefix("daily_completion_reminder_")
+            }.count
+            
+            DispatchQueue.main.async {
+                completion(dailyReminderCount)
+            }
+        }
+    }
+    
+    /// Get detailed information about pending daily reminders
+    func getPendingDailyRemindersInfo(completion: @escaping ([(identifier: String, date: String, type: String)]) -> Void) {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            var remindersInfo: [(identifier: String, date: String, type: String)] = []
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") {
+                    
+                    let components = request.identifier.components(separatedBy: "_")
+                    if components.count >= 4 {
+                        let dateString = components[3]
+                        let type = request.identifier.hasPrefix("daily_plan_reminder_") ? "Plan" : "Completion"
+                        remindersInfo.append((request.identifier, dateString, type))
+                    }
+                }
+            }
+            
+            DispatchQueue.main.async {
+                completion(remindersInfo)
+            }
+        }
+    }
+    
+    /// Comprehensive cleanup of all daily reminders with enhanced logging
+    func performComprehensiveDailyRemindersCleanup() {
+        print("🧹 NotificationManager: Starting comprehensive daily reminders cleanup...")
+        
+        // Step 1: Remove duplicates
+        removeDuplicateDailyReminders()
+        
+        // Step 2: Remove expired reminders
+        removeExpiredDailyReminders()
+        
+        // Step 3: Get final count
+        getPendingDailyRemindersCount { count in
+            print("📊 NotificationManager: Comprehensive cleanup completed. Remaining daily reminders: \(count)")
         }
     }
     
