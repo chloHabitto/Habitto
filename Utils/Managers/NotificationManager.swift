@@ -11,6 +11,46 @@ enum FriendlyReminderType {
     case threeHour
 }
 
+// MARK: - Notification Permission Testing
+struct NotificationPermissionTestResult {
+    let authorizationStatus: UNAuthorizationStatus
+    let alertSetting: UNNotificationSetting
+    let badgeSetting: UNNotificationSetting
+    let soundSetting: UNNotificationSetting
+    let notificationCenterSetting: UNNotificationSetting
+    let lockScreenSetting: UNNotificationSetting
+    let carPlaySetting: UNNotificationSetting
+    let criticalAlertSetting: UNNotificationSetting
+    let announcementSetting: UNNotificationSetting
+    let isAuthorized: Bool
+    let canScheduleNotifications: Bool
+}
+
+struct NotificationPermissionHistory {
+    let wasGranted: Bool
+    let grantedDate: Date?
+    let deniedDate: Date?
+    let errorMessage: String?
+    let errorDate: Date?
+}
+
+struct NotificationValidationResult {
+    var isAuthorized: Bool = false
+    var canSchedule: Bool = false
+    var canShowAlerts: Bool = false
+    var canShowBadges: Bool = false
+    var canPlaySounds: Bool = false
+    var canShowInNotificationCenter: Bool = false
+    var canShowOnLockScreen: Bool = false
+    var canShowInCarPlay: Bool = false
+    var canShowCriticalAlerts: Bool = false
+    var canShowAnnouncements: Bool = false
+    var overallCapability: Bool = false
+    var statusMessage: String = ""
+    var requiresUserAction: Bool = false
+    var requiresPermissionRequest: Bool = false
+}
+
 class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
@@ -22,10 +62,303 @@ class NotificationManager: ObservableObject {
     func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             DispatchQueue.main.async {
-                if granted {
+                if let error = error {
+                    print("❌ Notification permission request failed: \(error.localizedDescription)")
+                    self.handleNotificationPermissionError(error)
+                } else if granted {
                     print("✅ Notification permission granted")
+                    self.handleNotificationPermissionGranted()
                 } else {
-                    print("❌ Notification permission denied")
+                    print("❌ Notification permission denied by user")
+                    self.handleNotificationPermissionDenied()
+                }
+            }
+        }
+    }
+    
+    /// Check current notification authorization status
+    func checkNotificationPermissionStatus(completion: @escaping (UNAuthorizationStatus) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                completion(settings.authorizationStatus)
+            }
+        }
+    }
+    
+    /// Validate notification permissions before scheduling
+    func validateNotificationPermissions(completion: @escaping (Bool) -> Void) {
+        checkNotificationPermissionStatus { status in
+            switch status {
+            case .authorized:
+                print("✅ NotificationManager: Permissions validated - authorized")
+                completion(true)
+            case .denied:
+                print("❌ NotificationManager: Permissions validated - denied")
+                completion(false)
+            case .notDetermined:
+                print("⚠️ NotificationManager: Permissions not determined - requesting permission")
+                self.requestNotificationPermission()
+                // Check again after requesting
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.checkNotificationPermissionStatus { newStatus in
+                        completion(newStatus == .authorized)
+                    }
+                }
+            case .provisional:
+                print("✅ NotificationManager: Permissions validated - provisional")
+                completion(true)
+            case .ephemeral:
+                print("✅ NotificationManager: Permissions validated - ephemeral")
+                completion(true)
+            @unknown default:
+                print("⚠️ NotificationManager: Unknown permission status: \(status.rawValue)")
+                completion(false)
+            }
+        }
+    }
+    
+    /// Handle notification permission granted
+    private func handleNotificationPermissionGranted() {
+        print("🎉 NotificationManager: Notification permission granted - enabling all notification features")
+        
+        // Setup notification categories for snooze functionality
+        setupNotificationCategories()
+        
+        // Store permission granted state
+        UserDefaults.standard.set(true, forKey: "notificationPermissionGranted")
+        UserDefaults.standard.set(Date(), forKey: "notificationPermissionGrantedDate")
+        
+        // Log permission details
+        logNotificationPermissionDetails()
+    }
+    
+    /// Handle notification permission denied
+    private func handleNotificationPermissionDenied() {
+        print("🚫 NotificationManager: Notification permission denied - disabling notification features")
+        
+        // Clear any existing notification categories
+        UNUserNotificationCenter.current().setNotificationCategories([])
+        
+        // Store permission denied state
+        UserDefaults.standard.set(false, forKey: "notificationPermissionGranted")
+        UserDefaults.standard.set(Date(), forKey: "notificationPermissionDeniedDate")
+        
+        // Cancel all pending notifications
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        
+        print("🧹 NotificationManager: Cleared all pending notifications due to permission denial")
+    }
+    
+    /// Handle notification permission error
+    private func handleNotificationPermissionError(_ error: Error) {
+        print("💥 NotificationManager: Notification permission error: \(error.localizedDescription)")
+        
+        // Store error state
+        UserDefaults.standard.set(false, forKey: "notificationPermissionGranted")
+        UserDefaults.standard.set(error.localizedDescription, forKey: "notificationPermissionError")
+        UserDefaults.standard.set(Date(), forKey: "notificationPermissionErrorDate")
+        
+        // Log additional error details
+        if let nsError = error as NSError? {
+            print("💥 NotificationManager: Error domain: \(nsError.domain)")
+            print("💥 NotificationManager: Error code: \(nsError.code)")
+            print("💥 NotificationManager: Error userInfo: \(nsError.userInfo)")
+        }
+    }
+    
+    /// Log detailed notification permission information
+    private func logNotificationPermissionDetails() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                print("📊 NotificationManager: Permission Details:")
+                print("📊   Authorization Status: \(settings.authorizationStatus.rawValue)")
+                print("📊   Alert Setting: \(settings.alertSetting.rawValue)")
+                print("📊   Badge Setting: \(settings.badgeSetting.rawValue)")
+                print("📊   Sound Setting: \(settings.soundSetting.rawValue)")
+                print("📊   Notification Center Setting: \(settings.notificationCenterSetting.rawValue)")
+                print("📊   Lock Screen Setting: \(settings.lockScreenSetting.rawValue)")
+                print("📊   Car Play Setting: \(settings.carPlaySetting.rawValue)")
+                
+                if #available(iOS 14.0, *) {
+                    print("📊   Critical Alert Setting: \(settings.criticalAlertSetting.rawValue)")
+                    print("📊   Announcement Setting: \(settings.announcementSetting.rawValue)")
+                }
+            }
+        }
+    }
+    
+    /// Test notification permissions and provide comprehensive status report
+    func testNotificationPermissions(completion: @escaping (NotificationPermissionTestResult) -> Void) {
+        print("🧪 NotificationManager: Testing notification permissions...")
+        
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                let result = NotificationPermissionTestResult(
+                    authorizationStatus: settings.authorizationStatus,
+                    alertSetting: settings.alertSetting,
+                    badgeSetting: settings.badgeSetting,
+                    soundSetting: settings.soundSetting,
+                    notificationCenterSetting: settings.notificationCenterSetting,
+                    lockScreenSetting: settings.lockScreenSetting,
+                    carPlaySetting: settings.carPlaySetting,
+                    criticalAlertSetting: settings.criticalAlertSetting,
+                    announcementSetting: settings.announcementSetting,
+                    isAuthorized: settings.authorizationStatus == .authorized,
+                    canScheduleNotifications: settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral
+                )
+                
+                print("🧪 NotificationManager: Permission test completed")
+                print("🧪   Is Authorized: \(result.isAuthorized)")
+                print("🧪   Can Schedule: \(result.canScheduleNotifications)")
+                print("🧪   Status: \(result.authorizationStatus.rawValue)")
+                
+                completion(result)
+            }
+        }
+    }
+    
+    /// Get notification permission history from UserDefaults
+    func getNotificationPermissionHistory() -> NotificationPermissionHistory {
+        let granted = UserDefaults.standard.bool(forKey: "notificationPermissionGranted")
+        let grantedDate = UserDefaults.standard.object(forKey: "notificationPermissionGrantedDate") as? Date
+        let deniedDate = UserDefaults.standard.object(forKey: "notificationPermissionDeniedDate") as? Date
+        let errorMessage = UserDefaults.standard.string(forKey: "notificationPermissionError")
+        let errorDate = UserDefaults.standard.object(forKey: "notificationPermissionErrorDate") as? Date
+        
+        return NotificationPermissionHistory(
+            wasGranted: granted,
+            grantedDate: grantedDate,
+            deniedDate: deniedDate,
+            errorMessage: errorMessage,
+            errorDate: errorDate
+        )
+    }
+    
+    /// Request notification permission with user-friendly messaging
+    func requestNotificationPermissionWithExplanation() {
+        print("📱 NotificationManager: Requesting notification permission with explanation...")
+        
+        // First check current status
+        checkNotificationPermissionStatus { status in
+            switch status {
+            case .authorized:
+                print("✅ NotificationManager: Permission already granted")
+            case .denied:
+                print("🚫 NotificationManager: Permission previously denied - user must enable in Settings")
+                // Could show alert to guide user to Settings
+            case .notDetermined:
+                print("❓ NotificationManager: Permission not determined - requesting now")
+                self.requestNotificationPermission()
+            case .provisional:
+                print("✅ NotificationManager: Provisional permission granted")
+            case .ephemeral:
+                print("✅ NotificationManager: Ephemeral permission granted")
+            @unknown default:
+                print("⚠️ NotificationManager: Unknown permission status")
+            }
+        }
+    }
+    
+    /// Validate notification scheduling with comprehensive error handling
+    func validateNotificationScheduling(completion: @escaping (NotificationValidationResult) -> Void) {
+        print("🔍 NotificationManager: Validating notification scheduling capabilities...")
+        
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                var validationResult = NotificationValidationResult()
+                
+                // Check authorization status
+                switch settings.authorizationStatus {
+                case .authorized:
+                    validationResult.isAuthorized = true
+                    validationResult.canSchedule = true
+                    validationResult.statusMessage = "Notifications are authorized"
+                case .denied:
+                    validationResult.isAuthorized = false
+                    validationResult.canSchedule = false
+                    validationResult.statusMessage = "Notifications are denied - user must enable in Settings"
+                    validationResult.requiresUserAction = true
+                case .notDetermined:
+                    validationResult.isAuthorized = false
+                    validationResult.canSchedule = false
+                    validationResult.statusMessage = "Notification permission not determined - requesting now"
+                    validationResult.requiresPermissionRequest = true
+                case .provisional:
+                    validationResult.isAuthorized = true
+                    validationResult.canSchedule = true
+                    validationResult.statusMessage = "Provisional notification permission granted"
+                case .ephemeral:
+                    validationResult.isAuthorized = true
+                    validationResult.canSchedule = true
+                    validationResult.statusMessage = "Ephemeral notification permission granted"
+                @unknown default:
+                    validationResult.isAuthorized = false
+                    validationResult.canSchedule = false
+                    validationResult.statusMessage = "Unknown notification permission status"
+                }
+                
+                // Check specific notification settings
+                validationResult.canShowAlerts = settings.alertSetting == .enabled
+                validationResult.canShowBadges = settings.badgeSetting == .enabled
+                validationResult.canPlaySounds = settings.soundSetting == .enabled
+                validationResult.canShowInNotificationCenter = settings.notificationCenterSetting == .enabled
+                validationResult.canShowOnLockScreen = settings.lockScreenSetting == .enabled
+                validationResult.canShowInCarPlay = settings.carPlaySetting == .enabled
+                
+                // Check iOS 14+ features
+                if #available(iOS 14.0, *) {
+                    validationResult.canShowCriticalAlerts = settings.criticalAlertSetting == .enabled
+                    validationResult.canShowAnnouncements = settings.announcementSetting == .enabled
+                }
+                
+                // Determine overall capability
+                validationResult.overallCapability = validationResult.canSchedule && 
+                                                   validationResult.canShowAlerts && 
+                                                   validationResult.canShowBadges && 
+                                                   validationResult.canPlaySounds
+                
+                print("🔍 NotificationManager: Validation completed:")
+                print("🔍   Can Schedule: \(validationResult.canSchedule)")
+                print("🔍   Overall Capability: \(validationResult.overallCapability)")
+                print("🔍   Status: \(validationResult.statusMessage)")
+                
+                completion(validationResult)
+            }
+        }
+    }
+    
+    /// Test notification delivery with a test notification
+    func testNotificationDelivery(completion: @escaping (Bool) -> Void) {
+        print("🧪 NotificationManager: Testing notification delivery...")
+        
+        // Validate permissions first
+        validateNotificationScheduling { validationResult in
+            guard validationResult.canSchedule else {
+                print("❌ NotificationManager: Cannot test notification delivery - scheduling not available")
+                completion(false)
+                return
+            }
+            
+            // Create test notification
+            let content = UNMutableNotificationContent()
+            content.title = "Test Notification"
+            content.body = "This is a test notification to verify delivery"
+            content.sound = .default
+            content.badge = 1
+            
+            // Schedule for 5 seconds from now
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+            let request = UNNotificationRequest(identifier: "test_notification", content: content, trigger: trigger)
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ NotificationManager: Test notification failed: \(error.localizedDescription)")
+                        completion(false)
+                    } else {
+                        print("✅ NotificationManager: Test notification scheduled successfully")
+                        completion(true)
+                    }
                 }
             }
         }
@@ -535,6 +868,22 @@ class NotificationManager: ObservableObject {
     func scheduleDailyPlanReminders() {
         print("📅 NotificationManager: Scheduling daily plan reminders...")
         
+        // Validate notification permissions first
+        validateNotificationPermissions { [weak self] hasPermission in
+            guard hasPermission else {
+                print("❌ NotificationManager: Cannot schedule plan reminders - notification permission denied")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self?.performDailyPlanRemindersScheduling()
+            }
+        }
+    }
+    
+    /// Perform the actual daily plan reminders scheduling (after permission validation)
+    @MainActor
+    private func performDailyPlanRemindersScheduling() {
         // Check if plan reminders are enabled
         let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
         guard planReminderEnabled else {
@@ -570,6 +919,22 @@ class NotificationManager: ObservableObject {
     func scheduleDailyCompletionReminders() {
         print("📅 NotificationManager: Scheduling daily completion reminders...")
         
+        // Validate notification permissions first
+        validateNotificationPermissions { [weak self] hasPermission in
+            guard hasPermission else {
+                print("❌ NotificationManager: Cannot schedule completion reminders - notification permission denied")
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self?.performDailyCompletionRemindersScheduling()
+            }
+        }
+    }
+    
+    /// Perform the actual daily completion reminders scheduling (after permission validation)
+    @MainActor
+    private func performDailyCompletionRemindersScheduling() {
         // Check if completion reminders are enabled
         let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
         guard completionReminderEnabled else {
