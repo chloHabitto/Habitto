@@ -925,6 +925,20 @@ class NotificationManager: ObservableObject {
         setupNotificationCategories()
     }
     
+    /// Handle vacation mode changes - reschedule daily reminders when vacation mode changes
+    @MainActor
+    func handleVacationModeChange() {
+        print("🏖️ NotificationManager: Vacation mode changed, rescheduling daily reminders...")
+        
+        // Perform comprehensive cleanup to remove any vacation day reminders
+        performComprehensiveDailyRemindersCleanup()
+        
+        // Reschedule daily reminders (this will respect current vacation mode settings)
+        rescheduleDailyReminders()
+        
+        print("✅ NotificationManager: Daily reminders rescheduled for vacation mode change")
+    }
+    
     /// Get snooze count for a specific date
     private func getSnoozeCount(for dateKey: String) -> Int {
         let key = "snooze_count_\(dateKey)"
@@ -969,6 +983,51 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    /// Remove daily reminders for vacation days
+    private func removeVacationDayReminders() {
+        print("🗑️ NotificationManager: Checking for vacation day reminders to remove...")
+        
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let vacationManager = VacationManager.shared
+            var vacationDayIds: [String] = []
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") ||
+                   request.identifier.hasPrefix("daily_completion_reminder_snooze_") {
+                    
+                    // Extract date from identifier
+                    let components = request.identifier.components(separatedBy: "_")
+                    if components.count >= 4 {
+                        let dateString = components[3]
+                        
+                        // Parse date from dateString
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        if let date = formatter.date(from: dateString) {
+                            // Check if this date is a vacation day
+                            if vacationManager.isVacationDay(date) {
+                                vacationDayIds.append(request.identifier)
+                                print("🗑️ NotificationManager: Found vacation day reminder: \(request.identifier) (date: \(dateString))")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if !vacationDayIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: vacationDayIds)
+                print("✅ NotificationManager: Removed \(vacationDayIds.count) vacation day reminders")
+                
+                for id in vacationDayIds {
+                    print("🗑️ NotificationManager: Removed vacation reminder: \(id)")
+                }
+            } else {
+                print("ℹ️ NotificationManager: No vacation day reminders found")
+            }
+        }
+    }
+    
     /// Handle snooze action for completion reminders
     func handleSnoozeAction(for notificationId: String, snoozeMinutes: Int) {
         print("⏰ NotificationManager: Handling snooze action for \(notificationId) - \(snoozeMinutes) minutes")
@@ -987,6 +1046,13 @@ class NotificationManager: ObservableObject {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         guard let date = dateFormatter.date(from: dateKey) else {
             print("❌ NotificationManager: Could not parse date from notification ID: \(notificationId)")
+            return
+        }
+        
+        // Check if vacation mode is active - don't schedule snoozed notifications during vacation
+        let vacationManager = VacationManager.shared
+        if vacationManager.isVacationDay(date) {
+            print("🔇 NotificationManager: Skipping snooze for \(date) - vacation day")
             return
         }
         
@@ -1218,6 +1284,41 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    /// Check if any daily reminders are scheduled for vacation days
+    func checkForVacationDayReminders(completion: @escaping (Int) -> Void) {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let vacationManager = VacationManager.shared
+            var vacationReminderCount = 0
+            
+            for request in requests {
+                if request.identifier.hasPrefix("daily_plan_reminder_") || 
+                   request.identifier.hasPrefix("daily_completion_reminder_") ||
+                   request.identifier.hasPrefix("daily_completion_reminder_snooze_") {
+                    
+                    // Extract date from identifier
+                    let components = request.identifier.components(separatedBy: "_")
+                    if components.count >= 4 {
+                        let dateString = components[3]
+                        
+                        // Parse date from dateString
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        if let date = formatter.date(from: dateString) {
+                            // Check if this date is a vacation day
+                            if vacationManager.isVacationDay(date) {
+                                vacationReminderCount += 1
+                            }
+                        }
+                    }
+                }
+            }
+            
+            DispatchQueue.main.async {
+                completion(vacationReminderCount)
+            }
+        }
+    }
+    
     /// Comprehensive cleanup of all daily reminders with enhanced logging
     func performComprehensiveDailyRemindersCleanup() {
         print("🧹 NotificationManager: Starting comprehensive daily reminders cleanup...")
@@ -1228,10 +1329,13 @@ class NotificationManager: ObservableObject {
         // Step 2: Remove expired reminders
         removeExpiredDailyReminders()
         
-        // Step 3: Clean up old snooze counts
+        // Step 3: Remove vacation day reminders
+        removeVacationDayReminders()
+        
+        // Step 4: Clean up old snooze counts
         cleanupOldSnoozeCounts()
         
-        // Step 4: Get final count
+        // Step 5: Get final count
         getPendingDailyRemindersCount { count in
             print("📊 NotificationManager: Comprehensive cleanup completed. Remaining daily reminders: \(count)")
         }
