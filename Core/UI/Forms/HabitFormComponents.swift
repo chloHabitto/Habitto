@@ -365,7 +365,7 @@ struct FormActionButtons: View {
                     .foregroundColor(isFormValid ? .white : .text06)
                     .frame(width: screenWidth * 0.5)
                     .padding(.vertical, 16)
-                    .background(isFormValid ? primaryColor : .disabledBackground)
+                    .background(isFormValid ? .primary : .disabledBackground)
                     .clipShape(Capsule())
             }
             .disabled(!isFormValid)
