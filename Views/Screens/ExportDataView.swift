@@ -43,11 +43,11 @@ struct ExportDataView: View {
         
         var estimatedSize: String {
             switch self {
-            case .habits: return "1.2 MB"
-            case .progress: return "856 KB"
-            case .profile: return "2 KB"
-            case .settings: return "1 KB"
-            case .analytics: return "45 KB"
+            case .habits: return "Dynamic"
+            case .progress: return "Dynamic"
+            case .profile: return "1-5 KB"
+            case .settings: return "1-2 KB"
+            case .analytics: return "Dynamic"
             }
         }
         
@@ -344,6 +344,34 @@ struct ExportDataView: View {
                         }
                         .disabled(isExporting || selectedDataTypes.isEmpty)
                         .padding(.horizontal, 20)
+                        
+                        // Export Information
+                        VStack(spacing: 8) {
+                            HStack {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.navy200)
+                                
+                                Text("File will be saved to Documents/Habitto Exports/")
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(.text03)
+                                
+                                Spacer()
+                            }
+                            
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.navy200)
+                                
+                                Text("You'll be able to share the file after export")
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(.text03)
+                                
+                                Spacer()
+                            }
+                        }
+                        .padding(.horizontal, 20)
                         .padding(.bottom, 24)
                     }
                 }
@@ -378,16 +406,60 @@ struct ExportDataView: View {
     }
     
     private var estimatedTotalSize: String {
-        let totalKB = selectedDataTypes.reduce(0) { total, dataType in
-            let sizeString = dataType.estimatedSize
-            let size = Double(sizeString.replacingOccurrences(of: " KB", with: "").replacingOccurrences(of: " MB", with: "")) ?? 0
-            return total + (sizeString.contains("MB") ? size * 1024 : size)
+        // Calculate actual estimated size based on selected data types and date range
+        let estimatedSize = calculateEstimatedExportSize()
+        
+        if estimatedSize >= 1024 {
+            return String(format: "%.1f MB", estimatedSize / 1024)
+        } else {
+            return String(format: "%.0f KB", estimatedSize)
+        }
+    }
+    
+    private func calculateEstimatedExportSize() -> Double {
+        // Base size estimates for different data types (in KB)
+        let baseSizes: [DataType: Double] = [
+            .habits: 2.0,        // Per habit
+            .progress: 0.1,      // Per completion record
+            .profile: 0.5,       // User profile data
+            .settings: 1.0,      // App settings
+            .analytics: 0.05     // Per usage record
+        ]
+        
+        var totalSize: Double = 0
+        
+        // Estimate based on data type selection
+        for dataType in selectedDataTypes {
+            if let baseSize = baseSizes[dataType] {
+                // Apply date range multiplier
+                let rangeMultiplier = getDateRangeMultiplier()
+                totalSize += baseSize * rangeMultiplier
+            }
         }
         
-        if totalKB >= 1024 {
-            return String(format: "%.1f MB", totalKB / 1024)
-        } else {
-            return String(format: "%.0f KB", totalKB)
+        // Format-specific size adjustments
+        switch selectedFormat {
+        case .json:
+            totalSize *= 1.2 // JSON is slightly larger due to formatting
+        case .csv:
+            totalSize *= 0.8 // CSV is more compact
+        case .pdf:
+            totalSize *= 1.5 // PDF includes formatting overhead
+        }
+        
+        return max(totalSize, 1.0) // Minimum 1 KB
+    }
+    
+    private func getDateRangeMultiplier() -> Double {
+        switch selectedDateRange {
+        case .last30Days:
+            return 0.1 // ~10% of all data
+        case .last6Months:
+            return 0.3 // ~30% of all data
+        case .lastYear:
+            return 0.6 // ~60% of all data
+        case .allTime:
+            return 1.0 // All data
         }
     }
     
@@ -395,16 +467,32 @@ struct ExportDataView: View {
         isExporting = true
         
         do {
+            // Validate export options
+            try validateExportOptions()
+            
             // Create export data based on selected options
             let exportData = try await createExportData()
             
-            // Generate file URL
+            // Validate export data
+            try validateExportData(exportData)
+            
+            // Generate file URL in organized directory structure
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fileName = "habitto_export_\(Date().timeIntervalSince1970).\(selectedFormat.rawValue)"
-            let fileURL = documentsPath.appendingPathComponent(fileName)
+            let exportsDirectory = documentsPath.appendingPathComponent("Habitto Exports")
+            
+            // Create exports directory if it doesn't exist
+            try FileManager.default.createDirectory(at: exportsDirectory, withIntermediateDirectories: true, attributes: nil)
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
+            let fileName = "habitto_export_\(dateFormatter.string(from: Date())).\(selectedFormat.rawValue)"
+            let fileURL = exportsDirectory.appendingPathComponent(fileName)
             
             // Write data to file
             try writeExportData(exportData, to: fileURL)
+            
+            // Verify file was written successfully
+            try verifyExportedFile(fileURL)
             
             // Update UI on main thread
             await MainActor.run {
@@ -415,31 +503,407 @@ struct ExportDataView: View {
             
         } catch {
             await MainActor.run {
-                self.exportError = error.localizedDescription
+                self.exportError = getErrorMessage(for: error)
                 self.isExporting = false
             }
         }
     }
     
+    private func validateExportOptions() throws {
+        // Check if any data types are selected
+        guard !selectedDataTypes.isEmpty else {
+            throw ExportError.noDataTypesSelected
+        }
+        
+        // Check if export format is valid
+        guard ExportFormat.allCases.contains(selectedFormat) else {
+            throw ExportError.invalidFormat
+        }
+        
+        // Check if date range is valid
+        guard DateRange.allCases.contains(selectedDateRange) else {
+            throw ExportError.invalidDateRange
+        }
+    }
+    
+    private func validateExportData(_ data: Data) throws {
+        // Check if data is not empty
+        guard !data.isEmpty else {
+            throw ExportError.emptyExportData
+        }
+        
+        // Check if data size is reasonable (not too large)
+        let maxSize = 100 * 1024 * 1024 // 100MB limit
+        guard data.count < maxSize else {
+            throw ExportError.exportTooLarge
+        }
+    }
+    
+    private func verifyExportedFile(_ fileURL: URL) throws {
+        // Check if file exists
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            throw ExportError.fileNotCreated
+        }
+        
+        // Check file size
+        let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        guard let fileSize = attributes[.size] as? Int64, fileSize > 0 else {
+            throw ExportError.invalidFileSize
+        }
+    }
+    
+    private func getErrorMessage(for error: Error) -> String {
+        if let exportError = error as? ExportError {
+            return exportError.localizedDescription
+        } else if let backupError = error as? BackupError {
+            return "Export failed: \(backupError.localizedDescription)"
+        } else {
+            return "Export failed: \(error.localizedDescription)"
+        }
+    }
+    
     private func createExportData() async throws -> Data {
-        // This would integrate with BackupManager to create the actual export data
-        // For now, return mock data
-        let exportData = ExportData(
-            dataTypes: Array(selectedDataTypes),
-            dateRange: selectedDateRange,
-            format: selectedFormat,
-            timestamp: Date()
-        )
+        // Get actual user data from BackupManager
+        let backupData = try await backupManager.createBackupData()
         
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
+        // Filter data based on selected options
+        let filteredData = try await filterBackupData(backupData)
         
-        return try encoder.encode(exportData)
+        // Generate data in selected format
+        switch selectedFormat {
+        case .json:
+            return try await createJSONExport(filteredData)
+        case .csv:
+            return try await createCSVExport(filteredData)
+        case .pdf:
+            return try await createPDFExport(filteredData)
+        }
     }
     
     private func writeExportData(_ data: Data, to url: URL) throws {
         try data.write(to: url)
+    }
+    
+    // MARK: - Data Filtering
+    
+    private func filterBackupData(_ backupData: Data) async throws -> BackupData {
+        let backup = try JSONDecoder().decode(BackupData.self, from: backupData)
+        
+        // Apply date range filtering
+        let filteredBackup = try applyDateRangeFilter(backup)
+        
+        // Apply data type filtering
+        let finalBackup = applyDataTypeFilter(filteredBackup)
+        
+        return finalBackup
+    }
+    
+    private func applyDateRangeFilter(_ backup: BackupData) throws -> BackupData {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        let startDate: Date
+        switch selectedDateRange {
+        case .last30Days:
+            startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
+        case .last6Months:
+            startDate = calendar.date(byAdding: .month, value: -6, to: today) ?? today
+        case .lastYear:
+            startDate = calendar.date(byAdding: .year, value: -1, to: today) ?? today
+        case .allTime:
+            return backup // No filtering needed
+        }
+        
+        // Filter completions by date range
+        let filteredCompletions = backup.completions.filter { completion in
+            completion.date >= startDate
+        }
+        
+        // Filter difficulties by date range
+        let filteredDifficulties = backup.difficulties.filter { difficulty in
+            difficulty.date >= startDate
+        }
+        
+        // Filter usage records by date range
+        let filteredUsageRecords = backup.usageRecords.filter { usage in
+            usage.createdAt >= startDate
+        }
+        
+        // Filter habit notes by date range
+        let filteredHabitNotes = backup.habitNotes.filter { note in
+            note.createdAt >= startDate
+        }
+        
+        // Filter habits that were created or updated in the date range
+        let filteredHabits = backup.habits.filter { habit in
+            habit.createdAt >= startDate || habit.updatedAt >= startDate
+        }
+        
+        return BackupData(
+            metadata: backup.metadata,
+            habits: filteredHabits,
+            completions: filteredCompletions,
+            difficulties: filteredDifficulties,
+            usageRecords: filteredUsageRecords,
+            habitNotes: filteredHabitNotes,
+            userSettings: backup.userSettings,
+            legacyData: backup.legacyData,
+            habitsLegacy: backup.habitsLegacy?.filter { habit in
+                habit.startDate >= startDate
+            }
+        )
+    }
+    
+    private func applyDataTypeFilter(_ backup: BackupData) -> BackupData {
+        var filteredHabits: [BackupHabitData] = []
+        var filteredCompletions: [BackupCompletionRecord] = []
+        var filteredDifficulties: [BackupDifficultyRecord] = []
+        var filteredUsageRecords: [BackupUsageRecord] = []
+        var filteredHabitNotes: [BackupHabitNote] = []
+        var filteredUserSettings = BackupUserSettings()
+        var filteredLegacyData: LegacyBackupData? = nil
+        
+        // Filter based on selected data types
+        if selectedDataTypes.contains(.habits) {
+            filteredHabits = backup.habits
+            filteredCompletions = backup.completions
+            filteredDifficulties = backup.difficulties
+            filteredUsageRecords = backup.usageRecords
+            filteredHabitNotes = backup.habitNotes
+        }
+        
+        if selectedDataTypes.contains(.progress) {
+            // Progress data is already included with habits
+            if filteredCompletions.isEmpty {
+                filteredCompletions = backup.completions
+            }
+            if filteredDifficulties.isEmpty {
+                filteredDifficulties = backup.difficulties
+            }
+        }
+        
+        if selectedDataTypes.contains(.profile) {
+            filteredUserSettings = backup.userSettings
+        }
+        
+        if selectedDataTypes.contains(.settings) {
+            if filteredUserSettings.notificationSettings.isEmpty {
+                filteredUserSettings = backup.userSettings
+            }
+        }
+        
+        if selectedDataTypes.contains(.analytics) {
+            filteredLegacyData = backup.legacyData
+            if filteredUsageRecords.isEmpty {
+                filteredUsageRecords = backup.usageRecords
+            }
+        }
+        
+        return BackupData(
+            metadata: backup.metadata,
+            habits: filteredHabits,
+            completions: filteredCompletions,
+            difficulties: filteredDifficulties,
+            usageRecords: filteredUsageRecords,
+            habitNotes: filteredHabitNotes,
+            userSettings: filteredUserSettings,
+            legacyData: filteredLegacyData,
+            habitsLegacy: backup.habitsLegacy
+        )
+    }
+    
+    // MARK: - Export Format Generators
+    
+    private func createJSONExport(_ backup: BackupData) async throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        
+        return try encoder.encode(backup)
+    }
+    
+    private func createCSVExport(_ backup: BackupData) async throws -> Data {
+        var csvContent = ""
+        
+        // Add metadata header
+        csvContent += "Export Date,App Version,Device Model,OS Version,User ID\n"
+        csvContent += "\(backup.metadata.createdDate),\(backup.metadata.appVersion),\(backup.metadata.deviceModel),\(backup.metadata.osVersion),\(backup.metadata.userId)\n\n"
+        
+        // Export habits
+        if selectedDataTypes.contains(.habits) {
+            csvContent += "=== HABITS ===\n"
+            csvContent += "ID,Name,Description,Goal,Schedule,Type,Start Date,End Date,Streak,Is Completed\n"
+            
+            for habit in backup.habits {
+                let escapedName = habit.name.replacingOccurrences(of: ",", with: ";")
+                let escapedDescription = (habit.habitDescription ?? "").replacingOccurrences(of: ",", with: ";")
+                let escapedGoal = habit.goal.replacingOccurrences(of: ",", with: ";")
+                let escapedSchedule = habit.schedule.replacingOccurrences(of: ",", with: ";")
+                
+                csvContent += "\(habit.id),\(escapedName),\(escapedDescription),\(escapedGoal),\(escapedSchedule),\(habit.habitType),\(habit.startDate),\(habit.endDate?.description ?? ""),\(habit.streak),\(habit.isCompleted)\n"
+            }
+            csvContent += "\n"
+        }
+        
+        // Export completions
+        if selectedDataTypes.contains(.progress) {
+            csvContent += "=== COMPLETION HISTORY ===\n"
+            csvContent += "Habit ID,Date,Is Completed,Created At\n"
+            
+            for completion in backup.completions {
+                csvContent += "\(completion.habitId ?? ""),\(completion.date),\(completion.isCompleted),\(completion.createdAt)\n"
+            }
+            csvContent += "\n"
+        }
+        
+        // Export difficulties
+        if selectedDataTypes.contains(.progress) {
+            csvContent += "=== DIFFICULTY TRACKING ===\n"
+            csvContent += "Habit ID,Date,Difficulty,Created At\n"
+            
+            for difficulty in backup.difficulties {
+                csvContent += "\(difficulty.habitId ?? ""),\(difficulty.date),\(difficulty.difficulty),\(difficulty.createdAt)\n"
+            }
+            csvContent += "\n"
+        }
+        
+        // Export usage records
+        if selectedDataTypes.contains(.analytics) {
+            csvContent += "=== USAGE ANALYTICS ===\n"
+            csvContent += "Habit ID,Key,Value,Created At\n"
+            
+            for usage in backup.usageRecords {
+                csvContent += "\(usage.habitId ?? ""),\(usage.key),\(usage.value),\(usage.createdAt)\n"
+            }
+            csvContent += "\n"
+        }
+        
+        // Export notes
+        if selectedDataTypes.contains(.habits) {
+            csvContent += "=== HABIT NOTES ===\n"
+            csvContent += "Habit ID,Content,Created At,Updated At\n"
+            
+            for note in backup.habitNotes {
+                let escapedContent = note.content.replacingOccurrences(of: ",", with: ";")
+                csvContent += "\(note.habitId ?? ""),\(escapedContent),\(note.createdAt),\(note.updatedAt)\n"
+            }
+            csvContent += "\n"
+        }
+        
+        // Export user settings
+        if selectedDataTypes.contains(.settings) {
+            csvContent += "=== USER SETTINGS ===\n"
+            csvContent += "Category,Key,Value\n"
+            
+            for (key, value) in backup.userSettings.notificationSettings {
+                csvContent += "Notification,\(key),\(value)\n"
+            }
+            
+            for (key, value) in backup.userSettings.themeSettings {
+                csvContent += "Theme,\(key),\(value)\n"
+            }
+            
+            for (key, value) in backup.userSettings.privacySettings {
+                csvContent += "Privacy,\(key),\(value)\n"
+            }
+            
+            for (key, value) in backup.userSettings.backupSettings {
+                csvContent += "Backup,\(key),\(value)\n"
+            }
+            
+            for (key, value) in backup.userSettings.appSettings {
+                csvContent += "App,\(key),\(value)\n"
+            }
+        }
+        
+        return csvContent.data(using: .utf8) ?? Data()
+    }
+    
+    private func createPDFExport(_ backup: BackupData) async throws -> Data {
+        // For PDF generation, we'll create a simple text-based report
+        // In a production app, you might want to use a proper PDF library like PDFKit
+        
+        var reportContent = """
+        HABITTO DATA EXPORT REPORT
+        =========================
+        
+        Export Date: \(backup.metadata.createdDate)
+        App Version: \(backup.metadata.appVersion)
+        Device: \(backup.metadata.deviceModel)
+        OS Version: \(backup.metadata.osVersion)
+        User ID: \(backup.metadata.userId)
+        
+        """
+        
+        // Add habits summary
+        if selectedDataTypes.contains(.habits) {
+            reportContent += "\n\nHABITS SUMMARY\n"
+            reportContent += "==============\n"
+            reportContent += "Total Habits: \(backup.habits.count)\n\n"
+            
+            for (index, habit) in backup.habits.enumerated() {
+                reportContent += "\(index + 1). \(habit.name)\n"
+                reportContent += "   Goal: \(habit.goal)\n"
+                reportContent += "   Schedule: \(habit.schedule)\n"
+                reportContent += "   Start Date: \(habit.startDate)\n"
+                reportContent += "   Current Streak: \(habit.streak)\n"
+                if let description = habit.habitDescription {
+                    reportContent += "   Description: \(description)\n"
+                }
+                reportContent += "\n"
+            }
+        }
+        
+        // Add progress summary
+        if selectedDataTypes.contains(.progress) {
+            reportContent += "\n\nPROGRESS SUMMARY\n"
+            reportContent += "================\n"
+            reportContent += "Total Completion Records: \(backup.completions.count)\n"
+            reportContent += "Total Difficulty Records: \(backup.difficulties.count)\n"
+            
+            let completedCount = backup.completions.filter { $0.isCompleted }.count
+            let totalCompletions = backup.completions.count
+            let completionRate = totalCompletions > 0 ? Double(completedCount) / Double(totalCompletions) * 100 : 0
+            
+            reportContent += "Completion Rate: \(String(format: "%.1f", completionRate))%\n"
+            reportContent += "Completed Tasks: \(completedCount) / \(totalCompletions)\n\n"
+        }
+        
+        // Add analytics summary
+        if selectedDataTypes.contains(.analytics) {
+            reportContent += "\n\nANALYTICS SUMMARY\n"
+            reportContent += "=================\n"
+            reportContent += "Total Usage Records: \(backup.usageRecords.count)\n"
+            reportContent += "Total Notes: \(backup.habitNotes.count)\n"
+            
+            if let legacyData = backup.legacyData {
+                reportContent += "Total App Launches: \(legacyData.totalAppLaunches)\n"
+                reportContent += "Total Habits Created: \(legacyData.totalHabitsCreated)\n"
+                reportContent += "Total Completions: \(legacyData.totalCompletions)\n"
+            }
+            reportContent += "\n"
+        }
+        
+        // Add settings summary
+        if selectedDataTypes.contains(.settings) {
+            reportContent += "\n\nSETTINGS SUMMARY\n"
+            reportContent += "================\n"
+            
+            let enabledNotifications = backup.userSettings.notificationSettings.filter { $0.value }.count
+            let totalNotifications = backup.userSettings.notificationSettings.count
+            
+            reportContent += "Notifications Enabled: \(enabledNotifications) / \(totalNotifications)\n"
+            reportContent += "Selected Theme: \(backup.userSettings.themeSettings["selectedTheme"] ?? "default")\n"
+            reportContent += "Color Scheme: \(backup.userSettings.themeSettings["colorScheme"] ?? "system")\n"
+            reportContent += "Language: \(backup.userSettings.appSettings["language"] ?? "en")\n"
+            reportContent += "Timezone: \(backup.userSettings.appSettings["timezone"] ?? "system")\n\n"
+        }
+        
+        reportContent += "\n\n--- End of Report ---\n"
+        reportContent += "Generated by Habitto Export Tool\n"
+        reportContent += "For support, contact: support@habitto.app\n"
+        
+        return reportContent.data(using: .utf8) ?? Data()
     }
 }
 
@@ -625,26 +1089,37 @@ struct ExportPreviewView: View {
         return """
 {
   "version": "1.0",
-  "exportDate": "2024-01-15T10:30:00Z",
+  "exportDate": "\(Date().ISO8601Format())",
   "format": "\(selectedFormat.rawValue)",
   "dateRange": "\(selectedDateRange.rawValue)",
   "dataTypes": [\(dataTypesList)],
-  "userProfile": {
-    "name": "John Doe",
-    "email": "john@example.com"
+  "metadata": {
+    "appVersion": "1.0.0",
+    "deviceModel": "iPhone",
+    "osVersion": "iOS 17.0",
+    "userId": "user_***"
   },
   "habits": [
     {
-      "id": "habit_001",
-      "name": "Morning Exercise",
-      "goal": "30 minutes daily",
-      "completions": [...]
+      "id": "habit_***",
+      "name": "Your habit name",
+      "goal": "Your habit goal",
+      "schedule": "Your schedule",
+      "startDate": "2024-01-01",
+      "streak": 25
+    }
+  ],
+  "completions": [
+    {
+      "habitId": "habit_***",
+      "date": "2024-01-15",
+      "isCompleted": true
     }
   ],
   "analytics": {
-    "totalHabits": 5,
-    "totalCompletions": 150,
-    "averageStreak": 12
+    "totalHabits": "Based on your data",
+    "totalCompletions": "Based on your data",
+    "completionRate": "Calculated from your progress"
   }
 }
 """
@@ -695,6 +1170,8 @@ struct DataTypePreviewRow: View {
 struct ExportCompleteView: View {
     let fileURL: URL
     let onDismiss: () -> Void
+    @State private var showingShareSheet = false
+    @State private var showingFileInfo = false
     
     var body: some View {
         NavigationView {
@@ -716,36 +1193,143 @@ struct ExportCompleteView: View {
                         .multilineTextAlignment(.center)
                 }
                 
+                // File Information Card
                 VStack(spacing: 16) {
-                    Text("File saved to:")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.text02)
+                    HStack {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 20))
+                            .foregroundColor(.navy200)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Exported File")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.text01)
+                            
+                            Text(fileURL.lastPathComponent)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.text03)
+                                .lineLimit(2)
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            showingFileInfo.toggle()
+                        }) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 20))
+                                .foregroundColor(.navy200)
+                        }
+                    }
                     
-                    Text(fileURL.lastPathComponent)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(.text03)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.grey100)
-                        .cornerRadius(8)
+                    if showingFileInfo {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("File Location:")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.text02)
+                                Spacer()
+                            }
+                            
+                            Text("Documents/Habitto Exports/")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(.text03)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.grey100)
+                                .cornerRadius(8)
+                            
+                            if let fileSize = getFileSize() {
+                                HStack {
+                                    Text("File Size:")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.text02)
+                                    Spacer()
+                                    Text(fileSize)
+                                        .font(.system(size: 12, weight: .regular))
+                                        .foregroundColor(.text03)
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color.surface)
+                .cornerRadius(16)
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
-                Button("Done") {
-                    onDismiss()
+                // Action Buttons
+                VStack(spacing: 12) {
+                    // Share Button
+                    Button(action: {
+                        showingShareSheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("Share File")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.primary)
+                        .cornerRadius(12)
+                    }
+                    
+                    // Done Button
+                    Button("Done") {
+                        onDismiss()
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.text02)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.surface)
+                    .cornerRadius(12)
                 }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.primary)
-                .cornerRadius(12)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
             }
             .background(Color.surface2)
         }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(activityItems: [fileURL])
+        }
+    }
+    
+    private func getFileSize() -> String? {
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+            if let fileSize = attributes[.size] as? Int64 {
+                let formatter = ByteCountFormatter()
+                formatter.allowedUnits = [.useKB, .useMB]
+                formatter.countStyle = .file
+                return formatter.string(fromByteCount: fileSize)
+            }
+        } catch {
+            print("Error getting file size: \(error)")
+        }
+        return nil
+    }
+}
+
+// MARK: - Share Sheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
+        // No updates needed
     }
 }
 
@@ -764,6 +1348,43 @@ struct ExportData: Codable {
         self.format = format
         self.timestamp = timestamp
         self.version = "1.0"
+    }
+}
+
+// MARK: - Export Error Types
+
+enum ExportError: Error, LocalizedError {
+    case noDataTypesSelected
+    case invalidFormat
+    case invalidDateRange
+    case emptyExportData
+    case exportTooLarge
+    case fileNotCreated
+    case invalidFileSize
+    case dataFilteringFailed
+    case formatGenerationFailed
+    
+    var errorDescription: String? {
+        switch self {
+        case .noDataTypesSelected:
+            return "Please select at least one data type to export"
+        case .invalidFormat:
+            return "Invalid export format selected"
+        case .invalidDateRange:
+            return "Invalid date range selected"
+        case .emptyExportData:
+            return "No data available for export with current settings"
+        case .exportTooLarge:
+            return "Export data is too large (maximum 100MB)"
+        case .fileNotCreated:
+            return "Failed to create export file"
+        case .invalidFileSize:
+            return "Export file has invalid size"
+        case .dataFilteringFailed:
+            return "Failed to filter data for export"
+        case .formatGenerationFailed:
+            return "Failed to generate data in selected format"
+        }
     }
 }
 
