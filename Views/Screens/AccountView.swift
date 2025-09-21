@@ -211,8 +211,7 @@ struct AccountOptionRow: View {
                         .font(.appBodySmall)
                         .foregroundColor(.text03)
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 if hasChevron {
                     Image(systemName: "chevron.right")
@@ -222,6 +221,7 @@ struct AccountOptionRow: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
