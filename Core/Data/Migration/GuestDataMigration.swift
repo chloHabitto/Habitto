@@ -26,10 +26,13 @@ final class GuestDataMigration: ObservableObject {
     
     /// Check if there's guest data that can be migrated
     func hasGuestData() -> Bool {
+        print("🔍 GuestDataMigration.hasGuestData() - Starting check...")
+        
         // Check if there are guest habits
         if let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
            let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData),
            !guestHabits.isEmpty {
+            print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits")
             return true
         }
         
@@ -40,20 +43,29 @@ final class GuestDataMigration: ObservableObject {
         if fileManager.fileExists(atPath: guestBackupDir.path) {
             do {
                 let contents = try fileManager.contentsOfDirectory(atPath: guestBackupDir.path)
-                return !contents.isEmpty
+                if !contents.isEmpty {
+                    print("🔍 GuestDataMigration: Found \(contents.count) guest backup files")
+                    return true
+                }
             } catch {
                 print("❌ GuestDataMigration: Error checking guest backup directory: \(error)")
             }
         }
         
+        print("🔍 GuestDataMigration: No guest data found")
         return false
     }
     
     /// Check if guest data has already been migrated for the current user
     func hasMigratedGuestData() -> Bool {
-        guard let currentUser = authManager.currentUser else { return false }
+        guard let currentUser = authManager.currentUser else { 
+            print("🔍 GuestDataMigration.hasMigratedGuestData() - No authenticated user")
+            return false 
+        }
         let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
-        return userDefaults.bool(forKey: migrationKey)
+        let hasMigrated = userDefaults.bool(forKey: migrationKey)
+        print("🔍 GuestDataMigration.hasMigratedGuestData() - User: \(currentUser.uid), Key: \(migrationKey), Migrated: \(hasMigrated)")
+        return hasMigrated
     }
     
     /// Migrate guest data to the current authenticated user
@@ -253,6 +265,44 @@ final class GuestDataMigration: ObservableObject {
         try await swiftDataStorage.saveHabits(migratedHabits, immediate: true)
         
         print("✅ GuestDataMigration: Successfully synced migrated habits to cloud storage")
+    }
+    
+    /// Clear stale guest data that might be causing repeated migration prompts
+    func clearStaleGuestData() {
+        print("🧹 GuestDataMigration: Clearing stale guest data...")
+        
+        // Remove guest habits
+        userDefaults.removeObject(forKey: guestHabitsKey)
+        
+        // Remove guest backup flag
+        userDefaults.removeObject(forKey: guestBackupKey)
+        
+        // Remove guest backup directory
+        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let guestBackupDir = documentsPath.appendingPathComponent("Backups").appendingPathComponent("guest_user")
+        
+        if fileManager.fileExists(atPath: guestBackupDir.path) {
+            do {
+                try fileManager.removeItem(at: guestBackupDir)
+                print("🧹 GuestDataMigration: Removed guest backup directory")
+            } catch {
+                print("❌ GuestDataMigration: Failed to remove guest backup directory: \(error)")
+            }
+        }
+        
+        print("🧹 GuestDataMigration: Stale guest data cleared")
+    }
+    
+    /// Force mark migration as completed for current user (emergency fix)
+    func forceMarkMigrationCompleted() {
+        guard let currentUser = authManager.currentUser else { 
+            print("❌ GuestDataMigration: Cannot mark migration completed - no authenticated user")
+            return 
+        }
+        
+        let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
+        userDefaults.set(true, forKey: migrationKey)
+        print("✅ GuestDataMigration: Force marked migration as completed for user: \(currentUser.uid)")
     }
 }
 

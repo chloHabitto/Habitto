@@ -4,6 +4,7 @@ struct DataPrivacyView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingBackupRecovery = false
     @State private var showingExportData = false
+    @State private var showingDeleteData = false
     
     var body: some View {
         NavigationView {
@@ -82,7 +83,7 @@ struct DataPrivacyView: View {
                                     subtitle: "Permanently remove your data",
                                     hasChevron: true
                                 ) {
-                                    // TODO: Implement data deletion
+                                    showingDeleteData = true
                                 }
                             }
                             .background(Color.surface)
@@ -101,6 +102,9 @@ struct DataPrivacyView: View {
         }
         .sheet(isPresented: $showingExportData) {
             ExportDataView()
+        }
+        .sheet(isPresented: $showingDeleteData) {
+            DeleteDataView()
         }
     }
 }

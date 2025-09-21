@@ -83,17 +83,23 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                         
-                        // Show migration view if needed
-                        if habitRepository.shouldShowMigrationView {
-                            NavigationView {
-                                GuestDataMigrationView()
-                            }
-                            .zIndex(1)
-                        }
+                        // DISABLED: Migration view completely disabled per user request
+                        // if habitRepository.shouldShowMigrationView {
+                        //     NavigationView {
+                        //         GuestDataMigrationView()
+                        //     }
+                        //     .zIndex(1)
+                        // }
                     }
                         .onAppear {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
+                            
+                            // DISABLED: Migration completely disabled per user request
+                            print("ℹ️ HabittoApp: Migration disabled - skipping migration checks")
+                            
+                            // Immediately clear any migration state to prevent screen from showing
+                            habitRepository.shouldShowMigrationView = false
                             
                             // Check and execute migrations
                             Task { @MainActor in

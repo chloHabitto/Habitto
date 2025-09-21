@@ -140,6 +140,9 @@ class HabitRepository: ObservableObject {
     // Authentication manager for user change monitoring
     private let authManager = AuthenticationManager.shared
     
+    // UserDefaults for storing migration attempt counts
+    private let userDefaults = UserDefaults.standard
+    
     // Combine cancellables for subscriptions
     private var cancellables = Set<AnyCancellable>()
     
@@ -218,11 +221,15 @@ class HabitRepository: ObservableObject {
         case .authenticated(let user):
             print("🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
             
-            // Check if there's guest data to migrate
-            if guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData() {
-                print("🔄 HabitRepository: Found guest data, showing migration view...")
-                shouldShowMigrationView = true
-            }
+            // DISABLED: Migration screen completely disabled per user request
+            print("ℹ️ HabitRepository: Migration screen disabled - skipping migration check")
+            shouldShowMigrationView = false
+            
+            // Clear any stale guest data that might be causing issues
+            guestDataMigration.clearStaleGuestData()
+            
+            // Force mark migration as completed to prevent future prompts
+            guestDataMigration.forceMarkMigrationCompleted()
             
             // Load user data
             await loadHabits(force: true)
@@ -259,6 +266,27 @@ class HabitRepository: ObservableObject {
         Task {
             await loadHabits(force: true)
         }
+    }
+    
+    /// Emergency fix for repeated migration screen - clears stale guest data
+    func fixRepeatedMigrationIssue() {
+        print("🚨 HabitRepository: Applying emergency fix for repeated migration screen...")
+        
+        // Clear stale guest data
+        guestDataMigration.clearStaleGuestData()
+        
+        // Force mark migration as completed
+        guestDataMigration.forceMarkMigrationCompleted()
+        
+        // Hide migration view
+        shouldShowMigrationView = false
+        
+        // Reload habits
+        Task {
+            await loadHabits(force: true)
+        }
+        
+        print("✅ HabitRepository: Emergency fix applied - migration screen should no longer appear")
     }
     
     /// Clear all user-specific data when switching users
