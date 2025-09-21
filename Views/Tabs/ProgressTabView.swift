@@ -1173,9 +1173,7 @@ struct ProgressTabView: View {
     
     // MARK: - Helper Functions for Calendar
     private func formatMonthYear(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatMonthYear(date)
     }
     
     private func getFirstDayOfMonth(_ date: Date) -> Date {
@@ -1244,10 +1242,7 @@ struct ProgressTabView: View {
     }
     
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatDisplayDate(date)
     }
     
     private func formatWeek(_ date: Date) -> String {
@@ -1258,25 +1253,15 @@ struct ProgressTabView: View {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? date
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        
-        let startString = formatter.string(from: weekStart)
-        let endString = formatter.string(from: weekEnd)
-        
-        return "\(startString) - \(endString)"
+        return AppDateFormatter.shared.formatWeekRange(startDate: weekStart, endDate: weekEnd)
     }
     
     private func formatMonth(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatMonthYear(date)
     }
     
     private func formatYear(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy"
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatYear(date)
     }
     
     private var isTodaySelected: Bool {

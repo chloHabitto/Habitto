@@ -111,9 +111,7 @@ struct MonthPickerModal: View {
     }
     
     private func monthText(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        return AppDateFormatter.shared.formatMonthYear(date)
     }
 }
 

@@ -458,15 +458,11 @@ struct HabitDetailView: View {
     
     // MARK: - Computed Properties
     private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE dd MMMM"
-        return formatter.string(from: Date())
+        return AppDateFormatter.shared.formatDisplayDate(Date())
     }
     
     private var formattedSelectedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE dd MMMM"
-        return formatter.string(from: selectedDate)
+        return AppDateFormatter.shared.formatDisplayDate(selectedDate)
     }
     
     // MARK: - Helper Functions
