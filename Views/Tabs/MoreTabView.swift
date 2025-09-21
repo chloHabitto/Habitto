@@ -330,29 +330,11 @@ struct MoreTabView: View {
     }
     
     private func iconColorForSetting(_ title: String) -> Color {
-        switch title {
-        case "Vacation Mode":
-            return .navy200
-        case "Account":
-            return .navy200
-        case "Data & Privacy":
-            return .navy200
-        case "Notifications":
-            return .navy200
-        case "Preferences":
-            return .navy200
-        case "FAQ":
-            return .navy200
-        case "Contact us":
-            return .navy200
-        case "Terms & Conditions":
-            return .navy200
-        case "About us":
-            return .navy200
-        case "Time Block Test":
-            return .navy200
-        default:
-            return .navy200
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy200")
+        case .black:
+            return Color("themeBlack200")
         }
     }
 }
