@@ -25,7 +25,7 @@ struct TabBarView: View {
             }
             
             Rectangle()
-                .fill(Color(red: 0.93, green: 0.93, blue: 0.94)) // #ECECEF
+                .fill(.outline3)
                 .frame(height: 1)
             HStack {
                 tabBarItem(icon: selectedTab == .home ? "Icon-home-filled" : "Icon-home-outlined", title: "Home", tab: .home)
@@ -40,7 +40,6 @@ struct TabBarView: View {
     }
     
     private func tabBarItem(icon: String, title: String, tab: Tab) -> some View {
-        let selectedColor = Color(red: 0.10, green: 0.10, blue: 0.10) // #191919
         return Button(action: { 
             // Add haptic feedback when tab is selected
             UISelectionFeedbackGenerator().selectionChanged()
@@ -51,11 +50,11 @@ struct TabBarView: View {
                     .resizable()
                     .renderingMode(.template)
                     .frame(width: 24, height: 24)
-                    .foregroundColor(selectedTab == tab ? selectedColor : .text05)
+                    .foregroundColor(selectedTab == tab ? .primary : .text05)
                 Text(title)
                     .font(.appLabelSmallEmphasised)
                     .lineLimit(1)
-                    .foregroundColor(selectedTab == tab ? selectedColor : .text05)
+                    .foregroundColor(selectedTab == tab ? .primary : .text05)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 10)

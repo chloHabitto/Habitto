@@ -29,9 +29,9 @@ struct WhiteSheetContainer<Content: View>: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header section with white background
+            // Header section with surface background
             headerSection
-                .background(Color.white)
+                .background(.surface)
             
             // Content area with custom background
             content

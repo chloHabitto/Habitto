@@ -8,6 +8,10 @@ struct PreferencesView: View {
     @State private var showingTheme = false
     @State private var showingDailyReminders = false
     
+    private var iconColor: Color {
+        ThemeManager.shared.selectedTheme == .default ? Color("navy200") : Color("themeBlack200")
+    }
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -26,7 +30,8 @@ struct PreferencesView: View {
                             icon: "Icon-Language_Filled",
                             title: "Language",
                             subtitle: "Choose your preferred language",
-                            hasChevron: true
+                            hasChevron: true,
+                            iconColor: iconColor
                         ) {
                             showingLanguage = true
                         }
@@ -38,7 +43,8 @@ struct PreferencesView: View {
                             icon: "Icon-Calendar_Filled",
                             title: "Date & Calendar",
                             subtitle: "Set your date and calendar preferences",
-                            hasChevron: true
+                            hasChevron: true,
+                            iconColor: iconColor
                         ) {
                             showingDateCalendar = true
                         }
@@ -50,7 +56,8 @@ struct PreferencesView: View {
                             icon: "Icon-Theme_Filled",
                             title: "Theme",
                             subtitle: "Choose your preferred app theme",
-                            hasChevron: true
+                            hasChevron: true,
+                            iconColor: iconColor
                         ) {
                             showingTheme = true
                         }
@@ -62,7 +69,8 @@ struct PreferencesView: View {
                             icon: "Icon-alarm_Filled",
                             title: "Daily Reminders",
                             subtitle: "Set up your daily habit reminders",
-                            hasChevron: true
+                            hasChevron: true,
+                            iconColor: iconColor
                         ) {
                             showingDailyReminders = true
                         }

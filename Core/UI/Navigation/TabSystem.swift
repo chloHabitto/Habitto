@@ -97,12 +97,12 @@ struct UnderlineTabButton: View {
                 HStack(spacing: 4) {
                     Text(tab.title)
                         .font(.appTitleSmallEmphasised)
-                        .foregroundColor(isSelected ? .text03 : .text04)
+                        .foregroundColor(isSelected ? .primary : .text04)
                     
                     if let value = tab.value {
                         Text(value)
                             .font(.appTitleSmallEmphasised)
-                            .foregroundColor(isSelected ? .text03 : .text04)
+                            .foregroundColor(isSelected ? .primary : .text04)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -112,9 +112,9 @@ struct UnderlineTabButton: View {
                     // Bottom stroke - only show for selected tabs
                     VStack {
                         Spacer()
-                        Rectangle()
-                            .fill(.text03)
-                            .frame(height: 4)
+                            Rectangle()
+                                .fill(Color.primary)
+                                .frame(height: 4)
                     }
                     .opacity(isSelected ? 1 : 0) // Only show stroke for selected tabs
                 )

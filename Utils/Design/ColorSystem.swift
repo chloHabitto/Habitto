@@ -81,14 +81,58 @@ struct ColorPrimitives {
 
 // MARK: - Semantic Color Tokens
 struct ColorTokens {
-    // Primary Colors
-    static let primary = Color("navy500")
-    static let primaryFocus = Color("navy400")
-    static let onPrimary = Color("greyWhite")
-    static let primaryContainer = Color("navy50")
-    static let onPrimaryContainer = Color("navy900")
-    static let primaryDim = Color("navy300")
-    static let primaryContainerFocus = Color("navy200")
+    // Primary Colors - Now dynamic based on theme
+    static var primary: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy500")
+        case .black:
+            return Color("themeBlack500")
+        }
+    }
+    static var primaryFocus: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy400")
+        case .black:
+            return Color("themeBlack400")
+        }
+    }
+    static var onPrimary: Color {
+        return Color("greyWhite")
+    }
+    static var primaryContainer: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy50")
+        case .black:
+            return Color("themeBlack50")
+        }
+    }
+    static var onPrimaryContainer: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy500")
+        case .black:
+            return Color("themeBlack500")
+        }
+    }
+    static var primaryDim: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy300")
+        case .black:
+            return Color("themeBlack300")
+        }
+    }
+    static var primaryContainerFocus: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy200")
+        case .black:
+            return Color("themeBlack200")
+        }
+    }
     
     // Secondary Colors
     static let secondary = Color("pastelBlue300")
@@ -106,11 +150,34 @@ struct ColorTokens {
     static let surfaceContainer = Color("grey100")
     static let hover = Color("grey800").opacity(0.16) // Using asset color with opacity
     
-    // Text Colors
-    static let text01 = Color("greyBlack")
-    static let text02 = Color("navy900")
-    static let text03 = Color("navy600")
-    static let text04 = Color("navy400")
+    // Text Colors - Now dynamic based on theme
+    static var text01: Color {
+        return Color("greyBlack")
+    }
+    static var text02: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy500")
+        case .black:
+            return Color("themeBlack500")
+        }
+    }
+    static var text03: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy300")
+        case .black:
+            return Color("themeBlack300")
+        }
+    }
+    static var text04: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy400")
+        case .black:
+            return Color("themeBlack400")
+        }
+    }
     static let text05 = Color("grey800")
     static let text06 = Color("grey700")
     static let text07 = Color("navy300")
@@ -121,7 +188,14 @@ struct ColorTokens {
     static let outline3 = Color("grey200")
     static let outline1 = Color("grey50")
     static let outline4 = Color("grey300")
-    static let outlineHighlight = Color("navy400")
+    static var outlineHighlight: Color {
+        switch ThemeManager.shared.selectedTheme {
+        case .default:
+            return Color("navy400")
+        case .black:
+            return Color("themeBlack400")
+        }
+    }
     
     // Basic Colors
     static let white = Color("greyWhite")
@@ -145,14 +219,14 @@ struct ColorTokens {
 
 // MARK: - Convenience Extensions for Easy Access
 extension Color {
-    // Primary Colors
-    static let primary = ColorTokens.primary
-    static let primaryFocus = ColorTokens.primaryFocus
-    static let onPrimary = ColorTokens.onPrimary
-    static let primaryContainer = ColorTokens.primaryContainer
-    static let onPrimaryContainer = ColorTokens.onPrimaryContainer
-    static let primaryDim = ColorTokens.primaryDim
-    static let primaryContainerFocus = ColorTokens.primaryContainerFocus
+    // Primary Colors - Now dynamic
+    static var primary: Color { ColorTokens.primary }
+    static var primaryFocus: Color { ColorTokens.primaryFocus }
+    static var onPrimary: Color { ColorTokens.onPrimary }
+    static var primaryContainer: Color { ColorTokens.primaryContainer }
+    static var onPrimaryContainer: Color { ColorTokens.onPrimaryContainer }
+    static var primaryDim: Color { ColorTokens.primaryDim }
+    static var primaryContainerFocus: Color { ColorTokens.primaryContainerFocus }
     
     // Secondary Colors
     static let secondary = ColorTokens.secondary
@@ -170,21 +244,21 @@ extension Color {
     static let surfaceContainer = ColorTokens.surfaceContainer
     static let hover = ColorTokens.hover
     
-    // Text Colors
-    static let text01 = ColorTokens.text01
-    static let text02 = ColorTokens.text02
-    static let text03 = ColorTokens.text03
-    static let text04 = ColorTokens.text04
+    // Text Colors - Now dynamic for theme-dependent colors
+    static var text01: Color { ColorTokens.text01 }
+    static var text02: Color { ColorTokens.text02 }
+    static var text03: Color { ColorTokens.text03 }
+    static var text04: Color { ColorTokens.text04 }
     static let text05 = ColorTokens.text05
     static let text06 = ColorTokens.text06
     static let text07 = ColorTokens.text07
     
-    // Outline Colors
+    // Outline Colors - Now dynamic for theme-dependent colors
     static let outline1 = ColorTokens.outline1
     static let outline2 = ColorTokens.outline2
     static let outline3 = ColorTokens.outline3
     static let outline4 = ColorTokens.outline4
-    static let outlineHighlight = ColorTokens.outlineHighlight
+    static var outlineHighlight: Color { ColorTokens.outlineHighlight }
     
     // System Colors
     static let success = ColorTokens.success
@@ -202,7 +276,7 @@ extension Color {
 
 // MARK: - ShapeStyle Extension for SwiftUI Modifiers
 extension ShapeStyle where Self == Color {
-    // Primary Colors
+    // Primary Colors - Now dynamic
     static var primary: Color { ColorTokens.primary }
     static var primaryFocus: Color { ColorTokens.primaryFocus }
     static var onPrimary: Color { ColorTokens.onPrimary }
@@ -227,7 +301,7 @@ extension ShapeStyle where Self == Color {
     static var surfaceContainer: Color { ColorTokens.surfaceContainer }
     static var hover: Color { ColorTokens.hover }
     
-    // Text Colors
+    // Text Colors - Now dynamic for theme-dependent colors
     static var text01: Color { ColorTokens.text01 }
     static var text02: Color { ColorTokens.text02 }
     static var text03: Color { ColorTokens.text03 }
@@ -235,7 +309,7 @@ extension ShapeStyle where Self == Color {
     static var text05: Color { ColorTokens.text05 }
     static var text06: Color { ColorTokens.text06 }
     
-    // Outline Colors
+    // Outline Colors - Now dynamic for theme-dependent colors
     static var outline2: Color { ColorTokens.outline2 }
     static var outline3: Color { ColorTokens.outline3 }
     static var outline1: Color { ColorTokens.outline1 }
