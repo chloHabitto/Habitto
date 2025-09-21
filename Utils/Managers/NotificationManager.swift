@@ -11,6 +11,109 @@ enum FriendlyReminderType {
     case threeHour
 }
 
+// MARK: - Debug Logging System
+enum LogLevel: String, CaseIterable {
+    case debug = "🔍"
+    case info = "ℹ️"
+    case warning = "⚠️"
+    case error = "❌"
+    case success = "✅"
+    case notification = "📱"
+    case scheduling = "📅"
+    case cleanup = "🧹"
+    case permission = "🔐"
+    case vacation = "🏖️"
+    case snooze = "⏰"
+    case test = "🧪"
+}
+
+struct LogEntry {
+    let timestamp: Date
+    let level: LogLevel
+    let category: String
+    let message: String
+    let metadata: [String: Any]?
+    
+    init(level: LogLevel, category: String, message: String, metadata: [String: Any]? = nil) {
+        self.timestamp = Date()
+        self.level = level
+        self.category = category
+        self.message = message
+        self.metadata = metadata
+    }
+    
+    var formattedMessage: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        let timeString = formatter.string(from: timestamp)
+        
+        var logMessage = "\(level.rawValue) [\(timeString)] \(category): \(message)"
+        
+        if let metadata = metadata, !metadata.isEmpty {
+            let metadataString = metadata.map { "\($0.key): \($0.value)" }.joined(separator: ", ")
+            logMessage += " | \(metadataString)"
+        }
+        
+        return logMessage
+    }
+}
+
+class NotificationLogger {
+    static let shared = NotificationLogger()
+    
+    private var logEntries: [LogEntry] = []
+    private let maxLogEntries = 1000 // Keep last 1000 entries
+    private let queue = DispatchQueue(label: "notification.logger", qos: .utility)
+    
+    private init() {}
+    
+    func log(_ level: LogLevel, category: String, message: String, metadata: [String: Any]? = nil) {
+        let entry = LogEntry(level: level, category: category, message: message, metadata: metadata)
+        
+        queue.async {
+            self.logEntries.append(entry)
+            
+            // Trim to max entries
+            if self.logEntries.count > self.maxLogEntries {
+                self.logEntries.removeFirst(self.logEntries.count - self.maxLogEntries)
+            }
+            
+            // Print to console
+            print(entry.formattedMessage)
+        }
+    }
+    
+    func getRecentLogs(count: Int = 50) -> [LogEntry] {
+        return queue.sync {
+            return Array(logEntries.suffix(count))
+        }
+    }
+    
+    func getLogsByLevel(_ level: LogLevel) -> [LogEntry] {
+        return queue.sync {
+            return logEntries.filter { $0.level == level }
+        }
+    }
+    
+    func getLogsByCategory(_ category: String) -> [LogEntry] {
+        return queue.sync {
+            return logEntries.filter { $0.category == category }
+        }
+    }
+    
+    func clearLogs() {
+        queue.async {
+            self.logEntries.removeAll()
+        }
+    }
+    
+    func exportLogs() -> String {
+        return queue.sync {
+            return logEntries.map { $0.formattedMessage }.joined(separator: "\n")
+        }
+    }
+}
+
 // MARK: - Notification Permission Testing
 struct NotificationPermissionTestResult {
     let authorizationStatus: UNAuthorizationStatus
@@ -54,22 +157,226 @@ struct NotificationValidationResult {
 class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
+    private let logger = NotificationLogger.shared
+    
     private init() {
+        logger.log(.info, category: "NotificationManager", message: "Initializing NotificationManager")
         requestNotificationPermission()
+    }
+    
+    // MARK: - Logging Methods
+    
+    /// Log debug information
+    private func logDebug(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.debug, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log informational messages
+    private func logInfo(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.info, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log warnings
+    private func logWarning(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.warning, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log errors
+    private func logError(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.error, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log success messages
+    private func logSuccess(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.success, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log notification-related messages
+    private func logNotification(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.notification, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log scheduling-related messages
+    private func logScheduling(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.scheduling, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log cleanup-related messages
+    private func logCleanup(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.cleanup, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log permission-related messages
+    private func logPermission(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.permission, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log vacation-related messages
+    private func logVacation(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.vacation, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log snooze-related messages
+    private func logSnooze(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.snooze, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Log test-related messages
+    private func logTest(_ message: String, category: String = "NotificationManager", metadata: [String: Any]? = nil) {
+        logger.log(.test, category: category, message: message, metadata: metadata)
+    }
+    
+    /// Get recent logs for debugging
+    func getRecentLogs(count: Int = 50) -> [LogEntry] {
+        return logger.getRecentLogs(count: count)
+    }
+    
+    /// Get logs by level for debugging
+    func getLogsByLevel(_ level: LogLevel) -> [LogEntry] {
+        return logger.getLogsByLevel(level)
+    }
+    
+    /// Get logs by category for debugging
+    func getLogsByCategory(_ category: String) -> [LogEntry] {
+        return logger.getLogsByCategory(category)
+    }
+    
+    /// Export logs for debugging
+    func exportLogs() -> String {
+        return logger.exportLogs()
+    }
+    
+    /// Clear logs (useful for testing)
+    func clearLogs() {
+        logger.clearLogs()
+    }
+    
+    /// Comprehensive debugging and monitoring method
+    func performComprehensiveDebugging() {
+        logDebug("Starting comprehensive debugging and monitoring")
+        
+        // 1. Check notification permissions
+        checkNotificationPermissionStatus { status in
+            self.logDebug("Notification permission status", metadata: ["status": status.rawValue])
+        }
+        
+        // 2. Get pending notification count
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            DispatchQueue.main.async {
+                self.logDebug("Pending notifications", metadata: ["count": requests.count])
+                
+                // Categorize notifications
+                let planReminders = requests.filter { $0.identifier.hasPrefix("daily_plan_reminder_") }
+                let completionReminders = requests.filter { $0.identifier.hasPrefix("daily_completion_reminder_") }
+                let snoozeReminders = requests.filter { $0.identifier.hasPrefix("daily_completion_reminder_snooze_") }
+                let habitReminders = requests.filter { $0.identifier.hasPrefix("habit_reminder_") }
+                let friendlyReminders = requests.filter { $0.identifier.hasPrefix("friendly_reminder_") }
+                
+                self.logDebug("Notification breakdown", metadata: [
+                    "planReminders": planReminders.count,
+                    "completionReminders": completionReminders.count,
+                    "snoozeReminders": snoozeReminders.count,
+                    "habitReminders": habitReminders.count,
+                    "friendlyReminders": friendlyReminders.count
+                ])
+            }
+        }
+        
+        // 3. Check UserDefaults settings
+        let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+        let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+        let planReminderTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date
+        let completionReminderTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date
+        let snoozeDuration = UserDefaults.standard.string(forKey: "snoozeDuration") ?? "none"
+        
+        logDebug("UserDefaults settings", metadata: [
+            "planReminderEnabled": planReminderEnabled,
+            "completionReminderEnabled": completionReminderEnabled,
+            "planReminderTime": planReminderTime?.description ?? "nil",
+            "completionReminderTime": completionReminderTime?.description ?? "nil",
+            "snoozeDuration": snoozeDuration
+        ])
+        
+        // 4. Check habit count
+        Task { @MainActor in
+            let habits = HabitRepository.shared.habits
+            self.logDebug("Habit repository status", metadata: ["habitCount": habits.count])
+        }
+        
+        // 5. Check vacation mode status
+        let vacationManager = VacationManager.shared
+        let today = Date()
+        let isVacationDay = vacationManager.isVacationDay(today)
+        logDebug("Vacation mode status", metadata: [
+            "today": today.description,
+            "isVacationDay": isVacationDay
+        ])
+        
+        // 6. Check snooze counts
+        let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
+        let snoozeKeys = allKeys.filter { $0.hasPrefix("snooze_count_") }
+        logDebug("Snooze counts", metadata: ["snoozeKeys": snoozeKeys.count])
+        
+        // 7. Test notification delivery capability
+        testNotificationDelivery { success in
+            self.logDebug("Notification delivery test", metadata: ["success": success])
+        }
+        
+        logDebug("Comprehensive debugging completed")
+    }
+    
+    /// Generate debugging report
+    func generateDebuggingReport() -> String {
+        var report = "=== NOTIFICATION MANAGER DEBUG REPORT ===\n\n"
+        
+        // Add recent logs
+        let recentLogs = getRecentLogs(count: 100)
+        report += "=== RECENT LOGS (Last 100) ===\n"
+        for log in recentLogs {
+            report += "\(log.formattedMessage)\n"
+        }
+        
+        report += "\n=== ERROR LOGS ===\n"
+        let errorLogs = getLogsByLevel(.error)
+        for log in errorLogs {
+            report += "\(log.formattedMessage)\n"
+        }
+        
+        report += "\n=== WARNING LOGS ===\n"
+        let warningLogs = getLogsByLevel(.warning)
+        for log in warningLogs {
+            report += "\(log.formattedMessage)\n"
+        }
+        
+        report += "\n=== SCHEDULING LOGS ===\n"
+        let schedulingLogs = getLogsByCategory("NotificationManager")
+            .filter { $0.message.contains("scheduling") || $0.message.contains("reminder") }
+        for log in schedulingLogs {
+            report += "\(log.formattedMessage)\n"
+        }
+        
+        report += "\n=== REPORT END ===\n"
+        return report
     }
     
     // Request notification permission
     func requestNotificationPermission() {
+        logPermission("Requesting notification permission", metadata: ["options": ["alert", "badge", "sound"]])
+        
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ Notification permission request failed: \(error.localizedDescription)")
+                    self.logError("Notification permission request failed", metadata: [
+                        "error": error.localizedDescription,
+                        "errorCode": (error as NSError).code,
+                        "errorDomain": (error as NSError).domain
+                    ])
                     self.handleNotificationPermissionError(error)
                 } else if granted {
-                    print("✅ Notification permission granted")
+                    self.logSuccess("Notification permission granted")
                     self.handleNotificationPermissionGranted()
                 } else {
-                    print("❌ Notification permission denied by user")
+                    self.logWarning("Notification permission denied by user")
                     self.handleNotificationPermissionDenied()
                 }
             }
@@ -866,12 +1173,12 @@ class NotificationManager: ObservableObject {
     /// Schedule daily plan reminders based on user settings
     @MainActor
     func scheduleDailyPlanReminders() {
-        print("📅 NotificationManager: Scheduling daily plan reminders...")
+        logScheduling("Starting daily plan reminders scheduling")
         
         // Validate notification permissions first
         validateNotificationPermissions { [weak self] hasPermission in
             guard hasPermission else {
-                print("❌ NotificationManager: Cannot schedule plan reminders - notification permission denied")
+                self?.logError("Cannot schedule plan reminders - notification permission denied")
                 return
             }
             
@@ -887,19 +1194,24 @@ class NotificationManager: ObservableObject {
         // Check if plan reminders are enabled
         let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
         guard planReminderEnabled else {
-            print("ℹ️ NotificationManager: Plan reminders are disabled")
+            logInfo("Plan reminders are disabled", metadata: ["setting": "planReminderEnabled", "value": false])
             return
         }
         
         // Get the reminder time from UserDefaults
         guard let planReminderTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date else {
-            print("❌ NotificationManager: No plan reminder time set")
+            logError("No plan reminder time set", metadata: ["setting": "planReminderTime"])
             return
         }
         
+        logScheduling("Plan reminders enabled", metadata: [
+            "enabled": true,
+            "reminderTime": planReminderTime.description
+        ])
+        
         // Get habits from HabitRepository
         let habits = HabitRepository.shared.habits
-        print("📅 NotificationManager: Found \(habits.count) habits for plan reminders")
+        logScheduling("Found habits for plan reminders", metadata: ["habitCount": habits.count])
         
         // Schedule plan reminders for the next 7 days
         let calendar = Calendar.current
@@ -917,12 +1229,12 @@ class NotificationManager: ObservableObject {
     /// Schedule daily completion reminders based on user settings
     @MainActor
     func scheduleDailyCompletionReminders() {
-        print("📅 NotificationManager: Scheduling daily completion reminders...")
+        logScheduling("Starting daily completion reminders scheduling")
         
         // Validate notification permissions first
         validateNotificationPermissions { [weak self] hasPermission in
             guard hasPermission else {
-                print("❌ NotificationManager: Cannot schedule completion reminders - notification permission denied")
+                self?.logError("Cannot schedule completion reminders - notification permission denied")
                 return
             }
             
@@ -938,15 +1250,20 @@ class NotificationManager: ObservableObject {
         // Check if completion reminders are enabled
         let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
         guard completionReminderEnabled else {
-            print("ℹ️ NotificationManager: Completion reminders are disabled")
+            logInfo("Completion reminders are disabled", metadata: ["setting": "completionReminderEnabled", "value": false])
             return
         }
         
         // Get the reminder time from UserDefaults
         guard let completionReminderTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date else {
-            print("❌ NotificationManager: No completion reminder time set")
+            logError("No completion reminder time set", metadata: ["setting": "completionReminderTime"])
             return
         }
+        
+        logScheduling("Completion reminders enabled", metadata: [
+            "enabled": true,
+            "reminderTime": completionReminderTime.description
+        ])
         
         // Setup notification categories for snooze functionality
         setupNotificationCategories()
@@ -1395,11 +1712,17 @@ class NotificationManager: ObservableObject {
     
     /// Handle snooze action for completion reminders
     func handleSnoozeAction(for notificationId: String, snoozeMinutes: Int) {
-        print("⏰ NotificationManager: Handling snooze action for \(notificationId) - \(snoozeMinutes) minutes")
+        logSnooze("Handling snooze action", metadata: [
+            "notificationId": notificationId,
+            "snoozeMinutes": snoozeMinutes
+        ])
         
         // Validate snooze minutes
         guard snoozeMinutes > 0 && snoozeMinutes <= 60 else {
-            print("❌ NotificationManager: Invalid snooze duration: \(snoozeMinutes) minutes")
+            logError("Invalid snooze duration", metadata: [
+                "snoozeMinutes": snoozeMinutes,
+                "validRange": "1-60 minutes"
+            ])
             return
         }
         
@@ -1417,7 +1740,10 @@ class NotificationManager: ObservableObject {
         // Check if vacation mode is active - don't schedule snoozed notifications during vacation
         let vacationManager = VacationManager.shared
         if vacationManager.isVacationDay(date) {
-            print("🔇 NotificationManager: Skipping snooze for \(date) - vacation day")
+            logVacation("Skipping snooze for vacation day", metadata: [
+                "date": date.description,
+                "notificationId": notificationId
+            ])
             return
         }
         
@@ -1686,23 +2012,27 @@ class NotificationManager: ObservableObject {
     
     /// Comprehensive cleanup of all daily reminders with enhanced logging
     func performComprehensiveDailyRemindersCleanup() {
-        print("🧹 NotificationManager: Starting comprehensive daily reminders cleanup...")
+        logCleanup("Starting comprehensive daily reminders cleanup")
         
         // Step 1: Remove duplicates
+        logCleanup("Step 1: Removing duplicate reminders")
         removeDuplicateDailyReminders()
         
         // Step 2: Remove expired reminders
+        logCleanup("Step 2: Removing expired reminders")
         removeExpiredDailyReminders()
         
         // Step 3: Remove vacation day reminders
+        logCleanup("Step 3: Removing vacation day reminders")
         removeVacationDayReminders()
         
         // Step 4: Clean up old snooze counts
+        logCleanup("Step 4: Cleaning up old snooze counts")
         cleanupOldSnoozeCounts()
         
         // Step 5: Get final count
         getPendingDailyRemindersCount { count in
-            print("📊 NotificationManager: Comprehensive cleanup completed. Remaining daily reminders: \(count)")
+            self.logCleanup("Comprehensive cleanup completed", metadata: ["remainingReminders": count])
         }
     }
     
