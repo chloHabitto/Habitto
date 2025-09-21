@@ -125,7 +125,7 @@ class DataMigrationManager: ObservableObject {
                 print("🔄 DataMigrationManager: Executing \(step.description) (v\(step.version.stringValue))")
                 
                 // Check if step already completed (idempotent)
-                if isStepCompleted(step) {
+                if await isStepCompleted(step) {
                     print("⏭️ DataMigrationManager: \(step.description) already completed, skipping")
                     logMigration(step: step, result: .skipped(reason: "Already completed"), error: nil)
                     currentVersion = step.version
@@ -247,31 +247,31 @@ class DataMigrationManager: ObservableObject {
     
     private func createPreMigrationSnapshot() async throws -> URL {
         let habitStore = CrashSafeHabitStore.shared
-        return try habitStore.createSnapshot()
+        return try await habitStore.createSnapshot()
     }
     
     private func rollbackFromSnapshot(_ snapshotURL: URL) async throws {
         let habitStore = CrashSafeHabitStore.shared
-        try habitStore.restoreFromSnapshot(snapshotURL)
+        try await habitStore.restoreFromSnapshot(snapshotURL)
         
         // Clean up snapshot file
         try? FileManager.default.removeItem(at: snapshotURL)
     }
     
-    private func isStepCompleted(_ step: MigrationStep) -> Bool {
+    private func isStepCompleted(_ step: MigrationStep) async -> Bool {
         let habitStore = CrashSafeHabitStore.shared
-        let completedSteps = habitStore.getCompletedMigrationSteps()
+        let completedSteps = await habitStore.getCompletedMigrationSteps()
         return completedSteps.contains(step.description)
     }
     
     private func markStepCompleted(_ step: MigrationStep) async throws {
         let habitStore = CrashSafeHabitStore.shared
-        try habitStore.markMigrationStepCompleted(step.description)
+        try await habitStore.markMigrationStepCompleted(step.description)
     }
     
     private func validatePostMigration() async throws {
         let habitStore = CrashSafeHabitStore.shared
-        let habits = habitStore.loadHabits()
+        let habits = await habitStore.loadHabits()
         
         // Basic validation invariants
         let habitIds = Set(habits.map { $0.id })

@@ -45,7 +45,7 @@ class MigrationTestSuite {
         // Test: Normal migration flow works correctly
         print("🧪 Testing successful migration flow...")
         
-        let store = await CrashSafeHabitStore.shared
+        let store = CrashSafeHabitStore.shared
         let migrationManager = await DataMigrationManager.shared
         
         // Save initial data
@@ -65,7 +65,7 @@ class MigrationTestSuite {
         // Test: Running migration multiple times doesn't cause issues
         print("🧪 Testing idempotent migration...")
         
-        let store = await CrashSafeHabitStore.shared
+        let store = CrashSafeHabitStore.shared
         let migrationManager = await DataMigrationManager.shared
         
         // Save initial data
@@ -87,7 +87,7 @@ class MigrationTestSuite {
         // Test: Migration with no habits
         print("🧪 Testing empty dataset migration...")
         
-        let store = await CrashSafeHabitStore.shared
+        let store = CrashSafeHabitStore.shared
         let migrationManager = await DataMigrationManager.shared
         
         // Save empty dataset
