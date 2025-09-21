@@ -336,6 +336,10 @@ struct MoreTabView: View {
             return Color("navy200")
         case .black:
             return Color("themeBlack200")
+        case .purple:
+            return Color("themePurple200")
+        case .pink:
+            return Color("themePink200")
         }
     }
 }

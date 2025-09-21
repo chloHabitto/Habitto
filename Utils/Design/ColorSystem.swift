@@ -88,6 +88,10 @@ struct ColorTokens {
             return Color("navy500")
         case .black:
             return Color("themeBlack500")
+        case .purple:
+            return Color("themePurple500")
+        case .pink:
+            return Color("themePink500")
         }
     }
     static var primaryFocus: Color {
@@ -96,6 +100,10 @@ struct ColorTokens {
             return Color("navy400")
         case .black:
             return Color("themeBlack400")
+        case .purple:
+            return Color("themePurple400")
+        case .pink:
+            return Color("themePink400")
         }
     }
     static var onPrimary: Color {
@@ -107,6 +115,10 @@ struct ColorTokens {
             return Color("navy50")
         case .black:
             return Color("themeBlack50")
+        case .purple:
+            return Color("themePurple50")
+        case .pink:
+            return Color("themePink50")
         }
     }
     static var onPrimaryContainer: Color {
@@ -115,6 +127,10 @@ struct ColorTokens {
             return Color("navy500")
         case .black:
             return Color("themeBlack500")
+        case .purple:
+            return Color("themePurple500")
+        case .pink:
+            return Color("themePink500")
         }
     }
     static var primaryDim: Color {
@@ -123,6 +139,10 @@ struct ColorTokens {
             return Color("navy300")
         case .black:
             return Color("themeBlack300")
+        case .purple:
+            return Color("themePurple300")
+        case .pink:
+            return Color("themePink300")
         }
     }
     static var primaryContainerFocus: Color {
@@ -131,6 +151,10 @@ struct ColorTokens {
             return Color("navy200")
         case .black:
             return Color("themeBlack200")
+        case .purple:
+            return Color("themePurple200")
+        case .pink:
+            return Color("themePink200")
         }
     }
     
@@ -160,6 +184,10 @@ struct ColorTokens {
             return Color("navy500")
         case .black:
             return Color("themeBlack500")
+        case .purple:
+            return Color("themePurple500")
+        case .pink:
+            return Color("themePink500")
         }
     }
     static var text03: Color {
@@ -168,6 +196,10 @@ struct ColorTokens {
             return Color("navy300")
         case .black:
             return Color("themeBlack300")
+        case .purple:
+            return Color("themePurple300")
+        case .pink:
+            return Color("themePink300")
         }
     }
     static var text04: Color {
@@ -176,6 +208,10 @@ struct ColorTokens {
             return Color("navy400")
         case .black:
             return Color("themeBlack400")
+        case .purple:
+            return Color("themePurple400")
+        case .pink:
+            return Color("themePink400")
         }
     }
     static let text05 = Color("grey800")
@@ -194,6 +230,10 @@ struct ColorTokens {
             return Color("navy400")
         case .black:
             return Color("themeBlack400")
+        case .purple:
+            return Color("themePurple400")
+        case .pink:
+            return Color("themePink400")
         }
     }
     
