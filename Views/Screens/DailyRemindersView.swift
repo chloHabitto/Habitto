@@ -26,6 +26,30 @@ struct DailyRemindersView: View {
                snoozeDuration != originalSnoozeDuration
     }
     
+    // Plan reminder preview title
+    private var planReminderPreviewTitle: String {
+        let habitCount = getTodayHabitCount()
+        return generatePlanReminderTitle(habitCount: habitCount)
+    }
+    
+    // Plan reminder preview message
+    private var planReminderPreviewMessage: String {
+        let habitCount = getTodayHabitCount()
+        return generatePlanReminderMessage(habitCount: habitCount)
+    }
+    
+    // Completion reminder preview title
+    private var completionReminderPreviewTitle: String {
+        let incompleteCount = getTodayIncompleteHabitCount()
+        return generateCompletionReminderTitle(incompleteCount: incompleteCount)
+    }
+    
+    // Completion reminder preview message
+    private var completionReminderPreviewMessage: String {
+        let incompleteCount = getTodayIncompleteHabitCount()
+        return generateCompletionReminderMessage(incompleteCount: incompleteCount)
+    }
+    
     // Snooze Duration Options
     enum SnoozeDuration: String, CaseIterable {
         case none = "None"
@@ -100,6 +124,12 @@ struct DailyRemindersView: View {
                         .padding(.leading, 20)
                     
                     planReminderTimeRow
+                    
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 20)
+                    
+                    planReminderPreviewRow
                 }
             }
             .background(.surface)
@@ -128,6 +158,12 @@ struct DailyRemindersView: View {
                         .padding(.leading, 20)
                     
                     snoozeDurationRow
+                    
+                    Divider()
+                        .background(Color(.systemGray4))
+                        .padding(.leading, 20)
+                    
+                    completionReminderPreviewRow
                 }
             }
             .background(.surface)
@@ -184,6 +220,50 @@ struct DailyRemindersView: View {
         .padding(.vertical, 16)
         .accessibilityLabel("Plan reminder time")
         .accessibilityHint("Set the time for daily plan reminders")
+    }
+    
+    // MARK: - Plan Reminder Preview Row
+    private var planReminderPreviewRow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Preview")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+            }
+            
+            // Preview message container
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Text(planReminderPreviewTitle)
+                        .font(.appBodyMedium)
+                        .fontWeight(.medium)
+                        .foregroundColor(.text01)
+                }
+                
+                Text(planReminderPreviewMessage)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text02)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Plan reminder preview")
+        .accessibilityHint("Shows what your plan reminder notification will look like")
     }
     
     // MARK: - Completion Reminder Toggle Row
@@ -275,6 +355,50 @@ struct DailyRemindersView: View {
         .accessibilityHint("Choose how long to snooze completion reminders")
     }
     
+    // MARK: - Completion Reminder Preview Row
+    private var completionReminderPreviewRow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Preview")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+            }
+            
+            // Preview message container
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Text(completionReminderPreviewTitle)
+                        .font(.appBodyMedium)
+                        .fontWeight(.medium)
+                        .foregroundColor(.text01)
+                }
+                
+                Text(completionReminderPreviewMessage)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text02)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.primary.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.primary.opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .accessibilityLabel("Completion reminder preview")
+        .accessibilityHint("Shows what your completion reminder notification will look like")
+    }
+    
     // MARK: - Save Button
     private var saveButton: some View {
         VStack(spacing: 0) {
@@ -353,6 +477,85 @@ struct DailyRemindersView: View {
            let snooze = SnoozeDuration(rawValue: snoozeRawValue) {
             originalSnoozeDuration = snooze
             snoozeDuration = snooze
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Get the count of habits scheduled for today
+    private func getTodayHabitCount() -> Int {
+        let today = Date()
+        let habits = HabitRepository.shared.habits
+        
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: today)
+        }.count
+    }
+    
+    /// Generate plan reminder title based on habit count
+    private func generatePlanReminderTitle(habitCount: Int) -> String {
+        switch habitCount {
+        case 0:
+            return "📅 Your Daily Plan"
+        case 1:
+            return "📅 1 Habit Today"
+        default:
+            return "📅 \(habitCount) Habits Today"
+        }
+    }
+    
+    /// Generate plan reminder message based on habit count
+    private func generatePlanReminderMessage(habitCount: Int) -> String {
+        switch habitCount {
+        case 0:
+            return "You have a free day! Perfect time to relax or try something new."
+        case 1:
+            return "You have 1 habit scheduled for today. Let's make it count! 💪"
+        case 2...3:
+            return "You have \(habitCount) habits scheduled for today. You've got this! 🚀"
+        case 4...6:
+            return "You have \(habitCount) habits scheduled for today. A productive day ahead! ⭐"
+        default:
+            return "You have \(habitCount) habits scheduled for today. Time to shine! ✨"
+        }
+    }
+    
+    /// Get the count of incomplete habits for today
+    private func getTodayIncompleteHabitCount() -> Int {
+        let today = Date()
+        let habits = HabitRepository.shared.habits
+        
+        return habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) && 
+            !habit.isCompleted(for: today)
+        }.count
+    }
+    
+    /// Generate completion reminder title based on incomplete habit count
+    private func generateCompletionReminderTitle(incompleteCount: Int) -> String {
+        switch incompleteCount {
+        case 0:
+            return "🎉 All Done Today!"
+        case 1:
+            return "⏰ 1 Habit Remaining"
+        default:
+            return "⏰ \(incompleteCount) Habits Remaining"
+        }
+    }
+    
+    /// Generate completion reminder message based on incomplete habit count
+    private func generateCompletionReminderMessage(incompleteCount: Int) -> String {
+        switch incompleteCount {
+        case 0:
+            return "Amazing! You've completed all your habits today. Well done! 🌟"
+        case 1:
+            return "You have 1 habit left to complete today. You're almost there! 💪"
+        case 2...3:
+            return "You have \(incompleteCount) habits left to complete today. Keep going! 🚀"
+        case 4...6:
+            return "You have \(incompleteCount) habits left to complete today. Every step counts! ⭐"
+        default:
+            return "You have \(incompleteCount) habits left to complete today. You can do this! ✨"
         }
     }
 }
