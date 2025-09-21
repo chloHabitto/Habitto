@@ -2,6 +2,9 @@ import Foundation
 import UserNotifications
 import SwiftUI
 
+// Suppress async warning for UNUserNotificationCenter.add - using callback-based approach for consistency
+// swiftlint:disable:next async_warning
+
 // MARK: - Friendly Reminder Types
 enum FriendlyReminderType {
     case oneHour
@@ -58,6 +61,7 @@ class NotificationManager: ObservableObject {
         )
         
         // Schedule the notification
+        // Using callback-based approach for consistency - async alternative available but requires refactoring
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("❌ Error scheduling notification: \(error)")
@@ -579,6 +583,9 @@ class NotificationManager: ObservableObject {
             return
         }
         
+        // Setup notification categories for snooze functionality
+        setupNotificationCategories()
+        
         // Get habits from HabitRepository
         let habits = HabitRepository.shared.habits
         print("📅 NotificationManager: Found \(habits.count) habits for completion reminders")
@@ -707,6 +714,12 @@ class NotificationManager: ObservableObject {
         content.sound = .default
         content.badge = 1
         
+        // Add snooze actions if snooze is enabled
+        let snoozeDuration = getSnoozeDuration()
+        if snoozeDuration != .none {
+            content.categoryIdentifier = "COMPLETION_REMINDER_CATEGORY"
+        }
+        
         // Create date components for the reminder time on the specific date
         let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
         let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
@@ -777,10 +790,11 @@ class NotificationManager: ObservableObject {
         }
     }
     
-    /// Remove all daily reminders (both plan and completion)
+    /// Remove all daily reminders (both plan and completion, including snoozed)
     func removeAllDailyReminders() {
         removeDailyPlanReminders()
         removeDailyCompletionReminders()
+        removeSnoozedCompletionReminders()
     }
     
     /// Reschedule all daily reminders (useful when settings change)
@@ -796,5 +810,183 @@ class NotificationManager: ObservableObject {
         scheduleDailyCompletionReminders()
         
         print("✅ NotificationManager: Daily reminders rescheduled")
+    }
+    
+    // MARK: - Snooze Functionality
+    
+    /// SnoozeDuration enum to match the one in DailyRemindersView
+    enum SnoozeDuration: String, CaseIterable {
+        case none = "None"
+        case tenMinutes = "10 min"
+        case fifteenMinutes = "15 min"
+        case thirtyMinutes = "30 min"
+        
+        var minutes: Int {
+            switch self {
+            case .none: return 0
+            case .tenMinutes: return 10
+            case .fifteenMinutes: return 15
+            case .thirtyMinutes: return 30
+            }
+        }
+    }
+    
+    /// Get snooze duration from UserDefaults
+    private func getSnoozeDuration() -> SnoozeDuration {
+        if let snoozeRawValue = UserDefaults.standard.string(forKey: "snoozeDuration"),
+           let snooze = SnoozeDuration(rawValue: snoozeRawValue) {
+            return snooze
+        }
+        return .none
+    }
+    
+    /// Setup notification categories for snooze functionality
+    private func setupNotificationCategories() {
+        let snoozeDuration = getSnoozeDuration()
+        
+        // Only create snooze category if snooze is enabled
+        guard snoozeDuration != .none else {
+            print("ℹ️ NotificationManager: Snooze disabled, skipping category setup")
+            return
+        }
+        
+        var actions: [UNNotificationAction] = []
+        
+        // Add snooze action based on selected duration
+        switch snoozeDuration {
+        case .tenMinutes:
+            actions.append(UNNotificationAction(
+                identifier: "SNOOZE_10_MIN",
+                title: "Snooze 10 min",
+                options: []
+            ))
+        case .fifteenMinutes:
+            actions.append(UNNotificationAction(
+                identifier: "SNOOZE_15_MIN",
+                title: "Snooze 15 min",
+                options: []
+            ))
+        case .thirtyMinutes:
+            actions.append(UNNotificationAction(
+                identifier: "SNOOZE_30_MIN",
+                title: "Snooze 30 min",
+                options: []
+            ))
+        case .none:
+            break
+        }
+        
+        // Add dismiss action
+        actions.append(UNNotificationAction(
+            identifier: "DISMISS",
+            title: "Dismiss",
+            options: [.destructive]
+        ))
+        
+        // Create category
+        let category = UNNotificationCategory(
+            identifier: "COMPLETION_REMINDER_CATEGORY",
+            actions: actions,
+            intentIdentifiers: [],
+            options: []
+        )
+        
+        // Register category
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+        print("✅ NotificationManager: Notification categories set up with snooze duration: \(snoozeDuration.rawValue)")
+    }
+    
+    /// Handle snooze action for completion reminders
+    func handleSnoozeAction(for notificationId: String, snoozeMinutes: Int) {
+        print("⏰ NotificationManager: Handling snooze action for \(notificationId) - \(snoozeMinutes) minutes")
+        
+        // Extract date from notification ID
+        let dateKey = notificationId.replacingOccurrences(of: "daily_completion_reminder_", with: "")
+        
+        // Parse date from dateKey (assuming format like "2024-01-15")
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let date = dateFormatter.date(from: dateKey) else {
+            print("❌ NotificationManager: Could not parse date from notification ID: \(notificationId)")
+            return
+        }
+        
+        // Calculate snooze time
+        let calendar = Calendar.current
+        let snoozeTime = calendar.date(byAdding: .minute, value: snoozeMinutes, to: Date()) ?? Date()
+        
+        // Create snooze notification
+        let snoozeNotificationId = "daily_completion_reminder_snooze_\(dateKey)_\(Int(snoozeTime.timeIntervalSince1970))"
+        
+        // Get habits from HabitRepository (need to do this on MainActor)
+        Task { @MainActor in
+            let habits = HabitRepository.shared.habits
+            let incompleteHabits = getIncompleteScheduledHabits(for: date, habits: habits)
+            let incompleteCount = incompleteHabits.count
+            
+            guard incompleteCount > 0 else {
+                print("ℹ️ NotificationManager: No incomplete habits for snooze, skipping")
+                return
+            }
+            
+            // Create snooze notification content
+            let content = UNMutableNotificationContent()
+            content.title = "Daily Check-in (Snoozed)"
+            
+            // Generate personalized message based on incomplete habit count
+            if incompleteCount == 1 {
+                content.body = "You have 1 habit left to complete today. Almost there! 🌟"
+            } else if incompleteCount <= 3 {
+                content.body = "You have \(incompleteCount) habits left to complete today. Keep going! 💪"
+            } else {
+                content.body = "You have \(incompleteCount) habits left to complete today. Don't give up! 🎯"
+            }
+            
+            content.sound = .default
+            content.badge = 1
+            
+            // Add snooze actions if snooze is still enabled
+            let snoozeDuration = getSnoozeDuration()
+            if snoozeDuration != .none {
+                content.categoryIdentifier = "COMPLETION_REMINDER_CATEGORY"
+            }
+            
+            // Create trigger for snooze time
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(snoozeMinutes * 60), repeats: false)
+            
+            // Create request
+            let request = UNNotificationRequest(
+                identifier: snoozeNotificationId,
+                content: content,
+                trigger: trigger
+            )
+            
+            // Schedule the snooze notification
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+                print("✅ Snooze notification scheduled for \(snoozeMinutes) minutes from now")
+            } catch {
+                print("❌ Error scheduling snooze notification: \(error)")
+            }
+        }
+    }
+    
+    /// Remove snoozed completion reminders
+    func removeSnoozedCompletionReminders() {
+        print("🗑️ NotificationManager: Removing snoozed completion reminders...")
+        
+        // Get all pending notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let snoozeReminderIds = requests.compactMap { request in
+                request.identifier.hasPrefix("daily_completion_reminder_snooze_") ? request.identifier : nil
+            }
+            
+            if !snoozeReminderIds.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: snoozeReminderIds)
+                print("✅ NotificationManager: Removed \(snoozeReminderIds.count) snoozed completion reminders")
+            } else {
+                print("ℹ️ NotificationManager: No snoozed completion reminders to remove")
+            }
+        }
     }
 } 
