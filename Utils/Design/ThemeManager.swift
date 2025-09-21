@@ -32,6 +32,8 @@ class ThemeManager: ObservableObject {
 enum AppTheme: String, CaseIterable {
     case `default` = "default"
     case black = "black"
+    case purple = "purple"
+    case pink = "pink"
     
     var name: String {
         switch self {
@@ -39,6 +41,10 @@ enum AppTheme: String, CaseIterable {
             return "Default"
         case .black:
             return "Black"
+        case .purple:
+            return "Purple"
+        case .pink:
+            return "Pink"
         }
     }
     
@@ -48,6 +54,10 @@ enum AppTheme: String, CaseIterable {
             return "1C274C" // navy500
         case .black:
             return "16181E" // black500
+        case .purple:
+            return "8E2AF9" // themePurple500
+        case .pink:
+            return "F92A95" // themePink500
         }
     }
     
@@ -57,6 +67,10 @@ enum AppTheme: String, CaseIterable {
             return Color(hex: "1C274C")
         case .black:
             return Color(hex: "16181E")
+        case .purple:
+            return Color(hex: "8E2AF9")
+        case .pink:
+            return Color(hex: "F92A95")
         }
     }
     
@@ -66,6 +80,10 @@ enum AppTheme: String, CaseIterable {
             return "Classic blue theme"
         case .black:
             return "Dark black theme"
+        case .purple:
+            return "Vibrant purple theme"
+        case .pink:
+            return "Bright pink theme"
         }
     }
     
@@ -76,6 +94,10 @@ enum AppTheme: String, CaseIterable {
             return ThemeColorPalette.defaultPalette
         case .black:
             return ThemeColorPalette.blackPalette
+        case .purple:
+            return ThemeColorPalette.purplePalette
+        case .pink:
+            return ThemeColorPalette.pinkPalette
         }
     }
 }
@@ -128,6 +150,36 @@ struct ThemeColorPalette {
         text03: "4A4D53",            // black600
         text04: "6A6D73",            // black400
         outlineHighlight: "2A2D33"   // black400
+    )
+    
+    static let purplePalette = ThemeColorPalette(
+        primary: "8E2AF9",           // themePurple500
+        primaryFocus: "A555FA",      // themePurple400
+        onPrimary: "FFFFFF",         // greyWhite
+        primaryContainer: "F4EAFE",  // themePurple50
+        onPrimaryContainer: "8E2AF9", // themePurple500
+        primaryDim: "B370FB",        // themePurple300
+        primaryContainerFocus: "DCBDFD", // themePurple100
+        text01: "000000",            // greyBlack
+        text02: "8E2AF9",            // themePurple500
+        text03: "B370FB",            // themePurple300
+        text04: "A555FA",            // themePurple400
+        outlineHighlight: "A555FA"   // themePurple400
+    )
+    
+    static let pinkPalette = ThemeColorPalette(
+        primary: "F92A95",           // themePink500
+        primaryFocus: "FA55AA",      // themePink400
+        onPrimary: "FFFFFF",         // greyWhite
+        primaryContainer: "FEEAF4",  // themePink50
+        onPrimaryContainer: "F92A95", // themePink500
+        primaryDim: "FB70B8",        // themePink300
+        primaryContainerFocus: "FDBDDE", // themePink100
+        text01: "000000",            // greyBlack
+        text02: "F92A95",            // themePink500
+        text03: "FB70B8",            // themePink300
+        text04: "FA55AA",            // themePink400
+        outlineHighlight: "FA55AA"   // themePink400
     )
 }
 
