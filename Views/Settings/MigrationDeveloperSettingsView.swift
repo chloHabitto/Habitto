@@ -83,6 +83,16 @@ struct MigrationDeveloperSettingsView: View {
                         showingClearConfirmation = true
                     }
                     .foregroundColor(.red)
+                    
+                    Button("Emergency Kill Switch") {
+                        telemetryManager.developerSettings.setMigrationOverride(false)
+                    }
+                    .foregroundColor(.red)
+                    
+                    Button("Emergency Enable") {
+                        telemetryManager.developerSettings.setMigrationOverride(true)
+                    }
+                    .foregroundColor(.green)
                 }
                 
                 // Local Override Section

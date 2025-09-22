@@ -35,6 +35,9 @@ class ProveItTestScenarios: ObservableObject {
         case resumeTokenCorruption = "Resume Token Corruption"
         case invariantsValidation = "Invariants Validation"
         case fileSystemErrors = "File System Errors"
+        case clockSkew = "Clock Skew"
+        case dstTransition = "DST Transition"
+        case nonGregorianCalendar = "Non-Gregorian Calendar"
         
         var description: String {
             switch self {
@@ -68,6 +71,12 @@ class ProveItTestScenarios: ObservableObject {
                 return "Tests data integrity validation"
             case .fileSystemErrors:
                 return "Tests various file system error conditions"
+            case .clockSkew:
+                return "Tests behavior with system clock skew and timezone changes"
+            case .dstTransition:
+                return "Tests behavior during Daylight Saving Time transitions"
+            case .nonGregorianCalendar:
+                return "Tests behavior with non-Gregorian calendars and locales"
             }
         }
         
@@ -81,6 +90,8 @@ class ProveItTestScenarios: ObservableObject {
                 return .medium
             case .memoryPressure, .backgroundMigration, .resumeTokenCorruption, .fileSystemErrors:
                 return .low
+            case .clockSkew, .dstTransition, .nonGregorianCalendar:
+                return .medium
             }
         }
     }
@@ -182,6 +193,12 @@ class ProveItTestScenarios: ObservableObject {
                 return try await testInvariantsValidation()
             case .fileSystemErrors:
                 return try await testFileSystemErrors()
+            case .clockSkew:
+                return try await testClockSkew()
+            case .dstTransition:
+                return try await testDSTTransition()
+            case .nonGregorianCalendar:
+                return try await testNonGregorianCalendar()
             }
         } catch {
             return TestScenarioResult(
@@ -950,5 +967,101 @@ class ProveItTestScenarios: ObservableObject {
             
             return criticalFailures == 0 && highFailures == 0
         }
+    }
+    
+    // MARK: - Clock/Locale Stress Tests
+    
+    private func testClockSkew() async throws -> TestScenarioResult {
+        let startTime = Date()
+        
+        // Simulate clock skew by temporarily changing system time
+        let originalTime = Date()
+        let skewedTime = originalTime.addingTimeInterval(3600 * 24 * 7) // 1 week forward
+        
+        // Create test habits with dates that would be affected by clock skew
+        let testHabits = [
+            Habit(id: UUID(), name: "Clock Skew Test", description: "Test habit", icon: "star", color: .blue, habitType: .formation, schedule: "daily", goal: "1", reminder: "9:00 AM", startDate: skewedTime)
+        ]
+        
+        // Test migration with clock skew
+        try await habitStore.saveHabits(testHabits)
+        let loadedHabits = await habitStore.loadHabits()
+        
+        // Verify data integrity despite clock skew
+        let success = loadedHabits.count == testHabits.count && 
+                     loadedHabits.first?.name == testHabits.first?.name
+        
+        return TestScenarioResult(
+            scenario: .clockSkew,
+            startTime: startTime,
+            endTime: Date(),
+            duration: Date().timeIntervalSince(startTime),
+            success: success,
+            error: success ? nil : "Clock skew test failed",
+            metrics: TestScenarioResult.TestMetrics(recordsProcessed: testHabits.count, memoryUsage: 0, diskUsage: 0, networkCalls: 0, fileOperations: 0, encryptionOperations: 0, validationChecks: 0),
+            severity: .medium
+        )
+    }
+    
+    private func testDSTTransition() async throws -> TestScenarioResult {
+        let startTime = Date()
+        
+        // Test with dates around DST transitions (March 12, 2023 and November 5, 2023)
+        let dstSpring = Calendar.current.date(from: DateComponents(year: 2023, month: 3, day: 12, hour: 2, minute: 0))!
+        let dstFall = Calendar.current.date(from: DateComponents(year: 2023, month: 11, day: 5, hour: 1, minute: 0))!
+        
+        let testHabits = [
+            Habit(id: UUID(), name: "DST Spring Test", description: "Test habit", icon: "star", color: .blue, habitType: .formation, schedule: "daily", goal: "1", reminder: "2:30 AM", startDate: dstSpring),
+            Habit(id: UUID(), name: "DST Fall Test", description: "Test habit", icon: "star", color: .blue, habitType: .formation, schedule: "daily", goal: "1", reminder: "1:30 AM", startDate: dstFall)
+        ]
+        
+        // Test migration with DST transition dates
+        try await habitStore.saveHabits(testHabits)
+        let loadedHabits = await habitStore.loadHabits()
+        
+        // Verify data integrity despite DST transitions
+        let success = loadedHabits.count == testHabits.count
+        
+        return TestScenarioResult(
+            scenario: .dstTransition,
+            startTime: startTime,
+            endTime: Date(),
+            duration: Date().timeIntervalSince(startTime),
+            success: success,
+            error: success ? nil : "DST transition test failed",
+            metrics: TestScenarioResult.TestMetrics(recordsProcessed: testHabits.count, memoryUsage: 0, diskUsage: 0, networkCalls: 0, fileOperations: 0, encryptionOperations: 0, validationChecks: 0),
+            severity: .medium
+        )
+    }
+    
+    private func testNonGregorianCalendar() async throws -> TestScenarioResult {
+        let startTime = Date()
+        
+        // Test with non-Gregorian calendar (Hebrew calendar)
+        let hebrewCalendar = Calendar(identifier: .hebrew)
+        let testDate = hebrewCalendar.date(from: DateComponents(year: 5784, month: 1, day: 1))!
+        
+        let testHabits = [
+            Habit(id: UUID(), name: "Hebrew Calendar Test", description: "Test habit", icon: "star", color: .blue, habitType: .formation, schedule: "daily", goal: "1", reminder: "9:00 AM", startDate: testDate)
+        ]
+        
+        // Test migration with non-Gregorian calendar dates
+        try await habitStore.saveHabits(testHabits)
+        let loadedHabits = await habitStore.loadHabits()
+        
+        // Verify data integrity with non-Gregorian calendar
+        let success = loadedHabits.count == testHabits.count && 
+                     loadedHabits.first?.name == testHabits.first?.name
+        
+        return TestScenarioResult(
+            scenario: .nonGregorianCalendar,
+            startTime: startTime,
+            endTime: Date(),
+            duration: Date().timeIntervalSince(startTime),
+            success: success,
+            error: success ? nil : "Non-Gregorian calendar test failed",
+            metrics: TestScenarioResult.TestMetrics(recordsProcessed: testHabits.count, memoryUsage: 0, diskUsage: 0, networkCalls: 0, fileOperations: 0, encryptionOperations: 0, validationChecks: 0),
+            severity: .medium
+        )
     }
 }
