@@ -7,8 +7,9 @@ This document outlines the CloudKit integration strategy for Habitto's habit tra
 
 ### Database Configuration
 - **Database**: Private Database (user-specific data)
-- **Zone**: Custom Zone (`HabittoHabitsZone`)
+- **Zone**: Custom Zone per user (`HabittoHabitsZone:<userId>`)
 - **Record Name**: Habit UUID (deterministic, globally unique)
+- **Isolation**: Private DB already scopes to iCloud account, custom zone provides additional isolation
 
 ### Record Model
 
@@ -41,8 +42,8 @@ struct CloudKitHabitRecord {
     let dataVersion: String // "1.0.0", "2.0.0", etc.
     let migrationVersion: String // For sync compatibility
     
-    // User Scoping (for multi-account support)
-    let userId: String // Apple ID or custom user identifier
+    // User Scoping (for multi-account support) - Note: Custom zone provides isolation
+    let userId: String // Apple ID or custom user identifier (for additional scoping if needed)
     
     // Metadata
     let recordType: String = "Habit"
@@ -83,7 +84,7 @@ func mergeCompletionHistory(_ local: [String: Int], _ remote: [String: Int]) -> 
 ### User Identification
 - **Primary**: Apple ID (when available)
 - **Fallback**: Custom user identifier for non-Apple users
-- **Scope**: All records include `userId` field
+- **Scope**: Custom zone per user (`HabittoHabitsZone:<userId>`) provides isolation
 
 ### Multi-Account Support
 - **Separate Zones**: Each user account gets its own zone

@@ -55,6 +55,7 @@ actor CrashSafeHabitStore: ObservableObject {
     private let backupURL: URL
     private let backup2URL: URL
     private let userDefaults = UserDefaults.standard // For migration version cache only (not authoritative)
+    private let userId: String // For multi-account support
     
     // Cache for performance
     private var cachedContainer: HabitDataContainer?
@@ -62,6 +63,9 @@ actor CrashSafeHabitStore: ObservableObject {
     private init() {
         // Create documents directory URLs
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // For now, use a default userId - in production, this would come from user authentication
+        self.userId = "default_user"
         
         self.mainURL = documentsURL.appendingPathComponent("habits.json")
         self.backupURL = documentsURL.appendingPathComponent("habits_backup.json")
@@ -185,8 +189,9 @@ actor CrashSafeHabitStore: ObservableObject {
                 let container = try JSONDecoder().decode(HabitDataContainer.self, from: data)
                 print("✅ CrashSafeHabitStore: Loaded \(container.habits.count) habits, version \(container.version)")
                 
-                // Mirror version to UserDefaults cache (not authoritative)
-                userDefaults.set(container.version, forKey: "MigrationVersion")
+                // Mirror version to UserDefaults cache (not authoritative) with per-account key
+                let versionKey = "MigrationVersion:\(userId)"
+                userDefaults.set(container.version, forKey: versionKey)
                 
                 result = container
             } catch {
@@ -198,8 +203,9 @@ actor CrashSafeHabitStore: ObservableObject {
                     let container = try JSONDecoder().decode(HabitDataContainer.self, from: backupData)
                     print("✅ CrashSafeHabitStore: Loaded from backup: \(container.habits.count) habits, version \(container.version)")
                     
-                    // Mirror version to UserDefaults cache (not authoritative)
-                    userDefaults.set(container.version, forKey: "MigrationVersion")
+                    // Mirror version to UserDefaults cache (not authoritative) with per-account key
+                    let versionKey = "MigrationVersion:\(userId)"
+                    userDefaults.set(container.version, forKey: versionKey)
                     
                     // Try to restore main file from backup
                     try? fileManager.copyItem(at: backupURL, to: coordinatedURL)
@@ -227,9 +233,12 @@ actor CrashSafeHabitStore: ObservableObject {
             do {
                 // 1) Write to temporary file with fsync for durability
                 let tempURL = coordinatedURL.appendingPathExtension("tmp")
+                // Create the temp file first, then open for writing
+                FileManager.default.createFile(atPath: tempURL.path, contents: data)
+                
+                // Now fsync for durability
                 let fileHandle = try FileHandle(forWritingTo: tempURL)
-                try fileHandle.write(contentsOf: data)
-                try fileHandle.synchronize() // fsync for durability
+                try fileHandle.synchronize()
                 try fileHandle.close()
                 
                 // 2) Set file protection on temp file BEFORE atomic replace
@@ -253,6 +262,14 @@ actor CrashSafeHabitStore: ObservableObject {
                 
                 success = true
             } catch {
+                print("❌ CrashSafeHabitStore: Write operation failed: \(error)")
+                // Attempt rollback from backup
+                do {
+                    try rollbackFromBackup(coordinatedURL)
+                    print("✅ CrashSafeHabitStore: Successfully rolled back from backup")
+                } catch {
+                    print("❌ CrashSafeHabitStore: Rollback failed: \(error)")
+                }
                 success = false
             }
         }
@@ -261,11 +278,19 @@ actor CrashSafeHabitStore: ObservableObject {
             throw HabitStoreError.fileSystemError(coordinatorError ?? NSError(domain: "HabitStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown file coordination error"]))
         }
         
-        // 6) Only now rotate backup (keep two generations) - after successful save
+        // 6) Read-back verify + invariants before backup rotation
+        let verifyData = try Data(contentsOf: mainURL)
+        let verifyContainer = try JSONDecoder().decode(HabitDataContainer.self, from: verifyData)
+        
+        // Run invariants validation (simplified version for storage layer)
+        try validateStorageInvariants(verifyContainer)
+        
+        // 7) Only now rotate backup (keep two generations) - after verify + invariants pass
         try rotateBackup()
         
-        // 7) Mirror version to UserDefaults cache (not authoritative)
-        userDefaults.set(container.version, forKey: "MigrationVersion")
+        // 8) Mirror version to UserDefaults cache (not authoritative) with per-account key
+        let versionKey = "MigrationVersion:\(userId)"
+        userDefaults.set(container.version, forKey: versionKey)
         
         print("✅ CrashSafeHabitStore: Saved \(container.habits.count) habits, version \(container.version)")
     }
@@ -340,6 +365,67 @@ actor CrashSafeHabitStore: ObservableObject {
     func clearCache() {
         cachedContainer = nil
     }
+    
+    // MARK: - Rollback Methods
+    
+    private func rollbackFromBackup(_ targetURL: URL) throws {
+        // Try to restore from backup1 first, then backup2 if backup1 fails
+        if fileManager.fileExists(atPath: backupURL.path) {
+            try fileManager.copyItem(at: backupURL, to: targetURL)
+            print("✅ CrashSafeHabitStore: Restored from backup1")
+        } else if fileManager.fileExists(atPath: backup2URL.path) {
+            try fileManager.copyItem(at: backup2URL, to: targetURL)
+            print("✅ CrashSafeHabitStore: Restored from backup2")
+        } else {
+            // No backup available, create empty container
+            let emptyContainer = HabitDataContainer(habits: [])
+            let emptyData = try JSONEncoder().encode(emptyContainer)
+            try emptyData.write(to: targetURL)
+            print("⚠️ CrashSafeHabitStore: No backup available, created empty container")
+        }
+        
+        // Re-apply file protection after rollback
+        try fileManager.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: targetURL.path
+        )
+    }
+    
+    // MARK: - Storage-Level Invariants Validation
+    
+    private func validateStorageInvariants(_ container: HabitDataContainer) throws {
+        // Basic storage-level invariants (lightweight version of full migration invariants)
+        
+        // 1. Check for duplicate IDs
+        let habitIds = container.habits.map { $0.id }
+        let uniqueIds = Set(habitIds)
+        if habitIds.count != uniqueIds.count {
+            throw HabitStoreError.dataIntegrityError("Duplicate habit IDs detected")
+        }
+        
+        // 2. Check for valid version format
+        if container.version.isEmpty {
+            throw HabitStoreError.dataIntegrityError("Invalid version format")
+        }
+        
+        // 3. Check for reasonable data size
+        let dataSize = try JSONEncoder().encode(container).count
+        if dataSize > 100 * 1024 * 1024 { // 100MB limit
+            throw HabitStoreError.dataIntegrityError("Data size exceeds reasonable limits")
+        }
+        
+        // 4. Check for valid dates
+        for habit in container.habits {
+            if habit.startDate > Date() {
+                throw HabitStoreError.dataIntegrityError("Habit start date in the future")
+            }
+            if let endDate = habit.endDate, endDate < habit.startDate {
+                throw HabitStoreError.dataIntegrityError("Habit end date before start date")
+            }
+        }
+        
+        print("✅ CrashSafeHabitStore: Storage invariants validation passed")
+    }
 }
 
 // MARK: - Habit Store Error
@@ -348,6 +434,7 @@ enum HabitStoreError: LocalizedError {
     case fileSystemError(Error)
     case insufficientDiskSpace(required: Int, available: Int)
     case lowDiskSpace(available: Int, minimum: Int)
+    case dataIntegrityError(String)
     case encodingError(Error)
     case decodingError(Error)
     
@@ -361,6 +448,8 @@ enum HabitStoreError: LocalizedError {
             return "Insufficient disk space: need \(required) bytes, have \(available) bytes"
         case .lowDiskSpace(let available, let minimum):
             return "Low disk space: \(available) bytes available, minimum \(minimum) bytes required"
+        case .dataIntegrityError(let message):
+            return "Data integrity error: \(message)"
         case .encodingError(let error):
             return "Encoding error: \(error.localizedDescription)"
         case .decodingError(let error):
