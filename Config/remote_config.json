@@ -1,0 +1,7 @@
+{
+  "isMigrationEnabled": true,
+  "minAppVersion": "1.0.0",
+  "maxFailureRate": 0.15,
+  "configVersion": "1.0.0",
+  "lastUpdated": "2024-01-15T10:30:00Z"
+}

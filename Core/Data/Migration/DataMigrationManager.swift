@@ -95,6 +95,12 @@ class DataMigrationManager: ObservableObject {
     
     /// Execute all pending migrations with crash-safe, idempotent steps
     func executeMigrations() async throws {
+        // Check kill switch
+        let telemetryManager = EnhancedMigrationTelemetryManager.shared
+        guard await telemetryManager.checkMigrationEnabled() else {
+            throw DataMigrationError.migrationDisabledByKillSwitch
+        }
+        
         guard needsMigration() else {
             print("✅ DataMigrationManager: No migrations needed")
             return
@@ -113,6 +119,11 @@ class DataMigrationManager: ObservableObject {
         let totalSteps = availableMigrations.count
         
         print("🔄 DataMigrationManager: Starting migration from \(currentVersion.stringValue) to latest")
+        
+        let startTime = Date()
+        
+        // Record migration start
+        await telemetryManager.recordEvent(.migrationStart, datasetSize: await getHabitCount(), success: true)
         
         // Create pre-migration snapshot for rollback
         let snapshotURL = try await createPreMigrationSnapshot()
@@ -188,9 +199,18 @@ class DataMigrationManager: ObservableObject {
             
             print("🎉 DataMigrationManager: All migrations completed successfully")
             
+            // Record successful migration
+            let totalDuration = Date().timeIntervalSince(startTime)
+            await telemetryManager.recordEvent(.migrationEndSuccess, duration: totalDuration, datasetSize: await getHabitCount(), success: true)
+            
         } catch {
             // Rollback on failure
             print("❌ DataMigrationManager: Migration failed, attempting rollback...")
+            
+            // Record failed migration
+            let totalDuration = Date().timeIntervalSince(startTime)
+            await telemetryManager.recordEvent(.migrationEndFailure, duration: totalDuration, errorCode: error.localizedDescription, datasetSize: await getHabitCount(), success: false)
+            
             try await rollbackFromSnapshot(snapshotURL)
             throw error
         }
@@ -243,6 +263,12 @@ class DataMigrationManager: ObservableObject {
         let versionString = userDefaults.string(forKey: versionKey) ?? "1.0.0"
         currentVersion = MigrationVersion(versionString)
         print("🔍 DataMigrationManager: Loaded current version: \(currentVersion.stringValue)")
+    }
+    
+    private func getHabitCount() async -> Int {
+        let habitStore = CrashSafeHabitStore.shared
+        let habits = await habitStore.loadHabits()
+        return habits.count
     }
     
     private func createPreMigrationSnapshot() async throws -> URL {
