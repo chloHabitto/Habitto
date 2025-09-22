@@ -91,6 +91,42 @@ func mergeCompletionHistory(_ local: [String: Int], _ remote: [String: Int]) -> 
 - **Clean Separation**: No data mixing between accounts
 - **Account Switching**: Seamless transition between accounts
 
+## GDPR Data Deletion
+
+### Complete Data Deletion Sequence
+1. **Local Deletion**: Remove all local habit data from CrashSafeHabitStore
+2. **CloudKit Deletion**: Delete all records from private zone
+3. **Tombstone Creation**: Create deletion tombstones to prevent re-sync
+4. **Telemetry Cleanup**: Record "forget" event and purge user telemetry
+5. **Verification**: Confirm no data resurrection on offline device return
+
+### Implementation
+```swift
+func deleteUserData(userId: String) async throws {
+    // 1. Local deletion
+    try await habitStore.deleteAllHabits()
+    
+    // 2. CloudKit deletion
+    let records = try await fetchAllRecords(in: userZone)
+    try await deleteRecords(records)
+    
+    // 3. Create tombstones
+    let tombstone = createDeletionTombstone(userId: userId)
+    try await saveTombstone(tombstone)
+    
+    // 4. Telemetry cleanup
+    await telemetryManager.recordForgetEvent(userId: userId)
+    
+    // 5. Verification test
+    try await verifyNoDataResurrection(userId: userId)
+}
+```
+
+### Offline Device Protection
+- **Tombstone Mechanism**: Prevents offline devices from re-syncing deleted data
+- **Zone Cleanup**: Entire zone deletion ensures no orphaned records
+- **Resurrection Test**: Automated test to verify no data reappears
+
 ## Offline/Online Behavior
 
 ### Offline Mode

@@ -45,6 +45,11 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
     // Local TTL cache
     private let configTTL: TimeInterval = 300 // 5 minutes
     private let maxRetries = 3
+    
+    // Kill switch thresholds (documented for support)
+    private let criticalFailureThreshold = 0.01 // 1% critical failures
+    private let totalFailureThreshold = 0.03 // 3% total failures
+    private let evaluationWindow: TimeInterval = 3600 // 1 hour window
     private var configTask: Task<Void, Never>?
     
     // MARK: - Remote Config Structure
@@ -319,8 +324,21 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
     
     private func isFailureRateTooHigh() -> Bool {
         let failureRate = getFailureRate()
-        let threshold = 0.15 // 15% failure rate threshold
-        return failureRate > threshold
+        let criticalRate = getCriticalFailureRate()
+        
+        // Check both thresholds: >1% critical failures or >3% total failures in 1h window
+        return failureRate > totalFailureThreshold || criticalRate > criticalFailureThreshold
+    }
+    
+    private func getCriticalFailureRate() -> Double {
+        let recentEvents = getStoredEvents().filter { 
+            Date().timeIntervalSince($0.timestamp) <= evaluationWindow
+        }
+        let criticalFailures = recentEvents.filter { 
+            // This would need to be enhanced to check for critical failures specifically
+            !$0.success && $0.eventType == .migrationEndFailure 
+        }
+        return Double(criticalFailures.count) / Double(max(recentEvents.count, 1))
     }
     
     private func isAppVersionCompatible(_ minVersion: String) -> Bool {

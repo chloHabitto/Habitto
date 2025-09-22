@@ -167,6 +167,10 @@ actor CrashSafeHabitStore: ObservableObject {
             .appendingPathComponent("habits_snapshot_\(Date().timeIntervalSince1970).json")
         
         try fileManager.copyItem(at: mainURL, to: snapshotURL)
+        
+        // Exclude snapshot from backup
+        try? (snapshotURL as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
+        
         print("📸 CrashSafeHabitStore: Created snapshot at \(snapshotURL.path)")
         return snapshotURL
     }
@@ -232,12 +236,18 @@ actor CrashSafeHabitStore: ObservableObject {
         fileCoordinator.coordinate(writingItemAt: mainURL, options: .forReplacing, error: &coordinatorError) { (coordinatedURL) in
             do {
                 // 1) Write to temporary file with fsync for durability
-                let tempURL = coordinatedURL.appendingPathExtension("tmp")
-                // Create the temp file first, then open for writing
-                FileManager.default.createFile(atPath: tempURL.path, contents: data)
+                let tempURL = coordinatedURL.deletingPathExtension()
+                    .appendingPathExtension("tmp.\(UUID().uuidString)")
                 
-                // Now fsync for durability
+                // Ensure cleanup on any exit path
+                defer { try? FileManager.default.removeItem(at: tempURL) }
+                
+                // Create empty temp file first
+                FileManager.default.createFile(atPath: tempURL.path, contents: nil)
+                
+                // Write data via FileHandle for proper durability
                 let fileHandle = try FileHandle(forWritingTo: tempURL)
+                try fileHandle.write(contentsOf: data)
                 try fileHandle.synchronize()
                 try fileHandle.close()
                 
@@ -247,16 +257,19 @@ actor CrashSafeHabitStore: ObservableObject {
                     ofItemAtPath: tempURL.path
                 )
                 
-                // 3) Atomically replace main file
+                // 3) Exclude temp file from backup
+                try? (tempURL as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
+                
+                // 4) Atomically replace main file
                 _ = try fileManager.replaceItem(at: coordinatedURL, withItemAt: tempURL, backupItemName: nil, options: [], resultingItemURL: nil)
                 
-                // 4) Re-assert file protection on replaced target
+                // 5) Re-assert file protection on replaced target
                 try fileManager.setAttributes(
                     [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
                     ofItemAtPath: coordinatedURL.path
                 )
                 
-                // 5) Verify by reading back
+                // 6) Verify by reading back
                 let verificationData = try Data(contentsOf: coordinatedURL)
                 let _ = try JSONDecoder().decode(HabitDataContainer.self, from: verificationData)
                 
@@ -275,7 +288,8 @@ actor CrashSafeHabitStore: ObservableObject {
         }
         
         if !success {
-            throw HabitStoreError.fileSystemError(coordinatorError ?? NSError(domain: "HabitStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown file coordination error"]))
+            let error = coordinatorError ?? NSError(domain: "HabitStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown file coordination error"])
+            throw HabitStoreError.fileSystemError(error)
         }
         
         // 6) Read-back verify + invariants before backup rotation
@@ -296,16 +310,25 @@ actor CrashSafeHabitStore: ObservableObject {
     }
     
     private func rotateBackup() throws {
-        // Two-generation backup rotation: bak2 <- bak1 <- main
+        // Atomic two-generation backup rotation: bak2 <- bak1 <- main
+        // Use copy/rename pattern to avoid leaving zero backups if app dies mid-rotation
         
-        // 1) Remove old backup2 if it exists
-        if fileManager.fileExists(atPath: backup2URL.path) {
-            try? fileManager.removeItem(at: backup2URL)
-        }
+        // 1) Create new backup1 from main (atomic copy)
+        let newBackupURL = backupURL.appendingPathExtension("new")
+        try fileManager.copyItem(at: mainURL, to: newBackupURL)
         
-        // 2) Move current backup1 to backup2
+        // 2) Set file protection on new backup1
+        try fileManager.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: newBackupURL.path
+        )
+        
+        // 3) Move current backup1 to backup2 (atomic rename)
         if fileManager.fileExists(atPath: backupURL.path) {
+            // Remove old backup2 if it exists
+            try? fileManager.removeItem(at: backup2URL)
             try fileManager.moveItem(at: backupURL, to: backup2URL)
+            
             // Set file protection on backup2
             try fileManager.setAttributes(
                 [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
@@ -313,16 +336,10 @@ actor CrashSafeHabitStore: ObservableObject {
             )
         }
         
-        // 3) Copy main to backup1
-        try fileManager.copyItem(at: mainURL, to: backupURL)
+        // 4) Rename new backup to backup1 (atomic rename)
+        try fileManager.moveItem(at: newBackupURL, to: backupURL)
         
-        // 4) Set file protection on backup1
-        try fileManager.setAttributes(
-            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-            ofItemAtPath: backupURL.path
-        )
-        
-        print("🔄 CrashSafeHabitStore: Rotated backup files (main -> bak1 -> bak2)")
+        print("🔄 CrashSafeHabitStore: Atomically rotated backup files (main -> bak1 -> bak2)")
     }
     
     private func checkDiskSpace(for container: HabitDataContainer) throws {
@@ -414,7 +431,17 @@ actor CrashSafeHabitStore: ObservableObject {
             throw HabitStoreError.dataIntegrityError("Data size exceeds reasonable limits")
         }
         
-        // 4. Check for valid dates
+        // 4. Check for valid UTF-8 encoding in habit names and descriptions
+        for habit in container.habits {
+            if !habit.name.canBeConverted(to: .utf8) {
+                throw HabitStoreError.dataIntegrityError("Habit name contains invalid UTF-8 encoding")
+            }
+            if !habit.description.canBeConverted(to: .utf8) {
+                throw HabitStoreError.dataIntegrityError("Habit description contains invalid UTF-8 encoding")
+            }
+        }
+        
+        // 5. Check for valid dates
         for habit in container.habits {
             if habit.startDate > Date() {
                 throw HabitStoreError.dataIntegrityError("Habit start date in the future")
