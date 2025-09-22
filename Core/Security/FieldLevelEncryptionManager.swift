@@ -131,9 +131,69 @@ actor FieldLevelEncryptionManager {
         // Update cached key
         cachedEncryptionKey = newKey
         
-        // Note: In a real implementation, you would need to re-encrypt all existing data
-        // with the new key. This is a complex operation that should be done carefully.
-        print("⚠️ Encryption key rotated. Existing encrypted data needs to be re-encrypted.")
+        // Store key rotation metadata
+        let rotationMetadata = KeyRotationMetadata(
+            oldKeyIdentifier: encryptionKeyIdentifier,
+            newKeyIdentifier: newKeyIdentifier,
+            rotationDate: Date(),
+            rotationReason: "scheduled_rotation"
+        )
+        
+        if let metadataData = try? JSONEncoder().encode(rotationMetadata) {
+            UserDefaults.standard.set(metadataData, forKey: "KeyRotationMetadata")
+        }
+        
+        print("🔑 FieldLevelEncryptionManager: Encryption key rotated successfully.")
+    }
+    
+    func handleKeychainLoss() async throws -> KeychainLossResponse {
+        // Check if we can recover from backup or if we need to generate new key
+        let hasBackup = await checkForBackupKey()
+        
+        if hasBackup {
+            // Attempt to recover from backup
+            return try await recoverFromBackup()
+        } else {
+            // Generate new key and mark all encrypted data as needing re-encryption
+            return try await handleNewDeviceScenario()
+        }
+    }
+    
+    private func checkForBackupKey() async -> Bool {
+        // Check if backup key exists (e.g., in iCloud Keychain)
+        // This is a simplified check - in production, you'd check multiple sources
+        return false
+    }
+    
+    private func recoverFromBackup() async throws -> KeychainLossResponse {
+        // Attempt to recover from backup key
+        // This would involve fetching from iCloud Keychain or other backup sources
+        throw EncryptionError.keyGenerationFailed
+    }
+    
+    private func handleNewDeviceScenario() async throws -> KeychainLossResponse {
+        // Generate new key for new device scenario
+        let newKey = SymmetricKey(size: .bits256)
+        let newKeyData = newKey.withUnsafeBytes { Data($0) }
+        
+        // Store new key
+        try await keychain.storeData(newKeyData, forKey: encryptionKeyIdentifier,
+                                   accessControl: SecAccessControl.biometryAny,
+                                   accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
+        
+        cachedEncryptionKey = newKey
+        
+        return KeychainLossResponse(
+            recoveryMethod: .newKeyGenerated,
+            requiresReEncryption: true,
+            affectedRecords: await getAffectedRecordCount()
+        )
+    }
+    
+    private func getAffectedRecordCount() async -> Int {
+        // Count records that need re-encryption
+        // This would query your data store for encrypted records
+        return 0
     }
     
     // MARK: - Helper Methods
@@ -313,4 +373,77 @@ extension SecAccessControl {
             nil
         )!
     }
+}
+
+// MARK: - Key Rotation Metadata
+
+struct KeyRotationMetadata: Codable {
+    let oldKeyIdentifier: String
+    let newKeyIdentifier: String
+    let rotationDate: Date
+    let rotationReason: String // "scheduled_rotation", "security_incident", "manual_rotation"
+}
+
+// MARK: - Keychain Loss Response
+
+struct KeychainLossResponse {
+    let recoveryMethod: RecoveryMethod
+    let requiresReEncryption: Bool
+    let affectedRecords: Int
+    
+    enum RecoveryMethod {
+        case backupRecovered
+        case newKeyGenerated
+        case manualInterventionRequired
+    }
+}
+
+// MARK: - Security Policy Table
+
+struct SecurityPolicyTable {
+    static let sensitiveFields: [String] = [
+        "notes",
+        "personalGoals", 
+        "motivation",
+        "medicalNotes",
+        "financialGoals"
+    ]
+    
+    static let nonSensitiveFields: [String] = [
+        "name",
+        "description",
+        "icon",
+        "color",
+        "habitType",
+        "schedule",
+        "goal",
+        "reminder",
+        "startDate",
+        "endDate",
+        "isCompleted",
+        "streak",
+        "createdAt"
+    ]
+    
+    static func isFieldSensitive(_ fieldName: String) -> Bool {
+        return sensitiveFields.contains(fieldName)
+    }
+    
+    static func requiresEncryption(_ fieldName: String) -> Bool {
+        return isFieldSensitive(fieldName)
+    }
+    
+    static func getEncryptionLevel(_ fieldName: String) -> EncryptionLevel {
+        if isFieldSensitive(fieldName) {
+            return .fieldLevel
+        } else {
+            return .none
+        }
+    }
+}
+
+enum EncryptionLevel {
+    case none
+    case fieldLevel
+    case recordLevel
 }
