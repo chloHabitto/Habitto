@@ -128,6 +128,15 @@ class DataMigrationManager: ObservableObject {
         // Create pre-migration snapshot for rollback
         let snapshotURL = try await createPreMigrationSnapshot()
         
+        // Initialize resume token for this migration
+        let resumeTokenManager = MigrationResumeTokenManager.shared
+        let _ = await resumeTokenManager.createResumeToken(
+            migrationVersion: currentVersion.stringValue,
+            completedSteps: [],
+            currentStep: availableMigrations.first?.description,
+            stepCodeHash: "initial"
+        )
+        
         do {
             for (index, step) in availableMigrations.enumerated() {
                 currentMigrationStep = step.description
@@ -153,6 +162,13 @@ class DataMigrationManager: ObservableObject {
                         
                         // Mark step as completed (idempotent)
                         try await markStepCompleted(step)
+                        
+                        // Update resume token with completed step
+                        try await resumeTokenManager.markStepCompleted(
+                            step.description,
+                            codeHash: await step.getCodeHash(),
+                            migrationVersion: step.version.stringValue
+                        )
                         
                         // Update version after successful migration
                         currentVersion = step.version
@@ -198,6 +214,9 @@ class DataMigrationManager: ObservableObject {
             currentMigrationStep = "Migration completed successfully"
             
             print("🎉 DataMigrationManager: All migrations completed successfully")
+            
+            // Complete migration and cleanup resume token
+            await resumeTokenManager.completeMigration()
             
             // Record successful migration
             let totalDuration = Date().timeIntervalSince(startTime)
@@ -271,6 +290,12 @@ class DataMigrationManager: ObservableObject {
         return habits.count
     }
     
+    private func getPreviousVersion() -> String? {
+        // Get the previous version from the migration history
+        let migrationHistory = userDefaults.array(forKey: "MigrationHistory") as? [String] ?? []
+        return migrationHistory.last
+    }
+    
     private func createPreMigrationSnapshot() async throws -> URL {
         let habitStore = CrashSafeHabitStore.shared
         return try await habitStore.createSnapshot()
@@ -299,19 +324,67 @@ class DataMigrationManager: ObservableObject {
         let habitStore = CrashSafeHabitStore.shared
         let habits = await habitStore.loadHabits()
         
-        // Basic validation invariants
-        let habitIds = Set(habits.map { $0.id })
-        if habitIds.count != habits.count {
-            throw DataMigrationError.postMigrationValidationFailed("Duplicate habit IDs detected")
+        print("🔍 DataMigrationManager: Running comprehensive post-migration validation...")
+        
+        // Run comprehensive invariants validation
+        let validationResult = await MigrationInvariantsValidator.validateInvariants(
+            for: habits,
+            migrationVersion: currentVersion.stringValue,
+            previousVersion: getPreviousVersion()
+        )
+        
+        // Check validation results
+        if !validationResult.isValid {
+            let criticalFailures = validationResult.failedInvariants.filter { $0.severity == .critical }
+            let highFailures = validationResult.failedInvariants.filter { $0.severity == .high }
+            
+            if !criticalFailures.isEmpty {
+                let failureMessages = criticalFailures.map { "\($0.type.rawValue): \($0.message)" }
+                throw DataMigrationError.postMigrationValidationFailed("Critical validation failures: \(failureMessages.joined(separator: "; "))")
+            }
+            
+            if !highFailures.isEmpty {
+                let failureMessages = highFailures.map { "\($0.type.rawValue): \($0.message)" }
+                throw DataMigrationError.postMigrationValidationFailed("High severity validation failures: \(failureMessages.joined(separator: "; "))")
+            }
         }
         
-        // Validate habit names are not empty
-        let emptyNames = habits.filter { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        if !emptyNames.isEmpty {
-            throw DataMigrationError.postMigrationValidationFailed("Habits with empty names detected")
+        // Log validation summary
+        let summary = validationResult.summary
+        print("✅ DataMigrationManager: Post-migration validation completed")
+        print("   📊 Records: \(summary.totalRecords) total, \(summary.validRecords) valid, \(summary.invalidRecords) invalid")
+        print("   ⚠️  Failures: \(summary.criticalFailures) critical, \(summary.highFailures) high, \(summary.mediumFailures) medium, \(summary.lowFailures) low")
+        print("   📝 Warnings: \(summary.warnings)")
+        print("   ⏱️  Duration: \(String(format: "%.3f", summary.validationDuration))s")
+        
+        // Log warnings for debugging
+        if !validationResult.warnings.isEmpty {
+            print("⚠️ DataMigrationManager: Validation warnings:")
+            for warning in validationResult.warnings {
+                print("   • \(warning.type.rawValue): \(warning.message)")
+                print("     💡 \(warning.suggestion)")
+            }
         }
         
-        print("✅ DataMigrationManager: Post-migration validation passed")
+        // Store validation result in resume token for audit trail
+        let resumeTokenManager = MigrationResumeTokenManager.shared
+        if let currentToken = await resumeTokenManager.getCurrentResumeToken() {
+            let updatedToken = MigrationResumeToken(
+                tokenId: currentToken.tokenId,
+                migrationVersion: currentToken.migrationVersion,
+                completedSteps: currentToken.completedSteps,
+                currentStep: currentToken.currentStep,
+                stepVersionHash: currentToken.stepVersionHash,
+                createdAt: currentToken.createdAt,
+                lastUpdated: Date(),
+                validationResult: validationResult
+            )
+            
+            // Store the updated token with validation results
+            if let data = updatedToken.toData() {
+                UserDefaults.standard.set(data, forKey: "MigrationResumeToken")
+            }
+        }
     }
     
     private func setupMigrationSteps() {
