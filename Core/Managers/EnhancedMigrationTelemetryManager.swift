@@ -27,6 +27,21 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
         "https://habitto-config.firebaseapp.com/remote_config.json"
     ]
     
+    // Local default config (used when remote fails)
+    private let defaultConfig: RemoteConfig = {
+        let json = """
+        {
+            "isMigrationEnabled": true,
+            "minAppVersion": "1.0.0",
+            "maxFailureRate": 0.15,
+            "configVersion": "1.0.0",
+            "lastUpdated": "\(ISO8601DateFormatter().string(from: Date()))"
+        }
+        """
+        let data = json.data(using: .utf8)!
+        return try! JSONDecoder().decode(RemoteConfig.self, from: data)
+    }()
+    
     // Local TTL cache
     private let configTTL: TimeInterval = 300 // 5 minutes
     private let maxRetries = 3
@@ -200,6 +215,8 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
         guard configTask == nil else { return }
         
         configTask = Task {
+            var remoteFetchSuccessful = false
+            
             for urlString in remoteConfigURLs {
                 do {
                     guard let url = URL(string: urlString) else { continue }
@@ -211,12 +228,22 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
                     }
                     
                     await recordEvent(.configFetch, success: true)
+                    remoteFetchSuccessful = true
                     break
                     
                 } catch {
                     print("⚠️ Failed to fetch config from \(urlString): \(error)")
                     await recordEvent(.configFetch, errorCode: error.localizedDescription, success: false)
                 }
+            }
+            
+            // If all remote sources failed, use default config
+            if !remoteFetchSuccessful {
+                print("⚠️ All remote config sources failed, using default config")
+                await MainActor.run {
+                    self.applyDefaultConfig()
+                }
+                await recordEvent(.configFetch, errorCode: "All remote sources failed", success: false)
             }
             
             configTask = nil
@@ -245,6 +272,20 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
         }
         
         print("✅ Remote config applied: migration enabled = \(isMigrationEnabled)")
+    }
+    
+    private func applyDefaultConfig() {
+        // Apply default config when remote sources fail
+        isMigrationEnabled = defaultConfig.isMigrationEnabled
+        remoteConfigLoaded = false // Mark as not loaded from remote
+        lastConfigUpdate = defaultConfig.lastUpdated
+        
+        // Store default config locally
+        if let data = try? JSONEncoder().encode(defaultConfig) {
+            userDefaults.set(data, forKey: configKey)
+        }
+        
+        print("✅ Default config applied: migration enabled = \(isMigrationEnabled)")
     }
     
     private func loadLocalConfig() {
