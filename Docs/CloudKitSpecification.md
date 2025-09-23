@@ -86,9 +86,62 @@ func mergeCompletionHistory(_ local: [String: Int], _ remote: [String: Int]) -> 
 - **Scope**: Private DB automatically scopes to iCloud account, custom zone provides additional isolation
 
 ### Multi-Account Support
-- **Separate Zones**: Each user account gets its own zone
-- **Clean Separation**: No data mixing between accounts
+- **Private DB Isolation**: Private database automatically scopes to iCloud account
+- **Single Zone**: Use constant zone name `HabittoHabitsZone` (no user PII)
+- **Record Scoping**: `recordName = habitUUID` provides unique identification
 - **Account Switching**: Seamless transition between accounts
+
+## Seeding & Deduplication Strategy
+
+### One-Time Sync Enablement
+When enabling CloudKit sync on existing installations:
+
+1. **Local-First Seeding**: Upload all existing local habits to CloudKit
+2. **Conflict Prevention**: Use local timestamps as authoritative for initial sync
+3. **Deduplication**: Check for existing records by `recordName` before creating new ones
+4. **Gradual Sync**: Enable sync in phases to avoid overwhelming CloudKit
+
+### Implementation
+```swift
+func enableCloudKitSync() async throws {
+    // 1. Upload all local habits
+    let localHabits = await habitStore.loadHabits()
+    for habit in localHabits {
+        let record = createCloudKitRecord(from: habit)
+        // Check for existing record first
+        if try await recordExists(record.recordName) {
+            continue // Skip if already exists
+        }
+        try await saveRecord(record)
+    }
+    
+    // 2. Enable ongoing sync
+    await cloudKitManager.enableSync()
+}
+```
+
+### Future Field-Level Merge Strategy
+Beyond Last-Writer-Wins for counters and completion histories:
+
+```swift
+// Field-level merge for completion counters
+func mergeCompletionCounters(local: [String: Int], remote: [String: Int]) -> [String: Int] {
+    var merged = local
+    for (date, remoteCount) in remote {
+        let localCount = merged[date] ?? 0
+        merged[date] = max(localCount, remoteCount) // Take maximum
+    }
+    return merged
+}
+
+// Merge strategies by field type
+enum MergeStrategy {
+    case lastWriterWins    // For habit name, description
+    case takeMaximum       // For completion counters
+    case takeMinimum       // For difficulty ratings
+    case concatenate       // For notes, comments
+}
+```
 
 ## GDPR Data Deletion
 
