@@ -1,367 +1,453 @@
 # CloudKit Integration Specification
 
 ## Overview
-This document outlines the CloudKit integration strategy for Habitto's habit tracking system, designed for v2.0 release.
+This document outlines the CloudKit integration strategy for Habitto, including record models, conflict resolution, account scoping, and sync behavior.
 
-## Architecture
+## Record Model
 
-### Database Configuration
-- **Database**: Private Database (user-specific data)
-- **Zone**: Custom Zone (`HabittoHabitsZone`) - constant name, no user PII
-- **Record Name**: Habit UUID (deterministic, globally unique)
-- **Isolation**: Private DB already scopes to iCloud account, no additional userId field needed
-
-### Record Model
-
+### HabitRecord
 ```swift
 struct CloudKitHabitRecord {
-    // Primary Key
-    let recordName: String // UUID string (habit.id.uuidString)
+    let recordName: String // Habit UUID (deterministic)
+    let recordType: String = "Habit"
     
-    // Core Habit Data
-    let habitName: String
+    // Core habit data
+    let name: String
     let description: String
-    let icon: String
-    let color: Data // Serialized Color
     let habitType: String // "formation" or "breaking"
     let schedule: String // "daily", "weekly", etc.
     let goal: String
     let reminder: String
-    
-    // Dates
     let startDate: Date
     let endDate: Date?
-    let createdAt: Date
-    let lastModified: Date
     
-    // Status
-    let isCompleted: Bool
-    let streak: Int
+    // Completion history (compressed JSON)
+    let completionHistory: Data // JSON compressed with gzip
     
     // Versioning
-    let dataVersion: String // "1.0.0", "2.0.0", etc.
-    let migrationVersion: String // For sync compatibility
+    let dataVersion: String // Schema version
+    let migrationVersion: String
     
-    // No userId field needed - Private DB + custom zone provides isolation
-    
-    // Metadata
-    let recordType: String = "Habit"
+    // Sync metadata
+    let lastModified: Date
     let syncStatus: String // "synced", "pending", "conflict"
-    let lastSyncDate: Date?
+    let deviceId: String // For conflict resolution
 }
 ```
 
-## Conflict Resolution Strategy
-
-### Primary Strategy: Last Writer Wins (LWW)
-- **Field**: `lastModified` timestamp determines winner
-- **Use Case**: Most habit data (name, description, icon, etc.)
-- **Implementation**: Compare timestamps, keep newer record
-
-### Secondary Strategy: Field-Level Merge
-- **Fields**: Counters, histories, completion data
-- **Use Case**: `completionHistory`, `difficultyHistory`, `actualUsage`
-- **Implementation**: Merge dictionaries, preserve all data
-
+### CompletionEventRecord
 ```swift
-// Example field-level merge for completion history
-func mergeCompletionHistory(_ local: [String: Int], _ remote: [String: Int]) -> [String: Int] {
+struct CloudKitCompletionEventRecord {
+    let recordName: String // "habitId_date" (deterministic)
+    let recordType: String = "CompletionEvent"
+    
+    let habitId: String // Reference to HabitRecord
+    let date: Date
+    let completionCount: Int
+    let difficulty: Int? // Optional difficulty rating
+    let notes: String? // Optional completion notes
+    
+    // Sync metadata
+    let lastModified: Date
+    let deviceId: String
+}
+```
+
+## Account Scoping Strategy
+
+### Private Database + Custom Zone
+- **Database**: `CKContainer.default().privateCloudDatabase`
+- **Zone**: `CKRecordZone(zoneName: "HabittoHabitsZone")`
+- **Scoping**: Private DB automatically scopes to Apple ID - no userId field needed
+- **Benefits**: 
+  - Automatic user isolation
+  - No custom user management required
+  - Leverages Apple's security model
+
+### Zone Configuration
+```swift
+let userZone = CKRecordZone(zoneName: "HabittoHabitsZone")
+
+// Zone setup (one-time)
+func setupCloudKitZone() async throws {
+    try await privateDB.save(userZone)
+}
+```
+
+## Conflict Resolution
+
+### Current Strategy: Last Writer Wins (LWW)
+```swift
+func resolveConflict(local: CloudKitHabitRecord, remote: CloudKitHabitRecord) -> CloudKitHabitRecord {
+    // Simple LWW: newer timestamp wins
+    if local.lastModified > remote.lastModified {
+        return local
+    } else {
+        return remote
+    }
+}
+```
+
+### Future Strategy: Field-Level Merge
+```swift
+func mergeCompletionHistory(local: [String: Int], remote: [String: Int]) -> [String: Int] {
     var merged = local
     for (date, count) in remote {
-        merged[date] = max(merged[date] ?? 0, count) // Keep higher count
+        merged[date] = max(merged[date] ?? 0, count)
     }
     return merged
 }
-```
 
-### Tertiary Strategy: User Prompt
-- **Use Case**: Conflicting changes to critical fields (habit name, type)
-- **Implementation**: Present conflict resolution UI to user
-
-## Account Scoping
-
-### User Identification
-- **Primary**: Apple ID (when available)
-- **Fallback**: Custom user identifier for non-Apple users
-- **Scope**: Private DB automatically scopes to iCloud account, custom zone provides additional isolation
-
-### Multi-Account Support
-- **Private DB Isolation**: Private database automatically scopes to iCloud account
-- **Single Zone**: Use constant zone name `HabittoHabitsZone` (no user PII)
-- **Record Scoping**: `recordName = habitUUID` provides unique identification
-- **Account Switching**: Seamless transition between accounts
-
-## Seeding & Deduplication Strategy
-
-### One-Time Sync Enablement
-When enabling CloudKit sync on existing installations:
-
-1. **Local-First Seeding**: Upload all existing local habits to CloudKit
-2. **Conflict Prevention**: Use local timestamps as authoritative for initial sync
-3. **Deduplication**: Check for existing records by `recordName` before creating new ones
-4. **Gradual Sync**: Enable sync in phases to avoid overwhelming CloudKit
-
-### Implementation
-```swift
-func enableCloudKitSync() async throws {
-    // 1. Upload all local habits
-    let localHabits = await habitStore.loadHabits()
-    for habit in localHabits {
-        let record = createCloudKitRecord(from: habit)
-        // Check for existing record first
-        if try await recordExists(record.recordName) {
-            continue // Skip if already exists
-        }
-        try await saveRecord(record)
-    }
-    
-    // 2. Enable ongoing sync
-    await cloudKitManager.enableSync()
-}
-```
-
-### Future Field-Level Merge Strategy
-Beyond Last-Writer-Wins for counters and completion histories:
-
-```swift
-// Field-level merge for completion counters
-func mergeCompletionCounters(local: [String: Int], remote: [String: Int]) -> [String: Int] {
+func mergeHabitMetadata(local: Habit, remote: Habit) -> Habit {
+    // Merge non-conflicting fields
     var merged = local
-    for (date, remoteCount) in remote {
-        let localCount = merged[date] ?? 0
-        merged[date] = max(localCount, remoteCount) // Take maximum
-    }
+    merged.description = remote.description // Remote description wins
+    merged.goal = max(local.goal, remote.goal) // Higher goal wins
     return merged
 }
-
-// Merge strategies by field type
-enum MergeStrategy {
-    case lastWriterWins    // For habit name, description
-    case takeMaximum       // For completion counters
-    case takeMinimum       // For difficulty ratings
-    case concatenate       // For notes, comments
-}
 ```
 
-## GDPR Data Deletion
+## Seeding Strategy for Existing Installs
 
-### Complete Data Deletion Sequence
-1. **Local Deletion**: Remove all local habit data from CrashSafeHabitStore
-2. **CloudKit Deletion**: Delete all records from private zone
-3. **Tombstone Creation**: Create deletion tombstones to prevent re-sync
-4. **Telemetry Cleanup**: Record "forget" event and purge user telemetry
-5. **Verification**: Confirm no data resurrection on offline device return
-
-### Implementation
+### One-Time Seeding Process
 ```swift
-func deleteUserData(userId: String) async throws {
-    // 1. Local deletion
-    try await habitStore.deleteAllHabits()
+func seedExistingHabitsToCloudKit() async throws {
+    let habits = await habitStore.loadHabits()
+    let batchSize = 100 // CloudKit batch limit
     
-    // 2. CloudKit deletion
-    let records = try await fetchAllRecords(in: userZone)
-    try await deleteRecords(records)
-    
-    // 3. Create tombstones
-    let tombstone = createDeletionTombstone(userId: userId)
-    try await saveTombstone(tombstone)
-    
-    // 4. Telemetry cleanup
-    await telemetryManager.recordForgetEvent(userId: userId)
-    
-    // 5. Verification test
-    try await verifyNoDataResurrection(userId: userId)
-}
-```
-
-### Offline Device Protection
-- **Tombstone Mechanism**: Prevents offline devices from re-syncing deleted data
-- **Zone Cleanup**: Entire zone deletion ensures no orphaned records
-- **Resurrection Test**: Automated test to verify no data reappears
-
-## Offline/Online Behavior
-
-### Offline Mode
-- **Local Storage**: All operations continue locally
-- **Queue**: Changes queued for sync when online
-- **Status**: Records marked as `syncStatus: "pending"`
-
-### Online Sync
-- **Incremental**: Only changed records since last sync
-- **Batch Processing**: Process changes in batches of 100
-- **Conflict Detection**: Compare `lastModified` timestamps
-- **Retry Logic**: Exponential backoff for failed syncs
-
-### Backfill Strategy
-```swift
-func performBackfill() async throws {
-    // 1. Fetch all remote records modified since last sync
-    let lastSyncDate = getLastSyncDate()
-    let remoteRecords = try await fetchRecordsModifiedSince(lastSyncDate)
-    
-    // 2. Compare with local records
-    for remoteRecord in remoteRecords {
-        if let localRecord = findLocalRecord(remoteRecord.recordName) {
-            // Handle conflict resolution
-            let resolvedRecord = resolveConflict(localRecord, remoteRecord)
-            try await saveLocalRecord(resolvedRecord)
-        } else {
-            // New remote record, add locally
-            try await saveLocalRecord(remoteRecord.toLocalHabit())
+    for batch in habits.chunked(into: batchSize) {
+        let records = batch.map { habit in
+            createCloudKitRecord(from: habit)
         }
+        
+        try await privateDB.modifyRecords(saving: records, deleting: [])
     }
-    
-    // 3. Upload pending local changes
-    let pendingRecords = getPendingLocalRecords()
-    try await uploadRecords(pendingRecords)
-    
-    // 4. Update last sync timestamp
-    updateLastSyncDate()
-}
-```
-
-## One-Time Seeding & Deduplication
-
-### Existing User Migration
-```swift
-func enableCloudKitSync() async throws {
-    // 1. Create custom zone if it doesn't exist
-    try await createCustomZone()
-    
-    // 2. Seed existing habits to CloudKit
-    let localHabits = await loadLocalHabits()
-    let cloudKitRecords = localHabits.map { $0.toCloudKitRecord() }
-    try await uploadRecords(cloudKitRecords)
-    
-    // 3. Enable sync monitoring
-    startSyncMonitoring()
-    
-    // 4. Mark migration as complete
-    markCloudKitMigrationComplete()
 }
 ```
 
 ### Deduplication Strategy
-- **Primary Key**: Use habit UUID as record name
-- **Collision Detection**: Check for existing records before upload
-- **Resolution**: Merge or prompt user for resolution
+```swift
+func deduplicateHabits() async throws {
+    // Query all habits with same name
+    let predicate = NSPredicate(format: "name == %@", habitName)
+    let query = CKQuery(recordType: "Habit", predicate: predicate)
+    
+    let results = try await privateDB.records(matching: query)
+    
+    // Keep newest, delete duplicates
+    let sortedByDate = results.records.sorted { $0.lastModified > $1.lastModified }
+    let duplicates = Array(sortedByDate.dropFirst())
+    
+    if !duplicates.isEmpty {
+        try await privateDB.modifyRecords(saving: [], deleting: duplicates.map { $0.recordID })
+    }
+}
+```
 
-## Performance Considerations
+## Write Batching and Retry Policy
 
-### Batch Operations
-- **Upload Batch Size**: 100 records per batch
-- **Download Batch Size**: 200 records per batch
-- **Rate Limiting**: Respect CloudKit quotas
+### Batch Configuration
+```swift
+struct CloudKitSyncConfig {
+    static let batchSize = 100 // CK max records per batch
+    static let maxRetries = 3
+    static let baseRetryDelay: TimeInterval = 1.0
+    static let maxRetryDelay: TimeInterval = 30.0
+}
+```
 
-### Caching Strategy
-- **Local Cache**: Store frequently accessed records locally
-- **TTL**: Cache expires after 1 hour
-- **Invalidation**: Clear cache on account switch
+### Retry with Exponential Backoff
+```swift
+func syncWithRetry<T>(_ operation: () async throws -> T) async throws -> T {
+    var attempt = 0
+    var delay: TimeInterval = CloudKitSyncConfig.baseRetryDelay
+    
+    while attempt < CloudKitSyncConfig.maxRetries {
+        do {
+            return try await operation()
+        } catch let error as CKError {
+            if error.isRetryable {
+                attempt += 1
+                if attempt < CloudKitSyncConfig.maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    delay = min(delay * 2, CloudKitSyncConfig.maxRetryDelay)
+                    continue
+                }
+            }
+            throw error
+        }
+    }
+    
+    throw CloudKitError.maxRetriesExceeded
+}
 
-### Error Handling
-- **Network Errors**: Retry with exponential backoff
-- **Quota Exceeded**: Queue operations for later
-- **Authentication Errors**: Prompt user to re-authenticate
+extension CKError {
+    var isRetryable: Bool {
+        switch code {
+        case .networkUnavailable, .networkFailure, .serviceUnavailable:
+            return true
+        default:
+            return false
+        }
+    }
+}
+```
 
-## Security & Privacy
+## Offline → Online Sync Behavior
 
-### Data Encryption
-- **In Transit**: HTTPS/TLS (CloudKit default)
-- **At Rest**: CloudKit encryption (Apple's infrastructure)
-- **Field-Level**: Sensitive fields encrypted locally before sync
+### Conflict Detection
+```swift
+func detectConflicts(local: [Habit], remote: [CloudKitHabitRecord]) -> [Conflict] {
+    var conflicts: [Conflict] = []
+    
+    for localHabit in local {
+        if let remoteRecord = remote.first(where: { $0.recordName == localHabit.id.uuidString }) {
+            if localHabit.lastModified != remoteRecord.lastModified {
+                conflicts.append(Conflict(
+                    habitId: localHabit.id,
+                    local: localHabit,
+                    remote: remoteRecord
+                ))
+            }
+        }
+    }
+    
+    return conflicts
+}
+```
 
-### Access Control
-- **Private Database**: User can only access their own data
-- **Record-Level**: All records scoped to user ID
-- **API Keys**: No API keys required (uses Apple ID)
+### Offline Queue Management
+```swift
+actor OfflineSyncQueue {
+    private var pendingOperations: [SyncOperation] = []
+    
+    func enqueueOperation(_ operation: SyncOperation) {
+        pendingOperations.append(operation)
+        saveQueueToDisk()
+    }
+    
+    func processOfflineQueue() async throws {
+        let operations = pendingOperations
+        pendingOperations.removeAll()
+        
+        for operation in operations {
+            try await executeOperation(operation)
+        }
+    }
+}
+```
 
-### GDPR Compliance
-- **Data Export**: Full data export capability
-- **Data Deletion**: Complete data removal from CloudKit
-- **Audit Trail**: Log all data operations
+## Sign-Out/Switch Account Behavior
 
-## Monitoring & Telemetry
+### Account Switch Process
+```swift
+func handleAccountSwitch(from oldUserId: String, to newUserId: String) async {
+    // 1. Save current state locally
+    try await habitStore.saveHabits(currentHabits)
+    
+    // 2. Clear CloudKit cache for old user
+    await cloudKitManager.clearCache(for: oldUserId)
+    
+    // 3. Switch to new user's zone
+    let newZone = CKRecordZone(zoneName: "HabittoHabitsZone")
+    await cloudKitManager.switchToZone(newZone)
+    
+    // 4. Load new user's habits from local storage
+    await habitStore.loadHabits() // Loads from new user's file
+    
+    // 5. Sync with new account's CloudKit
+    try await cloudKitManager.syncWithCloudKit()
+}
+```
 
-### Sync Metrics
-- **Success Rate**: Percentage of successful sync operations
-- **Latency**: Time to complete sync operations
-- **Conflict Rate**: Frequency of conflict resolution
-- **Error Rate**: Failed sync operations
+## GDPR Delete Propagation
 
-### Health Checks
-- **Connectivity**: Test CloudKit availability
-- **Authentication**: Verify user authentication status
-- **Quota Usage**: Monitor API quota consumption
+### Deletion Tombstones
+```swift
+struct DeletionTombstone {
+    let recordName: String // "tombstone_habitId"
+    let recordType: String = "DeletionTombstone"
+    let habitId: String
+    let deletedAt: Date
+    let ttl: Date // 30 days TTL
+    let reason: String // "user_request", "gdpr", etc.
+    let deviceId: String
+}
 
-## Implementation Timeline
+func createDeletionTombstone(habitId: String) -> DeletionTombstone {
+    return DeletionTombstone(
+        recordName: "tombstone_\(habitId)",
+        habitId: habitId,
+        deletedAt: Date(),
+        ttl: Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date(),
+        reason: "gdpr_request",
+        deviceId: getDeviceId()
+    )
+}
+```
 
-### Phase 1: Core Infrastructure (v2.0.0)
-- [ ] CloudKit record model
-- [ ] Basic sync operations
-- [ ] Conflict resolution (LWW)
-- [ ] Account scoping
+### Resurrection Prevention
+```swift
+func preventDataResurrection() async throws {
+    // 1. Create tombstones for deleted habits
+    let deletedHabits = await getDeletedHabits()
+    let tombstones = deletedHabits.map { createDeletionTombstone(habitId: $0.id.uuidString) }
+    
+    try await privateDB.modifyRecords(saving: tombstones, deleting: [])
+    
+    // 2. Verify no data resurrection
+    try await verifyNoDataResurrection()
+}
 
-### Phase 2: Advanced Features (v2.1.0)
-- [ ] Field-level merge
-- [ ] Offline queue
-- [ ] Batch operations
-- [ ] Performance optimization
+func verifyNoDataResurrection() async throws {
+    let tombstones = try await queryTombstones()
+    let activeHabits = try await queryActiveHabits()
+    
+    for tombstone in tombstones {
+        if activeHabits.contains(where: { $0.recordName == tombstone.habitId }) {
+            throw CloudKitError.dataResurrectionDetected(habitId: tombstone.habitId)
+        }
+    }
+}
+```
 
-### Phase 3: Production Hardening (v2.2.0)
-- [ ] Comprehensive error handling
-- [ ] Monitoring & telemetry
-- [ ] GDPR compliance
-- [ ] Performance testing
+## Performance Optimizations
+
+### Incremental Sync
+```swift
+func incrementalSync(lastSyncDate: Date) async throws {
+    let predicate = NSPredicate(format: "lastModified > %@", lastSyncDate as NSDate)
+    let query = CKQuery(recordType: "Habit", predicate: predicate)
+    
+    let results = try await privateDB.records(matching: query)
+    // Process only changed records
+}
+```
+
+### Compression for Large Data
+```swift
+func compressCompletionHistory(_ history: [String: Int]) -> Data {
+    let jsonData = try! JSONEncoder().encode(history)
+    return try! (jsonData as NSData).compressed(using: .gzip)
+}
+
+func decompressCompletionHistory(_ data: Data) -> [String: Int] {
+    let decompressedData = try! (data as NSData).decompressed(using: .gzip)
+    return try! JSONDecoder().decode([String: Int].self, from: decompressedData as Data)
+}
+```
+
+## Error Handling
+
+### CloudKit Error Categories
+```swift
+enum CloudKitError: LocalizedError {
+    case networkUnavailable
+    case quotaExceeded
+    case recordNotFound
+    case conflictDetected
+    case dataResurrectionDetected(habitId: String)
+    case maxRetriesExceeded
+    
+    var errorDescription: String? {
+        switch self {
+        case .networkUnavailable:
+            return "Network unavailable. Changes will sync when connection is restored."
+        case .quotaExceeded:
+            return "CloudKit quota exceeded. Please contact support."
+        case .recordNotFound:
+            return "Record not found. This may indicate a sync issue."
+        case .conflictDetected:
+            return "Data conflict detected. Using most recent version."
+        case .dataResurrectionDetected(let habitId):
+            return "Data resurrection detected for habit \(habitId). This is a security violation."
+        case .maxRetriesExceeded:
+            return "Maximum retry attempts exceeded. Please try again later."
+        }
+    }
+}
+```
 
 ## Testing Strategy
 
-### Unit Tests
-- Record serialization/deserialization
-- Conflict resolution logic
-- Account scoping
-- Batch operations
-
-### Integration Tests
-- CloudKit connectivity
-- Sync operations
-- Offline/online transitions
-- Multi-device scenarios
-
-### Stress Tests
-- Large dataset sync (10k+ records)
-- Network interruption scenarios
-- Concurrent access patterns
-- Quota limit testing
+### CloudKit Testing
+```swift
+func testCloudKitSync() async throws {
+    // 1. Create test habits
+    let testHabits = createTestHabits()
+    
+    // 2. Seed to CloudKit
+    try await seedHabitsToCloudKit(testHabits)
+    
+    // 3. Verify sync
+    let syncedHabits = try await fetchHabitsFromCloudKit()
+    assert(syncedHabits.count == testHabits.count)
+    
+    // 4. Test conflict resolution
+    let conflictResult = try await testConflictResolution()
+    assert(conflictResult.resolved)
+}
+```
 
 ## Migration Path
 
-### From Local-Only to CloudKit
-1. **Backup**: Create full local backup
-2. **Enable**: Turn on CloudKit sync
-3. **Seed**: Upload existing habits
-4. **Verify**: Confirm data integrity
-5. **Monitor**: Track sync performance
+### Phase 1: Basic Sync (MVP)
+- LWW conflict resolution
+- Simple batch uploads
+- Basic offline queue
 
-### Rollback Plan
-- **Disable Sync**: Turn off CloudKit integration
-- **Restore**: Restore from local backup
-- **Continue**: Resume local-only operation
-- **Debug**: Investigate sync issues
+### Phase 2: Advanced Sync
+- Field-level merge
+- Incremental sync
+- Advanced conflict resolution
 
-## Success Metrics
+### Phase 3: Multi-Device Optimization
+- Real-time sync
+- Conflict-free replicated data types (CRDTs)
+- Advanced compression
 
-### Technical Metrics
-- **Sync Success Rate**: >99.5%
-- **Sync Latency**: <2 seconds average
-- **Conflict Rate**: <1% of operations
-- **Error Rate**: <0.1% of operations
+## Security Considerations
 
-### User Experience Metrics
-- **Data Consistency**: 100% across devices
-- **Offline Capability**: Full functionality
-- **Sync Transparency**: No user intervention required
-- **Performance Impact**: <5% app startup time increase
+### Data Protection
+- All data encrypted in transit (HTTPS)
+- All data encrypted at rest (CloudKit handles this)
+- Private database provides user isolation
+- Custom zone adds additional isolation layer
 
----
+### Privacy
+- No personally identifiable information in record names
+- Habit names/descriptions are user-controlled content
+- Completion history is anonymized (no personal data)
+- GDPR compliance through tombstone system
 
-*This specification is a living document and will be updated as the implementation progresses.*
+## Monitoring and Telemetry
+
+### Sync Metrics
+```swift
+struct CloudKitSyncMetrics {
+    let syncStartTime: Date
+    let syncEndTime: Date
+    let recordsProcessed: Int
+    let conflictsResolved: Int
+    let errorsEncountered: Int
+    let networkCalls: Int
+    let dataTransferred: Int64
+}
+```
+
+### Error Tracking
+```swift
+func trackCloudKitError(_ error: Error, context: String) {
+    let errorInfo = [
+        "error": error.localizedDescription,
+        "context": context,
+        "timestamp": Date().iso8601String,
+        "deviceId": getDeviceId()
+    ]
+    
+    // Send to telemetry system
+    telemetryManager.recordEvent(.cloudKitError, metadata: errorInfo)
+}
+```
+
+This specification provides a comprehensive foundation for CloudKit integration that can be implemented incrementally, starting with basic sync and evolving to advanced features as needed.

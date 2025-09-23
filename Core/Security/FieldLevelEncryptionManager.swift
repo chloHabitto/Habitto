@@ -46,22 +46,44 @@ actor FieldLevelEncryptionManager {
         let key = try await getOrCreateEncryptionKey()
         let data = value.data(using: .utf8) ?? Data()
         
-        // Encrypt using AES-GCM
+        // Encrypt using AES-GCM with separated nonce and auth tag
         let sealedBox = try AES.GCM.seal(data, using: key)
         
         return EncryptedField(
-            encryptedData: sealedBox.combined ?? Data(),
+            encryptedData: sealedBox.ciphertext,
             algorithm: .aesGCM,
             keyVersion: "1.0",
-            createdAt: Date()
+            createdAt: Date(),
+            nonce: Data(sealedBox.nonce),
+            authenticationTag: sealedBox.tag,
+            envelopeVersion: EncryptedField.EnvelopeVersion.v2.rawValue
         )
     }
     
     func decryptField(_ encryptedField: EncryptedField) async throws -> String {
         let key = try await getOrCreateEncryptionKey()
         
-        guard let sealedBox = try? AES.GCM.SealedBox(combined: encryptedField.encryptedData) else {
-            throw EncryptionError.invalidEncryptedData
+        let sealedBox: AES.GCM.SealedBox
+        
+        // Handle different envelope versions
+        switch encryptedField.envelopeVersion {
+        case EncryptedField.EnvelopeVersion.v2.rawValue:
+            // v2: Separated nonce, auth tag, and ciphertext
+            sealedBox = try AES.GCM.SealedBox(
+                nonce: try AES.GCM.Nonce(data: encryptedField.nonce),
+                ciphertext: encryptedField.encryptedData,
+                tag: encryptedField.authenticationTag
+            )
+            
+        case EncryptedField.EnvelopeVersion.v1.rawValue:
+            // v1: Combined data (backward compatibility)
+            guard let combinedSealedBox = try? AES.GCM.SealedBox(combined: encryptedField.encryptedData) else {
+                throw EncryptionError.invalidEncryptedData
+            }
+            sealedBox = combinedSealedBox
+            
+        default:
+            throw EncryptionError.unsupportedEnvelopeVersion(encryptedField.envelopeVersion)
         }
         
         let decryptedData = try AES.GCM.open(sealedBox, using: key)
@@ -242,10 +264,40 @@ struct EncryptedField: Codable {
     let algorithm: EncryptionAlgorithm
     let keyVersion: String
     let createdAt: Date
+    let nonce: Data // GCM nonce for verification
+    let authenticationTag: Data // GCM authentication tag
+    let envelopeVersion: String // Version of the encryption envelope format
     
     enum EncryptionAlgorithm: String, Codable {
-        case aesGCM = "AES-GCM"
-        case aesCBC = "AES-CBC"
+        case aesGCM = "AES-256-GCM"
+        case aesCBC = "AES-256-CBC"
+    }
+    
+    enum EnvelopeVersion: String, Codable {
+        case v1 = "1.0" // Initial version (combined data)
+        case v2 = "2.0" // Separated nonce and auth tag
+    }
+    
+    init(encryptedData: Data, algorithm: EncryptionAlgorithm, keyVersion: String, createdAt: Date, nonce: Data, authenticationTag: Data, envelopeVersion: String = EnvelopeVersion.v2.rawValue) {
+        self.encryptedData = encryptedData
+        self.algorithm = algorithm
+        self.keyVersion = keyVersion
+        self.createdAt = createdAt
+        self.nonce = nonce
+        self.authenticationTag = authenticationTag
+        self.envelopeVersion = envelopeVersion
+    }
+    
+    // Backward compatibility initializer for v1 envelopes
+    init(legacyData: Data, algorithm: EncryptionAlgorithm, keyVersion: String, createdAt: Date) {
+        // For v1, the nonce and auth tag were combined with the encrypted data
+        self.encryptedData = legacyData
+        self.algorithm = algorithm
+        self.keyVersion = keyVersion
+        self.createdAt = createdAt
+        self.nonce = Data() // Will be extracted during decryption
+        self.authenticationTag = Data() // Will be extracted during decryption
+        self.envelopeVersion = EnvelopeVersion.v1.rawValue
     }
 }
 
@@ -277,6 +329,7 @@ enum EncryptionError: Error, LocalizedError {
     case deserializationFailed
     case fieldPathNotFound
     case keyRotationFailed
+    case unsupportedEnvelopeVersion(String)
     
     var errorDescription: String? {
         switch self {
@@ -300,6 +353,8 @@ enum EncryptionError: Error, LocalizedError {
             return "Field path not found in object"
         case .keyRotationFailed:
             return "Failed to rotate encryption key"
+        case .unsupportedEnvelopeVersion(let version):
+            return "Unsupported encryption envelope version: \(version)"
         }
     }
 }

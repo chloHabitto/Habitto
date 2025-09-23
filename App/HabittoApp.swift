@@ -161,6 +161,10 @@ struct HabittoApp: App {
                                 print("🔧 HabittoApp: Initializing notification categories...")
                                 NotificationManager.shared.initializeNotificationCategories()
                                 
+                                // Set deterministic calendar for DST handling in production
+                                print("🔧 HabittoApp: Setting deterministic calendar for DST handling...")
+                                NotificationManager.shared.setDeterministicCalendarForDST()
+                                
                                 // Reschedule notifications after habits are loaded
                                 try? await Task.sleep(nanoseconds: 500_000_000)
                                 print("🔄 HabittoApp: Rescheduling notifications after app start...")
