@@ -245,11 +245,13 @@ actor CrashSafeHabitStore: ObservableObject {
                 // Create empty temp file first
                 FileManager.default.createFile(atPath: tempURL.path, contents: nil)
                 
-                // Write data via FileHandle for proper durability
+                // Write data via FileHandle for proper durability - write what we fsync
                 let fileHandle = try FileHandle(forWritingTo: tempURL)
+                defer { try? fileHandle.close() }
+                
+                // Write the exact bytes we'll sync
                 try fileHandle.write(contentsOf: data)
-                try fileHandle.synchronize()
-                try fileHandle.close()
+                try fileHandle.synchronize() // fsync exactly what we wrote
                 
                 // 2) Set file protection on temp file BEFORE atomic replace
                 try fileManager.setAttributes(
@@ -288,15 +290,25 @@ actor CrashSafeHabitStore: ObservableObject {
         }
         
         if !success {
-            let error = coordinatorError ?? NSError(domain: "HabitStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown file coordination error"])
+            // Surface both coordinator errors and thrown errors with detailed telemetry
+            let finalError: NSError
+            if let coordinatorError = coordinatorError {
+                finalError = coordinatorError
+                print("❌ CrashSafeHabitStore: File coordination failed (coordinator error)")
+                print("   📊 Coordinator Error: \(coordinatorError.localizedDescription)")
+                print("   📊 Error Code: \(coordinatorError.code)")
+                print("   📊 Error Domain: \(coordinatorError.domain)")
+            } else {
+                finalError = NSError(domain: "HabitStore", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: "Unknown file coordination error",
+                    NSLocalizedFailureReasonErrorKey: "File coordination completed but success=false"
+                ])
+                print("❌ CrashSafeHabitStore: File coordination failed (unknown error)")
+                print("   📊 Success flag: false")
+                print("   📊 No coordinator error provided")
+            }
             
-            // Enhanced telemetry for file coordination errors
-            print("❌ CrashSafeHabitStore: File coordination failed")
-            print("   📊 Coordinator Error: \(coordinatorError?.localizedDescription ?? "nil")")
-            print("   📊 Thrown Error: \(error.localizedDescription)")
-            print("   📊 Error Code: \((coordinatorError ?? error).code)")
-            
-            throw HabitStoreError.fileSystemError(error)
+            throw HabitStoreError.fileSystemError(finalError)
         }
         
         // 6) Read-back verify + invariants before backup rotation
@@ -351,7 +363,7 @@ actor CrashSafeHabitStore: ObservableObject {
     
     private func checkDiskSpace(for container: HabitDataContainer) throws {
         let data = try JSONEncoder().encode(container)
-        let estimatedSize = data.count * 3 // Write amplification: temp + main + backup
+        let estimatedWriteSize = data.count * 2 // 2x for temp + final (backup rotation happens after)
         
         do {
             // Query available capacity for important usage (more accurate than systemFreeSize)
@@ -365,18 +377,18 @@ actor CrashSafeHabitStore: ObservableObject {
             let availableCapacity = resourceValues.volumeAvailableCapacityForImportantUsage ?? 
                                   Int64(resourceValues.volumeAvailableCapacity ?? 0)
             
-            // Check if we have enough space for the write operation
-            if availableCapacity < Int64(estimatedSize) {
-                let error = HabitStoreError.insufficientDiskSpace(required: estimatedSize, available: Int(availableCapacity))
+            // Check if we have enough space for the write operation (2x estimate for safety)
+            if availableCapacity < Int64(estimatedWriteSize) {
+                let error = HabitStoreError.insufficientDiskSpace(required: estimatedWriteSize, available: Int(availableCapacity))
                 print("💾 CrashSafeHabitStore: Insufficient disk space")
-                print("   📊 Required: \(estimatedSize / 1024 / 1024)MB")
+                print("   📊 Required: \(estimatedWriteSize / 1024 / 1024)MB (2x safety buffer)")
                 print("   📊 Available: \(Int(availableCapacity) / 1024 / 1024)MB")
-                print("   💡 Suggestion: Free up space or contact support")
+                print("   💡 Please free up space and try again")
                 throw error
             }
             
             // Additional safety buffer - require 2x the estimated size for safety
-            let safetyBuffer = max(Int64(estimatedSize) * 2, 100 * 1024 * 1024) // 2x or 100MB, whichever is larger
+            let safetyBuffer = max(Int64(estimatedWriteSize) * 2, 100 * 1024 * 1024) // 2x or 100MB, whichever is larger
             if availableCapacity < safetyBuffer {
                 let error = HabitStoreError.lowDiskSpace(available: Int(availableCapacity), minimum: Int(safetyBuffer))
                 print("💾 CrashSafeHabitStore: Low disk space warning")
@@ -386,7 +398,7 @@ actor CrashSafeHabitStore: ObservableObject {
                 throw error
             }
             
-            print("💾 CrashSafeHabitStore: Disk space check passed - \(Int(availableCapacity / 1024 / 1024))MB available, \(estimatedSize / 1024)KB needed")
+            print("💾 CrashSafeHabitStore: Disk space check passed - \(Int(availableCapacity / 1024 / 1024))MB available, \(estimatedWriteSize / 1024)KB needed")
             
         } catch let error as HabitStoreError {
             throw error
@@ -442,10 +454,20 @@ actor CrashSafeHabitStore: ObservableObject {
             throw HabitStoreError.dataIntegrityError("Invalid version format")
         }
         
-        // 3. Check for reasonable data size
+        // 3. Check for main file size limits (5MB target with 10MB hard limit)
         let dataSize = try JSONEncoder().encode(container).count
-        if dataSize > 100 * 1024 * 1024 { // 100MB limit
-            throw HabitStoreError.dataIntegrityError("Data size exceeds reasonable limits")
+        let maxMainFileSize = 10 * 1024 * 1024 // 10MB hard limit
+        let targetMainFileSize = 5 * 1024 * 1024 // 5MB target
+        
+        if dataSize > maxMainFileSize {
+            throw HabitStoreError.dataIntegrityError("Main file size exceeds hard limit (10MB)")
+        }
+        
+        // Alert via telemetry when near limits
+        if dataSize > targetMainFileSize {
+            print("⚠️ CrashSafeHabitStore: Main file size (\(dataSize / 1024 / 1024)MB) exceeds target (5MB)")
+            print("   💡 Consider compaction or moving history to segments")
+            // TODO: Add telemetry alert here
         }
         
         // 4. Check for valid UTF-8 encoding in habit names and descriptions
@@ -469,6 +491,75 @@ actor CrashSafeHabitStore: ObservableObject {
         }
         
         print("✅ CrashSafeHabitStore: Storage invariants validation passed")
+    }
+    
+    // MARK: - Compaction
+    
+    func compactMainFile() async throws {
+        let container = loadContainer()
+        let dataSize = try JSONEncoder().encode(container).count
+        let targetSize = 5 * 1024 * 1024 // 5MB target
+        
+        if dataSize <= targetSize {
+            print("✅ CrashSafeHabitStore: Main file already within target size (\(dataSize / 1024 / 1024)MB)")
+            return
+        }
+        
+        print("🔄 CrashSafeHabitStore: Starting main file compaction (\(dataSize / 1024 / 1024)MB -> target 5MB)")
+        
+        // Create compacted container with pruned data
+        let compactedHabits = container.habits.map { habit in
+            // Prune stale completion history (keep only last 90 days)
+            let cutoffDate = Calendar.current.date(byAdding: .day, value: -90, to: Date()) ?? Date()
+            let prunedHistory = habit.completionHistory.filter { dateString, _ in
+                if let date = ISO8601DateFormatter().date(from: dateString) {
+                    return date >= cutoffDate
+                }
+                return false
+            }
+            
+            // Prune oversized metadata
+            let prunedDescription = habit.description.count > 500 ? 
+                String(habit.description.prefix(500)) + "..." : habit.description
+            
+            // Create new Habit instance with pruned data
+            return Habit(
+                id: habit.id,
+                name: habit.name,
+                description: prunedDescription,
+                icon: habit.icon,
+                color: habit.color,
+                habitType: habit.habitType,
+                schedule: habit.schedule,
+                goal: habit.goal,
+                reminder: habit.reminder,
+                startDate: habit.startDate,
+                endDate: habit.endDate,
+                isCompleted: habit.isCompleted,
+                streak: habit.streak,
+                createdAt: habit.createdAt,
+                reminders: habit.reminders,
+                baseline: habit.baseline,
+                target: habit.target,
+                completionHistory: prunedHistory,
+                difficultyHistory: habit.difficultyHistory,
+                actualUsage: habit.actualUsage
+            )
+        }
+        
+        let compactedContainer = HabitDataContainer(
+            habits: compactedHabits,
+            version: container.version,
+            completedSteps: container.completedMigrationSteps
+        )
+        
+        let compactedSize = try JSONEncoder().encode(compactedContainer).count
+        print("📊 CrashSafeHabitStore: Compaction reduced size from \(dataSize / 1024 / 1024)MB to \(compactedSize / 1024 / 1024)MB")
+        
+        // Save compacted container
+        try saveContainer(compactedContainer)
+        
+        print("✅ CrashSafeHabitStore: Main file compaction completed")
     }
 }
 

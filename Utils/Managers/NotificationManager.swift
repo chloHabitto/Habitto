@@ -169,13 +169,24 @@ class NotificationManager: ObservableObject {
         requestNotificationPermission()
     }
     
-    // MARK: - Calendar/Locale Injection for Testing
+    // MARK: - Calendar/Locale Injection for Testing and Production
     
     func injectCalendar(_ calendar: Calendar?, timeZone: TimeZone? = nil, locale: Locale? = nil) {
         injectedCalendar = calendar
         injectedTimeZone = timeZone
         injectedLocale = locale
         logger.log(.info, category: "NotificationManager", message: "Injected calendar/timezone/locale for deterministic behavior")
+    }
+    
+    /// Set deterministic calendar/locale for production DST handling
+    func setDeterministicCalendarForDST() {
+        // Use Gregorian calendar with UTC timezone for consistent behavior
+        let gregorianCalendar = Calendar(identifier: .gregorian)
+        let utcTimeZone = TimeZone(identifier: "UTC") ?? TimeZone.current
+        let englishLocale = Locale(identifier: "en_US_POSIX") // POSIX for consistent formatting
+        
+        injectCalendar(gregorianCalendar, timeZone: utcTimeZone, locale: englishLocale)
+        logger.log(.info, category: "NotificationManager", message: "Set deterministic calendar for DST handling (Gregorian/UTC/en_US_POSIX)")
     }
     
     private func getCalendar() -> Calendar {

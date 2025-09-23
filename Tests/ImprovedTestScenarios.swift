@@ -184,7 +184,7 @@ class ImprovedTestScenarios {
                     error: errorMessage,
                     metrics: TestScenarioResult.TestMetrics(
                         recordsProcessed: largeHabits.count,
-                        memoryUsage: peakMemoryUsage,
+                        memoryUsage: Int64(peakMemoryUsage),
                         diskUsage: 0,
                         networkCalls: 0,
                         fileOperations: largeHabits.count * 2,
@@ -225,7 +225,7 @@ class ImprovedTestScenarios {
             error: errorMessage,
             metrics: TestScenarioResult.TestMetrics(
                 recordsProcessed: largeHabits.count,
-                memoryUsage: peakMemoryUsage,
+                memoryUsage: Int64(peakMemoryUsage),
                 diskUsage: 0, // Would need to calculate actual disk usage
                 networkCalls: 0,
                 fileOperations: largeHabits.count * 2,
@@ -291,58 +291,4 @@ class ImprovedTestScenarios {
     }
 }
 
-// MARK: - Mock File Manager for Testing
 
-class MockFileManager {
-    var shouldFailAfterReplace = false
-    var shouldFailAfterBackup = false
-    var availableSpace: Int64 = 1024 * 1024 * 1024 // 1GB default
-    
-    func simulateKillAfterReplace() {
-        shouldFailAfterReplace = true
-    }
-    
-    func simulateKillAfterBackup() {
-        shouldFailAfterBackup = true
-    }
-    
-    func setAvailableSpace(_ space: Int64) {
-        availableSpace = space
-    }
-}
-
-// MARK: - Test Scenario Result
-
-struct TestScenarioResult {
-    let scenario: TestScenario
-    let startTime: Date
-    let endTime: Date
-    let duration: TimeInterval
-    let success: Bool
-    let error: String?
-    let metrics: TestMetrics
-    let severity: TestSeverity
-    
-    struct TestMetrics {
-        let recordsProcessed: Int
-        let memoryUsage: Int
-        let diskUsage: Int
-        let networkCalls: Int
-        let fileOperations: Int
-        let encryptionOperations: Int
-        let validationChecks: Int
-    }
-}
-
-enum TestScenario {
-    case crashRecovery
-    case clockSkew
-    case largeDataset
-}
-
-enum TestSeverity {
-    case critical
-    case high
-    case medium
-    case low
-}
