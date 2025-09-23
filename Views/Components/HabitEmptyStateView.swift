@@ -108,6 +108,15 @@ extension HabitEmptyStateView {
             subtitle: "Try adjusting your search terms"
         )
     }
+    
+    /// Empty state for coming soon features
+    static func comingSoon() -> HabitEmptyStateView {
+        HabitEmptyStateView(
+            imageName: "comingSoon",
+            title: "Coming Soon",
+            subtitle: "We're working on this feature"
+        )
+    }
 }
 
 #Preview {
