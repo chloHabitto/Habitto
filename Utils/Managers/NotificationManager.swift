@@ -159,9 +159,35 @@ class NotificationManager: ObservableObject {
     
     private let logger = NotificationLogger.shared
     
+    // Calendar/Locale injection for deterministic behavior (especially DST)
+    private var injectedCalendar: Calendar?
+    private var injectedTimeZone: TimeZone?
+    private var injectedLocale: Locale?
+    
     private init() {
         logger.log(.info, category: "NotificationManager", message: "Initializing NotificationManager")
         requestNotificationPermission()
+    }
+    
+    // MARK: - Calendar/Locale Injection for Testing
+    
+    func injectCalendar(_ calendar: Calendar?, timeZone: TimeZone? = nil, locale: Locale? = nil) {
+        injectedCalendar = calendar
+        injectedTimeZone = timeZone
+        injectedLocale = locale
+        logger.log(.info, category: "NotificationManager", message: "Injected calendar/timezone/locale for deterministic behavior")
+    }
+    
+    private func getCalendar() -> Calendar {
+        return injectedCalendar ?? Calendar.current
+    }
+    
+    private func getTimeZone() -> TimeZone {
+        return injectedTimeZone ?? TimeZone.current
+    }
+    
+    private func getLocale() -> Locale {
+        return injectedLocale ?? Locale.current
     }
     
     // MARK: - Logging Methods

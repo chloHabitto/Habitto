@@ -43,10 +43,11 @@ actor SegmentedHabitStore: ObservableObject {
         
         // Check if we're approaching size limits
         if data.count > maxMainFileSize {
+            let suggestion = generateCleanupSuggestion(currentSize: data.count, limit: maxMainFileSize)
             throw SegmentedStorageError.dataSizeExceeded(
                 current: data.count,
                 limit: maxMainFileSize,
-                suggestion: "Consider archiving old habits or moving to SwiftData"
+                suggestion: suggestion
             )
         }
         
@@ -127,6 +128,7 @@ actor SegmentedHabitStore: ObservableObject {
             [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
             ofItemAtPath: tempURL.path
         )
+        // Exclude temp file from backup
         try? (tempURL as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
         
         // Atomic replace
@@ -163,6 +165,20 @@ actor SegmentedHabitStore: ObservableObject {
         guard components.count >= 2 else { return nil }
         let monthPart = components[1].replacingOccurrences(of: ".json", with: "")
         return monthPart
+    }
+    
+    private func generateCleanupSuggestion(currentSize: Int, limit: Int) -> String {
+        let currentMB = currentSize / 1024 / 1024
+        let limitMB = limit / 1024 / 1024
+        let excessMB = currentMB - limitMB
+        
+        if excessMB < 2 {
+            return "Main file is \(currentMB)MB (limit: \(limitMB)MB). Consider archiving completed habits or moving to SwiftData for larger datasets."
+        } else if excessMB < 10 {
+            return "Main file is \(currentMB)MB (limit: \(limitMB)MB). Archive old habits or enable SwiftData migration. Contact support if needed."
+        } else {
+            return "Main file is \(currentMB)MB (limit: \(limitMB)MB). Immediate cleanup required. Archive completed habits, delete old data, or upgrade to SwiftData. Contact support."
+        }
     }
 }
 

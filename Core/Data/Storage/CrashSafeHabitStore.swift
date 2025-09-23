@@ -427,7 +427,7 @@ actor CrashSafeHabitStore: ObservableObject {
     
     // MARK: - Storage-Level Invariants Validation
     
-    private func validateStorageInvariants(_ container: HabitDataContainer) throws {
+    func validateStorageInvariants(_ container: HabitDataContainer) throws {
         // Basic storage-level invariants (lightweight version of full migration invariants)
         
         // 1. Check for duplicate IDs
