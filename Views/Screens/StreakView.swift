@@ -17,8 +17,6 @@ struct StreakView: View {
         print("🔍 STREAK VIEW: userHabits computed property called - count: \(habits.count)")
         return habits
     }
-    @State private var isExpanded = false
-    @State private var dragOffset: CGFloat = 0
     
     // Swipe to dismiss animation state
     @State private var dismissOffset: CGFloat = 0
@@ -48,57 +46,19 @@ struct StreakView: View {
                     bestStreak: streakStatistics.bestStreak,
                     averageStreak: streakStatistics.averageStreak
                 )
+                
+                // Coming soon empty state
+                HabitEmptyStateView.comingSoon()
+                    .padding(.top, 40)
+                
+                // Spacer to push content to top
+                Spacer()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
-            .offset(y: -20)
-            .opacity(dragOffset < 0 ? max(0, 1.0 + (dragOffset / 100.0)) : 1.0)
-            
-            // White sheet that expands to bottom (with its own internal scrolling)
-            GeometryReader { geometry in
-                WhiteSheetContainer(
-                    showGrabber: true
-                ) {
-                    // Completely empty white sheet - all content removed
-                    Spacer()
-                    .frame(maxWidth: .infinity)
-                }
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height + (dragOffset < 0 ? abs(dragOffset) : 0)
-                )
-                .offset(y: dragOffset)
-                .zIndex(5)
-                .ignoresSafeArea(.container, edges: .bottom)
-            }
-            .gesture(
-                DragGesture()
-                    .onChanged { value in
-                        let translation = value.translation.height
-                        if translation < 0 { // Dragging up
-                            dragOffset = max(translation, -280) // Slightly increased max height
-                        } else { // Dragging down
-                            dragOffset = min(translation, 0) // Limit downward drag
-                        }
-                    }
-                    .onEnded { value in
-                        let translation = value.translation.height
-                        let velocity = value.velocity.height
-                        
-                        if translation < -150 || velocity < -300 { // Increased expand threshold
-                            isExpanded = true
-                            dragOffset = -280 // Slightly increased max height
-                        } else if translation > 25 || velocity > 300 { // Collapse threshold
-                            isExpanded = false
-                            dragOffset = 0
-                        } else { // Return to current state
-                            dragOffset = isExpanded ? -280 : 0
-                        }
-                    }
-            )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primary)
-        .ignoresSafeArea(.container, edges: .bottom)
         .safeAreaInset(edge: .top, spacing: 0) {
             Color.primary
                 .frame(height: 0)
