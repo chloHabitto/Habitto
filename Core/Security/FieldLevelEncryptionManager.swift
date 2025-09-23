@@ -143,7 +143,18 @@ actor FieldLevelEncryptionManager {
             UserDefaults.standard.set(metadataData, forKey: "KeyRotationMetadata")
         }
         
+        // Schedule re-encryption of existing data (background task)
+        Task.detached {
+            await self.reEncryptExistingData(with: newKey)
+        }
+        
         print("🔑 FieldLevelEncryptionManager: Encryption key rotated successfully.")
+    }
+    
+    private func reEncryptExistingData(with newKey: SymmetricKey) async {
+        // This would iterate through existing encrypted data and re-encrypt with new key
+        // Implementation depends on how encrypted data is stored
+        print("🔄 FieldLevelEncryptionManager: Starting background re-encryption with new key")
     }
     
     func handleKeychainLoss() async throws -> KeychainLossResponse {

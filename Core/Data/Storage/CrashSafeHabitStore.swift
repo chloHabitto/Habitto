@@ -289,6 +289,13 @@ actor CrashSafeHabitStore: ObservableObject {
         
         if !success {
             let error = coordinatorError ?? NSError(domain: "HabitStore", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown file coordination error"])
+            
+            // Enhanced telemetry for file coordination errors
+            print("❌ CrashSafeHabitStore: File coordination failed")
+            print("   📊 Coordinator Error: \(coordinatorError?.localizedDescription ?? "nil")")
+            print("   📊 Thrown Error: \(error.localizedDescription)")
+            print("   📊 Error Code: \((coordinatorError ?? error).code)")
+            
             throw HabitStoreError.fileSystemError(error)
         }
         
@@ -360,16 +367,26 @@ actor CrashSafeHabitStore: ObservableObject {
             
             // Check if we have enough space for the write operation
             if availableCapacity < Int64(estimatedSize) {
-                throw HabitStoreError.insufficientDiskSpace(required: estimatedSize, available: Int(availableCapacity))
+                let error = HabitStoreError.insufficientDiskSpace(required: estimatedSize, available: Int(availableCapacity))
+                print("💾 CrashSafeHabitStore: Insufficient disk space")
+                print("   📊 Required: \(estimatedSize / 1024 / 1024)MB")
+                print("   📊 Available: \(Int(availableCapacity) / 1024 / 1024)MB")
+                print("   💡 Suggestion: Free up space or contact support")
+                throw error
             }
             
             // Additional safety buffer - require 2x the estimated size for safety
             let safetyBuffer = max(Int64(estimatedSize) * 2, 100 * 1024 * 1024) // 2x or 100MB, whichever is larger
             if availableCapacity < safetyBuffer {
-                throw HabitStoreError.lowDiskSpace(available: Int(availableCapacity), minimum: Int(safetyBuffer))
+                let error = HabitStoreError.lowDiskSpace(available: Int(availableCapacity), minimum: Int(safetyBuffer))
+                print("💾 CrashSafeHabitStore: Low disk space warning")
+                print("   📊 Available: \(Int(availableCapacity) / 1024 / 1024)MB")
+                print("   📊 Minimum recommended: \(Int(safetyBuffer) / 1024 / 1024)MB")
+                print("   💡 Suggestion: Consider freeing up space for optimal performance")
+                throw error
             }
             
-            print("💾 CrashSafeHabitStore: Disk space check passed - \(Int(availableCapacity / 1024 / 1024))MB available, \(estimatedSize) bytes needed")
+            print("💾 CrashSafeHabitStore: Disk space check passed - \(Int(availableCapacity / 1024 / 1024))MB available, \(estimatedSize / 1024)KB needed")
             
         } catch let error as HabitStoreError {
             throw error
