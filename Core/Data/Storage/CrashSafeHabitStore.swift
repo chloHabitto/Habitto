@@ -176,7 +176,8 @@ actor CrashSafeHabitStore: ObservableObject {
     }
     
     func restoreFromSnapshot(_ snapshotURL: URL) throws {
-        try fileManager.copyItem(at: snapshotURL, to: mainURL)
+        // Atomic restore using replaceItem to avoid torn files
+        _ = try fileManager.replaceItem(at: mainURL, withItemAt: snapshotURL, backupItemName: nil, options: [], resultingItemURL: nil)
         cachedContainer = nil // Force reload
         print("🔄 CrashSafeHabitStore: Restored from snapshot at \(snapshotURL.path)")
     }
@@ -439,8 +440,8 @@ actor CrashSafeHabitStore: ObservableObject {
     
     // MARK: - Storage-Level Invariants Validation
     
-    func validateStorageInvariants(_ container: HabitDataContainer) throws {
-        // Basic storage-level invariants (lightweight version of full migration invariants)
+    func validateStorageInvariants(_ container: HabitDataContainer, previousVersion: String? = nil) throws {
+        // Comprehensive storage-level invariants
         
         // 1. Check for duplicate IDs
         let habitIds = container.habits.map { $0.id }
@@ -449,12 +450,67 @@ actor CrashSafeHabitStore: ObservableObject {
             throw HabitStoreError.dataIntegrityError("Duplicate habit IDs detected")
         }
         
-        // 2. Check for valid version format
+        // 2. Semver validity and monotonicity
         if container.version.isEmpty {
-            throw HabitStoreError.dataIntegrityError("Invalid version format")
+            throw HabitStoreError.dataIntegrityError("Invalid version format: empty")
         }
         
-        // 3. Check for main file size limits (5MB target with 10MB hard limit)
+        // Parse version and check semver validity
+        let versionComponents = container.version.split(separator: ".").compactMap { Int($0) }
+        if versionComponents.count != 3 || versionComponents.contains(where: { $0 < 0 }) {
+            throw HabitStoreError.dataIntegrityError("Invalid semver format: \(container.version)")
+        }
+        
+        // Check version monotonicity if previous version provided
+        if let prevVersion = previousVersion {
+            let prevComponents = prevVersion.split(separator: ".").compactMap { Int($0) }
+            if prevComponents.count == 3 {
+                let isMonotonic = (versionComponents[0] > prevComponents[0]) ||
+                                 (versionComponents[0] == prevComponents[0] && versionComponents[1] > prevComponents[1]) ||
+                                 (versionComponents[0] == prevComponents[0] && versionComponents[1] == prevComponents[1] && versionComponents[2] > prevComponents[2]) ||
+                                 (versionComponents == prevComponents)
+                
+                if !isMonotonic {
+                    throw HabitStoreError.dataIntegrityError("Non-monotonic version: \(prevVersion) -> \(container.version)")
+                }
+            }
+        }
+        
+        // 3. Date bounds and timezone safety
+        let now = Date()
+        
+        for habit in container.habits {
+            // Check for future start dates
+            if habit.startDate > now {
+                throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has future start date: \(habit.startDate)")
+            }
+            
+            // Check date range validity
+            if let endDate = habit.endDate, endDate < habit.startDate {
+                throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has invalid date range: end < start")
+            }
+            
+            // Check completion history dates
+            for dateKey in habit.completionHistory.keys {
+                if let date = parseDate(from: dateKey) {
+                    if date > now {
+                        throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has future completion date: \(dateKey)")
+                    }
+                    if date < habit.startDate {
+                        throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has completion before start: \(dateKey)")
+                    }
+                }
+            }
+        }
+        
+        // 4. Counter monotonicity (streaks >= 0)
+        for habit in container.habits {
+            if habit.streak < 0 {
+                throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has negative streak: \(habit.streak)")
+            }
+        }
+        
+        // 5. Check for main file size limits (5MB target with 10MB hard limit)
         let dataSize = try JSONEncoder().encode(container).count
         let maxMainFileSize = 10 * 1024 * 1024 // 10MB hard limit
         let targetMainFileSize = 5 * 1024 * 1024 // 5MB target
@@ -491,6 +547,12 @@ actor CrashSafeHabitStore: ObservableObject {
         }
         
         print("✅ CrashSafeHabitStore: Storage invariants validation passed")
+    }
+    
+    private func parseDate(from dateKey: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: dateKey)
     }
     
     // MARK: - Compaction
