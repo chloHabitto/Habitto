@@ -437,7 +437,7 @@ struct HomeView: View {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
 
-        .fullScreenCover(isPresented: $state.showingStreakView) {
+        .sheet(isPresented: $state.showingStreakView) {
             StreakView()
                 .environmentObject(state)
         }

@@ -59,10 +59,6 @@ struct StreakView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primary)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            Color.primary
-                .frame(height: 0)
-        }
         .onAppear {
             setupNotificationObserver()
             loadData()
