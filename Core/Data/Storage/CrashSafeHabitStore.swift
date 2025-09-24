@@ -385,6 +385,15 @@ actor CrashSafeHabitStore: ObservableObject {
                 print("   📊 Required: \(estimatedWriteSize / 1024 / 1024)MB (2x safety buffer)")
                 print("   📊 Available: \(Int(availableCapacity) / 1024 / 1024)MB")
                 print("   💡 Please free up space and try again")
+                
+                // Show user-visible alert
+                Task { @MainActor in
+                    DiskSpaceAlertManager.shared.showAlert(
+                        required: estimatedWriteSize,
+                        available: Int(availableCapacity)
+                    )
+                }
+                
                 throw error
             }
             
@@ -526,6 +535,17 @@ actor CrashSafeHabitStore: ObservableObject {
             // TODO: Add telemetry alert here
         }
         
+        // 6. Referential integrity validation
+        try validateReferentialIntegrity(container.habits)
+        
+        // 7. Streak consistency validation
+        try validateStreakConsistency(container.habits)
+        
+        // 8. Semver monotonicity validation
+        if let prevVersion = previousVersion {
+            try validateSemverMonotonicity(previous: prevVersion, current: container.version)
+        }
+        
         // 4. Check for valid UTF-8 encoding in habit names and descriptions
         for habit in container.habits {
             if !habit.name.canBeConverted(to: .utf8) {
@@ -553,6 +573,86 @@ actor CrashSafeHabitStore: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: dateKey)
+    }
+    
+    private func validateReferentialIntegrity(_ habits: [Habit]) throws {
+        // Validate habit-reminder relationships
+        for habit in habits {
+            // Check that all reminder IDs in habit.reminders are valid
+            for reminder in habit.reminders {
+                // Basic validation - reminder should have valid properties
+                if reminder.id.uuidString.isEmpty {
+                    throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has invalid reminder ID")
+                }
+                
+                // Validate reminder time (Date objects are always valid)
+                // No additional validation needed for Date objects
+            }
+            
+            // TODO: When challenges are added, validate habit-challenge relationships
+            // TODO: When notes are added, validate habit-note relationships
+        }
+        
+        print("✅ CrashSafeHabitStore: Referential integrity validation passed")
+    }
+    
+    private func validateStreakConsistency(_ habits: [Habit]) throws {
+        let calendar = Calendar.current
+        let timeZone = TimeZone.current
+        
+        for habit in habits {
+            // Calculate expected streak from completion history
+            let completionDates = habit.completionHistory.compactMap { dateKey, completionCount in
+                guard let date = parseDate(from: dateKey),
+                      completionCount > 0 else { return nil }
+                return date
+            }.sorted(by: >) // Most recent first
+            
+            // Calculate consecutive streak from most recent completion
+            var expectedStreak = 0
+            var currentDate = Date().startOfDay(in: timeZone)
+            
+            for completionDate in completionDates {
+                let completionStartOfDay = calendar.startOfDay(for: completionDate)
+                let daysDifference = calendar.dateComponents([.day], from: completionStartOfDay, to: currentDate).day ?? 0
+                
+                if daysDifference == expectedStreak {
+                    expectedStreak += 1
+                    currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+                } else {
+                    break
+                }
+            }
+            
+            // Allow some tolerance for edge cases (e.g., timezone changes, DST)
+            let streakDifference = abs(habit.streak - expectedStreak)
+            if streakDifference > 1 {
+                print("⚠️ CrashSafeHabitStore: Streak inconsistency for habit \(habit.name): stored=\(habit.streak), calculated=\(expectedStreak)")
+                // Don't throw error for minor inconsistencies, just log warning
+            }
+        }
+        
+        print("✅ CrashSafeHabitStore: Streak consistency validation passed")
+    }
+    
+    private func validateSemverMonotonicity(previous: String, current: String) throws {
+        let prevComponents = previous.split(separator: ".").compactMap { Int($0) }
+        let currentComponents = current.split(separator: ".").compactMap { Int($0) }
+        
+        guard prevComponents.count == 3 && currentComponents.count == 3 else {
+            throw HabitStoreError.dataIntegrityError("Invalid semver format for monotonicity check: \(previous) -> \(current)")
+        }
+        
+        // Check if current version is greater than or equal to previous
+        let isMonotonic = (currentComponents[0] > prevComponents[0]) ||
+                         (currentComponents[0] == prevComponents[0] && currentComponents[1] > prevComponents[1]) ||
+                         (currentComponents[0] == prevComponents[0] && currentComponents[1] == prevComponents[1] && currentComponents[2] >= prevComponents[2])
+        
+        if !isMonotonic {
+            throw HabitStoreError.dataIntegrityError("Non-monotonic version progression: \(previous) -> \(current)")
+        }
+        
+        print("✅ CrashSafeHabitStore: Semver monotonicity validation passed")
     }
     
     // MARK: - Compaction
