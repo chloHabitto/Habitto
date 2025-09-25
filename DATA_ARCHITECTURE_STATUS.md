@@ -136,7 +136,7 @@ enum FeatureFlag: String, CaseIterable {
 - **Challenges feature** (needs tests - feature flag integration ✅ COMPLETED)
 - **Multi-language support** (needs tests - feature flag integration ✅ COMPLETED)
 - **Dark mode persistence** (needs tests - feature flag integration ✅ COMPLETED)
-- **CloudKit sync** (needs implementation or explicit disable)
+- ~~**CloudKit sync** (needs implementation or explicit disable)~~ ✅ EXPLICITLY DISABLED
 - **Field-level encryption** (needs integration or explicit disable)
 
 ## 📋 MINIMAL REQUIREMENTS TO UNBLOCK FEATURES
@@ -148,7 +148,7 @@ enum FeatureFlag: String, CaseIterable {
 4. ~~**Add telemetry hooks** for migration events~~ ✅ COMPLETED
 
 ### Priority 2 (P1 - Soon After)
-1. **Either implement or disable** CloudKit sync with flags
+1. ~~**Either implement or disable** CloudKit sync with flags~~ ✅ COMPLETED (explicitly disabled)
 2. **Either integrate or disable** field-level encryption with flags
 3. **Create comprehensive invariant tests** that prove rollback triggers
 4. **Add migration kill switch** integration
