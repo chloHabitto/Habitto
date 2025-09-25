@@ -314,6 +314,13 @@ class DataMigrationManager: ObservableObject {
         let habitStore = CrashSafeHabitStore.shared
         try await habitStore.restoreFromSnapshot(snapshotURL)
         
+        // Record successful rollback telemetry
+        await EnhancedMigrationTelemetryManager.shared.recordEvent(
+            .killSwitchTriggered,
+            errorCode: "rollback_successful",
+            success: true
+        )
+        
         // Clean up snapshot file
         try? FileManager.default.removeItem(at: snapshotURL)
     }

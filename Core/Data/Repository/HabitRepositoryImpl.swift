@@ -9,7 +9,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     @Published var habits: [Habit] = []
     
     private let storage: any HabitStorageProtocol
-    private let cloudKitManager: CloudKitManager
+    private let cloudKitManager: CloudKitManager // TODO: Use for CloudKit sync operations
     
     // Performance optimization: Cache expensive operations
     private var lastHabitsUpdate: Date = Date()
@@ -146,6 +146,12 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         }
         guard isEnabled else {
             print("🚩 HabitRepositoryImpl: Data operations disabled by feature flag")
+            // Record telemetry for feature flag kill
+            await EnhancedMigrationTelemetryManager.shared.recordEvent(
+                .killSwitchTriggered,
+                errorCode: "feature_flag_disabled",
+                success: false
+            )
             throw DataError.featureDisabled("Data operations disabled by feature flag")
         }
         

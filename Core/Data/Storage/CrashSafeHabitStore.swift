@@ -180,6 +180,15 @@ actor CrashSafeHabitStore: ObservableObject {
         _ = try fileManager.replaceItem(at: mainURL, withItemAt: snapshotURL, backupItemName: nil, options: [], resultingItemURL: nil)
         cachedContainer = nil // Force reload
         print("🔄 CrashSafeHabitStore: Restored from snapshot at \(snapshotURL.path)")
+        
+        // Record snapshot restore telemetry
+        Task {
+            await EnhancedMigrationTelemetryManager.shared.recordEvent(
+                .killSwitchTriggered,
+                errorCode: "snapshot_restore",
+                success: true
+            )
+        }
     }
     
     // MARK: - Private Methods
@@ -317,7 +326,19 @@ actor CrashSafeHabitStore: ObservableObject {
         let verifyContainer = try JSONDecoder().decode(HabitDataContainer.self, from: verifyData)
         
         // Run invariants validation (simplified version for storage layer)
-        try validateStorageInvariants(verifyContainer)
+        do {
+            try validateStorageInvariants(verifyContainer)
+        } catch {
+            // Record invariant failure telemetry
+            Task {
+                await EnhancedMigrationTelemetryManager.shared.recordEvent(
+                    .killSwitchTriggered,
+                    errorCode: "invariant_validation_failed",
+                    success: false
+                )
+            }
+            throw error
+        }
         
         // 7) Only now rotate backup (keep two generations) - after verify + invariants pass
         try rotateBackup()
@@ -394,6 +415,14 @@ actor CrashSafeHabitStore: ObservableObject {
                     )
                 }
                 
+                // Record disk space telemetry
+                Task {
+                    await EnhancedMigrationTelemetryManager.shared.recordEvent(
+                        .killSwitchTriggered,
+                        errorCode: "insufficient_disk_space",
+                        success: false
+                    )
+                }
                 throw error
             }
             
@@ -445,6 +474,15 @@ actor CrashSafeHabitStore: ObservableObject {
             [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
             ofItemAtPath: targetURL.path
         )
+        
+        // Record backup rollback telemetry
+        Task {
+            await EnhancedMigrationTelemetryManager.shared.recordEvent(
+                .killSwitchTriggered,
+                errorCode: "backup_rollback",
+                success: true
+            )
+        }
     }
     
     // MARK: - Storage-Level Invariants Validation
