@@ -133,9 +133,9 @@ enum FeatureFlag: String, CaseIterable {
 - **Performance optimizations** that don't modify data storage
 
 ### ❌ NOT SAFE TO SHIP
-- **Challenges feature** (needs feature flag integration + tests)
-- **Multi-language support** (needs i18n flag integration + invariant tests)
-- **Dark mode persistence** (needs theme flag + data integrity tests)
+- **Challenges feature** (needs tests - feature flag integration ✅ COMPLETED)
+- **Multi-language support** (needs tests - feature flag integration ✅ COMPLETED)
+- **Dark mode persistence** (needs tests - feature flag integration ✅ COMPLETED)
 - **CloudKit sync** (needs implementation or explicit disable)
 - **Field-level encryption** (needs integration or explicit disable)
 
@@ -144,7 +144,7 @@ enum FeatureFlag: String, CaseIterable {
 ### Priority 1 (P0 - Blockers)
 1. **Configure proper test target** and move test files there
 2. **Run version skipping tests** (v1→v4) with green CI
-3. **Integrate feature flags** into actual data-touching code paths
+3. ~~**Integrate feature flags** into actual data-touching code paths~~ ✅ COMPLETED
 4. **Add telemetry hooks** for migration events
 
 ### Priority 2 (P1 - Soon After)

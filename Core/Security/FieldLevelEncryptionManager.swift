@@ -43,6 +43,15 @@ actor FieldLevelEncryptionManager {
     // MARK: - Public Encryption Interface
     
     func encryptField(_ value: String) async throws -> EncryptedField {
+        // Feature flag protection: Check if field-level encryption is enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+        }
+        
         let key = try await getOrCreateEncryptionKey()
         let data = value.data(using: .utf8) ?? Data()
         
@@ -330,6 +339,7 @@ enum EncryptionError: Error, LocalizedError {
     case fieldPathNotFound
     case keyRotationFailed
     case unsupportedEnvelopeVersion(String)
+    case featureDisabled(String)
     
     var errorDescription: String? {
         switch self {
@@ -355,6 +365,8 @@ enum EncryptionError: Error, LocalizedError {
             return "Failed to rotate encryption key"
         case .unsupportedEnvelopeVersion(let version):
             return "Unsupported encryption envelope version: \(version)"
+        case .featureDisabled(let message):
+            return "Feature disabled: \(message)"
         }
     }
 }

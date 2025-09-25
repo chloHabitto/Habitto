@@ -140,6 +140,15 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     }
     
     func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
+        // Feature flag protection: Check if data operations are enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.migrationKillSwitch, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 HabitRepositoryImpl: Data operations disabled by feature flag")
+            throw DataError.featureDisabled("Data operations disabled by feature flag")
+        }
+        
         try await storage.saveHabits(habits, immediate: immediate)
         
         await MainActor.run {

@@ -8,6 +8,7 @@ enum DataError: Error, LocalizedError, Identifiable {
     case network(NetworkError)
     case persistence(PersistenceError)
     case migration(MigrationError)
+    case featureDisabled(String)
     case unknown(Error)
     
     var id: String {
@@ -22,6 +23,8 @@ enum DataError: Error, LocalizedError, Identifiable {
             return "persistence_\(error.id.uuidString)"
         case .migration(let error):
             return "migration_\(error.id.uuidString)"
+        case .featureDisabled(let message):
+            return "feature_disabled_\(message.hashValue)"
         case .unknown(let error):
             return "unknown_\(error.localizedDescription.hashValue)"
         }
@@ -39,6 +42,8 @@ enum DataError: Error, LocalizedError, Identifiable {
             return error.errorDescription
         case .migration(let error):
             return error.errorDescription
+        case .featureDisabled(let message):
+            return "Feature disabled: \(message)"
         case .unknown(let error):
             return "An unexpected error occurred: \(error.localizedDescription)"
         }
@@ -56,6 +61,8 @@ enum DataError: Error, LocalizedError, Identifiable {
             return error.severity
         case .migration(let error):
             return error.severity
+        case .featureDisabled:
+            return .warning
         case .unknown:
             return .error
         }
@@ -73,6 +80,8 @@ enum DataError: Error, LocalizedError, Identifiable {
             return error.recoverySuggestion
         case .migration(let error):
             return error.recoverySuggestion
+        case .featureDisabled:
+            return "This feature is currently disabled. Please contact support if you believe this is an error."
         case .unknown:
             return "Please try again. If the problem persists, contact support."
         }
@@ -443,6 +452,13 @@ struct ErrorRecoveryOptions {
             self.canRetry = false
             self.canIgnore = false
             self.canAbort = true
+            
+        case .featureDisabled:
+            self.actions = [.contactSupport]
+            self.defaultAction = .contactSupport
+            self.canRetry = false
+            self.canIgnore = false
+            self.canAbort = false
             
         case .unknown:
             self.actions = [.retry, .contactSupport]
