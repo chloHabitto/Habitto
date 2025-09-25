@@ -589,7 +589,11 @@ actor CrashSafeHabitStore: ObservableObject {
                 // No additional validation needed for Date objects
             }
             
+            // Feature flag protection: Only validate challenges if feature is enabled
+            // Note: Feature flag check moved to higher-level async methods due to MainActor constraint
             // TODO: When challenges are added, validate habit-challenge relationships
+            print("🚩 CrashSafeHabitStore: Challenges validation placeholder")
+            
             // TODO: When notes are added, validate habit-note relationships
         }
         
@@ -734,6 +738,7 @@ enum HabitStoreError: LocalizedError {
     case dataIntegrityError(String)
     case encodingError(Error)
     case decodingError(Error)
+    case featureDisabled(String)
     
     var errorDescription: String? {
         switch self {
@@ -751,6 +756,8 @@ enum HabitStoreError: LocalizedError {
             return "Encoding error: \(error.localizedDescription)"
         case .decodingError(let error):
             return "Decoding error: \(error.localizedDescription)"
+        case .featureDisabled(let message):
+            return "Feature disabled: \(message)"
         }
     }
 }
