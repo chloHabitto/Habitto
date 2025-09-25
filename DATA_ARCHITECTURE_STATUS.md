@@ -145,7 +145,7 @@ enum FeatureFlag: String, CaseIterable {
 1. **Configure proper test target** and move test files there
 2. **Run version skipping tests** (v1→v4) with green CI
 3. ~~**Integrate feature flags** into actual data-touching code paths~~ ✅ COMPLETED
-4. **Add telemetry hooks** for migration events
+4. ~~**Add telemetry hooks** for migration events~~ ✅ COMPLETED
 
 ### Priority 2 (P1 - Soon After)
 1. **Either implement or disable** CloudKit sync with flags
