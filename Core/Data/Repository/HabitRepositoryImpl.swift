@@ -19,8 +19,18 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         self.storage = storage
         self.cloudKitManager = cloudKitManager
         
-        // Initialize CloudKit sync
-        cloudKitManager.initializeCloudKitSync()
+        // Initialize CloudKit sync (feature flag protected)
+        Task {
+            let isEnabled = await MainActor.run {
+                FeatureFlagsManager.shared.isEnabled(.cloudKitSync, forUser: nil)
+            }
+            if isEnabled {
+                cloudKitManager.initializeCloudKitSync()
+                print("🚩 HabitRepositoryImpl: CloudKit sync enabled by feature flag")
+            } else {
+                print("🚩 HabitRepositoryImpl: CloudKit sync disabled by feature flag")
+            }
+        }
         
         // Load initial data
         Task {

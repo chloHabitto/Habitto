@@ -195,12 +195,20 @@ class CloudKitManager: ObservableObject {
     
     // MARK: - Integration with Core Data
     func initializeCloudKitSync() {
-        // This method can be called to ensure CloudKit sync is properly initialized
-        // Container is always available, so we can proceed directly
-        checkAuthenticationStatus()
-        
-        // Subscribe to CloudKit changes
-        Task {
+        // Feature flag protection: Only initialize if CloudKit sync is enabled
+        // Since this is a sync method, we'll defer the feature flag check to the async initialization
+        Task { @MainActor in
+            let featureFlags = FeatureFlagsManager.shared
+            guard featureFlags.isEnabled(.cloudKitSync, forUser: nil) else {
+                print("🚩 CloudKitManager: CloudKit sync disabled by feature flag")
+                return
+            }
+            
+            // This method can be called to ensure CloudKit sync is properly initialized
+            // Container is always available, so we can proceed directly
+            checkAuthenticationStatus()
+            
+            // Subscribe to CloudKit changes
             await subscribeToChanges()
         }
     }
