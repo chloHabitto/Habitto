@@ -70,6 +70,15 @@ actor FieldLevelEncryptionManager {
     }
     
     func decryptField(_ encryptedField: EncryptedField) async throws -> String {
+        // Feature flag protection: Check if field-level encryption is enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+        }
+        
         let key = try await getOrCreateEncryptionKey()
         
         let sealedBox: AES.GCM.SealedBox
@@ -104,6 +113,15 @@ actor FieldLevelEncryptionManager {
     }
     
     func encryptSensitiveFields<T: Codable>(_ object: T, fieldPaths: [String]) async throws -> EncryptedObject<T> {
+        // Feature flag protection: Check if field-level encryption is enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+        }
+        
         let encoder = JSONEncoder()
         let data = try encoder.encode(object)
         
@@ -130,6 +148,15 @@ actor FieldLevelEncryptionManager {
     }
     
     func decryptSensitiveFields<T: Codable>(_ encryptedObject: EncryptedObject<T>) async throws -> T {
+        // Feature flag protection: Check if field-level encryption is enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+        }
+        
         guard var json = try JSONSerialization.jsonObject(with: encryptedObject.serializedData) as? [String: Any] else {
             throw EncryptionError.deserializationFailed
         }
@@ -149,6 +176,15 @@ actor FieldLevelEncryptionManager {
     // MARK: - Key Rotation
     
     func rotateEncryptionKey() async throws {
+        // Feature flag protection: Check if field-level encryption is enabled
+        let isEnabled = await MainActor.run {
+            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+        }
+        guard isEnabled else {
+            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+        }
+        
         // Generate new key
         let newKey = SymmetricKey(size: .bits256)
         let newKeyData = newKey.withUnsafeBytes { Data($0) }
