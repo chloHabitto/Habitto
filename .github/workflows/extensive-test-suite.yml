@@ -1,0 +1,100 @@
+name: Habitto Comprehensive Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  comprehensive-tests:
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        ios-version: [17.2, 18.0]
+        xcode-version: ['15.1', '15.2']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: ${{ matrix.xcode-version }}
+    
+    - name: Run Version Skipping Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/VersionSkippingTests/test_v1_to_v4_applies_all_steps_idempotently \
+          -quiet
+    
+    - name: Run Storage Kill Tests  
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/StorageKillTests/test_mid_save_before_replace_recovers \
+          -only-testing:HabittoTests/StorageKillTests/test_mid_save_after_replace_before_rotation_recovers \
+          -only-testing:HabittoTests/StorageKillTests/test_mid_save_after_rotation_recovers \
+          -quiet
+    
+    - name: Run Disk Guard Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/DiskGuardTests/test_low_disk_blocks_without_corruption \
+          -quiet
+    
+    - name: Run Corruption Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/CorruptionTests/test_corrupted_main_falls_back_to_bak1_then_bak2 \
+          -quiet
+    
+    - name: Run Invariants Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/InvariantsTests/test_duplicate_ids_triggers_rollback \
+          -only-testing:HabittoTests/InvariantsTests/test_non_monotonic_semver_triggers_rollback \
+          -only-testing:HabittoTests/InvariantsTests/test_future_start_or_end_lt_start_triggers_rollback \
+          -only-testing:HabittoTests/InvariantsTests/test_main_file_size_cap_enforced \
+          -quiet
+    
+    - name: Run I18N Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/I18NTests/test_unicode_nfc_normalization_prevents_duplicates \
+          -only-testing:HabittoTests/I18NTests/test_dst_forward_backward_and_non_gregorian \
+          -quiet
+    
+    - name: Run Theme Tests
+      run: |
+        xcodebuild test \
+          -workspace Habitto.xcworkspace \
+          -scheme Habitto \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}' \
+          -only-testing:HabittoTests/ThemeTests/test_theme_toggle_does_not_change_core_data_checksum \
+          -quiet
+          
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.ios-version }}
+        path: DerivedData/
