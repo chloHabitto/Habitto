@@ -142,16 +142,16 @@ enum FeatureFlag: String, CaseIterable {
 ## 📋 MINIMAL REQUIREMENTS TO UNBLOCK FEATURES
 
 ### Priority 1 (P0 - Blockers)
-1. **Configure proper test target** and move test files there
-2. **Run version skipping tests** (v1→v4) with green CI
+1. ~~**Configure proper test target** and move test files there~~ ✅ COMPLETED
+2. ~~**Run version skipping tests** (v1→v4) with green CI~~ ✅ COMPLETED
 3. ~~**Integrate feature flags** into actual data-touching code paths~~ ✅ COMPLETED
 4. ~~**Add telemetry hooks** for migration events~~ ✅ COMPLETED
 
 ### Priority 2 (P1 - Soon After)
 1. ~~**Either implement or disable** CloudKit sync with flags~~ ✅ COMPLETED (explicitly disabled)
 2. ~~**Either integrate or disable** field-level encryption with flags~~ ✅ COMPLETED (explicitly disabled)
-3. **Create comprehensive invariant tests** that prove rollback triggers
-4. **Add migration kill switch** integration
+3. ~~**Create comprehensive invariant tests** that prove rollback triggers~~ ✅ COMPLETED
+4. ~~**Add migration kill switch** integration~~ ✅ COMPLETED
 
 ### Priority 3 (P2 - Quality)
 1. **Theme toggle data integrity tests**
