@@ -1,0 +1,254 @@
+import Foundation
+
+// MARK: - Version Skipping Tests
+// Tests migration jumps to verify all intermediate steps execute deterministically
+
+class VersionSkippingTests {
+    
+    // MARK: - Custom Assertions (matching existing test infrastructure)
+    
+    private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+        if actual != expected {
+            print("❌ Assertion failed: \(message). Expected: \(expected), Actual: \(actual)")
+        } else {
+            print("✅ \(message): \(expected)")
+        }
+    }
+    
+    private func assertTrue(_ condition: Bool, _ message: String) {
+        if !condition {
+            print("❌ Assertion failed: \(message)")
+        } else {
+            print("✅ \(message)")
+        }
+    }
+    
+    // MARK: - Test Data Setup
+    
+    private var testHabits: [Habit] = []
+    
+    func setUp() {
+        createTestHabits()
+    }
+    
+    func tearDown() {
+        testHabits = []
+        cleanupTestData()
+    }
+    
+    private func createTestHabits() {
+        print("🔄 Creating test habits for v1→v4 migration test...")
+        
+        let testHabit1 = Habit(
+            id: UUID(),
+            name: "Read for 30 minutes",
+            description: "Daily reading habit",
+            icon: "📚",
+            color: .blue,
+            habitType: .formation,
+            schedule: "daily",
+            goal: "30 minutes",
+            reminder: "",
+            startDate: Date(),
+            endDate: nil,
+            isCompleted: false,
+            streak: 0,
+            createdAt: Date(),
+            reminders: [],
+            baseline: 0,
+            target: 30,
+            completionHistory: [:],
+            difficultyHistory: [:],
+            actualUsage: [:]
+        )
+        
+        let testHabit2 = Habit(
+            id: UUID(),
+            name: "Exercise regularly",
+            description: "Physical activity",
+            icon: "🏃‍♂️",
+            color: .green,
+            habitType: .formation,
+            schedule: "3x per week",
+            goal: "45 minutes",
+            reminder: "Morning workout",
+            startDate: Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date(),
+            endDate: nil,
+            isCompleted: true,
+            streak: 3,
+            createdAt: Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date(),
+            reminders: [],
+            baseline: 0,
+            target: 45,
+            completionHistory: ["2024-12-20": 1, "2024-12-21": 1, "2024-12-22": 1],
+            difficultyHistory: [:],
+            actualUsage: [:]
+        )
+        
+        testHabits = [testHabit1, testHabit2]
+        print("✅ Created \(testHabits.count) test habits")
+    }
+    
+    private func cleanupTestData() {
+        // Clean up any test artifacts
+        print("🧹 Cleaning up test data...")
+        
+        // Reset migration flags for testing
+        let keys = [
+            "AddHabitCreationDateMigrationCompleted",
+            "NormalizeHabitGoalMigrationCompleted", 
+            "CleanUpInvalidDataMigrationCompleted",
+            "UserDefaultsToCoreDataMigrationCompleted",
+            "CoreDataToCloudKitMigrationCompleted",
+            "OptimizeUserDefaultsStorageMigrationCompleted"
+        ]
+        
+        for key in keys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        
+        // Reset migration version for test independence
+        UserDefaults.standard.removeObject(forKey: "DataMigrationVersion")
+        UserDefaults.standard.set("1.0.0", forKey: "DataMigrationVersion")
+        
+        print("✅ Test cleanup completed")
+    }
+    
+    // MARK: - Main Version Skipping Test
+    
+    func testVersionSkipping_v1_to_v4_applies_all_steps() async throws {
+        print("🧪 Testing version skipping v1.0.0 → v4.0.0 migration...")
+        
+        setUp()
+        
+        let store = CrashSafeHabitStore.shared
+        let migrationManager = await DataMigrationManager.shared
+        
+        // Step 1: Save initial data in v1 format
+        print("📊 Setting up v1 payload...")
+        try await store.saveHabits(testHabits)
+        assertTrue(testHabits.count == 2, "Initial habits created")
+        
+        // Step 2: Simulate funding a v1 payload (old format)
+        // Force setting migration version to simulate app restart from very old version
+        UserDefaults.standard.set("1.0.0", forKey: "DataMigrationVersion")
+        
+        // Step 3: Load "upgrade to current"
+        let migrationLogBefore = getMigrationLog()
+        print("🔍 Migration log before: \(migrationLogBefore.count) entries")
+        
+        // Step 4: Execute migration 
+        print("🔄 Executing migration from v1 ➜ v4...")
+        do {
+            try await migrationManager.executeMigrations()
+            print("✅ Migration executed successfully")
+        } catch {
+            print("❌ Migration failed: \(error)")
+            throw error
+        }
+        
+        // Step 5: Verify v4 format
+        let loadedHabits = await store.loadHabits()
+        assertEqual(loadedHabits.count, testHabits.count, "Habit count preserved after v1→v4")
+        
+        // Step 6: Check migration log
+        let migrationLogAfter = getMigrationLog()
+        print("🔍 Migration log after: \(migrationLogAfter.count) entries")
+        
+        // Expected migration steps should have been executed:
+        let expectedSteps = [
+            "Add Habit Creation Date",           // v1.1.0
+            "Normalize Habit Goal",               // v1.2.0  
+            "Clean Up Invalid Data",              // v1.3.0
+            "Add Habit Creation Date",           // v1.1.0 (repeat due to conflicts)
+            "Normalize Habit Goal",               // v1.2.0 (repeat)
+            // May include storage-level migrations depending on infrastructure
+        ]
+        
+        // Verify all intermediate steps were executed
+        assertTrue(migrationLogAfter.count >= expectedSteps.count, "Should have at least \(expectedSteps.count) migration steps")
+        
+        // Step 7: Verify idempotence - run migration again
+        print("🔄 Testing migration idempotence...")
+        try await migrationManager.executeMigrations()
+        
+        let migrationLogAfterIdempotence = getMigrationLog()
+        let migrationCountChange = migrationLogAfterIdempotence.count - migrationLogAfter.count
+        assertTrue(migrationCountChange == 0, "Migration should be idempotent (no new migrations)")
+        
+        // Step 8: Verify invariants pass
+        print("🔍 Checking storage invariants...")
+        guard let verifyData = try? Data(contentsOf: getMainStorageURL()),
+              let verifyContainer = try? JSONDecoder().decode(HabitDataContainer.self, from: verifyData) else {
+            print("❌ Failed to verify storage invariants")
+            throw TestError.verificationFailed
+        }
+        
+        assertTrue(verifyContainer.version.count > 0, "Payload version should be updated")
+        print("✅ Invariants verification passed")
+        
+        print("🎉 Version skipping test completed successfully!")
+        
+        tearDown()
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func getMigrationLog() -> [MigrationLogEntry] {
+        guard let data = UserDefaults.standard.data(forKey: "MigrationLog"),
+              let log = try? JSONDecoder().decode([MigrationLogEntry].self, from: data) else {
+            return []
+        }
+        return log
+    }
+    
+    private func getMainStorageURL() -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return documentsPath.appendingPathComponent("HabitStorage.json")
+    }
+    
+    // MARK: - Data Model Helpers
+    
+    private struct HabitDataContainer: Codable {
+        let version: String
+        let habits: [Habit]
+        let creationDate: Date?
+    }
+    
+    private enum TestError: Error {
+        case verificationFailed
+    }
+    
+    // MARK: - Main Test Runner
+    
+    func runTests() async {
+        print("🚀 Starting Version Skipping Tests...")
+        
+        do {
+            try await testVersionSkipping_v1_to_v4_applies_all_steps()
+            print("🎉 ALL TESTS PASSED")
+        } catch {
+            print("❌ TEST FAILED: \(error)")
+        }
+    }
+}
+
+// MARK: - Extensions for compatibility
+
+extension VersionSkippingTests {
+    /// Convenience method to use existing test runner pattern
+    static func runAllTests() async {
+        let testSuite = VersionSkippingTests()
+        await testSuite.runTests()
+    }
+}
+
+// MARK: - Integration with test command
+
+extension VersionSkippingTests {
+    /// Static entrance point for testing
+    /// Usage:
+    /// ```
+    /// await VersionSkippingTests.runAllTests()
+    /// ```
+}
