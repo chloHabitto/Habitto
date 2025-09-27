@@ -1543,8 +1543,23 @@ class NotificationManager: ObservableObject {
         removeAllDailyReminders()
         
         // Step 4: Schedule new ones based on current settings
-        scheduleDailyPlanReminders()
-        scheduleDailyCompletionReminders()
+        // Only schedule if the user has enabled them
+        let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+        let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+        
+        if planReminderEnabled {
+            print("📅 NotificationManager: Plan reminders are enabled, scheduling...")
+            scheduleDailyPlanReminders()
+        } else {
+            print("📅 NotificationManager: Plan reminders are disabled, skipping...")
+        }
+        
+        if completionReminderEnabled {
+            print("📅 NotificationManager: Completion reminders are enabled, scheduling...")
+            scheduleDailyCompletionReminders()
+        } else {
+            print("📅 NotificationManager: Completion reminders are disabled, skipping...")
+        }
         
         // Step 5: Get final count for verification
         getPendingDailyRemindersCount { count in
@@ -1554,7 +1569,7 @@ class NotificationManager: ObservableObject {
     
     // MARK: - Snooze Functionality
     
-    /// SnoozeDuration enum to match the one in DailyRemindersView
+    /// SnoozeDuration enum to match the one in NotificationsView
     enum SnoozeDuration: String, CaseIterable {
         case none = "None"
         case tenMinutes = "10 min"
