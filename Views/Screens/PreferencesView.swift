@@ -77,8 +77,8 @@ struct PreferencesView: View {
                         
                         AccountOptionRow(
                             icon: "Icon-alarm_Filled",
-                            title: "Daily Reminders",
-                            subtitle: "Set up your daily habit reminders",
+                            title: "Notifications",
+                            subtitle: "Manage your daily habit reminders and notification settings",
                             hasChevron: true,
                             iconColor: iconColor
                         ) {
@@ -117,7 +117,7 @@ struct PreferencesView: View {
             ThemeView()
         }
         .sheet(isPresented: $showingDailyReminders) {
-            DailyRemindersView()
+            NotificationsView()
         }
     }
 }
