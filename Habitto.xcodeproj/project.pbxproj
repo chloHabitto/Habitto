@@ -75,9 +75,22 @@
 		89F79B1F2E7833C000E7F316 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Config/App-Info.plist",
+			);
+			target = 89C17A362DF73D8A00B2480F /* Habitto */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		89C17A392DF73D8A00B2480F /* . */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
+			);
 			path = .;
 			sourceTree = "<group>";
 		};
