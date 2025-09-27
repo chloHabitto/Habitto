@@ -188,6 +188,16 @@ struct MoreTabView: View {
                 ]
             )
             
+            // Data Management Group
+            settingsGroup(
+                title: "Data Management",
+                items: [
+                    SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
+                        showingDataPrivacy = true
+                    })
+                ]
+            )
+            
             // Support/Legal Group
             settingsGroup(
                 title: "Support & Legal",
@@ -322,8 +332,6 @@ struct MoreTabView: View {
             return "Icon-Bell_Filled"
         case "Preferences":
             return "Icon-Setting_Filled"
-        case "Backup & Recovery":
-            return "Icon-RefreshSquare2_Filled"
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":
