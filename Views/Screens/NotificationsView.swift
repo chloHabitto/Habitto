@@ -1,5 +1,4 @@
 import SwiftUI
-import AVFoundation
 
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -18,13 +17,6 @@ struct NotificationsView: View {
     @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
     @State private var snoozeDuration = SnoozeDuration.none
     
-    // Notification Sound State
-    @State private var originalReminderSound = "Default"
-    @State private var reminderSound = "Default"
-    @State private var showingSoundPicker = false
-    
-    // Available sound options
-    private let soundOptions = ["Default", "Gentle", "Chime", "Bell", "Crystal", "Digital", "Nature", "Piano", "Pop", "None"]
     
     // Snooze Duration Options
     enum SnoozeDuration: String, CaseIterable {
@@ -49,8 +41,7 @@ struct NotificationsView: View {
                planReminderTime != originalPlanReminderTime ||
                completionReminderEnabled != originalCompletionReminderEnabled ||
                completionReminderTime != originalCompletionReminderTime ||
-               snoozeDuration != originalSnoozeDuration ||
-               reminderSound != originalReminderSound
+               snoozeDuration != originalSnoozeDuration
     }
     
     // Plan reminder preview title
@@ -89,9 +80,6 @@ struct NotificationsView: View {
                             
                             // Completion Reminder Section
                             completionReminderSection
-                            
-                            // Notification Sound Section
-                            notificationSoundSection
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 24)
@@ -120,9 +108,6 @@ struct NotificationsView: View {
         }
         .onAppear {
             loadReminderSettings()
-        }
-        .sheet(isPresented: $showingSoundPicker) {
-            SoundPickerView(selectedSound: $reminderSound, soundOptions: soundOptions)
         }
     }
     
@@ -188,19 +173,6 @@ struct NotificationsView: View {
         }
     }
     
-    // MARK: - Notification Sound Section
-    private var notificationSoundSection: some View {
-        VStack(spacing: 0) {
-            // Options container
-            VStack(spacing: 0) {
-                // Notification Sound Row
-                notificationSoundRow
-            }
-            .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-        }
-    }
     
     // MARK: - Plan Reminder Toggle Row
     private var planReminderToggleRow: some View {
@@ -429,40 +401,6 @@ struct NotificationsView: View {
         .accessibilityHint("Shows what your completion reminder notification will look like")
     }
     
-    // MARK: - Notification Sound Row
-    private var notificationSoundRow: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Notification Sound")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                Text("Choose the sound for your daily reminders.")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            HStack(spacing: 4) {
-                Text(reminderSound)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text03)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .foregroundColor(.text03)
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                showingSoundPicker = true
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Notification sound")
-        .accessibilityHint("Choose the sound for daily reminders")
-    }
     
     // MARK: - Save Button
     private var saveButton: some View {
@@ -497,7 +435,6 @@ struct NotificationsView: View {
         originalCompletionReminderEnabled = completionReminderEnabled
         originalCompletionReminderTime = completionReminderTime
         originalSnoozeDuration = snoozeDuration
-        originalReminderSound = reminderSound
         
         // Save to UserDefaults
         UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
@@ -505,7 +442,6 @@ struct NotificationsView: View {
         UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
         UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
         UserDefaults.standard.set(snoozeDuration.rawValue, forKey: "snoozeDuration")
-        UserDefaults.standard.set(reminderSound, forKey: "reminderSound")
         
         // Schedule daily reminders based on new settings
         Task { @MainActor in
@@ -544,12 +480,6 @@ struct NotificationsView: View {
            let snooze = SnoozeDuration(rawValue: snoozeRawValue) {
             originalSnoozeDuration = snooze
             snoozeDuration = snooze
-        }
-        
-        // Load reminder sound
-        if let sound = UserDefaults.standard.string(forKey: "reminderSound") {
-            originalReminderSound = sound
-            reminderSound = sound
         }
     }
     
@@ -650,172 +580,6 @@ extension Date {
         components.minute = minute
         components.second = 0
         return calendar.date(from: components) ?? self
-    }
-}
-
-// MARK: - Sound Picker View
-struct SoundPickerView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var selectedSound: String
-    let soundOptions: [String]
-    
-    // Track the original selection to determine if Save should be enabled
-    @State private var originalSelection: String
-    
-    // Audio player for sound preview
-    @State private var audioPlayer: AVAudioPlayer?
-    
-    init(selectedSound: Binding<String>, soundOptions: [String]) {
-        self._selectedSound = selectedSound
-        self.soundOptions = soundOptions
-        self._originalSelection = State(initialValue: selectedSound.wrappedValue)
-    }
-    
-    var body: some View {
-        ZStack {
-            // Full screen background
-            Color.surface2
-                .ignoresSafeArea()
-            
-            // Content
-            VStack(spacing: 0) {
-                // Header
-                ScreenHeader(
-                    title: "Reminder Sound",
-                    description: "Choose your preferred notification sound"
-                ) {
-                    dismiss()
-                }
-                
-                // Sound Options List
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(soundOptions, id: \.self) { sound in
-                            HStack(spacing: 12) {
-                                Text(sound)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.text01)
-                                
-                                Spacer()
-                                
-                                // Checkmark for selected sound
-                                if selectedSound == sound {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.primary)
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedSound = sound
-                                playSound(for: sound)
-                            }
-                            
-                            if sound != soundOptions.last {
-                                Divider()
-                                    .padding(.leading, 56)
-                            }
-                        }
-                    }
-                    .background(Color.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .padding(.bottom, 20)
-                }
-                
-                // Save Button
-                VStack(spacing: 0) {
-                    HabittoButton(
-                        size: .large,
-                        style: .fillPrimary,
-                        content: .text("Save"),
-                        state: selectedSound != originalSelection ? .default : .disabled
-                    ) {
-                        dismiss()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-            }
-        }
-        .navigationBarHidden(true)
-    }
-    
-    // MARK: - Sound Playback
-    private func playSound(for sound: String) {
-        // Stop any currently playing sound
-        audioPlayer?.stop()
-        
-        // Map sound names to system sound files
-        let soundName: String
-        switch sound {
-        case "Default":
-            soundName = "notification_default"
-        case "Gentle":
-            soundName = "notification_gentle"
-        case "Chime":
-            soundName = "notification_chime"
-        case "Bell":
-            soundName = "notification_bell"
-        case "Crystal":
-            soundName = "notification_crystal"
-        case "Digital":
-            soundName = "notification_digital"
-        case "Nature":
-            soundName = "notification_nature"
-        case "Piano":
-            soundName = "notification_piano"
-        case "Pop":
-            soundName = "notification_pop"
-        case "None":
-            return // Don't play anything for "None"
-        default:
-            soundName = "notification_default"
-        }
-        
-        // Try to play the sound
-        if let soundURL = Bundle.main.url(forResource: soundName, withExtension: "wav") {
-            do {
-                audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
-                audioPlayer?.play()
-            } catch {
-                print("Error playing sound: \(error)")
-                // Fallback to system sound if custom sound fails
-                playSystemSound(for: sound)
-            }
-        } else {
-            // Fallback to system sounds if custom sounds aren't available
-            playSystemSound(for: sound)
-        }
-    }
-    
-    private func playSystemSound(for sound: String) {
-        // Fallback to system notification sounds
-        switch sound {
-        case "Default":
-            AudioServicesPlaySystemSound(1007) // System notification sound
-        case "Gentle":
-            AudioServicesPlaySystemSound(1008) // System notification sound (gentle)
-        case "Chime":
-            AudioServicesPlaySystemSound(1009) // System notification sound (chime)
-        case "Bell":
-            AudioServicesPlaySystemSound(1010) // System notification sound (bell)
-        case "Crystal":
-            AudioServicesPlaySystemSound(1011) // System notification sound (crystal-like)
-        case "Digital":
-            AudioServicesPlaySystemSound(1012) // System notification sound (digital)
-        case "Nature":
-            AudioServicesPlaySystemSound(1013) // System notification sound (nature)
-        case "Piano":
-            AudioServicesPlaySystemSound(1014) // System notification sound (piano-like)
-        case "Pop":
-            AudioServicesPlaySystemSound(1015) // System notification sound (pop)
-        default:
-            AudioServicesPlaySystemSound(1007) // Default system sound
-        }
     }
 }
 
