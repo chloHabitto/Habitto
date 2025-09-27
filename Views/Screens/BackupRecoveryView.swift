@@ -33,8 +33,8 @@ struct BackupRecoveryView: View {
                         }
                         
                         // Backup Settings
-                        VStack(spacing: 0) {
-                                // Automatic Backup Toggle
+                        VStack(spacing: 16) {
+                            // Automatic Backup Toggle
                             HStack {
                                 Image("Icon-CloudDownload_Filled")
                                     .renderingMode(.template)
@@ -64,92 +64,86 @@ struct BackupRecoveryView: View {
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)
-                            .background(Color.white)
-                            .cornerRadius(12)
+                            .background(Color.surface)
+                            .cornerRadius(16)
                             
                             // Backup Frequency (shown when automatic backup is enabled)
                             if isAutomaticBackupEnabled {
-                                VStack(spacing: 0) {
-                                    HStack {
-                                        Image("Icon-Calendar_Filled")
-                                            .renderingMode(.template)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 24, height: 24)
-                                            .foregroundColor(.navy200)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("Backup Frequency")
-                                                .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.text01)
-                                            Text("How often to backup your data")
-                                                .font(.system(size: 14, weight: .regular))
-                                                .foregroundColor(.text03)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Picker("Frequency", selection: $backupFrequency) {
-                                            ForEach(backupFrequencies, id: \.self) { frequency in
-                                                Text(frequency).tag(frequency)
-                                            }
-                                        }
-                                        .pickerStyle(MenuPickerStyle())
-                                        .onChange(of: backupFrequency) {
-                                            Task {
-                                                await saveBackupSettings()
-                                            }
+                                HStack {
+                                    Image("Icon-Calendar_Filled")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundColor(.navy200)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Backup Frequency")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.text01)
+                                        Text("How often to backup your data")
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(.text03)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Picker("Frequency", selection: $backupFrequency) {
+                                        ForEach(backupFrequencies, id: \.self) { frequency in
+                                            Text(frequency).tag(frequency)
                                         }
                                     }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(Color.white)
-                                    .cornerRadius(12)
+                                    .pickerStyle(MenuPickerStyle())
+                                    .onChange(of: backupFrequency) {
+                                        Task {
+                                            await saveBackupSettings()
+                                        }
+                                    }
                                 }
-                                .padding(.top, 12)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(Color.surface)
+                                .cornerRadius(16)
                             }
                             
                             // WiFi Only Toggle (shown when automatic backup is enabled)
                             if isAutomaticBackupEnabled {
-                                VStack(spacing: 0) {
-                                    HStack {
-                                        Image(systemName: "wifi")
-                                            .renderingMode(.template)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 24, height: 24)
-                                            .foregroundColor(.navy200)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("WiFi Only")
-                                                .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.text01)
-                                            Text("Only backup when connected to WiFi")
-                                                .font(.system(size: 14, weight: .regular))
-                                                .foregroundColor(.text03)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        Toggle("", isOn: $wifiOnlyBackup)
-                                            .fixedSize(horizontal: true, vertical: false)
-                                            .onChange(of: wifiOnlyBackup) {
-                                                Task {
-                                                    await saveBackupSettings()
-                                                }
-                                            }
+                                HStack {
+                                    Image(systemName: "wifi")
+                                        .renderingMode(.template)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 24, height: 24)
+                                        .foregroundColor(.navy200)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("WiFi Only")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.text01)
+                                        Text("Only backup when connected to WiFi")
+                                            .font(.system(size: 14, weight: .regular))
+                                            .foregroundColor(.text03)
                                     }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(Color.white)
-                                    .cornerRadius(12)
+                                    
+                                    Spacer()
+                                    
+                                    Toggle("", isOn: $wifiOnlyBackup)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        .onChange(of: wifiOnlyBackup) {
+                                            Task {
+                                                await saveBackupSettings()
+                                            }
+                                        }
                                 }
-                                .padding(.top, 12)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(Color.surface)
+                                .cornerRadius(16)
                             }
                         }
                         
                         // Backup Status Section
-                        VStack(spacing: 0) {
+                        VStack(spacing: 16) {
                             HStack {
                                 Image("Icon-Archive_Filled")
                                     .renderingMode(.template)
@@ -177,8 +171,8 @@ struct BackupRecoveryView: View {
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)
-                            .background(Color.white)
-                            .cornerRadius(12)
+                            .background(Color.surface)
+                            .cornerRadius(16)
                             
                             // Backup Now Button
                             Button(action: {
@@ -207,12 +201,10 @@ struct BackupRecoveryView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .background(Color.primary)
-                                .cornerRadius(12)
+                                .cornerRadius(16)
                             }
                             .disabled(isBackingUp)
-                            .padding(.top, 12)
-                            
-                            }
+                        }
                         }
                     }
                     .padding(.horizontal, 20)

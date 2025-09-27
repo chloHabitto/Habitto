@@ -41,19 +41,6 @@ struct AccountView: View {
                                     ) {
                                         showingPersonalInformation = true
                                     }
-                                    
-                                    Divider()
-                                        .padding(.leading, 56)
-                                    
-                                    AccountOptionRow(
-                                        icon: "Icon-Cloud_Filled",
-                                        title: "Data Management",
-                                        subtitle: "Manage your data and privacy settings",
-                                        hasChevron: true,
-                                        iconColor: .navy200
-                                    ) {
-                                        showingDataPrivacy = true
-                                    }
                                 }
                                 .background(Color.surface)
                                 .cornerRadius(16)
