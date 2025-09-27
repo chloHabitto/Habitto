@@ -115,7 +115,7 @@ struct NotificationsView: View {
                 }
             }
             .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         }
     }
@@ -143,7 +143,7 @@ struct NotificationsView: View {
                 }
             }
             .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         }
     }
