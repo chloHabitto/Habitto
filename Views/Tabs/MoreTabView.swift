@@ -172,9 +172,9 @@ struct MoreTabView: View {
                     SettingItem(title: "Account", value: nil, hasChevron: true, action: {
                         showingAccountView = true
                     }),
-                    SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
-                        showingDataPrivacy = true
-                    }),
+                    // SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
+                    //     showingDataPrivacy = true
+                    // }),
                     SettingItem(title: "Date & Calendar", value: nil, hasChevron: true, action: {
                         showingDateCalendar = true
                     }),
