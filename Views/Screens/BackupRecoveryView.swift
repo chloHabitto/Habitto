@@ -34,7 +34,7 @@ struct BackupRecoveryView: View {
                         
                         // Backup Settings
                         VStack(spacing: 0) {
-                            // Automatic Backup Toggle
+                                // Automatic Backup Toggle
                             HStack {
                                 Image("Icon-CloudDownload_Filled")
                                     .renderingMode(.template)
@@ -212,34 +212,7 @@ struct BackupRecoveryView: View {
                             .disabled(isBackingUp)
                             .padding(.top, 12)
                             
-                            // Testing Section
-                            VStack(spacing: 0) {
-                                HStack {
-                                    Image(systemName: "testtube.2")
-                                        .foregroundColor(.blue)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("System Testing")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.text01)
-                                        
-                                        Text("Run comprehensive backup system tests")
-                                            .font(.system(size: 14, weight: .regular))
-                                            .foregroundColor(.text03)
-                                    }
-                                    
-                                    Button("Test") {
-                                        showingTestingView = true
-                                    }
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.navy200)
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                                .background(Color.white)
-                                .cornerRadius(12)
                             }
-                            .padding(.top, 12)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -259,58 +232,58 @@ struct BackupRecoveryView: View {
             .backupNotifications()
             .background(Color.surface2)
         }
-    }
-    
-    private func loadBackupSettings() {
-        let config = BackupScheduler.loadScheduleConfig()
-        isAutomaticBackupEnabled = config.isEnabled
-        backupFrequency = config.frequency.displayName
-        wifiOnlyBackup = config.networkCondition == NetworkCondition.wifiOnly
-    }
-    
-    private func saveBackupSettings() async {
-        let frequency: BackupFrequency = {
-            switch backupFrequency {
-            case "Daily": return .daily
-            case "Weekly": return .weekly
-            case "Monthly": return .monthly
-            default: return .manual
+        
+        @MainActor
+        private func loadBackupSettings() {
+            let config = BackupScheduler.loadScheduleConfig()
+            isAutomaticBackupEnabled = config.isEnabled
+            backupFrequency = config.frequency.displayName
+            wifiOnlyBackup = config.networkCondition == NetworkCondition.wifiOnly
+        }
+        
+        private func saveBackupSettings() async {
+            let frequency: BackupFrequency = {
+                switch backupFrequency {
+                case "Daily": return .daily
+                case "Weekly": return .weekly
+                case "Monthly": return .monthly
+                default: return .manual
+                }
+            }()
+            
+            backupScheduler.updateSchedule(
+                isEnabled: isAutomaticBackupEnabled,
+                frequency: frequency,
+                networkCondition: wifiOnlyBackup ? NetworkCondition.wifiOnly : NetworkCondition.any
+            )
+            
+            // Show notification for settings change
+            notificationService.showSettingsChanged()
+        }
+        
+        private func performBackup() async {
+            isBackingUp = true
+            
+            do {
+                let result = try await backupManager.createBackup()
+                
+                await MainActor.run {
+                    notificationService.showBackupSuccess(
+                        backupSize: result.formattedSize,
+                        habitCount: result.habitCount
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    notificationService.showBackupFailure(error: error)
+                }
             }
-        }()
-        
-        backupScheduler.updateSchedule(
-            isEnabled: isAutomaticBackupEnabled,
-            frequency: frequency,
-            networkCondition: wifiOnlyBackup ? NetworkCondition.wifiOnly : NetworkCondition.any
-        )
-        
-        // Show notification for settings change
-        notificationService.showSettingsChanged()
-    }
-    
-    private func performBackup() async {
-        isBackingUp = true
-        
-        do {
-            let result = try await backupManager.createBackup()
             
             await MainActor.run {
-                notificationService.showBackupSuccess(
-                    backupSize: result.formattedSize,
-                    habitCount: result.habitCount
-                )
+                isBackingUp = false
             }
-        } catch {
-            await MainActor.run {
-                notificationService.showBackupFailure(error: error)
-            }
-        }
-        
-        await MainActor.run {
-            isBackingUp = false
         }
     }
-}
 
 #Preview {
     BackupRecoveryView()
