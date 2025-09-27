@@ -87,7 +87,7 @@ struct DataPrivacyView: View {
                                 }
                             }
                             .background(Color.surface)
-                            .cornerRadius(16)
+                            .cornerRadius(24)
                             .padding(.horizontal, 20)
                         }
                     }
