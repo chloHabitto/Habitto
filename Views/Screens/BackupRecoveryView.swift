@@ -210,6 +210,7 @@ struct BackupRecoveryView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 100)
                 }
+                .background(Color.surface2)
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -222,7 +223,6 @@ struct BackupRecoveryView: View {
                 BackupTestingView()
             }
             .backupNotifications()
-            .background(Color.surface2)
         }
         
         @MainActor
