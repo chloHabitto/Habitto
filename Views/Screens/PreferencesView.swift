@@ -5,7 +5,6 @@ struct PreferencesView: View {
     @EnvironmentObject var themeManager: ThemeManager
     
     @State private var showingLanguage = false
-    @State private var showingDateCalendar = false
     @State private var showingTheme = false
     
     private var iconColor: Color {
@@ -49,19 +48,6 @@ struct PreferencesView: View {
                             .padding(.leading, 56)
                         
                         AccountOptionRow(
-                            icon: "Icon-Calendar_Filled",
-                            title: "Date & Calendar",
-                            subtitle: "Set your date and calendar preferences",
-                            hasChevron: true,
-                            iconColor: iconColor
-                        ) {
-                            showingDateCalendar = true
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 56)
-                        
-                        AccountOptionRow(
                             icon: "Icon-Theme_Filled",
                             title: "Theme",
                             subtitle: "Choose your preferred app theme",
@@ -95,9 +81,6 @@ struct PreferencesView: View {
         .navigationBarHidden(true)
         .sheet(isPresented: $showingLanguage) {
             LanguageView()
-        }
-        .sheet(isPresented: $showingDateCalendar) {
-            DateCalendarView()
         }
         .sheet(isPresented: $showingTheme) {
             ThemeView()
