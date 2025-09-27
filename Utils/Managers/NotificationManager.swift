@@ -1364,8 +1364,16 @@ class NotificationManager: ObservableObject {
             content.badge = 1
             
             // Create date components for the reminder time on the specific date
-            let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
-            let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+            // Use the same timezone for both reminder time and target date
+            let reminderComponents = calendar.dateComponents(in: .current, from: reminderTime)
+            let dateComponents = calendar.dateComponents(in: .current, from: date)
+            
+            // Debug logging
+            print("🔍 NotificationManager: Plan reminder scheduling debug:")
+            print("  - Target date: \(date)")
+            print("  - Reminder time: \(reminderTime)")
+            print("  - Reminder components: \(reminderComponents)")
+            print("  - Date components: \(dateComponents)")
             
             // Combine date and time components
             var combinedComponents = DateComponents()
@@ -1374,6 +1382,8 @@ class NotificationManager: ObservableObject {
             combinedComponents.day = dateComponents.day
             combinedComponents.hour = reminderComponents.hour
             combinedComponents.minute = reminderComponents.minute
+            
+            print("  - Combined components: \(combinedComponents)")
             
             // Create trigger for specific date
             let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
@@ -1441,8 +1451,16 @@ class NotificationManager: ObservableObject {
             }
             
             // Create date components for the reminder time on the specific date
-            let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
-            let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+            // Use the same timezone for both reminder time and target date
+            let reminderComponents = calendar.dateComponents(in: .current, from: reminderTime)
+            let dateComponents = calendar.dateComponents(in: .current, from: date)
+            
+            // Debug logging
+            print("🔍 NotificationManager: Completion reminder scheduling debug:")
+            print("  - Target date: \(date)")
+            print("  - Reminder time: \(reminderTime)")
+            print("  - Reminder components: \(reminderComponents)")
+            print("  - Date components: \(dateComponents)")
             
             // Combine date and time components
             var combinedComponents = DateComponents()
@@ -1451,6 +1469,8 @@ class NotificationManager: ObservableObject {
             combinedComponents.day = dateComponents.day
             combinedComponents.hour = reminderComponents.hour
             combinedComponents.minute = reminderComponents.minute
+            
+            print("  - Combined components: \(combinedComponents)")
             
             // Create trigger for specific date
             let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)

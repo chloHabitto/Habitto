@@ -306,7 +306,7 @@ extension Date {
     
     func settingMinute(_ minute: Int) -> Date {
         let calendar = Calendar.current
-        var components = calendar.dateComponents(in: .current, from: self)
+        var components = calendar.dateComponents([.year, .month, .day, .hour], from: self)
         components.minute = minute
         components.second = 0
         return calendar.date(from: components) ?? self
