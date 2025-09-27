@@ -24,40 +24,6 @@ struct VacationModeView: View {
                     dismiss()
                 }
                 
-                // DEBUG: Vacation Mode Status
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("DEBUG INFO")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.red)
-                    
-                    Text("Vacation Mode Active: \(vacationManager.isActive ? "YES" : "NO")")
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                    
-                    Text("Today is Vacation Day: \(vacationManager.isVacationDay(Date()) ? "YES" : "NO")")
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                    
-                    if let current = vacationManager.current {
-                        Text("Current Period: \(current.start) - \(current.end?.description ?? "ongoing")")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Text("History Count: \(vacationManager.history.count)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    
-                    Button("Clear All Vacation Data") {
-                        vacationManager.clearAllVacationData()
-                    }
-                    .font(.system(size: 12))
-                    .foregroundColor(.red)
-                }
-                .padding()
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(8)
-                .padding(.horizontal, 20)
                 
                 // Vacation Mode Status Section
                 VStack(alignment: .leading, spacing: 16) {
