@@ -319,28 +319,13 @@ struct ExportDataView: View {
                                 await performExport()
                             }
                         }) {
-                            HStack {
-                                if isExporting {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image("Icon-Download_Filled")
-                                        .renderingMode(.template)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 20, height: 20)
-                                        .foregroundColor(.white)
-                                }
-                                
-                                Text(isExporting ? "Exporting..." : "Export Data")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
+                            Text(isExporting ? "Exporting..." : "Export Data")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(Color.primary)
-                            .cornerRadius(12)
+                            .cornerRadius(28)
                         }
                         .disabled(isExporting || selectedDataTypes.isEmpty)
                         .padding(.horizontal, 20)
