@@ -12,36 +12,17 @@ struct NotificationsView: View {
     // Completion Reminder State
     @State private var originalCompletionReminderEnabled = false
     @State private var originalCompletionReminderTime = Date().settingHour(20).settingMinute(30)
-    @State private var originalSnoozeDuration = SnoozeDuration.none
     @State private var completionReminderEnabled = false
     @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
-    @State private var snoozeDuration = SnoozeDuration.none
     
     
-    // Snooze Duration Options
-    enum SnoozeDuration: String, CaseIterable {
-        case none = "None"
-        case tenMinutes = "10 min"
-        case fifteenMinutes = "15 min"
-        case thirtyMinutes = "30 min"
-        
-        var minutes: Int {
-            switch self {
-            case .none: return 0
-            case .tenMinutes: return 10
-            case .fifteenMinutes: return 15
-            case .thirtyMinutes: return 30
-            }
-        }
-    }
     
     // Check if any changes were made
     private var hasChanges: Bool {
         return planReminderEnabled != originalPlanReminderEnabled ||
                planReminderTime != originalPlanReminderTime ||
                completionReminderEnabled != originalCompletionReminderEnabled ||
-               completionReminderTime != originalCompletionReminderTime ||
-               snoozeDuration != originalSnoozeDuration
+               completionReminderTime != originalCompletionReminderTime
     }
     
     // Plan reminder preview title
@@ -153,12 +134,6 @@ struct NotificationsView: View {
                         .padding(.leading, 20)
                     
                     completionReminderTimeRow
-                    
-                    Divider()
-                        .background(Color(.systemGray4))
-                        .padding(.leading, 20)
-                    
-                    snoozeDurationRow
                     
                     Divider()
                         .background(Color(.systemGray4))
@@ -318,44 +293,6 @@ struct NotificationsView: View {
         .accessibilityHint("Set the time for daily completion reminders")
     }
     
-    // MARK: - Snooze Duration Row
-    private var snoozeDurationRow: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Snooze duration")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                Spacer()
-            }
-            
-            HStack(spacing: 8) {
-                ForEach(SnoozeDuration.allCases, id: \.self) { duration in
-                    Button(action: {
-                        snoozeDuration = duration
-                    }) {
-                        Text(duration.rawValue)
-                            .font(.appBodyMedium)
-                            .foregroundColor(snoozeDuration == duration ? .white : .text02)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(snoozeDuration == duration ? Color.primary : Color.clear)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color(.systemGray4), lineWidth: 1)
-                                    )
-                            )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Snooze duration")
-        .accessibilityHint("Choose how long to snooze completion reminders")
-    }
     
     // MARK: - Completion Reminder Preview Row
     private var completionReminderPreviewRow: some View {
@@ -434,14 +371,12 @@ struct NotificationsView: View {
         originalPlanReminderTime = planReminderTime
         originalCompletionReminderEnabled = completionReminderEnabled
         originalCompletionReminderTime = completionReminderTime
-        originalSnoozeDuration = snoozeDuration
         
         // Save to UserDefaults
         UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
         UserDefaults.standard.set(completionReminderEnabled, forKey: "completionReminderEnabled")
         UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
         UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
-        UserDefaults.standard.set(snoozeDuration.rawValue, forKey: "snoozeDuration")
         
         // Schedule daily reminders based on new settings
         Task { @MainActor in
@@ -475,12 +410,6 @@ struct NotificationsView: View {
             completionReminderTime = completionTime
         }
         
-        // Load snooze duration
-        if let snoozeRawValue = UserDefaults.standard.string(forKey: "snoozeDuration"),
-           let snooze = SnoozeDuration(rawValue: snoozeRawValue) {
-            originalSnoozeDuration = snooze
-            snoozeDuration = snooze
-        }
     }
     
     // MARK: - Helper Methods
