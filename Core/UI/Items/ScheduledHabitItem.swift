@@ -60,6 +60,44 @@ struct ScheduledHabitItem: View {
         .opacity(isVacationDay ? 0.6 : 1.0)
     }
     
+    // Computed property to check if habit has reminders
+    private var hasReminders: Bool {
+        return !habit.reminders.isEmpty
+    }
+    
+    // Computed property to check if all reminders for today are completed
+    private var areRemindersCompleted: Bool {
+        guard hasReminders else { return false }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: selectedDate)
+        let now = Date()
+        
+        // Check if all reminders for today have passed
+        return habit.reminders.allSatisfy { reminder in
+            let reminderTime = calendar.dateComponents([.hour, .minute], from: reminder.time)
+            let todayWithReminderTime = calendar.date(bySettingHour: reminderTime.hour ?? 0, 
+                                                    minute: reminderTime.minute ?? 0, 
+                                                    second: 0, 
+                                                    of: today) ?? today
+            
+            return now > todayWithReminderTime
+        }
+    }
+    
+    // Computed property for reminder icon
+    private var reminderIcon: some View {
+        Group {
+            if hasReminders {
+                Image(areRemindersCompleted ? "Icon-Bell_Filled" : "Icon-BellOn_Filled")
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(.yellow100)
+            }
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 12) {
             // ColorMark
@@ -73,11 +111,15 @@ struct ScheduledHabitItem: View {
             
             // VStack with title, progress text, and progress bar
             VStack(alignment: .leading, spacing: 8) {
-                Text(habit.name)
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.text02)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                HStack(spacing: 6) {
+                    Text(habit.name)
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.text02)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    
+                    reminderIcon
+                }
                 
                 Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
                     .font(.appBodySmall)

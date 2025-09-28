@@ -19,6 +19,44 @@ struct AddedHabitItem: View {
         self.onLongPress = onLongPress
     }
     
+    // Computed property to check if habit has reminders
+    private var hasReminders: Bool {
+        return !habit.reminders.isEmpty
+    }
+    
+    // Computed property to check if all reminders for today are completed
+    private var areRemindersCompleted: Bool {
+        guard hasReminders else { return false }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let now = Date()
+        
+        // Check if all reminders for today have passed
+        return habit.reminders.allSatisfy { reminder in
+            let reminderTime = calendar.dateComponents([.hour, .minute], from: reminder.time)
+            let todayWithReminderTime = calendar.date(bySettingHour: reminderTime.hour ?? 0, 
+                                                    minute: reminderTime.minute ?? 0, 
+                                                    second: 0, 
+                                                    of: today) ?? today
+            
+            return now > todayWithReminderTime
+        }
+    }
+    
+    // Computed property for reminder icon
+    private var reminderIcon: some View {
+        Group {
+            if hasReminders {
+                Image(areRemindersCompleted ? "Icon-Bell_Filled" : "Icon-BellOn_Filled")
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(.yellow100)
+            }
+        }
+    }
+    
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // ColorMark
@@ -37,11 +75,15 @@ struct AddedHabitItem: View {
                 HStack(spacing: 4) {
                     // Text container - tappable area
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(habit.name)
-                            .font(.appTitleMediumEmphasised)
-                            .foregroundColor(.text02)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+                        HStack(spacing: 6) {
+                            Text(habit.name)
+                                .font(.appTitleMediumEmphasised)
+                                .foregroundColor(.text02)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            
+                            reminderIcon
+                        }
                         
                         Text(habit.description.isEmpty ? "No description" : habit.description)
                             .font(.appBodyExtraSmall)
