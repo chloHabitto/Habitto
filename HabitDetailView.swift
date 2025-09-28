@@ -520,7 +520,12 @@ struct HabitDetailView: View {
     }
     
     private func deleteReminder(_ reminder: ReminderItem) {
+        print("🗑️ HabitDetailView: Deleting reminder with ID: \(reminder.id)")
+        print("🗑️ HabitDetailView: Current reminders count: \(habit.reminders.count)")
+        
         let updatedReminders = habit.reminders.filter { $0.id != reminder.id }
+        print("🗑️ HabitDetailView: Updated reminders count: \(updatedReminders.count)")
+        
         let updatedHabit = Habit(
             id: habit.id,
             name: habit.name,
@@ -543,11 +548,16 @@ struct HabitDetailView: View {
             actualUsage: habit.actualUsage
         )
         
+        // Update the local state first
+        habit = updatedHabit
+        
         // Update notifications for the habit
         print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders")
         NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
         
+        print("🗑️ HabitDetailView: Calling onUpdateHabit callback")
         onUpdateHabit?(updatedHabit)
+        print("🗑️ HabitDetailView: Delete reminder completed")
     }
     
     // MARK: - Today's Progress Section
@@ -865,10 +875,12 @@ struct ReminderEditSheet: View {
     
     private func saveReminder() {
         if isEditing, let reminder = reminder {
-            // Update existing reminder
+            // Update existing reminder - preserve the original ID
             let updatedReminders = habit.reminders.map { existingReminder in
                 if existingReminder.id == reminder.id {
-                    return ReminderItem(time: selectedTime, isActive: existingReminder.isActive)
+                    var updatedReminder = existingReminder
+                    updatedReminder.time = selectedTime
+                    return updatedReminder
                 }
                 return existingReminder
             }
