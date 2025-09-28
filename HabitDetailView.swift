@@ -13,19 +13,21 @@ struct HabitDetailView: View {
     @State private var selectedReminder: ReminderItem?
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Top navigation bar
-            topNavigationBar
-            
-            // Main content card
-            mainContentCard
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-            
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                // Full header
+                fullHeader
+                    .padding(.top, 0)
+                    .padding(.bottom, 24)
+                
+                // Main content card
+                mainContentCard
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 32)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGray6))
+        .background(Color.surface2)
+        .navigationBarHidden(true)
         .onAppear {
             // Initialize todayProgress with the actual habit progress for the selected date
             todayProgress = habit.getProgress(for: selectedDate)
@@ -73,20 +75,18 @@ struct HabitDetailView: View {
         }
     }
     
-    // MARK: - Top Navigation Bar
-    private var topNavigationBar: some View {
+    // MARK: - Full Header (shown when at top)
+    private var fullHeader: some View {
         VStack(spacing: 0) {
+            // Top row with close button and menu
             HStack {
-                // Back button
                 Button(action: {
                     dismiss()
                 }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.primary)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.text01)
                 }
-                .frame(width: 40, height: 40)
-                .contentShape(Rectangle())
                 
                 Spacer()
                 
@@ -105,33 +105,34 @@ struct HabitDetailView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.primary)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.text01)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
-                        .background(Color.clear.opacity(0.001)) // Invisible background for better touch
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 8)
+            .padding(.horizontal, 20)
             .padding(.bottom, 16)
             
-            // Title and description
-            VStack(alignment: .leading, spacing: 4) {
+            // Title section - left aligned
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Habit details")
-                    .font(.appHeadlineMediumEmphasised)
+                    .font(.appHeadlineSmallEmphasised)
                     .foregroundColor(.text01)
-                
+                    .accessibilityAddTraits(.isHeader)
+
                 Text("View and edit your habit details.")
                     .font(.appTitleSmall)
-                    .foregroundColor(.text04)
+                    .foregroundColor(.text05)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
         }
-        .padding(.top, 0) // Let the system handle safe area
+        .padding(.top, 0)
     }
+    
     
     // MARK: - Main Content Card
     private var mainContentCard: some View {
@@ -356,6 +357,11 @@ struct HabitDetailView: View {
             completionHistory: habit.completionHistory,
             actualUsage: habit.actualUsage
         )
+        
+        // Update notifications for the habit
+        print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders")
+        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
+        
         onUpdateHabit?(updatedHabit)
     }
     
@@ -704,6 +710,10 @@ struct ReminderEditSheet: View {
                 actualUsage: habit.actualUsage
             )
             
+            // Update notifications for the habit
+            print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders (editing)")
+            NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
+            
             onSave(updatedHabit)
         } else {
             // Create new reminder
@@ -731,6 +741,10 @@ struct ReminderEditSheet: View {
                 completionHistory: habit.completionHistory,
                 actualUsage: habit.actualUsage
             )
+            
+            // Update notifications for the habit
+            print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders (creating new)")
+            NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
             
             onSave(updatedHabit)
         }

@@ -781,6 +781,13 @@ class NotificationManager: ObservableObject {
         // First, remove all existing notifications for this habit
         removeAllNotifications(for: habit)
         
+        // Check if habit reminders are globally enabled
+        let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        if !habitReminderEnabled {
+            print("📅 NotificationManager: Habit reminders globally disabled, skipping individual habit notifications for '\(habit.name)'")
+            return
+        }
+        
         // Schedule notifications for the next 7 days for this specific habit
         let calendar = Calendar.current
         let today = Date()
@@ -790,7 +797,7 @@ class NotificationManager: ObservableObject {
                 // Only schedule if habit should be shown on this date
                 if shouldShowHabitOnDate(habit, date: targetDate) {
                     for reminder in reminders where reminder.isActive {
-                        let notificationId = "\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: targetDate))"
+                        let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: targetDate))"
                         
                         // Create content
                         let content = UNMutableNotificationContent()
@@ -800,6 +807,7 @@ class NotificationManager: ObservableObject {
                         content.badge = 1
                         
                         // Create date components for the specific date and reminder time
+                        // Use local timezone for both reminder time and target date
                         let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminder.time)
                         let dateComponents = calendar.dateComponents([.year, .month, .day], from: targetDate)
                         
@@ -858,9 +866,10 @@ class NotificationManager: ObservableObject {
             return false
         }
         
-        // Check if the habit is already completed for this date
-        if habit.isCompleted(for: date) {
-            print("🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Already completed for this date")
+        // Check if the habit is already completed for this date (only for today, not future dates)
+        let today = calendar.startOfDay(for: Date())
+        if dateKey == today && habit.isCompleted(for: date) {
+            print("🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Already completed for today")
             return false
         }
         
@@ -1546,6 +1555,27 @@ class NotificationManager: ObservableObject {
         removeDailyPlanReminders()
         removeDailyCompletionReminders()
         removeSnoozedCompletionReminders()
+        removeAllHabitReminders()
+    }
+    
+    /// Remove all habit reminders
+    func removeAllHabitReminders() {
+        print("🧹 NotificationManager: Removing all habit reminders...")
+        
+        // Get all pending notifications
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            // Filter for habit reminders
+            let habitReminders = requests.filter { $0.identifier.hasPrefix("habit_reminder_") }
+            
+            let identifiersToRemove = habitReminders.map { $0.identifier }
+            
+            if !identifiersToRemove.isEmpty {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+                print("🗑️ NotificationManager: Removed \(identifiersToRemove.count) habit reminders")
+            } else {
+                print("ℹ️ NotificationManager: No habit reminders found to remove")
+            }
+        }
     }
     
     /// Reschedule all daily reminders (useful when settings change)
@@ -1581,9 +1611,285 @@ class NotificationManager: ObservableObject {
             print("📅 NotificationManager: Completion reminders are disabled, skipping...")
         }
         
-        // Step 5: Get final count for verification
+        // Step 5: Schedule habit reminders based on global setting
+        let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        if habitReminderEnabled {
+            print("📅 NotificationManager: Habit reminders are enabled, rescheduling all existing habits...")
+            rescheduleAllHabitReminders()
+        } else {
+            print("📅 NotificationManager: Habit reminders are disabled, skipping...")
+        }
+        
+        // Step 6: Get final count for verification
         getPendingDailyRemindersCount { count in
             print("✅ NotificationManager: Daily reminders rescheduled. Total pending: \(count)")
+        }
+        
+        // Step 7: Debug - List all pending notifications
+        debugPendingNotifications()
+    }
+    
+    /// Reschedule all existing habit reminders (useful when global toggle is turned on)
+    @MainActor
+    func rescheduleAllHabitReminders() {
+        print("🔄 NotificationManager: Rescheduling all existing habit reminders...")
+        
+        // Get all habits and reschedule their notifications
+        let habits = HabitRepository.shared.habits
+        for habit in habits {
+            if !habit.reminders.isEmpty {
+                print("🔄 Rescheduling notifications for habit: \(habit.name)")
+                updateNotifications(for: habit, reminders: habit.reminders)
+            }
+        }
+    }
+    
+    /// Force reschedule all habit reminders (bypasses completion checks)
+    @MainActor
+    func forceRescheduleAllHabitReminders() {
+        print("🔄 NotificationManager: Force rescheduling all habit reminders...")
+        
+        // First, remove all existing habit reminders
+        removeAllHabitReminders()
+        
+        // Get all habits and force schedule their notifications
+        let habits = HabitRepository.shared.habits
+        let calendar = Calendar.current
+        let today = Date()
+        
+        for habit in habits {
+            let activeReminders = habit.reminders.filter { $0.isActive }
+            if !activeReminders.isEmpty {
+                print("🔄 Force rescheduling notifications for habit: \(habit.name) (\(activeReminders.count) active reminders)")
+                
+                // Schedule for the next 7 days
+                for dayOffset in 0..<7 {
+                    if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                        for reminder in activeReminders {
+                            let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: targetDate))"
+                            
+                            // Create content
+                            let content = UNMutableNotificationContent()
+                            content.title = "Habit Reminder"
+                            content.body = "Time to complete: \(habit.name)"
+                            content.sound = .default
+                            content.badge = 1
+                            
+                            // Create date components for the specific date and reminder time
+                            // Use local timezone for both reminder time and target date
+                            let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminder.time)
+                            let dateComponents = calendar.dateComponents([.year, .month, .day], from: targetDate)
+                            
+                            // Combine date and time components
+                            var combinedComponents = DateComponents()
+                            combinedComponents.year = dateComponents.year
+                            combinedComponents.month = dateComponents.month
+                            combinedComponents.day = dateComponents.day
+                            combinedComponents.hour = reminderComponents.hour
+                            combinedComponents.minute = reminderComponents.minute
+                            
+                            // Create trigger for specific date
+                            let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+                            
+                            // Create request
+                            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+                            
+                            // Schedule the notification
+                            UNUserNotificationCenter.current().add(request) { error in
+                                if let error = error {
+                                    print("❌ Error force scheduling notification for \(habit.name) on \(targetDate): \(error)")
+                                } else {
+                                    print("✅ Force scheduled notification for habit '\(habit.name)' on \(targetDate) at \(reminder.time) - ID: \(notificationId)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Test method to immediately schedule a test notification
+    @MainActor
+    func scheduleTestHabitReminder() {
+        print("🧪 NotificationManager: Scheduling test habit reminder...")
+        
+        // Check notification authorization
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("🔐 Test - Notification authorization status: \(settings.authorizationStatus.rawValue)")
+            if settings.authorizationStatus != .authorized {
+                print("❌ Test - Notifications not authorized! Status: \(settings.authorizationStatus.rawValue)")
+                return
+            }
+            
+            // Schedule a test notification for 10 seconds from now
+            let content = UNMutableNotificationContent()
+            content.title = "🧪 TEST Habit Reminder"
+            content.body = "This is a test notification to verify the system is working"
+            content.sound = .default
+            content.badge = 1
+            
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+            let request = UNNotificationRequest(identifier: "test_habit_reminder", content: content, trigger: trigger)
+            
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Test - Error scheduling test notification: \(error)")
+                } else {
+                    print("✅ Test - Test notification scheduled successfully!")
+                }
+            }
+        }
+    }
+    
+    /// Comprehensive debug method to check everything
+    @MainActor
+    func debugHabitRemindersStatus() {
+        print("🔍 ===== COMPREHENSIVE HABIT REMINDERS DEBUG =====")
+        
+        // Check global toggle
+        let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        print("🔍 Global habit reminder toggle: \(habitReminderEnabled)")
+        
+        // Check habits
+        let habits = HabitRepository.shared.habits
+        print("🔍 Total habits: \(habits.count)")
+        
+        var totalReminders = 0
+        var activeReminders = 0
+        
+        for habit in habits {
+            let habitReminders = habit.reminders
+            let activeHabitReminders = habit.reminders.filter { $0.isActive }
+            totalReminders += habitReminders.count
+            activeReminders += activeHabitReminders.count
+            
+            print("🔍 Habit '\(habit.name)': \(habitReminders.count) total, \(activeHabitReminders.count) active reminders")
+            for (index, reminder) in habitReminders.enumerated() {
+                print("  Reminder \(index + 1): \(reminder.time) - Active: \(reminder.isActive)")
+            }
+        }
+        
+        print("🔍 Total reminders across all habits: \(totalReminders) total, \(activeReminders) active")
+        
+        // Check notification authorization
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("🔍 Notification authorization: \(settings.authorizationStatus.rawValue)")
+            print("🔍 Alert setting: \(settings.alertSetting.rawValue)")
+            print("🔍 Badge setting: \(settings.badgeSetting.rawValue)")
+            print("🔍 Sound setting: \(settings.soundSetting.rawValue)")
+            
+            // Check pending notifications
+            UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+                print("🔍 Total pending notifications: \(requests.count)")
+                
+                let habitReminders = requests.filter { $0.identifier.hasPrefix("habit_reminder_") }
+                print("🔍 Pending habit reminders: \(habitReminders.count)")
+                
+                for request in habitReminders {
+                    print("  - \(request.identifier)")
+                    print("    Title: \(request.content.title)")
+                    print("    Body: \(request.content.body)")
+                }
+                
+                print("🔍 ===== END DEBUG =====")
+            }
+        }
+    }
+    
+    /// Schedule all habit reminders for the next 7 days
+    @MainActor
+    private func scheduleAllHabitReminders() {
+        print("📅 NotificationManager: Scheduling all habit reminders...")
+        
+        // Check notification authorization first
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("🔐 Notification authorization status: \(settings.authorizationStatus.rawValue)")
+            if settings.authorizationStatus != .authorized {
+                print("⚠️ Notifications not authorized! Status: \(settings.authorizationStatus.rawValue)")
+            }
+        }
+        
+        // Get habits from HabitRepository
+        let habits = HabitRepository.shared.habits
+        print("📅 NotificationManager: Found \(habits.count) habits for habit reminders")
+        
+        // Debug: Check each habit's reminders
+        var totalActiveReminders = 0
+        for habit in habits {
+            let activeReminders = habit.reminders.filter { $0.isActive }
+            totalActiveReminders += activeReminders.count
+            print("🔍 Habit '\(habit.name)': \(habit.reminders.count) total reminders, \(activeReminders.count) active")
+            for (index, reminder) in habit.reminders.enumerated() {
+                print("  Reminder \(index + 1): \(reminder.time) - Active: \(reminder.isActive)")
+            }
+        }
+        
+        if totalActiveReminders == 0 {
+            print("⚠️ NotificationManager: No active habit reminders found! Users need to add reminders to individual habits first.")
+        }
+        
+        // Schedule habit reminders for the next 7 days
+        let calendar = Calendar.current
+        let today = Date()
+        
+        for dayOffset in 0..<7 {
+            if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+                scheduleHabitRemindersForDate(targetDate, habits: habits)
+            }
+        }
+    }
+    
+    /// Schedule habit reminders for a specific date
+    private func scheduleHabitRemindersForDate(_ date: Date, habits: [Habit]) {
+        let calendar = Calendar.current
+        
+        for habit in habits {
+            // Only schedule if habit should be shown on this date
+            if shouldShowHabitOnDate(habit, date: date) {
+                let activeReminders = habit.reminders.filter { $0.isActive }
+                print("🔍 Habit '\(habit.name)' on \(date): \(activeReminders.count) active reminders")
+                
+                for reminder in activeReminders {
+                    let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: date))"
+                    print("🔔 Scheduling notification for habit '\(habit.name)' at \(reminder.time) on \(date) - ID: \(notificationId)")
+                    
+                    // Create content
+                    let content = UNMutableNotificationContent()
+                    content.title = "Habit Reminder"
+                    content.body = "Time to complete: \(habit.name)"
+                    content.sound = .default
+                    content.badge = 1
+                    
+                           // Create date components for the reminder time
+                           let reminderTime = reminder.time
+                           let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+                           let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+                    
+                    // Combine date and time components
+                    var combinedComponents = DateComponents()
+                    combinedComponents.year = dateComponents.year
+                    combinedComponents.month = dateComponents.month
+                    combinedComponents.day = dateComponents.day
+                    combinedComponents.hour = reminderComponents.hour
+                    combinedComponents.minute = reminderComponents.minute
+                    
+                    // Create trigger
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
+                    
+                    // Create request
+                    let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+                    
+                    // Schedule the notification
+                    UNUserNotificationCenter.current().add(request) { error in
+                        if let error = error {
+                            print("❌ Error scheduling notification for \(habit.name) on \(date): \(error)")
+                        } else {
+                            print("✅ Notification scheduled for habit '\(habit.name)' on \(date) at \(reminder.time) - ID: \(notificationId)")
+                        }
+                    }
+                }
+            }
         }
     }
     
