@@ -18,6 +18,8 @@ struct ProfileView: View {
     @State private var showingCamera = false
     @State private var showingPhotoLibrary = false
     @State private var showingSignIn = false
+    @State private var showingMigrationAlert = false
+    @State private var hasGuestData = false
     
     var body: some View {
         NavigationView {
@@ -186,9 +188,14 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
-            .onAppear {
-                loadUserData()
-            }
+        .onAppear {
+            loadUserData()
+            // Debug: List all stored avatars
+            avatarManager.debugListAllStoredAvatars()
+        }
+        .onChange(of: authManager.authState) { _, authState in
+            handleAuthStateChange(authState)
+        }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
@@ -220,10 +227,14 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showingAvatarSelection) {
             AvatarSelectionView()
+                .onDisappear {
+                    print("🔄 ProfileView: Avatar selection closed, current avatar: \(avatarManager.selectedAvatar.displayName)")
+                }
         }
         .sheet(isPresented: $showingCamera) {
             if permissionManager.canUseCamera {
                 CameraView { image in
+                    print("📸 ProfileView: Camera photo selected, updating avatar")
                     avatarManager.selectCustomPhoto(image)
                 }
             } else {
@@ -256,11 +267,24 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showingPhotoLibrary) {
             PhotoLibraryView { image in
+                print("📷 ProfileView: Photo library image selected, updating avatar")
                 avatarManager.selectCustomPhoto(image)
             }
         }
         .sheet(isPresented: $showingSignIn) {
             LoginView()
+        }
+        .alert("Welcome!", isPresented: $showingMigrationAlert) {
+            Button("Start Fresh") {
+                avatarManager.clearGuestData()
+                hasGuestData = false
+            }
+            Button("Keep My Data") {
+                avatarManager.migrateGuestDataToUserAccount()
+                hasGuestData = false
+            }
+        } message: {
+            Text("We found some data from your guest session. Would you like to keep it or start fresh?")
         }
     }
     
@@ -287,6 +311,33 @@ struct ProfileView: View {
             }
         } else {
             showingPhotoLibrary = true
+        }
+    }
+    
+    private func handleAuthStateChange(_ authState: AuthenticationState) {
+        print("🔄 ProfileView: Auth state changed to: \(authState)")
+        switch authState {
+        case .authenticated:
+            // User logged in - check for guest data and show migration alert
+            print("👤 ProfileView: User authenticated, checking for guest data")
+            checkForGuestDataAndShowMigration()
+            loadUserData()
+        case .unauthenticated, .authenticating, .error:
+            // User logged out - load guest data
+            print("👤 ProfileView: User not authenticated, loading guest data")
+            loadUserData()
+        }
+    }
+    
+    private func checkForGuestDataAndShowMigration() {
+        // Check if there's guest data to migrate
+        let guestData = UserDefaults.standard.data(forKey: "GuestSelectedAvatar")
+        if guestData != nil && !hasGuestData {
+            hasGuestData = true
+            showingMigrationAlert = true
+        } else {
+            // No guest data, just migrate normally
+            avatarManager.migrateGuestDataToUserAccount()
         }
     }
     

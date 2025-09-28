@@ -6,11 +6,25 @@ import GoogleSignIn
 import CryptoKit
 
 // MARK: - Authentication State
-enum AuthenticationState {
+enum AuthenticationState: Equatable {
     case unauthenticated
     case authenticating
     case authenticated(UserProtocol)
     case error(String)
+    
+    static func == (lhs: AuthenticationState, rhs: AuthenticationState) -> Bool {
+        switch (lhs, rhs) {
+        case (.unauthenticated, .unauthenticated),
+             (.authenticating, .authenticating):
+            return true
+        case (.authenticated(let lhsUser), .authenticated(let rhsUser)):
+            return lhsUser.uid == rhsUser.uid
+        case (.error(let lhsMessage), .error(let rhsMessage)):
+            return lhsMessage == rhsMessage
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Authentication Manager

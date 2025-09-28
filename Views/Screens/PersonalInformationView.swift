@@ -1,8 +1,10 @@
 import SwiftUI
+import UIKit
 
 struct PersonalInformationView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authManager: AuthenticationManager
+    @ObservedObject private var avatarManager = AvatarManager.shared
     
     @State private var firstName: String = ""
     @State private var lastName: String = ""
@@ -65,15 +67,25 @@ struct PersonalInformationView: View {
     
     private var profilePictureSection: some View {
         VStack(spacing: 16) {
-            Image("Default-Profile@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 80, height: 80)
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .stroke(Color.primaryContainer, lineWidth: 3)
-                )
+            Group {
+                if avatarManager.selectedAvatar.isCustomPhoto,
+                   let imageData = avatarManager.selectedAvatar.customPhotoData,
+                   let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    Image(avatarManager.selectedAvatar.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                }
+            }
+            .frame(width: 80, height: 80)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color.primaryContainer, lineWidth: 3)
+            )
             
             // Email display below profile image
             Text(email)
