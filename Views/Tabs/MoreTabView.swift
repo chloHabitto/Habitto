@@ -212,8 +212,11 @@ struct MoreTabView: View {
                     SettingItem(title: "FAQ", value: nil, hasChevron: true, action: {
                         showingFAQ = true
                     }),
-                    SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
-                        showingContactUs = true
+                    // SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
+                    //     showingContactUs = true
+                    // }) // Hidden for now, can be used in the future
+                    SettingItem(title: "Send Feedback", value: nil, hasChevron: true, action: {
+                        showingSendFeedback = true
                     }),
                     SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true, action: {
                         showingTermsConditions = true
@@ -335,6 +338,8 @@ struct MoreTabView: View {
         case "FAQ":
             return "Icon-QuestionCircle_Filled"
         case "Contact us":
+            return "Icon-Letter_Filled"
+        case "Send Feedback":
             return "Icon-Letter_Filled"
         case "Terms & Conditions":
             return "Icon-DocumentText_Filled"
