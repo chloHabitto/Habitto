@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var avatarManager = AvatarManager.shared
     
     @State private var firstName: String = ""
     @State private var lastName: String = ""
@@ -12,6 +13,7 @@ struct ProfileView: View {
     @State private var originalLastName: String = ""
     @State private var originalEmail: String = ""
     @State private var showingPhotoOptions = false
+    @State private var showingAvatarSelection = false
     @State private var showingSignIn = false
     
     var body: some View {
@@ -27,7 +29,7 @@ struct ProfileView: View {
                                 showingPhotoOptions = true
                             }) {
                                 ZStack(alignment: .bottomTrailing) {
-                                    Image("Default-Profile@4x")
+                                    Image(avatarManager.selectedAvatar.imageName)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                         .frame(width: 80, height: 80)
@@ -36,6 +38,9 @@ struct ProfileView: View {
                                             Circle()
                                                 .stroke(Color.primaryContainer, lineWidth: 3)
                                         )
+                                        .onAppear {
+                                            print("🖼️ ProfileView: Displaying avatar: \(avatarManager.selectedAvatar.displayName) (ID: \(avatarManager.selectedAvatar.id))")
+                                        }
                                     
                                     // Edit Icon
                                     Image("Icon-pen")
@@ -185,9 +190,17 @@ struct ProfileView: View {
         }
         .background(Color.surface2)
         .sheet(isPresented: $showingPhotoOptions) {
-            PhotoOptionsBottomSheet(onClose: {
-                showingPhotoOptions = false
-            })
+            PhotoOptionsBottomSheet(
+                onClose: {
+                    showingPhotoOptions = false
+                },
+                onAvatarSelection: {
+                    showingAvatarSelection = true
+                }
+            )
+        }
+        .sheet(isPresented: $showingAvatarSelection) {
+            AvatarSelectionView()
         }
         .sheet(isPresented: $showingSignIn) {
             LoginView()
@@ -267,6 +280,7 @@ struct ProfileView: View {
 // MARK: - Photo Options Bottom Sheet
 struct PhotoOptionsBottomSheet: View {
     let onClose: () -> Void
+    let onAvatarSelection: () -> Void
     
     var body: some View {
         NavigationView {
@@ -295,8 +309,8 @@ struct PhotoOptionsBottomSheet: View {
                 VStack(spacing: 0) {
                     // Avatar Option
                     Button(action: {
-                        // TODO: Implement avatar selection
                         onClose()
+                        onAvatarSelection()
                     }) {
                         HStack {
                             Image(systemName: "person.crop.circle")
@@ -316,6 +330,8 @@ struct PhotoOptionsBottomSheet: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
+                        .background(Color.clear)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -345,6 +361,8 @@ struct PhotoOptionsBottomSheet: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
+                        .background(Color.clear)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -374,6 +392,8 @@ struct PhotoOptionsBottomSheet: View {
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
+                        .background(Color.clear)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
