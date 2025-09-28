@@ -221,12 +221,12 @@ struct ScheduledHabitItem: View {
                             print("🔄 ScheduledHabitItem: Swipe right detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
                             currentProgress = newProgress
                             
-                            // Call the callback to save the progress
-                            onProgressChange?(habit, selectedDate, newProgress)
-                            
                             // Check if habit is completed and show completion sheet
                             let goalAmount = extractNumericGoalAmount(from: habit.goal)
                             if newProgress >= goalAmount {
+                                // Set completing flag to prevent immediate data save
+                                isCompletingHabit = true
+                                
                                 // Fun completion animation for swipe
                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
                                     isCompletingAnimation = true
@@ -240,6 +240,9 @@ struct ScheduledHabitItem: View {
                                 }
                                 
                                 showingCompletionSheet = true
+                            } else {
+                                // For non-completion progress changes, save immediately
+                                onProgressChange?(habit, selectedDate, newProgress)
                             }
                             
                             // Haptic feedback for increase
