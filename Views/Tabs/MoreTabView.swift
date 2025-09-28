@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct MoreTabView: View {
     @ObservedObject var state: HomeViewState
@@ -13,6 +14,7 @@ struct MoreTabView: View {
     @State private var showingFAQ = false
     @State private var showingContactUs = false
     @State private var showingSendFeedback = false
+    @State private var showingCustomRating = false
     @State private var showingTermsConditions = false
     @State private var showingVacationMode = false
     @State private var showingSecurity = false
@@ -73,6 +75,9 @@ struct MoreTabView: View {
         }
         .sheet(isPresented: $showingSendFeedback) {
             SendFeedbackView()
+        }
+        .sheet(isPresented: $showingCustomRating) {
+            CustomRatingView()
         }
         .sheet(isPresented: $showingTermsConditions) {
             TermsConditionsView()
@@ -218,6 +223,9 @@ struct MoreTabView: View {
                     SettingItem(title: "Send Feedback", value: nil, hasChevron: true, action: {
                         showingSendFeedback = true
                     }),
+                    SettingItem(title: "Rate Us", value: nil, hasChevron: true, action: {
+                        showingCustomRating = true
+                    }),
                     SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true, action: {
                         showingTermsConditions = true
                     })
@@ -341,6 +349,8 @@ struct MoreTabView: View {
             return "Icon-Letter_Filled"
         case "Send Feedback":
             return "Icon-Letter_Filled"
+        case "Rate Us":
+            return "Icon-Hearts_Filled"
         case "Terms & Conditions":
             return "Icon-DocumentText_Filled"
         case "About us":
@@ -365,6 +375,11 @@ struct MoreTabView: View {
         case .pink:
             return Color("themePink200")
         }
+    }
+    
+    // MARK: - App Rating
+    private func requestAppRating() {
+        AppRatingManager.shared.requestRating()
     }
 }
 
