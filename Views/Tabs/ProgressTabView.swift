@@ -1586,7 +1586,7 @@ struct ProgressTabView: View {
                         .font(.appBodyMedium)
                         .foregroundColor(.text02)
                     
-                    Text("Complete some habits this week to see your top performer!")
+                    Text(getTopPerformerEmptyStateMessage())
                         .font(.appBodySmall)
                         .foregroundColor(.text03)
                         .multilineTextAlignment(.center)
@@ -1620,7 +1620,7 @@ struct ProgressTabView: View {
                     
                     // Content with habit info
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Needs Attention")
+                        Text("Could Use a Nudge")
                             .font(.appLabelMedium)
                             .foregroundColor(.text02)
                             .padding(.horizontal, 8)
@@ -1667,7 +1667,7 @@ struct ProgressTabView: View {
                         .font(.appBodyMedium)
                         .foregroundColor(.text02)
                     
-                    Text("Keep up the excellent work across all your habits!")
+                    Text(getNeedsAttentionEmptyStateMessage())
                         .font(.appBodySmall)
                         .foregroundColor(.text03)
                         .multilineTextAlignment(.center)
@@ -1679,64 +1679,128 @@ struct ProgressTabView: View {
     
     private var weeklyTrendsPage: some View {
         VStack(spacing: 16) {
-            // Main content
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.purple.opacity(0.25), Color.blue.opacity(0.15)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            if shouldShowWeeklyTrends() {
+                // Main content
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0.25), Color.blue.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 48, height: 48)
+                            .frame(width: 48, height: 48)
+                        
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.purple)
+                    }
                     
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.purple)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Weekly Trends")
+                            .font(.appLabelMedium)
+                            .foregroundColor(.text02)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.purple.opacity(0.1))
+                            )
+                        
+                        Text(getWeeklyTrendTitle())
+                            .font(.appTitleMediumEmphasised)
+                            .foregroundColor(.text01)
+                            .lineLimit(2)
+                        
+                        Text(getWeeklyTrendDescription())
+                            .font(.appBodyMedium)
+                            .foregroundColor(.purple)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Spacer()
                 }
+                .padding(.horizontal, 24)
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Weekly Trends")
-                        .font(.appLabelMedium)
-                        .foregroundColor(.text02)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.purple.opacity(0.1))
-                        )
+                // Trend details
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.purple)
                     
-                    Text(getWeeklyTrendTitle())
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.text01)
+                    Text(getWeeklyTrendInsight())
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
                         .lineLimit(2)
                     
-                    Text(getWeeklyTrendDescription())
-                        .font(.appBodyMedium)
-                        .foregroundColor(.purple)
-                        .fontWeight(.semibold)
+                    Spacer()
                 }
-                
-                Spacer()
+                .padding(.horizontal, 24)
+            } else {
+                // Empty state when no meaningful trends
+                VStack(spacing: 12) {
+                    Text("No trends to show yet")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                    
+                    Text(getWeeklyTrendsEmptyStateMessage())
+                        .font(.appBodySmall)
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 24)
+        }
+    }
+    
+    // MARK: - Weekly Trends Helper Functions
+    private func shouldShowWeeklyTrends() -> Bool {
+        let uniqueHabitsCount = getUniqueHabitsCount()
+        let totalPossibleDays = getWeeklyTotalPossibleDays()
+        
+        // Don't show trends if no habits or no scheduled days
+        if uniqueHabitsCount == 0 || totalPossibleDays == 0 {
+            return false
+        }
+        
+        // Don't show trends if there's no meaningful data (less than 2 days of data)
+        if totalPossibleDays < 2 {
+            return false
+        }
+        
+        return true
+    }
+    
+    private func getWeeklyTrendsEmptyStateMessage() -> String {
+        if habitRepository.habits.isEmpty {
+            return "Create your first habit to start tracking progress!"
+        } else {
+            // Check if any habits are scheduled this week
+            let calendar = Calendar.current
+            let weekStart = selectedWeekStartDate
+            let hasScheduledHabits = habitRepository.habits.contains { habit in
+                for dayOffset in 0..<7 {
+                    if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
             
-            // Trend details
-            HStack(spacing: 8) {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.purple)
-                
-                Text(getWeeklyTrendInsight())
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
-                    .lineLimit(2)
-                
-                Spacer()
+            if hasScheduledHabits {
+                let weeklyMetrics = getWeeklyMetrics()
+                if weeklyMetrics.activeDays == 1 {
+                    return "You've logged 1 active day. Track a bit more to see trends!"
+                } else {
+                    return "Complete habits for a few days to see your weekly trends!"
+                }
+            } else {
+                return "No habits scheduled this week. Add schedules to see highlights!"
             }
-            .padding(.horizontal, 24)
         }
     }
     
@@ -1871,24 +1935,24 @@ struct ProgressTabView: View {
     }
     
     private func getWeeklyProgressPercentage() -> Double {
-        let scheduledCount = getWeeklyScheduledHabitsCount()
-        guard scheduledCount > 0 else { return 0.0 }
+        let completedDays = getWeeklyCompletedDaysCount()
+        let totalPossibleDays = getWeeklyTotalPossibleDays()
+        guard totalPossibleDays > 0 else { return 0.0 }
         
-        let completedCount = getWeeklyCompletedHabitsCount()
-        return Double(completedCount) / Double(scheduledCount)
+        return Double(completedDays) / Double(totalPossibleDays)
     }
     
     private func getWeeklyEncouragingMessage() -> String {
         let progressPercentage = getWeeklyProgressPercentage()
-        let completedCount = getWeeklyCompletedHabitsCount()
-        let scheduledCount = getWeeklyScheduledHabitsCount()
+        let completedDays = getWeeklyCompletedDaysCount()
+        let totalPossibleDays = getWeeklyTotalPossibleDays()
         
         // Handle edge cases
-        if scheduledCount == 0 {
+        if totalPossibleDays == 0 {
             return "No habits scheduled this week yet"
         }
         
-        if completedCount == 0 {
+        if completedDays == 0 {
             return "Ready to start your week strong! 💪"
         }
         
@@ -1914,12 +1978,65 @@ struct ProgressTabView: View {
         }
     }
     
+    // MARK: - Highlights Configuration
+    /// Configuration constants for "This Week's Highlights" calculations
+    /// These values control thresholds, minimum data requirements, and comparison safety
+    private struct HighlightsConfig {
+        /// Minimum scheduled days required for a habit to be considered for "Top Performer" or "Needs Attention"
+        /// Prevents low-data habits (e.g., 1/1 = 100%) from beating high-commitment habits (e.g., 6/7 = 86%)
+        static let minScheduledDays = 3
+        
+        /// Hard floor for "clearly struggling" habits - below this threshold, habits are flagged regardless of context
+        /// 50 percentage points (0.5) - habits below this are clearly struggling
+        static let needsAttentionHardFloor: Double = 0.5
+        
+        /// Soft floor for "needs attention" - habits above this are considered performing well
+        /// 80 percentage points (0.8) - habits above this don't need attention even if below average
+        static let needsAttentionSoftFloor: Double = 0.8
+        
+        /// Minimum difference below average required to flag a habit as "needs attention"
+        /// 20 percentage points (0.20) - prevents flagging habits that are only slightly below average
+        static let belowAvgDelta: Double = 0.20
+        
+        /// Threshold for considering all habits as "doing great" in empty state messages
+        /// 80 percentage points (0.8) - above this, show celebratory message
+        static let greatAvgFloor: Double = 0.80
+        
+        /// Epsilon for floating-point comparisons to prevent precision issues in tie-breaking
+        /// 1e-9 - used in all rate comparisons to ensure stable sorting
+        static let floatingPointEpsilon: Double = 1e-9
+    }
+    
     // MARK: - Habit Spotlight Helper Functions
+    
+    /// Calculates the top performing habit for "This Week's Highlights"
+    /// 
+    /// **Purpose**: Shows the habit performing best (but not perfect) this week
+    /// 
+    /// **Algorithm**:
+    /// 1. Calculate completion rate for each habit across the week
+    /// 2. Filter out perfect habits (100% completion) to avoid showing them as "top performers"
+    /// 3. Apply minimum scheduled days filter (≥3) to prevent low-data habits from skewing results
+    /// 4. Sort with comprehensive tie-breaking: rate → scheduled days → completions → UUID
+    /// 
+    /// **Edge Cases**:
+    /// - No habits: Returns `nil` (shows empty state)
+    /// - All habits perfect: Returns the one with most scheduled days
+    /// - All habits 0% completion: Returns the one with most scheduled days
+    /// - Insufficient data: Habits with <3 scheduled days are deprioritized
+    /// 
+    /// **Example**: Habit A (1/1=100%), Habit B (6/7=86%), Habit C (2/2=100%)
+    /// - Habit A excluded (perfect), Habit C excluded (perfect)
+    /// - Habit B selected (highest rate among non-perfect, sufficient data)
+    /// 
+    /// - Returns: The top performing habit, or `nil` if no eligible habits
     private func getTopPerformingHabit() -> Habit? {
         let calendar = Calendar.current
         let weekStart = selectedWeekStartDate
         
-        var habitCompletionRates: [(Habit, Double)] = []
+        // Step 1: Calculate habit performance data for the week
+        // Each habit gets: (habit, scheduled_days, completed_days, completion_rate)
+        var habitData: [(habit: Habit, scheduled: Int, completed: Int, rate: Double)] = []
         
         for habit in habitRepository.habits {
             var totalScheduled = 0
@@ -1939,14 +2056,84 @@ struct ProgressTabView: View {
                 }
             }
             
+            // Only include habits with scheduled days (avoid division by zero)
             if totalScheduled > 0 {
                 let completionRate = Double(totalCompleted) / Double(totalScheduled)
-                habitCompletionRates.append((habit, completionRate))
+                habitData.append((habit: habit, scheduled: totalScheduled, completed: totalCompleted, rate: completionRate))
             }
         }
         
-        // Return the habit with the highest completion rate
-        return habitCompletionRates.max(by: { $0.1 < $1.1 })?.0
+        guard !habitData.isEmpty else { return nil }
+        
+        // Filter out perfect habits (100% completion) to avoid showing them as "top performers"
+        let nonPerfectHabits = habitData.filter { $0.rate < 1.0 }
+        let candidatePool = nonPerfectHabits.isEmpty ? habitData : nonPerfectHabits
+        
+        // Apply minimum scheduled days filter
+        let minScheduledCandidates = candidatePool.filter { $0.scheduled >= HighlightsConfig.minScheduledDays }
+        let finalCandidates = minScheduledCandidates.isEmpty ? candidatePool : minScheduledCandidates
+        
+        // Sort with comprehensive tie-breaking rules
+        return finalCandidates.max { habit1, habit2 in
+            // 1. Primary: completion rate (with floating-point safety)
+            if abs(habit1.rate - habit2.rate) > HighlightsConfig.floatingPointEpsilon {
+                return habit1.rate < habit2.rate
+            }
+            
+            // 2. Secondary: more scheduled days (more commitment)
+            if habit1.scheduled != habit2.scheduled {
+                return habit1.scheduled < habit2.scheduled
+            }
+            
+            // 3. Tertiary: more completions (more actual progress)
+            if habit1.completed != habit2.completed {
+                return habit1.completed < habit2.completed
+            }
+            
+            // 4. Quaternary: stable ID alphabetical (deterministic)
+            return habit1.habit.id.uuidString < habit2.habit.id.uuidString
+        }?.habit
+    }
+    
+    private func getScheduledDaysCount(for habit: Habit) -> Int {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        
+        var scheduledDays = 0
+        for dayOffset in 0..<7 {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                    scheduledDays += 1
+                }
+            }
+        }
+        return scheduledDays
+    }
+    
+    private func getTopPerformerEmptyStateMessage() -> String {
+        if habitRepository.habits.isEmpty {
+            return "Create your first habit to start tracking progress!"
+        } else {
+            // Check if any habits are scheduled this week
+            let calendar = Calendar.current
+            let weekStart = selectedWeekStartDate
+            let hasScheduledHabits = habitRepository.habits.contains { habit in
+                for dayOffset in 0..<7 {
+                    if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+            
+            if hasScheduledHabits {
+                return "Complete some habits this week to see your top performer!"
+            } else {
+                return "No habits scheduled this week. Check your habit schedules!"
+            }
+        }
     }
     
     private func getWeeklyHabitCompletionRate(_ habit: Habit) -> Double {
@@ -2406,11 +2593,39 @@ struct ProgressTabView: View {
     }
     
     // MARK: - Weekly Insights Helper Functions
+    
+    /// Calculates the habit that "Could Use a Nudge" for "This Week's Highlights"
+    /// 
+    /// **Purpose**: Identifies habits that are struggling or significantly underperforming
+    /// 
+    /// **Algorithm** (Two-Step Logic):
+    /// 1. **Step 1 - Clear Struggling**: Find habits <50% completion with ≥3 scheduled days
+    /// 2. **Step 2 - Significant Difference**: Among non-struggling habits, only flag if:
+    ///    - Significantly below average (≥20 percentage points)
+    ///    - Below soft floor (80%)
+    ///    - Sufficient data (≥3 scheduled days)
+    /// 
+    /// **Why Two Steps?**: Prevents false positives when all habits perform similarly well
+    /// 
+    /// **Edge Cases**:
+    /// - All habits perfect: Returns `nil` (shows "All habits are doing great!")
+    /// - All habits performing well: Returns `nil` (shows "All habits are performing well!")
+    /// - Single habit <50% with 1 day: Returns `nil` (insufficient data)
+    /// - All habits 80-95%: Returns `nil` (no significant difference)
+    /// 
+    /// **Example**: Habits at 90%, 85%, 30% (average 68%)
+    /// - Habit at 30% is 38% below average (>20% threshold) → selected
+    /// 
+    /// **Example**: Habits at 90%, 85%, 80% (average 85%)
+    /// - Worst habit at 80% is only 5% below average (<20% threshold) → none selected
+    /// 
+    /// - Returns: The habit needing attention, or `nil` if no habits need attention
     private func getStrugglingHabit() -> Habit? {
         let calendar = Calendar.current
         let weekStart = selectedWeekStartDate
         
-        var habitCompletionRates: [(Habit, Double)] = []
+        // Calculate habit performance data
+        var habitData: [(habit: Habit, scheduled: Int, completed: Int, rate: Double)] = []
         
         for habit in habitRepository.habits {
             var totalScheduled = 0
@@ -2430,14 +2645,96 @@ struct ProgressTabView: View {
                 }
             }
             
+            // Only include habits with scheduled days (avoid division by zero)
             if totalScheduled > 0 {
                 let completionRate = Double(totalCompleted) / Double(totalScheduled)
-                habitCompletionRates.append((habit, completionRate))
+                habitData.append((habit: habit, scheduled: totalScheduled, completed: totalCompleted, rate: completionRate))
             }
         }
         
-        // Return the habit with the lowest completion rate (struggling)
-        return habitCompletionRates.min(by: { $0.1 < $1.1 })?.0
+        guard !habitData.isEmpty else { return nil }
+        
+        // Filter out perfect habits (100% completion)
+        let nonPerfectHabits = habitData.filter { $0.rate < 1.0 }
+        guard !nonPerfectHabits.isEmpty else { return nil } // All habits are perfect
+        
+        // Step 1: Find habits that are clearly struggling (< 50% completion)
+        let reallyStrugglingHabits = nonPerfectHabits.filter { 
+            $0.rate < HighlightsConfig.needsAttentionHardFloor && 
+            $0.scheduled >= HighlightsConfig.minScheduledDays 
+        }
+        
+        if !reallyStrugglingHabits.isEmpty {
+            // Return the worst among clearly struggling habits
+            return reallyStrugglingHabits.min { habit1, habit2 in
+                // Primary: lowest completion rate (with floating-point safety)
+                if abs(habit1.rate - habit2.rate) > HighlightsConfig.floatingPointEpsilon {
+                    return habit1.rate < habit2.rate
+                }
+                // Secondary: fewer scheduled days (less commitment = more concerning)
+                if habit1.scheduled != habit2.scheduled {
+                    return habit1.scheduled < habit2.scheduled
+                }
+                // Tertiary: fewer completions
+                if habit1.completed != habit2.completed {
+                    return habit1.completed < habit2.completed
+                }
+                // Quaternary: stable ID alphabetical
+                return habit1.habit.id.uuidString < habit2.habit.id.uuidString
+            }?.habit
+        }
+        
+        // Step 2: Check for significant differences among non-struggling habits
+        let completionRates = nonPerfectHabits.map { $0.rate }
+        let averageRate = completionRates.reduce(0, +) / Double(completionRates.count)
+        
+        // Only show "needs attention" if:
+        // 1. There's a significant difference (≥20 percentage points below average)
+        // 2. The worst habit is below a soft floor (80%)
+        // 3. The worst habit has sufficient data (≥3 scheduled days)
+        let worstHabit = nonPerfectHabits.min { $0.rate < $1.rate }
+        
+        if let worst = worstHabit,
+           worst.rate < (averageRate - HighlightsConfig.belowAvgDelta) && // 20 percentage points below average
+           worst.rate < HighlightsConfig.needsAttentionSoftFloor && // Below soft floor
+           worst.scheduled >= HighlightsConfig.minScheduledDays { // Sufficient data
+            return worst.habit
+        }
+        
+        // No habit needs attention
+        return nil
+    }
+    
+    private func getNeedsAttentionEmptyStateMessage() -> String {
+        if habitRepository.habits.isEmpty {
+            return "Create your first habit to start tracking progress!"
+        } else {
+            // Check if any habits are scheduled this week
+            let calendar = Calendar.current
+            let weekStart = selectedWeekStartDate
+            let hasScheduledHabits = habitRepository.habits.contains { habit in
+                for dayOffset in 0..<7 {
+                    if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+            
+            if hasScheduledHabits {
+                // Check if all habits are performing well (average ≥80%)
+                let weeklyMetrics = getWeeklyMetrics()
+                if weeklyMetrics.overallCompletion >= HighlightsConfig.greatAvgFloor {
+                    return "All habits are doing great! Keep up the excellent work!"
+                } else {
+                    return "All habits are performing well this week!"
+                }
+            } else {
+                return "No habits scheduled this week. Check your habit schedules!"
+            }
+        }
     }
     
     private func getStrugglingHabitTip(for habit: Habit) -> String {
@@ -2473,43 +2770,219 @@ struct ProgressTabView: View {
     }
     
     private func getWeeklyTrendDescription() -> String {
-        let progressPercentage = getWeeklyProgressPercentage()
-        let completedCount = getWeeklyCompletedHabitsCount()
-        let scheduledCount = getWeeklyScheduledHabitsCount()
+        let uniqueHabitsCount = getUniqueHabitsCount()
+        let weeklyMetrics = getWeeklyMetrics()
         
-        if scheduledCount == 0 {
+        if uniqueHabitsCount == 0 {
             return "No habits scheduled this week"
         }
         
-        switch progressPercentage {
-        case 0.8...1.0:
-            return "\(completedCount) habits completed this week"
-        case 0.6..<0.8:
-            return "\(completedCount) of \(scheduledCount) habits completed"
-        case 0.4..<0.6:
-            return "\(completedCount) of \(scheduledCount) habits completed"
-        case 0.2..<0.4:
-            return "\(completedCount) of \(scheduledCount) habits completed"
-        default:
-            return "\(completedCount) of \(scheduledCount) habits completed"
+        let overallCompletion = Int(weeklyMetrics.overallCompletion * 100)
+        let perfectDayRate = Int(weeklyMetrics.perfectDayRate * 100)
+        
+        // Show both overall completion and perfect-day consistency
+        if weeklyMetrics.activeDays >= 3 {
+            return "\(overallCompletion)% of scheduled actions completed, \(perfectDayRate)% perfect days"
+        } else {
+            return "\(overallCompletion)% of scheduled actions completed"
         }
     }
     
-    private func getWeeklyTrendInsight() -> String {
-        let progressPercentage = getWeeklyProgressPercentage()
+    // MARK: - Weekly Trends Helper Functions
+    private func getUniqueHabitsCount() -> Int {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = selectedWeekStartDate
         
-        switch progressPercentage {
-        case 0.8...1.0:
-            return "You're maintaining excellent consistency! Keep up the great work."
-        case 0.6..<0.8:
-            return "Strong performance this week! You're building great habits."
-        case 0.4..<0.6:
-            return "Good progress! Focus on consistency to improve your completion rate."
-        case 0.2..<0.4:
-            return "Every step counts! Try to complete a few more habits this week."
-        default:
-            return "Start small and build momentum. Even one completed habit is progress!"
+        // Get all unique habits that are scheduled at least once this week
+        var uniqueHabitIds = Set<UUID>()
+        
+        for habit in habitRepository.habits {
+            // Check if habit is scheduled on any day this week
+            for dayOffset in 0..<7 {
+                if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                    if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                        uniqueHabitIds.insert(habit.id)
+                        break // Found this habit scheduled, no need to check other days
+                    }
+                }
+            }
         }
+        
+        return uniqueHabitIds.count
+    }
+    
+    private func getWeeklyCompletedDaysCount() -> Int {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = selectedWeekStartDate
+        let today = selectedProgressDate
+        
+        // Only count days from week start up to today (or selected date)
+        let daysToCount = min(7, calendar.dateComponents([.day], from: weekStart, to: today).day ?? 0) + 1
+        
+        var completedDays = 0
+        for dayOffset in 0..<daysToCount {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                let scheduledHabits = habitRepository.habits.filter { habit in
+                    StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
+                }
+                
+                // Count this day as completed if all scheduled habits are completed
+                let allCompleted = scheduledHabits.allSatisfy { habit in
+                    let progress = habitRepository.getProgress(for: habit, date: currentDay)
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    return progress >= goalAmount
+                }
+                
+                if allCompleted && !scheduledHabits.isEmpty {
+                    completedDays += 1
+                }
+            }
+        }
+        return completedDays
+    }
+    
+    private func getWeeklyTotalPossibleDays() -> Int {
+        let calendar = AppDateFormatter.shared.getUserCalendar()
+        let weekStart = selectedWeekStartDate
+        let today = selectedProgressDate
+        
+        // Only count days from week start up to today (or selected date)
+        let daysToCount = min(7, calendar.dateComponents([.day], from: weekStart, to: today).day ?? 0) + 1
+        
+        var totalPossibleDays = 0
+        for dayOffset in 0..<daysToCount {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                let scheduledHabits = habitRepository.habits.filter { habit in
+                    StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
+                }
+                
+                // Count this day if there are any scheduled habits
+                if !scheduledHabits.isEmpty {
+                    totalPossibleDays += 1
+                }
+            }
+        }
+        return totalPossibleDays
+    }
+    
+    private func getWeeklyTrendInsight() -> String {
+        let weeklyMetrics = getWeeklyMetrics()
+        
+        if weeklyMetrics.activeDays == 0 {
+            return "No habits scheduled this week"
+        }
+        
+        let perfectDays = Int(weeklyMetrics.perfectDayRate * Double(weeklyMetrics.activeDays))
+        let overallCompletion = Int(weeklyMetrics.overallCompletion * 100)
+        
+        // Show different insights based on performance
+        if weeklyMetrics.overallCompletion >= 0.8 {
+            if weeklyMetrics.perfectDayRate >= 0.8 {
+                return "Outstanding! \(overallCompletion)% overall, \(perfectDays) perfect days"
+            } else {
+                return "Great performance! \(overallCompletion)% overall, \(perfectDays) perfect days"
+            }
+        } else if weeklyMetrics.overallCompletion >= 0.6 {
+            return "Good progress! \(overallCompletion)% overall, \(perfectDays) perfect days"
+        } else if weeklyMetrics.overallCompletion >= 0.4 {
+            return "Building momentum! \(overallCompletion)% overall, \(perfectDays) perfect days"
+        } else {
+            return "Getting started! \(overallCompletion)% overall, \(perfectDays) perfect days"
+        }
+    }
+    
+    // MARK: - Weekly Metrics Calculation
+    
+    /// Calculates comprehensive weekly performance metrics for "This Week's Highlights"
+    /// 
+    /// **Purpose**: Provides overall completion rate and perfect-day consistency metrics
+    /// 
+    /// **Algorithm** (Micro-Averaging):
+    /// 1. **Daily Calculation**: For each day, calculate completion ratio (completed/scheduled)
+    /// 2. **Overall Completion**: Micro-average = sum(completed) / sum(scheduled)
+    /// 3. **Perfect Day Rate**: % of days where ALL scheduled habits were completed
+    /// 4. **Variability**: Standard deviation of daily ratios (consistency measure)
+    /// 
+    /// **Why Micro-Average?**: Prevents quiet days from skewing results
+    /// - Macro-average would overweight days with fewer habits
+    /// - Micro-average gives equal weight to each scheduled habit instance
+    /// 
+    /// **Example**: 2 habits × 7 days = 14 total scheduled, completed 12 total, 5 perfect days
+    /// - Overall: 12/14 = 86% of scheduled actions completed
+    /// - Perfect days: 5/7 = 71% perfect days
+    /// - Variability: Standard deviation of daily ratios
+    /// 
+    /// **Edge Cases**:
+    /// - No habits: Returns (0, 0, 0, 0)
+    /// - No scheduled days: Returns (0, 0, 0, 0)
+    /// - Single day: Perfect day rate = 0 or 1
+    /// 
+    /// - Returns: Tuple of (overallCompletion, perfectDayRate, activeDays, variability)
+    private func getWeeklyMetrics() -> (overallCompletion: Double, perfectDayRate: Double, activeDays: Int, variability: Double) {
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        
+        var dailyRatios: [Double] = []
+        var perfectDays = 0
+        var activeDays = 0
+        var totalScheduled = 0
+        var totalCompleted = 0
+        
+        for dayOffset in 0..<7 {
+            if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+                let scheduledHabits = habitRepository.habits.filter { habit in
+                    StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
+                }
+                
+                guard !scheduledHabits.isEmpty else { continue }
+                
+                var completedCount = 0
+                for habit in scheduledHabits {
+                    let progress = habitRepository.getProgress(for: habit, date: currentDay)
+                    let goalAmount = parseGoalAmount(from: habit.goal)
+                    if progress >= goalAmount {
+                        completedCount += 1
+                    }
+                }
+                
+                activeDays += 1
+                totalScheduled += scheduledHabits.count
+                totalCompleted += completedCount
+                
+                let dayRatio = Double(completedCount) / Double(scheduledHabits.count)
+                dailyRatios.append(dayRatio)
+                
+                // Perfect day = all scheduled habits completed on this day
+                if dayRatio == 1.0 {
+                    perfectDays += 1
+                }
+            }
+        }
+        
+        // MICRO-AVERAGE: sum(completed) / sum(scheduled)
+        // This prevents quiet days from skewing results by giving equal weight to each scheduled habit instance
+        // Alternative (macro-average) would overweight days with fewer habits
+        let overallCompletion = totalScheduled > 0 ? Double(totalCompleted) / Double(totalScheduled) : 0.0
+        
+        // PERFECT-DAY RATE: % of days where ALL scheduled habits were completed
+        // This measures consistency of perfect days, not overall performance
+        // Example: 5 perfect days out of 7 active days = 71% perfect days
+        let perfectDayRate = activeDays > 0 ? Double(perfectDays) / Double(activeDays) : 0.0
+        
+        // VARIABILITY: Standard deviation of daily ratios (consistency measure)
+        // Lower values indicate more consistent daily performance
+        // Future use: Could show "steady vs. up-and-down" insights
+        let variability = calculateVariability(dailyRatios)
+        
+        return (overallCompletion: overallCompletion, perfectDayRate: perfectDayRate, activeDays: activeDays, variability: variability)
+    }
+    
+    private func calculateVariability(_ ratios: [Double]) -> Double {
+        guard ratios.count > 1 else { return 0.0 }
+        
+        let mean = ratios.reduce(0, +) / Double(ratios.count)
+        let variance = ratios.map { pow($0 - mean, 2) }.reduce(0, +) / Double(ratios.count)
+        return sqrt(variance)
     }
     
     // MARK: - Monthly Progress Card
