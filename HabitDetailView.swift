@@ -1,5 +1,19 @@
 import SwiftUI
 
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+struct ContentSizePreferenceKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
+    }
+}
+
 struct HabitDetailView: View {
     @State var habit: Habit
     let onUpdateHabit: ((Habit) -> Void)?
@@ -11,27 +25,131 @@ struct HabitDetailView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingReminderSheet = false
     @State private var selectedReminder: ReminderItem?
+    @State private var scrollOffset: CGFloat = 0
+    @State private var availableHeight: CGFloat = 0
+    @State private var contentHeight: CGFloat = 0
+    
+    // Computed property to determine if content should scroll
+    private var shouldScroll: Bool {
+        // Add some buffer to account for safe areas and ensure we detect when scrolling is needed
+        let bufferHeight: CGFloat = 100 // Reduced buffer for easier detection
+        
+        // If content height is 0 (not measured yet), check if habit has many reminders as a fallback
+        if contentHeight == 0 {
+            let hasManyReminders = habit.reminders.count > 3
+            print("🔍 SCROLL CHECK (FALLBACK) - Content not measured yet, Has many reminders: \(hasManyReminders), Should Scroll: \(hasManyReminders)")
+            return hasManyReminders
+        }
+        
+        let needsScrolling = contentHeight > (availableHeight - bufferHeight)
+        print("🔍 SCROLL CHECK - Content: \(Int(contentHeight)), Available: \(Int(availableHeight)), Buffer: \(Int(bufferHeight)), Should Scroll: \(needsScrolling)")
+        return needsScrolling
+    }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                // Full header
-                fullHeader
-                    .padding(.top, 0)
-                    .padding(.bottom, 24)
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                // Background
+                Color.surface2
+                    .ignoresSafeArea()
                 
-                // Main content card
-                mainContentCard
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 32)
+                // Always show the content, but measure it first
+                VStack {
+                    // Sticky compact header (appears when scrolled)
+                    compactHeader
+                        .background(Color.surface2)
+                        .opacity(shouldScroll && scrollOffset > 50 ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
+                    
+                    // Debug indicator (remove in production)
+                    VStack {
+                        Text("Content: \(Int(contentHeight)) | Available: \(Int(availableHeight)) | Should Scroll: \(shouldScroll)")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(4)
+                            .background(Color.yellow.opacity(0.8))
+                            .cornerRadius(4)
+                            .multilineTextAlignment(.center)
+                        
+                        if scrollOffset > 0 {
+                            Text("Scroll Offset: \(Int(scrollOffset))")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                                .padding(2)
+                                .background(Color.green.opacity(0.8))
+                                .cornerRadius(4)
+                        }
+                    }
+                }
+                .zIndex(1)
+                
+                // Content - measure and display
+                ZStack {
+                    // Hidden measurement view (positioned off-screen)
+                    contentView
+                        .opacity(0)
+                        .position(x: -1000, y: -1000) // Move off-screen
+                        .background(
+                            GeometryReader { contentGeometry in
+                                Color.clear
+                                    .preference(key: ContentSizePreferenceKey.self, value: contentGeometry.size)
+                            }
+                        )
+                        .onPreferenceChange(ContentSizePreferenceKey.self) { size in
+                            let newHeight = size.height
+                            if abs(newHeight - contentHeight) > 1 {
+                                contentHeight = newHeight
+                                print("🔍 CONTENT MEASURED - Height: \(Int(contentHeight)), Available: \(Int(availableHeight))")
+                                print("🔍 SHOULD SCROLL CALCULATION - Content: \(Int(contentHeight)) > (Available: \(Int(availableHeight)) - Buffer: 150) = \(Int(contentHeight)) > \(Int(availableHeight - 150)) = \(contentHeight > (availableHeight - 150))")
+                            }
+                        }
+                    
+                    // Actual content display
+                    if shouldScroll {
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                contentView
+                                    .background(
+                                        GeometryReader { contentGeometry in
+                                            Color.clear
+                                                .preference(key: ScrollOffsetPreferenceKey.self, 
+                                                          value: contentGeometry.frame(in: .global).minY)
+                                        }
+                                    )
+                            }
+                            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                                let newOffset = -value
+                                if abs(newOffset - scrollOffset) > 1 {
+                                    scrollOffset = newOffset
+                                    print("🔍 Scroll offset: \(scrollOffset)")
+                                }
+                            }
+                        }
+                        .onAppear {
+                            print("🔍 DISPLAY PHASE - Using ScrollView (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
+                        }
+                    } else {
+                        VStack {
+                            contentView
+                            Spacer(minLength: 0)
+                        }
+                        .onAppear {
+                            print("🔍 DISPLAY PHASE - Using Static VStack (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                availableHeight = geometry.size.height
+                todayProgress = habit.getProgress(for: selectedDate)
+                print("🔍 SCREEN APPEARED - Available Height: \(Int(availableHeight))")
+            }
+            .onChange(of: geometry.size.height) { _, newHeight in
+                availableHeight = newHeight
+                print("🔍 SCREEN HEIGHT CHANGED - New: \(Int(newHeight))")
             }
         }
-        .background(Color.surface2)
         .navigationBarHidden(true)
-        .onAppear {
-            // Initialize todayProgress with the actual habit progress for the selected date
-            todayProgress = habit.getProgress(for: selectedDate)
-        }
         .onChange(of: selectedDate) { oldDate, newDate in
             // Only update progress if the date actually changed
             let calendar = Calendar.current
@@ -72,6 +190,24 @@ struct HabitDetailView: View {
             }
         } message: {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
+        }
+    }
+    
+    // MARK: - Content View (shared between scrollable and static)
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            // Full header (fades out when scrolled)
+            fullHeader
+                .opacity(shouldScroll && scrollOffset > 50 ? 0 : 1)
+                .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
+                .padding(.top, 0)
+                .padding(.bottom, 24)
+                .id("header")
+            
+            // Main content card
+            mainContentCard
+                .padding(.horizontal, 16)
+                .padding(.bottom, 32)
         }
     }
     
@@ -133,6 +269,55 @@ struct HabitDetailView: View {
         .padding(.top, 0)
     }
     
+    // MARK: - Compact Header (shown when scrolled)
+    private var compactHeader: some View {
+        HStack {
+            // Close button
+            Button(action: {
+                dismiss()
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.text01)
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            
+            // Title
+            Text("Habit details")
+                .font(.appHeadlineSmallEmphasised)
+                .foregroundColor(.text01)
+                .accessibilityAddTraits(.isHeader)
+            
+            Spacer()
+            
+            // More options button with menu
+            Menu {
+                Button(action: {
+                    showingEditView = true
+                }) {
+                    Label("Edit", systemImage: "pencil")
+                }
+                
+                Button(role: .destructive, action: {
+                    showingDeleteConfirmation = true
+                }) {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.text01)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+        .padding(.top, 8) // Safe area padding
+        .background(Color.surface2)
+        .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
+    }
     
     // MARK: - Main Content Card
     private var mainContentCard: some View {
