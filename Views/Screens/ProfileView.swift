@@ -4,6 +4,7 @@ struct ProfileView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var avatarManager = AvatarManager.shared
+    @ObservedObject private var permissionManager = PermissionManager.shared
     
     @State private var firstName: String = ""
     @State private var lastName: String = ""
@@ -14,6 +15,8 @@ struct ProfileView: View {
     @State private var originalEmail: String = ""
     @State private var showingPhotoOptions = false
     @State private var showingAvatarSelection = false
+    @State private var showingCamera = false
+    @State private var showingPhotoLibrary = false
     @State private var showingSignIn = false
     
     var body: some View {
@@ -29,18 +32,28 @@ struct ProfileView: View {
                                 showingPhotoOptions = true
                             }) {
                                 ZStack(alignment: .bottomTrailing) {
-                                    Image(avatarManager.selectedAvatar.imageName)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 80, height: 80)
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.primaryContainer, lineWidth: 3)
-                                        )
-                                        .onAppear {
-                                            print("🖼️ ProfileView: Displaying avatar: \(avatarManager.selectedAvatar.displayName) (ID: \(avatarManager.selectedAvatar.id))")
+                                    Group {
+                                        if avatarManager.selectedAvatar.isCustomPhoto,
+                                           let imageData = avatarManager.selectedAvatar.customPhotoData,
+                                           let uiImage = UIImage(data: imageData) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                        } else {
+                                            Image(avatarManager.selectedAvatar.imageName)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
                                         }
+                                    }
+                                    .frame(width: 80, height: 80)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.primaryContainer, lineWidth: 3)
+                                    )
+                                    .onAppear {
+                                        print("🖼️ ProfileView: Displaying avatar: \(avatarManager.selectedAvatar.displayName) (ID: \(avatarManager.selectedAvatar.id))")
+                                    }
                                     
                                     // Edit Icon
                                     Image("Icon-pen")
@@ -196,11 +209,55 @@ struct ProfileView: View {
                 },
                 onAvatarSelection: {
                     showingAvatarSelection = true
+                },
+                onTakePhoto: {
+                    requestCameraPermissionAndOpen()
+                },
+                onChooseFromLibrary: {
+                    requestPhotoLibraryPermissionAndOpen()
                 }
             )
         }
         .sheet(isPresented: $showingAvatarSelection) {
             AvatarSelectionView()
+        }
+        .sheet(isPresented: $showingCamera) {
+            if permissionManager.canUseCamera {
+                CameraView { image in
+                    avatarManager.selectCustomPhoto(image)
+                }
+            } else {
+                VStack(spacing: 20) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.text03)
+                    
+                    Text("Camera Not Available")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Text("Camera is not available or permission is required.")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text02)
+                        .multilineTextAlignment(.center)
+                    
+                    Button("OK") {
+                        showingCamera = false
+                    }
+                    .font(.appLabelLarge)
+                    .foregroundColor(.primary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.primary.opacity(0.1))
+                    .cornerRadius(25)
+                }
+                .padding(40)
+            }
+        }
+        .sheet(isPresented: $showingPhotoLibrary) {
+            PhotoLibraryView { image in
+                avatarManager.selectCustomPhoto(image)
+            }
         }
         .sheet(isPresented: $showingSignIn) {
             LoginView()
@@ -208,6 +265,31 @@ struct ProfileView: View {
     }
     
     // MARK: - Helper Functions
+    
+    private func requestCameraPermissionAndOpen() {
+        if permissionManager.cameraPermissionStatus == .notDetermined {
+            permissionManager.requestCameraPermission { granted in
+                if granted {
+                    showingCamera = true
+                }
+            }
+        } else {
+            showingCamera = true
+        }
+    }
+    
+    private func requestPhotoLibraryPermissionAndOpen() {
+        if permissionManager.photoLibraryPermissionStatus == .notDetermined {
+            permissionManager.requestPhotoLibraryPermission { granted in
+                if granted {
+                    showingPhotoLibrary = true
+                }
+            }
+        } else {
+            showingPhotoLibrary = true
+        }
+    }
+    
     private var isLoggedIn: Bool {
         switch authManager.authState {
         case .authenticated:
@@ -281,6 +363,8 @@ struct ProfileView: View {
 struct PhotoOptionsBottomSheet: View {
     let onClose: () -> Void
     let onAvatarSelection: () -> Void
+    let onTakePhoto: () -> Void
+    let onChooseFromLibrary: () -> Void
     
     var body: some View {
         NavigationView {
@@ -340,8 +424,8 @@ struct PhotoOptionsBottomSheet: View {
                     
                     // Take Photo Option
                     Button(action: {
-                        // TODO: Implement camera functionality
                         onClose()
+                        onTakePhoto()
                     }) {
                         HStack {
                             Image(systemName: "camera")
@@ -371,8 +455,8 @@ struct PhotoOptionsBottomSheet: View {
                     
                     // Choose from Library Option
                     Button(action: {
-                        // TODO: Implement photo library selection
                         onClose()
+                        onChooseFromLibrary()
                     }) {
                         HStack {
                             Image(systemName: "photo.on.rectangle")

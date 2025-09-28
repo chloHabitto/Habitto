@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Represents a user avatar with its metadata
 struct Avatar: Identifiable, Codable, Equatable {
@@ -6,12 +7,28 @@ struct Avatar: Identifiable, Codable, Equatable {
     let imageName: String
     let displayName: String
     let isDefault: Bool
+    let isCustomPhoto: Bool
+    let customPhotoData: Data?
     
-    init(id: String, imageName: String, displayName: String, isDefault: Bool = false) {
+    init(id: String, imageName: String, displayName: String, isDefault: Bool = false, isCustomPhoto: Bool = false, customPhotoData: Data? = nil) {
         self.id = id
         self.imageName = imageName
         self.displayName = displayName
         self.isDefault = isDefault
+        self.isCustomPhoto = isCustomPhoto
+        self.customPhotoData = customPhotoData
+    }
+    
+    /// Create a custom photo avatar
+    static func customPhoto(id: String, imageData: Data) -> Avatar {
+        return Avatar(
+            id: id,
+            imageName: "custom_photo",
+            displayName: "Custom Photo",
+            isDefault: false,
+            isCustomPhoto: true,
+            customPhotoData: imageData
+        )
     }
 }
 
@@ -68,6 +85,21 @@ class AvatarManager: ObservableObject {
         selectedAvatar = avatar
         saveSelectedAvatar()
         print("✅ AvatarManager: Avatar selected and saved successfully")
+    }
+    
+    /// Select a custom photo as avatar
+    func selectCustomPhoto(_ image: UIImage) {
+        print("📸 AvatarManager: Selecting custom photo")
+        
+        // Convert UIImage to Data
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("❌ AvatarManager: Failed to convert image to data")
+            return
+        }
+        
+        // Create custom photo avatar
+        let customAvatar = Avatar.customPhoto(id: "custom_\(UUID().uuidString)", imageData: imageData)
+        selectAvatar(customAvatar)
     }
     
     /// Load the selected avatar from UserDefaults
