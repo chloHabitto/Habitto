@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 
 
@@ -11,6 +12,7 @@ struct HeaderView: View {
     
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
+    @ObservedObject private var avatarManager = AvatarManager.shared
     @State private var showingLoginView = false
     @State private var showingProfileView = false
     
@@ -20,11 +22,21 @@ struct HeaderView: View {
                 // Profile section for More tab
                 HStack(spacing: 12) {
                     // Profile picture
-                    Image("Default-Profile@4x")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 56, height: 56)
-                        .clipShape(Circle())
+                    Group {
+                        if avatarManager.selectedAvatar.isCustomPhoto,
+                           let imageData = avatarManager.selectedAvatar.customPhotoData,
+                           let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } else {
+                            Image(avatarManager.selectedAvatar.imageName)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        }
+                    }
+                    .frame(width: 56, height: 56)
+                    .clipShape(Circle())
                     
                     VStack(alignment: .leading, spacing: 2) {
                         if isLoggedIn {
