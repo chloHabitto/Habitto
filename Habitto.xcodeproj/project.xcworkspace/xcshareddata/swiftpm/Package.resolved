@@ -1,5 +1,5 @@
 {
-  "originHash" : "3db8251d68a119b721dcf62c278cfaf449153320aa5511908da81953348b0936",
+  "originHash" : "19361a3c64fde0cd72d0da35f855659c3ba8c83766366c05566dde12a5d406fc",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -134,6 +134,15 @@
       "state" : {
         "revision" : "04f2fd18cc9404a0a0917265a449002674f24ec9",
         "version" : "4.5.2"
+      }
+    },
+    {
+      "identity" : "mcemojipicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/izyumkin/MCEmojiPicker.git",
+      "state" : {
+        "revision" : "e5b3ed359b04370287366a7c15ffa7013cdd4eec",
+        "version" : "1.2.5"
       }
     },
     {

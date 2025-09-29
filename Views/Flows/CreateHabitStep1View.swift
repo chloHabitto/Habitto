@@ -1,4 +1,5 @@
 import SwiftUI
+import MCEmojiPicker
 
 /**
  * CreateHabitStep1View - Optimized for keyboard performance
@@ -25,7 +26,7 @@ struct CreateHabitStep1View: View {
     let onNext: (String, String, String, Color, HabitType) -> Void
     let onCancel: () -> Void
     
-    @State private var showingIconSheet = false
+    @State private var showingEmojiPicker = false
     @State private var showingColorSheet = false
     @FocusState private var isNameFieldFocused: Bool
     @FocusState private var isDescriptionFieldFocused: Bool
@@ -390,7 +391,7 @@ struct CreateHabitStep1View: View {
                     )
                     .cornerRadius(12)
                     .onTapGesture {
-                        showingIconSheet = true
+                        showingEmojiPicker = true
                     }
                     
                     // Habit type selection
@@ -462,12 +463,14 @@ struct CreateHabitStep1View: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
 
-        .sheet(isPresented: $showingIconSheet) {
-            IconBottomSheet(
-                selectedIcon: $icon,
-                onClose: { showingIconSheet = false }
-            )
-        }
+        .mcEmojiPicker(
+            isPresented: $showingEmojiPicker,
+            selectedEmoji: $icon,
+            onEmojiSelected: { selectedEmoji in
+                icon = selectedEmoji
+                showingEmojiPicker = false
+            }
+        )
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(
                 onClose: { showingColorSheet = false },

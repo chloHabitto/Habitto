@@ -1,4 +1,5 @@
 import SwiftUI
+import MCEmojiPicker
 
 struct HabitEditView: View {
     @FocusState private var isGoalNumberFocused: Bool
@@ -47,7 +48,7 @@ struct HabitEditView: View {
     @State private var targetFieldFocused: Bool = false
     
     // Sheet states
-    @State private var showingIconSheet = false
+    @State private var showingEmojiPicker = false
     @State private var showingColorSheet = false
     @State private var showingScheduleSheet = false
     @State private var showingReminderSheet = false
@@ -193,7 +194,7 @@ struct HabitEditView: View {
                 color: selectedColor,
                 icon: selectedIcon,
                 value: getIconDisplayName(selectedIcon),
-                action: { showingIconSheet = true }
+                action: { showingEmojiPicker = true }
             )
             
             // Habit Type
@@ -378,9 +379,14 @@ struct HabitEditView: View {
             .onChange(of: targetFieldFocused) { _, newValue in
                 isTargetFieldFocused = newValue
             }
-            .sheet(isPresented: $showingIconSheet) {
-                IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
-            }
+            .mcEmojiPicker(
+                isPresented: $showingEmojiPicker,
+                selectedEmoji: $selectedIcon,
+                onEmojiSelected: { selectedEmoji in
+                    selectedIcon = selectedEmoji
+                    showingEmojiPicker = false
+                }
+            )
             .sheet(isPresented: $showingColorSheet) {
                 ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
                     selectedColor = color
@@ -493,9 +499,14 @@ struct HabitEditView: View {
     @ViewBuilder
     private var allSheets: some View {
         self
-        .sheet(isPresented: $showingIconSheet) {
-            IconBottomSheet(selectedIcon: $selectedIcon, onClose: { showingIconSheet = false })
-        }
+        .mcEmojiPicker(
+            isPresented: $showingEmojiPicker,
+            selectedEmoji: $selectedIcon,
+            onEmojiSelected: { selectedEmoji in
+                selectedIcon = selectedEmoji
+                showingEmojiPicker = false
+            }
+        )
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
                 selectedColor = color
