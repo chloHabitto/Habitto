@@ -52,23 +52,16 @@ struct StreakView: View {
                     )
                     
                     // Monthly Calendar
-                    VStack(spacing: 16) {
-                        Text("Overview")
-                            .font(.appTitleMedium)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        SimpleMonthlyCalendar(
-                            selectedDate: $selectedDate,
-                            userHabits: userHabits
-                        )
-                        .background(Color.white)
-                        .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.top, 20)
+                    SimpleMonthlyCalendar(
+                        selectedDate: $selectedDate,
+                        userHabits: userHabits
+                    )
+                    .background(Color.white)
+                    .cornerRadius(24)
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
+                .padding(.top, 20)
                 .padding(.bottom, 20)
             }
         }
