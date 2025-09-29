@@ -312,14 +312,22 @@ struct MoreTabView: View {
                 }
                 
                 // Add divider after the last item if it's the General Settings group
-                if index == items.count - 1 && title == "General Settings" {
+                // Removed divider between General Settings and Data Management groups
+                // if index == items.count - 1 && title == "General Settings" {
+                //     Rectangle()
+                //         .fill(Color(hex: "F0F0F6"))
+                //         .frame(height: 8)
+                // }
+                
+                // Add divider after the last item if it's the Account & Notifications group
+                if index == items.count - 1 && title == "Account & Notifications" {
                     Rectangle()
                         .fill(Color(hex: "F0F0F6"))
                         .frame(height: 8)
                 }
                 
-                // Add divider after the last item if it's the Account & Notifications group
-                if index == items.count - 1 && title == "Account & Notifications" {
+                // Add divider after the last item if it's the Data Management group
+                if index == items.count - 1 && title == "Data Management" {
                     Rectangle()
                         .fill(Color(hex: "F0F0F6"))
                         .frame(height: 8)
