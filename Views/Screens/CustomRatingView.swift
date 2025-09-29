@@ -77,7 +77,7 @@ struct CustomRatingView: View {
                                     )
                                     .cornerRadius(8)
                                     .frame(minHeight: 100)
-                                    .onChange(of: comment) { newValue in
+                                    .onChange(of: comment) { _, newValue in
                                         // Limit comment length
                                         if newValue.count > maxCommentLength {
                                             comment = String(newValue.prefix(maxCommentLength))

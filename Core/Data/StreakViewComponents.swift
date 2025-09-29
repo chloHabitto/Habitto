@@ -28,6 +28,7 @@ struct StreakHeaderView: View {
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
+        .background(Color.primary) // Match the streak view background
     }
 }
 

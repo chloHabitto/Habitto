@@ -30,32 +30,47 @@ struct StreakView: View {
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
     
+    // Calendar state
+    @State private var selectedDate: Date = Date()
+    
     var body: some View {
         VStack(spacing: 0) {
             // Fixed Header Section
             StreakHeaderView(onDismiss: { dismiss() })
                 .zIndex(10)
             
-            // Fixed Primary Background Content (Non-scrollable)
-            VStack(spacing: 16) {
-                // Main Streak Display
-                MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
-                
-                // Streak Summary Cards
-                StreakSummaryCardsView(
-                    bestStreak: streakStatistics.bestStreak,
-                    averageStreak: streakStatistics.averageStreak
-                )
-                
-                // Coming soon empty state
-                HabitEmptyStateView.comingSoon()
-                    .padding(.top, 40)
-                
-                // Spacer to push content to top
-                Spacer()
+            // Scrollable Content
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Main Streak Display
+                    MainStreakDisplayView(currentStreak: streakStatistics.currentStreak)
+                    
+                    // Streak Summary Cards
+                    StreakSummaryCardsView(
+                        bestStreak: streakStatistics.bestStreak,
+                        averageStreak: streakStatistics.averageStreak
+                    )
+                    
+                    // Monthly Calendar
+                    VStack(spacing: 16) {
+                        Text("Overview")
+                            .font(.appTitleMedium)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        SimpleMonthlyCalendar(
+                            selectedDate: $selectedDate,
+                            userHabits: userHabits
+                        )
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(.top, 20)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.primary)
@@ -189,6 +204,7 @@ struct StreakView: View {
             }
         }
     }
+    
 }
 
 #Preview {

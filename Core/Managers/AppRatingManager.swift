@@ -57,7 +57,11 @@ class AppRatingManager: ObservableObject {
         }
         
         // Request in-app rating using the window scene
-        SKStoreReviewController.requestReview(in: windowScene)
+        if #available(iOS 18.0, *) {
+            AppStore.requestReview(in: windowScene)
+        } else {
+            SKStoreReviewController.requestReview(in: windowScene)
+        }
         print("✅ AppRatingManager: In-app rating requested successfully")
     }
     
