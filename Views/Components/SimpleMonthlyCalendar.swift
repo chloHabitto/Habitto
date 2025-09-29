@@ -121,23 +121,6 @@ struct SimpleMonthlyCalendar: View {
         }
         .background(Color.white)
         .cornerRadius(24)
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    let threshold: CGFloat = 50
-                    if value.translation.width > threshold {
-                        // Swipe right - go to previous month
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        changeMonth(by: -1)
-                    } else if value.translation.width < -threshold {
-                        // Swipe left - go to next month
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        changeMonth(by: 1)
-                    }
-                }
-        )
         .onAppear {
             updateTodayButtonVisibility()
         }

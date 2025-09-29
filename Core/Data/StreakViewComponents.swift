@@ -25,10 +25,19 @@ struct StreakHeaderView: View {
             }
             
             Spacer()
+            
+            Text("Overview")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            // Invisible spacer to balance the layout
+            Color.clear
+                .frame(width: 48, height: 48)
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
-        .background(Color.primary) // Match the streak view background
     }
 }
 
@@ -40,7 +49,7 @@ struct MainStreakDisplayView: View {
     @State private var glowOpacity: Double = 0.0
     
     var body: some View {
-        VStack(spacing: StreakSpacing.lg) {
+        VStack(spacing: StreakSpacing.md) {
             // Enhanced Fire Icon with Modern Design
             ZStack {
                 // Outer glow effect
