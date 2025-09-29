@@ -11,8 +11,13 @@ struct EmojiKeyboardView: View {
     private let emojis = EmojiData.emojis
     
     var filteredEmojis: [String] {
-        let categoryEmojis = emojis[selectedCategory]
-        return searchText.isEmpty ? categoryEmojis : categoryEmojis.filter { $0.contains(searchText) }
+        if searchText.isEmpty {
+            return emojis[selectedCategory]
+        } else {
+            // Search across all emojis when searching
+            let allEmojis = emojis.flatMap { $0 }
+            return allEmojis.filter { $0.contains(searchText) }
+        }
     }
     
     var body: some View {

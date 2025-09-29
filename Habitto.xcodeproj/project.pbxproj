@@ -15,6 +15,8 @@
 		8935E7902E7C2260004BF684 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E78F2E7C2260004BF684 /* FirebaseDatabase */; };
 		8935E7932E7C2278004BF684 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7922E7C2278004BF684 /* GoogleSignIn */; };
 		8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7942E7C2278004BF684 /* GoogleSignInSwift */; };
+		8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70C2E8A680E00E7B437 /* MCEmojiPicker */; };
+		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -107,7 +109,9 @@
 				8935E7872E7C2204004BF684 /* Lottie in Frameworks */,
 				8935E78A2E7C2260004BF684 /* FirebaseAnalytics in Frameworks */,
 				8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */,
+				8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */,
 				8935E7932E7C2278004BF684 /* GoogleSignIn in Frameworks */,
+				8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -417,6 +421,8 @@
 				8935E78F2E7C2260004BF684 /* FirebaseDatabase */,
 				8935E7922E7C2278004BF684 /* GoogleSignIn */,
 				8935E7942E7C2278004BF684 /* GoogleSignInSwift */,
+				8940C70C2E8A680E00E7B437 /* MCEmojiPicker */,
+				8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */,
 			);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
@@ -451,6 +457,7 @@
 				8935E7852E7C2204004BF684 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 89C17A382DF73D8A00B2480F /* Products */;
@@ -903,6 +910,14 @@
 				minimumVersion = 9.0.0;
 			};
 		};
+		8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/izyumkin/MCEmojiPicker.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.5;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -945,6 +960,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		8940C70C2E8A680E00E7B437 /* MCEmojiPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
+			productName = MCEmojiPicker;
+		};
+		8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
+			productName = MCEmojiPickerJSON;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
