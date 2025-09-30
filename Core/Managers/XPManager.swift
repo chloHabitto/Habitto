@@ -84,12 +84,14 @@ class XPManager: ObservableObject {
     }
     
     /// Removes XP when habits are uncompleted
-    func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date()) -> Int {
+    func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date(), oldProgress: Int? = nil) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let dateKey = DateKey.key(for: date)
         
-        // Calculate XP that should be removed
-        let xpToRemove = calculateTotalXPForHabits(habits, for: targetDate)
+        // Calculate XP that should be removed (based on what was previously awarded)
+        let xpToRemove = calculateXPToRemoveForHabits(habits, for: targetDate, oldProgress: oldProgress)
+        
+        print("🎯 XPManager: removeXPForHabitUncompleted - oldProgress: \(oldProgress ?? -1), xpToRemove: \(xpToRemove)")
         
         if xpToRemove > 0 {
             // Remove the XP
@@ -129,6 +131,31 @@ class XPManager: ObservableObject {
     }
     
     // MARK: - XP Calculation (Private Helper)
+    
+    /// Calculate XP to remove for uncompleted habits (based on what was previously awarded)
+    private func calculateXPToRemoveForHabits(_ habits: [Habit], for date: Date, oldProgress: Int? = nil) -> Int {
+        var totalXP = 0
+        
+        for habit in habits {
+            // Calculate the XP that was previously awarded for this habit
+            // Use oldProgress if provided, otherwise check completion history
+            let dateKey = DateKey.key(for: date)
+            let previousProgress = oldProgress ?? (habit.completionHistory[dateKey] ?? 0)
+            
+            print("🎯 XPManager: calculateXPToRemoveForHabits - habit: \(habit.name), previousProgress: \(previousProgress)")
+            
+            if previousProgress > 0 {
+                // This habit was previously completed, so we need to remove the XP that was awarded
+                let baseXP = XPRewards.completeHabit
+                let streakBonus = calculateStreakBonus(for: habit)
+                let habitXP = baseXP + streakBonus
+                totalXP += habitXP
+                print("🎯 XPManager: Removing \(habitXP) XP for habit \(habit.name) (base: \(baseXP), streak: \(streakBonus))")
+            }
+        }
+        
+        return totalXP
+    }
     
     private func calculateTotalXPForHabits(_ habits: [Habit], for date: Date) -> Int {
         var totalXP = 0
