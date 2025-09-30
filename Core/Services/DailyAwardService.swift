@@ -95,23 +95,15 @@ public class DailyAwardService: ObservableObject {
         
         // Check if all habits are completed for the given date
         return habits.allSatisfy { habit in
-            // Convert HabitData to Habit and check completion
-            let habitStruct = Habit(
-                id: habit.id,
-                name: habit.name,
-                emoji: habit.emoji,
-                color: habit.color,
-                schedule: habit.schedule,
-                difficulty: habit.difficulty,
-                originalOrder: habit.originalOrder,
-                completionHistory: habit.completionHistory,
-                difficultyHistory: habit.difficultyHistory,
-                usageHistory: habit.usageHistory,
-                userId: habit.userId,
-                createdAt: habit.createdAt,
-                updatedAt: habit.updatedAt
-            )
-            return habitStruct.isCompleted(for: DateKey.startOfDay(for: dateKey))
+            // Check if habit is completed for the given date by looking at completion history
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+            guard let targetDate = formatter.date(from: dateKey) else { return false }
+            
+            return habit.completionHistory.contains { (record: CompletionRecord) in
+                Calendar.current.isDate(record.date, inSameDayAs: targetDate) && record.isCompleted
+            }
         }
     }
     
