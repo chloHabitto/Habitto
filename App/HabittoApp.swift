@@ -90,6 +90,7 @@ struct HabittoApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
     @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var xpService = XPService.shared
     @State private var showSplash = true
     
     var body: some Scene {
@@ -171,10 +172,13 @@ struct HabittoApp: App {
                                 let habits = habitRepository.habits
                                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
                                 
-                                // Schedule daily reminders after habits are loaded
-                                try? await Task.sleep(nanoseconds: 500_000_000)
-                                print("🔄 HabittoApp: Scheduling daily reminders after app start...")
-                                NotificationManager.shared.rescheduleDailyReminders()
+                            // Schedule daily reminders after habits are loaded
+                            try? await Task.sleep(nanoseconds: 500_000_000)
+                            print("🔄 HabittoApp: Scheduling daily reminders after app start...")
+                            NotificationManager.shared.rescheduleDailyReminders()
+                            
+                            // Reset daily XP counter if needed
+                            XPService.shared.resetDailyXP()
                             }
                         }
                 }
