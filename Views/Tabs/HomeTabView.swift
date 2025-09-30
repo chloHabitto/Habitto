@@ -784,8 +784,19 @@ struct HomeTabView: View {
         // Mark complete and present difficulty sheet
         deferResort = true
         
-        // Present difficulty sheet (existing logic)
-        selectedHabit = habit
+        // Check if this is the last habit to be completed
+        let remainingHabits = baseHabitsForSelectedDate.filter { h in
+            h.id != habit.id && !h.isCompleted(for: selectedDate)
+        }
+        
+        if remainingHabits.isEmpty {
+            // This is the last habit - show celebration instead of details
+            selectedHabit = nil
+            onLastHabitCompleted()
+        } else {
+            // Present difficulty sheet (existing logic)
+            selectedHabit = habit
+        }
     }
     
     private func onHabitUncompleted(_ habit: Habit) {
@@ -804,6 +815,16 @@ struct HomeTabView: View {
         resortHabits()
         
         // Call award service
+        Task {
+            await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
+        }
+    }
+    
+    private func onLastHabitCompleted() {
+        deferResort = false
+        resortHabits()
+        
+        // Call award service to trigger celebration
         Task {
             await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
         }
