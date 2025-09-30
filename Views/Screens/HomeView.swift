@@ -53,6 +53,9 @@ class HomeViewState: ObservableObject {
         // Debug the repository state
         habitRepository.debugRepositoryState()
         
+        // Initialize with current habits from repository to avoid empty state
+        habits = habitRepository.habits
+        isLoadingHabits = habits.isEmpty
         
         // Subscribe to HabitRepository changes
         habitRepository.$habits
