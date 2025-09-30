@@ -372,41 +372,11 @@ final actor HabitStore {
             
             // XP logic is now handled in HabitRepository.setProgress for immediate UI feedback
             
-            // Check for perfect day (all habits completed)
+            // Celebration logic is now handled in HabitRepository.setProgress for immediate UI feedback
+            
+            // Check achievements
             let currentHabitsCopy = currentHabits
             await MainActor.run {
-                let todayHabits = currentHabitsCopy.filter { habit in
-                    let calendar = Calendar.current
-                    let weekday = calendar.component(.weekday, from: date)
-                    
-                    if habit.schedule.lowercased().contains("everyday") {
-                        return true
-                    } else if habit.schedule.lowercased().contains("weekdays") {
-                        return weekday >= 2 && weekday <= 6
-                    } else if habit.schedule.lowercased().contains("weekends") {
-                        return weekday == 1 || weekday == 7
-                    } else {
-                        let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-                        let dayName = dayNames[weekday - 1]
-                        return habit.schedule.lowercased().contains(dayName)
-                    }
-                }
-                
-                let allCompleted = todayHabits.allSatisfy { habit in
-                    habit.isCompleted(for: date)
-                }
-                
-                if allCompleted {
-                    // Trigger celebration through event bus
-                    print("🎉 HabitStore: All habits completed! Triggering celebration for \(dateKey)")
-                    EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
-                } else {
-                    // Revoke celebration if not all habits completed
-                    print("🎉 HabitStore: Not all habits completed. Revoking celebration for \(dateKey)")
-                    EventBus.shared.publish(.dailyAwardRevoked(dateKey: dateKey))
-                }
-                
-                // Check achievements
                 XPManager.shared.checkAchievements(habits: currentHabitsCopy)
             }
         } else {
