@@ -898,16 +898,24 @@ struct HomeTabView: View {
         deferResort = false
         resortHabits()
         
-        // Don't call award service here - it should only be called for the last habit
-        // The award service will be called from onLastHabitCompleted() when appropriate
+        // Check if the last habit was just completed
+        if lastHabitJustCompleted {
+            // Trigger celebration when the last habit completion sheet is dismissed
+            let dateKey = DateKey.key(for: selectedDate)
+            print("🎉 HomeTabView: Last habit completion sheet dismissed! Triggering celebration for \(dateKey)")
+            EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
+            
+            // Reset the flag
+            lastHabitJustCompleted = false
+        }
     }
     
     private func onLastHabitCompleted() {
         deferResort = false
         resortHabits()
         
-        // Celebration logic is now handled in HabitRepository.setProgress
-        // No need to call awardService.onHabitCompleted here
+        // Set flag to trigger celebration when difficulty sheet is dismissed
+        lastHabitJustCompleted = true
     }
     
     private func getCurrentUserId() -> String {
@@ -917,4 +925,5 @@ struct HomeTabView: View {
     }
     
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var lastHabitJustCompleted = false
 }
