@@ -44,8 +44,7 @@ struct HomeTabView: View {
             self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(try! ModelContainer(for: DailyAward.self))))
         }
         
-        // Subscribe to event bus
-        subscribeToEvents()
+        // Subscribe to event bus - will be handled in onAppear
     }
     
     // Performance optimization: Cached regex patterns
@@ -123,7 +122,17 @@ struct HomeTabView: View {
             // Initialize sorted habits
             resortHabits()
             
-            // Subscribe to event bus - will be called from init
+            // Subscribe to event bus
+            let _ = eventBus.publisher()
+                .receive(on: DispatchQueue.main)
+                .sink { event in
+                    switch event {
+                    case .dailyAwardGranted:
+                        showCelebration = true
+                    case .dailyAwardRevoked:
+                        showCelebration = false
+                    }
+                }
         }
 
         .fullScreenCover(item: $selectedHabit) { habit in
@@ -729,20 +738,6 @@ struct HomeTabView: View {
         notificationFeedback.notificationOccurred(.success)
     }
     
-    // MARK: - Event Subscription
-    private mutating func subscribeToEvents() {
-        eventBus.publisher()
-            .receive(on: DispatchQueue.main)
-            .sink { event in
-                switch event {
-                case .dailyAwardGranted:
-                    showCelebration = true
-                case .dailyAwardRevoked:
-                    showCelebration = false
-                }
-            }
-            .store(in: &cancellables)
-    }
     
     // MARK: - Sorting Logic
     private func resortHabits() {

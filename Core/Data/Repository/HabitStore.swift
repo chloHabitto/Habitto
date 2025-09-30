@@ -428,7 +428,7 @@ final actor HabitStore {
                     }
                     
                     if allCompleted {
-                        XPManager.shared.awardXPForPerfectDay(habits: todayHabits, date: date)
+                        XPManager.shared.awardXPForAllHabitsCompleted(habits: todayHabits, for: date)
                     }
                     
                     // Check achievements

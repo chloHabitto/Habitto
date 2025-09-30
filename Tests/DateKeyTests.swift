@@ -1,7 +1,6 @@
-import XCTest
-@testable import Habitto
+import Foundation
 
-final class DateKeyTests: XCTestCase {
+final class DateKeyTests {
     
     func testDateKeyGeneration() {
         // Given
@@ -12,11 +11,11 @@ final class DateKeyTests: XCTestCase {
         // When & Then
         let date1 = formatter.date(from: "2024-03-15 10:30:00")!
         let key1 = DateKey.key(for: date1)
-        XCTAssertEqual(key1, "2024-03-15")
+        assert(key1 == "2024-03-15")
         
         let date2 = formatter.date(from: "2024-12-25 23:59:59")!
         let key2 = DateKey.key(for: date2)
-        XCTAssertEqual(key2, "2024-12-25")
+        assert(key2 == "2024-12-25")
     }
     
     func testDSTEdgeCases() {
@@ -28,12 +27,12 @@ final class DateKeyTests: XCTestCase {
         // DST Start (2024-03-31 02:00:00)
         let dstStart = formatter.date(from: "2024-03-31 02:00:00")!
         let key1 = DateKey.key(for: dstStart)
-        XCTAssertEqual(key1, "2024-03-31")
+        assert(key1 == "2024-03-31")
         
         // DST End (2024-10-27 02:00:00)
         let dstEnd = formatter.date(from: "2024-10-27 02:00:00")!
         let key2 = DateKey.key(for: dstEnd)
-        XCTAssertEqual(key2, "2024-10-27")
+        assert(key2 == "2024-10-27")
     }
     
     func testMidnightBoundaries() {
@@ -45,15 +44,15 @@ final class DateKeyTests: XCTestCase {
         // Just before midnight
         let justBeforeMidnight = formatter.date(from: "2024-03-31 23:59:59")!
         let key1 = DateKey.key(for: justBeforeMidnight)
-        XCTAssertEqual(key1, "2024-03-31")
+        assert(key1 == "2024-03-31")
         
         // Just after midnight
         let justAfterMidnight = formatter.date(from: "2024-04-01 00:00:01")!
         let key2 = DateKey.key(for: justAfterMidnight)
-        XCTAssertEqual(key2, "2024-04-01")
+        assert(key2 == "2024-04-01")
         
         // Different dates should have different keys
-        XCTAssertNotEqual(key1, key2)
+        assert(key1 != key2)
     }
     
     func testStartOfDay() {
@@ -72,7 +71,7 @@ final class DateKeyTests: XCTestCase {
         resultFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
         resultFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let resultString = resultFormatter.string(from: startOfDay)
-        XCTAssertEqual(resultString, "2024-03-15 00:00:00")
+        assert(resultString == "2024-03-15 00:00:00")
     }
     
     func testEndOfDay() {
@@ -91,7 +90,7 @@ final class DateKeyTests: XCTestCase {
         resultFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
         resultFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let resultString = resultFormatter.string(from: endOfDay)
-        XCTAssertEqual(resultString, "2024-03-15 23:59:59")
+        assert(resultString == "2024-03-15 23:59:59")
     }
     
     func testConsistencyAcrossDay() {
@@ -114,7 +113,7 @@ final class DateKeyTests: XCTestCase {
         }
         
         // Then - all times should produce the same key
-        XCTAssertEqual(keys.count, 1, "All times on the same day should produce the same key")
-        XCTAssertEqual(keys.first, "2024-03-15")
+        assert(keys.count == 1, "All times on the same day should produce the same key")
+        assert(keys.first == "2024-03-15")
     }
 }
