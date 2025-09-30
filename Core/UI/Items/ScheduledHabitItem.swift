@@ -329,14 +329,10 @@ struct ScheduledHabitItem: View {
                         // Reset flag immediately
                         isCompletingHabit = false
                         
-                        // Save to data model after 0.5 second delay (visual is already updated)
+                        // Save to data model immediately to prevent race conditions
                         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            print("🎯 ScheduledHabitItem: Delayed data save after 0.5 seconds")
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1)) {
-                                self.onProgressChange?(self.habit, self.selectedDate, goalAmount)
-                            }
-                        }
+                        print("🎯 ScheduledHabitItem: Immediate data save for completion")
+                        onProgressChange?(habit, selectedDate, goalAmount)
                         
                         // Call the original completion dismiss handler
                         onCompletionDismiss?()

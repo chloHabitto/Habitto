@@ -41,13 +41,6 @@ class XPManager: ObservableObject {
         let targetDate = DateUtils.startOfDay(for: date)
         let today = DateUtils.startOfDay(for: Date())
         
-        // Check if we already awarded XP today (prevent duplicates)
-        if let lastAwardDate = userProgress.lastCompletedDate,
-           Calendar.current.isDate(lastAwardDate, inSameDayAs: today) {
-            logger.debug("Daily XP already awarded for today")
-            return calculateTotalXPForHabits(habits, for: targetDate)
-        }
-        
         // Calculate total XP for all completed habits
         let totalXP = calculateTotalXPForHabits(habits, for: targetDate)
         
@@ -63,6 +56,44 @@ class XPManager: ObservableObject {
         }
         
         return totalXP
+    }
+    
+    /// Removes XP when habits are uncompleted
+    func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date()) -> Int {
+        let targetDate = DateUtils.startOfDay(for: date)
+        
+        // Calculate XP that should be removed
+        let xpToRemove = calculateTotalXPForHabits(habits, for: targetDate)
+        
+        if xpToRemove > 0 {
+            // Remove the XP
+            userProgress.totalXP = max(0, userProgress.totalXP - xpToRemove)
+            userProgress.dailyXP = max(0, userProgress.dailyXP - xpToRemove)
+            
+            // Recalculate level
+            let newLevel = calculateLevel(for: userProgress.totalXP)
+            userProgress.currentLevel = max(1, newLevel)
+            updateLevelProgress()
+            
+            // Add transaction for removal
+            let transaction = XPTransaction(
+                amount: -xpToRemove,
+                reason: .completeHabit,
+                description: "Habit uncompleted"
+            )
+            addTransaction(transaction)
+            
+            // Save data
+            saveUserProgress()
+            saveRecentTransactions()
+            
+            // Trigger UI update
+            objectWillChange.send()
+            
+            logger.info("Removed \(xpToRemove) XP for uncompleting habits")
+        }
+        
+        return xpToRemove
     }
     
     // MARK: - XP Calculation (Private Helper)

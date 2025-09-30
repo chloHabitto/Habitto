@@ -393,9 +393,10 @@ final actor HabitStore {
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
             
-            // Award XP for habit completion (only when progress increases)
-            if progress > oldProgress {
-                await MainActor.run {
+            // Handle XP based on progress change
+            await MainActor.run {
+                if progress > oldProgress {
+                    // Progress increased - award XP
                     XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
                     
                     // Check for streak milestones
@@ -404,36 +405,43 @@ final actor HabitStore {
                         // Award additional XP for streak milestones
                         XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
                     }
-                    
-                    // Check for perfect day (all habits completed)
-                    let todayHabits = currentHabits.filter { habit in
-                        let calendar = Calendar.current
-                        let weekday = calendar.component(.weekday, from: date)
-                        
-                        if habit.schedule.lowercased().contains("everyday") {
-                            return true
-                        } else if habit.schedule.lowercased().contains("weekdays") {
-                            return weekday >= 2 && weekday <= 6
-                        } else if habit.schedule.lowercased().contains("weekends") {
-                            return weekday == 1 || weekday == 7
-                        } else {
-                            let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-                            let dayName = dayNames[weekday - 1]
-                            return habit.schedule.lowercased().contains(dayName)
-                        }
-                    }
-                    
-                    let allCompleted = todayHabits.allSatisfy { habit in
-                        habit.isCompleted(for: date)
-                    }
-                    
-                    if allCompleted {
-                        XPManager.shared.awardXPForAllHabitsCompleted(habits: todayHabits, for: date)
-                    }
-                    
-                    // Check achievements
-                    XPManager.shared.checkAchievements(habits: currentHabits)
+                } else if progress < oldProgress {
+                    // Progress decreased - remove XP
+                    XPManager.shared.removeXPForHabitUncompleted(habits: [currentHabits[index]], for: date)
                 }
+                
+                // Check for perfect day (all habits completed)
+                let todayHabits = currentHabits.filter { habit in
+                    let calendar = Calendar.current
+                    let weekday = calendar.component(.weekday, from: date)
+                    
+                    if habit.schedule.lowercased().contains("everyday") {
+                        return true
+                    } else if habit.schedule.lowercased().contains("weekdays") {
+                        return weekday >= 2 && weekday <= 6
+                    } else if habit.schedule.lowercased().contains("weekends") {
+                        return weekday == 1 || weekday == 7
+                    } else {
+                        let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+                        let dayName = dayNames[weekday - 1]
+                        return habit.schedule.lowercased().contains(dayName)
+                    }
+                }
+                
+                let allCompleted = todayHabits.allSatisfy { habit in
+                    habit.isCompleted(for: date)
+                }
+                
+                if allCompleted {
+                    // Trigger celebration through event bus
+                    EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
+                } else {
+                    // Revoke celebration if not all habits completed
+                    EventBus.shared.publish(.dailyAwardRevoked(dateKey: dateKey))
+                }
+                
+                // Check achievements
+                XPManager.shared.checkAchievements(habits: currentHabits)
             }
         } else {
             logger.error("Habit not found in storage: \(habit.name)")
