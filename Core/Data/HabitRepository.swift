@@ -1,6 +1,5 @@
 import CoreData
 import SwiftUI
-import UserNotifications
 import Combine
 
 // MARK: - Notification Extensions
@@ -587,7 +586,7 @@ class HabitRepository: ObservableObject {
         // Skip Core Data and handle completion directly in UserDefaults
         print("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
         
-        let dateKey = CoreDataManager.dateKey(for: date)
+        let dateKey = DateKey.key(for: date)
         let currentProgress = habit.completionHistory[dateKey] ?? 0
         let newProgress = currentProgress > 0 ? 0 : 1
         
@@ -606,7 +605,7 @@ class HabitRepository: ObservableObject {
     
     // MARK: - Set Progress
     func setProgress(for habit: Habit, date: Date, progress: Int) {
-        let dateKey = CoreDataManager.dateKey(for: date)
+        let dateKey = DateKey.key(for: date)
         print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
         
         // Update the local habits array immediately for UI responsiveness
@@ -618,24 +617,8 @@ class HabitRepository: ObservableObject {
             objectWillChange.send()
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
             
-            // Handle XP based on progress change
-            if progress > oldProgress {
-                // Progress increased - award XP
-                print("🎯 HabitRepository: Progress increased, awarding XP for \(habit.name)")
-                _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [habits[index]], for: date)
-                
-                // Check for streak milestones
-                let streak = habits[index].streak
-                if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
-                    // Award additional XP for streak milestones
-                    print("🎯 HabitRepository: Streak milestone reached (\(streak)), awarding bonus XP for \(habit.name)")
-                    _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [habits[index]], for: date)
-                }
-            } else if progress < oldProgress {
-                // Progress decreased - remove XP
-                print("🎯 HabitRepository: Progress decreased, removing XP for \(habit.name)")
-                _ = XPManager.shared.removeXPForHabitUncompleted(habits: [habits[index]], for: date, oldProgress: oldProgress)
-            }
+            // XP handling is now centralized in DailyAwardService
+            // No direct XP manipulation here to prevent duplicates
             
             // Celebration logic is now handled in HomeTabView when the last habit completion sheet is dismissed
             
