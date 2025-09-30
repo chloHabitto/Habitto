@@ -16,6 +16,8 @@ struct ScheduledHabitItem: View {
     @State private var showingCompletionSheet = false
     @State private var isCompletingHabit = false
     @State private var isCompletingAnimation = false
+    @State private var hasDragged = false
+    @State private var isProcessingCompletion = false
     
     
     // Computed property for background color to simplify complex expression
@@ -198,10 +200,11 @@ struct ScheduledHabitItem: View {
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
         .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            DragGesture(minimumDistance: 10, coordinateSpace: .local)
                 .onChanged { value in
                     print("🔄 Drag onChanged: translation=\(value.translation), velocity=\(value.velocity)")
                     dragOffset = value.translation.width
+                    hasDragged = true
                 }
                 .onEnded { value in
                     print("🔄 Drag onEnded: translation=\(value.translation), velocity=\(value.velocity)")
@@ -228,6 +231,7 @@ struct ScheduledHabitItem: View {
                         if newProgress >= goalAmount {
                             // Set completing flag to prevent immediate data save
                             isCompletingHabit = true
+                            isProcessingCompletion = true
                             
                             // Fun completion animation for swipe
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
@@ -276,16 +280,21 @@ struct ScheduledHabitItem: View {
                         print("🔄 Swipe not strong enough: translationX=\(translationX)")
                     }
                     
-                    // Always reset drag offset
+                    // Always reset drag offset and hasDragged flag
                     withAnimation(.easeOut(duration: 0.2)) {
                         dragOffset = 0
                     }
+                    hasDragged = false
                 }
         )
         .onTapGesture {
-            // Trigger the row tap callback when the habit item is tapped
-            print("🎯 ScheduledHabitItem: Row tapped for \(habit.name)")
-            onRowTap?()
+            // Only trigger tap if no drag has occurred and not processing completion
+            if !hasDragged && !isProcessingCompletion {
+                print("🎯 ScheduledHabitItem: Row tapped for \(habit.name)")
+                onRowTap?()
+            } else {
+                print("🎯 ScheduledHabitItem: Tap ignored due to drag gesture or completion processing")
+            }
         }
 
         .onLongPressGesture {
@@ -374,8 +383,9 @@ struct ScheduledHabitItem: View {
                     onDismiss: {
                         print("🎯 ScheduledHabitItem: Sheet dismissed for habit: \(habit.name)")
                         
-                        // Reset flag immediately
+                        // Reset flags immediately
                         isCompletingHabit = false
+                        isProcessingCompletion = false
                         
                         // Save to data model immediately to prevent race conditions
                         let goalAmount = extractNumericGoalAmount(from: habit.goal)
@@ -461,6 +471,7 @@ struct ScheduledHabitItem: View {
             // If not completed, show completion sheet
             print("🎯 ScheduledHabitItem: Showing completion sheet for \(habit.name)")
             isCompletingHabit = true
+            isProcessingCompletion = true
             showingCompletionSheet = true
             
             // Haptic feedback for completion
