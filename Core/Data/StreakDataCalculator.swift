@@ -49,6 +49,36 @@ class StreakDataCalculator {
         return maxStreak
     }
     
+    // MARK: - Overall Streak Calculation (All Habits Must Be Completed)
+    
+    /// Calculates the overall streak only when ALL habits are completed for each day
+    /// This is the correct behavior: streaks should only increment when all daily habits are done
+    private static func calculateOverallStreakWhenAllCompleted(from habits: [Habit], calendar: Calendar, today: Date) -> Int {
+        guard !habits.isEmpty else { return 0 }
+        
+        var streak = 0
+        var currentDate = today
+        
+        // Count consecutive days backwards from today where ALL habits were completed
+        while true {
+            // Check if all habits were completed on this date
+            let allCompletedOnThisDate = habits.allSatisfy { habit in
+                habit.isCompleted(for: currentDate)
+            }
+            
+            if allCompletedOnThisDate {
+                streak += 1
+                // Move to previous day
+                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+            } else {
+                // Stop counting when we hit a day where not all habits were completed
+                break
+            }
+        }
+        
+        return streak
+    }
+    
     // MARK: - Streak Statistics
     static func calculateStreakStatistics(from habits: [Habit]) -> StreakStatistics {
         guard !habits.isEmpty else {
@@ -64,9 +94,8 @@ class StreakDataCalculator {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        // Calculate current streak
-        let totalCurrentStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
-        let currentStreak = totalCurrentStreak / habits.count
+        // Calculate current streak - only count when ALL habits are completed
+        let currentStreak = calculateOverallStreakWhenAllCompleted(from: habits, calendar: calendar, today: today)
         
         // Calculate best streak - find the longest consecutive streak in history
         let bestStreak = habits.map { calculateBestStreakFromHistory(for: $0) }.max() ?? 0
@@ -843,9 +872,8 @@ class StreakDataCalculator {
                 let calendar = Calendar.current
                 let today = calendar.startOfDay(for: Date())
                 
-                // Calculate current streak
-                let totalCurrentStreak = habits.reduce(0) { $0 + $1.calculateTrueStreak() }
-                let currentStreak = totalCurrentStreak / habits.count
+                // Calculate current streak - only count when ALL habits are completed
+                let currentStreak = calculateOverallStreakWhenAllCompleted(from: habits, calendar: calendar, today: today)
                 
                 DispatchQueue.main.async {
                     progress(0.2)
