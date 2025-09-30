@@ -61,17 +61,13 @@ struct DateUtils {
         let now = Date()
         print("🔍 DateUtils.today() - Raw Date(): \(now)")
         print("🔍 DateUtils.today() - Current timezone: \(TimeZone.current)")
-        print("🔍 DateUtils.today() - Calendar timezone: \(calendar.timeZone)")
-        print("🔍 DateUtils.today() - Calendar locale: \(calendar.locale?.identifier ?? "nil")")
         
-        // Force use of current timezone
-        var robustCalendar = Calendar.current
-        robustCalendar.timeZone = TimeZone.current
-        robustCalendar.locale = Locale.current
+        // Get today's date components in the current timezone
+        let components = calendar.dateComponents([.year, .month, .day], from: now)
+        let today = calendar.date(from: components) ?? now
         
-        let today = robustCalendar.startOfDay(for: now)
         print("🔍 DateUtils.today() - Calculated today: \(today)")
-        print("🔍 DateUtils.today() - Today components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
+        print("🔍 DateUtils.today() - Today components: \(components)")
         
         return today
     }

@@ -135,9 +135,50 @@ class HomeViewState: ObservableObject {
     
     func updateAllStreaks() {
         print("🔄 HomeView: Updating all streaks...")
-        for i in 0..<habits.count {
-            habits[i].updateStreakWithReset()
+        
+        // Check if all habits are completed for today
+        let today = DateUtils.today()
+        let todayHabits = habits.filter { habit in
+            // Check if habit should be shown on today's date
+            let calendar = Calendar.current
+            let weekday = calendar.component(.weekday, from: today)
+            
+            // Parse schedule to check if habit is scheduled for today
+            if habit.schedule.lowercased().contains("everyday") {
+                return true
+            } else if habit.schedule.lowercased().contains("weekdays") {
+                return weekday >= 2 && weekday <= 6 // Monday to Friday
+            } else if habit.schedule.lowercased().contains("weekends") {
+                return weekday == 1 || weekday == 7 // Sunday or Saturday
+            } else {
+                // For specific day schedules, check if today matches
+                let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+                let todayName = dayNames[weekday - 1]
+                return habit.schedule.lowercased().contains(todayName)
+            }
         }
+        
+        // Check if all scheduled habits for today are completed
+        let allCompleted = todayHabits.allSatisfy { habit in
+            habit.isCompleted(for: today)
+        }
+        
+        print("🔄 HomeView: Today's habits: \(todayHabits.count), All completed: \(allCompleted)")
+        
+        if allCompleted {
+            // Only update streaks when ALL habits are completed for today
+            print("🎉 HomeView: All habits completed! Updating streaks...")
+            for i in 0..<habits.count {
+                habits[i].updateStreakWithReset()
+            }
+        } else {
+            // Reset streaks if not all habits are completed
+            print("🔄 HomeView: Not all habits completed, resetting streaks...")
+            for i in 0..<habits.count {
+                habits[i].streak = 0
+            }
+        }
+        
         // Save the updated habits
         updateHabits(habits)
         print("🔄 HomeView: All streaks updated")
