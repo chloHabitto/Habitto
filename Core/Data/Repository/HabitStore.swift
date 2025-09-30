@@ -383,6 +383,7 @@ final actor HabitStore {
         var currentHabits = try await loadHabits()
         
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
+            let oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
             currentHabits[index].completionHistory[dateKey] = progress
             
             // Update streak after progress change
@@ -390,6 +391,48 @@ final actor HabitStore {
             
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
+            
+            // Award XP for habit completion (only when progress increases)
+            if progress > oldProgress {
+                await MainActor.run {
+                    XPService.shared.awardXPForHabitCompletion(currentHabits[index], date: date)
+                    
+                    // Check for streak milestones
+                    let streak = currentHabits[index].streak
+                    if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
+                        XPService.shared.awardXPForStreakMilestone(currentHabits[index], streakDays: streak)
+                    }
+                    
+                    // Check for perfect day (all habits completed)
+                    let todayHabits = currentHabits.filter { habit in
+                        let calendar = Calendar.current
+                        let weekday = calendar.component(.weekday, from: date)
+                        
+                        if habit.schedule.lowercased().contains("everyday") {
+                            return true
+                        } else if habit.schedule.lowercased().contains("weekdays") {
+                            return weekday >= 2 && weekday <= 6
+                        } else if habit.schedule.lowercased().contains("weekends") {
+                            return weekday == 1 || weekday == 7
+                        } else {
+                            let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+                            let dayName = dayNames[weekday - 1]
+                            return habit.schedule.lowercased().contains(dayName)
+                        }
+                    }
+                    
+                    let allCompleted = todayHabits.allSatisfy { habit in
+                        habit.isCompleted(for: date)
+                    }
+                    
+                    if allCompleted {
+                        XPService.shared.awardXPForPerfectDay(habits: todayHabits, date: date)
+                    }
+                    
+                    // Check achievements
+                    XPService.shared.checkAchievements(habits: currentHabits)
+                }
+            }
         } else {
             logger.error("Habit not found in storage: \(habit.name)")
             throw DataError.storage(StorageError(
