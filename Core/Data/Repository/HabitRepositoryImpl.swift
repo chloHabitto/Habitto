@@ -107,6 +107,9 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         let dateKey = DateUtils.dateKey(for: date)
         habit.completionHistory[dateKey] = Int(progress * 100) // Store as percentage
         
+        // Update streak after progress change
+        habit.updateStreakWithReset()
+        
         _ = try await update(habit)
     }
     

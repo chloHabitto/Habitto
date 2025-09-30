@@ -727,8 +727,19 @@ struct HomeTabView: View {
             return 
         }
         
-        // Get habits for today
-        let todayHabits = habitsForSelectedDate
+        // Get the most recent habits from HabitRepository instead of the local array
+        let todayHabits = HabitRepository.shared.habits.filter { habit in
+            let selected = DateUtils.startOfDay(for: selectedDate)
+            let start = DateUtils.startOfDay(for: habit.startDate)
+            let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+            
+            guard selected >= start && selected <= end else {
+                return false
+            }
+            
+            return shouldShowHabitOnDate(habit, date: selectedDate)
+        }
+        
         print("🔍 CELEBRATION DEBUG - todayHabits count: \(todayHabits.count)")
         
         // Check if there are any habits for today
@@ -737,13 +748,14 @@ struct HomeTabView: View {
             return 
         }
         
-        // Check if all habits are completed
-        print("🔍 CELEBRATION DEBUG - Checking each habit completion status:")
+        // Check if all habits have made progress (not necessarily completed their full goal)
+        print("🔍 CELEBRATION DEBUG - Checking each habit progress status:")
         var completedCount = 0
         for habit in todayHabits {
-            let isCompleted = habit.isCompleted(for: selectedDate)
-            print("🔍 CELEBRATION DEBUG - Habit '\(habit.name)': completed=\(isCompleted)")
-            if isCompleted {
+            let progress = habit.getProgress(for: selectedDate)
+            let hasProgress = progress > 0
+            print("🔍 CELEBRATION DEBUG - Habit '\(habit.name)': progress=\(progress), hasProgress=\(hasProgress)")
+            if hasProgress {
                 completedCount += 1
             }
         }
@@ -752,16 +764,16 @@ struct HomeTabView: View {
         print("🔍 CELEBRATION DEBUG - Completed: \(completedCount)/\(todayHabits.count) | All completed: \(allCompleted)")
         
         if allCompleted {
-            print("🎉 All habits completed for today! Showing celebration...")
+            print("🎉 All habits have made progress for today! Showing celebration...")
             showCelebration = true
             print("🔍 CELEBRATION DEBUG - showCelebration set to true")
             
-            // Update streaks when all habits are completed
-            print("🎉 CELEBRATION DEBUG - All habits completed! Updating streaks...")
+            // Update streaks when all habits have made progress
+            print("🎉 CELEBRATION DEBUG - All habits have made progress! Updating streaks...")
             // Trigger streak update through the parent callback
             onCompletionDismiss?()
         } else {
-            print("🔍 CELEBRATION DEBUG - Not all habits completed yet")
+            print("🔍 CELEBRATION DEBUG - Not all habits have made progress yet")
         }
     }
 }
