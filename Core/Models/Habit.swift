@@ -298,17 +298,28 @@ struct Habit: Identifiable, Codable, Equatable {
         let vacationManager = VacationManager.shared
         var streak = 0
         var currentDate = today
+        var debugInfo: [String] = []
         
         // Count consecutive completed days backwards from today
         // Skip vacation days only during active vacation periods
         while isCompleted(for: currentDate) || (vacationManager.isActive && vacationManager.isVacationDay(currentDate)) {
+            let dateKey = Self.dateKey(for: currentDate)
+            let isCompleted = isCompleted(for: currentDate)
+            let isVacation = vacationManager.isActive && vacationManager.isVacationDay(currentDate)
+            
             // Only increment streak for actually completed days (not vacation days)
-            if isCompleted(for: currentDate) {
+            if isCompleted {
                 streak += 1
+                debugInfo.append("\(dateKey): completed=true, vacation=\(isVacation)")
+            } else {
+                debugInfo.append("\(dateKey): completed=false, vacation=\(isVacation)")
             }
+            
             // Move to previous day regardless of vacation status
             currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
         }
+        
+        print("🔍 STREAK CALCULATION DEBUG - Habit '\(name)': calculated streak=\(streak), details: \(debugInfo.joined(separator: ", "))")
         
         return streak
     }
@@ -318,33 +329,34 @@ struct Habit: Identifiable, Codable, Equatable {
     mutating func updateStreakWithReset() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
         let vacationManager = VacationManager.shared
+        
+        let oldStreak = streak
         
         // If today is a vacation day AND vacation is active, preserve the current streak
         if vacationManager.isActive && vacationManager.isVacationDay(today) {
             // Don't change the streak during active vacation - it remains frozen
+            print("🔍 STREAK UPDATE DEBUG - Habit '\(name)': Vacation day, preserving streak=\(streak)")
             return
         }
         
-        if isCompleted(for: today) {
-            if isCompleted(for: yesterday) || (vacationManager.isActive && vacationManager.isVacationDay(yesterday)) {
-                // Continue streak - increment (yesterday could be vacation day)
-                streak += 1
-            } else {
-                // Start new streak - reset to 1
-                streak = 1
-            }
-        } else {
-            // Reset streak if not completed today (and today is not a vacation day)
-            streak = 0
-        }
+        // Use the same logic as calculateTrueStreak() to ensure consistency
+        streak = calculateTrueStreak()
+        
+        print("🔍 STREAK UPDATE DEBUG - Habit '\(name)': Updated streak \(oldStreak) -> \(streak)")
     }
     
     /// Validates if the current streak matches actual consecutive completions
     func validateStreak() -> Bool {
         let actualStreak = calculateTrueStreak()
-        return streak == actualStreak
+        let isValid = streak == actualStreak
+        
+        // Debug logging to understand streak validation issues
+        if !isValid {
+            print("🔍 STREAK VALIDATION DEBUG - Habit '\(name)': stored streak=\(streak), calculated streak=\(actualStreak), valid=\(isValid)")
+        }
+        
+        return isValid
     }
     
     /// Corrects the streak to match actual consecutive completions
