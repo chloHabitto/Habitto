@@ -374,11 +374,8 @@ final actor HabitStore {
             
             // Celebration logic is now handled in HabitRepository.setProgress for immediate UI feedback
             
-            // Check achievements
-            let currentHabitsCopy = currentHabits
-            await MainActor.run {
-                XPManager.shared.checkAchievements(habits: currentHabitsCopy)
-            }
+            // Achievement checking is now handled by DailyAwardService
+            // No direct XP manipulation here to prevent duplicates
         } else {
             logger.error("Habit not found in storage: \(habit.name)")
             throw DataError.storage(StorageError(

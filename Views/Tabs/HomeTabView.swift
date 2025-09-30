@@ -900,10 +900,13 @@ struct HomeTabView: View {
         
         // Check if the last habit was just completed
         if lastHabitJustCompleted {
-            // Trigger celebration when the last habit completion sheet is dismissed
+            // Call DailyAwardService to grant XP for completing all habits
             let dateKey = DateKey.key(for: selectedDate)
-            print("🎉 HomeTabView: Last habit completion sheet dismissed! Triggering celebration for \(dateKey)")
-            EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
+            print("🎉 HomeTabView: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
+            
+            Task {
+                await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
+            }
             
             // Reset the flag
             lastHabitJustCompleted = false

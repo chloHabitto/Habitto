@@ -3,6 +3,10 @@ import SwiftUI
 import OSLog
 
 /// Simplified XP Manager with single, clear award flow
+/// 
+/// ⚠️  IMPORTANT: Do not call XP mutation methods directly from UI or repositories.
+/// Use DailyAwardService instead to prevent duplicate XP awards.
+/// 
 @MainActor
 class XPManager: ObservableObject {
     static let shared = XPManager()
@@ -41,8 +45,9 @@ class XPManager: ObservableObject {
     
     // MARK: - Main XP Award Method (Single Entry Point)
     
-    /// Awards XP for completing all habits - the ONLY method that should be called
-    func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
+    /// Awards XP for completing all habits - DEPRECATED: Use DailyAwardService instead
+    @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
+    internal func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let today = DateUtils.startOfDay(for: Date())
         let dateKey = DateKey.key(for: date)
@@ -83,8 +88,9 @@ class XPManager: ObservableObject {
         return totalXP
     }
     
-    /// Removes XP when habits are uncompleted
-    func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date(), oldProgress: Int? = nil) -> Int {
+    /// Removes XP when habits are uncompleted - DEPRECATED: Use DailyAwardService instead
+    @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
+    internal func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date(), oldProgress: Int? = nil) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let dateKey = DateKey.key(for: date)
         
@@ -189,7 +195,7 @@ class XPManager: ObservableObject {
         }
     }
     
-    // MARK: - Core XP Management (Private)
+    // MARK: - Core XP Management (Private - Use DailyAwardService instead)
     
     private func addXP(_ amount: Int, reason: XPRewardReason, description: String) {
         let oldLevel = userProgress.currentLevel
