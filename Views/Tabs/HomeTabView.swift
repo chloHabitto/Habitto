@@ -308,7 +308,23 @@ struct HomeTabView: View {
             },
             onCompletionDismiss: {
                 // Check for celebration after habit completion bottom sheet is dismissed
-                checkForAllHabitsCompleted()
+                print("🔍 CELEBRATION DEBUG - onCompletionDismiss triggered")
+                
+                // Add delay to ensure habit data is saved before checking celebration
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    print("🔍 CELEBRATION DEBUG - Running delayed celebration check after 0.6 seconds")
+                    
+                    // Force reload habits to ensure we have the latest data
+                    Task {
+                        await HabitRepository.shared.loadHabits(force: true)
+                        
+                        // Run celebration check on main thread after data reload
+                        DispatchQueue.main.async {
+                            checkForAllHabitsCompleted()
+                        }
+                    }
+                }
+                
                 onCompletionDismiss?()
             }
         )
@@ -698,24 +714,54 @@ struct HomeTabView: View {
     
     // MARK: - Celebration Detection
     private func checkForAllHabitsCompleted() {
+        print("🔍 CELEBRATION DEBUG - checkForAllHabitsCompleted called")
+        print("🔍 CELEBRATION DEBUG - selectedDate: \(selectedDate)")
+        
         // Only check for today's date
         let today = DateUtils.today()
-        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else { return }
+        print("🔍 CELEBRATION DEBUG - today: \(today)")
+        print("🔍 CELEBRATION DEBUG - isSameDay: \(Calendar.current.isDate(selectedDate, inSameDayAs: today))")
+        
+        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else { 
+            print("🔍 CELEBRATION DEBUG - Not today's date, skipping celebration")
+            return 
+        }
         
         // Get habits for today
         let todayHabits = habitsForSelectedDate
+        print("🔍 CELEBRATION DEBUG - todayHabits count: \(todayHabits.count)")
         
         // Check if there are any habits for today
-        guard !todayHabits.isEmpty else { return }
+        guard !todayHabits.isEmpty else { 
+            print("🔍 CELEBRATION DEBUG - No habits for today, skipping celebration")
+            return 
+        }
         
         // Check if all habits are completed
-        let allCompleted = todayHabits.allSatisfy { habit in
-            habit.isCompleted(for: selectedDate)
+        print("🔍 CELEBRATION DEBUG - Checking each habit completion status:")
+        var completedCount = 0
+        for habit in todayHabits {
+            let isCompleted = habit.isCompleted(for: selectedDate)
+            print("🔍 CELEBRATION DEBUG - Habit '\(habit.name)': completed=\(isCompleted)")
+            if isCompleted {
+                completedCount += 1
+            }
         }
+        
+        let allCompleted = completedCount == todayHabits.count
+        print("🔍 CELEBRATION DEBUG - Completed: \(completedCount)/\(todayHabits.count) | All completed: \(allCompleted)")
         
         if allCompleted {
             print("🎉 All habits completed for today! Showing celebration...")
             showCelebration = true
+            print("🔍 CELEBRATION DEBUG - showCelebration set to true")
+            
+            // Update streaks when all habits are completed
+            print("🎉 CELEBRATION DEBUG - All habits completed! Updating streaks...")
+            // Trigger streak update through the parent callback
+            onCompletionDismiss?()
+        } else {
+            print("🔍 CELEBRATION DEBUG - Not all habits completed yet")
         }
     }
 }
