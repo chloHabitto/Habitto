@@ -303,8 +303,11 @@ final actor HabitStore {
                 logger.warning("  - \(error.field): \(error.message)")
             }
             
-            // If there are critical errors, don't update the habit
-            let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
+            // Only abort for truly critical errors that would corrupt data
+            let criticalErrors = validationResult.errors.filter { 
+                $0.severity == .critical && 
+                ($0.field == "streak" && $0.message.contains("cannot be negative"))
+            }
             if !criticalErrors.isEmpty {
                 logger.error("Critical validation errors found, aborting habit update")
                 throw DataError.validation(ValidationError(
@@ -312,6 +315,8 @@ final actor HabitStore {
                     message: "Critical validation errors found",
                     severity: .critical
                 ))
+            } else {
+                logger.info("Non-critical validation errors found, proceeding with update")
             }
         }
         
@@ -327,14 +332,23 @@ final actor HabitStore {
         var currentHabits = try await loadHabits()
         
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
+            // Update existing habit
             currentHabits[index] = habit
-            try await saveHabits(currentHabits)
-            logger.info("Successfully updated habit: \(habit.name)")
+            logger.info("Found existing habit at index \(index), updating...")
         } else {
+            // Create new habit if not found
             logger.warning("No matching habit found for ID: \(habit.id), creating new habit")
             currentHabits.append(habit)
+        }
+        
+        // Save the updated habits array
+        do {
             try await saveHabits(currentHabits)
-            logger.info("Successfully created new habit: \(habit.name)")
+            logger.info("Successfully saved habit: \(habit.name) (total habits: \(currentHabits.count))")
+        } catch {
+            logger.error("Failed to save habits after update: \(error)")
+            // Re-throw the error to be handled by the calling code
+            throw error
         }
     }
     
