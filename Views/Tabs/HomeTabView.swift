@@ -138,6 +138,11 @@ struct HomeTabView: View {
                     }
                 }
         }
+        .onChange(of: habits) { oldHabits, newHabits in
+            // Resort habits when the habits array changes
+            print("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
+            resortHabits()
+        }
 
         .fullScreenCover(item: $selectedHabit) { habit in
             HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
