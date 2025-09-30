@@ -233,6 +233,10 @@ struct ScheduledHabitItem: View {
                             isCompletingHabit = true
                             isProcessingCompletion = true
                             
+                            // Save completion data immediately
+                            print("🔄 Calling onProgressChange for completion: \(newProgress)")
+                            onProgressChange?(habit, selectedDate, newProgress)
+                            
                             // Fun completion animation for swipe
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
                                 isCompletingAnimation = true
@@ -245,7 +249,10 @@ struct ScheduledHabitItem: View {
                                 }
                             }
                             
-                            showingCompletionSheet = true
+                            // Delay showing completion sheet to allow progress bar and checkmark animations to complete
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                showingCompletionSheet = true
+                            }
                         } else {
                             // For non-completion progress changes, save immediately
                             print("🔄 Calling onProgressChange for right swipe: \(newProgress)")
@@ -387,10 +394,8 @@ struct ScheduledHabitItem: View {
                         isCompletingHabit = false
                         isProcessingCompletion = false
                         
-                        // Save to data model immediately to prevent race conditions
-                        let goalAmount = extractNumericGoalAmount(from: habit.goal)
-                        print("🎯 ScheduledHabitItem: Immediate data save for completion with progress: \(goalAmount)")
-                        onProgressChange?(habit, selectedDate, goalAmount)
+                        // Data is already saved when completion happened, no need to save again
+                        print("🎯 ScheduledHabitItem: Data already saved on completion, skipping duplicate save")
                         
                         // Call the original completion dismiss handler
                         onCompletionDismiss?()
@@ -472,11 +477,20 @@ struct ScheduledHabitItem: View {
             print("🎯 ScheduledHabitItem: Showing completion sheet for \(habit.name)")
             isCompletingHabit = true
             isProcessingCompletion = true
-            showingCompletionSheet = true
+            
+            // Save completion data immediately
+            let goalAmount = extractNumericGoalAmount(from: habit.goal)
+            print("🎯 ScheduledHabitItem: Saving completion data immediately: \(goalAmount)")
+            onProgressChange?(habit, selectedDate, goalAmount)
             
             // Haptic feedback for completion
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
+            
+            // Delay showing completion sheet to allow progress bar and checkmark animations to complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                showingCompletionSheet = true
+            }
         }
     }
 }
