@@ -1,7 +1,8 @@
 import Foundation
 import SwiftUI
+import OSLog
 
-/// Manages XP (Experience Points) system for habit completion rewards
+/// Simplified XP Manager with single, clear award flow
 @MainActor
 class XPManager: ObservableObject {
     static let shared = XPManager()
@@ -9,209 +10,225 @@ class XPManager: ObservableObject {
     @Published var userProgress = UserProgress()
     @Published var recentTransactions: [XPTransaction] = []
     
+    private let logger = Logger(subsystem: "com.habitto.app", category: "XPManager")
     private let userDefaults = UserDefaults.standard
-    private let totalXPKey = "totalXP"
-    private let dailyXPKey = "dailyXP"
-    private let lastXPDateKey = "lastXPDate"
-    private let currentLevelKey = "currentLevel"
-    private let streakDaysKey = "streakDays"
+    private let userProgressKey = "user_progress"
+    private let recentTransactionsKey = "recent_xp_transactions"
     
-    // XP calculation constants
-    private let baseXPPerHabit = 5  // Reduced from 10
-    private let streakBonusMultiplier = 1.5
-    private let allHabitsCompletedBonus = 15  // Reduced from 50
-    
-    init() {
-        loadXPData()
-        // Fix any corrupted XP data on first load
-        if userProgress.xpForNextLevel < 0 || userProgress.xpForCurrentLevel < 0 {
-            print("🔧 XP DEBUG - Fixing corrupted XP data")
-            resetXPData()
-        }
+    // Single source of truth for XP values
+    struct XPRewards {
+        static let completeHabit = 5
+        static let completeAllHabits = 15
+        static let streakBonus = 10
+        static let levelUp = 25
+        static let perfectWeek = 25
+        static let achievement = 10
     }
     
-    // MARK: - XP Calculation
+    // Level calculation constants
+    private let levelBaseXP = 25 // XP needed for level 2
     
-    /// Calculates XP earned for completing all habits for today
-    func calculateXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
-        var totalXP = 0
-        var completedHabitsCount = 0
+    init() {
+        loadUserProgress()
+        loadRecentTransactions()
+        logger.info("XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
+    }
+    
+    // MARK: - Main XP Award Method (Single Entry Point)
+    
+    /// Awards XP for completing all habits - the ONLY method that should be called
+    func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
+        let today = DateUtils.startOfDay(for: Date())
         
-        // Base XP for each completed habit
-        for habit in habits {
-            // Only give XP if the habit is actually completed for the target date
-            if habit.isCompleted(for: targetDate) {
-                let baseXP = baseXPPerHabit
-                
-                // Streak bonus: +50% XP for habits with 3+ day streaks
-                let streakBonus = habit.streak >= 3 ? Int(Double(baseXP) * (streakBonusMultiplier - 1.0)) : 0
-                
-                totalXP += baseXP + streakBonus
-                completedHabitsCount += 1
-                
-                print("🎯 XP CALC - Habit '\(habit.name)' completed for \(targetDate): +\(baseXP + streakBonus) XP")
-            } else {
-                print("🎯 XP CALC - Habit '\(habit.name)' not completed for \(targetDate): +0 XP")
-            }
+        // Check if we already awarded XP today (prevent duplicates)
+        if let lastAwardDate = userProgress.lastCompletedDate,
+           Calendar.current.isDate(lastAwardDate, inSameDayAs: today) {
+            logger.debug("Daily XP already awarded for today")
+            return calculateTotalXPForHabits(habits, for: targetDate)
         }
         
-        // Bonus XP for completing ALL habits (only if all habits are completed)
-        if completedHabitsCount == habits.count && !habits.isEmpty {
-            totalXP += allHabitsCompletedBonus
-            print("🎯 XP CALC - All habits bonus: +\(allHabitsCompletedBonus) XP")
+        // Calculate total XP for all completed habits
+        let totalXP = calculateTotalXPForHabits(habits, for: targetDate)
+        
+        if totalXP > 0 {
+            // Award the XP
+            addXP(totalXP, reason: .completeAllHabits, description: "Completed all habits")
+            
+            // Update last award date
+            userProgress.lastCompletedDate = today
+            saveUserProgress()
+            
+            logger.info("Awarded \(totalXP) XP for completing \(habits.count) habits")
         }
         
-        print("🎯 XP CALC - Total calculated XP: \(totalXP) (completed: \(completedHabitsCount)/\(habits.count)) for date: \(targetDate)")
         return totalXP
     }
     
-    /// Awards XP for completing all habits and updates daily/total XP
-    func awardXPForAllHabitsCompleted(habits: [Habit]) -> Int {
-        let earnedXP = calculateXPForAllHabitsCompleted(habits: habits)
-        
-        // Check if we already awarded XP today
-        let today = Calendar.current.startOfDay(for: Date())
-        let lastAwardDate = userProgress.lastCompletedDate.map { Calendar.current.startOfDay(for: $0) }
-        
-        if lastAwardDate == nil || today > lastAwardDate! {
-            // New day - reset daily XP and award new XP
-            userProgress.dailyXP = earnedXP
-            userProgress.totalXP += earnedXP
-            userProgress.lastCompletedDate = Date()
-            
-            // Update level and progress
-            updateUserLevel()
-            
-            saveXPData()
-            
-            print("🎯 XP AWARDED: \(earnedXP) XP for completing \(habits.count) habits")
-            return earnedXP
-        } else {
-            // Already awarded XP today - don't award again, but return the calculated amount for display
-            print("🎯 XP ALREADY AWARDED: Daily XP already earned for today")
-            return earnedXP
-        }
-    }
+    // MARK: - XP Calculation (Private Helper)
     
-    /// Updates XP based on current habit completion state (can remove XP if habits are uncompleted)
-    func updateXPForCurrentHabits(habits: [Habit], for date: Date = Date()) -> Int {
-        print("🎯 XP UPDATE: Starting update for \(habits.count) habits on \(date)")
+    private func calculateTotalXPForHabits(_ habits: [Habit], for date: Date) -> Int {
+        var totalXP = 0
+        var completedHabitsCount = 0
         
-        let calculatedXP = calculateXPForAllHabitsCompleted(habits: habits, for: date)
-        let today = Calendar.current.startOfDay(for: date)
-        let lastAwardDate = userProgress.lastCompletedDate.map { Calendar.current.startOfDay(for: $0) }
-        
-        print("🎯 XP UPDATE: Calculated XP: \(calculatedXP), Today: \(today), LastAward: \(lastAwardDate?.description ?? "nil")")
-        
-        // Only allow XP updates if it's the same day (for dynamic updates when uncompleting habits)
-        guard lastAwardDate != nil && today == lastAwardDate! else {
-            print("🎯 XP UPDATE: Not same day, skipping dynamic XP update (today: \(today), lastAward: \(lastAwardDate?.description ?? "nil"))")
-            return calculatedXP
-        }
-        
-        let previousDailyXP = userProgress.dailyXP
-        let xpDifference = calculatedXP - previousDailyXP
-        
-        print("🎯 XP UPDATE: Previous daily XP: \(previousDailyXP), Calculated XP: \(calculatedXP), Difference: \(xpDifference)")
-        
-        if xpDifference != 0 {
-            // Update daily XP and total XP
-            userProgress.dailyXP = calculatedXP
-            userProgress.totalXP += xpDifference
-            
-            // Ensure total XP doesn't go below 0
-            if userProgress.totalXP < 0 {
-                userProgress.totalXP = 0
-                userProgress.dailyXP = 0
+        for habit in habits {
+            if habit.isCompleted(for: date) {
+                let baseXP = XPRewards.completeHabit
+                let streakBonus = calculateStreakBonus(for: habit)
+                totalXP += baseXP + streakBonus
+                completedHabitsCount += 1
             }
-            
-            // Update level and progress
-            updateUserLevel()
-            
-            // Ensure lastCompletedDate is set for today (important for dynamic updates)
-            userProgress.lastCompletedDate = Date()
-            
-            saveXPData()
-            
-            if xpDifference > 0 {
-                print("🎯 XP GAINED: +\(xpDifference) XP (total: \(userProgress.totalXP))")
-            } else {
-                print("🎯 XP LOST: \(xpDifference) XP (total: \(userProgress.totalXP))")
-            }
-        } else {
-            print("🎯 XP UPDATE: No XP change needed")
         }
         
-        return calculatedXP
+        // Bonus for completing ALL habits
+        if completedHabitsCount == habits.count && !habits.isEmpty {
+            totalXP += XPRewards.completeAllHabits
+        }
+        
+        return totalXP
     }
     
-    /// Handles individual habit completion/uncompletion for immediate XP updates
-    func handleHabitCompletionChange(habits: [Habit]) {
-        // Update XP immediately when any habit completion state changes
-        let _ = updateXPForCurrentHabits(habits: habits)
+    private func calculateStreakBonus(for habit: Habit) -> Int {
+        let streak = habit.streak
+        switch streak {
+        case 0...6: return 0
+        case 7...13: return 5
+        case 14...29: return 10
+        case 30...99: return 15
+        default: return 20
+        }
     }
     
-    /// Updates user level based on total XP
-    private func updateUserLevel() {
-        // More balanced level system: Level 1: 0-49 XP, Level 2: 50-149 XP, Level 3: 150-299 XP, etc.
-        // Formula: Level = sqrt(totalXP / 25) + 1, rounded down
-        let newLevel = Int(sqrt(Double(userProgress.totalXP) / 25.0)) + 1
-        if newLevel > userProgress.currentLevel {
+    // MARK: - Core XP Management (Private)
+    
+    private func addXP(_ amount: Int, reason: XPRewardReason, description: String) {
+        let oldLevel = userProgress.currentLevel
+        
+        // Add XP
+        userProgress.totalXP += amount
+        userProgress.dailyXP += amount
+        
+        // Check for level up
+        let newLevel = calculateLevel(for: userProgress.totalXP)
+        if newLevel > oldLevel {
             userProgress.currentLevel = newLevel
+            updateLevelProgress()
+            
+            // Award level-up bonus (without recursion)
+            awardLevelUpBonus(newLevel: newLevel)
+            
+            logger.info("Level up! Reached level \(newLevel)")
+        } else {
+            updateLevelProgress()
         }
-        // Update level progress fields
-        let currentLevelStartXP = Int(pow(Double(userProgress.currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(userProgress.currentLevel), 2) * 25)
+        
+        // Add transaction
+        let transaction = XPTransaction(
+            amount: amount,
+            reason: reason,
+            description: description
+        )
+        addTransaction(transaction)
+        
+        // Save data
+        saveUserProgress()
+        saveRecentTransactions()
+        
+        // Trigger UI update
+        objectWillChange.send()
+    }
+    
+    private func awardLevelUpBonus(newLevel: Int) {
+        // Add level-up XP directly (no recursion)
+        userProgress.totalXP += XPRewards.levelUp
+        userProgress.dailyXP += XPRewards.levelUp
+        
+        // Add transaction
+        let transaction = XPTransaction(
+            amount: XPRewards.levelUp,
+            reason: .levelUp,
+            description: "Level \(newLevel) reached!"
+        )
+        addTransaction(transaction)
+        
+        logger.info("Awarded \(XPRewards.levelUp) XP for reaching level \(newLevel)")
+    }
+    
+    private func addTransaction(_ transaction: XPTransaction) {
+        recentTransactions.insert(transaction, at: 0)
+        if recentTransactions.count > 10 {
+            recentTransactions.removeLast()
+        }
+    }
+    
+    // MARK: - Level Management
+    
+    private func calculateLevel(for totalXP: Int) -> Int {
+        return Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
+    }
+    
+    private func updateLevelProgress() {
+        let currentLevel = userProgress.currentLevel
+        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * Double(levelBaseXP))
+        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * Double(levelBaseXP))
+        
         userProgress.xpForCurrentLevel = userProgress.totalXP - currentLevelStartXP
-        userProgress.xpForNextLevel = nextLevelStartXP - userProgress.totalXP
+        userProgress.xpForNextLevel = nextLevelStartXP - currentLevelStartXP
     }
     
     // MARK: - Data Persistence
     
-    private func saveXPData() {
-        userDefaults.set(userProgress.totalXP, forKey: totalXPKey)
-        userDefaults.set(userProgress.dailyXP, forKey: dailyXPKey)
-        userDefaults.set(userProgress.currentLevel, forKey: currentLevelKey)
-        userDefaults.set(userProgress.streakDays, forKey: streakDaysKey)
-        userDefaults.set(userProgress.lastCompletedDate, forKey: lastXPDateKey)
+    private func saveUserProgress() {
+        if let encoded = try? JSONEncoder().encode(userProgress) {
+            userDefaults.set(encoded, forKey: userProgressKey)
+        }
     }
     
-    private func loadXPData() {
-        userProgress.totalXP = userDefaults.integer(forKey: totalXPKey)
-        userProgress.dailyXP = userDefaults.integer(forKey: dailyXPKey)
-        userProgress.currentLevel = userDefaults.integer(forKey: currentLevelKey)
-        userProgress.streakDays = userDefaults.integer(forKey: streakDaysKey)
-        userProgress.lastCompletedDate = userDefaults.object(forKey: lastXPDateKey) as? Date
-        
-        // Ensure minimum level is 1
-        if userProgress.currentLevel <= 0 {
-            userProgress.currentLevel = 1
+    private func loadUserProgress() {
+        if let data = userDefaults.data(forKey: userProgressKey),
+           let progress = try? JSONDecoder().decode(UserProgress.self, from: data) {
+            userProgress = progress
+            updateLevelProgress()
+        } else {
+            // Initialize with default values
+            userProgress = UserProgress()
+            updateLevelProgress()
         }
-        
-        // Reset daily XP if it's a new day
-        let today = Calendar.current.startOfDay(for: Date())
-        let lastAwardDate = userProgress.lastCompletedDate.map { Calendar.current.startOfDay(for: $0) }
-        
-        if lastAwardDate == nil || today > lastAwardDate! {
-            userProgress.dailyXP = 0
-            saveXPData()
-        }
-        
-        // Update level progress fields
-        let currentLevelStartXP = Int(pow(Double(userProgress.currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(userProgress.currentLevel), 2) * 25)
-        userProgress.xpForCurrentLevel = userProgress.totalXP - currentLevelStartXP
-        userProgress.xpForNextLevel = nextLevelStartXP - userProgress.totalXP
-        
-        print("🔍 XP DEBUG - loadXPData: totalXP=\(userProgress.totalXP), level=\(userProgress.currentLevel)")
-        print("🔍 XP DEBUG - currentLevelStartXP=\(currentLevelStartXP), nextLevelStartXP=\(nextLevelStartXP)")
-        print("🔍 XP DEBUG - xpForCurrentLevel=\(userProgress.xpForCurrentLevel), xpForNextLevel=\(userProgress.xpForNextLevel)")
     }
     
-    // MARK: - XP Display Helpers
+    private func saveRecentTransactions() {
+        if let encoded = try? JSONEncoder().encode(recentTransactions) {
+            userDefaults.set(encoded, forKey: recentTransactionsKey)
+        }
+    }
     
-    /// Gets a friendly XP message for the celebration
+    private func loadRecentTransactions() {
+        if let data = userDefaults.data(forKey: recentTransactionsKey),
+           let transactions = try? JSONDecoder().decode([XPTransaction].self, from: data) {
+            recentTransactions = transactions
+        }
+    }
+    
+    // MARK: - Public API (Simplified)
+    
+    /// Check daily completion for habits (used by existing system)
+    func checkDailyCompletion(habits: [Habit]) async {
+        logger.debug("Daily completion checked for \(habits.count) habits")
+    }
+    
+    /// Reset daily XP (used by existing system)
+    func resetDailyXP() {
+        userProgress.dailyXP = 0
+        saveUserProgress()
+    }
+    
+    /// Check achievements (delegated to AchievementManager)
+    func checkAchievements(habits: [Habit]) {
+        logger.debug("Achievement checking delegated to AchievementManager")
+    }
+    
+    // MARK: - Display Helpers
+    
     func getXPCelebrationMessage(earnedXP: Int, habitCount: Int) -> String {
         if habitCount == 1 {
             return "You earned \(earnedXP) XP!"
@@ -220,7 +237,6 @@ class XPManager: ObservableObject {
         }
     }
     
-    /// Gets total XP with formatting
     func getFormattedTotalXP() -> String {
         if userProgress.totalXP >= 1000 {
             return String(format: "%.1fK", Double(userProgress.totalXP) / 1000.0)
@@ -229,85 +245,42 @@ class XPManager: ObservableObject {
         }
     }
     
-    /// Gets daily XP with formatting
     func getFormattedDailyXP() -> String {
         return "\(userProgress.dailyXP)"
     }
     
-    /// Resets all XP data (for testing purposes)
-    func resetXPData() {
-        userProgress.totalXP = 0
-        userProgress.dailyXP = 0
-        userProgress.currentLevel = 1
-        userProgress.streakDays = 0
-        userProgress.lastCompletedDate = nil
-        // Update level progress fields with correct values
-        let currentLevelStartXP = Int(pow(Double(userProgress.currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(userProgress.currentLevel), 2) * 25)
-        userProgress.xpForCurrentLevel = userProgress.totalXP - currentLevelStartXP
-        userProgress.xpForNextLevel = nextLevelStartXP - userProgress.totalXP
-        saveXPData()
-        print("🔧 XP DEBUG - XP data reset to defaults")
-    }
-    
-    /// Fix corrupted XP data by recalculating level and progress
-    func fixXPData() {
-        // Recalculate level based on total XP
-        let newLevel = Int(sqrt(Double(userProgress.totalXP) / 25.0)) + 1
-        userProgress.currentLevel = max(1, newLevel)
-        
-        // Recalculate progress fields
-        let currentLevelStartXP = Int(pow(Double(userProgress.currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(userProgress.currentLevel), 2) * 25)
-        userProgress.xpForCurrentLevel = userProgress.totalXP - currentLevelStartXP
-        userProgress.xpForNextLevel = nextLevelStartXP - userProgress.totalXP
-        
-        saveXPData()
-        print("🔧 XP DEBUG - Fixed XP data: level=\(userProgress.currentLevel), xpForCurrent=\(userProgress.xpForCurrentLevel), xpForNext=\(userProgress.xpForNextLevel)")
-    }
-    
-    /// Check daily completion for habits (used by existing system)
-    func checkDailyCompletion(habits: [Habit]) async {
-        // This method is called by the existing system
-        // We can implement additional logic here if needed
-        print("🎯 Daily completion checked for \(habits.count) habits")
-    }
-    
-    /// Reset daily XP (used by existing system)
-    func resetDailyXP() {
-        userProgress.dailyXP = 0
-        saveXPData()
-    }
-    
-    /// XP Rewards constants (used by existing system)
-    struct XPRewards {
-        static let completeAllHabits = 15  // Reduced from 50
-        static let completeHabit = 5       // Reduced from 10
-        static let streakBonus = 10        // Reduced from 25
-        static let perfectWeek = 25        // Reduced from 100
-        static let levelUp = 15            // Reduced from 50
-        static let achievement = 10        // Reduced from 25
-    }
-}
-
-// MARK: - XP Level System (Future Enhancement)
-extension XPManager {
-    /// Calculates user level based on total XP
     func calculateLevel() -> Int {
-        // Balanced level calculation: Level = sqrt(totalXP / 25) + 1
-        return Int(sqrt(Double(userProgress.totalXP) / 25.0)) + 1
+        return calculateLevel(for: userProgress.totalXP)
     }
     
-    /// Gets XP progress to next level
     func getXPProgressToNextLevel() -> (current: Int, needed: Int, percentage: Double) {
         let currentLevel = calculateLevel()
-        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * 25)
+        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * Double(levelBaseXP))
+        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * Double(levelBaseXP))
         let currentXPInLevel = userProgress.totalXP - currentLevelStartXP
         let neededXP = nextLevelStartXP - userProgress.totalXP
         let xpNeededForNextLevel = nextLevelStartXP - currentLevelStartXP
         let percentage = Double(currentXPInLevel) / Double(xpNeededForNextLevel)
         
         return (current: currentXPInLevel, needed: neededXP, percentage: min(percentage, 1.0))
+    }
+    
+    // MARK: - Testing/Debug Methods
+    
+    func resetXPData() {
+        userProgress = UserProgress()
+        recentTransactions = []
+        updateLevelProgress()
+        saveUserProgress()
+        saveRecentTransactions()
+        logger.info("XP data reset to defaults")
+    }
+    
+    func fixXPData() {
+        let newLevel = calculateLevel(for: userProgress.totalXP)
+        userProgress.currentLevel = max(1, newLevel)
+        updateLevelProgress()
+        saveUserProgress()
+        logger.info("Fixed XP data: level=\(self.userProgress.currentLevel)")
     }
 }

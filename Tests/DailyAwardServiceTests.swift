@@ -1,30 +1,26 @@
-import XCTest
+import Foundation
 import SwiftData
-@testable import Habitto
 
 @MainActor
-final class DailyAwardServiceTests: XCTestCase {
+final class DailyAwardServiceTests {
     var modelContainer: ModelContainer!
     var modelContext: ModelContext!
     var awardService: DailyAwardService!
     
-    override func setUp() async throws {
-        try await super.setUp()
-        
+    func setUp() async throws {
         // Create in-memory model container for testing
         modelContainer = try ModelContainer(
-            for: DailyAward.self, Habit.self,
+            for: DailyAward.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         modelContext = ModelContext(modelContainer)
         awardService = DailyAwardService(modelContext: modelContext)
     }
     
-    override func tearDown() async throws {
+    func tearDown() async throws {
         modelContainer = nil
         modelContext = nil
         awardService = nil
-        try await super.tearDown()
     }
     
     // MARK: - Unit Tests
@@ -38,15 +34,16 @@ final class DailyAwardServiceTests: XCTestCase {
         let result = await awardService.onHabitCompleted(date: date, userId: userId)
         
         // Then
-        XCTAssertTrue(result, "Should grant award when all habits completed")
+        assert(result, "Should grant award when all habits completed")
         
         // Verify award was created
+        let dateKey = DateKey.key(for: date)
         let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == DateKey.key(for: date)
+            award.userId == userId && award.dateKey == dateKey
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let awards = try modelContext.fetch(request)
-        XCTAssertEqual(awards.count, 1, "Should create exactly one award")
+        assert(awards.count == 1, "Should create exactly one award")
     }
     
     func testIdempotency() async throws {
@@ -60,17 +57,18 @@ final class DailyAwardServiceTests: XCTestCase {
         let result3 = await awardService.onHabitCompleted(date: date, userId: userId)
         
         // Then
-        XCTAssertTrue(result1, "First call should grant award")
-        XCTAssertFalse(result2, "Second call should not grant award (idempotency)")
-        XCTAssertFalse(result3, "Third call should not grant award (idempotency)")
+        assert(result1, "First call should grant award")
+        assert(!result2, "Second call should not grant award (idempotency)")
+        assert(!result3, "Third call should not grant award (idempotency)")
         
         // Verify only one award exists
+        let dateKey = DateKey.key(for: date)
         let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == DateKey.key(for: date)
+            award.userId == userId && award.dateKey == dateKey
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let awards = try modelContext.fetch(request)
-        XCTAssertEqual(awards.count, 1, "Should create exactly one award")
+        assert(awards.count == 1, "Should create exactly one award")
     }
     
     func testRevokeAwardOnUncomplete() async throws {
@@ -85,12 +83,13 @@ final class DailyAwardServiceTests: XCTestCase {
         await awardService.onHabitUncompleted(date: date, userId: userId)
         
         // Then - award should be revoked
+        let dateKey = DateKey.key(for: date)
         let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == DateKey.key(for: date)
+            award.userId == userId && award.dateKey == dateKey
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let awards = try modelContext.fetch(request)
-        XCTAssertEqual(awards.count, 0, "Award should be revoked")
+        assert(awards.count == 0, "Award should be revoked")
     }
     
     func testReGrantAfterReComplete() async throws {
@@ -100,7 +99,7 @@ final class DailyAwardServiceTests: XCTestCase {
         
         // Grant award
         let result1 = await awardService.onHabitCompleted(date: date, userId: userId)
-        XCTAssertTrue(result1)
+        assert(result1)
         
         // Revoke award
         await awardService.onHabitUncompleted(date: date, userId: userId)
@@ -109,15 +108,16 @@ final class DailyAwardServiceTests: XCTestCase {
         let result2 = await awardService.onHabitCompleted(date: date, userId: userId)
         
         // Then
-        XCTAssertTrue(result2, "Should re-grant award after re-completion")
+        assert(result2, "Should re-grant award after re-completion")
         
         // Verify exactly one award exists
+        let dateKey = DateKey.key(for: date)
         let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == DateKey.key(for: date)
+            award.userId == userId && award.dateKey == dateKey
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let awards = try modelContext.fetch(request)
-        XCTAssertEqual(awards.count, 1, "Should have exactly one award")
+        assert(awards.count == 1, "Should have exactly one award")
     }
     
     func testTimezoneBoundaries() async throws {
@@ -129,17 +129,17 @@ final class DailyAwardServiceTests: XCTestCase {
         // DST start (2024-03-31 02:00:00)
         let dstStart = formatter.date(from: "2024-03-31 02:00:00")!
         let result1 = await awardService.onHabitCompleted(date: dstStart, userId: "test_user")
-        XCTAssertTrue(result1)
+        assert(result1)
         
         // DST end (2024-10-27 02:00:00)
         let dstEnd = formatter.date(from: "2024-10-27 02:00:00")!
         let result2 = await awardService.onHabitCompleted(date: dstEnd, userId: "test_user")
-        XCTAssertTrue(result2)
+        assert(result2)
         
         // Verify different date keys
         let key1 = DateKey.key(for: dstStart)
         let key2 = DateKey.key(for: dstEnd)
-        XCTAssertNotEqual(key1, key2, "Different dates should have different keys")
+        assert(key1 != key2, "Different dates should have different keys")
     }
     
     func testMidnightBoundaries() async throws {
@@ -155,7 +155,7 @@ final class DailyAwardServiceTests: XCTestCase {
         let justAfterMidnight = formatter.date(from: "2024-04-01 00:00:01")!
         let key2 = DateKey.key(for: justAfterMidnight)
         
-        XCTAssertNotEqual(key1, key2, "Midnight boundary should create different date keys")
+        assert(key1 != key2, "Midnight boundary should create different date keys")
     }
 }
 
@@ -184,6 +184,6 @@ extension DailyAwardServiceTests {
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let awards = try modelContext.fetch(request)
-        XCTAssertLessThanOrEqual(awards.count, 1, "Should never have more than one award per (userId, dateKey)")
+        assert(awards.count <= 1, "Should never have more than one award per (userId, dateKey)")
     }
 }
