@@ -906,10 +906,8 @@ struct HomeTabView: View {
         deferResort = false
         resortHabits()
         
-        // Call award service to trigger celebration
-        Task {
-            await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
-        }
+        // Celebration logic is now handled in HabitRepository.setProgress
+        // No need to call awardService.onHabitCompleted here
     }
     
     private func getCurrentUserId() -> String {
