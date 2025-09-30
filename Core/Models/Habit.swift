@@ -285,6 +285,7 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     private mutating func updateCurrentCompletionStatus() {
+        // Use the current date to determine completion status
         let today = Calendar.current.startOfDay(for: Date())
         isCompleted = isCompleted(for: today)
     }

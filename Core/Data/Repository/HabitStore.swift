@@ -434,9 +434,11 @@ final actor HabitStore {
                 
                 if allCompleted {
                     // Trigger celebration through event bus
+                    print("🎉 HabitStore: All habits completed! Triggering celebration for \(dateKey)")
                     EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
                 } else {
                     // Revoke celebration if not all habits completed
+                    print("🎉 HabitStore: Not all habits completed. Revoking celebration for \(dateKey)")
                     EventBus.shared.publish(.dailyAwardRevoked(dateKey: dateKey))
                 }
                 
