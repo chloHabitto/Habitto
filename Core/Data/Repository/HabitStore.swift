@@ -384,6 +384,10 @@ final actor HabitStore {
         
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
             currentHabits[index].completionHistory[dateKey] = progress
+            
+            // Update streak after progress change
+            currentHabits[index].updateStreakWithReset()
+            
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
         } else {

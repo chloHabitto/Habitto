@@ -162,6 +162,9 @@ struct Habit: Identifiable, Codable, Equatable {
         completionHistory[dateKey] = currentProgress + 1
         updateCurrentCompletionStatus()
         
+        // Update streak after completion
+        updateStreakWithReset()
+        
         // Debug: Print completion tracking
         print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
     }
@@ -185,6 +188,9 @@ struct Habit: Identifiable, Codable, Equatable {
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = max(0, currentProgress - 1)
         updateCurrentCompletionStatus()
+        
+        // Update streak after completion change
+        updateStreakWithReset()
     }
     
     func isCompleted(for date: Date) -> Bool {
