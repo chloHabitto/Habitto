@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import SwiftData
 
 struct HomeTabView: View {
     @Binding var selectedDate: Date
@@ -12,6 +13,12 @@ struct HomeTabView: View {
     @State private var selectedHabit: Habit? = nil
     @State private var showCelebration: Bool = false
     @State private var showingCancelVacationAlert: Bool = false
+    @State private var deferResort: Bool = false
+    @State private var sortedHabits: [Habit] = []
+    
+    @Environment(\.modelContext) private var modelContext
+    @StateObject private var eventBus = EventBus.shared
+    @StateObject private var awardService: DailyAwardService
     
     let habits: [Habit]
     let onToggleHabit: (Habit, Date) -> Void
@@ -19,6 +26,18 @@ struct HomeTabView: View {
     let onSetProgress: ((Habit, Date, Int) -> Void)?
     let onDeleteHabit: ((Habit) -> Void)?
     let onCompletionDismiss: (() -> Void)?
+    
+    init(selectedDate: Binding<Date>, selectedStatsTab: Binding<Int>, habits: [Habit], onToggleHabit: @escaping (Habit, Date) -> Void, onUpdateHabit: ((Habit) -> Void)?, onSetProgress: ((Habit, Date, Int) -> Void)?, onDeleteHabit: ((Habit) -> Void)?, onCompletionDismiss: (() -> Void)?) {
+        self._selectedDate = selectedDate
+        self._selectedStatsTab = selectedStatsTab
+        self.habits = habits
+        self.onToggleHabit = onToggleHabit
+        self.onUpdateHabit = onUpdateHabit
+        self.onSetProgress = onSetProgress
+        self.onDeleteHabit = onDeleteHabit
+        self.onCompletionDismiss = onCompletionDismiss
+        self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(try! ModelContainer(for: DailyAward.self))))
+    }
     
     // Performance optimization: Cached regex patterns
     private static let dayCountRegex = try? NSRegularExpression(pattern: "Every (\\d+) days?", options: .caseInsensitive)
@@ -91,6 +110,12 @@ struct HomeTabView: View {
             } else {
                 selectedDate = today
             }
+            
+            // Initialize sorted habits
+            resortHabits()
+            
+            // Subscribe to event bus
+            subscribeToEvents()
         }
 
         .fullScreenCover(item: $selectedHabit) { habit in
@@ -239,15 +264,15 @@ struct HomeTabView: View {
                     // No habits created in the app at all
                     HabitEmptyStateView.noHabitsYet()
                         .frame(maxWidth: .infinity, alignment: .center)
-                } else if habitsForSelectedDate.isEmpty {
+                } else if sortedHabits.isEmpty {
                     // No habits for the selected tab/date
                     emptyStateViewForTab
                         .frame(maxWidth: .infinity, alignment: .center)
                 } else {
-                    ForEach(habitsForSelectedDate, id: \.id) { habit in
+                    ForEach(sortedHabits, id: \.id) { habit in
                         habitRow(habit)
                     }
-                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: habitsForSelectedDate.map { "\($0.id)-\($0.isCompleted(for: selectedDate))" })
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: sortedHabits.map { "\($0.id)-\($0.isCompleted(for: selectedDate))" })
                 }
             }
             .padding(.horizontal, 20)
@@ -299,6 +324,13 @@ struct HomeTabView: View {
             onProgressChange: { habit, date, progress in
                 // Use the new progress setting method that properly saves to Core Data
                 onSetProgress?(habit, date, progress)
+                
+                // Handle completion/uncompletion
+                if progress > 0 {
+                    onHabitCompleted(habit)
+                } else {
+                    onHabitUncompleted(habit)
+                }
             },
             onEdit: {
                 selectedHabit = habit
@@ -307,24 +339,7 @@ struct HomeTabView: View {
                 onDeleteHabit?(habit)
             },
             onCompletionDismiss: {
-                // Check for celebration after habit completion bottom sheet is dismissed
-                print("🔍 CELEBRATION DEBUG - onCompletionDismiss triggered")
-                
-                // Add delay to ensure habit data is saved before checking celebration
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    print("🔍 CELEBRATION DEBUG - Running delayed celebration check after 0.6 seconds")
-                    
-                    // Force reload habits to ensure we have the latest data
-                    Task {
-                        await HabitRepository.shared.loadHabits(force: true)
-                        
-                        // Run celebration check on main thread after data reload
-                        DispatchQueue.main.async {
-                            checkForAllHabitsCompleted()
-                        }
-                    }
-                }
-                
+                onDifficultySheetDismissed()
                 onCompletionDismiss?()
             }
         )
@@ -712,23 +727,26 @@ struct HomeTabView: View {
         notificationFeedback.notificationOccurred(.success)
     }
     
-    // MARK: - Celebration Detection
-    private func checkForAllHabitsCompleted() {
-        print("🔍 CELEBRATION DEBUG - checkForAllHabitsCompleted called")
-        print("🔍 CELEBRATION DEBUG - selectedDate: \(selectedDate)")
+    // MARK: - Event Subscription
+    private func subscribeToEvents() {
+        eventBus.publisher()
+            .receive(on: DispatchQueue.main)
+            .sink { event in
+                switch event {
+                case .dailyAwardGranted:
+                    showCelebration = true
+                case .dailyAwardRevoked:
+                    showCelebration = false
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Sorting Logic
+    private func resortHabits() {
+        guard !deferResort else { return }
         
-        // Only check for today's date
-        let today = DateUtils.today()
-        print("🔍 CELEBRATION DEBUG - today: \(today)")
-        print("🔍 CELEBRATION DEBUG - isSameDay: \(Calendar.current.isDate(selectedDate, inSameDayAs: today))")
-        
-        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else { 
-            print("🔍 CELEBRATION DEBUG - Not today's date, skipping celebration")
-            return 
-        }
-        
-        // Get the most recent habits from HabitRepository instead of the local array
-        let todayHabits = HabitRepository.shared.habits.filter { habit in
+        let todayHabits = habits.filter { habit in
             let selected = DateUtils.startOfDay(for: selectedDate)
             let start = DateUtils.startOfDay(for: habit.startDate)
             let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
@@ -740,40 +758,65 @@ struct HomeTabView: View {
             return shouldShowHabitOnDate(habit, date: selectedDate)
         }
         
-        print("🔍 CELEBRATION DEBUG - todayHabits count: \(todayHabits.count)")
-        
-        // Check if there are any habits for today
-        guard !todayHabits.isEmpty else { 
-            print("🔍 CELEBRATION DEBUG - No habits for today, skipping celebration")
-            return 
-        }
-        
-        // Check if all habits have made progress (not necessarily completed their full goal)
-        print("🔍 CELEBRATION DEBUG - Checking each habit progress status:")
-        var completedCount = 0
-        for habit in todayHabits {
-            let progress = habit.getProgress(for: selectedDate)
-            let hasProgress = progress > 0
-            print("🔍 CELEBRATION DEBUG - Habit '\(habit.name)': progress=\(progress), hasProgress=\(hasProgress)")
-            if hasProgress {
-                completedCount += 1
-            }
-        }
-        
-        let allCompleted = completedCount == todayHabits.count
-        print("🔍 CELEBRATION DEBUG - Completed: \(completedCount)/\(todayHabits.count) | All completed: \(allCompleted)")
-        
-        if allCompleted {
-            print("🎉 All habits have made progress for today! Showing celebration...")
-            showCelebration = true
-            print("🔍 CELEBRATION DEBUG - showCelebration set to true")
+        // Sort: Incomplete first by originalOrder, then completed by completedAt then originalOrder
+        sortedHabits = todayHabits.sorted { habit1, habit2 in
+            let isCompleted1 = habit1.isCompleted(for: selectedDate)
+            let isCompleted2 = habit2.isCompleted(for: selectedDate)
             
-            // Update streaks when all habits have made progress
-            print("🎉 CELEBRATION DEBUG - All habits have made progress! Updating streaks...")
-            // Trigger streak update through the parent callback
-            onCompletionDismiss?()
-        } else {
-            print("🔍 CELEBRATION DEBUG - Not all habits have made progress yet")
+            if isCompleted1 != isCompleted2 {
+                return !isCompleted1 // Incomplete first
+            }
+            
+            if isCompleted1 && isCompleted2 {
+                // Both completed, sort by completedAt then originalOrder
+                let completedAt1 = habit1.completionHistory[DateKey.key(for: selectedDate)] ?? 0
+                let completedAt2 = habit2.completionHistory[DateKey.key(for: selectedDate)] ?? 0
+                
+                if completedAt1 != completedAt2 {
+                    return completedAt1 > completedAt2 // More recent first
+                }
+            }
+            
+            // Fallback to original order
+            return habit1.originalOrder < habit2.originalOrder
         }
     }
+    
+    // MARK: - Habit Completion Logic
+    private func onHabitCompleted(_ habit: Habit) {
+        // Mark complete and present difficulty sheet
+        deferResort = true
+        
+        // Present difficulty sheet (existing logic)
+        selectedHabit = habit
+    }
+    
+    private func onHabitUncompleted(_ habit: Habit) {
+        // Call award service
+        Task {
+            await awardService.onHabitUncompleted(date: selectedDate, userId: getCurrentUserId())
+        }
+        
+        // Resort immediately
+        deferResort = false
+        resortHabits()
+    }
+    
+    private func onDifficultySheetDismissed() {
+        deferResort = false
+        resortHabits()
+        
+        // Call award service
+        Task {
+            await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
+        }
+    }
+    
+    private func getCurrentUserId() -> String {
+        // This should return the current user ID
+        // Implementation depends on your authentication system
+        return "current_user_id"
+    }
+    
+    private var cancellables = Set<AnyCancellable>()
 }
