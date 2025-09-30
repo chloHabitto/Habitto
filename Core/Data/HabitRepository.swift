@@ -634,7 +634,7 @@ class HabitRepository: ObservableObject {
             } else if progress < oldProgress {
                 // Progress decreased - remove XP
                 print("🎯 HabitRepository: Progress decreased, removing XP for \(habit.name)")
-                _ = XPManager.shared.removeXPForHabitUncompleted(habits: [habits[index]], for: date)
+                _ = XPManager.shared.removeXPForHabitUncompleted(habits: [habits[index]], for: date, oldProgress: oldProgress)
             }
             
             // Celebration logic is now handled in HomeTabView when the last habit completion sheet is dismissed
