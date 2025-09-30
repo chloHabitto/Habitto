@@ -35,9 +35,8 @@ struct ScheduledHabitItem: View {
     private var progressPercentage: Double {
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
         guard goalAmount > 0 else { return 0.0 }
-        // Use the actual habit progress for the selected date, not local currentProgress
-        let actualProgress = habit.getProgress(for: selectedDate)
-        let percentage = Double(actualProgress) / Double(goalAmount)
+        // Use local currentProgress for immediate UI feedback
+        let percentage = Double(currentProgress) / Double(goalAmount)
         // Cap at 100% so progress bar never exceeds background width
         return min(percentage, 1.0)
     }
@@ -445,10 +444,9 @@ struct ScheduledHabitItem: View {
     
     // Helper function to check if habit is completed for the selected date
     private func isHabitCompleted() -> Bool {
-        // Use local currentProgress for immediate UI feedback, but fall back to habit data
+        // Use local currentProgress for immediate UI feedback
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        let actualProgress = habit.getProgress(for: selectedDate)
-        return actualProgress >= goalAmount
+        return currentProgress >= goalAmount
     }
     
     // Helper function to toggle habit completion
