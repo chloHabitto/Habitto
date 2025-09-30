@@ -157,13 +157,7 @@ struct ScheduledHabitItem: View {
             // Completion Button
             completionButton
                 .padding(.trailing, 8)
-                .onTapGesture {
-                    // Prevent the row tap from being triggered when tapping the completion button
-                    print("🎯 ScheduledHabitItem: Completion button tapped for \(habit.name)")
-                    if !isVacationDay {
-                        completeHabit()
-                    }
-                }
+            
         }
         .padding(.trailing, 4)
         .background(
@@ -204,72 +198,82 @@ struct ScheduledHabitItem: View {
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
         .gesture(
-            DragGesture(minimumDistance: 20, coordinateSpace: .local)
+            DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
-                    // Only respond to horizontal drags with a clear horizontal preference
-                    let horizontalDistance = abs(value.translation.width)
-                    let verticalDistance = abs(value.translation.height)
-                    
-                    // Require significantly more horizontal movement than vertical
-                    if horizontalDistance > verticalDistance * 1.5 && horizontalDistance > 10 {
-                        dragOffset = value.translation.width
-                    }
+                    print("🔄 Drag onChanged: translation=\(value.translation), velocity=\(value.velocity)")
+                    dragOffset = value.translation.width
                 }
                 .onEnded { value in
-                    let horizontalDistance = abs(value.translation.width)
-                    let verticalDistance = abs(value.translation.height)
+                    print("🔄 Drag onEnded: translation=\(value.translation), velocity=\(value.velocity)")
+                    let translationX = value.translation.width
+                    let velocityX = value.velocity.width
                     
-                    // Only process if it was clearly a horizontal gesture
-                    if horizontalDistance > verticalDistance * 1.5 && horizontalDistance > 30 {
-                        let threshold: CGFloat = 30
-                        let translationX = value.translation.width
+                    print("🔄 TranslationX: \(translationX), VelocityX: \(velocityX)")
+                    
+                    // Very simple threshold-based detection
+                    let threshold: CGFloat = 10
+                    
+                    if translationX > threshold {
+                        // Swipe right - increase progress by 1
+                        let newProgress = currentProgress + 1
+                        print("🔄 Swipe right detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
                         
-                        if translationX > threshold {
-                            // Swipe right - increase progress by 1
-                            let newProgress = currentProgress + 1
-                            print("🔄 ScheduledHabitItem: Swipe right detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+                        // Update UI immediately
+                        withAnimation(.easeInOut(duration: 0.2)) {
                             currentProgress = newProgress
+                        }
+                        
+                        // Check if habit is completed and show completion sheet
+                        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+                        if newProgress >= goalAmount {
+                            // Set completing flag to prevent immediate data save
+                            isCompletingHabit = true
                             
-                            // Check if habit is completed and show completion sheet
-                            let goalAmount = extractNumericGoalAmount(from: habit.goal)
-                            if newProgress >= goalAmount {
-                                // Set completing flag to prevent immediate data save
-                                isCompletingHabit = true
-                                
-                                // Fun completion animation for swipe
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
-                                    isCompletingAnimation = true
-                                }
-                                
-                                // Reset animation after completion
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                                    withAnimation(.easeOut(duration: 0.3)) {
-                                        self.isCompletingAnimation = false
-                                    }
-                                }
-                                
-                                showingCompletionSheet = true
-                            } else {
-                                // For non-completion progress changes, save immediately
-                                onProgressChange?(habit, selectedDate, newProgress)
+                            // Fun completion animation for swipe
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
+                                isCompletingAnimation = true
                             }
                             
-                            // Haptic feedback for increase
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                            impactFeedback.impactOccurred()
-                        } else if translationX < -threshold {
-                            // Swipe left - decrease progress by 1 (minimum 0)
-                            let newProgress = max(0, currentProgress - 1)
-                            print("🔄 ScheduledHabitItem: Swipe left detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
-                            currentProgress = newProgress
+                            // Reset animation after completion
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    self.isCompletingAnimation = false
+                                }
+                            }
                             
-                            // Call the callback to save the progress
+                            showingCompletionSheet = true
+                        } else {
+                            // For non-completion progress changes, save immediately
+                            print("🔄 Calling onProgressChange for right swipe: \(newProgress)")
                             onProgressChange?(habit, selectedDate, newProgress)
-                            
-                            // Haptic feedback for decrease
-                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                            impactFeedback.impactOccurred()
                         }
+                        
+                        // Haptic feedback for increase
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        
+                        // UI should update automatically due to @State currentProgress
+                    } else if translationX < -threshold {
+                        // Swipe left - decrease progress by 1 (minimum 0)
+                        let newProgress = max(0, currentProgress - 1)
+                        print("🔄 Swipe left detected for \(habit.name), updating progress from \(currentProgress) to \(newProgress)")
+                        
+                        // Update UI immediately
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            currentProgress = newProgress
+                        }
+                        
+                        // Call the callback to save the progress
+                        print("🔄 Calling onProgressChange for left swipe: \(newProgress)")
+                        onProgressChange?(habit, selectedDate, newProgress)
+                        
+                        // Haptic feedback for decrease
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        
+                        // UI should update automatically due to @State currentProgress
+                    } else {
+                        print("🔄 Swipe not strong enough: translationX=\(translationX)")
                     }
                     
                     // Always reset drag offset
@@ -306,7 +310,21 @@ struct ScheduledHabitItem: View {
             // Initialize currentProgress with the actual saved progress from the habit
             let initialProgress = habit.getProgress(for: selectedDate)
             print("🔄 ScheduledHabitItem: onAppear for \(habit.name), initializing progress to \(initialProgress)")
-            currentProgress = initialProgress
+            print("🔄 ScheduledHabitItem: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
+            withAnimation(.easeInOut(duration: 0.2)) {
+                currentProgress = initialProgress
+            }
+            
+            // Force a small delay to ensure everything is properly initialized
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                let updatedProgress = habit.getProgress(for: selectedDate)
+                if updatedProgress != currentProgress {
+                    print("🔄 ScheduledHabitItem: Progress updated after delay from \(currentProgress) to \(updatedProgress)")
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        currentProgress = updatedProgress
+                    }
+                }
+            }
         }
         .onChange(of: selectedDate) { oldDate, newDate in
             // Only update progress if the date actually changed
@@ -316,18 +334,38 @@ struct ScheduledHabitItem: View {
             
             if oldDay != newDay {
                 let newProgress = habit.getProgress(for: selectedDate)
-                currentProgress = newProgress
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentProgress = newProgress
+                }
             }
         }
         .onChange(of: habit.completionHistory) { oldHistory, newHistory in
             let newProgress = habit.getProgress(for: selectedDate)
             print("🎯 ScheduledHabitItem: completionHistory changed for \(habit.name), updating currentProgress from \(currentProgress) to \(newProgress)")
-            currentProgress = newProgress
+            withAnimation(.easeInOut(duration: 0.2)) {
+                currentProgress = newProgress
+            }
         }
         .onChange(of: habit) { oldHabit, newHabit in
+            // Sync currentProgress when the habit object itself changes
             let newProgress = newHabit.getProgress(for: selectedDate)
-            print("🎯 ScheduledHabitItem: habit changed for \(habit.name), updating currentProgress from \(currentProgress) to \(newProgress)")
-            currentProgress = newProgress
+            if newProgress != currentProgress {
+                print("🎯 ScheduledHabitItem: habit object changed for \(newHabit.name), syncing currentProgress from \(currentProgress) to \(newProgress)")
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentProgress = newProgress
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .habitProgressUpdated)) { notification in
+            // Listen for habit progress updates from the repository
+            if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
+               updatedHabitId == habit.id {
+                let newProgress = habit.getProgress(for: selectedDate)
+                print("🎯 ScheduledHabitItem: Received progress update for \(habit.name), syncing currentProgress from \(currentProgress) to \(newProgress)")
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentProgress = newProgress
+                }
+            }
         }
             .sheet(isPresented: $showingCompletionSheet) {
                 HabitCompletionBottomSheet(
@@ -392,8 +430,10 @@ struct ScheduledHabitItem: View {
     
     // Helper function to check if habit is completed for the selected date
     private func isHabitCompleted() -> Bool {
-        // Use the actual habit's completion status for the selected date
-        return habit.isCompleted(for: selectedDate)
+        // Use local currentProgress for immediate UI feedback, but fall back to habit data
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+        let actualProgress = habit.getProgress(for: selectedDate)
+        return actualProgress >= goalAmount
     }
     
     // Helper function to toggle habit completion
@@ -405,6 +445,13 @@ struct ScheduledHabitItem: View {
         if isCompleted {
             // If already completed, uncomplete it (set progress to 0)
             print("🎯 ScheduledHabitItem: Uncompleting habit \(habit.name)")
+            
+            // Update local state immediately for instant UI feedback
+            withAnimation(.easeInOut(duration: 0.2)) {
+                currentProgress = 0
+            }
+            
+            // Then save to data model
             onProgressChange?(habit, selectedDate, 0)
             
             // Haptic feedback for uncompletion

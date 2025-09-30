@@ -3,6 +3,11 @@ import SwiftUI
 import UserNotifications
 import Combine
 
+// MARK: - Notification Extensions
+extension Notification.Name {
+    static let habitProgressUpdated = Notification.Name("habitProgressUpdated")
+}
+
 // MARK: - Temporary Core Data Entity Stubs (Missing from model)
 // These are temporary stubs until the Core Data model is restored
 
@@ -164,8 +169,8 @@ class HabitRepository: ObservableObject {
         // Load habits using the new actor
         print("✅ HabitRepository: Using HabitStore actor for data operations...")
         
-        // Load habits synchronously to ensure they're available immediately
-        Task {
+        // Load habits immediately and wait for completion
+        Task { @MainActor in
             await loadHabits(force: true)
             print("✅ HabitRepository: Initial habit loading completed with \(habits.count) habits")
         }
@@ -604,23 +609,40 @@ class HabitRepository: ObservableObject {
         let dateKey = CoreDataManager.dateKey(for: date)
         print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
         
+        // Update the local habits array immediately for UI responsiveness
+        if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+            habits[index].completionHistory[dateKey] = progress
+            // Update streak after progress change
+            habits[index].updateStreakWithReset()
+            objectWillChange.send()
+            print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
+            
+            // Send notification for UI components to update
+            NotificationCenter.default.post(
+                name: .habitProgressUpdated,
+                object: nil,
+                userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey]
+            )
+        }
+        
+        // Persist data in background
         Task {
             do {
                 // Use the HabitStore actor for data operations
                 try await habitStore.setProgress(for: habit, date: date, progress: progress)
-                
-                // Update the local habits array immediately for UI responsiveness
-                if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-                    habits[index].completionHistory[dateKey] = progress
-                    // Update streak after progress change
-                    habits[index].updateStreakWithReset()
-                    objectWillChange.send()
-                }
-                
-                print("✅ HabitRepository: Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
+                print("✅ HabitRepository: Successfully persisted progress for habit '\(habit.name)' on \(dateKey)")
                 
             } catch {
-                print("❌ HabitRepository: Failed to update progress: \(error.localizedDescription)")
+                print("❌ HabitRepository: Failed to persist progress: \(error.localizedDescription)")
+                // Revert UI change if persistence failed
+                DispatchQueue.main.async {
+                    if let index = self.habits.firstIndex(where: { $0.id == habit.id }) {
+                        self.habits[index].completionHistory[dateKey] = habit.completionHistory[dateKey] ?? 0
+                        self.habits[index].updateStreakWithReset()
+                        self.objectWillChange.send()
+                        print("🔄 HabitRepository: Reverted UI change due to persistence failure")
+                    }
+                }
             }
         }
     }

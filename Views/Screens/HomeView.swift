@@ -18,6 +18,7 @@ class HomeViewState: ObservableObject {
     @Published var selectedTab: Tab = .home
     @Published var selectedStatsTab: Int = 0
     @Published var habits: [Habit] = []
+    @Published var isLoadingHabits = true
     
     // UI State
     @Published var showingCreateHabit = false
@@ -58,6 +59,7 @@ class HomeViewState: ObservableObject {
             .receive(on: DispatchQueue.main) // Ensure UI updates on main thread
             .sink { [weak self] habits in
                 self?.habits = habits
+                self?.isLoadingHabits = false
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
@@ -351,6 +353,7 @@ struct HomeView: View {
                             selectedDate: $state.selectedDate,
                             selectedStatsTab: $state.selectedStatsTab,
                             habits: state.habits,
+                            isLoadingHabits: state.isLoadingHabits,
                             onToggleHabit: { (habit: Habit, date: Date) in
                                 state.toggleHabitCompletion(habit, for: date)
                             },
@@ -368,11 +371,6 @@ struct HomeView: View {
                                     print("🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
                                     state.setHabitProgress(syncedHabit, for: date, progress: progress)
                                     print("🔄 HomeView: Progress saved to Core Data using synced habit")
-                                    
-                                    // Force UI update by triggering objectWillChange
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        state.objectWillChange.send()
-                                    }
                                 } else {
                                     print("❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
                                     state.setHabitProgress(habit, for: date, progress: progress)

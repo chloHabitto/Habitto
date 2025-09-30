@@ -21,16 +21,18 @@ struct HomeTabView: View {
     @StateObject private var awardService: DailyAwardService
     
     let habits: [Habit]
+    let isLoadingHabits: Bool
     let onToggleHabit: (Habit, Date) -> Void
     let onUpdateHabit: ((Habit) -> Void)?
     let onSetProgress: ((Habit, Date, Int) -> Void)?
     let onDeleteHabit: ((Habit) -> Void)?
     let onCompletionDismiss: (() -> Void)?
     
-    init(selectedDate: Binding<Date>, selectedStatsTab: Binding<Int>, habits: [Habit], onToggleHabit: @escaping (Habit, Date) -> Void, onUpdateHabit: ((Habit) -> Void)?, onSetProgress: ((Habit, Date, Int) -> Void)?, onDeleteHabit: ((Habit) -> Void)?, onCompletionDismiss: (() -> Void)?) {
+    init(selectedDate: Binding<Date>, selectedStatsTab: Binding<Int>, habits: [Habit], isLoadingHabits: Bool, onToggleHabit: @escaping (Habit, Date) -> Void, onUpdateHabit: ((Habit) -> Void)?, onSetProgress: ((Habit, Date, Int) -> Void)?, onDeleteHabit: ((Habit) -> Void)?, onCompletionDismiss: (() -> Void)?) {
         self._selectedDate = selectedDate
         self._selectedStatsTab = selectedStatsTab
         self.habits = habits
+        self.isLoadingHabits = isLoadingHabits
         self.onToggleHabit = onToggleHabit
         self.onUpdateHabit = onUpdateHabit
         self.onSetProgress = onSetProgress
@@ -276,14 +278,25 @@ struct HomeTabView: View {
                     .padding(.bottom, 8)
                 }
                 
-                if habits.isEmpty {
+                if habits.isEmpty && !isLoadingHabits {
                     // No habits created in the app at all
                     HabitEmptyStateView.noHabitsYet()
                         .frame(maxWidth: .infinity, alignment: .center)
-                } else if sortedHabits.isEmpty {
+                } else if sortedHabits.isEmpty && !isLoadingHabits {
                     // No habits for the selected tab/date
                     emptyStateViewForTab
                         .frame(maxWidth: .infinity, alignment: .center)
+                } else if isLoadingHabits {
+                    // Show loading state
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Loading habits...")
+                            .font(.appBodyMedium)
+                            .foregroundColor(.text02)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
                 } else {
                     ForEach(sortedHabits, id: \.id) { habit in
                         habitRow(habit)
