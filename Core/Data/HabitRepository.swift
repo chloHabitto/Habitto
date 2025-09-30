@@ -610,7 +610,7 @@ class HabitRepository: ObservableObject {
         
         // Update the local habits array immediately for UI responsiveness
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            let oldProgress = habits[index].completionHistory[dateKey] ?? 0
+            let _ = habits[index].completionHistory[dateKey] ?? 0  // oldProgress - no longer needed after XP cleanup
             habits[index].completionHistory[dateKey] = progress
             // Update streak after progress change
             habits[index].updateStreakWithReset()
