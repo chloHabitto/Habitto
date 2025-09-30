@@ -513,19 +513,28 @@ class HabitRepository: ObservableObject {
     func updateHabit(_ habit: Habit) {
         print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
         print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
+        print("🔄 HabitRepository: Current habits count before update: \(habits.count)")
         
         Task {
             do {
                 // Use the HabitStore actor for data operations
+                print("🔄 HabitRepository: Calling habitStore.updateHabit...")
                 try await habitStore.updateHabit(habit)
+                print("✅ HabitRepository: habitStore.updateHabit completed successfully")
                 
                 // Reload habits to get the updated list
+                print("🔄 HabitRepository: Reloading habits...")
                 await loadHabits(force: true)
+                print("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
                 
                 print("✅ HabitRepository: Successfully updated habit: \(habit.name)")
                 
             } catch {
                 print("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
+                print("❌ HabitRepository: Error type: \(type(of: error))")
+                if let dataError = error as? DataError {
+                    print("❌ HabitRepository: DataError details: \(dataError)")
+                }
             }
         }
     }
