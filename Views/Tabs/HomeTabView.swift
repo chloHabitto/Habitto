@@ -878,7 +878,8 @@ struct HomeTabView: View {
             onLastHabitCompleted()
         } else {
             // Present difficulty sheet (existing logic)
-            selectedHabit = habit
+            // Don't set selectedHabit here as it triggers habit detail screen
+            // The difficulty sheet will be shown by the ScheduledHabitItem
         }
     }
     
