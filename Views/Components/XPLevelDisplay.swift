@@ -2,8 +2,7 @@ import SwiftUI
 
 // MARK: - XP Level Display Component
 struct XPLevelDisplay: View {
-    @ObservedObject var xpService: XPService
-    @EnvironmentObject var themeManager: ThemeManager
+    @ObservedObject var xpManager: XPManager
     
     var body: some View {
         VStack(spacing: 12) {
@@ -15,7 +14,7 @@ struct XPLevelDisplay: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.text04)
                     
-                    Text("\(xpService.userProgress.currentLevel)")
+                    Text("\(xpManager.userProgress.currentLevel)")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.text01)
                 }
@@ -30,7 +29,7 @@ struct XPLevelDisplay: View {
                         
                         Spacer()
                         
-                        Text("\(xpService.userProgress.xpForCurrentLevel)/\(xpService.userProgress.xpForNextLevel)")
+                        Text("\(xpManager.userProgress.xpForCurrentLevel)/\(xpManager.userProgress.xpForNextLevel)")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.text04)
                     }
@@ -46,31 +45,31 @@ struct XPLevelDisplay: View {
                             // Progress
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(progressGradient)
-                                .frame(width: progressWidth(for: geometry.size.width), height: 8)
+                                .frame(width: progressWidth(geometry.size.width), height: 8)
                         }
                     }
                     .frame(height: 8)
                     
                     // Total XP
-                    Text("\(xpService.userProgress.totalXP) total XP")
+                    Text("\(xpManager.userProgress.totalXP) total XP")
                         .font(.system(size: 10, weight: .regular))
                         .foregroundColor(.text04)
                 }
             }
             
             // Recent XP Transactions (if any)
-            if !xpService.recentTransactions.isEmpty {
+            if !xpManager.recentTransactions.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Recent Activity")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.text04)
                     
-                    ForEach(Array(xpService.recentTransactions.prefix(3)), id: \.id) { transaction in
+                    ForEach(Array(xpManager.recentTransactions.prefix(3)), id: \.id) { transaction in
                         HStack(spacing: 8) {
                             // XP Icon
                             Image(systemName: "star.fill")
                                 .font(.system(size: 10))
-                                .foregroundColor(.yellow500)
+                                .foregroundColor(.warning)
                             
                             // Description
                             Text(transaction.description)
@@ -82,7 +81,7 @@ struct XPLevelDisplay: View {
                             // XP Amount
                             Text("+\(transaction.amount)")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.green500)
+                                .foregroundColor(.success)
                         }
                     }
                 }
@@ -99,14 +98,14 @@ struct XPLevelDisplay: View {
     
     private var progressWidth: (CGFloat) -> CGFloat {
         return { totalWidth in
-            let progress = xpService.userProgress.levelProgress
+            let progress = xpManager.userProgress.levelProgress
             return totalWidth * CGFloat(progress)
         }
     }
     
     private var progressGradient: LinearGradient {
         LinearGradient(
-            colors: [Color.blue400, Color.blue500],
+            colors: [Color.primary, Color.primaryFocus],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -115,8 +114,7 @@ struct XPLevelDisplay: View {
 
 // MARK: - XP Level Display Compact Version
 struct XPLevelDisplayCompact: View {
-    @ObservedObject var xpService: XPService
-    @EnvironmentObject var themeManager: ThemeManager
+    @ObservedObject var xpManager: XPManager
     
     var body: some View {
         HStack(spacing: 12) {
@@ -126,7 +124,7 @@ struct XPLevelDisplayCompact: View {
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.text04)
                 
-                Text("\(xpService.userProgress.currentLevel)")
+                Text("\(xpManager.userProgress.currentLevel)")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.text01)
             }
@@ -135,13 +133,13 @@ struct XPLevelDisplayCompact: View {
             // XP Info
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("\(xpService.userProgress.totalXP) XP")
+                    Text("\(xpManager.userProgress.totalXP) XP")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.text01)
                     
                     Spacer()
                     
-                    Text("\(xpService.userProgress.xpForCurrentLevel)/\(xpService.userProgress.xpForNextLevel)")
+                    Text("\(xpManager.userProgress.xpForCurrentLevel)/\(xpManager.userProgress.xpForNextLevel)")
                         .font(.system(size: 10, weight: .regular))
                         .foregroundColor(.text04)
                 }
@@ -157,7 +155,7 @@ struct XPLevelDisplayCompact: View {
                         // Progress
                         RoundedRectangle(cornerRadius: 2)
                             .fill(progressGradient)
-                            .frame(width: progressWidth(for: geometry.size.width), height: 4)
+                            .frame(width: progressWidth(geometry.size.width), height: 4)
                     }
                 }
                 .frame(height: 4)
@@ -174,14 +172,14 @@ struct XPLevelDisplayCompact: View {
     
     private var progressWidth: (CGFloat) -> CGFloat {
         return { totalWidth in
-            let progress = xpService.userProgress.levelProgress
+            let progress = xpManager.userProgress.levelProgress
             return totalWidth * CGFloat(progress)
         }
     }
     
     private var progressGradient: LinearGradient {
         LinearGradient(
-            colors: [Color.blue400, Color.blue500],
+            colors: [Color.primary, Color.primaryFocus],
             startPoint: .leading,
             endPoint: .trailing
         )
@@ -216,7 +214,7 @@ struct XPTransactionRow: View {
             // XP Amount
             Text("+\(transaction.amount)")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.green500)
+                .foregroundColor(.success)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -246,21 +244,21 @@ struct XPTransactionRow: View {
     private func colorForReason(_ reason: XPRewardReason) -> Color {
         switch reason {
         case .completeHabit:
-            return .blue500
+            return .primary
         case .completeAllHabits:
-            return .yellow500
+            return .warning
         case .streakBonus:
-            return .orange500
+            return .warning
         case .levelUp:
-            return .purple500
+            return .primaryFocus
         case .achievement:
-            return .green500
+            return .success
         case .perfectWeek:
-            return .blue500
+            return .primary
         case .firstHabit:
-            return .yellow500
+            return .warning
         case .comeback:
-            return .green500
+            return .success
         }
     }
     
@@ -273,9 +271,9 @@ struct XPTransactionRow: View {
 
 #Preview {
     VStack(spacing: 20) {
-        XPLevelDisplay(xpService: XPService.shared)
+        XPLevelDisplay(xpManager: XPManager.shared)
         
-        XPLevelDisplayCompact(xpService: XPService.shared)
+        XPLevelDisplayCompact(xpManager: XPManager.shared)
         
         XPTransactionRow(transaction: XPTransaction(
             amount: 15,

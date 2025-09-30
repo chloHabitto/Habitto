@@ -7,7 +7,7 @@ struct MoreTabView: View {
     @EnvironmentObject var tutorialManager: TutorialManager
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var vacationManager: VacationManager
-    @StateObject private var xpService = XPService.shared
+    @StateObject private var xpManager = XPManager.shared
     @State private var showingProfileView = false
     @State private var showingVacationModeSheet = false
     @State private var showingVacationSummary = false
@@ -43,7 +43,7 @@ struct MoreTabView: View {
                         trialBanner
                         
                         // XP Level Display
-                        XPLevelDisplay(xpService: xpService)
+                        XPLevelDisplay(xpManager: xpManager)
                             .padding(.bottom, 16)
                     }
                 )

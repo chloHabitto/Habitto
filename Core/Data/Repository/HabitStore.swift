@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import OSLog
+import SwiftUI
 
 // MARK: - Habit Store Actor
 // This actor handles all data operations off the main thread
@@ -395,12 +396,13 @@ final actor HabitStore {
             // Award XP for habit completion (only when progress increases)
             if progress > oldProgress {
                 await MainActor.run {
-                    XPService.shared.awardXPForHabitCompletion(currentHabits[index], date: date)
+                    XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
                     
                     // Check for streak milestones
                     let streak = currentHabits[index].streak
                     if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
-                        XPService.shared.awardXPForStreakMilestone(currentHabits[index], streakDays: streak)
+                        // Award additional XP for streak milestones
+                        XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
                     }
                     
                     // Check for perfect day (all habits completed)
@@ -426,11 +428,11 @@ final actor HabitStore {
                     }
                     
                     if allCompleted {
-                        XPService.shared.awardXPForPerfectDay(habits: todayHabits, date: date)
+                        XPManager.shared.awardXPForPerfectDay(habits: todayHabits, date: date)
                     }
                     
                     // Check achievements
-                    XPService.shared.checkAchievements(habits: currentHabits)
+                    XPManager.shared.checkAchievements(habits: currentHabits)
                 }
             }
         } else {

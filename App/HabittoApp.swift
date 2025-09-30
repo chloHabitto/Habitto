@@ -90,7 +90,7 @@ struct HabittoApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
     @StateObject private var vacationManager = VacationManager.shared
     @StateObject private var themeManager = ThemeManager.shared
-    @StateObject private var xpService = XPService.shared
+    @StateObject private var xpManager = XPManager.shared
     @State private var showSplash = true
     
     var body: some Scene {
@@ -178,7 +178,7 @@ struct HabittoApp: App {
                             NotificationManager.shared.rescheduleDailyReminders()
                             
                             // Reset daily XP counter if needed
-                            XPService.shared.resetDailyXP()
+                            XPManager.shared.resetDailyXP()
                             }
                         }
                 }

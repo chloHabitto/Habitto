@@ -36,7 +36,16 @@ struct HomeTabView: View {
         self.onSetProgress = onSetProgress
         self.onDeleteHabit = onDeleteHabit
         self.onCompletionDismiss = onCompletionDismiss
-        self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(try! ModelContainer(for: DailyAward.self))))
+        // Initialize DailyAwardService with proper error handling
+        if let container = try? ModelContainer(for: DailyAward.self) {
+            self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(container)))
+        } else {
+            // Fallback: create a new container as last resort
+            self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(try! ModelContainer(for: DailyAward.self))))
+        }
+        
+        // Subscribe to event bus
+        subscribeToEvents()
     }
     
     // Performance optimization: Cached regex patterns
@@ -114,8 +123,7 @@ struct HomeTabView: View {
             // Initialize sorted habits
             resortHabits()
             
-            // Subscribe to event bus
-            subscribeToEvents()
+            // Subscribe to event bus - will be called from init
         }
 
         .fullScreenCover(item: $selectedHabit) { habit in
@@ -151,20 +159,14 @@ struct HomeTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .vacationModeEnded)) { _ in
             // Refresh UI when vacation mode ends
-            print("🏖️ VACATION MODE DEBUG: HomeTabView received vacationModeEnded notification")
-            print("🏖️ VACATION MODE DEBUG: Vacation active after notification: \(VacationManager.shared.isActive)")
+            // Vacation mode ended notification received
             // This will trigger a view update to reflect the new vacation state
         }
         .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
             Button("Cancel", role: .cancel) { }
             Button("End Vacation", role: .destructive) {
                 // End vacation mode for the selected date
-                print("🏖️ VACATION MODE DEBUG: User clicked End Vacation for date: \(selectedDate)")
-                print("🏖️ VACATION MODE DEBUG: Current vacation active: \(VacationManager.shared.isActive)")
-                print("🏖️ VACATION MODE DEBUG: Is vacation day: \(VacationManager.shared.isVacationDay(selectedDate))")
                 VacationManager.shared.cancelVacationForDate(selectedDate)
-                print("🏖️ VACATION MODE DEBUG: After cancellation - vacation active: \(VacationManager.shared.isActive)")
-                print("🏖️ VACATION MODE DEBUG: After cancellation - is vacation day: \(VacationManager.shared.isVacationDay(selectedDate))")
             }
         } message: {
             Text("Are you sure you want to end vacation mode for this date? This will resume all habit tracking.")
@@ -728,7 +730,7 @@ struct HomeTabView: View {
     }
     
     // MARK: - Event Subscription
-    private func subscribeToEvents() {
+    private mutating func subscribeToEvents() {
         eventBus.publisher()
             .receive(on: DispatchQueue.main)
             .sink { event in
@@ -759,7 +761,7 @@ struct HomeTabView: View {
         }
         
         // Sort: Incomplete first by originalOrder, then completed by completedAt then originalOrder
-        sortedHabits = todayHabits.sorted { habit1, habit2 in
+        sortedHabits = todayHabits.sorted(by: { habit1, habit2 in
             let isCompleted1 = habit1.isCompleted(for: selectedDate)
             let isCompleted2 = habit2.isCompleted(for: selectedDate)
             
@@ -777,9 +779,9 @@ struct HomeTabView: View {
                 }
             }
             
-            // Fallback to original order
-            return habit1.originalOrder < habit2.originalOrder
-        }
+            // Fallback to name order
+            return habit1.name < habit2.name
+        })
     }
     
     // MARK: - Habit Completion Logic

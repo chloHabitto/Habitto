@@ -86,16 +86,32 @@ public class DailyAwardService: ObservableObject {
     
     private func areAllHabitsCompleted(dateKey: String, userId: String) async -> Bool {
         // Get all habits for the user
-        let predicate = #Predicate<Habit> { habit in
+        let predicate = #Predicate<HabitData> { habit in
             habit.userId == userId
         }
         
-        let request = FetchDescriptor<Habit>(predicate: predicate)
+        let request = FetchDescriptor<HabitData>(predicate: predicate)
         let habits = (try? modelContext.fetch(request)) ?? []
         
         // Check if all habits are completed for the given date
         return habits.allSatisfy { habit in
-            habit.isCompleted(for: DateKey.startOfDay(for: DateKey.key(for: Date())))
+            // Convert HabitData to Habit and check completion
+            let habitStruct = Habit(
+                id: habit.id,
+                name: habit.name,
+                emoji: habit.emoji,
+                color: habit.color,
+                schedule: habit.schedule,
+                difficulty: habit.difficulty,
+                originalOrder: habit.originalOrder,
+                completionHistory: habit.completionHistory,
+                difficultyHistory: habit.difficultyHistory,
+                usageHistory: habit.usageHistory,
+                userId: habit.userId,
+                createdAt: habit.createdAt,
+                updatedAt: habit.updatedAt
+            )
+            return habitStruct.isCompleted(for: DateKey.startOfDay(for: dateKey))
         }
     }
     
