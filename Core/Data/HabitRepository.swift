@@ -637,37 +637,7 @@ class HabitRepository: ObservableObject {
                 _ = XPManager.shared.removeXPForHabitUncompleted(habits: [habits[index]], for: date)
             }
             
-            // Check for perfect day (all habits completed) - celebration logic
-            let todayHabits = habits.filter { habit in
-                let calendar = Calendar.current
-                let weekday = calendar.component(.weekday, from: date)
-                
-                if habit.schedule.lowercased().contains("everyday") {
-                    return true
-                } else if habit.schedule.lowercased().contains("weekdays") {
-                    return weekday >= 2 && weekday <= 6
-                } else if habit.schedule.lowercased().contains("weekends") {
-                    return weekday == 1 || weekday == 7
-                } else {
-                    let dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-                    let dayName = dayNames[weekday - 1]
-                    return habit.schedule.lowercased().contains(dayName)
-                }
-            }
-            
-            let allCompleted = todayHabits.allSatisfy { habit in
-                habit.isCompleted(for: date)
-            }
-            
-            if allCompleted {
-                // Trigger celebration through event bus
-                print("🎉 HabitRepository: All habits completed! Triggering celebration for \(dateKey)")
-                EventBus.shared.publish(.dailyAwardGranted(dateKey: dateKey))
-            } else {
-                // Revoke celebration if not all habits completed
-                print("🎉 HabitRepository: Not all habits completed. Revoking celebration for \(dateKey)")
-                EventBus.shared.publish(.dailyAwardRevoked(dateKey: dateKey))
-            }
+            // Celebration logic is now handled in HomeTabView when the last habit completion sheet is dismissed
             
             // Send notification for UI components to update
             NotificationCenter.default.post(
