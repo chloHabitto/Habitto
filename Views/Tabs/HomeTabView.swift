@@ -898,10 +898,8 @@ struct HomeTabView: View {
         deferResort = false
         resortHabits()
         
-        // Call award service
-        Task {
-            await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
-        }
+        // Don't call award service here - it should only be called for the last habit
+        // The award service will be called from onLastHabitCompleted() when appropriate
     }
     
     private func onLastHabitCompleted() {
