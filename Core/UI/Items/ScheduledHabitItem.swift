@@ -31,14 +31,14 @@ struct ScheduledHabitItem: View {
         }
     }
     
-    // Computed property for progress percentage (capped at 100% for display purposes)
+    // Computed property for progress percentage (allows over-completion display)
     private var progressPercentage: Double {
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
         guard goalAmount > 0 else { return 0.0 }
         // Use local currentProgress for immediate UI feedback
         let percentage = Double(currentProgress) / Double(goalAmount)
-        // Cap at 100% so progress bar never exceeds background width
-        return min(percentage, 1.0)
+        // Allow over-completion display (e.g., 150% for 3/2 progress)
+        return percentage
     }
     
     // Computed property to check if it's a vacation day and vacation is currently active
