@@ -362,7 +362,6 @@ final actor HabitStore {
         var currentHabits = try await loadHabits()
         
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-            let oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
             currentHabits[index].completionHistory[dateKey] = progress
             
             // Update streak after progress change
@@ -371,25 +370,11 @@ final actor HabitStore {
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
             
-            // Handle XP based on progress change
+            // XP logic is now handled in HabitRepository.setProgress for immediate UI feedback
+            
+            // Check for perfect day (all habits completed)
             let currentHabitsCopy = currentHabits
             await MainActor.run {
-                if progress > oldProgress {
-                    // Progress increased - award XP
-                    _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabitsCopy[index]], for: date)
-                    
-                    // Check for streak milestones
-                    let streak = currentHabitsCopy[index].streak
-                    if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
-                        // Award additional XP for streak milestones
-                        _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabitsCopy[index]], for: date)
-                    }
-                } else if progress < oldProgress {
-                    // Progress decreased - remove XP
-                    _ = XPManager.shared.removeXPForHabitUncompleted(habits: [currentHabitsCopy[index]], for: date)
-                }
-                
-                // Check for perfect day (all habits completed)
                 let todayHabits = currentHabitsCopy.filter { habit in
                     let calendar = Calendar.current
                     let weekday = calendar.component(.weekday, from: date)

@@ -611,11 +611,31 @@ class HabitRepository: ObservableObject {
         
         // Update the local habits array immediately for UI responsiveness
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+            let oldProgress = habits[index].completionHistory[dateKey] ?? 0
             habits[index].completionHistory[dateKey] = progress
             // Update streak after progress change
             habits[index].updateStreakWithReset()
             objectWillChange.send()
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
+            
+            // Handle XP based on progress change
+            if progress > oldProgress {
+                // Progress increased - award XP
+                print("🎯 HabitRepository: Progress increased, awarding XP for \(habit.name)")
+                _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [habits[index]], for: date)
+                
+                // Check for streak milestones
+                let streak = habits[index].streak
+                if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
+                    // Award additional XP for streak milestones
+                    print("🎯 HabitRepository: Streak milestone reached (\(streak)), awarding bonus XP for \(habit.name)")
+                    _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [habits[index]], for: date)
+                }
+            } else if progress < oldProgress {
+                // Progress decreased - remove XP
+                print("🎯 HabitRepository: Progress decreased, removing XP for \(habit.name)")
+                _ = XPManager.shared.removeXPForHabitUncompleted(habits: [habits[index]], for: date)
+            }
             
             // Send notification for UI components to update
             NotificationCenter.default.post(
