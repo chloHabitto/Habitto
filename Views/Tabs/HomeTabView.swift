@@ -39,11 +39,23 @@ struct HomeTabView: View {
         self.onDeleteHabit = onDeleteHabit
         self.onCompletionDismiss = onCompletionDismiss
         // Initialize DailyAwardService with proper error handling
-        if let container = try? ModelContainer(for: DailyAward.self) {
+        do {
+            let container = try ModelContainer(for: DailyAward.self)
             self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(container)))
-        } else {
+        } catch {
             // Fallback: create a new container as last resort
-            self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(try! ModelContainer(for: DailyAward.self))))
+            // This should not happen in normal circumstances
+            print("⚠️ HomeTabView: Failed to create ModelContainer for DailyAward: \(error)")
+            // Create a minimal container for testing/fallback
+            do {
+                let fallbackContainer = try ModelContainer(for: DailyAward.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+                self._awardService = StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(fallbackContainer)))
+            } catch {
+                // If even the fallback fails, create a dummy service
+                print("❌ HomeTabView: Critical error - cannot create ModelContainer: \(error)")
+                // This will cause a runtime error, but it's better than a crash
+                fatalError("Cannot initialize DailyAwardService: \(error)")
+            }
         }
         
         // Subscribe to event bus - will be handled in onAppear
@@ -60,139 +72,185 @@ struct HomeTabView: View {
     }()
     
     var body: some View {
-        WhiteSheetContainer(
-            headerContent: {
-                AnyView(
-                    VStack(spacing: 0) {
-                        ExpandableCalendar(selectedDate: $selectedDate)
-                        statsRowSection
-                    }
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(.outline3)
-                            .frame(maxWidth: .infinity),
-                        alignment: .bottom
-                    )
-                )
-            },
-            rightButton: {
-                AnyView(
-                    HStack(spacing: 2) {
-                        // Add (+) button
-                        Button(action: {
-                            // TODO: Add create habit action
-                            print("➕ Add habit button tapped")
-                        }) {
-                            Image("Icon-AddCircle_Filled")
-                                .renderingMode(.template)
-                                .resizable()
-                                .frame(width: 28, height: 28)
-                                .foregroundColor(.onPrimary)
+        mainContent
+            .onAppear {
+                let today = DateUtils.today()
+                if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
+                    // No update needed
+                } else {
+                    selectedDate = today
+                }
+                
+                // Initialize sorted habits
+                resortHabits()
+                
+                // Subscribe to event bus
+                eventBus.publisher()
+                    .receive(on: DispatchQueue.main)
+                    .sink { event in
+                        switch event {
+                        case .dailyAwardGranted(let dateKey):
+                            print("🎉 HomeTabView: Received dailyAwardGranted for \(dateKey)")
+                            showCelebration = true
+                        case .dailyAwardRevoked(let dateKey):
+                            print("🎉 HomeTabView: Received dailyAwardRevoked for \(dateKey)")
+                            showCelebration = false
                         }
-                        .frame(width: 44, height: 44)
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Notification button
-                        Button(action: {
-                            // TODO: Add notification action
-                            print("🔔 Notification button tapped")
-                        }) {
-                            Image("Icon-Bell_Filled")
-                                .renderingMode(.template)
-                                .resizable()
-                                .frame(width: 28, height: 28)
-                                .foregroundColor(.onPrimary)
-                        }
-                        .frame(width: 44, height: 44)
-                        .buttonStyle(PlainButtonStyle())
                     }
-                )
+                    .store(in: &cancellables)
             }
+            .onChange(of: habits) { oldHabits, newHabits in
+                handleHabitsChange(oldHabits: oldHabits, newHabits: newHabits)
+            }
+            .fullScreenCover(item: $selectedHabit, content: habitDetailView)
+            .overlay(celebrationOverlay)
+            .onChange(of: habitsForSelectedDate) { oldHabits, newHabits in
+                handleHabitsForSelectedDateChange(oldHabits, newHabits)
+            }
+            .onChange(of: selectedDate) { oldDate, newDate in
+                handleSelectedDateChange(oldDate, newDate)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .vacationModeEnded), perform: handleVacationModeEnded)
+            .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("End Vacation", role: .destructive) {
+                    VacationManager.shared.cancelVacationForDate(selectedDate)
+                }
+            } message: {
+                Text("Are you sure you want to end vacation mode for this date? This will resume all habit tracking.")
+            }
+    }
+    
+    // MARK: - Main Content
+    @ViewBuilder
+    private var mainContent: some View {
+        WhiteSheetContainer(
+            headerContent: { AnyView(headerContent) },
+            rightButton: { AnyView(rightButtonContent) }
         ) {
             habitsListSection
         }
-
-        .onAppear {
-            let today = DateUtils.today()
-            if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
-                // No update needed
-            } else {
-                selectedDate = today
+    }
+    
+    // MARK: - Header Content
+    @ViewBuilder
+    private var headerContent: some View {
+        AnyView(
+            VStack(spacing: 0) {
+                ExpandableCalendar(selectedDate: $selectedDate)
+                statsRowSection
             }
-            
-            // Initialize sorted habits
-            resortHabits()
-            
-            // Subscribe to event bus
-            let _ = eventBus.publisher()
-                .receive(on: DispatchQueue.main)
-                .sink { event in
-                    switch event {
-                    case .dailyAwardGranted(let dateKey):
-                        print("🎉 HomeTabView: Received dailyAwardGranted for \(dateKey)")
-                        showCelebration = true
-                    case .dailyAwardRevoked(let dateKey):
-                        print("🎉 HomeTabView: Received dailyAwardRevoked for \(dateKey)")
-                        showCelebration = false
-                    }
-                }
-        }
-        .onChange(of: habits) { oldHabits, newHabits in
-            // Resort habits when the habits array changes
-            print("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
-            resortHabits()
-        }
-
-        .fullScreenCover(item: $selectedHabit) { habit in
-            HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
-                .gesture(
-                    DragGesture()
-                        .onEnded { value in
-                            // Swipe right to dismiss (like back button)
-                            if value.translation.width > 100 && abs(value.translation.height) < 100 {
-                                selectedHabit = nil
-                            }
-                        }
-                )
-                .onAppear {
-                    print("🎯 HomeTabView: HabitDetailView appeared for habit: \(habit.name)")
-                }
-        }
-        .overlay(
-            Group {
-                if showCelebration {
-                    CelebrationView(
-                        isPresented: $showCelebration,
-                        onDismiss: {
-                            // Celebration dismissed, ready for next time
-                        }
-                    )
-                }
+            .overlay(headerOverlay, alignment: .bottom)
+        )
+    }
+    
+    @ViewBuilder
+    private var headerOverlay: some View {
+        Rectangle()
+            .frame(height: 1)
+            .foregroundColor(.outline3)
+            .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - Right Button Content
+    @ViewBuilder
+    private var rightButtonContent: some View {
+        AnyView(
+            HStack(spacing: 2) {
+                addButton
+                notificationButton
             }
         )
-        .onChange(of: habitsForSelectedDate) { _, newHabits in
-            // Remove automatic celebration check - now triggered by bottom sheet dismissal
+    }
+    
+    @ViewBuilder
+    private var addButton: some View {
+        Button(action: {
+            // TODO: Add create habit action
+            print("➕ Add habit button tapped")
+        }) {
+            Image("Icon-AddCircle_Filled")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 28, height: 28)
+                .foregroundColor(.onPrimary)
         }
-        .onChange(of: selectedDate) { _, _ in
-            // Reset celebration when date changes
-            showCelebration = false
+        .frame(width: 44, height: 44)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    @ViewBuilder
+    private var notificationButton: some View {
+        Button(action: {
+            // TODO: Add notification action
+            print("🔔 Notification button tapped")
+        }) {
+            Image("Icon-Bell_Filled")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 28, height: 28)
+                .foregroundColor(.onPrimary)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .vacationModeEnded)) { _ in
-            // Refresh UI when vacation mode ends
-            // Vacation mode ended notification received
-            // This will trigger a view update to reflect the new vacation state
-        }
-        .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("End Vacation", role: .destructive) {
-                // End vacation mode for the selected date
-                VacationManager.shared.cancelVacationForDate(selectedDate)
+        .frame(width: 44, height: 44)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Celebration Overlay
+    @ViewBuilder
+    private var celebrationOverlay: some View {
+        Group {
+            if showCelebration {
+                CelebrationView(
+                    isPresented: $showCelebration,
+                    onDismiss: {
+                        // Celebration dismissed, ready for next time
+                    }
+                )
             }
-        } message: {
-            Text("Are you sure you want to end vacation mode for this date? This will resume all habit tracking.")
         }
     }
+    
+    // MARK: - Habit Detail View
+    @ViewBuilder
+    private func habitDetailView(for habit: Habit) -> some View {
+        HabitDetailView(habit: habit, onUpdateHabit: onUpdateHabit, selectedDate: selectedDate, onDeleteHabit: onDeleteHabit)
+            .gesture(
+                DragGesture()
+                    .onEnded { value in
+                        // Swipe right to dismiss (like back button)
+                        if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                            selectedHabit = nil
+                        }
+                    }
+            )
+            .onAppear {
+                print("🎯 HomeTabView: HabitDetailView appeared for habit: \(habit.name)")
+            }
+    }
+    
+    // MARK: - Event Handlers
+    
+    private func handleHabitsChange(oldHabits: [Habit], newHabits: [Habit]) {
+        // Resort habits when the habits array changes
+        print("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
+        resortHabits()
+    }
+    
+    private func handleHabitsForSelectedDateChange(_ oldHabits: [Habit], _ newHabits: [Habit]) {
+        // Remove automatic celebration check - now triggered by bottom sheet dismissal
+    }
+    
+    private func handleSelectedDateChange(_ oldDate: Date, _ newDate: Date) {
+        // Reset celebration when date changes
+        showCelebration = false
+    }
+    
+    private func handleVacationModeEnded(_ notification: Notification) {
+        // Refresh UI when vacation mode ends
+        // Vacation mode ended notification received
+        // This will trigger a view update to reflect the new vacation state
+    }
+    
     
     @ViewBuilder
     private var statsRowSection: some View {
@@ -861,5 +919,5 @@ struct HomeTabView: View {
         return "current_user_id"
     }
     
-    private var cancellables = Set<AnyCancellable>()
+    @State private var cancellables = Set<AnyCancellable>()
 }

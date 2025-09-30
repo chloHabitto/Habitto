@@ -372,24 +372,25 @@ final actor HabitStore {
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
             
             // Handle XP based on progress change
+            let currentHabitsCopy = currentHabits
             await MainActor.run {
                 if progress > oldProgress {
                     // Progress increased - award XP
-                    XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
+                    _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabitsCopy[index]], for: date)
                     
                     // Check for streak milestones
-                    let streak = currentHabits[index].streak
+                    let streak = currentHabitsCopy[index].streak
                     if streak > 0 && (streak == 7 || streak == 14 || streak == 30 || streak == 60 || streak == 100) {
                         // Award additional XP for streak milestones
-                        XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabits[index]], for: date)
+                        _ = XPManager.shared.awardXPForAllHabitsCompleted(habits: [currentHabitsCopy[index]], for: date)
                     }
                 } else if progress < oldProgress {
                     // Progress decreased - remove XP
-                    XPManager.shared.removeXPForHabitUncompleted(habits: [currentHabits[index]], for: date)
+                    _ = XPManager.shared.removeXPForHabitUncompleted(habits: [currentHabitsCopy[index]], for: date)
                 }
                 
                 // Check for perfect day (all habits completed)
-                let todayHabits = currentHabits.filter { habit in
+                let todayHabits = currentHabitsCopy.filter { habit in
                     let calendar = Calendar.current
                     let weekday = calendar.component(.weekday, from: date)
                     
@@ -421,7 +422,7 @@ final actor HabitStore {
                 }
                 
                 // Check achievements
-                XPManager.shared.checkAchievements(habits: currentHabits)
+                XPManager.shared.checkAchievements(habits: currentHabitsCopy)
             }
         } else {
             logger.error("Habit not found in storage: \(habit.name)")
