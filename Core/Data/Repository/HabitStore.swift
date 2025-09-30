@@ -24,93 +24,57 @@ final actor HabitStore {
     // MARK: - Manager Properties (Actor-Safe)
     // Create instances on-demand to avoid main actor isolation issues
     
-    private var _migrationManager: DataMigrationManager?
     private var migrationManager: DataMigrationManager {
         get async {
-            if let existing = _migrationManager { return existing }
-            let manager = await MainActor.run { DataMigrationManager.shared }
-            _migrationManager = manager
-            return manager
+            return await MainActor.run { DataMigrationManager.shared }
         }
     }
     
-    private var _retentionManager: DataRetentionManager?
     private var retentionManager: DataRetentionManager {
         get async {
-            if let existing = _retentionManager { return existing }
-            let manager = await MainActor.run { DataRetentionManager.shared }
-            _retentionManager = manager
-            return manager
+            return await MainActor.run { DataRetentionManager.shared }
         }
     }
     
-    private var _historyCapper: HistoryCapper?
     private var historyCapper: HistoryCapper {
         get async {
-            if let existing = _historyCapper { return existing }
-            let capper = await MainActor.run { HistoryCapper.shared }
-            _historyCapper = capper
-            return capper
+            return await MainActor.run { HistoryCapper.shared }
         }
     }
     
-    private var _cloudKitSyncManager: CloudKitSyncManager?
     private var cloudKitSyncManager: CloudKitSyncManager {
         get async {
-            if let existing = _cloudKitSyncManager { return existing }
-            let manager = await MainActor.run { CloudKitSyncManager.shared }
-            _cloudKitSyncManager = manager
-            return manager
+            return await MainActor.run { CloudKitSyncManager.shared }
         }
     }
     
-    private var _conflictResolver: ConflictResolutionManager?
     private var conflictResolver: ConflictResolutionManager {
         get async {
-            if let existing = _conflictResolver { return existing }
-            let resolver = await MainActor.run { ConflictResolutionManager.shared }
-            _conflictResolver = resolver
-            return resolver
+            return await MainActor.run { ConflictResolutionManager.shared }
         }
     }
     
-    private var _backupManager: BackupManager?
     private var backupManager: BackupManager {
         get async {
-            if let existing = _backupManager { return existing }
-            let manager = await MainActor.run { BackupManager.shared }
-            _backupManager = manager
-            return manager
+            return await MainActor.run { BackupManager.shared }
         }
     }
     
-    private var _performanceMetrics: PerformanceMetrics?
     private var performanceMetrics: PerformanceMetrics {
         get async {
-            if let existing = _performanceMetrics { return existing }
-            let metrics = await MainActor.run { PerformanceMetrics.shared }
-            _performanceMetrics = metrics
-            return metrics
+            return await MainActor.run { PerformanceMetrics.shared }
         }
     }
     
-    private var _dataUsageAnalytics: DataUsageAnalytics?
     private var dataUsageAnalytics: DataUsageAnalytics {
         get async {
-            if let existing = _dataUsageAnalytics { return existing }
-            let analytics = await MainActor.run { DataUsageAnalytics.shared }
-            _dataUsageAnalytics = analytics
-            return analytics
+            return await MainActor.run { DataUsageAnalytics.shared }
         }
     }
     
-    private var _userAnalytics: UserAnalytics?
     private var userAnalytics: UserAnalytics {
         get async {
-            if let existing = _userAnalytics { return existing }
-            let analytics = await MainActor.run { UserAnalytics.shared }
-            _userAnalytics = analytics
-            return analytics
+            return await MainActor.run { UserAnalytics.shared }
         }
     }
     
