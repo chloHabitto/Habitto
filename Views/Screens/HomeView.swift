@@ -94,7 +94,9 @@ class HomeViewState: ObservableObject {
     }
     
     func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) {
+        print("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
         habitRepository.setProgress(for: habit, date: date, progress: progress)
+        print("🔄 HomeViewState: setHabitProgress completed for \(habit.name)")
     }
     
     func createHabit(_ habit: Habit) {
@@ -363,8 +365,14 @@ struct HomeView: View {
                                 // Find the habit by ID from the current state to ensure we have the latest Core Data-synced version
                                 if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
                                     print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
+                                    print("🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
                                     state.setHabitProgress(syncedHabit, for: date, progress: progress)
                                     print("🔄 HomeView: Progress saved to Core Data using synced habit")
+                                    
+                                    // Force UI update by triggering objectWillChange
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        state.objectWillChange.send()
+                                    }
                                 } else {
                                     print("❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
                                     state.setHabitProgress(habit, for: date, progress: progress)

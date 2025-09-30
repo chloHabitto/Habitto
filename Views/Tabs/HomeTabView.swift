@@ -127,9 +127,11 @@ struct HomeTabView: View {
                 .receive(on: DispatchQueue.main)
                 .sink { event in
                     switch event {
-                    case .dailyAwardGranted:
+                    case .dailyAwardGranted(let dateKey):
+                        print("🎉 HomeTabView: Received dailyAwardGranted for \(dateKey)")
                         showCelebration = true
-                    case .dailyAwardRevoked:
+                    case .dailyAwardRevoked(let dateKey):
+                        print("🎉 HomeTabView: Received dailyAwardRevoked for \(dateKey)")
                         showCelebration = false
                     }
                 }
@@ -146,6 +148,9 @@ struct HomeTabView: View {
                             }
                         }
                 )
+                .onAppear {
+                    print("🎯 HomeTabView: HabitDetailView appeared for habit: \(habit.name)")
+                }
         }
         .overlay(
             Group {
@@ -330,7 +335,9 @@ struct HomeTabView: View {
             habit: habit,
             selectedDate: selectedDate,
             onRowTap: {
+                print("🎯 HomeTabView: Row tapped for habit: \(habit.name)")
                 selectedHabit = habit
+                print("🎯 HomeTabView: selectedHabit set to: \(selectedHabit?.name ?? "nil")")
             },
             onProgressChange: { habit, date, progress in
                 // Use the new progress setting method that properly saves to Core Data

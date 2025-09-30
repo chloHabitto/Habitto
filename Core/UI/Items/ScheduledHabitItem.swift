@@ -33,7 +33,9 @@ struct ScheduledHabitItem: View {
     private var progressPercentage: Double {
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
         guard goalAmount > 0 else { return 0.0 }
-        let percentage = Double(currentProgress) / Double(goalAmount)
+        // Use the actual habit progress for the selected date, not local currentProgress
+        let actualProgress = habit.getProgress(for: selectedDate)
+        let percentage = Double(actualProgress) / Double(goalAmount)
         // Cap at 100% so progress bar never exceeds background width
         return min(percentage, 1.0)
     }
@@ -121,7 +123,7 @@ struct ScheduledHabitItem: View {
                     reminderIcon
                 }
                 
-                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
+                Text("\(habit.getProgress(for: selectedDate))/\(extractGoalAmount(from: habit.goal))")
                     .font(.appBodySmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -155,6 +157,13 @@ struct ScheduledHabitItem: View {
             // Completion Button
             completionButton
                 .padding(.trailing, 8)
+                .onTapGesture {
+                    // Prevent the row tap from being triggered when tapping the completion button
+                    print("🎯 ScheduledHabitItem: Completion button tapped for \(habit.name)")
+                    if !isVacationDay {
+                        completeHabit()
+                    }
+                }
         }
         .padding(.trailing, 4)
         .background(
@@ -271,6 +280,7 @@ struct ScheduledHabitItem: View {
         )
         .onTapGesture {
             // Trigger the row tap callback when the habit item is tapped
+            print("🎯 ScheduledHabitItem: Row tapped for \(habit.name)")
             onRowTap?()
         }
 
@@ -310,13 +320,13 @@ struct ScheduledHabitItem: View {
             }
         }
         .onChange(of: habit.completionHistory) { oldHistory, newHistory in
-            guard !isCompletingHabit else { return }
             let newProgress = habit.getProgress(for: selectedDate)
+            print("🎯 ScheduledHabitItem: completionHistory changed for \(habit.name), updating currentProgress from \(currentProgress) to \(newProgress)")
             currentProgress = newProgress
         }
         .onChange(of: habit) { oldHabit, newHabit in
-            guard !isCompletingHabit else { return }
             let newProgress = newHabit.getProgress(for: selectedDate)
+            print("🎯 ScheduledHabitItem: habit changed for \(habit.name), updating currentProgress from \(currentProgress) to \(newProgress)")
             currentProgress = newProgress
         }
             .sheet(isPresented: $showingCompletionSheet) {
@@ -331,7 +341,7 @@ struct ScheduledHabitItem: View {
                         
                         // Save to data model immediately to prevent race conditions
                         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-                        print("🎯 ScheduledHabitItem: Immediate data save for completion")
+                        print("🎯 ScheduledHabitItem: Immediate data save for completion with progress: \(goalAmount)")
                         onProgressChange?(habit, selectedDate, goalAmount)
                         
                         // Call the original completion dismiss handler
@@ -382,8 +392,8 @@ struct ScheduledHabitItem: View {
     
     // Helper function to check if habit is completed for the selected date
     private func isHabitCompleted() -> Bool {
-        let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        return currentProgress >= goalAmount
+        // Use the actual habit's completion status for the selected date
+        return habit.isCompleted(for: selectedDate)
     }
     
     // Helper function to toggle habit completion
@@ -394,7 +404,7 @@ struct ScheduledHabitItem: View {
         
         if isCompleted {
             // If already completed, uncomplete it (set progress to 0)
-            currentProgress = 0
+            print("🎯 ScheduledHabitItem: Uncompleting habit \(habit.name)")
             onProgressChange?(habit, selectedDate, 0)
             
             // Haptic feedback for uncompletion
@@ -405,22 +415,6 @@ struct ScheduledHabitItem: View {
             print("🎯 ScheduledHabitItem: Showing completion sheet for \(habit.name)")
             isCompletingHabit = true
             showingCompletionSheet = true
-            
-            // Show visual completion immediately (check mark filled)
-            let goalAmount = extractNumericGoalAmount(from: habit.goal)
-            
-            // Fun completion animation
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
-                currentProgress = goalAmount
-                isCompletingAnimation = true
-            }
-            
-            // Reset animation after completion
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    self.isCompletingAnimation = false
-                }
-            }
             
             // Haptic feedback for completion
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

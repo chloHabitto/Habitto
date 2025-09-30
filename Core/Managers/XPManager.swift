@@ -14,6 +14,10 @@ class XPManager: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let userProgressKey = "user_progress"
     private let recentTransactionsKey = "recent_xp_transactions"
+    private let dailyAwardsKey = "daily_xp_awards"
+    
+    // Track which habits have been awarded XP today to prevent duplicates
+    private var dailyAwards: [String: Set<UUID>] = [:]
     
     // Single source of truth for XP values
     struct XPRewards {
@@ -31,6 +35,7 @@ class XPManager: ObservableObject {
     init() {
         loadUserProgress()
         loadRecentTransactions()
+        loadDailyAwards()
         logger.info("XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
     }
     
@@ -40,6 +45,17 @@ class XPManager: ObservableObject {
     func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let today = DateUtils.startOfDay(for: Date())
+        let dateKey = DateKey.key(for: date)
+        
+        // Check if we already awarded XP for these habits today
+        let alreadyAwarded = habits.allSatisfy { habit in
+            dailyAwards[dateKey]?.contains(habit.id) ?? false
+        }
+        
+        if alreadyAwarded {
+            logger.debug("XP already awarded for these habits today")
+            return 0
+        }
         
         // Calculate total XP for all completed habits
         let totalXP = calculateTotalXPForHabits(habits, for: targetDate)
@@ -47,6 +63,15 @@ class XPManager: ObservableObject {
         if totalXP > 0 {
             // Award the XP
             addXP(totalXP, reason: .completeAllHabits, description: "Completed all habits")
+            
+            // Track which habits were awarded XP today
+            if dailyAwards[dateKey] == nil {
+                dailyAwards[dateKey] = Set<UUID>()
+            }
+            for habit in habits {
+                dailyAwards[dateKey]?.insert(habit.id)
+            }
+            saveDailyAwards()
             
             // Update last award date
             userProgress.lastCompletedDate = today
@@ -61,6 +86,7 @@ class XPManager: ObservableObject {
     /// Removes XP when habits are uncompleted
     func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
+        let dateKey = DateKey.key(for: date)
         
         // Calculate XP that should be removed
         let xpToRemove = calculateTotalXPForHabits(habits, for: targetDate)
@@ -82,6 +108,12 @@ class XPManager: ObservableObject {
                 description: "Habit uncompleted"
             )
             addTransaction(transaction)
+            
+            // Remove from daily awards tracking
+            for habit in habits {
+                dailyAwards[dateKey]?.remove(habit.id)
+            }
+            saveDailyAwards()
             
             // Save data
             saveUserProgress()
@@ -240,6 +272,19 @@ class XPManager: ObservableObject {
         }
     }
     
+    private func saveDailyAwards() {
+        if let encoded = try? JSONEncoder().encode(dailyAwards) {
+            userDefaults.set(encoded, forKey: dailyAwardsKey)
+        }
+    }
+    
+    private func loadDailyAwards() {
+        if let data = userDefaults.data(forKey: dailyAwardsKey),
+           let awards = try? JSONDecoder().decode([String: Set<UUID>].self, from: data) {
+            dailyAwards = awards
+        }
+    }
+    
     // MARK: - Public API (Simplified)
     
     /// Check daily completion for habits (used by existing system)
@@ -301,10 +346,27 @@ class XPManager: ObservableObject {
     func resetXPData() {
         userProgress = UserProgress()
         recentTransactions = []
+        dailyAwards = [:]
         updateLevelProgress()
         saveUserProgress()
         saveRecentTransactions()
+        saveDailyAwards()
         logger.info("XP data reset to defaults")
+    }
+    
+    /// Reset XP to a specific level for testing/correction
+    func resetXPToLevel(_ level: Int) {
+        let baseXP = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
+        userProgress = UserProgress()
+        userProgress.totalXP = baseXP
+        userProgress.currentLevel = level
+        recentTransactions = []
+        dailyAwards = [:]
+        updateLevelProgress()
+        saveUserProgress()
+        saveRecentTransactions()
+        saveDailyAwards()
+        logger.info("XP reset to level \(level) with \(baseXP) XP")
     }
     
     func fixXPData() {
@@ -313,5 +375,18 @@ class XPManager: ObservableObject {
         updateLevelProgress()
         saveUserProgress()
         logger.info("Fixed XP data: level=\(self.userProgress.currentLevel)")
+    }
+    
+    /// Emergency reset method to fix corrupted XP data
+    func emergencyResetXP() {
+        userProgress = UserProgress()
+        recentTransactions = []
+        dailyAwards = [:]
+        updateLevelProgress()
+        saveUserProgress()
+        saveRecentTransactions()
+        saveDailyAwards()
+        objectWillChange.send()
+        logger.info("Emergency XP reset completed - back to level 1")
     }
 }
