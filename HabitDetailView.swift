@@ -30,7 +30,8 @@ struct HabitDetailView: View {
     @State private var contentHeight: CGFloat = 0
     @State private var isActive: Bool = true
     @State private var showingInactiveConfirmation: Bool = false
-    @State private var pendingActiveState: Bool = true
+    @State private var isProcessingToggle: Bool = false
+    @State private var hasInitializedActiveState: Bool = false
     
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
@@ -131,12 +132,24 @@ struct HabitDetailView: View {
                         .onAppear {
                             print("🔍 DISPLAY PHASE - Using ScrollView (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
                             
-                            // Initialize active state based on current dates
+                            // Always recalculate active state based on current habit's dates
                             let calendar = Calendar.current
                             let today = calendar.startOfDay(for: Date())
                             let startDate = calendar.startOfDay(for: habit.startDate)
                             let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                            isActive = today >= startDate && today <= endDate
+                            let calculatedActiveState = today >= startDate && today <= endDate
+                            
+                            // Only update if we haven't initialized yet, or if it's different from current state
+                            // This prevents unnecessary onChange triggers
+                            if !hasInitializedActiveState || isActive != calculatedActiveState {
+                                // Guard against triggering onChange during initialization
+                                isProcessingToggle = true
+                                isActive = calculatedActiveState
+                                isProcessingToggle = false
+                                hasInitializedActiveState = true
+                                
+                                print("🔍 Active state initialized: \(isActive) (endDate: \(habit.endDate?.description ?? "nil"))")
+                            }
                         }
                     } else {
                         VStack {
@@ -160,6 +173,26 @@ struct HabitDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        .onChange(of: habit.id) { _, _ in
+            // Reset initialization flag when habit changes
+            hasInitializedActiveState = false
+        }
+        .onChange(of: habit.endDate) { _, newEndDate in
+            // Recalculate active state when endDate changes
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let startDate = calendar.startOfDay(for: habit.startDate)
+            let endDate = newEndDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+            let calculatedActiveState = today >= startDate && today <= endDate
+            
+            // Only update if different to avoid unnecessary triggers
+            if isActive != calculatedActiveState {
+                isProcessingToggle = true
+                isActive = calculatedActiveState
+                isProcessingToggle = false
+                print("🔍 Active state updated due to endDate change: \(isActive) (endDate: \(newEndDate?.description ?? "nil"))")
+            }
+        }
         .onChange(of: selectedDate) { oldDate, newDate in
             // Only update progress if the date actually changed
             let calendar = Calendar.current
@@ -203,10 +236,12 @@ struct HabitDetailView: View {
         }
         .alert("Make Habit Inactive", isPresented: $showingInactiveConfirmation) {
             Button("Cancel", role: .cancel) {
-                // Revert toggle
-                isActive = true
+                // No action needed - toggle already reverted
             }
             Button("Make Inactive", role: .destructive) {
+                // Prevent onChange from triggering during the entire process
+                isProcessingToggle = true
+                
                 // Create updated habit with endDate set to yesterday
                 let calendar = Calendar.current
                 let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())
@@ -233,9 +268,18 @@ struct HabitDetailView: View {
                     difficultyHistory: habit.difficultyHistory,
                     actualUsage: habit.actualUsage
                 )
+                
+                print("✅ Making habit '\(habit.name)' inactive - endDate set to: \(yesterday?.description ?? "nil")")
+                print("   Before: startDate=\(habit.startDate), endDate=\(habit.endDate?.description ?? "nil")")
+                print("   After:  startDate=\(updatedHabit.startDate), endDate=\(updatedHabit.endDate?.description ?? "nil")")
+                
+                // Update habit and notify parent
                 habit = updatedHabit
                 onUpdateHabit?(updatedHabit)
-                isActive = false
+                
+                // Dismiss immediately - don't try to update toggle state
+                // The view will be gone, so no need to manage state
+                dismiss()
             }
         } message: {
             Text("This habit will be moved to the Inactive tab. You can reactivate it anytime by toggling it back on.")
@@ -723,7 +767,54 @@ struct HabitDetailView: View {
     // MARK: - Active/Inactive Toggle Section
     private var activeInactiveToggleSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle(isOn: $isActive) {
+            Toggle(isOn: Binding(
+                get: { isActive },
+                set: { newValue in
+                    // Prevent recursive calls
+                    guard !isProcessingToggle else { return }
+                    
+                    let oldValue = isActive
+                    
+                    if !newValue && oldValue {
+                        // Attempting to make inactive - show confirmation
+                        showingInactiveConfirmation = true
+                        // Don't change isActive yet - wait for confirmation
+                    } else if newValue && !oldValue {
+                        // Making active - no confirmation needed
+                        isProcessingToggle = true
+                        isActive = true
+                        
+                        // Create updated habit with endDate removed
+                        let updatedHabit = Habit(
+                            id: habit.id,
+                            name: habit.name,
+                            description: habit.description,
+                            icon: habit.icon,
+                            color: habit.color,
+                            habitType: habit.habitType,
+                            schedule: habit.schedule,
+                            goal: habit.goal,
+                            reminder: habit.reminder,
+                            startDate: habit.startDate,
+                            endDate: nil,
+                            isCompleted: habit.isCompleted,
+                            streak: habit.streak,
+                            createdAt: habit.createdAt,
+                            reminders: habit.reminders,
+                            baseline: habit.baseline,
+                            target: habit.target,
+                            completionHistory: habit.completionHistory,
+                            difficultyHistory: habit.difficultyHistory,
+                            actualUsage: habit.actualUsage
+                        )
+                        habit = updatedHabit
+                        onUpdateHabit?(updatedHabit)
+                        
+                        isProcessingToggle = false
+                        print("✅ Habit '\(habit.name)' made active")
+                    }
+                }
+            )) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Active")
                         .font(.appBodyLarge)
@@ -736,42 +827,6 @@ struct HabitDetailView: View {
                 }
             }
             .toggleStyle(SwitchToggleStyle(tint: .green))
-            .onChange(of: isActive) { oldValue, newValue in
-                if !newValue && oldValue {
-                    // Attempting to make inactive - show confirmation
-                    pendingActiveState = newValue
-                    showingInactiveConfirmation = true
-                    // Temporarily revert toggle until confirmed
-                    isActive = true
-                } else if newValue && !oldValue {
-                    // Making active - no confirmation needed
-                    // Create updated habit with endDate removed
-                    let updatedHabit = Habit(
-                        id: habit.id,
-                        name: habit.name,
-                        description: habit.description,
-                        icon: habit.icon,
-                        color: habit.color,
-                        habitType: habit.habitType,
-                        schedule: habit.schedule,
-                        goal: habit.goal,
-                        reminder: habit.reminder,
-                        startDate: habit.startDate,
-                        endDate: nil,
-                        isCompleted: habit.isCompleted,
-                        streak: habit.streak,
-                        createdAt: habit.createdAt,
-                        reminders: habit.reminders,
-                        baseline: habit.baseline,
-                        target: habit.target,
-                        completionHistory: habit.completionHistory,
-                        difficultyHistory: habit.difficultyHistory,
-                        actualUsage: habit.actualUsage
-                    )
-                    habit = updatedHabit
-                    onUpdateHabit?(updatedHabit)
-                }
-            }
         }
         .padding(16)
         .background(Color.surface)
