@@ -112,14 +112,20 @@ class XPManager: ObservableObject {
     /// ✅ NEW: Update XP from DailyAwardService
     /// This method is called by DailyAwardService when XP is granted
     func updateXPFromDailyAward(xpGranted: Int, dateKey: String) {
-        print("🎯 XPManager: updateXPFromDailyAward - xpGranted: \(xpGranted), dateKey: \(dateKey)")
+        print("🎯 STEP 11: XPManager.updateXPFromDailyAward() called")
+        print("🎯 STEP 11: xpGranted: \(xpGranted), dateKey: \(dateKey)")
+        print("🎯 STEP 11: Current totalXP before update: \(userProgress.totalXP)")
         
         // Add XP to total
         userProgress.totalXP += xpGranted
         userProgress.dailyXP += xpGranted
         
+        print("🎯 STEP 11: Added \(xpGranted) XP - new totalXP: \(userProgress.totalXP)")
+        
         // Update level from XP (pure function approach)
+        let oldLevel = userProgress.currentLevel
         updateLevelFromXP()
+        print("🎯 STEP 11: Level updated from \(oldLevel) to \(userProgress.currentLevel)")
         
         // Add transaction for the award
         let transaction = XPTransaction(
@@ -128,12 +134,14 @@ class XPManager: ObservableObject {
             description: "Completed all habits for \(dateKey)"
         )
         addTransaction(transaction)
+        print("🎯 STEP 11: Transaction added: \(transaction.description)")
         
         // Save data
         saveUserProgress()
         saveRecentTransactions()
+        print("🎯 STEP 11: Data saved to UserDefaults")
         
-        print("🎯 XPManager: Updated XP - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
+        print("🎯 STEP 11: ✅ XPManager update complete - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
     }
     
     /// ✅ DEBUG: Force award XP for testing
@@ -159,6 +167,12 @@ class XPManager: ObservableObject {
     /// ✅ DEBUG: Get current XP status
     func debugGetXPStatus() -> String {
         return "Total XP: \(userProgress.totalXP), Level: \(userProgress.currentLevel), Daily XP: \(userProgress.dailyXP)"
+    }
+    
+    /// ✅ DEBUG: Get current userId (XPManager doesn't store userId, this is for debugging)
+    func debugGetCurrentUserId() -> String {
+        print("🎯 USER SCOPING: XPManager.debugGetCurrentUserId() = 'XPManager does not store userId'")
+        return "XPManager does not store userId"
     }
     
     /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
