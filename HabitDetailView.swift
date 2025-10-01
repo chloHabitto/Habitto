@@ -575,19 +575,14 @@ struct HabitDetailView: View {
                 }
             } else {
                 // Empty state
-                HStack {
-                    Image("Icon-BellOff_Outlined")
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                        .foregroundColor(.text04)
-                    
-                    Text("No reminders set")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text04)
-                    
-                    Spacer()
-                }
-                .padding(.vertical, 8)
+                Text("No reminders set")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text04)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(Color.surfaceContainer.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
         .padding(.horizontal, 16)
