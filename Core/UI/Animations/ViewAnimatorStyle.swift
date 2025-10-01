@@ -29,7 +29,7 @@ struct ViewAnimatorStyle {
                 return AnyTransition.offset(x: offset).combined(with: AnyTransition.opacity)
             case .zoom(let scale):
                 return AnyTransition.scale(scale: scale).combined(with: AnyTransition.opacity)
-            case .rotate(let angle):
+            case .rotate:
                 // SwiftUI doesn't have a rotation transition, so we use scale + opacity
                 return AnyTransition.scale(scale: 0.8).combined(with: AnyTransition.opacity)
             }
