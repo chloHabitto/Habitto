@@ -9,6 +9,11 @@ public class DailyAward {
     public var xpGranted: Int
     public var createdAt: Date
     
+    // Computed property for composite unique key
+    public var uniqueKey: String {
+        return "\(userId)#\(dateKey)"
+    }
+    
     public init(userId: String, dateKey: String, xpGranted: Int) {
         self.id = UUID()
         self.userId = userId
