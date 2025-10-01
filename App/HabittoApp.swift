@@ -3,6 +3,7 @@ import UIKit
 import FirebaseCore
 import GoogleSignIn
 import UserNotifications
+import MijickPopups
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
