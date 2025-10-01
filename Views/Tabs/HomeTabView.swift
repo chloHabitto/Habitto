@@ -899,7 +899,7 @@ struct HomeTabView: View {
             print("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
             #endif
             
-            await awardService.onHabitUncompleted(date: selectedDate, userId: getCurrentUserId())
+            _ = await awardService.revokeIfAnyIncomplete(date: selectedDate, userId: getCurrentUserId(), callSite: "ui_habit_uncompleted")
         }
         
         // Resort immediately
@@ -930,7 +930,7 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                _ = await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
+                _ = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "ui_sheet_dismiss")
             }
             
             // Reset the flag
