@@ -591,15 +591,6 @@ struct HabitDetailView: View {
     
     private func reminderRow(for reminder: ReminderItem) -> some View {
         HStack(spacing: 16) {
-            // Time icon - shows different icon based on whether time has passed
-            let reminderHasPassed = hasReminderTimePassed(reminder.time)
-            let iconName = reminderHasPassed ? "Icon-Bell_Outlined" : "Icon-BellOn_Outlined"
-            
-            Image(iconName)
-                .resizable()
-                .frame(width: 24, height: 24)
-                .foregroundColor(.primary)
-            
             // Time text
             Text(formatReminderTime(reminder.time))
                 .font(.appBodyLarge)
