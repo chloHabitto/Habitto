@@ -94,39 +94,36 @@ struct StreakView: View {
                 loadData()
             }
         }
-        .overlay(
-            // Pop-up Modal for week selection
-            showingCalendar ? AnyView(
-                WeekPickerModal(
-                    selectedWeekStartDate: $selectedWeekStartDate,
-                    isPresented: $showingCalendar
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                .animation(.easeInOut(duration: 0.3), value: showingCalendar)
-            ) : AnyView(EmptyView())
-        )
-        .overlay(
-            // Pop-up Modal for month selection
-            showingMonthPicker ? AnyView(
-                MonthPickerModal(
-                    selectedMonth: $selectedMonth,
-                    isPresented: $showingMonthPicker
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
-            ) : AnyView(EmptyView())
-        )
-        .overlay(
-            // Pop-up Modal for year selection
-            showingYearPicker ? AnyView(
-                YearPickerModal(
-                    selectedYear: $selectedYear,
-                    isPresented: $showingYearPicker
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                .animation(.easeInOut(duration: 0.3), value: showingYearPicker)
-            ) : AnyView(EmptyView())
-        )
+        .sheet(isPresented: $showingCalendar) {
+            WeekPickerModal(
+                selectedWeekStartDate: $selectedWeekStartDate,
+                isPresented: $showingCalendar
+            )
+            .presentationDetents([.height(520)])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.regularMaterial)
+            .presentationCornerRadius(20)
+        }
+        .sheet(isPresented: $showingMonthPicker) {
+            MonthPickerModal(
+                selectedMonth: $selectedMonth,
+                isPresented: $showingMonthPicker
+            )
+            .presentationDetents([.height(520)])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.regularMaterial)
+            .presentationCornerRadius(20)
+        }
+        .sheet(isPresented: $showingYearPicker) {
+            YearPickerModal(
+                selectedYear: $selectedYear,
+                isPresented: $showingYearPicker
+            )
+            .presentationDetents([.height(400)])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.regularMaterial)
+            .presentationCornerRadius(20)
+        }
     }
     
     // MARK: - Data Loading

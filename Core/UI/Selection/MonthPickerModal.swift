@@ -13,16 +13,7 @@ struct MonthPickerModal: View {
     }
     
     var body: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-            
-            // Modal content
-            VStack(spacing: 20) {
+        VStack(spacing: 20) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -93,9 +84,8 @@ struct MonthPickerModal: View {
             }
             .background(.surface)
             .cornerRadius(20)
-            .padding(.horizontal, 20)
-        }
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            .padding(.horizontal, 8)
+            .frame(height: 520)
     }
     
     private var isCurrentMonthSelected: Bool {
