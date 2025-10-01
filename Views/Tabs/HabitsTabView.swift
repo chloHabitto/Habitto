@@ -247,6 +247,11 @@ struct HabitsTabView: View {
                                         .onDrop(of: [.text], delegate: createDropDelegate(for: habit))
                                         .id("habit-\(habit.id)-\(index)") // Performance optimization: Stable ID
                                 }
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity).combined(with: .offset(y: 10)),
+                                    removal: .scale(scale: 0.9).combined(with: .opacity)
+                                ))
+                                .animation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.03), value: filteredHabits.map { $0.id })
                             }
                             
                             // Show insertion line at the very end if dragging to the bottom

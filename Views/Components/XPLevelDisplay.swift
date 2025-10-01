@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - XP Level Display Component
 struct XPLevelDisplay: View {
     @ObservedObject var xpManager: XPManager
+    @State private var appeared = false
     
     var body: some View {
         VStack(spacing: 12) {
@@ -92,6 +93,14 @@ struct XPLevelDisplay: View {
         .background(Color.white)
         .cornerRadius(12)
         .padding(.horizontal, 20)
+        .opacity(appeared ? 1 : 0)
+        .scaleEffect(appeared ? 1 : 0.95)
+        .offset(y: appeared ? 0 : 10)
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.05)) {
+                appeared = true
+            }
+        }
     }
     
     // MARK: - Computed Properties

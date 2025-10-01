@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CelebrationView: View {
+    @State private var animateElements: Bool = false
     @Binding var isPresented: Bool
     @State private var circleProgress: CGFloat = 0
     @State private var checkmarkProgress: CGFloat = 0
@@ -51,6 +52,8 @@ struct CelebrationView: View {
                         .frame(width: 60, height: 60)
                 }
                 .scaleEffect(scale)
+                .rotationEffect(.degrees(animateElements ? 0 : -180))
+                .opacity(animateElements ? 1 : 0)
                 
                 // Celebration message
                 if showMessage {
@@ -77,12 +80,22 @@ struct CelebrationView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(.white.opacity(0.2), lineWidth: 1)
                     )
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.5).combined(with: .opacity).combined(with: .offset(y: 20)),
+                        removal: .scale(scale: 0.8).combined(with: .opacity)
+                    ))
+                    .offset(y: animateElements ? 0 : 30)
+                    .opacity(animateElements ? 1 : 0)
                 }
             }
         }
         .onAppear {
             startCelebrationSequence()
+            
+            // Trigger entrance animations
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                animateElements = true
+            }
         }
     }
     
