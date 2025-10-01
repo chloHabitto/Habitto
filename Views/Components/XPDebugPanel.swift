@@ -57,15 +57,25 @@ struct XPDebugPanel: View {
                     .background(Color.primary.opacity(0.1))
                     .cornerRadius(6)
                     
-                    Button("Test Idempotency") {
-                        testIdempotency()
-                    }
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.orange)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(6)
+                           Button("Test Idempotency") {
+                               testIdempotency()
+                           }
+                           .font(.system(size: 11, weight: .medium))
+                           .foregroundColor(.orange)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(Color.orange.opacity(0.1))
+                           .cornerRadius(6)
+                           
+                           Button("Show Today's Awards") {
+                               showTodaysAwards()
+                           }
+                           .font(.system(size: 11, weight: .medium))
+                           .foregroundColor(.blue)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(Color.blue.opacity(0.1))
+                           .cornerRadius(6)
                     
                     Button("Complete All Habits") {
                         testCompleteAllHabits()
@@ -204,12 +214,51 @@ struct XPDebugPanel: View {
         print("🧪 TEST: Testing idempotency - trying to award XP twice for today")
         
         Task {
+            let today = Date()
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let todayKey = formatter.string(from: today)
+            
+            print("🧪 TEST: First award attempt for \(todayKey)")
             // This would need to be implemented to actually test the DailyAwardService
             // For now, just show what would happen
             print("⚠️ TEST: Idempotency test - This would need to be implemented")
             print("  - First call: Should award 100 XP")
             print("  - Second call: Should return false (no duplicate award)")
             print("  - Check that total XP only increased by 100, not 200")
+        }
+    }
+    
+    private func showTodaysAwards() {
+        print("🧪 TEST: Showing today's DailyAward records")
+        
+        Task {
+            await MainActor.run {
+                do {
+                    let userId = getCurrentUserId()
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    let todayKey = formatter.string(from: Date())
+                    
+                    let predicate = #Predicate<DailyAward> { award in
+                        award.userId == userId && award.dateKey == todayKey
+                    }
+                    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+                    let awards = try modelContext.fetch(request)
+                    
+                    print("🧪 TEST: Found \(awards.count) DailyAward records for today (\(todayKey))")
+                    for (index, award) in awards.enumerated() {
+                        print("🧪 TEST:   Award \(index + 1): id=\(award.id), xpGranted=\(award.xpGranted), createdAt=\(award.createdAt)")
+                    }
+                    
+                    // Test the unique constraint
+                    let isUnique = DailyAward.validateUniqueConstraint(userId: userId, dateKey: todayKey, in: modelContext)
+                    print("🧪 TEST: validateUniqueConstraint returns: \(isUnique)")
+                    
+                } catch {
+                    print("❌ TEST: Error fetching today's awards: \(error)")
+                }
+            }
         }
     }
     

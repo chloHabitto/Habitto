@@ -464,7 +464,7 @@ class XPManager: ObservableObject {
         }
     }
     
-    private func saveRecentTransactions() {
+    func saveRecentTransactions() {
         if let encoded = try? JSONEncoder().encode(recentTransactions) {
             userDefaults.set(encoded, forKey: recentTransactionsKey)
         }
