@@ -37,7 +37,7 @@ struct MonthPickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
-                .padding(.bottom, 20)
+                .padding(.bottom, 8)
                 
                 Spacer()
                 
@@ -62,6 +62,7 @@ struct MonthPickerModal: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
+                    .padding(.top, 12)
                 }
                 
                 // Selected month display
@@ -84,9 +85,12 @@ struct MonthPickerModal: View {
                     .cornerRadius(16)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                
+                Spacer()
             }
-            .frame(height: 520)
+            .frame(height: 450)
     }
     
     private var isCurrentMonthSelected: Bool {
@@ -121,7 +125,7 @@ struct MonthPicker: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             // Year Navigation
             HStack {
                 Button(action: previousYear) {
@@ -147,7 +151,7 @@ struct MonthPicker: View {
             .padding(.horizontal, 20)
             
             // Month Grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                 ForEach(1...12, id: \.self) { month in
                     MonthButton(
                         month: month,
@@ -229,7 +233,7 @@ struct MonthButton: View {
                 .font(.appBodyMedium)
                 .foregroundColor(isSelected ? .white : .text01)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .frame(height: 36)
                 .background(isSelected ? .primary : .surfaceContainer)
                 .cornerRadius(12)
                 .overlay(
