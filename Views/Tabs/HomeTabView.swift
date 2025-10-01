@@ -966,7 +966,12 @@ struct HomeTabView: View {
             }
             #endif
             
-            _ = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "last_habit_completed")
+            let result = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "last_habit_completed")
+            print("🎯 HomeTabView: grantIfAllComplete result: \(result)")
+            
+            // Check XP after award
+            let currentXP = XPManager.shared.userProgress.totalXP
+            print("🎯 HomeTabView: Current XP after award: \(currentXP)")
         }
     }
     

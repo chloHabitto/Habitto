@@ -79,6 +79,13 @@ public actor DailyAwardService: ObservableObject {
             // Emit event
             self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
             
+            // ✅ FIX: Update XPManager with the new XP
+            await MainActor.run {
+                print("🎯 DailyAwardService: Updating XPManager with \(Self.XP_PER_DAY) XP for \(dateKey)")
+                XPManager.shared.updateXPFromDailyAward(xpGranted: Self.XP_PER_DAY, dateKey: dateKey)
+                print("🎯 DailyAwardService: XPManager updated successfully")
+            }
+            
             #if DEBUG
             // Verify no extra XP was granted
             try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
