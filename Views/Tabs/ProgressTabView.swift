@@ -773,11 +773,14 @@ struct ProgressTabView: View {
                                         Button(action: {
                         print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                         if selectedTimePeriod == 0 { // Daily
-                            Task {
+                            print("🔍 DEBUG: Attempting to show DatePickerModal...")
+                            Task { @MainActor in
                                 await DatePickerModal(selectedDate: $selectedProgressDate) { newDate in
+                                    print("🔍 DEBUG: Date selected: \(newDate)")
                                     selectedProgressDate = newDate
                                 }
                                 .present()
+                                print("🔍 DEBUG: DatePickerModal.present() called")
                             }
                         } else if selectedTimePeriod == 1 { // Weekly
                             showingWeekPicker = true
