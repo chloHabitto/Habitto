@@ -93,7 +93,7 @@ struct ProgressTabView: View {
     @State private var selectedHabit: Habit?
     @State private var selectedProgressDate = Date()
     @State private var showingHabitSelector = false
-    @State private var showingDatePicker = false
+    // @State private var showingDatePicker = false // ← No longer needed with MijickPopups
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
@@ -443,14 +443,6 @@ struct ProgressTabView: View {
             habitSelectorSheet
         }
         .overlay(
-            // Date Picker Modal
-            showingDatePicker ? AnyView(
-                DatePickerModal(selectedDate: $selectedProgressDate, isPresented: $showingDatePicker)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
-            ) : AnyView(EmptyView())
-        )
-        .overlay(
             // Week Picker Modal
             showingWeekPicker ? AnyView(
                 WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
@@ -781,7 +773,12 @@ struct ProgressTabView: View {
                                         Button(action: {
                         print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                         if selectedTimePeriod == 0 { // Daily
-                            showingDatePicker = true
+                            Task {
+                                await DatePickerModal(selectedDate: $selectedProgressDate) { newDate in
+                                    selectedProgressDate = newDate
+                                }
+                                .present()
+                            }
                         } else if selectedTimePeriod == 1 { // Weekly
                             showingWeekPicker = true
                         } else if selectedTimePeriod == 2 { // Monthly
