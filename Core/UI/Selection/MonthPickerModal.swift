@@ -13,7 +13,7 @@ struct MonthPickerModal: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -37,11 +37,15 @@ struct MonthPickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
+                .padding(.bottom, 20)
+                
+                Spacer()
                 
                 // Month Picker
                 MonthPicker(selectedMonth: $tempSelectedMonth)
-                    .frame(height: 300)
                     .padding(.horizontal, 20)
+                
+                Spacer()
                 
                 // Reset button - only show if month is different from current month
                 if !isCurrentMonthSelected {
@@ -82,9 +86,6 @@ struct MonthPickerModal: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .background(.surface)
-            .cornerRadius(20)
-            .padding(.horizontal, 8)
             .frame(height: 520)
     }
     

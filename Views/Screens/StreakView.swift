@@ -109,7 +109,7 @@ struct StreakView: View {
                 selectedMonth: $selectedMonth,
                 isPresented: $showingMonthPicker
             )
-            .presentationDetents([.height(520)])
+            .presentationDetents([.height(450)])
             .presentationDragIndicator(.hidden)
             .presentationBackground(.regularMaterial)
             .presentationCornerRadius(20)
@@ -119,7 +119,7 @@ struct StreakView: View {
                 selectedYear: $selectedYear,
                 isPresented: $showingYearPicker
             )
-            .presentationDetents([.height(400)])
+            .presentationDetents([.height(400), .large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(.regularMaterial)
             .presentationCornerRadius(20)

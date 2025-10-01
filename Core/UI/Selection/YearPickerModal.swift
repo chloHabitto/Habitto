@@ -14,38 +14,41 @@ struct YearPickerModal: View {
     
     var body: some View {
         VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                    .foregroundColor(.text02)
-                    
-                    Spacer()
-                    
-                    Text("Select Year")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.text01)
-                    
-                    Spacer()
-                    
-                    Button("Done") {
-                        selectedYear = tempSelectedYear
-                        isPresented = false
-                    }
-                    .foregroundColor(.primary)
+            // Header
+            HStack {
+                Button("Cancel") {
+                    isPresented = false
                 }
+                .foregroundColor(.text02)
+                
+                Spacer()
+                
+                Text("Select Year")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Button("Done") {
+                    selectedYear = tempSelectedYear
+                    isPresented = false
+                }
+                .foregroundColor(.primary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 20)
+            
+            Spacer()
+            
+            // Year Picker
+            YearPicker(selectedYear: $tempSelectedYear)
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 20)
+                .environmentObject(HabitRepository.shared)
+            
+            Spacer()
                 
-                // Year Picker
-                YearPicker(selectedYear: $tempSelectedYear)
-                    .frame(height: 300)
-                    .padding(.horizontal, 20)
-                    .environmentObject(HabitRepository.shared)
-                
-                // Reset button - always reserve space for consistent height
+            // Reset button - always reserve space for consistent height
                 VStack {
                     if !isCurrentYearSelected {
                         Button(action: {
@@ -92,12 +95,7 @@ struct YearPickerModal: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .background(.surface)
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 8)
-            .frame(height: 400)
     }
     
     private var isCurrentYearSelected: Bool {
