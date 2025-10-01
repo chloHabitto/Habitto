@@ -930,7 +930,7 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
+                _ = await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
             }
             
             // Reset the flag
