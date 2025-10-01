@@ -59,8 +59,8 @@ struct StaggeredAnimationModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isVisible ? 1 : 0)
-            .scaleEffect(isVisible ? 1 : 0.9)
-            .offset(y: isVisible ? 0 : 10)
+            .scaleEffect(isVisible ? 1 : 0.95)  // Subtle scale (95% → 100%)
+            .offset(y: isVisible ? 0 : 6)        // Subtle slide (6 points)
             .onAppear {
                 withAnimation(
                     .spring(response: config.duration, dampingFraction: config.dampingFraction)
@@ -101,10 +101,10 @@ struct EntranceAnimationModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .opacity(isVisible ? 1 : 0)
-            .scaleEffect(isVisible ? 1 : 0.85)
-            .offset(y: isVisible ? 0 : 20)
+            .scaleEffect(isVisible ? 1 : 0.97)  // Very subtle scale (97% → 100%)
+            .offset(y: isVisible ? 0 : 8)        // Very subtle slide (8 points)
             .onAppear {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(delay)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8).delay(delay)) {  // Smoother spring
                     isVisible = true
                 }
             }
