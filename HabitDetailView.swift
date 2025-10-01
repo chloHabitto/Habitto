@@ -28,6 +28,9 @@ struct HabitDetailView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var availableHeight: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
+    @State private var isActive: Bool = true
+    @State private var showingInactiveConfirmation: Bool = false
+    @State private var pendingActiveState: Bool = true
     
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
@@ -127,6 +130,13 @@ struct HabitDetailView: View {
                         }
                         .onAppear {
                             print("🔍 DISPLAY PHASE - Using ScrollView (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
+                            
+                            // Initialize active state based on current dates
+                            let calendar = Calendar.current
+                            let today = calendar.startOfDay(for: Date())
+                            let startDate = calendar.startOfDay(for: habit.startDate)
+                            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+                            isActive = today >= startDate && today <= endDate
                         }
                     } else {
                         VStack {
@@ -191,6 +201,45 @@ struct HabitDetailView: View {
         } message: {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
+        .alert("Make Habit Inactive", isPresented: $showingInactiveConfirmation) {
+            Button("Cancel", role: .cancel) {
+                // Revert toggle
+                isActive = true
+            }
+            Button("Make Inactive", role: .destructive) {
+                // Create updated habit with endDate set to yesterday
+                let calendar = Calendar.current
+                let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())
+                
+                let updatedHabit = Habit(
+                    id: habit.id,
+                    name: habit.name,
+                    description: habit.description,
+                    icon: habit.icon,
+                    color: habit.color,
+                    habitType: habit.habitType,
+                    schedule: habit.schedule,
+                    goal: habit.goal,
+                    reminder: habit.reminder,
+                    startDate: habit.startDate,
+                    endDate: yesterday,
+                    isCompleted: habit.isCompleted,
+                    streak: habit.streak,
+                    createdAt: habit.createdAt,
+                    reminders: habit.reminders,
+                    baseline: habit.baseline,
+                    target: habit.target,
+                    completionHistory: habit.completionHistory,
+                    difficultyHistory: habit.difficultyHistory,
+                    actualUsage: habit.actualUsage
+                )
+                habit = updatedHabit
+                onUpdateHabit?(updatedHabit)
+                isActive = false
+            }
+        } message: {
+            Text("This habit will be moved to the Inactive tab. You can reactivate it anytime by toggling it back on.")
+        }
     }
     
     // MARK: - Content View (shared between scrollable and static)
@@ -206,6 +255,11 @@ struct HabitDetailView: View {
             
             // Main content card
             mainContentCard
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            
+            // Active/Inactive toggle section
+            activeInactiveToggleSection
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)
         }
@@ -666,6 +720,68 @@ struct HabitDetailView: View {
         return AppDateFormatter.shared.formatDisplayDate(selectedDate)
     }
     
+    // MARK: - Active/Inactive Toggle Section
+    private var activeInactiveToggleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: $isActive) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Active")
+                        .font(.appBodyLarge)
+                        .foregroundColor(.text01)
+                    
+                    Text(isActive ? "This habit is currently active and appears in your daily list" : "This habit is inactive and won't appear in your daily list")
+                        .font(.appBodySmall)
+                        .foregroundColor(.text05)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .toggleStyle(SwitchToggleStyle(tint: .green))
+            .onChange(of: isActive) { oldValue, newValue in
+                if !newValue && oldValue {
+                    // Attempting to make inactive - show confirmation
+                    pendingActiveState = newValue
+                    showingInactiveConfirmation = true
+                    // Temporarily revert toggle until confirmed
+                    isActive = true
+                } else if newValue && !oldValue {
+                    // Making active - no confirmation needed
+                    // Create updated habit with endDate removed
+                    let updatedHabit = Habit(
+                        id: habit.id,
+                        name: habit.name,
+                        description: habit.description,
+                        icon: habit.icon,
+                        color: habit.color,
+                        habitType: habit.habitType,
+                        schedule: habit.schedule,
+                        goal: habit.goal,
+                        reminder: habit.reminder,
+                        startDate: habit.startDate,
+                        endDate: nil,
+                        isCompleted: habit.isCompleted,
+                        streak: habit.streak,
+                        createdAt: habit.createdAt,
+                        reminders: habit.reminders,
+                        baseline: habit.baseline,
+                        target: habit.target,
+                        completionHistory: habit.completionHistory,
+                        difficultyHistory: habit.difficultyHistory,
+                        actualUsage: habit.actualUsage
+                    )
+                    habit = updatedHabit
+                    onUpdateHabit?(updatedHabit)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.surface)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.outline3, lineWidth: 1)
+        )
+    }
+    
     // MARK: - Helper Functions
     private func extractGoalNumber(from goalString: String) -> Int {
         // Extract the number from goal strings like "5 times on 1 times a week", "20 pages on everyday", etc.
@@ -872,6 +988,9 @@ struct ReminderEditSheet: View {
             }
         }
     }
+    
+    // MARK: - Active/Inactive Logic
+    // (Logic moved inline to avoid scope issues)
     
     private func saveReminder() {
         if isEditing, let reminder = reminder {
