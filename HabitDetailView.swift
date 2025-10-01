@@ -242,9 +242,10 @@ struct HabitDetailView: View {
                 // Prevent onChange from triggering during the entire process
                 isProcessingToggle = true
                 
-                // Create updated habit with endDate set to yesterday
+                // Create updated habit with endDate set to yesterday (end of yesterday)
                 let calendar = Calendar.current
-                let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())
+                let today = calendar.startOfDay(for: Date())
+                let yesterday = calendar.date(byAdding: .day, value: -1, to: today)
                 
                 let updatedHabit = Habit(
                     id: habit.id,
