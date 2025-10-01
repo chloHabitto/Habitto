@@ -372,10 +372,12 @@ final actor HabitStore {
             
             // XP logic is now handled in HabitRepository.setProgress for immediate UI feedback
             
-            // Celebration logic is now handled in HabitRepository.setProgress for immediate UI feedback
+            // ⚠️  CRITICAL: NO XP WRITES HERE
+            // Achievement checking is handled by DailyAwardService
+            // Do NOT call XPManager methods or perform any XP manipulation
+            // All XP changes must go through DailyAwardService to prevent duplicates
             
-            // Achievement checking is now handled by DailyAwardService
-            // No direct XP manipulation here to prevent duplicates
+            // Celebration logic is handled in UI layer (HomeTabView)
         } else {
             logger.error("Habit not found in storage: \(habit.name)")
             throw DataError.storage(StorageError(
