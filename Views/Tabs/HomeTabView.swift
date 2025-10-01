@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import SwiftData
+import ViewAnimator
 
 struct HomeTabView: View {
     @Binding var selectedDate: Date

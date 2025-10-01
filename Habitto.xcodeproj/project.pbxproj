@@ -17,6 +17,7 @@
 		8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7942E7C2278004BF684 /* GoogleSignInSwift */; };
 		8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70C2E8A680E00E7B437 /* MCEmojiPicker */; };
 		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
+		897DB9E82E8D22EE00B830CA /* ViewAnimator in Frameworks */ = {isa = PBXBuildFile; productRef = 897DB9E72E8D22EE00B830CA /* ViewAnimator */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -104,6 +105,7 @@
 		89C17A342DF73D8A00B2480F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				897DB9E82E8D22EE00B830CA /* ViewAnimator in Frameworks */,
 				8935E7902E7C2260004BF684 /* FirebaseDatabase in Frameworks */,
 				8935E7842E7C21DB004BF684 /* Algorithms in Frameworks */,
 				8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */,
@@ -435,6 +437,7 @@
 				8935E7942E7C2278004BF684 /* GoogleSignInSwift */,
 				8940C70C2E8A680E00E7B437 /* MCEmojiPicker */,
 				8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */,
+				897DB9E72E8D22EE00B830CA /* ViewAnimator */,
 			);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
@@ -470,6 +473,7 @@
 				8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
+				897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 89C17A382DF73D8A00B2480F /* Products */;
@@ -938,6 +942,14 @@
 				minimumVersion = 1.2.5;
 			};
 		};
+		897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/marcosgriselli/ViewAnimator.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -990,6 +1002,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
 			productName = MCEmojiPickerJSON;
+		};
+		897DB9E72E8D22EE00B830CA /* ViewAnimator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */;
+			productName = ViewAnimator;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
