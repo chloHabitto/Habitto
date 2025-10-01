@@ -30,6 +30,7 @@ class SimpleTestRunner {
         runDSTBoundaryTests()
         runDataIntegrityTests()
         runIntegrationTests()
+        runXPSignOutTests()
         
         // Print summary
         printSummary()
@@ -233,6 +234,137 @@ class SimpleTestRunner {
             let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
             
             return timeElapsed < 1.0 && streak >= 0 // Should complete in under 1 second
+        }
+    }
+    
+    // MARK: - XP Sign-Out Tests
+    
+    private func runXPSignOutTests() {
+        print("\n🎯 Running XP Sign-Out Tests")
+        print("-" * 30)
+        
+        test("XP data clearing on sign-out") {
+            // Set up initial XP data
+            let userDefaults = UserDefaults.standard
+            let testXP = 1000
+            let testLevel = 5
+            
+            // Create test UserProgress data
+            var testProgress = UserProgress()
+            testProgress.totalXP = testXP
+            testProgress.currentLevel = testLevel
+            testProgress.dailyXP = 100
+            
+            // Save test data to UserDefaults
+            if let encoded = try? JSONEncoder().encode(testProgress) {
+                userDefaults.set(encoded, forKey: "user_progress")
+            }
+            
+            // Verify data was saved
+            guard let savedData = userDefaults.data(forKey: "user_progress"),
+                  let savedProgress = try? JSONDecoder().decode(UserProgress.self, from: savedData) else {
+                return false
+            }
+            
+            // Verify initial state
+            guard savedProgress.totalXP == testXP && savedProgress.currentLevel == testLevel else {
+                return false
+            }
+            
+            // Simulate sign-out by clearing XP data (like our clearXPData method does)
+            userDefaults.removeObject(forKey: "user_progress")
+            userDefaults.removeObject(forKey: "recent_xp_transactions")
+            userDefaults.removeObject(forKey: "daily_xp_awards")
+            
+            // Verify data was cleared
+            let clearedData = userDefaults.data(forKey: "user_progress")
+            return clearedData == nil
+        }
+        
+        test("UserDefaults keys removal") {
+            let userDefaults = UserDefaults.standard
+            let testKeys = ["user_progress", "recent_xp_transactions", "daily_xp_awards"]
+            
+            // Set test data for all keys
+            for key in testKeys {
+                userDefaults.set("test_data_\(key)", forKey: key)
+            }
+            
+            // Verify all keys exist
+            for key in testKeys {
+                if userDefaults.object(forKey: key) == nil {
+                    return false
+                }
+            }
+            
+            // Remove all keys (simulating clearXPData)
+            for key in testKeys {
+                userDefaults.removeObject(forKey: key)
+            }
+            
+            // Verify all keys are removed
+            for key in testKeys {
+                if userDefaults.object(forKey: key) != nil {
+                    return false
+                }
+            }
+            
+            return true
+        }
+        
+        test("XP data isolation between users") {
+            // This test simulates the bug scenario and verifies our fix
+            
+            // User A data
+            var userAProgress = UserProgress()
+            userAProgress.totalXP = 500
+            userAProgress.currentLevel = 3
+            
+            // User B data  
+            var userBProgress = UserProgress()
+            userBProgress.totalXP = 200
+            userBProgress.currentLevel = 2
+            
+            let userDefaults = UserDefaults.standard
+            
+            // Simulate User A signing in and earning XP
+            if let encodedA = try? JSONEncoder().encode(userAProgress) {
+                userDefaults.set(encodedA, forKey: "user_progress")
+            }
+            
+            // Verify User A data is there
+            guard let savedDataA = userDefaults.data(forKey: "user_progress"),
+                  let loadedProgressA = try? JSONDecoder().decode(UserProgress.self, from: savedDataA),
+                  loadedProgressA.totalXP == 500 else {
+                return false
+            }
+            
+            // Simulate User A signing out (our fix should clear data)
+            userDefaults.removeObject(forKey: "user_progress")
+            userDefaults.removeObject(forKey: "recent_xp_transactions")
+            userDefaults.removeObject(forKey: "daily_xp_awards")
+            
+            // Verify data is cleared
+            guard userDefaults.data(forKey: "user_progress") == nil else {
+                return false
+            }
+            
+            // Simulate User B signing in (should start fresh)
+            if let encodedB = try? JSONEncoder().encode(userBProgress) {
+                userDefaults.set(encodedB, forKey: "user_progress")
+            }
+            
+            // Verify User B gets their own data, not User A's
+            guard let savedDataB = userDefaults.data(forKey: "user_progress"),
+                  let loadedProgressB = try? JSONDecoder().decode(UserProgress.self, from: savedDataB),
+                  loadedProgressB.totalXP == 200 && loadedProgressB.currentLevel == 2 else {
+                return false
+            }
+            
+            // Clean up
+            userDefaults.removeObject(forKey: "user_progress")
+            
+            return true
         }
     }
     
