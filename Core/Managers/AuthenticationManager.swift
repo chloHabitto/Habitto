@@ -72,6 +72,10 @@ class AuthenticationManager: ObservableObject {
                     self?.authState = .authenticated(user)
                     self?.currentUser = user
                     print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
+                    
+                    // Load user-specific XP data
+                    // Note: This will be called from a view with ModelContext access
+                    print("🎯 AUTH: User signed in, XP loading will be handled by view")
                 } else {
                     self?.authState = .unauthenticated
                     self?.currentUser = nil
@@ -128,7 +132,7 @@ class AuthenticationManager: ObservableObject {
             print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
             
             // Clear XP data to prevent data leakage between users
-            XPManager.shared.clearXPData()
+            XPManager.shared.handleUserSignOut()
             print("✅ AuthenticationManager: Cleared XP data")
             
             print("✅ AuthenticationManager: User signed out successfully")

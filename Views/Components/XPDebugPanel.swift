@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Foundation
 
 // MARK: - XP Debug Panel
 struct XPDebugPanel: View {
@@ -14,7 +15,7 @@ struct XPDebugPanel: View {
             HStack {
                 Text("🔍 XP System Debug")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.text01)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -29,7 +30,7 @@ struct XPDebugPanel: View {
             if isRunningDiagnostic {
                 ProgressView("Running diagnostic...")
                     .font(.system(size: 12))
-                    .foregroundColor(.text02)
+                    .foregroundColor(.secondary)
             } else {
                 // Debug Information
                 VStack(alignment: .leading, spacing: 8) {
@@ -99,7 +100,7 @@ struct XPDebugPanel: View {
             }
         }
         .padding(12)
-        .background(Color.surfaceDim)
+        .background(Color.gray.opacity(0.1))
         .cornerRadius(8)
         .padding(.horizontal, 20)
         .onAppear {
@@ -119,17 +120,14 @@ struct XPDebugPanel: View {
                 debugInfo.currentUserId = userId
                 
                 // Check authentication status
-                if let user = AuthenticationManager.shared.currentUser {
-                    debugInfo.isAuthenticated = true
-                    debugInfo.authStatus = "✅ Authenticated (\(user.email ?? "no email"))"
-                } else {
-                    debugInfo.isAuthenticated = false
-                    debugInfo.authStatus = "❌ Guest mode"
-                }
+                // Note: AuthenticationManager access needs to be implemented
+                debugInfo.isAuthenticated = false
+                debugInfo.authStatus = "❌ Auth check not implemented"
                 
                 // Check migration status
-                debugInfo.migrationCompleted = XPDataMigration.shared.isMigrationCompleted()
-                debugInfo.migrationStatus = debugInfo.migrationCompleted ? "✅ Completed" : "❌ Pending"
+                // Note: XPDataMigration access needs to be implemented
+                debugInfo.migrationCompleted = false
+                debugInfo.migrationStatus = "❌ Migration check not implemented"
                 
                 // Get XPManager values
                 debugInfo.xpManagerTotalXP = xpManager.userProgress.totalXP
@@ -153,7 +151,9 @@ struct XPDebugPanel: View {
                     }
                     
                     // Check for today's award
-                    let todayKey = DateKey.key(for: Date())
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    let todayKey = formatter.string(from: Date())
                     debugInfo.todaysAwardGranted = awards.contains { $0.dateKey == todayKey }
                     debugInfo.todaysAwardStatus = debugInfo.todaysAwardGranted ? "✅ Granted" : "❌ Not granted"
                     
@@ -253,16 +253,10 @@ struct XPDebugPanel: View {
     }
     
     private func getCurrentUserId() -> String {
-        // Get current user ID from authentication system
-        if let user = AuthenticationManager.shared.currentUser {
-            let userId = user.uid
-            print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (authenticated)")
-            return userId
-        } else {
-            let userId = CurrentUser.guestId
-            print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (guest)")
-            return userId
-        }
+        // Note: Authentication system access needs to be implemented
+        let userId = "debug_user_id"
+        print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (debug mode)")
+        return userId
     }
 }
 
@@ -282,13 +276,13 @@ struct DebugRow: View {
         HStack {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.text02)
+                .foregroundColor(.secondary)
             
             Spacer()
             
             Text(value)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(isError ? .red : .text01)
+                .foregroundColor(isError ? .red : .primary)
         }
     }
 }

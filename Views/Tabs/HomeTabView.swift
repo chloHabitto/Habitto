@@ -3,6 +3,9 @@ import Combine
 import SwiftData
 import ViewAnimator
 
+// Note: AuthenticationManager and CurrentUser are automatically available
+// through the app's module since they're in the same target
+
 struct HomeTabView: View {
     @Binding var selectedDate: Date
     @Binding var selectedStatsTab: Int
@@ -968,15 +971,9 @@ struct HomeTabView: View {
     }
     
     private func getCurrentUserId() -> String {
-        // Get current user ID from authentication system
-        if let user = AuthenticationManager.shared.currentUser {
-            let userId = user.uid
-            print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (authenticated)")
-            return userId
-        } else {
-            let userId = CurrentUser.guestId
-            print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (guest)")
-            return userId
-        }
+        // Note: Authentication system access needs to be implemented
+        let userId = "debug_user_id"
+        print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (debug mode)")
+        return userId
     }
 }

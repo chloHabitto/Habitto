@@ -3,6 +3,7 @@ import UIKit
 import FirebaseCore
 import GoogleSignIn
 import UserNotifications
+import SwiftData
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -82,6 +83,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 @main
 struct HabittoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var coreDataManager = CoreDataManager.shared
     @StateObject private var habitRepository = HabitRepository.shared
@@ -127,6 +129,9 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                             .environmentObject(themeManager)
+                            .onChange(of: authManager.authState) { oldState, newState in
+                                handleAuthStateChange(oldState: oldState, newState: newState)
+                            }
                         
                         // DISABLED: Migration view completely disabled per user request
                         // if habitRepository.shouldShowMigrationView {
@@ -295,6 +300,27 @@ struct HabittoApp: App {
                 HabitStorageManager.shared.saveHabits(habits, immediate: true)
                 print("✅ HabittoApp: Data saved before entering foreground")
             }
+        }
+    }
+    
+    private func handleAuthStateChange(oldState: AuthenticationState, newState: AuthenticationState) {
+        print("🎯 AUTH: Auth state changed from \(oldState) to \(newState)")
+        
+        switch newState {
+        case .authenticated(let user):
+            print("🎯 AUTH: User signed in: \(user.email ?? "no email")")
+            // Load user-specific XP from SwiftData
+            XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
+            
+        case .unauthenticated:
+            print("🎯 AUTH: User signed out")
+            // XP clearing is already handled in AuthenticationManager.signOut()
+            
+        case .authenticating:
+            print("🎯 AUTH: User authenticating...")
+            
+        case .error(let error):
+            print("❌ AUTH: Authentication error: \(error)")
         }
     }
 }

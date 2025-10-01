@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 import OSLog
 
 /// Simplified XP Manager with single, clear award flow
@@ -204,14 +205,54 @@ class XPManager: ObservableObject {
     private func loadUserXPFromSwiftData(userId: String) {
         print("🎯 AUTH: Loading XP from SwiftData for userId: \(userId)")
         
-        // This would need to be implemented to query SwiftData
-        // For now, just log what would happen
-        print("⚠️ TODO: Implement loadUserXPFromSwiftData() to query DailyAward records")
+        // Note: This method needs access to ModelContext to query SwiftData
+        // For now, we'll implement a placeholder that can be called from a view
+        // The actual implementation should be called from a view that has @Environment(\\.modelContext)
+        print("⚠️ TODO: This method needs ModelContext access to query SwiftData")
+        print("  - Should be called from a view with @Environment(\\.modelContext)")
         print("  - Query all DailyAward records for userId: \(userId)")
         print("  - Sum up total XP from all records")
         print("  - Update userProgress.totalXP with the sum")
         print("  - Update userProgress.currentLevel based on total XP")
         print("  - Save to UserDefaults")
+    }
+    
+    /// Load user-specific XP from SwiftData (call this from a view with ModelContext)
+    func loadUserXPFromSwiftData(userId: String, modelContext: ModelContext) {
+        print("🎯 AUTH: Loading XP from SwiftData for userId: \(userId)")
+        
+        do {
+            // Query all DailyAward records for this user
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let request = FetchDescriptor<DailyAward>(predicate: predicate)
+            let awards = try modelContext.fetch(request)
+            
+            print("🎯 AUTH: Found \(awards.count) DailyAward records for userId: \(userId)")
+            
+            // Calculate total XP from all awards
+            let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+            print("🎯 AUTH: Total XP from SwiftData: \(totalXP)")
+            
+            // Update XPManager with the calculated XP
+            let oldXP = userProgress.totalXP
+            userProgress.totalXP = totalXP
+            userProgress.dailyXP = 0 // Reset daily XP
+            
+            // Recalculate level based on total XP
+            updateLevelFromXP()
+            
+            // Save to UserDefaults
+            saveUserProgress()
+            
+            print("🎯 AUTH: ✅ User XP loaded successfully")
+            print("🎯 AUTH: Old XP: \(oldXP) → New XP: \(userProgress.totalXP)")
+            print("🎯 AUTH: Level: \(userProgress.currentLevel)")
+            
+        } catch {
+            print("❌ AUTH: Error loading user XP from SwiftData: \(error)")
+        }
     }
     
     /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
@@ -405,13 +446,13 @@ class XPManager: ObservableObject {
     
     // MARK: - Data Persistence
     
-    private func saveUserProgress() {
+    func saveUserProgress() {
         if let encoded = try? JSONEncoder().encode(userProgress) {
             userDefaults.set(encoded, forKey: userProgressKey)
         }
     }
     
-    private func loadUserProgress() {
+    func loadUserProgress() {
         if let data = userDefaults.data(forKey: userProgressKey),
            let progress = try? JSONDecoder().decode(UserProgress.self, from: data) {
             userProgress = progress
