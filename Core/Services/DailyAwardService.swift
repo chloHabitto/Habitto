@@ -18,11 +18,24 @@ public actor DailyAwardService: ObservableObject {
     
     /// Idempotent method to grant daily award if all habits are completed
     /// Returns true if award was granted, false if already exists or not all habits completed
-    public func grantIfAllComplete(date: Date, userId: String) async -> Bool {
+    public func grantIfAllComplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
         let dateKey = DateKey.key(for: date)
+        
+        #if DEBUG
+        let preXP = await modelContext.perform {
+            let predicate = #Predicate<DailyAward> { award in award.userId == userId }
+            let request = FetchDescriptor<DailyAward>(predicate: predicate)
+            let awards = (try? self.modelContext.fetch(request)) ?? []
+            return awards.reduce(0) { $0 + $1.xpGranted }
+        }
+        print("🔍 TRACE [grantIfAllComplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
+        #endif
         
         // Check if all habits are completed for this date
         guard await areAllHabitsCompleted(dateKey: dateKey, userId: userId) else {
+            #if DEBUG
+            print("  ↳ Not all habits completed, no award granted")
+            #endif
             return false
         }
         
@@ -42,9 +55,15 @@ public actor DailyAwardService: ObservableObject {
         #endif
         
         do {
+            #if DEBUG
+            print("🔒 DailyAwardService.grantIfAllComplete: Executing save() [TRANSACTION START]")
+            #endif
+            
             try modelContext.save()
             
             #if DEBUG
+            print("✅ DailyAwardService.grantIfAllComplete: save() completed [TRANSACTION END]")
+            
             // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
             let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
             let postXP = self.computeTotalXPFromLedger(userId: userId)
@@ -70,9 +89,17 @@ public actor DailyAwardService: ObservableObject {
             try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
             #endif
             
+            #if DEBUG
+            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            print("  ↳ ✅ Award granted: postXP=\(postXP), delta=+\(postXP - preXP)")
+            #endif
+            
             return true
         } catch {
             print("Failed to save daily award: \(error)")
+            #if DEBUG
+            print("  ↳ ❌ Save failed: \(error)")
+            #endif
             return false
         }
     }
@@ -85,8 +112,13 @@ public actor DailyAwardService: ObservableObject {
     
     /// Idempotent method to revoke daily award if any habit is uncompleted
     /// Returns true if award was revoked, false if no award existed
-    public func revokeIfAnyIncomplete(date: Date, userId: String) async -> Bool {
+    public func revokeIfAnyIncomplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
         let dateKey = DateKey.key(for: date)
+        
+        #if DEBUG
+        let preXP = self.computeTotalXPFromLedger(userId: userId)
+        print("🔍 TRACE [revokeIfAnyIncomplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
+        #endif
         
         // Check if award exists for this date
         let predicate = #Predicate<DailyAward> { award in
@@ -97,6 +129,9 @@ public actor DailyAwardService: ObservableObject {
         let existingAwards = (try? modelContext.fetch(request)) ?? []
         
         guard let award = existingAwards.first else {
+            #if DEBUG
+            print("  ↳ No award to revoke")
+            #endif
             return false // No award to revoke
         }
         
@@ -110,9 +145,15 @@ public actor DailyAwardService: ObservableObject {
         #endif
         
         do {
+            #if DEBUG
+            print("🔒 DailyAwardService.revokeIfAnyIncomplete: Executing save() [TRANSACTION START]")
+            #endif
+            
             try modelContext.save()
             
             #if DEBUG
+            print("✅ DailyAwardService.revokeIfAnyIncomplete: save() completed [TRANSACTION END]")
+            
             // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
             let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
             let postXP = self.computeTotalXPFromLedger(userId: userId)
@@ -133,9 +174,17 @@ public actor DailyAwardService: ObservableObject {
             // Emit event
             self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
             
+            #if DEBUG
+            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            print("  ↳ ✅ Award revoked: postXP=\(postXP), delta=\(postXP - preXP)")
+            #endif
+            
             return true
         } catch {
             print("Failed to revoke daily award: \(error)")
+            #if DEBUG
+            print("  ↳ ❌ Save failed: \(error)")
+            #endif
             return false
         }
     }
