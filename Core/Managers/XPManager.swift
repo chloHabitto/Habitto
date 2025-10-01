@@ -109,6 +109,58 @@ class XPManager: ObservableObject {
         return totalXP
     }
     
+    /// ✅ NEW: Update XP from DailyAwardService
+    /// This method is called by DailyAwardService when XP is granted
+    func updateXPFromDailyAward(xpGranted: Int, dateKey: String) {
+        print("🎯 XPManager: updateXPFromDailyAward - xpGranted: \(xpGranted), dateKey: \(dateKey)")
+        
+        // Add XP to total
+        userProgress.totalXP += xpGranted
+        userProgress.dailyXP += xpGranted
+        
+        // Update level from XP (pure function approach)
+        updateLevelFromXP()
+        
+        // Add transaction for the award
+        let transaction = XPTransaction(
+            amount: xpGranted,
+            reason: .completeAllHabits,
+            description: "Completed all habits for \(dateKey)"
+        )
+        addTransaction(transaction)
+        
+        // Save data
+        saveUserProgress()
+        saveRecentTransactions()
+        
+        print("🎯 XPManager: Updated XP - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
+    }
+    
+    /// ✅ DEBUG: Force award XP for testing
+    func debugForceAwardXP(_ amount: Int) {
+        print("🎯 XPManager: DEBUG - Force awarding \(amount) XP")
+        userProgress.totalXP += amount
+        userProgress.dailyXP += amount
+        updateLevelFromXP()
+        
+        let transaction = XPTransaction(
+            amount: amount,
+            reason: .completeAllHabits,
+            description: "DEBUG: Force awarded \(amount) XP"
+        )
+        addTransaction(transaction)
+        
+        saveUserProgress()
+        saveRecentTransactions()
+        
+        print("🎯 XPManager: DEBUG - Force award complete - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
+    }
+    
+    /// ✅ DEBUG: Get current XP status
+    func debugGetXPStatus() -> String {
+        return "Total XP: \(userProgress.totalXP), Level: \(userProgress.currentLevel), Daily XP: \(userProgress.dailyXP)"
+    }
+    
     /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
     /// This method causes duplicate XP removal and should not be called
     @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
