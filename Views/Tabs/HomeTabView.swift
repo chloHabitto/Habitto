@@ -99,10 +99,12 @@ struct HomeTabView: View {
                     .sink { event in
                         switch event {
                         case .dailyAwardGranted(let dateKey):
-                            print("🎉 HomeTabView: Received dailyAwardGranted for \(dateKey)")
+                            print("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
+                            print("🎯 STEP 12: Setting showCelebration = true")
                             showCelebration = true
                         case .dailyAwardRevoked(let dateKey):
-                            print("🎉 HomeTabView: Received dailyAwardRevoked for \(dateKey)")
+                            print("🎯 STEP 12: Received dailyAwardRevoked event for \(dateKey)")
+                            print("🎯 STEP 12: Setting showCelebration = false")
                             showCelebration = false
                         }
                     }
@@ -923,7 +925,9 @@ struct HomeTabView: View {
             // This is the ONLY place where XP should be awarded for habit completion
             // Do NOT call XPManager methods directly - always use DailyAwardService
             let dateKey = DateKey.key(for: selectedDate)
-            print("🎉 HomeTabView: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
+            let userId = getCurrentUserId()
+            print("🎉 STEP 2: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
+            print("🎯 STEP 2: userId = \(userId)")
             
             Task {
                 #if DEBUG
@@ -936,12 +940,14 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                let result = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "ui_sheet_dismiss")
-                print("🎯 HomeTabView: grantIfAllComplete result: \(result)")
+                print("🎯 STEP 3: Calling DailyAwardService.grantIfAllComplete()")
+                let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "ui_sheet_dismiss")
+                print("🎯 STEP 3: grantIfAllComplete result: \(result)")
                 
                 // Check XP after award
                 let currentXP = XPManager.shared.userProgress.totalXP
-                print("🎯 HomeTabView: Current XP after award: \(currentXP)")
+                print("🎯 STEP 4: Current XP after award: \(currentXP)")
+                print("🎯 STEP 4: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
             }
             
             // Reset the flag
@@ -957,12 +963,20 @@ struct HomeTabView: View {
         lastHabitJustCompleted = true
         
         // Note: XP will be awarded in onDifficultySheetDismissed() after the difficulty sheet is dismissed
-        print("🎉 HomeTabView: Last habit completed! Will award XP after difficulty sheet is dismissed")
+        print("🎉 STEP 1: Last habit completed! Will award XP after difficulty sheet is dismissed")
+        print("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
     }
     
     private func getCurrentUserId() -> String {
-        // This should return the current user ID
-        // Implementation depends on your authentication system
-        return "current_user_id"
+        // Get current user ID from authentication system
+        if let user = AuthenticationManager.shared.currentUser {
+            let userId = user.uid
+            print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (authenticated)")
+            return userId
+        } else {
+            let userId = CurrentUser.guestId
+            print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (guest)")
+            return userId
+        }
     }
 }

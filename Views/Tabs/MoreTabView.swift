@@ -52,6 +52,13 @@ struct MoreTabView: View {
                         .padding(.bottom, 16)
                         .entranceAnimation(delay: 0.05)
                     
+                    // DEBUG: XP System Test Panel
+                    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" || true {
+                        XPDebugPanel()
+                            .padding(.bottom, 16)
+                            .entranceAnimation(delay: 0.1)
+                    }
+                    
                     // Settings Sections
                     settingsSections
                 }

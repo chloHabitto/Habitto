@@ -21,27 +21,51 @@ public actor DailyAwardService: ObservableObject {
     public func grantIfAllComplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
         let dateKey = DateKey.key(for: date)
         
+        print("🎯 STEP 5: DailyAwardService.grantIfAllComplete() called")
+        print("🎯 STEP 5: userId = \(userId), dateKey = \(dateKey), callSite = \(callSite)")
+        
         #if DEBUG
         let preXP = self.computeTotalXPFromLedger(userId: userId)
         print("🔍 TRACE [grantIfAllComplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
         #endif
         
         // Check if all habits are completed for this date
+        print("🎯 STEP 6: Checking if all habits are completed for \(dateKey)")
         guard await areAllHabitsCompleted(dateKey: dateKey, userId: userId) else {
+            print("🎯 STEP 6: ❌ Not all habits completed, no award granted")
             #if DEBUG
             print("  ↳ Not all habits completed, no award granted")
             #endif
             return false
         }
+        print("🎯 STEP 6: ✅ All habits completed, proceeding with award")
         
         // Check if award already exists (idempotency)
-        guard DailyAward.validateUniqueConstraint(userId: userId, dateKey: dateKey, in: modelContext) else {
-            return false
+        print("🎯 STEP 7: Checking for duplicate award for \(dateKey)")
+        
+        // Query existing awards for this user and date
+        let predicate = #Predicate<DailyAward> { award in
+            award.userId == userId && award.dateKey == dateKey
+        }
+        let request = FetchDescriptor<DailyAward>(predicate: predicate)
+        let existingAwards = (try? modelContext.fetch(request)) ?? []
+        
+        print("🎯 STEP 7: Found \(existingAwards.count) existing awards for userId: \(userId), dateKey: \(dateKey)")
+        for (index, award) in existingAwards.enumerated() {
+            print("🎯 STEP 7:   Award \(index + 1): id=\(award.id), xpGranted=\(award.xpGranted), createdAt=\(award.createdAt)")
         }
         
+        guard existingAwards.isEmpty else {
+            print("🎯 STEP 7: ❌ Duplicate award exists, no award granted")
+            return false
+        }
+        print("🎯 STEP 7: ✅ No duplicate award, creating new award")
+        
         // Create and insert award
+        print("🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(Self.XP_PER_DAY)")
         let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: Self.XP_PER_DAY)
         modelContext.insert(award)
+        print("🎯 STEP 8: DailyAward record created and inserted")
         
         #if DEBUG
         // Capture pre-save state for runtime tripwire
@@ -80,11 +104,13 @@ public actor DailyAwardService: ObservableObject {
             self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
             
             // ✅ FIX: Update XPManager with the new XP
+            print("🎯 STEP 10: Updating XPManager with \(Self.XP_PER_DAY) XP for \(dateKey)")
             await MainActor.run {
                 print("🎯 DailyAwardService: Updating XPManager with \(Self.XP_PER_DAY) XP for \(dateKey)")
                 XPManager.shared.updateXPFromDailyAward(xpGranted: Self.XP_PER_DAY, dateKey: dateKey)
                 print("🎯 DailyAwardService: XPManager updated successfully")
             }
+            print("🎯 STEP 10: XPManager update completed")
             
             #if DEBUG
             // Verify no extra XP was granted
