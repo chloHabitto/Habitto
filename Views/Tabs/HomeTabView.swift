@@ -886,9 +886,10 @@ struct HomeTabView: View {
         }
         
         if remainingHabits.isEmpty {
-            // This is the last habit - show celebration instead of details
-            selectedHabit = nil
+            // This is the last habit - set flag and let difficulty sheet be shown
+            // The celebration will be triggered after the difficulty sheet is dismissed
             onLastHabitCompleted()
+            // Don't set selectedHabit = nil here - let the difficulty sheet show
         } else {
             // Present difficulty sheet (existing logic)
             // Don't set selectedHabit here as it triggers habit detail screen
@@ -935,7 +936,12 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                _ = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "ui_sheet_dismiss")
+                let result = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "ui_sheet_dismiss")
+                print("🎯 HomeTabView: grantIfAllComplete result: \(result)")
+                
+                // Check XP after award
+                let currentXP = XPManager.shared.userProgress.totalXP
+                print("🎯 HomeTabView: Current XP after award: \(currentXP)")
             }
             
             // Reset the flag
@@ -950,29 +956,8 @@ struct HomeTabView: View {
         // Set flag to trigger celebration when difficulty sheet is dismissed
         lastHabitJustCompleted = true
         
-        // ✅ FIX: Award XP immediately since no difficulty sheet will be shown
-        // This is the ONLY place where XP should be awarded for completing all habits
-        let dateKey = DateKey.key(for: selectedDate)
-        print("🎉 HomeTabView: Last habit completed! Granting daily award for \(dateKey)")
-        
-        Task {
-            #if DEBUG
-            debugGrantCalls += 1
-            print("🔍 DEBUG: onLastHabitCompleted - grant call #\(debugGrantCalls) from last_habit_completed")
-            if debugGrantCalls > 1 {
-                print("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
-                print("⚠️ Stack trace:")
-                Thread.callStackSymbols.forEach { print("  \($0)") }
-            }
-            #endif
-            
-            let result = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "last_habit_completed")
-            print("🎯 HomeTabView: grantIfAllComplete result: \(result)")
-            
-            // Check XP after award
-            let currentXP = XPManager.shared.userProgress.totalXP
-            print("🎯 HomeTabView: Current XP after award: \(currentXP)")
-        }
+        // Note: XP will be awarded in onDifficultySheetDismissed() after the difficulty sheet is dismissed
+        print("🎉 HomeTabView: Last habit completed! Will award XP after difficulty sheet is dismissed")
     }
     
     private func getCurrentUserId() -> String {
