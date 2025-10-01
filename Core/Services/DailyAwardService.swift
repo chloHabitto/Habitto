@@ -40,8 +40,10 @@ public actor DailyAwardService: ObservableObject {
         }
         print("🎯 STEP 6: ✅ All habits completed, proceeding with award")
         
-        // Check if award already exists (idempotency)
+        // Check if award already exists (idempotency) - ATOMIC CHECK
         print("🎯 STEP 7: Checking for duplicate award for \(dateKey)")
+        print("🎯 STEP 7: All habits completed: true")
+        print("🎯 STEP 7: Today already awarded: checking...")
         
         // Query existing awards for this user and date
         let predicate = #Predicate<DailyAward> { award in
@@ -55,11 +57,18 @@ public actor DailyAwardService: ObservableObject {
             print("🎯 STEP 7:   Award \(index + 1): id=\(award.id), xpGranted=\(award.xpGranted), createdAt=\(award.createdAt)")
         }
         
+        let todayAlreadyAwarded = !existingAwards.isEmpty
+        print("🎯 STEP 7: Today already awarded: \(todayAlreadyAwarded)")
+        
         guard existingAwards.isEmpty else {
             print("🎯 STEP 7: ❌ Duplicate award exists, no award granted")
+            print("🎯 STEP 7: Action taken: skip (already awarded today)")
+            print("🎯 STEP 7: XP change: 0")
             return false
         }
         print("🎯 STEP 7: ✅ No duplicate award, creating new award")
+        print("🎯 STEP 7: Action taken: award")
+        print("🎯 STEP 7: XP change: +\(Self.XP_PER_DAY)")
         
         // Create and insert award
         print("🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(Self.XP_PER_DAY)")
@@ -141,6 +150,10 @@ public actor DailyAwardService: ObservableObject {
     public func revokeIfAnyIncomplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
         let dateKey = DateKey.key(for: date)
         
+        print("🎯 REVOKE: Starting revocation check for \(dateKey)")
+        print("🎯 REVOKE: All habits completed: false (uncompleted detected)")
+        print("🎯 REVOKE: Today already awarded: checking...")
+        
         #if DEBUG
         let preXP = self.computeTotalXPFromLedger(userId: userId)
         print("🔍 TRACE [revokeIfAnyIncomplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
@@ -154,12 +167,19 @@ public actor DailyAwardService: ObservableObject {
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         let existingAwards = (try? modelContext.fetch(request)) ?? []
         
+        let todayWasAwarded = !existingAwards.isEmpty
+        print("🎯 REVOKE: Today already awarded: \(todayWasAwarded)")
+        
         guard let award = existingAwards.first else {
-            #if DEBUG
-            print("  ↳ No award to revoke")
-            #endif
+            print("🎯 REVOKE: ❌ No award to revoke")
+            print("🎯 REVOKE: Action taken: skip (no award exists)")
+            print("🎯 REVOKE: XP change: 0")
             return false // No award to revoke
         }
+        
+        print("🎯 REVOKE: ✅ Award found, proceeding with revocation")
+        print("🎯 REVOKE: Action taken: revoke")
+        print("🎯 REVOKE: XP change: -\(Self.XP_PER_DAY)")
         
         // Revoke award
         modelContext.delete(award)
@@ -176,6 +196,15 @@ public actor DailyAwardService: ObservableObject {
             #endif
             
             try modelContext.save()
+            
+            // ✅ FIX: Update XPManager with the revoked XP
+            print("🎯 REVOKE: Updating XPManager with -\(Self.XP_PER_DAY) XP for \(dateKey)")
+            await MainActor.run {
+                print("🎯 DailyAwardService: Updating XPManager with -\(Self.XP_PER_DAY) XP for \(dateKey)")
+                XPManager.shared.updateXPFromDailyAward(xpGranted: -Self.XP_PER_DAY, dateKey: dateKey)
+                print("🎯 DailyAwardService: XPManager updated successfully")
+            }
+            print("🎯 REVOKE: XPManager update completed")
             
             #if DEBUG
             print("✅ DailyAwardService.revokeIfAnyIncomplete: save() completed [TRANSACTION END]")

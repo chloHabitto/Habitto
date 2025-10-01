@@ -25,6 +25,7 @@ class XPDataMigration {
         print("🔄 XPDataMigration: Starting XP data migration...")
         
         // Query for old hardcoded userId records
+        let oldUserId = "current_user_id"
         let predicate = #Predicate<DailyAward> { award in
             award.userId == oldUserId
         }
