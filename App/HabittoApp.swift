@@ -128,6 +128,7 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                             .environmentObject(themeManager)
+                            .registerPopups()
                         
                         // DISABLED: Migration view completely disabled per user request
                         // if habitRepository.shouldShowMigrationView {
