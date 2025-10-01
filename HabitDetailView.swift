@@ -25,6 +25,8 @@ struct HabitDetailView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingReminderSheet = false
     @State private var selectedReminder: ReminderItem?
+    @State private var showingReminderDeleteConfirmation = false
+    @State private var reminderToDelete: ReminderItem?
     @State private var scrollOffset: CGFloat = 0
     @State private var availableHeight: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
@@ -284,6 +286,19 @@ struct HabitDetailView: View {
             }
         } message: {
             Text("This habit will be moved to the Inactive tab. You can reactivate it anytime by toggling it back on.")
+        }
+        .alert("Delete Reminder", isPresented: $showingReminderDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                reminderToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let reminder = reminderToDelete {
+                    deleteReminder(reminder)
+                    reminderToDelete = nil
+                }
+            }
+        } message: {
+            Text("Are you sure you want to delete this reminder?")
         }
     }
     
@@ -574,19 +589,19 @@ struct HabitDetailView: View {
     }
     
     private func reminderRow(for reminder: ReminderItem) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             // Time icon - shows different icon based on whether time has passed
             let reminderHasPassed = hasReminderTimePassed(reminder.time)
             let iconName = reminderHasPassed ? "Icon-Bell_Filled" : "Icon-BellOn_Filled"
             
             Image(iconName)
                 .resizable()
-                .frame(width: 20, height: 20)
+                .frame(width: 24, height: 24)
                 .foregroundColor(.primary)
             
             // Time text
             Text(formatReminderTime(reminder.time))
-                .font(.appBodyMedium)
+                .font(.appBodyLarge)
                 .foregroundColor(.text01)
             
             Spacer()
@@ -598,24 +613,27 @@ struct HabitDetailView: View {
             }) {
                 Image("Icon-Pen_Filled")
                     .resizable()
-                    .frame(width: 14, height: 14)
+                    .frame(width: 18, height: 18)
                     .foregroundColor(.text03)
+                    .padding(8)
             }
             
             // Delete button
             Button(action: {
-                deleteReminder(reminder)
+                reminderToDelete = reminder
+                showingReminderDeleteConfirmation = true
             }) {
                 Image("Icon-TrashBin3_Filled")
                     .resizable()
-                    .frame(width: 14, height: 14)
+                    .frame(width: 18, height: 18)
                     .foregroundColor(.red)
+                    .padding(8)
             }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
         .background(Color.surfaceContainer.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
     private func formatReminderTime(_ time: Date) -> String {
