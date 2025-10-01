@@ -1,4 +1,5 @@
 import SwiftUI
+import ViewAnimator
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
@@ -96,6 +97,7 @@ struct ProgressTabView: View {
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
+    @State private var contentAppeared = false
     @State private var selectedWeekStartDate: Date = {
         let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
@@ -229,9 +231,11 @@ struct ProgressTabView: View {
                                     }
                                     .background(Color.grey50)
                                     .cornerRadius(24)
+                                    .entranceAnimation(delay: 0.2)
                                     
                                     // Weekly Analysis Card
                                     weeklyAnalysisCard
+                                        .entranceAnimation(delay: 0.25)
                                 }
                                 .padding(.horizontal, 20)
                             }
@@ -242,9 +246,11 @@ struct ProgressTabView: View {
                             VStack(spacing: 20) {
                                 // Weekly Difficulty Graph
                                 weeklyDifficultyGraph
+                                    .entranceAnimation(delay: 0.05)
                                 
                                 // Time Base Completion Chart
                                 timeBaseCompletionChart
+                                    .entranceAnimation(delay: 0.15)
                             }
                             .padding(.horizontal, 20)
                         }
@@ -254,6 +260,7 @@ struct ProgressTabView: View {
                             VStack(spacing: 20) {
                                 // Monthly Difficulty Graph
                                 monthlyDifficultyGraph
+                                    .entranceAnimation(delay: 0.1)
                             }
                             .padding(.horizontal, 20)
                         }
@@ -278,12 +285,14 @@ struct ProgressTabView: View {
                                 VStack(spacing: 20) {
                                     // Monthly Progress Card
                                     monthlyProgressCard
+                                        .entranceAnimation(delay: 0.05)
                                     
                                     // Monthly Calendar Grid
                                     MonthlyCalendarGridView(
                                         userHabits: getActiveHabitsForSelectedMonth(),
                                         selectedMonth: selectedProgressDate
                                         )
+                                        .entranceAnimation(delay: 0.15)
                                     }
                 .padding(.horizontal, 20)
                             }
@@ -301,6 +310,7 @@ struct ProgressTabView: View {
                                     isLoadingProgress: isLoadingProgress,
                                     selectedYear: selectedYear
                                 )
+                                .entranceAnimation(delay: 0.1)
                             }
                             .padding(.horizontal, 20)
                         }
@@ -329,6 +339,7 @@ struct ProgressTabView: View {
                                         isLoadingProgress: isLoadingProgress,
                                         selectedYear: selectedYear
                                     )
+                                    .entranceAnimation(delay: 0.1)
                                 }
                                 .padding(.horizontal, 20)
                             }
@@ -400,8 +411,9 @@ struct ProgressTabView: View {
                             } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                                        ForEach(getActiveRemindersForDate(selectedProgressDate), id: \.id) { reminder in
+                                        ForEach(Array(getActiveRemindersForDate(selectedProgressDate).enumerated()), id: \.element.id) { index, reminder in
                                             reminderCard(for: reminder)
+                                                .entranceAnimation(delay: Double(index) * 0.05)
                                         }
                                     }
                                     .padding(.horizontal, 20)
@@ -758,6 +770,7 @@ struct ProgressTabView: View {
                 .fill(Color.surface)
         )
                                         .padding(.horizontal, 20)
+        .entranceAnimation(delay: 0.0)
     }
     
     // Date selection section
@@ -1420,6 +1433,7 @@ struct ProgressTabView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .padding(.horizontal, 20)
+        .entranceAnimation(delay: 0.1)
     }
     
     // MARK: - Weekly Progress Card
@@ -1458,6 +1472,7 @@ struct ProgressTabView: View {
                 .allowsHitTesting(false)
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
+        .entranceAnimation(delay: 0.05)
     }
     
     // MARK: - Weekly Analysis Card
