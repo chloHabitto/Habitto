@@ -13,16 +13,7 @@ struct YearPickerModal: View {
     }
     
     var body: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-            
-            // Modal content
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -105,10 +96,8 @@ struct YearPickerModal: View {
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .frame(height: 200)
-        }
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            .padding(.horizontal, 8)
+            .frame(height: 400)
     }
     
     private var isCurrentYearSelected: Bool {

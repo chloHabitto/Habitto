@@ -1,14 +1,15 @@
 import SwiftUI
-import MijickPopups
 
-// MARK: - Date Picker Modal (MijickPopups Version)
-struct DatePickerModal: CenterPopup {
+// MARK: - Date Picker Modal (Native SwiftUI Version)
+struct DatePickerModal: View {
+    @Binding var isPresented: Bool
     let selectedDate: Binding<Date>
     let onDateSelected: (Date) -> Void
     @State private var tempSelectedDate: Date
     @State private var currentMonth: Date = Date()
     
-    init(selectedDate: Binding<Date>, onDateSelected: @escaping (Date) -> Void) {
+    init(isPresented: Binding<Bool>, selectedDate: Binding<Date>, onDateSelected: @escaping (Date) -> Void) {
+        self._isPresented = isPresented
         self.selectedDate = selectedDate
         self.onDateSelected = onDateSelected
         self._tempSelectedDate = State(initialValue: selectedDate.wrappedValue)
@@ -16,15 +17,11 @@ struct DatePickerModal: CenterPopup {
     }
     
     var body: some View {
-        createContent()
-    }
-    
-    func createContent() -> some View {
         VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
-                        Task { await dismissLastPopup() }
+                        dismissModal()
                     }
                     .foregroundColor(.text02)
                     
@@ -37,9 +34,7 @@ struct DatePickerModal: CenterPopup {
                     Spacer()
                     
                     Button("Done") {
-                        selectedDate.wrappedValue = tempSelectedDate
-                        onDateSelected(tempSelectedDate)
-                        Task { await dismissLastPopup() }
+                        confirmSelection()
                     }
                     .foregroundColor(.primary)
                 }
@@ -128,9 +123,7 @@ struct DatePickerModal: CenterPopup {
                 
                 // Selected date display - always at bottom
                 Button(action: {
-                    selectedDate.wrappedValue = tempSelectedDate
-                    onDateSelected(tempSelectedDate)
-                    Task { await dismissLastPopup() }
+                    confirmSelection()
                 }) {
                     VStack(spacing: 8) {
                         Text("Selected Date")
@@ -153,15 +146,23 @@ struct DatePickerModal: CenterPopup {
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
             .frame(height: 520)
             .onAppear {
                 currentMonth = tempSelectedDate
             }
     }
     
-    func configurePopup(config: CenterPopupConfig) -> CenterPopupConfig {
-        config
-            .tapOutsideToDismissPopup(true)
+    // MARK: - Helper Functions
+    
+    private func dismissModal() {
+        isPresented = false
+    }
+    
+    private func confirmSelection() {
+        selectedDate.wrappedValue = tempSelectedDate
+        onDateSelected(tempSelectedDate)
+        dismissModal()
     }
     
     // MARK: - Helper Properties and Functions
@@ -274,6 +275,7 @@ struct CustomCalendarDayView: View {
 
 #Preview {
     DatePickerModal(
+        isPresented: .constant(true),
         selectedDate: .constant(Date()),
         onDateSelected: { _ in }
     )

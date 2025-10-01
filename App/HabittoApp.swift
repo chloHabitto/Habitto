@@ -3,7 +3,6 @@ import UIKit
 import FirebaseCore
 import GoogleSignIn
 import UserNotifications
-import MijickPopups
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -128,7 +127,6 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                             .environmentObject(themeManager)
-                            .registerPopups()
                         
                         // DISABLED: Migration view completely disabled per user request
                         // if habitRepository.shouldShowMigrationView {

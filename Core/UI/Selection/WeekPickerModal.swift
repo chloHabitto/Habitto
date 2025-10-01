@@ -20,16 +20,7 @@ struct WeekPickerModal: View {
     }
     
     var body: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-            
-            // Modal content
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -112,7 +103,7 @@ struct WeekPickerModal: View {
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 8)
             .frame(height: 520)
             .onAppear {
                 // Update temporary state when modal appears to reflect current selection
@@ -124,7 +115,6 @@ struct WeekPickerModal: View {
                 let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
                 selectedDateRange = weekStart...weekEnd
             }
-        }
     }
     
     private func weekRangeText(from range: ClosedRange<Date>) -> String {
