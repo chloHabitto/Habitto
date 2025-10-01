@@ -97,9 +97,13 @@ struct XPLevelDisplay: View {
         .scaleEffect(appeared ? 1 : 0.95)
         .offset(y: appeared ? 0 : 10)
         .onAppear {
+            print("🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.userProgress.totalXP), level: \(xpManager.userProgress.currentLevel)")
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.05)) {
                 appeared = true
             }
+        }
+        .onChange(of: xpManager.userProgress.totalXP) { oldValue, newValue in
+            print("🎯 UI: XPLevelDisplay XP changed from \(oldValue) to \(newValue)")
         }
     }
     
