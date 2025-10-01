@@ -175,6 +175,45 @@ class XPManager: ObservableObject {
         return "XPManager does not store userId"
     }
     
+    // MARK: - Authentication Handling
+    
+    /// Handle user sign-out: Clear XP data and switch to guest mode
+    func handleUserSignOut() {
+        print("🎯 AUTH: XPManager.handleUserSignOut() called")
+        
+        // Reset to default state
+        userProgress = UserProgress()
+        recentTransactions.removeAll()
+        
+        // Save cleared data
+        saveUserProgress()
+        saveRecentTransactions()
+        
+        print("🎯 AUTH: XP data cleared for sign-out")
+    }
+    
+    /// Handle user sign-in: Load user-specific XP from SwiftData
+    func handleUserSignIn(userId: String) {
+        print("🎯 AUTH: XPManager.handleUserSignIn() called for userId: \(userId)")
+        
+        // Load user-specific XP from SwiftData
+        loadUserXPFromSwiftData(userId: userId)
+    }
+    
+    /// Load user-specific XP from SwiftData DailyAward records
+    private func loadUserXPFromSwiftData(userId: String) {
+        print("🎯 AUTH: Loading XP from SwiftData for userId: \(userId)")
+        
+        // This would need to be implemented to query SwiftData
+        // For now, just log what would happen
+        print("⚠️ TODO: Implement loadUserXPFromSwiftData() to query DailyAward records")
+        print("  - Query all DailyAward records for userId: \(userId)")
+        print("  - Sum up total XP from all records")
+        print("  - Update userProgress.totalXP with the sum")
+        print("  - Update userProgress.currentLevel based on total XP")
+        print("  - Save to UserDefaults")
+    }
+    
     /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
     /// This method causes duplicate XP removal and should not be called
     @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")

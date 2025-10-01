@@ -146,6 +146,11 @@ struct HabittoApp: App {
                             // Immediately clear any migration state to prevent screen from showing
                             habitRepository.shouldShowMigrationView = false
                             
+                            // Run XP data migration
+                            Task {
+                                await XPDataMigration.shared.checkAndRunMigration(modelContext: modelContext)
+                            }
+                            
                             // Check and execute migrations
                             Task { @MainActor in
                                 print("🔄 HabittoApp: Checking for data migrations...")
