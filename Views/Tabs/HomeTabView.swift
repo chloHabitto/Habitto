@@ -16,6 +16,12 @@ struct HomeTabView: View {
     @State private var deferResort: Bool = false
     @State private var sortedHabits: [Habit] = []
     
+    #if DEBUG
+    // Runtime tracking: verify service is called exactly once per flow
+    @State private var debugGrantCalls: Int = 0
+    @State private var debugRevokeCalls: Int = 0
+    #endif
+    
     @Environment(\.modelContext) private var modelContext
     @StateObject private var eventBus = EventBus.shared
     @StateObject private var awardService: DailyAwardService
@@ -886,6 +892,11 @@ struct HomeTabView: View {
     private func onHabitUncompleted(_ habit: Habit) {
         // Call award service
         Task {
+            #if DEBUG
+            debugRevokeCalls += 1
+            print("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
+            #endif
+            
             await awardService.onHabitUncompleted(date: selectedDate, userId: getCurrentUserId())
         }
         
@@ -907,6 +918,16 @@ struct HomeTabView: View {
             print("🎉 HomeTabView: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
             
             Task {
+                #if DEBUG
+                debugGrantCalls += 1
+                print("🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
+                if debugGrantCalls > 1 {
+                    print("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
+                    print("⚠️ Stack trace:")
+                    Thread.callStackSymbols.forEach { print("  \($0)") }
+                }
+                #endif
+                
                 await awardService.onHabitCompleted(date: selectedDate, userId: getCurrentUserId())
             }
             
