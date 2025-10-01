@@ -7,6 +7,7 @@ struct XPLevelCard: View {
     @State private var showXPGain = false
     @State private var xpGainAmount = 0
     @State private var levelUpAnimation = false
+    @State private var cardAppeared = false
     
     var body: some View {
         VStack(spacing: 16) {
@@ -125,7 +126,15 @@ struct XPLevelCard: View {
                 }
             }
         )
+        .opacity(cardAppeared ? 1 : 0)
+        .scaleEffect(cardAppeared ? 1 : 0.9)
+        .offset(y: cardAppeared ? 0 : 15)
         .onAppear {
+            // Entrance animation
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) {
+                cardAppeared = true
+            }
+            
             withAnimation(.easeInOut(duration: 0.6).delay(0.1)) {
                 isAnimating = true
             }

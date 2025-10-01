@@ -370,10 +370,14 @@ struct HomeTabView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 40)
                 } else {
-                    ForEach(sortedHabits, id: \.id) { habit in
+                    ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
                         habitRow(habit)
+                            .animateViewAnimatorStyle(
+                                index: index,
+                                animation: .slideFromBottom(offset: 20),
+                                config: .fast
+                            )
                     }
-                    .animation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1), value: sortedHabits.map { "\($0.id)-\($0.isCompleted(for: selectedDate))" })
                 }
             }
             .padding(.horizontal, 20)
