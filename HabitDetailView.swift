@@ -555,8 +555,9 @@ struct HabitDetailView: View {
             } else {
                 // Empty state
                 HStack {
-                    Image(systemName: "bell.slash")
-                        .font(.system(size: 16))
+                    Image("Icon-BellOff_Filled")
+                        .resizable()
+                        .frame(width: 16, height: 16)
                         .foregroundColor(.text04)
                     
                     Text("No reminders set")
@@ -574,11 +575,14 @@ struct HabitDetailView: View {
     
     private func reminderRow(for reminder: ReminderItem) -> some View {
         HStack(spacing: 12) {
-            // Time icon
-            Image(systemName: "clock")
-                .font(.system(size: 16))
+            // Time icon - shows different icon based on whether time has passed
+            let reminderHasPassed = hasReminderTimePassed(reminder.time)
+            let iconName = reminderHasPassed ? "Icon-Bell_Filled" : "Icon-BellOn_Filled"
+            
+            Image(iconName)
+                .resizable()
+                .frame(width: 20, height: 20)
                 .foregroundColor(.primary)
-                .frame(width: 20)
             
             // Time text
             Text(formatReminderTime(reminder.time))
@@ -592,8 +596,9 @@ struct HabitDetailView: View {
                 selectedReminder = reminder
                 showingReminderSheet = true
             }) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 14))
+                Image("Icon-Pen_Filled")
+                    .resizable()
+                    .frame(width: 14, height: 14)
                     .foregroundColor(.text03)
             }
             
@@ -601,8 +606,9 @@ struct HabitDetailView: View {
             Button(action: {
                 deleteReminder(reminder)
             }) {
-                Image(systemName: "trash")
-                    .font(.system(size: 14))
+                Image("Icon-TrashBin3_Filled")
+                    .resizable()
+                    .frame(width: 14, height: 14)
                     .foregroundColor(.red)
             }
         }
@@ -616,6 +622,33 @@ struct HabitDetailView: View {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: time)
+    }
+    
+    private func hasReminderTimePassed(_ reminderTime: Date) -> Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Extract hour and minute from reminder time
+        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        
+        // Extract hour and minute from current time
+        let nowComponents = calendar.dateComponents([.hour, .minute], from: now)
+        
+        guard let reminderHour = reminderComponents.hour,
+              let reminderMinute = reminderComponents.minute,
+              let nowHour = nowComponents.hour,
+              let nowMinute = nowComponents.minute else {
+            return false
+        }
+        
+        // Compare hours first
+        if nowHour > reminderHour {
+            return true
+        } else if nowHour == reminderHour {
+            return nowMinute > reminderMinute
+        } else {
+            return false
+        }
     }
     
     private func deleteReminder(_ reminder: ReminderItem) {
