@@ -346,6 +346,34 @@ class XPManager: ObservableObject {
     
     // MARK: - Public API (Simplified)
     
+    /// Clear all XP data (used during sign-out)
+    func clearXPData() {
+        logger.info("Clearing XP data for sign-out")
+        
+        // Reset objects to defaults
+        userProgress = UserProgress()
+        recentTransactions = []
+        dailyAwards = [:]
+        
+        // Remove the keys from UserDefaults to ensure clean state
+        userDefaults.removeObject(forKey: userProgressKey)
+        userDefaults.removeObject(forKey: recentTransactionsKey)
+        userDefaults.removeObject(forKey: dailyAwardsKey)
+        
+        // Update level from XP (will be level 1 with 0 XP)
+        updateLevelFromXP()
+        
+        // Save the reset state
+        saveUserProgress()
+        saveRecentTransactions()
+        saveDailyAwards()
+        
+        // Trigger UI update
+        objectWillChange.send()
+        
+        logger.info("XP data cleared for sign-out - user will start fresh")
+    }
+    
     /// Check daily completion for habits (used by existing system)
     func checkDailyCompletion(habits: [Habit]) async {
         logger.debug("Daily completion checked for \(habits.count) habits")
