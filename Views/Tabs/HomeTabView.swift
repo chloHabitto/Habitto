@@ -949,6 +949,25 @@ struct HomeTabView: View {
         
         // Set flag to trigger celebration when difficulty sheet is dismissed
         lastHabitJustCompleted = true
+        
+        // ✅ FIX: Award XP immediately since no difficulty sheet will be shown
+        // This is the ONLY place where XP should be awarded for completing all habits
+        let dateKey = DateKey.key(for: selectedDate)
+        print("🎉 HomeTabView: Last habit completed! Granting daily award for \(dateKey)")
+        
+        Task {
+            #if DEBUG
+            debugGrantCalls += 1
+            print("🔍 DEBUG: onLastHabitCompleted - grant call #\(debugGrantCalls) from last_habit_completed")
+            if debugGrantCalls > 1 {
+                print("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
+                print("⚠️ Stack trace:")
+                Thread.callStackSymbols.forEach { print("  \($0)") }
+            }
+            #endif
+            
+            _ = await awardService.grantIfAllComplete(date: selectedDate, userId: getCurrentUserId(), callSite: "last_habit_completed")
+        }
     }
     
     private func getCurrentUserId() -> String {
