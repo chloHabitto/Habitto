@@ -39,7 +39,7 @@ class XPManager: ObservableObject {
     }
     
     // Level calculation constants
-    private let levelBaseXP = 25 // XP needed for level 2
+    private let levelBaseXP = 50 // XP needed for level 2 (increased for more challenging progression)
     
     // MARK: - Pure Level Calculation
     
