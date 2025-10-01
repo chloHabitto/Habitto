@@ -900,7 +900,9 @@ struct HomeTabView: View {
         
         // Check if the last habit was just completed
         if lastHabitJustCompleted {
-            // Call DailyAwardService to grant XP for completing all habits
+            // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
+            // This is the ONLY place where XP should be awarded for habit completion
+            // Do NOT call XPManager methods directly - always use DailyAwardService
             let dateKey = DateKey.key(for: selectedDate)
             print("🎉 HomeTabView: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
             

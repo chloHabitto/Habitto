@@ -4,8 +4,12 @@ import OSLog
 
 /// Simplified XP Manager with single, clear award flow
 /// 
-/// ⚠️  IMPORTANT: Do not call XP mutation methods directly from UI or repositories.
-/// Use DailyAwardService instead to prevent duplicate XP awards.
+/// ⚠️  CRITICAL: ALL XP MUTATIONS MUST GO THROUGH DailyAwardService
+/// DO NOT call XP mutation methods directly from UI or repositories.
+/// Direct XP writes will cause double-awarding and data corruption.
+/// 
+/// This class manages the UserProgress state but should NOT be used
+/// to award or remove XP. Use DailyAwardService.grantIfAllComplete() instead.
 /// 
 @MainActor
 class XPManager: ObservableObject {
@@ -57,11 +61,14 @@ class XPManager: ObservableObject {
         logger.info("XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
     }
     
-    // MARK: - Main XP Award Method (Single Entry Point)
+    // MARK: - DEPRECATED XP Methods (DO NOT USE)
+    // These methods are kept for backwards compatibility only
+    // ALL NEW CODE MUST USE DailyAwardService
     
-    /// Awards XP for completing all habits - DEPRECATED: Use DailyAwardService instead
+    /// ❌ DEPRECATED: Use DailyAwardService.grantIfAllComplete() instead
+    /// This method causes duplicate XP awards and should not be called
     @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
-    internal func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
+    private func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let today = DateUtils.startOfDay(for: Date())
         let dateKey = DateKey.key(for: date)
@@ -102,9 +109,10 @@ class XPManager: ObservableObject {
         return totalXP
     }
     
-    /// Removes XP when habits are uncompleted - DEPRECATED: Use DailyAwardService instead
+    /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
+    /// This method causes duplicate XP removal and should not be called
     @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
-    internal func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date(), oldProgress: Int? = nil) -> Int {
+    private func removeXPForHabitUncompleted(habits: [Habit], for date: Date = Date(), oldProgress: Int? = nil) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let dateKey = DateKey.key(for: date)
         
@@ -209,6 +217,8 @@ class XPManager: ObservableObject {
     
     // MARK: - Core XP Management (Private - Use DailyAwardService instead)
     
+    /// ⚠️  INTERNAL USE ONLY: Do not call this method directly
+    /// All XP awards must go through DailyAwardService to prevent duplicates
     private func addXP(_ amount: Int, reason: XPRewardReason, description: String) {
         let oldLevel = userProgress.currentLevel
         
@@ -393,7 +403,7 @@ class XPManager: ObservableObject {
     // MARK: - Testing/Debug Methods
     
     #if DEBUG
-    /// Debug method to verify daily XP limits are respected
+    /// ⚠️ DEBUG ONLY: Verify daily XP limits are respected
     func verifyDailyXPLimits() {
         let today = DateUtils.startOfDay(for: Date())
         let dateKey = DateKey.key(for: today)
@@ -406,6 +416,9 @@ class XPManager: ObservableObject {
     }
     #endif
     
+    #if DEBUG
+    /// ⚠️ DEBUG/ADMIN ONLY: Reset all XP data to defaults
+    /// DO NOT call from production code - this bypasses DailyAwardService
     func resetXPData() {
         userProgress = UserProgress()
         recentTransactions = []
@@ -417,7 +430,8 @@ class XPManager: ObservableObject {
         logger.info("XP data reset to defaults")
     }
     
-    /// Reset XP to a specific level for testing/correction
+    /// ⚠️ DEBUG/ADMIN ONLY: Reset XP to a specific level for testing/correction
+    /// DO NOT call from production code - this bypasses DailyAwardService
     func resetXPToLevel(_ level: Int) {
         let baseXP = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
         userProgress = UserProgress()
@@ -432,13 +446,16 @@ class XPManager: ObservableObject {
         logger.info("XP reset to level \(level) with \(baseXP) XP")
     }
     
+    /// ⚠️ DEBUG/ADMIN ONLY: Fix XP data by recalculating level from current XP
+    /// DO NOT call from production code - this bypasses DailyAwardService
     func fixXPData() {
         updateLevelFromXP() // Ensure level is calculated from XP
         saveUserProgress()
         logger.info("Fixed XP data: level=\(self.userProgress.currentLevel)")
     }
     
-    /// Emergency reset method to fix corrupted XP data
+    /// ⚠️ DEBUG/ADMIN ONLY: Emergency reset method to fix corrupted XP data
+    /// DO NOT call from production code - this bypasses DailyAwardService
     func emergencyResetXP() {
         userProgress = UserProgress()
         recentTransactions = []
@@ -450,4 +467,5 @@ class XPManager: ObservableObject {
         objectWillChange.send()
         logger.info("Emergency XP reset completed - back to level 1")
     }
+    #endif
 }

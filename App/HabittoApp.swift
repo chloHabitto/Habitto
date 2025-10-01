@@ -177,7 +177,8 @@ struct HabittoApp: App {
                             print("🔄 HabittoApp: Scheduling daily reminders after app start...")
                             NotificationManager.shared.rescheduleDailyReminders()
                             
-                            // Reset daily XP counter if needed
+                            // Reset daily XP counter if needed (maintenance operation)
+                            // This is a legitimate daily counter reset, not an XP award mutation
                             XPManager.shared.resetDailyXP()
                             }
                         }
