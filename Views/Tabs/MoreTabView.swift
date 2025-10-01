@@ -37,21 +37,21 @@ struct MoreTabView: View {
     var body: some View {
         WhiteSheetContainer(
             headerContent: {
-                AnyView(
-                    VStack(spacing: 0) {
-                        // Trial Banner
-                        trialBanner
-                        
-                        // XP Level Display
-                        XPLevelDisplay(xpManager: xpManager)
-                            .padding(.bottom, 16)
-                    }
-                )
+                AnyView(EmptyView())
             }
         ) {
-            // Settings content in main content area
+            // Settings content in main content area with banner and XP card at top
             ScrollView {
                 VStack(spacing: 0) {
+                    // Trial Banner (now scrollable)
+                    trialBanner
+                        .entranceAnimation(delay: 0.0)
+                    
+                    // XP Level Display (now scrollable)
+                    XPLevelDisplay(xpManager: xpManager)
+                        .padding(.bottom, 16)
+                        .entranceAnimation(delay: 0.05)
+                    
                     // Settings Sections
                     settingsSections
                 }
