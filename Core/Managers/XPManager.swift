@@ -405,9 +405,6 @@ class XPManager: ObservableObject {
     #if DEBUG
     /// ⚠️ DEBUG ONLY: Verify daily XP limits are respected
     func verifyDailyXPLimits() {
-        let today = DateUtils.startOfDay(for: Date())
-        let dateKey = DateKey.key(for: today)
-        
         // Check if daily XP exceeds reasonable limits
         precondition(userProgress.dailyXP <= 500, "Daily XP \(userProgress.dailyXP) exceeds reasonable limit - possible duplication")
         
