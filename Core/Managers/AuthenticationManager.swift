@@ -127,6 +127,10 @@ class AuthenticationManager: ObservableObject {
             KeychainManager.shared.clearAuthenticationData()
             print("✅ AuthenticationManager: Cleared sensitive data from Keychain")
             
+            // Clear XP data to prevent data leakage between users
+            XPManager.shared.clearXPData()
+            print("✅ AuthenticationManager: Cleared XP data")
+            
             print("✅ AuthenticationManager: User signed out successfully")
         } catch {
             authState = .error(error.localizedDescription)
