@@ -26,57 +26,54 @@ public actor DailyAwardService: ObservableObject {
             return false
         }
         
-        // Atomic operation: check existence and insert in one transaction
-        return await modelContext.perform {
-            // Check if award already exists (idempotency)
-            guard DailyAward.validateUniqueConstraint(userId: userId, dateKey: dateKey, in: self.modelContext) else {
-                return false
-            }
-            
-            // Create and insert award
-            let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: Self.XP_PER_DAY)
-            self.modelContext.insert(award)
+        // Check if award already exists (idempotency)
+        guard DailyAward.validateUniqueConstraint(userId: userId, dateKey: dateKey, in: modelContext) else {
+            return false
+        }
+        
+        // Create and insert award
+        let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: Self.XP_PER_DAY)
+        modelContext.insert(award)
+        
+        #if DEBUG
+        // Capture pre-save state for runtime tripwire
+        let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
+        let preXP = self.computeTotalXPFromLedger(userId: userId)
+        #endif
+        
+        do {
+            try modelContext.save()
             
             #if DEBUG
-            // Capture pre-save state for runtime tripwire
-            let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let preXP = self.computeTotalXPFromLedger(userId: userId)
+            // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
+            let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
+            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            try self.assertXPDeltaValid(
+                userId: userId,
+                dateKey: dateKey,
+                preXP: preXP,
+                postXP: postXP,
+                preAwards: preAwardCount,
+                postAwards: postAwardCount,
+                expectedDelta: Self.XP_PER_DAY
+            )
             #endif
             
-            do {
-                try self.modelContext.save()
-                
-                #if DEBUG
-                // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
-                let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-                let postXP = self.computeTotalXPFromLedger(userId: userId)
-                try self.assertXPDeltaValid(
-                    userId: userId,
-                    dateKey: dateKey,
-                    preXP: preXP,
-                    postXP: postXP,
-                    preAwards: preAwardCount,
-                    postAwards: postAwardCount,
-                    expectedDelta: Self.XP_PER_DAY
-                )
-                #endif
-                
-                // Update streak
-                await self.updateStreak(userId: userId, dateKey: dateKey)
-                
-                // Emit event
-                await self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
-                
-                #if DEBUG
-                // Verify no extra XP was granted
-                try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
-                #endif
-                
-                return true
-            } catch {
-                print("Failed to save daily award: \(error)")
-                return false
-            }
+            // Update streak
+            await self.updateStreak(userId: userId, dateKey: dateKey)
+            
+            // Emit event
+            self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
+            
+            #if DEBUG
+            // Verify no extra XP was granted
+            try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
+            #endif
+            
+            return true
+        } catch {
+            print("Failed to save daily award: \(error)")
+            return false
         }
     }
     
@@ -91,64 +88,61 @@ public actor DailyAwardService: ObservableObject {
     public func revokeIfAnyIncomplete(date: Date, userId: String) async -> Bool {
         let dateKey = DateKey.key(for: date)
         
-        // Atomic operation: fetch and delete in one transaction
-        return await modelContext.perform {
-            // Check if award exists for this date
-            let predicate = #Predicate<DailyAward> { award in
-                award.userId == userId && award.dateKey == dateKey
-            }
-            
-            let request = FetchDescriptor<DailyAward>(predicate: predicate)
-            let existingAwards = (try? self.modelContext.fetch(request)) ?? []
-            
-            guard let award = existingAwards.first else {
-                return false // No award to revoke
-            }
-            
-            // Revoke award
-            self.modelContext.delete(award)
+        // Check if award exists for this date
+        let predicate = #Predicate<DailyAward> { award in
+            award.userId == userId && award.dateKey == dateKey
+        }
+        
+        let request = FetchDescriptor<DailyAward>(predicate: predicate)
+        let existingAwards = (try? modelContext.fetch(request)) ?? []
+        
+        guard let award = existingAwards.first else {
+            return false // No award to revoke
+        }
+        
+        // Revoke award
+        modelContext.delete(award)
+        
+        #if DEBUG
+        // Capture pre-save state for runtime tripwire
+        let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
+        let preXP = self.computeTotalXPFromLedger(userId: userId)
+        #endif
+        
+        do {
+            try modelContext.save()
             
             #if DEBUG
-            // Capture pre-save state for runtime tripwire
-            let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let preXP = self.computeTotalXPFromLedger(userId: userId)
+            // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
+            let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
+            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            try self.assertXPDeltaValid(
+                userId: userId,
+                dateKey: dateKey,
+                preXP: preXP,
+                postXP: postXP,
+                preAwards: preAwardCount,
+                postAwards: postAwardCount,
+                expectedDelta: -Self.XP_PER_DAY
+            )
             #endif
             
-            do {
-                try self.modelContext.save()
-                
-                #if DEBUG
-                // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
-                let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-                let postXP = self.computeTotalXPFromLedger(userId: userId)
-                try self.assertXPDeltaValid(
-                    userId: userId,
-                    dateKey: dateKey,
-                    preXP: preXP,
-                    postXP: postXP,
-                    preAwards: preAwardCount,
-                    postAwards: postAwardCount,
-                    expectedDelta: -Self.XP_PER_DAY
-                )
-                #endif
-                
-                // Revert streak
-                await self.revertStreak(userId: userId, dateKey: dateKey)
-                
-                // Emit event
-                await self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
-                
-                return true
-            } catch {
-                print("Failed to revoke daily award: \(error)")
-                return false
-            }
+            // Revert streak
+            await self.revertStreak(userId: userId, dateKey: dateKey)
+            
+            // Emit event
+            self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
+            
+            return true
+        } catch {
+            print("Failed to revoke daily award: \(error)")
+            return false
         }
     }
     
     /// Called when a habit is uncompleted (legacy method for compatibility)
     public func onHabitUncompleted(date: Date, userId: String) async {
-        await revokeIfAnyIncomplete(date: date, userId: userId)
+        _ = await revokeIfAnyIncomplete(date: date, userId: userId)
     }
     
     // MARK: - Private Methods
@@ -201,7 +195,7 @@ public actor DailyAwardService: ObservableObject {
         // Valid deltas: 0 (no-op), +XP_PER_DAY (grant), -XP_PER_DAY (revoke)
         let validDeltas: Set<Int> = [0, Self.XP_PER_DAY, -Self.XP_PER_DAY]
         
-        guard validDeltas.contains(delta) else {
+        if !validDeltas.contains(delta) {
             let awardsForDay = self.getAwardsForDay(userId: userId, dateKey: dateKey)
             preconditionFailure("""
                 ❌ XP DELTA INVALID (DUPLICATE XP DETECTED)
@@ -218,7 +212,7 @@ public actor DailyAwardService: ObservableObject {
         }
         
         // Verify delta matches expectation
-        guard delta == expectedDelta || delta == 0 else {
+        if delta != expectedDelta && delta != 0 {
             print("⚠️ XP delta mismatch: expected \(expectedDelta), got \(delta) (userId: \(userId), date: \(dateKey))")
         }
         

@@ -15,6 +15,8 @@ struct HomeTabView: View {
     @State private var showingCancelVacationAlert: Bool = false
     @State private var deferResort: Bool = false
     @State private var sortedHabits: [Habit] = []
+    @State private var cancellables = Set<AnyCancellable>()
+    @State private var lastHabitJustCompleted = false
     
     #if DEBUG
     // Runtime tracking: verify service is called exactly once per flow
@@ -949,7 +951,4 @@ struct HomeTabView: View {
         // Implementation depends on your authentication system
         return "current_user_id"
     }
-    
-    @State private var cancellables = Set<AnyCancellable>()
-    @State private var lastHabitJustCompleted = false
 }
