@@ -36,6 +36,20 @@ class XPManager: ObservableObject {
     // Level calculation constants
     private let levelBaseXP = 25 // XP needed for level 2
     
+    // MARK: - Pure Level Calculation
+    
+    /// Pure function to calculate level from XP
+    private func level(forXP totalXP: Int) -> Int {
+        return Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
+    }
+    
+    /// Ensures level is always calculated from current XP (no double-bumping)
+    private func updateLevelFromXP() {
+        let calculatedLevel = level(forXP: userProgress.totalXP)
+        userProgress.currentLevel = max(1, calculatedLevel)
+        updateLevelProgress()
+    }
+    
     init() {
         loadUserProgress()
         loadRecentTransactions()
@@ -104,10 +118,8 @@ class XPManager: ObservableObject {
             userProgress.totalXP = max(0, userProgress.totalXP - xpToRemove)
             userProgress.dailyXP = max(0, userProgress.dailyXP - xpToRemove)
             
-            // Recalculate level
-            let newLevel = calculateLevel(for: userProgress.totalXP)
-            userProgress.currentLevel = max(1, newLevel)
-            updateLevelProgress()
+            // Update level from XP (pure function approach)
+            updateLevelFromXP()
             
             // Add transaction for removal
             let transaction = XPTransaction(
@@ -200,23 +212,26 @@ class XPManager: ObservableObject {
     private func addXP(_ amount: Int, reason: XPRewardReason, description: String) {
         let oldLevel = userProgress.currentLevel
         
+        #if DEBUG
+        // Debug invariant: ensure XP changes are reasonable
+        precondition(amount > 0, "XP amount must be positive")
+        precondition(amount <= 1000, "XP amount \(amount) seems too high - possible duplication")
+        #endif
+        
         // Add XP
         userProgress.totalXP += amount
         userProgress.dailyXP += amount
         
-        // Check for level up
-        let newLevel = calculateLevel(for: userProgress.totalXP)
+        // Update level from XP (pure function approach)
+        let newLevel = level(forXP: userProgress.totalXP)
         if newLevel > oldLevel {
-            userProgress.currentLevel = newLevel
-            updateLevelProgress()
-            
             // Award level-up bonus (without recursion)
             awardLevelUpBonus(newLevel: newLevel)
-            
             logger.info("Level up! Reached level \(newLevel)")
-        } else {
-            updateLevelProgress()
         }
+        
+        // Always update level from current XP to prevent double-bumping
+        updateLevelFromXP()
         
         // Add transaction
         let transaction = XPTransaction(
@@ -259,8 +274,9 @@ class XPManager: ObservableObject {
     
     // MARK: - Level Management
     
+    // Legacy method - use level(forXP:) instead
     private func calculateLevel(for totalXP: Int) -> Int {
-        return Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
+        return level(forXP: totalXP)
     }
     
     private func updateLevelProgress() {
@@ -284,11 +300,11 @@ class XPManager: ObservableObject {
         if let data = userDefaults.data(forKey: userProgressKey),
            let progress = try? JSONDecoder().decode(UserProgress.self, from: data) {
             userProgress = progress
-            updateLevelProgress()
+            updateLevelFromXP() // Ensure level is calculated from XP
         } else {
             // Initialize with default values
             userProgress = UserProgress()
-            updateLevelProgress()
+            updateLevelFromXP()
         }
     }
     
@@ -376,11 +392,25 @@ class XPManager: ObservableObject {
     
     // MARK: - Testing/Debug Methods
     
+    #if DEBUG
+    /// Debug method to verify daily XP limits are respected
+    func verifyDailyXPLimits() {
+        let today = DateUtils.startOfDay(for: Date())
+        let dateKey = DateKey.key(for: today)
+        
+        // Check if daily XP exceeds reasonable limits
+        precondition(userProgress.dailyXP <= 500, "Daily XP \(userProgress.dailyXP) exceeds reasonable limit - possible duplication")
+        
+        // Log current state for debugging
+        print("🔍 XPManager Debug: Daily XP = \(userProgress.dailyXP), Total XP = \(userProgress.totalXP)")
+    }
+    #endif
+    
     func resetXPData() {
         userProgress = UserProgress()
         recentTransactions = []
         dailyAwards = [:]
-        updateLevelProgress()
+        updateLevelFromXP() // Ensure level is calculated from XP
         saveUserProgress()
         saveRecentTransactions()
         saveDailyAwards()
@@ -392,10 +422,10 @@ class XPManager: ObservableObject {
         let baseXP = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
         userProgress = UserProgress()
         userProgress.totalXP = baseXP
-        userProgress.currentLevel = level
+        // Level will be calculated from XP automatically
         recentTransactions = []
         dailyAwards = [:]
-        updateLevelProgress()
+        updateLevelFromXP() // Ensure level is calculated from XP
         saveUserProgress()
         saveRecentTransactions()
         saveDailyAwards()
@@ -403,9 +433,7 @@ class XPManager: ObservableObject {
     }
     
     func fixXPData() {
-        let newLevel = calculateLevel(for: userProgress.totalXP)
-        userProgress.currentLevel = max(1, newLevel)
-        updateLevelProgress()
+        updateLevelFromXP() // Ensure level is calculated from XP
         saveUserProgress()
         logger.info("Fixed XP data: level=\(self.userProgress.currentLevel)")
     }
@@ -415,7 +443,7 @@ class XPManager: ObservableObject {
         userProgress = UserProgress()
         recentTransactions = []
         dailyAwards = [:]
-        updateLevelProgress()
+        updateLevelFromXP() // Ensure level is calculated from XP
         saveUserProgress()
         saveRecentTransactions()
         saveDailyAwards()

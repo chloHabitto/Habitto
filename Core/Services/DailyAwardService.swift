@@ -3,19 +3,22 @@ import SwiftData
 import Combine
 
 /// Service for managing daily awards and streak/XP calculations
-@MainActor
-public class DailyAwardService: ObservableObject {
+/// Swift actor ensures thread-safe operations and prevents race conditions
+public actor DailyAwardService: ObservableObject {
     private let modelContext: ModelContext
     private let eventBus: EventBus
+    
+    // Constants for XP management
+    private static let XP_PER_DAY = 100
     
     public init(modelContext: ModelContext, eventBus: EventBus = EventBus.shared) {
         self.modelContext = modelContext
         self.eventBus = eventBus
     }
     
-    /// Called when a habit is completed
-    /// Returns true if a daily award was granted
-    public func onHabitCompleted(date: Date, userId: String) async -> Bool {
+    /// Idempotent method to grant daily award if all habits are completed
+    /// Returns true if award was granted, false if already exists or not all habits completed
+    public func grantIfAllComplete(date: Date, userId: String) async -> Bool {
         let dateKey = DateKey.key(for: date)
         
         // Check if all habits are completed for this date
@@ -23,63 +26,87 @@ public class DailyAwardService: ObservableObject {
             return false
         }
         
-        // Check if award already exists (idempotency)
-        guard DailyAward.validateUniqueConstraint(userId: userId, dateKey: dateKey, in: modelContext) else {
-            return false
-        }
-        
-        // Grant daily award
-        let xpGranted = await calculateDailyXP()
-        let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: xpGranted)
-        
-        modelContext.insert(award)
-        
-        do {
-            try modelContext.save()
+        // Atomic operation: check existence and insert in one transaction
+        return await modelContext.perform {
+            // Check if award already exists (idempotency)
+            guard DailyAward.validateUniqueConstraint(userId: userId, dateKey: dateKey, in: self.modelContext) else {
+                return false
+            }
             
-            // Update streak
-            await updateStreak(userId: userId, dateKey: dateKey)
+            // Create and insert award
+            let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: Self.XP_PER_DAY)
+            self.modelContext.insert(award)
             
-            // Emit event
-            eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
-            
-            return true
-        } catch {
-            print("Failed to save daily award: \(error)")
-            return false
+            do {
+                try self.modelContext.save()
+                
+                // Update streak
+                await self.updateStreak(userId: userId, dateKey: dateKey)
+                
+                // Emit event
+                await self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
+                
+                #if DEBUG
+                // Verify no extra XP was granted
+                try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
+                #endif
+                
+                return true
+            } catch {
+                print("Failed to save daily award: \(error)")
+                return false
+            }
         }
     }
     
-    /// Called when a habit is uncompleted
-    public func onHabitUncompleted(date: Date, userId: String) async {
+    /// Called when a habit is completed (legacy method for compatibility)
+    /// Returns true if a daily award was granted
+    public func onHabitCompleted(date: Date, userId: String) async -> Bool {
+        return await grantIfAllComplete(date: date, userId: userId)
+    }
+    
+    /// Idempotent method to revoke daily award if any habit is uncompleted
+    /// Returns true if award was revoked, false if no award existed
+    public func revokeIfAnyIncomplete(date: Date, userId: String) async -> Bool {
         let dateKey = DateKey.key(for: date)
         
-        // Check if award exists for this date
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let existingAwards = (try? modelContext.fetch(request)) ?? []
-        
-        guard let award = existingAwards.first else {
-            return // No award to revoke
-        }
-        
-        // Revoke award
-        modelContext.delete(award)
-        
-        do {
-            try modelContext.save()
+        // Atomic operation: fetch and delete in one transaction
+        return await modelContext.perform {
+            // Check if award exists for this date
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId && award.dateKey == dateKey
+            }
             
-            // Revert streak
-            await revertStreak(userId: userId, dateKey: dateKey)
+            let request = FetchDescriptor<DailyAward>(predicate: predicate)
+            let existingAwards = (try? self.modelContext.fetch(request)) ?? []
             
-            // Emit event
-            eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
-        } catch {
-            print("Failed to revoke daily award: \(error)")
+            guard let award = existingAwards.first else {
+                return false // No award to revoke
+            }
+            
+            // Revoke award
+            self.modelContext.delete(award)
+            
+            do {
+                try self.modelContext.save()
+                
+                // Revert streak
+                await self.revertStreak(userId: userId, dateKey: dateKey)
+                
+                // Emit event
+                await self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
+                
+                return true
+            } catch {
+                print("Failed to revoke daily award: \(error)")
+                return false
+            }
         }
+    }
+    
+    /// Called when a habit is uncompleted (legacy method for compatibility)
+    public func onHabitUncompleted(date: Date, userId: String) async {
+        await revokeIfAnyIncomplete(date: date, userId: userId)
     }
     
     // MARK: - Private Methods
@@ -109,9 +136,30 @@ public class DailyAwardService: ObservableObject {
     
     private func calculateDailyXP() async -> Int {
         // Calculate XP based on completed habits
-        // For now, returning a fixed value
-        return 100
+        // Using the standardized XP_PER_DAY constant
+        return Self.XP_PER_DAY
     }
+    
+    // MARK: - Debug Methods
+    
+    #if DEBUG
+    /// Debug method to verify no extra XP has been granted beyond the daily limit
+    private func assertNoExtraXP(userId: String, dateKey: String) async throws {
+        // Fetch all awards for this user and date
+        let predicate = #Predicate<DailyAward> { award in
+            award.userId == userId && award.dateKey == dateKey
+        }
+        
+        let request = FetchDescriptor<DailyAward>(predicate: predicate)
+        let awards = (try? modelContext.fetch(request)) ?? []
+        
+        // Verify only one award exists and XP is within limits
+        assert(awards.count <= 1, "Multiple awards found for user \(userId) on \(dateKey)")
+        if let award = awards.first {
+            assert(award.xpGranted <= Self.XP_PER_DAY, "Award XP \(award.xpGranted) exceeds daily limit \(Self.XP_PER_DAY)")
+        }
+    }
+    #endif
     
     private func updateStreak(userId: String, dateKey: String) async {
         // Update user streak based on consecutive daily awards
