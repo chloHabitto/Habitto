@@ -545,6 +545,12 @@ struct HabitDetailView: View {
         VStack(spacing: 16) {
             // Reminders header
             HStack {
+                Image("Icon-Bell_Outlined")
+                    .resizable()
+                    .renderingMode(.template)
+                    .frame(width: 16, height: 16)
+                    .foregroundColor(.text05)
+                
                 Text("Reminders")
                     .font(.appBodyMedium)
                     .foregroundColor(.text05)
@@ -570,7 +576,7 @@ struct HabitDetailView: View {
             } else {
                 // Empty state
                 HStack {
-                    Image("Icon-BellOff_Filled")
+                    Image("Icon-BellOff_Outlined")
                         .resizable()
                         .frame(width: 16, height: 16)
                         .foregroundColor(.text04)
@@ -592,7 +598,7 @@ struct HabitDetailView: View {
         HStack(spacing: 16) {
             // Time icon - shows different icon based on whether time has passed
             let reminderHasPassed = hasReminderTimePassed(reminder.time)
-            let iconName = reminderHasPassed ? "Icon-Bell_Filled" : "Icon-BellOn_Filled"
+            let iconName = reminderHasPassed ? "Icon-Bell_Outlined" : "Icon-BellOn_Outlined"
             
             Image(iconName)
                 .resizable()
@@ -611,7 +617,7 @@ struct HabitDetailView: View {
                 selectedReminder = reminder
                 showingReminderSheet = true
             }) {
-                Image("Icon-Pen_Filled")
+                Image("Icon-Pen_Outlined")
                     .resizable()
                     .frame(width: 18, height: 18)
                     .foregroundColor(.text03)
