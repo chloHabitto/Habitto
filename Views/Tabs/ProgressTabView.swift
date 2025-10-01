@@ -464,14 +464,14 @@ struct ProgressTabView: View {
         }
         .sheet(isPresented: $showingMonthPicker) {
             MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
-                .presentationDetents([.height(520)])
+                .presentationDetents([.height(450)])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(.regularMaterial)
                 .presentationCornerRadius(20)
         }
         .sheet(isPresented: $showingYearPicker) {
             YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
-                .presentationDetents([.height(400)])
+                .presentationDetents([.height(400), .large])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(.regularMaterial)
                 .presentationCornerRadius(20)
