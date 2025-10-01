@@ -40,7 +40,8 @@ struct XPDebugPanel: View {
                     DebugRow(label: "DailyAward count:", value: "\(debugInfo.dailyAwardCount)")
                     DebugRow(label: "Last award date:", value: debugInfo.lastAwardDate)
                     DebugRow(label: "Today's award:", value: debugInfo.todaysAwardStatus, isError: !debugInfo.todaysAwardGranted)
-                    DebugRow(label: "Auth issue:", value: "❌ Hardcoded userId - no auth integration", isError: true)
+                    DebugRow(label: "Auth status:", value: debugInfo.authStatus, isError: !debugInfo.isAuthenticated)
+                    DebugRow(label: "Migration:", value: debugInfo.migrationStatus, isError: !debugInfo.migrationCompleted)
                 }
                 
                 // Action Buttons
@@ -113,9 +114,22 @@ struct XPDebugPanel: View {
         
         Task {
             await MainActor.run {
-                // Get current userId
+                // Get current userId and auth status
                 let userId = getCurrentUserId()
                 debugInfo.currentUserId = userId
+                
+                // Check authentication status
+                if let user = AuthenticationManager.shared.currentUser {
+                    debugInfo.isAuthenticated = true
+                    debugInfo.authStatus = "✅ Authenticated (\(user.email ?? "no email"))"
+                } else {
+                    debugInfo.isAuthenticated = false
+                    debugInfo.authStatus = "❌ Guest mode"
+                }
+                
+                // Check migration status
+                debugInfo.migrationCompleted = XPDataMigration.shared.isMigrationCompleted()
+                debugInfo.migrationStatus = debugInfo.migrationCompleted ? "✅ Completed" : "❌ Pending"
                 
                 // Get XPManager values
                 debugInfo.xpManagerTotalXP = xpManager.userProgress.totalXP
@@ -239,10 +253,16 @@ struct XPDebugPanel: View {
     }
     
     private func getCurrentUserId() -> String {
-        // This should match the userId used in DailyAwardService
-        let userId = "current_user_id"
-        print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId)")
-        return userId
+        // Get current user ID from authentication system
+        if let user = AuthenticationManager.shared.currentUser {
+            let userId = user.uid
+            print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (authenticated)")
+            return userId
+        } else {
+            let userId = CurrentUser.guestId
+            print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (guest)")
+            return userId
+        }
     }
 }
 
@@ -284,6 +304,10 @@ struct XPDebugInfo {
     var lastAwardDate: String = "Loading..."
     var todaysAwardGranted: Bool = false
     var todaysAwardStatus: String = "Loading..."
+    var isAuthenticated: Bool = false
+    var authStatus: String = "Loading..."
+    var migrationCompleted: Bool = false
+    var migrationStatus: String = "Loading..."
 }
 
 #Preview {
