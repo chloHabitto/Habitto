@@ -22,12 +22,7 @@ public actor DailyAwardService: ObservableObject {
         let dateKey = DateKey.key(for: date)
         
         #if DEBUG
-        let preXP = await modelContext.perform {
-            let predicate = #Predicate<DailyAward> { award in award.userId == userId }
-            let request = FetchDescriptor<DailyAward>(predicate: predicate)
-            let awards = (try? self.modelContext.fetch(request)) ?? []
-            return awards.reduce(0) { $0 + $1.xpGranted }
-        }
+        let preXP = self.computeTotalXPFromLedger(userId: userId)
         print("🔍 TRACE [grantIfAllComplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
         #endif
         
@@ -51,7 +46,7 @@ public actor DailyAwardService: ObservableObject {
         #if DEBUG
         // Capture pre-save state for runtime tripwire
         let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-        let preXP = self.computeTotalXPFromLedger(userId: userId)
+        let preSaveXP = self.computeTotalXPFromLedger(userId: userId)
         #endif
         
         do {
@@ -66,12 +61,12 @@ public actor DailyAwardService: ObservableObject {
             
             // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
             let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            let postSaveXP = self.computeTotalXPFromLedger(userId: userId)
             try self.assertXPDeltaValid(
                 userId: userId,
                 dateKey: dateKey,
-                preXP: preXP,
-                postXP: postXP,
+                preXP: preSaveXP,
+                postXP: postSaveXP,
                 preAwards: preAwardCount,
                 postAwards: postAwardCount,
                 expectedDelta: Self.XP_PER_DAY
@@ -87,11 +82,9 @@ public actor DailyAwardService: ObservableObject {
             #if DEBUG
             // Verify no extra XP was granted
             try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
-            #endif
             
-            #if DEBUG
-            let postXP = self.computeTotalXPFromLedger(userId: userId)
-            print("  ↳ ✅ Award granted: postXP=\(postXP), delta=+\(postXP - preXP)")
+            let finalXP = self.computeTotalXPFromLedger(userId: userId)
+            print("  ↳ ✅ Award granted: postXP=\(finalXP), delta=+\(finalXP - preXP)")
             #endif
             
             return true
@@ -139,9 +132,9 @@ public actor DailyAwardService: ObservableObject {
         modelContext.delete(award)
         
         #if DEBUG
-        // Capture pre-save state for runtime tripwire
+        // Capture pre-save state for runtime tripwire (after delete, before save)
         let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-        let preXP = self.computeTotalXPFromLedger(userId: userId)
+        let preSaveXP = self.computeTotalXPFromLedger(userId: userId)
         #endif
         
         do {
@@ -156,12 +149,12 @@ public actor DailyAwardService: ObservableObject {
             
             // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
             let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let postXP = self.computeTotalXPFromLedger(userId: userId)
+            let postSaveXP = self.computeTotalXPFromLedger(userId: userId)
             try self.assertXPDeltaValid(
                 userId: userId,
                 dateKey: dateKey,
-                preXP: preXP,
-                postXP: postXP,
+                preXP: preSaveXP,
+                postXP: postSaveXP,
                 preAwards: preAwardCount,
                 postAwards: postAwardCount,
                 expectedDelta: -Self.XP_PER_DAY
@@ -175,8 +168,8 @@ public actor DailyAwardService: ObservableObject {
             self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
             
             #if DEBUG
-            let postXP = self.computeTotalXPFromLedger(userId: userId)
-            print("  ↳ ✅ Award revoked: postXP=\(postXP), delta=\(postXP - preXP)")
+            let finalXP = self.computeTotalXPFromLedger(userId: userId)
+            print("  ↳ ✅ Award revoked: postXP=\(finalXP), delta=\(finalXP - preXP)")
             #endif
             
             return true
