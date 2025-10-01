@@ -153,7 +153,6 @@ struct DatePickerModal: CenterPopup {
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
             .frame(height: 520)
             .onAppear {
                 currentMonth = tempSelectedDate
