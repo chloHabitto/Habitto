@@ -122,6 +122,7 @@ struct HabitsTabView: View {
     @State private var habitsOrder: [Habit]
     @State private var dragOverItem: Habit? = nil
     @State private var insertionIndex: Int? = nil
+    @State private var habitAnimationStates: [UUID: CGFloat] = [:]
     
     // Debounce timer for drag state updates
     @State private var dragUpdateTimer: Timer?
@@ -252,6 +253,14 @@ struct HabitsTabView: View {
                                     removal: .scale(scale: 0.9).combined(with: .opacity)
                                 ))
                                 .animation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.03), value: filteredHabits.map { $0.id })
+                                .opacity(habitAnimationStates[habit.id] ?? 0)
+                                .scaleEffect(habitAnimationStates[habit.id] ?? 0.9)
+                                .offset(y: (habitAnimationStates[habit.id] ?? 0) == 1 ? 0 : 15)
+                                .onAppear {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.05)) {
+                                        habitAnimationStates[habit.id] = 1.0
+                                    }
+                                }
                             }
                             
                             // Show insertion line at the very end if dragging to the bottom
