@@ -76,6 +76,16 @@ struct XPDebugPanel: View {
                            .padding(.vertical, 4)
                            .background(Color.blue.opacity(0.1))
                            .cornerRadius(6)
+                           
+                           Button("Level Analysis") {
+                               showLevelAnalysis()
+                           }
+                           .font(.system(size: 11, weight: .medium))
+                           .foregroundColor(.purple)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(Color.purple.opacity(0.1))
+                           .cornerRadius(6)
                     
                     Button("Complete All Habits") {
                         testCompleteAllHabits()
@@ -257,6 +267,83 @@ struct XPDebugPanel: View {
                     
                 } catch {
                     print("❌ TEST: Error fetching today's awards: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func showLevelAnalysis() {
+        print("🧪 LEVEL ANALYSIS: Complete XP and Leveling Analysis")
+        
+        Task {
+            await MainActor.run {
+                let currentXP = xpManager.userProgress.totalXP
+                let currentLevel = xpManager.userProgress.currentLevel
+                let dailyXP = xpManager.userProgress.dailyXP
+                
+                print("🧪 LEVEL ANALYSIS: Current Status")
+                print("  Current Level: \(currentLevel)")
+                print("  Total XP: \(currentXP)")
+                print("  Daily XP: \(dailyXP)")
+                
+                // Calculate level progression
+                let levelBaseXP = 50
+                let xpPerDay = 100
+                
+                print("\n🧪 LEVEL ANALYSIS: Level Progression Table")
+                for level in 1...20 {
+                    let xpNeeded = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
+                    let daysNeeded = max(1, Int(ceil(Double(xpNeeded) / Double(xpPerDay))))
+                    let status = level <= currentLevel ? "✅ ACHIEVED" : (level == currentLevel + 1 ? "🎯 NEXT" : "⏳ FUTURE")
+                    print("  Level \(level): \(xpNeeded) XP (\(daysNeeded) days) \(status)")
+                }
+                
+                // Calculate days to next level
+                let nextLevel = currentLevel + 1
+                let xpForNextLevel = Int(pow(Double(nextLevel - 1), 2) * Double(levelBaseXP))
+                let xpNeeded = xpForNextLevel - currentXP
+                let daysToNextLevel = max(0, Int(ceil(Double(xpNeeded) / Double(xpPerDay))))
+                
+                print("\n🧪 LEVEL ANALYSIS: Progress to Next Level")
+                print("  Next Level: \(nextLevel)")
+                print("  XP Needed: \(xpNeeded)")
+                print("  Days Needed: \(daysToNextLevel)")
+                
+                // Calculate total XP from all awards
+                do {
+                    let userId = getCurrentUserId()
+                    let predicate = #Predicate<DailyAward> { award in
+                        award.userId == userId
+                    }
+                    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+                    let allAwards = try modelContext.fetch(request)
+                    let totalAwardedXP = allAwards.reduce(0) { $0 + $1.xpGranted }
+                    
+                    print("\n🧪 LEVEL ANALYSIS: Historical Data")
+                    print("  Total Awards: \(allAwards.count)")
+                    print("  Total Awarded XP: \(totalAwardedXP)")
+                    print("  Average XP per Award: \(allAwards.isEmpty ? 0 : totalAwardedXP / allAwards.count)")
+                    
+                    if !allAwards.isEmpty {
+                        let firstAward = allAwards.min(by: { $0.createdAt < $1.createdAt })!
+                        let daysSinceFirst = Calendar.current.dateComponents([.day], from: firstAward.createdAt, to: Date()).day ?? 0
+                        let averageXPPerDay = daysSinceFirst > 0 ? Double(totalAwardedXP) / Double(daysSinceFirst) : 0
+                        print("  Days Since First Award: \(daysSinceFirst)")
+                        print("  Average XP per Day: \(String(format: "%.1f", averageXPPerDay))")
+                    }
+                } catch {
+                    print("❌ LEVEL ANALYSIS: Error fetching historical data: \(error)")
+                }
+                
+                print("\n🧪 LEVEL ANALYSIS: Assessment")
+                if daysToNextLevel <= 1 {
+                    print("  ⚡ Leveling is VERY FAST - consider increasing XP requirements")
+                } else if daysToNextLevel <= 3 {
+                    print("  🚀 Leveling is FAST - good for engagement")
+                } else if daysToNextLevel <= 7 {
+                    print("  ✅ Leveling is BALANCED - good pace")
+                } else {
+                    print("  🐌 Leveling is SLOW - consider decreasing XP requirements")
                 }
             }
         }

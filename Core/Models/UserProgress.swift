@@ -23,8 +23,8 @@ struct UserProgress: Codable, Identifiable {
     // Computed properties
     var levelProgress: Double {
         // Calculate progress based on XP needed for current level vs XP needed for next level
-        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * 25)
-        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * 25)
+        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * 50)
+        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * 50)
         let xpNeededForNextLevel = nextLevelStartXP - currentLevelStartXP
         let xpInCurrentLevel = totalXP - currentLevelStartXP
         
