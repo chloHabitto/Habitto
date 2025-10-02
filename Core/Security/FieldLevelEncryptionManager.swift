@@ -45,7 +45,9 @@ actor FieldLevelEncryptionManager {
     func encryptField(_ value: String) async throws -> EncryptedField {
         // Feature flag protection: Check if field-level encryption is enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.fieldLevelEncryption
+            return false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
@@ -72,7 +74,9 @@ actor FieldLevelEncryptionManager {
     func decryptField(_ encryptedField: EncryptedField) async throws -> String {
         // Feature flag protection: Check if field-level encryption is enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.fieldLevelEncryption
+            return false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
@@ -115,7 +119,9 @@ actor FieldLevelEncryptionManager {
     func encryptSensitiveFields<T: Codable>(_ object: T, fieldPaths: [String]) async throws -> EncryptedObject<T> {
         // Feature flag protection: Check if field-level encryption is enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.fieldLevelEncryption
+            return false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
@@ -150,7 +156,9 @@ actor FieldLevelEncryptionManager {
     func decryptSensitiveFields<T: Codable>(_ encryptedObject: EncryptedObject<T>) async throws -> T {
         // Feature flag protection: Check if field-level encryption is enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.fieldLevelEncryption
+            return false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
@@ -178,7 +186,9 @@ actor FieldLevelEncryptionManager {
     func rotateEncryptionKey() async throws {
         // Feature flag protection: Check if field-level encryption is enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.fieldLevelEncryption, forUser: nil)
+            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.fieldLevelEncryption
+            return false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")

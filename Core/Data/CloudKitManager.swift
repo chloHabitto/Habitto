@@ -198,11 +198,12 @@ class CloudKitManager: ObservableObject {
         // Feature flag protection: Only initialize if CloudKit sync is enabled
         // Since this is a sync method, we'll defer the feature flag check to the async initialization
         Task { @MainActor in
-            let featureFlags = FeatureFlagsManager.shared
-            guard featureFlags.isEnabled(.cloudKitSync, forUser: nil) else {
-                print("🚩 CloudKitManager: CloudKit sync disabled by feature flag")
-                return
-            }
+            let featureFlags = FeatureFlagManager.shared
+            // TODO: Add cloudKitSync feature flag to FeatureFlagProvider
+            // guard featureFlags.isEnabled(.cloudKitSync, forUser: nil) else {
+            //     print("🚩 CloudKitManager: CloudKit sync disabled by feature flag")
+            //     return
+            // }
             
             // This method can be called to ensure CloudKit sync is properly initialized
             // Container is always available, so we can proceed directly
@@ -371,8 +372,6 @@ extension CKRecord {
             reminder: reminder,
             startDate: startDate,
             endDate: endDate,
-            isCompleted: isCompleted,
-            streak: streak,
             reminders: [], // Would need separate records for reminders
             baseline: baseline,
             target: target

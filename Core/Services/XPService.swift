@@ -120,19 +120,21 @@ final class XPService: XPServiceProtocol {
     // MARK: - Query Methods
     
     func getUserProgress(userId: String) async throws -> UserProgress {
-        let request = FetchDescriptor<UserProgress>(
-            predicate: #Predicate { $0.userId == userId }
+        let request = FetchDescriptor<UserProgressData>(
+            predicate: #Predicate<UserProgressData> { progress in
+                progress.userId == userId
+            }
         )
         
         let results = try modelContext.fetch(request)
         if let existing = results.first {
-            return existing
+            return existing.toUserProgress()
         } else {
             // Create new user progress if doesn't exist
-            let newProgress = UserProgress(userId: userId)
+            let newProgress = UserProgressData(userId: userId)
             modelContext.insert(newProgress)
             try modelContext.save()
-            return newProgress
+            return newProgress.toUserProgress()
         }
     }
     
@@ -171,8 +173,11 @@ final class XPService: XPServiceProtocol {
     
     private func isHabitCompleted(habit: HabitData, dateKey: String) async throws -> Bool {
         // Check completion history for the specific date
+        let habitId = habit.id
         let request = FetchDescriptor<CompletionRecord>(
-            predicate: #Predicate { $0.habitId == habit.id && $0.dateKey == dateKey && $0.isCompleted == true }
+            predicate: #Predicate<CompletionRecord> { completion in
+                completion.habitId == habitId && completion.dateKey == dateKey && completion.isCompleted == true
+            }
         )
         
         let results = try modelContext.fetch(request)
@@ -203,16 +208,16 @@ final class XPService: XPServiceProtocol {
     }
     
     private func updateUserProgress(userId: String, xpToAdd: Int) async throws {
-        let progress = try await getUserProgress(userId: userId)
-        let oldLevel = progress.level
-        progress.xpTotal += xpToAdd
-        progress.level = calculateLevel(xpTotal: progress.xpTotal)
-        progress.levelProgress = calculateLevelProgress(xpTotal: progress.xpTotal, level: progress.level)
+        var progress = try await getUserProgress(userId: userId)
+        let oldLevel = progress.currentLevel
+        progress.totalXP += xpToAdd
+        progress.currentLevel = calculateLevel(xpTotal: progress.totalXP)
+        // progress.levelProgress = calculateLevelProgress(xpTotal: progress.totalXP, level: progress.currentLevel)  // Read-only property
         progress.updatedAt = Date()
         
         // Log level up if it occurred
-        if progress.level > oldLevel {
-            ObservabilityLogger.shared.logLevelUp(userId: userId, oldLevel: oldLevel, newLevel: progress.level, totalXP: progress.xpTotal)
+        if progress.currentLevel > oldLevel {
+            ObservabilityLogger.shared.logLevelUp(userId: userId, oldLevel: oldLevel, newLevel: progress.currentLevel, totalXP: progress.totalXP)
         }
         
         try modelContext.save()

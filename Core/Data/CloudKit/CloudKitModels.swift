@@ -402,8 +402,6 @@ extension CloudKitHabit {
             reminder: reminder,
             startDate: startDate,
             endDate: endDate,
-            isCompleted: isCompleted,
-            streak: streak,
             createdAt: createdAt,
             reminders: [], // Would need separate sync for reminders
             baseline: baseline,

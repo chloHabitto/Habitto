@@ -3,7 +3,7 @@ import SwiftUI
 struct StreakView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedProgressTab = 0
-    @State private var streakStatistics = StreakStatistics(currentStreak: 0, bestStreak: 0, averageStreak: 0, completionRate: 0, consistencyRate: 0)
+    @State private var streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
     
     // Performance optimization: Cache expensive data
     @State private var yearlyHeatmapData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []

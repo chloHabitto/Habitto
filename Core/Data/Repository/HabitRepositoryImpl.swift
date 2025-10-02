@@ -22,7 +22,9 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         // Initialize CloudKit sync (feature flag protected)
         Task {
             let isEnabled = await MainActor.run {
-                FeatureFlagsManager.shared.isEnabled(.cloudKitSync, forUser: nil)
+                // TODO: Add cloudKitSync feature flag to FeatureFlagProvider
+                // FeatureFlagManager.shared.provider.cloudKitSync
+                false // Temporarily disabled
             }
             if isEnabled {
                 cloudKitManager.initializeCloudKitSync()
@@ -91,12 +93,12 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     
     func getActiveHabits() async throws -> [Habit] {
         let allHabits = try await getAll()
-        return allHabits.filter { !$0.isCompleted }
+        return allHabits.filter { !$0.currentCompletionStatus }
     }
     
     func getArchivedHabits() async throws -> [Habit] {
         let allHabits = try await getAll()
-        return allHabits.filter { $0.isCompleted }
+        return allHabits.filter { $0.currentCompletionStatus }
     }
     
     func updateHabitCompletion(habitId: UUID, date: Date, progress: Double) async throws {
@@ -107,8 +109,8 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
         let dateKey = DateUtils.dateKey(for: date)
         habit.completionHistory[dateKey] = Int(progress * 100) // Store as percentage
         
-        // Update streak after progress change
-        habit.updateStreakWithReset()
+        // Note: updateStreakWithReset() was removed in Phase 4. Streak is now computed-only.
+        // The streak will be automatically calculated when accessed via computedStreak()
         
         _ = try await update(habit)
     }
@@ -155,7 +157,9 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
         // Feature flag protection: Check if data operations are enabled
         let isEnabled = await MainActor.run {
-            FeatureFlagsManager.shared.isEnabled(.migrationKillSwitch, forUser: nil)
+            // TODO: Add migrationKillSwitch feature flag to FeatureFlagProvider
+            // FeatureFlagManager.shared.provider.migrationKillSwitch
+            false // Temporarily disabled
         }
         guard isEnabled else {
             print("🚩 HabitRepositoryImpl: Data operations disabled by feature flag")

@@ -339,9 +339,7 @@ extension View {
             goal: "1 chapter",
             reminder: "No reminder",
             startDate: Date(),
-            endDate: nil,
-            isCompleted: false,
-            streak: 5
+            endDate: nil
         ),
         onDismiss: {}
     )

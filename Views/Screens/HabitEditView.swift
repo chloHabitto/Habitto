@@ -1042,8 +1042,6 @@ struct HabitEditView: View {
                 reminder: isReminderEnabled ? selectedReminder : "",
                 startDate: startDate,
                 endDate: endDate,
-                isCompleted: habit.isCompleted,
-                streak: habit.streak,
                 reminders: reminders
             )
         } else {
@@ -1069,8 +1067,6 @@ struct HabitEditView: View {
                 reminder: isReminderEnabled ? selectedReminder : "",
                 startDate: startDate,
                 endDate: endDate,
-                isCompleted: habit.isCompleted,
-                streak: habit.streak,
                 reminders: reminders,
                 baseline: Int(baselineNumber) ?? 0,
                 target: Int(targetNumber) ?? 0
@@ -1090,8 +1086,6 @@ struct HabitEditView: View {
             reminder: updatedHabit.reminder,
             startDate: updatedHabit.startDate,
             endDate: endDate,
-            isCompleted: habit.isCompleted, // Preserve original completion status
-            streak: habit.streak, // Preserve original streak
             createdAt: habit.createdAt, // Preserve original creation date
             reminders: updatedHabit.reminders,
             baseline: updatedHabit.baseline,
@@ -1101,8 +1095,8 @@ struct HabitEditView: View {
             actualUsage: habit.actualUsage // Preserve original usage data
         )
         
-        // Recalculate completion status based on new goal while preserving historical data
-        updatedHabit.recalculateCompletionStatus()
+        // ✅ PHASE 4: Completion status is now computed-only, no need to recalculate
+        // Completion status is derived from completion history in real-time
         
         // Update notifications for the habit
         NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
@@ -1258,7 +1252,5 @@ struct HabitEditView: View {
         reminder: "9:00 AM",
         startDate: Date(),
         endDate: nil,
-        isCompleted: false,
-        streak: 5
     ), onSave: { _ in })
 } 

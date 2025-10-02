@@ -655,8 +655,8 @@ class HabitRepository: ObservableObject {
                 print("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
             }
             
-            // Update streak after progress change
-            habits[index].updateStreakWithReset()
+            // ✅ PHASE 4: Streak is now computed-only, no need to update
+            // Streak is derived from completion history in real-time
             objectWillChange.send()
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
             
@@ -688,7 +688,7 @@ class HabitRepository: ObservableObject {
                 DispatchQueue.main.async {
                     if let index = self.habits.firstIndex(where: { $0.id == habit.id }) {
                         self.habits[index].completionHistory[dateKey] = habit.completionHistory[dateKey] ?? 0
-                        self.habits[index].updateStreakWithReset()
+                        // ✅ PHASE 4: Streak is now computed-only, no need to update
                         self.objectWillChange.send()
                         print("🔄 HabitRepository: Reverted UI change due to persistence failure")
                     }
@@ -805,8 +805,6 @@ extension HabitEntity {
             reminder: self.reminder ?? "No reminder",
             startDate: self.startDate ?? Date(),
             endDate: self.endDate,
-            isCompleted: self.isCompleted,
-            streak: Int(self.streak),
             createdAt: self.createdAt ?? Date(),
             reminders: reminders,
             baseline: Int(self.baseline),

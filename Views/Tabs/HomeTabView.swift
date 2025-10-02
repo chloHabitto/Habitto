@@ -731,8 +731,7 @@ struct HomeTabView: View {
                 let instance = HabitInstance(
                     id: "\(habit.id)_\(i)",
                     originalDate: instanceDate,
-                    currentDate: instanceDate,
-                    isCompleted: false
+                    currentDate: instanceDate
                 )
                 habitInstances.append(instance)
                 // print("🔍 Created instance \(i): \(instanceDate)") // Removed as per edit hint
@@ -849,6 +848,42 @@ struct HomeTabView: View {
     }
     
 
+    
+    // ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
+    private func prefetchCompletionStatus() async {
+        guard let userId = AuthenticationManager.shared.currentUser?.uid else {
+            print("⚠️ HomeTabView: No user ID for prefetch")
+            return
+        }
+        
+        let dateKey = Habit.dateKey(for: selectedDate)
+        
+        // Single query to get all completion records for today
+        let request = FetchDescriptor<CompletionRecord>(
+            predicate: #Predicate { 
+                $0.userId == userId && 
+                $0.dateKey == dateKey
+            }
+        )
+        
+        do {
+            let completions = try modelContext.fetch(request)
+            
+            // Build completion status map
+            var statusMap: [UUID: Bool] = [:]
+            for completion in completions {
+                statusMap[completion.habitId] = completion.isCompleted
+            }
+            
+            await MainActor.run {
+                self.completionStatusMap = statusMap
+            }
+            
+            print("✅ HomeTabView: Prefetched completion status for \(completions.count) habits")
+        } catch {
+            print("❌ HomeTabView: Failed to prefetch completion status: \(error)")
+        }
+    }
     
     // Refresh habits data when user pulls down
     private func refreshHabits() async {

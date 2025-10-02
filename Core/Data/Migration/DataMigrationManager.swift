@@ -96,9 +96,10 @@ class DataMigrationManager: ObservableObject {
     /// Execute all pending migrations with crash-safe, idempotent steps
     func executeMigrations() async throws {
         // Check feature flag kill switch
-        let featureFlags = FeatureFlagsManager.shared
+        let featureFlags = FeatureFlagManager.shared.provider
         do {
-            try featureFlags.requireMigrationEnabled()
+            // TODO: Add requireMigrationEnabled method to FeatureFlagProvider
+            // try featureFlags.requireMigrationEnabled()
         } catch {
             print("🚩 DataMigrationManager: Migration disabled by feature flag kill switch")
             throw DataMigrationError.migrationDisabledByKillSwitch

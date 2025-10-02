@@ -10,7 +10,7 @@ class MigrationService: ObservableObject {
     // MARK: - Properties
     @Published var isRunning = false
     @Published var lastMigrationDate: Date?
-    @Published var migrationStatus: MigrationStatus = .idle
+    @Published var migrationStatus: MigrationStatus = .pending
     
     private let migrationManager = DataMigrationManager.shared
     private let userDefaults = UserDefaults.standard
@@ -52,7 +52,7 @@ class MigrationService: ObservableObject {
         }
         
         isRunning = true
-        migrationStatus = .running
+        migrationStatus = .inProgress
         
         do {
             try await migrationManager.executeMigrations()
@@ -62,7 +62,7 @@ class MigrationService: ObservableObject {
             print("✅ MigrationService: Migrations completed successfully")
             
         } catch {
-            migrationStatus = .failed(error)
+            migrationStatus = .failed
             print("❌ MigrationService: Migration failed: \(error.localizedDescription)")
         }
         
@@ -86,12 +86,12 @@ class MigrationService: ObservableObject {
     
     /// Check if app needs to show migration UI
     func shouldShowMigrationUI() -> Bool {
-        return migrationStatus == .running || migrationStatus == .failed(nil)
+        return migrationStatus == .inProgress || migrationStatus == .failed
     }
     
     /// Reset migration status
     func resetMigrationStatus() {
-        migrationStatus = .idle
+        migrationStatus = .pending
     }
     
     // MARK: - Private Methods
@@ -104,13 +104,13 @@ class MigrationService: ObservableObject {
 }
 
 // MARK: - Migration Status
-enum MigrationStatus: Equatable {
+enum MigrationServiceStatus: Equatable {
     case idle
     case running
     case completed
     case failed(Error?)
     
-    static func == (lhs: MigrationStatus, rhs: MigrationStatus) -> Bool {
+    static func == (lhs: MigrationServiceStatus, rhs: MigrationServiceStatus) -> Bool {
         switch (lhs, rhs) {
         case (.idle, .idle), (.running, .running), (.completed, .completed):
             return true

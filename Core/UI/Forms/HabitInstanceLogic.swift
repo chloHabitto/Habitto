@@ -221,8 +221,7 @@ class HabitInstanceLogic {
                 let instance = HabitInstance(
                     id: "\(habit.id)_\(i)",
                     originalDate: instanceDate,
-                    currentDate: instanceDate,
-                    isCompleted: false
+                    currentDate: instanceDate
                 )
                 habitInstances.append(instance)
             }
@@ -275,7 +274,7 @@ class HabitInstanceLogic {
         return habitInstances.filter { instance in
             let instanceDate = DateUtils.startOfDay(for: instance.currentDate)
             let targetDateStart = DateUtils.startOfDay(for: targetDate)
-            return instanceDate == targetDateStart && !instance.isCompleted
+            return instanceDate == targetDateStart && !instance.isCompleted(for: habit)
         }
     }
 }

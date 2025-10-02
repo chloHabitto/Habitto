@@ -4,8 +4,8 @@ import SwiftData
 @Model
 public class DailyAward {
     @Attribute(.unique) public var id: UUID
-    @Attribute(.indexed) public var userId: String
-    @Attribute(.indexed) public var dateKey: String
+    public var userId: String
+    public var dateKey: String
     public var xpGranted: Int
     public var allHabitsCompleted: Bool
     public var createdAt: Date

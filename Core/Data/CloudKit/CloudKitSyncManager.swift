@@ -224,8 +224,6 @@ final class CloudKitSyncManager {
             reminder: reminder,
             startDate: startDate,
             endDate: endDate,
-            isCompleted: isCompleted,
-            streak: streak,
             createdAt: createdAt,
             reminders: [],
             baseline: 0,

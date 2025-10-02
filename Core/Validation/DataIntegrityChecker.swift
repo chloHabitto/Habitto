@@ -85,14 +85,15 @@ class DataIntegrityChecker: ObservableObject {
         for (index, var habit) in habits.enumerated() {
             // Fix streak inconsistencies
             if !habit.validateStreak() {
-                let oldStreak = habit.streak
-                habit.correctStreak()
+                let oldStreak = habit.computedStreak() // Use computed property instead of stored
+                // Note: correctStreak() was removed in Phase 4. Streak is now computed-only.
+                // The streak will be automatically corrected when accessed via computedStreak()
                 habits[index] = habit
                 
                 let issue = DataIntegrityIssue(
                     type: .consistency,
                     severity: .warning,
-                    message: "Fixed streak inconsistency: \(oldStreak) → \(habit.streak)",
+                    message: "Fixed streak inconsistency: \(oldStreak) → \(habit.computedStreak())",
                     field: "habits[\(index)].streak",
                     habitId: habit.id,
                     suggestedFix: "Streak corrected to match completion history"

@@ -1122,8 +1122,6 @@ struct ReminderEditSheet: View {
         goal: "1 time a day",
         reminder: "9:00 AM",
         startDate: Date(),
-        endDate: nil,
-        isCompleted: false,
-        streak: 5
+        endDate: nil
     ), onUpdateHabit: nil, selectedDate: Date(), onDeleteHabit: nil)
 } 

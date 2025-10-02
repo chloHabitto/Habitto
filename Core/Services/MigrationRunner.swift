@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 import OSLog
 
 // MARK: - Migration Runner
@@ -119,17 +120,17 @@ final class MigrationRunner {
                     id: habit.id,
                     userId: userId,
                     name: habit.name,
-                    habitDescription: habit.habitDescription,
+                    habitDescription: habit.description,
                     icon: habit.icon,
-                    colorData: try encodeColor(habit.color),
-                    habitType: habit.habitType.rawValue,
+                    color: habit.color,
+                    habitType: habit.habitType,
                     schedule: habit.schedule,
                     goal: habit.goal,
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: habit.endDate,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak
+                    // isCompleted: habit.isCompleted,  // ❌ DEPRECATED: Use isCompleted(for:) instead
+                    // streak: habit.streak  // ❌ DEPRECATED: Use computedStreak() instead
                 )
                 
                 context.insert(habitData)
@@ -205,7 +206,7 @@ final class MigrationRunner {
         // In a real implementation, this would analyze historical completion data
         var migratedCount = 0
         
-        if legacyProgress.xpTotal > 0 {
+        if legacyProgress.totalXP > 0 {
             // Create a daily award for today with the total XP
             let today = Date()
             let dateKey = DateKey.key(for: today)
@@ -220,7 +221,7 @@ final class MigrationRunner {
                 let dailyAward = DailyAward(
                     userId: userId,
                     dateKey: dateKey,
-                    xpGranted: legacyProgress.xpTotal,
+                    xpGranted: legacyProgress.totalXP,
                     allHabitsCompleted: true
                 )
                 
@@ -239,7 +240,7 @@ final class MigrationRunner {
         logger.info("MigrationRunner: Migrating user progress for user \(userId)")
         
         // Check if UserProgress already exists
-        let existingRequest = FetchDescriptor<UserProgress>(
+        let existingRequest = FetchDescriptor<UserProgressData>(
             predicate: #Predicate { $0.userId == userId }
         )
         let existing = try context.fetch(existingRequest)
@@ -251,13 +252,14 @@ final class MigrationRunner {
                let legacyProgress = try? JSONDecoder().decode(UserProgress.self, from: progressData) {
                 
                 // Create new UserProgress with migrated data
-                let userProgress = UserProgress(
-                    userId: userId,
-                    xpTotal: legacyProgress.xpTotal,
-                    level: legacyProgress.level,
-                    levelProgress: legacyProgress.levelProgress,
-                    lastCompletedDate: legacyProgress.lastCompletedDate
-                )
+                let userProgress = UserProgressData(userId: userId)
+                userProgress.xpTotal = legacyProgress.totalXP
+                userProgress.level = legacyProgress.currentLevel
+                userProgress.xpForCurrentLevel = legacyProgress.xpForCurrentLevel
+                userProgress.xpForNextLevel = legacyProgress.xpForNextLevel
+                userProgress.dailyXP = legacyProgress.dailyXP
+                userProgress.lastCompletedDate = legacyProgress.lastCompletedDate
+                userProgress.streakDays = legacyProgress.streakDays
                 
                 context.insert(userProgress)
                 try context.save()
@@ -265,7 +267,7 @@ final class MigrationRunner {
                 logger.info("MigrationRunner: Migrated user progress for user \(userId)")
             } else {
                 // Create default user progress
-                let userProgress = UserProgress(userId: userId)
+                let userProgress = UserProgressData(userId: userId)
                 context.insert(userProgress)
                 try context.save()
                 

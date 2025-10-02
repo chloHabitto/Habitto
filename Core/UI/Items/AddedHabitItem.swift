@@ -214,9 +214,7 @@ struct AddedHabitItem: View {
                 goal: "30 minutes",
                 reminder: "No reminder",
                 startDate: Date(),
-                endDate: nil,
-                isCompleted: false,
-                streak: 0
+                endDate: nil
             ),
             onEdit: {
                 print("Edit tapped")
@@ -241,8 +239,6 @@ struct AddedHabitItem: View {
                 reminder: "No reminder",
                 startDate: Date(),
                 endDate: nil,
-                isCompleted: false,
-                streak: 0
             ),
             onEdit: {
                 print("Edit tapped")
