@@ -5,29 +5,39 @@ import Foundation
 /// All feature flags are injected via dependency injection for testability
 struct FeatureFlags {
     
+    // MARK: - Emergency Override (Internal Builds Only)
+    
+    #if INTERNAL_BUILD
+    /// Emergency override to disable normalized data path (internal builds only)
+    /// This is a compile-time flag for emergency rollback
+    private static let emergencyDisableNormalizedPath = false
+    #else
+    private static let emergencyDisableNormalizedPath = false
+    #endif
+    
     // MARK: - Data Layer Feature Flags
     
     /// Enables the new normalized data path with proper user isolation
     /// When false: Uses legacy UserDefaults + SwiftData dual storage
     /// When true: Uses SwiftData-only with proper user scoping
-    static var useNormalizedDataPath: Bool = false
+    static var useNormalizedDataPath: Bool = emergencyDisableNormalizedPath ? false : true
     
     /// Enables the new XPService centralized XP management
     /// When false: Uses legacy XPManager with direct mutations
     /// When true: Uses XPService with proper validation
-    static var useCentralizedXP: Bool = false
+    static var useCentralizedXP: Bool = true
     
     /// Enables user-specific SwiftData containers
     /// When false: Single shared container for all users
     /// When true: Separate containers per user (guest vs account)
-    static var useUserScopedContainers: Bool = false
+    static var useUserScopedContainers: Bool = true
     
     // MARK: - Migration Feature Flags
     
     /// Enables automatic migration from legacy storage
     /// When false: No migration runs
     /// When true: Migration runs on first app launch with new data path
-    static var enableAutoMigration: Bool = false
+    static var enableAutoMigration: Bool = true
     
     /// Enables migration rollback capability
     /// When false: No rollback support
@@ -47,12 +57,13 @@ struct FeatureFlags {
     
     // MARK: - Feature Flag Management
     
-    /// Resets all feature flags to their default values
+    /// Resets all feature flags to their default values (Phase 4 defaults)
     static func resetToDefaults() {
-        useNormalizedDataPath = false
-        useCentralizedXP = false
-        useUserScopedContainers = false
-        enableAutoMigration = false
+        // Phase 4 defaults: normalized path enabled by default
+        // useNormalizedDataPath is computed from emergency override
+        useCentralizedXP = true
+        useUserScopedContainers = true
+        enableAutoMigration = true
         enableMigrationRollback = false
         forceMigration = false
         verboseMigrationLogging = false

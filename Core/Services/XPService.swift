@@ -77,6 +77,10 @@ final class XPService: XPServiceProtocol {
             try await updateUserProgress(userId: userId, xpToAdd: xpAmount)
             
             logger.info("XPService: Awarded \(xpAmount) XP to user \(userId) for daily completion on \(dateKey)")
+            
+            // Log XP award event
+            ObservabilityLogger.shared.logXPAward(userId: userId, dateKey: dateKey, xpGranted: xpAmount, reason: "daily_completion")
+            
             return xpAmount
         } else {
             logger.info("XPService: Not all habits completed for user \(userId) on \(dateKey), no XP awarded")
@@ -102,6 +106,10 @@ final class XPService: XPServiceProtocol {
             try await updateUserProgress(userId: userId, xpToAdd: -xpAmount)
             
             logger.info("XPService: Revoked \(xpAmount) XP from user \(userId) for daily completion on \(dateKey)")
+            
+            // Log XP revocation event
+            ObservabilityLogger.shared.logXPRevocation(userId: userId, dateKey: dateKey, xpRevoked: xpAmount, reason: "daily_incompletion")
+            
             return xpAmount
         } else {
             logger.info("XPService: All habits still completed for user \(userId) on \(dateKey), no XP revoked")
@@ -196,10 +204,16 @@ final class XPService: XPServiceProtocol {
     
     private func updateUserProgress(userId: String, xpToAdd: Int) async throws {
         let progress = try await getUserProgress(userId: userId)
+        let oldLevel = progress.level
         progress.xpTotal += xpToAdd
         progress.level = calculateLevel(xpTotal: progress.xpTotal)
         progress.levelProgress = calculateLevelProgress(xpTotal: progress.xpTotal, level: progress.level)
         progress.updatedAt = Date()
+        
+        // Log level up if it occurred
+        if progress.level > oldLevel {
+            ObservabilityLogger.shared.logLevelUp(userId: userId, oldLevel: oldLevel, newLevel: progress.level, totalXP: progress.xpTotal)
+        }
         
         try modelContext.save()
     }
