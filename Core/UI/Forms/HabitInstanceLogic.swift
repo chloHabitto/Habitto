@@ -238,14 +238,15 @@ class HabitInstanceLogic {
             
             if originalProgress > 0 {
                 // Instance was completed on its original date
-                instance.isCompleted = true
+                // ❌ REMOVED: Direct assignment in Phase 4
+                // instance.isCompleted = true  // Now computed via isCompleted(for:)
                 habitInstances[i] = instance
                 continue
             }
             
             // Instance was not completed, so it slides forward
             var currentDate = instance.originalDate
-            var isCompleted = false
+            var foundCompletion = false
             
             // Slide the instance forward until it's completed or reaches the end of the week
             while currentDate <= DateUtils.endOfWeek(for: targetDate) {
@@ -254,7 +255,7 @@ class HabitInstanceLogic {
                 
                 if progress > 0 {
                     // Instance was completed on this date
-                    isCompleted = true
+                    foundCompletion = true
                     instance.currentDate = currentDate
                     break
                 }
@@ -265,7 +266,8 @@ class HabitInstanceLogic {
             
             // Update instance
             instance.currentDate = currentDate
-            instance.isCompleted = isCompleted
+            // ❌ REMOVED: Direct assignment in Phase 4
+            // instance.isCompleted = foundCompletion  // Now computed via isCompleted(for:)
             habitInstances[i] = instance
         }
         
@@ -283,5 +285,13 @@ struct HabitInstance {
     let id: String
     let originalDate: Date
     var currentDate: Date
-    var isCompleted: Bool
+    // ❌ REMOVED: Denormalized field in Phase 4
+    // var isCompleted: Bool  // Use computed property instead
+    
+    /// Computed completion status based on habit completion history
+    func isCompleted(for habit: Habit) -> Bool {
+        let dateKey = Habit.dateKey(for: currentDate)
+        let progress = habit.completionHistory[dateKey] ?? 0
+        return progress > 0
+    }
 }

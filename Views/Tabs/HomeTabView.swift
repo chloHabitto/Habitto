@@ -731,14 +731,15 @@ struct HomeTabView: View {
             
             if originalProgress > 0 {
                 // Instance was completed on its original date
-                instance.isCompleted = true
+                // ❌ REMOVED: Direct assignment in Phase 4
+                // instance.isCompleted = true  // Now computed via isCompleted(for:)
                 habitInstances[i] = instance
                 continue
             }
             
             // Instance was not completed, so it slides forward
             var currentDate = instance.originalDate
-            var isCompleted = false
+            var foundCompletion = false
             
             // Slide the instance forward until it's completed or reaches the end of the week
             while currentDate <= DateUtils.endOfWeek(for: targetDate) {
@@ -747,7 +748,7 @@ struct HomeTabView: View {
                 
                 if progress > 0 {
                     // Instance was completed on this date
-                    isCompleted = true
+                    foundCompletion = true
                     instance.currentDate = currentDate
                     break
                 }
@@ -758,7 +759,8 @@ struct HomeTabView: View {
             
             // Update instance
             instance.currentDate = currentDate
-            instance.isCompleted = isCompleted
+            // ❌ REMOVED: Direct assignment in Phase 4
+            // instance.isCompleted = foundCompletion  // Now computed via isCompleted(for:)
             habitInstances[i] = instance
         }
         
@@ -766,7 +768,7 @@ struct HomeTabView: View {
         return habitInstances.filter { instance in
             let instanceDate = DateUtils.startOfDay(for: instance.currentDate)
             let targetDateStart = DateUtils.startOfDay(for: targetDate)
-            return instanceDate == targetDateStart && !instance.isCompleted
+            return instanceDate == targetDateStart && !instance.isCompleted(for: habit)
         }
     }
     
@@ -775,7 +777,15 @@ struct HomeTabView: View {
         let id: String
         let originalDate: Date
         var currentDate: Date
-        var isCompleted: Bool
+        // ❌ REMOVED: Denormalized field in Phase 4
+        // var isCompleted: Bool  // Use computed property instead
+        
+        /// Computed completion status based on habit completion history
+        func isCompleted(for habit: Habit) -> Bool {
+            let dateKey = Habit.dateKey(for: currentDate)
+            let progress = habit.completionHistory[dateKey] ?? 0
+            return progress > 0
+        }
     }
     
     private func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
