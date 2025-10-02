@@ -505,6 +505,7 @@ struct MonthlyCalendarGridView: View {
                         habit: habit,
                         dayIndex: dayIndex,
                         numberOfWeeks: numberOfWeeksInMonth,
+                        selectedMonth: selectedMonth,
                         getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit
                     )
                     .frame(width: 24, height: 32)
@@ -970,6 +971,7 @@ struct MonthlyTotalEmojiCell: View {
     let habit: Habit
     let dayIndex: Int
     let numberOfWeeks: Int
+    let selectedMonth: Date
     let getMonthlyHeatmapDataForHabit: (Habit, Int, Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
     
     var body: some View {
@@ -980,7 +982,8 @@ struct MonthlyTotalEmojiCell: View {
         // Check if ALL weeks have passed for this day column
         let allWeeksPassedForThisDay = (0..<numberOfWeeks).allSatisfy { weekIndex in
             // Calculate the date for this week and day using the same logic as the monthly heatmap
-            let monthStart = calendar.dateInterval(of: .month, for: habit.startDate)?.start ?? habit.startDate
+            // Use the selectedMonth instead of habit.startDate to get the correct month context
+            let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
             let monthStartWeekday = calendar.component(.weekday, from: monthStart)
             let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
             let firstWeekdayOfMonth = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: monthStart) ?? monthStart
@@ -1001,7 +1004,8 @@ struct MonthlyTotalEmojiCell: View {
             // All weeks have passed, calculate average completion
             let completedWeeks = (0..<numberOfWeeks).filter { weekIndex in
                 // Calculate the date for this week and day using the same logic
-                let monthStart = calendar.dateInterval(of: .month, for: habit.startDate)?.start ?? habit.startDate
+                // Use the selectedMonth instead of habit.startDate to get the correct month context
+                let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
                 let monthStartWeekday = calendar.component(.weekday, from: monthStart)
                 let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
                 let firstWeekdayOfMonth = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: monthStart) ?? monthStart
