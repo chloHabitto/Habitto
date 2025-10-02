@@ -3718,7 +3718,7 @@ struct ProgressTabView: View {
                                 if let testDate = calendar.date(byAdding: .day, value: -i, to: today) {
                                     for (hour, minute) in testTimes {
                                         if let testTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: testDate) {
-                                            habitRepository.setProgress(for: habit, date: testDate, progress: 1)
+                                            habitRepository.setProgress(for: habit, date: testTime, progress: 1)
                                         }
                                     }
                                 }
@@ -3858,7 +3858,9 @@ struct ProgressTabView: View {
                 
                 // Update the habit with generated timestamps
                 if let index = habitRepository.habits.firstIndex(where: { $0.id == habit.id }) {
-                    habitRepository.habits[index].completionTimestamps[dateString] = timestamps
+                    var updatedHabit = habitRepository.habits[index]
+                    updatedHabit.completionTimestamps[dateString] = timestamps
+                    habitRepository.habits[index] = updatedHabit
                     print("🕐 Added \(timestamps.count) timestamps for \(dateString)")
                 }
             }
@@ -3866,7 +3868,8 @@ struct ProgressTabView: View {
         
         // Save the changes
         Task {
-            try? await habitRepository.habitStore.saveHabits(habitRepository.habits)
+            // Use the public method to save habits
+            habitRepository.saveHabits(habitRepository.habits)
             print("🕐 Saved updated habits with generated timestamps")
         }
     }
