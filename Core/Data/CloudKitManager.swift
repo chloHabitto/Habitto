@@ -198,7 +198,7 @@ class CloudKitManager: ObservableObject {
         // Feature flag protection: Only initialize if CloudKit sync is enabled
         // Since this is a sync method, we'll defer the feature flag check to the async initialization
         Task { @MainActor in
-            let featureFlags = FeatureFlagManager.shared
+            _ = FeatureFlagManager.shared
             // TODO: Add cloudKitSync feature flag to FeatureFlagProvider
             // guard featureFlags.isEnabled(.cloudKitSync, forUser: nil) else {
             //     print("🚩 CloudKitManager: CloudKit sync disabled by feature flag")
@@ -330,8 +330,8 @@ extension CKRecord {
         self["reminder"] = habit.reminder
         self["startDate"] = habit.startDate
         self["endDate"] = habit.endDate
-        self["isCompleted"] = habit.isCompleted
-        self["streak"] = habit.streak
+        self["isCompleted"] = habit.isCompletedForDate(Date())
+        self["streak"] = habit.computedStreak()
         self["createdAt"] = habit.createdAt
         self["baseline"] = habit.baseline
         self["target"] = habit.target
@@ -350,8 +350,8 @@ extension CKRecord {
               let goal = self["goal"] as? String,
               let reminder = self["reminder"] as? String,
               let startDate = self["startDate"] as? Date,
-              let isCompleted = self["isCompleted"] as? Bool,
-              let streak = self["streak"] as? Int,
+              let _ = self["isCompleted"] as? Bool,
+              let _ = self["streak"] as? Int,
               let _ = self["createdAt"] as? Date,
               let baseline = self["baseline"] as? Int,
               let target = self["target"] as? Int else {

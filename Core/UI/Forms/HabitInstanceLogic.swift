@@ -245,7 +245,6 @@ class HabitInstanceLogic {
             
             // Instance was not completed, so it slides forward
             var currentDate = instance.originalDate
-            var foundCompletion = false
             
             // Slide the instance forward until it's completed or reaches the end of the week
             while currentDate <= DateUtils.endOfWeek(for: targetDate) {
@@ -254,7 +253,6 @@ class HabitInstanceLogic {
                 
                 if progress > 0 {
                     // Instance was completed on this date
-                    foundCompletion = true
                     instance.currentDate = currentDate
                     break
                 }

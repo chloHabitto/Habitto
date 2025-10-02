@@ -400,7 +400,7 @@ class TestRunner {
             errors.append("Name too long")
         }
         
-        if habit.streak < 0 {
+        if habit.computedStreak() < 0 {
             errors.append("Streak cannot be negative")
         }
         
