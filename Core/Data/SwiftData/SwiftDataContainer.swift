@@ -59,7 +59,7 @@ final class SwiftDataContainer: ObservableObject {
             
             if headers.isEmpty {
                 // Create initial storage header
-                let header = StorageHeader(schemaVersion: 1)
+                let header = StorageHeader(userId: "legacy", schemaVersion: 1)
                 modelContext.insert(header)
                 
                 try modelContext.save()
@@ -96,7 +96,7 @@ final class SwiftDataContainer: ObservableObject {
                 header.schemaVersion = version
                 header.lastMigration = Date()
             } else {
-                let header = StorageHeader(schemaVersion: version)
+                let header = StorageHeader(userId: "legacy", schemaVersion: version)
                 modelContext.insert(header)
             }
             
@@ -111,6 +111,7 @@ final class SwiftDataContainer: ObservableObject {
     
     func recordMigration(from fromVersion: Int, to toVersion: Int, success: Bool, errorMessage: String? = nil) {
         let migrationRecord = MigrationRecord(
+            userId: "legacy",
             fromVersion: fromVersion,
             toVersion: toVersion,
             success: success,

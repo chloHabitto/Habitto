@@ -58,7 +58,7 @@ final class MigrationRunner {
         ObservabilityLogger.shared.logMigrationStart(userId: userId, version: state.migrationVersion)
         
         // Mark migration as in progress
-        var migrationState = state
+        let migrationState = state
         migrationState.markInProgress()
         try context.save()
         
