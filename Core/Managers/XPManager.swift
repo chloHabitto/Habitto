@@ -66,9 +66,9 @@ class XPManager: ObservableObject {
     // These methods are kept for backwards compatibility only
     // ALL NEW CODE MUST USE DailyAwardService
     
-    /// ❌ DEPRECATED: Use DailyAwardService.grantIfAllComplete() instead
+    /// ❌ DEPRECATED: Use XPService.awardDailyCompletionIfEligible() instead
     /// This method causes duplicate XP awards and should not be called
-    @available(*, deprecated, message: "XP must go through DailyAwardService to prevent duplicates")
+    @available(*, deprecated, message: "XP must go through XPService to prevent duplicates")
     private func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
         let targetDate = DateUtils.startOfDay(for: date)
         let today = DateUtils.startOfDay(for: Date())
@@ -147,6 +147,9 @@ class XPManager: ObservableObject {
     
     /// ✅ DEBUG: Force award XP for testing
     func debugForceAwardXP(_ amount: Int) {
+        // Guard against direct XP mutations
+        XPServiceGuard.shared.validateXPMutation(caller: "XPManager", function: "debugForceAwardXP")
+        
         print("🎯 XPManager: DEBUG - Force awarding \(amount) XP")
         userProgress.totalXP += amount
         userProgress.dailyXP += amount
@@ -364,7 +367,7 @@ class XPManager: ObservableObject {
     // MARK: - Core XP Management (Private - Use DailyAwardService instead)
     
     /// ⚠️  INTERNAL USE ONLY: Do not call this method directly
-    /// All XP awards must go through DailyAwardService to prevent duplicates
+    /// All XP awards must go through XPService to prevent duplicates
     private func addXP(_ amount: Int, reason: XPRewardReason, description: String) {
         let oldLevel = userProgress.currentLevel
         

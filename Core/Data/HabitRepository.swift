@@ -661,9 +661,9 @@ class HabitRepository: ObservableObject {
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
             
             // ⚠️  CRITICAL: NO XP WRITES HERE
-            // XP handling is centralized in DailyAwardService to prevent duplicates
+            // XP handling is centralized in XPService to prevent duplicates
             // Do NOT call XPManager.awardXP... or any XP mutation methods
-            // Use DailyAwardService.grantIfAllComplete() instead (called from UI layer)
+            // Use XPService.awardDailyCompletionIfEligible() instead (called from UI layer)
             
             // Celebration logic is handled in HomeTabView when sheet is dismissed
             
