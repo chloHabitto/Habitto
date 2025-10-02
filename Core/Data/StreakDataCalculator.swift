@@ -98,19 +98,11 @@ class StreakDataCalculator {
         // Calculate best streak - find the longest consecutive streak in history
         let bestStreak = habits.map { calculateBestStreakFromHistory(for: $0) }.max() ?? 0
         
-        // Calculate average streak - average of best streaks from each habit
-        let totalBestStreak = habits.reduce(0) { $0 + calculateBestStreakFromHistory(for: $1) }
-        let averageStreak = totalBestStreak / habits.count
-        
-        // Calculate completion rate (exclude vacation days)
+        // Calculate completed habits today (exclude vacation days)
         let vacationManager = VacationManager.shared
         let completedHabitsToday = habits.filter { 
             !(vacationManager.isActive && vacationManager.isVacationDay(today)) && $0.isCompleted(for: today) 
         }.count
-        let completionRate = (completedHabitsToday * 100) / habits.count
-        
-        // Calculate consistency rate
-        let consistencyRate = calculateConsistencyRate(for: habits, calendar: calendar, today: today)
         
         return StreakStatistics(
             currentStreak: currentStreak,
@@ -880,24 +872,16 @@ class StreakDataCalculator {
                     progress(0.4)
                 }
                 
-                // Calculate average streak - average of best streaks from each habit
-                let totalBestStreak = habits.reduce(0) { $0 + calculateBestStreakFromHistory(for: $1) }
-                let averageStreak = totalBestStreak / habits.count
+                // Calculate completed habits today
+                let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
                 
                 DispatchQueue.main.async {
                     progress(0.6)
                 }
                 
-                // Calculate completion rate
-                let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
-                let completionRate = (completedHabitsToday * 100) / habits.count
-                
                 DispatchQueue.main.async {
                     progress(0.8)
                 }
-                
-                // Calculate consistency rate
-                let consistencyRate = calculateConsistencyRate(for: habits, calendar: calendar, today: today)
                 
                 DispatchQueue.main.async {
                     progress(1.0)
