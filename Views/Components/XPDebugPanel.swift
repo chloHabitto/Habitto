@@ -307,10 +307,10 @@ struct XPDebugPanel: View {
                 print("  Daily XP: \(dailyXP)")
                 
                 // Calculate level progression
-                let levelBaseXP = 50
-                let xpPerDay = 100
+                let levelBaseXP = 300 // Updated to new challenging progression
+                let xpPerDay = 50 // Updated to new challenging progression
                 
-                print("\n🧪 LEVEL ANALYSIS: Level Progression Table")
+                print("\n🧪 LEVEL ANALYSIS: NEW CHALLENGING Level Progression Table")
                 for level in 1...20 {
                     let xpNeeded = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
                     let daysNeeded = max(1, Int(ceil(Double(xpNeeded) / Double(xpPerDay))))
@@ -549,8 +549,8 @@ struct XPDebugPanel: View {
                     } else {
                         // Calculate correct XP from actual awards (excluding level-up bonuses)
                         let correctXP = allAwards.reduce(0) { total, award in
-                            // Only count standard 100 XP awards, ignore any level-up bonuses
-                            if award.xpGranted == 100 {
+                            // Only count standard 50 XP awards, ignore any level-up bonuses
+                            if award.xpGranted == 50 {
                                 return total + award.xpGranted
                             } else {
                                 print("🔧 Found non-standard award: \(award.dateKey) - \(award.xpGranted) XP (likely level-up bonus)")
@@ -558,26 +558,41 @@ struct XPDebugPanel: View {
                             }
                         }
                         
-                        // Calculate correct level from correct XP
-                        let correctLevel = Int(sqrt(Double(correctXP) / 50.0)) + 1
+                        // Calculate correct level from correct XP (using new challenging progression)
+                        let correctLevel = Int(sqrt(Double(correctXP) / 300.0)) + 1
                         
                         // Manual verification of level calculation
                         print("🔧 LEVEL CALCULATION VERIFICATION:")
                         print("  correctXP: \(correctXP)")
-                        print("  sqrt(correctXP / 50): \(sqrt(Double(correctXP) / 50.0))")
-                        print("  Int(sqrt(correctXP / 50)): \(Int(sqrt(Double(correctXP) / 50.0)))")
+                        print("  sqrt(correctXP / 300): \(sqrt(Double(correctXP) / 300.0))")
+                        print("  Int(sqrt(correctXP / 300)): \(Int(sqrt(Double(correctXP) / 300.0)))")
                         print("  correctLevel: \(correctLevel)")
                         
                         // Show what level you should be at for different XP amounts
-                        print("🔧 LEVEL REFERENCE:")
-                        for xp in [0, 50, 100, 200, 300, 400, 500, 600, 700] {
-                            let level = Int(sqrt(Double(xp) / 50.0)) + 1
-                            print("  \(xp) XP = Level \(level)")
+                        print("🔧 NEW CHALLENGING LEVEL REFERENCE:")
+                        for xp in [0, 50, 100, 150, 300, 600, 900, 1200, 1800, 3000, 6000, 12000] {
+                            let level = Int(sqrt(Double(xp) / 300.0)) + 1
+                            let days = Int(ceil(Double(xp) / 50.0))
+                            print("  \(xp) XP = Level \(level) (\(days) days)")
                         }
                         
+                        print("\n🔧 NEW CHALLENGING PROGRESSION:")
+                        print("  Level 2: 300 XP (6 days) - CHALLENGING!")
+                        print("  Level 3: 900 XP (18 days) - CHALLENGING!")
+                        print("  Level 4: 1,800 XP (36 days) - CHALLENGING!")
+                        print("  Level 5: 3,000 XP (60 days) - CHALLENGING!")
+                        print("  Level 10: 12,000 XP (240 days) - VERY CHALLENGING!")
+                        print("  Level 20: 48,000 XP (960 days) - EXTREMELY CHALLENGING!")
+                        
+                        print("\n🔧 COMPARISON:")
+                        print("  OLD: Level 4 in 4-5 days")
+                        print("  NEW: Level 4 in 36 days (7x harder!)")
+                        print("  OLD: Level 10 in 45 days")
+                        print("  NEW: Level 10 in 240 days (5x harder!)")
+                        
                         print("🔧 CALCULATED CORRECT VALUES:")
-                        print("  Standard Awards: \(allAwards.filter { $0.xpGranted == 100 }.count)")
-                        print("  Level-up Bonuses: \(allAwards.filter { $0.xpGranted != 100 }.count)")
+                        print("  Standard Awards: \(allAwards.filter { $0.xpGranted == 50 }.count)")
+                        print("  Level-up Bonuses: \(allAwards.filter { $0.xpGranted != 50 }.count)")
                         print("  Correct XP: \(correctXP)")
                         print("  Correct Level: \(correctLevel)")
                         

@@ -48,8 +48,8 @@ struct XPLevelCard: View {
                 // Progress Bar
                 VStack(spacing: 4) {
                     HStack {
-                        let currentLevelStartXP = Int(pow(Double(xpManager.userProgress.currentLevel - 1), 2) * 50)
-                        let nextLevelStartXP = Int(pow(Double(xpManager.userProgress.currentLevel), 2) * 50)
+                        let currentLevelStartXP = Int(pow(Double(xpManager.userProgress.currentLevel - 1), 2) * 300) // Updated to 300 for challenging progression
+                        let nextLevelStartXP = Int(pow(Double(xpManager.userProgress.currentLevel), 2) * 300) // Updated to 300 for challenging progression
                         
                         Text("\(currentLevelStartXP + xpManager.userProgress.xpForCurrentLevel) XP")
                             .font(.appLabelSmall)
