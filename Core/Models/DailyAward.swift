@@ -4,22 +4,28 @@ import SwiftData
 @Model
 public class DailyAward {
     @Attribute(.unique) public var id: UUID
-    public var userId: String
-    public var dateKey: String
+    @Attribute(.indexed) public var userId: String
+    @Attribute(.indexed) public var dateKey: String
     public var xpGranted: Int
+    public var allHabitsCompleted: Bool
     public var createdAt: Date
+    
+    // Unique constraint on (userId, dateKey)
+    @Attribute(.unique) public var userIdDateKey: String
     
     // Computed property for composite unique key
     public var uniqueKey: String {
         return "\(userId)#\(dateKey)"
     }
     
-    public init(userId: String, dateKey: String, xpGranted: Int) {
+    public init(userId: String, dateKey: String, xpGranted: Int, allHabitsCompleted: Bool = true) {
         self.id = UUID()
         self.userId = userId
         self.dateKey = dateKey
         self.xpGranted = xpGranted
+        self.allHabitsCompleted = allHabitsCompleted
         self.createdAt = Date()
+        self.userIdDateKey = "\(userId)#\(dateKey)"
     }
 }
 

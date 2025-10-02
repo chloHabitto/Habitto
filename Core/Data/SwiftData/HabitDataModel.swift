@@ -20,7 +20,9 @@ final class HabitData {
     // MARK: - Denormalized Fields (Computed from completionHistory)
     // WARNING: These fields are cached/denormalized for performance
     // Use recomputeCompletionStatus() and recomputeStreak() to refresh them
+    @available(*, deprecated, message: "Derived field - use isCompleted(for:) for truth")
     var isCompleted: Bool // ⚠️ DENORMALIZED - use isCompleted(for:) for truth
+    @available(*, deprecated, message: "Derived field - use calculateTrueStreak() for truth")
     var streak: Int // ⚠️ DENORMALIZED - use calculateTrueStreak() for truth
     var createdAt: Date
     var updatedAt: Date
@@ -217,12 +219,29 @@ final class HabitData {
 // MARK: - Completion Record
 @Model
 final class CompletionRecord {
+    @Attribute(.indexed) var userId: String
+    @Attribute(.indexed) var habitId: UUID
     var date: Date
+    var dateKey: String
     var isCompleted: Bool
     var createdAt: Date
     
-    init(date: Date, isCompleted: Bool) {
+    init(userId: String, habitId: UUID, date: Date, dateKey: String, isCompleted: Bool) {
+        self.userId = userId
+        self.habitId = habitId
         self.date = date
+        self.dateKey = dateKey
+        self.isCompleted = isCompleted
+        self.createdAt = Date()
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:habitId:date:dateKey:isCompleted:) instead")
+    init(date: Date, isCompleted: Bool) {
+        self.userId = "legacy"
+        self.habitId = UUID()
+        self.date = date
+        self.dateKey = ""
         self.isCompleted = isCompleted
         self.createdAt = Date()
     }
@@ -231,11 +250,25 @@ final class CompletionRecord {
 // MARK: - Difficulty Record
 @Model
 final class DifficultyRecord {
+    @Attribute(.indexed) var userId: String
+    @Attribute(.indexed) var habitId: UUID
     var date: Date
     var difficulty: Int
     var createdAt: Date
     
+    init(userId: String, habitId: UUID, date: Date, difficulty: Int) {
+        self.userId = userId
+        self.habitId = habitId
+        self.date = date
+        self.difficulty = difficulty
+        self.createdAt = Date()
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:habitId:date:difficulty:) instead")
     init(date: Date, difficulty: Int) {
+        self.userId = "legacy"
+        self.habitId = UUID()
         self.date = date
         self.difficulty = difficulty
         self.createdAt = Date()
@@ -245,11 +278,25 @@ final class DifficultyRecord {
 // MARK: - Usage Record
 @Model
 final class UsageRecord {
+    @Attribute(.indexed) var userId: String
+    @Attribute(.indexed) var habitId: UUID
     var key: String
     var value: Int
     var createdAt: Date
     
+    init(userId: String, habitId: UUID, key: String, value: Int) {
+        self.userId = userId
+        self.habitId = habitId
+        self.key = key
+        self.value = value
+        self.createdAt = Date()
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:habitId:key:value:) instead")
     init(key: String, value: Int) {
+        self.userId = "legacy"
+        self.habitId = UUID()
         self.key = key
         self.value = value
         self.createdAt = Date()
@@ -259,11 +306,25 @@ final class UsageRecord {
 // MARK: - Habit Note
 @Model
 final class HabitNote {
+    @Attribute(.indexed) var userId: String
+    @Attribute(.indexed) var habitId: UUID
     var content: String
     var createdAt: Date
     var updatedAt: Date
     
+    init(userId: String, habitId: UUID, content: String) {
+        self.userId = userId
+        self.habitId = habitId
+        self.content = content
+        self.createdAt = Date()
+        self.updatedAt = Date()
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:habitId:content:) instead")
     init(content: String) {
+        self.userId = "legacy"
+        self.habitId = UUID()
         self.content = content
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -273,11 +334,22 @@ final class HabitNote {
 // MARK: - Storage Header for Schema Versioning
 @Model
 final class StorageHeader {
+    @Attribute(.indexed) var userId: String
     var schemaVersion: Int
     var lastMigration: Date
     var createdAt: Date
     
+    init(userId: String, schemaVersion: Int) {
+        self.userId = userId
+        self.schemaVersion = schemaVersion
+        self.lastMigration = Date()
+        self.createdAt = Date()
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:schemaVersion:) instead")
     init(schemaVersion: Int) {
+        self.userId = "legacy"
         self.schemaVersion = schemaVersion
         self.lastMigration = Date()
         self.createdAt = Date()
@@ -287,13 +359,26 @@ final class StorageHeader {
 // MARK: - Migration Record
 @Model
 final class MigrationRecord {
+    @Attribute(.indexed) var userId: String
     var fromVersion: Int
     var toVersion: Int
     var executedAt: Date
     var success: Bool
     var errorMessage: String?
     
+    init(userId: String, fromVersion: Int, toVersion: Int, success: Bool, errorMessage: String? = nil) {
+        self.userId = userId
+        self.fromVersion = fromVersion
+        self.toVersion = toVersion
+        self.executedAt = Date()
+        self.success = success
+        self.errorMessage = errorMessage
+    }
+    
+    // Legacy initializer for backward compatibility
+    @available(*, deprecated, message: "Use init(userId:fromVersion:toVersion:success:errorMessage:) instead")
     init(fromVersion: Int, toVersion: Int, success: Bool, errorMessage: String? = nil) {
+        self.userId = "legacy"
         self.fromVersion = fromVersion
         self.toVersion = toVersion
         self.executedAt = Date()
