@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-public class DailyAward {
+public final class DailyAward: @unchecked Sendable {
     @Attribute(.unique) public var id: UUID
     public var userId: String
     public var dateKey: String
