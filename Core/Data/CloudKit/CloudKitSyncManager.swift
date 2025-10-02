@@ -203,8 +203,8 @@ final class CloudKitSyncManager {
               let goal = record["goal"] as? String,
               let reminder = record["reminder"] as? String,
               let startDate = record["startDate"] as? Date,
-              let isCompleted = record["isCompleted"] as? Bool,
-              let streak = record["streak"] as? Int,
+              let _ = record["isCompleted"] as? Bool,
+              let _ = record["streak"] as? Int,
               let createdAt = record["createdAt"] as? Date else {
             throw CloudKitError.invalidRecord
         }

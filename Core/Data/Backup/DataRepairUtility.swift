@@ -323,7 +323,7 @@ class DataRepairUtility: ObservableObject {
         var issuesFixed = 0
         var repairedHabits: [Habit] = []
         
-        for var habit in habits {
+        for habit in habits {
             if !habit.validateStreak() {
                 issuesFound += 1
                 // Note: correctStreak() was removed in Phase 4. Streak is now computed-only.

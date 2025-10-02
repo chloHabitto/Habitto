@@ -506,7 +506,10 @@ class BackupManager: ObservableObject {
             if let habitId = backupCompletion.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let completion = CompletionRecord(
+                    userId: "legacy",
+                    habitId: habit.id,
                     date: backupCompletion.date,
+                    dateKey: Habit.dateKey(for: backupCompletion.date),
                     isCompleted: backupCompletion.isCompleted
                 )
                 habit.completionHistory.append(completion)
@@ -518,6 +521,8 @@ class BackupManager: ObservableObject {
             if let habitId = backupDifficulty.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let difficulty = DifficultyRecord(
+                    userId: "legacy",
+                    habitId: habit.id,
                     date: backupDifficulty.date,
                     difficulty: backupDifficulty.difficulty
                 )
@@ -530,6 +535,8 @@ class BackupManager: ObservableObject {
             if let habitId = backupUsage.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let usage = UsageRecord(
+                    userId: "legacy",
+                    habitId: habit.id,
                     key: backupUsage.key,
                     value: backupUsage.value
                 )
@@ -541,7 +548,11 @@ class BackupManager: ObservableObject {
         for backupNote in backupData.habitNotes {
             if let habitId = backupNote.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
-                let note = HabitNote(content: backupNote.content)
+                let note = HabitNote(
+                    userId: "legacy",
+                    habitId: habit.id,
+                    content: backupNote.content
+                )
                 habit.notes.append(note)
             }
         }
@@ -579,7 +590,7 @@ class BackupManager: ObservableObject {
         }
         
         // Restore theme settings (feature flag protected)
-        let featureFlags = FeatureFlagManager.shared.provider
+        _ = FeatureFlagManager.shared.provider
         // TODO: Add themePersistence feature flag to FeatureFlagProvider
         // if featureFlags.isEnabled(.themePersistence, forUser: nil) {
         if false { // Temporarily disabled
@@ -878,7 +889,7 @@ class BackupManager: ObservableObject {
         ]
         
         // Feature flag protection: Only backup theme settings if feature is enabled
-        let featureFlags = FeatureFlagManager.shared.provider
+        _ = FeatureFlagManager.shared.provider
         // TODO: Add themePersistence feature flag to FeatureFlagProvider
         // let themeSettings: [String: String] = featureFlags.isEnabled(.themePersistence, forUser: nil) ? [
         let themeSettings: [String: String] = false ? [ // Temporarily disabled
@@ -1111,8 +1122,8 @@ struct BackupHabitData: Codable {
         self.reminder = habitData.reminder
         self.startDate = habitData.startDate
         self.endDate = habitData.endDate
-        self.isCompleted = habitData.isCompleted
-        self.streak = habitData.streak
+        self.isCompleted = habitData.isCompletedForDate(Date())
+        self.streak = habitData.calculateTrueStreak()
         self.createdAt = habitData.createdAt
         self.updatedAt = habitData.updatedAt
         self.userId = habitData.userId

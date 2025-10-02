@@ -289,19 +289,15 @@ class HomeViewState: ObservableObject {
         
         // Try to save directly to UserDefaults as a test
         Task {
-            do {
-                let userDefaults = UserDefaults.standard
-                // TODO: Fix JSON encoding issue
-                // let encoded = try JSONEncoder().encode([testHabit])
-                // userDefaults.set(encoded, forKey: "habits")
-                print("🧪 HomeViewState: Saved to UserDefaults directly")
-                
-                // Try to reload
-                await habitRepository.loadHabits(force: true)
-                print("🧪 HomeViewState: Reloaded habits, count: \(habitRepository.habits.count)")
-            } catch {
-                print("❌ HomeViewState: Failed to save simple test habit: \(error)")
-            }
+            _ = UserDefaults.standard
+            // TODO: Fix JSON encoding issue
+            // let encoded = try JSONEncoder().encode([testHabit])
+            // userDefaults.set(encoded, forKey: "habits")
+            print("🧪 HomeViewState: Saved to UserDefaults directly")
+            
+            // Try to reload
+            await habitRepository.loadHabits(force: true)
+            print("🧪 HomeViewState: Reloaded habits, count: \(habitRepository.habits.count)")
         }
     }
     
@@ -534,17 +530,17 @@ struct HomeView: View {
             print("🏠 HomeView: Validating streaks...")
             // Use Task to prevent UI blocking
             Task {
-                var updatedHabits = state.habits
-                for i in 0..<updatedHabits.count {
-                    if !updatedHabits[i].validateStreak() {
-                        print("🔄 HomeView: Streak validation failed for habit: \(updatedHabits[i].name) - streak is now computed-only")
+                let habits = state.habits
+                for i in 0..<habits.count {
+                    if !habits[i].validateStreak() {
+                        print("🔄 HomeView: Streak validation failed for habit: \(habits[i].name) - streak is now computed-only")
                         // ✅ PHASE 4: Streaks are now computed-only, no need to correct them
                     }
                 }
                 
                 // Update on main thread
                 await MainActor.run {
-                    state.updateHabits(updatedHabits)
+                    state.updateHabits(habits)
                     print("🏠 HomeView: Streak validation completed")
                 }
             }
