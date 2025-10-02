@@ -296,8 +296,9 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
     
     func loadHabits() async throws -> [Habit] {
         // Load habits from SwiftData with user scoping
+        let currentUserId = self.userId
         let request = FetchDescriptor<HabitData>(
-            predicate: #Predicate { $0.userId == self.userId }
+            predicate: #Predicate { $0.userId == currentUserId }
         )
         
         let habitDataList = try modelContext.fetch(request)

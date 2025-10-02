@@ -238,23 +238,11 @@ extension Habit {
     }
     
     /// Update streak with proper reset logic
+    /// @deprecated: Streaks are now computed-only, use computedStreak() instead
+    @available(*, deprecated, message: "Streaks are now computed-only, use computedStreak() instead")
     mutating func updateStreakWithResetImproved() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-        
-        if isCompletedImproved(for: today) {
-            if isCompletedImproved(for: yesterday) {
-                // Continue streak - increment
-                streak += 1
-            } else {
-                // Start new streak - reset to 1
-                streak = 1
-            }
-        } else {
-            // Reset streak if not completed today
-            streak = 0
-        }
+        // Streaks are now computed-only, this function is no longer needed
+        // The streak will be automatically calculated when accessed via computedStreak()
     }
     
     /// Get schedule display name (improved)
@@ -321,7 +309,7 @@ extension Habit {
         }
         
         // Validate streak
-        if streak < 0 {
+        if computedStreak() < 0 {
             errors.append("Streak cannot be negative")
         }
         
@@ -361,9 +349,8 @@ extension Habit {
         actualUsage = actualUsage.filter { $0.value >= 0 }
         
         // Ensure streak is not negative
-        if streak < 0 {
-            streak = 0
-        }
+        // Note: Streaks are now computed-only, so we don't need to repair them
+        // The streak will be automatically calculated correctly when accessed via computedStreak()
     }
 }
 
