@@ -18,11 +18,15 @@ final class SwiftDataContainer: ObservableObject {
             let schema = Schema([
                 HabitData.self,
                 CompletionRecord.self,
+                DailyAward.self,          // ✅ PHASE 5: Added DailyAward model
+                UserProgressData.self,    // ✅ PHASE 5: Added UserProgressData model
+                AchievementData.self,     // ✅ PHASE 5: Added AchievementData model
                 DifficultyRecord.self,
                 UsageRecord.self,
                 HabitNote.self,
                 StorageHeader.self,
-                MigrationRecord.self
+                MigrationRecord.self,
+                MigrationState.self       // ✅ PHASE 5: Added MigrationState model
             ])
             
             let modelConfiguration = ModelConfiguration(

@@ -222,9 +222,12 @@ final class CompletionRecord {
     @Attribute(.indexed) var userId: String
     @Attribute(.indexed) var habitId: UUID
     var date: Date
-    var dateKey: String
+    @Attribute(.indexed) var dateKey: String  // ✅ PHASE 5: Added index for date-based queries
     var isCompleted: Bool
     var createdAt: Date
+    
+    // ✅ PHASE 5: Composite unique constraint to prevent duplicate completions
+    @Attribute(.unique) var userIdHabitIdDateKey: String
     
     init(userId: String, habitId: UUID, date: Date, dateKey: String, isCompleted: Bool) {
         self.userId = userId
@@ -233,6 +236,7 @@ final class CompletionRecord {
         self.dateKey = dateKey
         self.isCompleted = isCompleted
         self.createdAt = Date()
+        self.userIdHabitIdDateKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
     }
     
     // Legacy initializer for backward compatibility
@@ -244,6 +248,7 @@ final class CompletionRecord {
         self.dateKey = ""
         self.isCompleted = isCompleted
         self.createdAt = Date()
+        self.userIdHabitIdDateKey = "legacy#\(self.habitId.uuidString)#"
     }
 }
 

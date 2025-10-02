@@ -34,6 +34,58 @@ final class StreakService {
         return streak
     }
     
+    /// ✅ PHASE 5: Optimized streak lookup using single range query
+    /// Gets consecutive award date keys for a user up to a specific date
+    func consecutiveAwardDateKeys(userId: String, upTo dateKey: String, limit: Int = 365, context: ModelContext) async throws -> [String] {
+        logger.debug("StreakService: Getting consecutive award date keys for \(userId) up to \(dateKey)")
+        
+        // Parse the target date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        guard let targetDate = dateFormatter.date(from: dateKey) else {
+            logger.error("StreakService: Invalid date key format: \(dateKey)")
+            return []
+        }
+        
+        // Calculate the range of dates to query (limit days back from target date)
+        let calendar = Calendar.current
+        let startDate = calendar.date(byAdding: .day, value: -limit, to: targetDate) ?? targetDate
+        let startDateKey = dateFormatter.string(from: startDate)
+        
+        // Single range query for all awards in the date range
+        let request = FetchDescriptor<DailyAward>(
+            predicate: #Predicate { 
+                $0.userId == userId && 
+                $0.allHabitsCompleted == true &&
+                $0.dateKey >= startDateKey &&
+                $0.dateKey <= dateKey
+            }
+        )
+        
+        let dailyAwards = try context.fetch(request)
+            .sorted { $0.dateKey > $1.dateKey }  // Most recent first
+        
+        // Find consecutive sequence from target date backwards
+        var consecutiveDateKeys: [String] = []
+        var currentDate = targetDate
+        
+        for _ in 0..<limit {
+            let currentDateKey = dateFormatter.string(from: currentDate)
+            
+            // Check if this date has an award
+            if dailyAwards.contains(where: { $0.dateKey == currentDateKey }) {
+                consecutiveDateKeys.append(currentDateKey)
+                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+            } else {
+                // Gap found, streak broken
+                break
+            }
+        }
+        
+        logger.debug("StreakService: Found \(consecutiveDateKeys.count) consecutive award dates")
+        return consecutiveDateKeys
+    }
+    
     /// Computes streak for a specific habit from completion records
     func computeHabitStreak(userId: String, habitId: UUID, context: ModelContext) async throws -> Int {
         logger.debug("StreakService: Computing habit streak for habit \(habitId)")
