@@ -66,48 +66,11 @@ class XPManager: ObservableObject {
     // These methods are kept for backwards compatibility only
     // ALL NEW CODE MUST USE DailyAwardService
     
-    /// ❌ DEPRECATED: Use XPService.awardDailyCompletionIfEligible() instead
-    /// This method causes duplicate XP awards and should not be called
-    @available(*, deprecated, message: "XP must go through XPService to prevent duplicates")
+    /// ❌ REMOVED: awardXPForAllHabitsCompleted method
+    /// This method has been removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.
+    @available(*, unavailable, message: "Removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.")
     private func awardXPForAllHabitsCompleted(habits: [Habit], for date: Date = Date()) -> Int {
-        let targetDate = DateUtils.startOfDay(for: date)
-        let today = DateUtils.startOfDay(for: Date())
-        let dateKey = DateKey.key(for: date)
-        
-        // Check if we already awarded XP for these habits today
-        let alreadyAwarded = habits.allSatisfy { habit in
-            dailyAwards[dateKey]?.contains(habit.id) ?? false
-        }
-        
-        if alreadyAwarded {
-            logger.debug("XP already awarded for these habits today")
-            return 0
-        }
-        
-        // Calculate total XP for all completed habits
-        let totalXP = calculateTotalXPForHabits(habits, for: targetDate)
-        
-        if totalXP > 0 {
-            // Award the XP
-            addXP(totalXP, reason: .completeAllHabits, description: "Completed all habits")
-            
-            // Track which habits were awarded XP today
-            if dailyAwards[dateKey] == nil {
-                dailyAwards[dateKey] = Set<UUID>()
-            }
-            for habit in habits {
-                dailyAwards[dateKey]?.insert(habit.id)
-            }
-            saveDailyAwards()
-            
-            // Update last award date
-            userProgress.lastCompletedDate = today
-            saveUserProgress()
-            
-            logger.info("Awarded \(totalXP) XP for completing \(habits.count) habits")
-        }
-        
-        return totalXP
+        fatalError("awardXPForAllHabitsCompleted has been removed. Use XPService.awardDailyCompletionIfEligible instead.")
     }
     
     /// ✅ NEW: Update XP from DailyAwardService
@@ -145,27 +108,11 @@ class XPManager: ObservableObject {
         print("🎯 STEP 11: ✅ XPManager update complete - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
     }
     
-    /// ✅ DEBUG: Force award XP for testing
+    /// ❌ REMOVED: Force award XP for testing
+    /// This method has been removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.
+    @available(*, unavailable, message: "Removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.")
     func debugForceAwardXP(_ amount: Int) {
-        // Guard against direct XP mutations
-        XPServiceGuard.shared.validateXPMutation(caller: "XPManager", function: "debugForceAwardXP")
-        
-        print("🎯 XPManager: DEBUG - Force awarding \(amount) XP")
-        userProgress.totalXP += amount
-        userProgress.dailyXP += amount
-        updateLevelFromXP()
-        
-        let transaction = XPTransaction(
-            amount: amount,
-            reason: .completeAllHabits,
-            description: "DEBUG: Force awarded \(amount) XP"
-        )
-        addTransaction(transaction)
-        
-        saveUserProgress()
-        saveRecentTransactions()
-        
-        print("🎯 XPManager: DEBUG - Force award complete - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
+        fatalError("debugForceAwardXP has been removed. Use XPService.awardDailyCompletionIfEligible instead.")
     }
     
     /// ✅ DEBUG: Get current XP status
@@ -391,20 +338,7 @@ class XPManager: ObservableObject {
         // Always update level from current XP to prevent double-bumping
         updateLevelFromXP()
         
-        // Add transaction
-        let transaction = XPTransaction(
-            amount: amount,
-            reason: reason,
-            description: description
-        )
-        addTransaction(transaction)
-        
-        // Save data
-        saveUserProgress()
-        saveRecentTransactions()
-        
-        // Trigger UI update
-        objectWillChange.send()
+        fatalError("addXP has been removed. Use XPService instead.")
     }
     
     private func awardLevelUpBonus(newLevel: Int) {

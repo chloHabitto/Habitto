@@ -83,6 +83,9 @@ final class AuthRoutingManager: ObservableObject {
         
         let guestUserId = "guest_user"
         
+        // Log auth switch
+        ObservabilityLogger.shared.logAuthSwitch(fromUserId: currentUserId, toUserId: guestUserId, reason: "sign_out")
+        
         do {
             // Clear existing repository provider
             repositoryProvider = nil
@@ -103,6 +106,9 @@ final class AuthRoutingManager: ObservableObject {
     
     private func switchToUser(userId: String) async {
         logger.info("AuthRoutingManager: Switching to user \(userId)")
+        
+        // Log auth switch
+        ObservabilityLogger.shared.logAuthSwitch(fromUserId: currentUserId, toUserId: userId, reason: "sign_in")
         
         do {
             // Clear existing repository provider

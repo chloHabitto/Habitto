@@ -231,10 +231,9 @@ struct Habit: Identifiable, Codable, Equatable {
         }
         completionTimestamps[dateKey]?.append(timestamp)
         
-        updateCurrentCompletionStatus()
-        
-        // Update streak after completion
-        updateStreakWithReset()
+        // ❌ REMOVED: Denormalized field updates in Phase 4
+        // updateCurrentCompletionStatus() and updateStreakWithReset() have been removed
+        // Use isCompleted(for:) and calculateTrueStreak() for read-only access
         
         // Debug: Print completion tracking
         print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) at \(timestamp) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
@@ -264,10 +263,9 @@ struct Habit: Identifiable, Codable, Equatable {
             completionTimestamps[dateKey]?.removeLast()
         }
         
-        updateCurrentCompletionStatus()
-        
-        // Update streak after completion change
-        updateStreakWithReset()
+        // ❌ REMOVED: Denormalized field updates in Phase 4
+        // updateCurrentCompletionStatus() and updateStreakWithReset() have been removed
+        // Use isCompleted(for:) and calculateTrueStreak() for read-only access
     }
     
     func isCompleted(for date: Date) -> Bool {
@@ -361,10 +359,11 @@ struct Habit: Identifiable, Codable, Equatable {
         return Int(successRate)
     }
     
+    /// ❌ REMOVED: updateCurrentCompletionStatus method
+    /// This method has been removed in Phase 4. Use isCompleted(for:) for read-only access.
+    @available(*, unavailable, message: "Removed in Phase 4. Use isCompleted(for:) for read-only access.")
     private mutating func updateCurrentCompletionStatus() {
-        // Use the current date to determine completion status
-        let today = Calendar.current.startOfDay(for: Date())
-        isCompleted = isCompleted(for: today)
+        fatalError("updateCurrentCompletionStatus has been removed. Use isCompleted(for:) for read-only access.")
     }
     
     // MARK: - Improved Streak Tracking Methods
@@ -402,26 +401,11 @@ struct Habit: Identifiable, Codable, Equatable {
         return streak
     }
     
-    /// Updates streak with proper reset logic based on consecutive day completion
-    /// Preserves streaks during vacation periods to avoid penalizing users
+    /// ❌ REMOVED: updateStreakWithReset method
+    /// This method has been removed in Phase 4. Use calculateTrueStreak() for read-only access.
+    @available(*, unavailable, message: "Removed in Phase 4. Use calculateTrueStreak() for read-only access.")
     mutating func updateStreakWithReset() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let vacationManager = VacationManager.shared
-        
-        let oldStreak = streak
-        
-        // If today is a vacation day AND vacation is active, preserve the current streak
-        if vacationManager.isActive && vacationManager.isVacationDay(today) {
-            // Don't change the streak during active vacation - it remains frozen
-            print("🔍 STREAK UPDATE DEBUG - Habit '\(name)': Vacation day, preserving streak=\(streak)")
-            return
-        }
-        
-        // Use the same logic as calculateTrueStreak() to ensure consistency
-        streak = calculateTrueStreak()
-        
-        print("🔍 STREAK UPDATE DEBUG - Habit '\(name)': Updated streak \(oldStreak) -> \(streak)")
+        fatalError("updateStreakWithReset has been removed. Use calculateTrueStreak() for read-only access.")
     }
     
     /// Validates if the current streak matches actual consecutive completions
@@ -437,20 +421,18 @@ struct Habit: Identifiable, Codable, Equatable {
         return isValid
     }
     
-    /// Corrects the streak to match actual consecutive completions
+    /// ❌ REMOVED: correctStreak method
+    /// This method has been removed in Phase 4. Use calculateTrueStreak() for read-only access.
+    @available(*, unavailable, message: "Removed in Phase 4. Use calculateTrueStreak() for read-only access.")
     mutating func correctStreak() {
-        streak = calculateTrueStreak()
+        fatalError("correctStreak has been removed. Use calculateTrueStreak() for read-only access.")
     }
     
-    /// Recalculates completion status after editing habit properties
-    /// This preserves historical data but updates current completion status based on new goal
+    /// ❌ REMOVED: recalculateCompletionStatus method
+    /// This method has been removed in Phase 4. Use isCompleted(for:) for read-only access.
+    @available(*, unavailable, message: "Removed in Phase 4. Use isCompleted(for:) for read-only access.")
     mutating func recalculateCompletionStatus() {
-        // Update current completion status based on today's progress and new goal
-        let today = Calendar.current.startOfDay(for: Date())
-        isCompleted = isCompleted(for: today)
-        
-        // Recalculate streak based on new goal
-        correctStreak()
+        fatalError("recalculateCompletionStatus has been removed. Use isCompleted(for:) for read-only access.")
     }
     
     /// Debug function to print streak information

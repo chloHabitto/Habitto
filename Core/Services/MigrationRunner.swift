@@ -52,6 +52,10 @@ final class MigrationRunner {
     private func runMigration(userId: String, context: ModelContext, state: MigrationState) async throws {
         logger.info("MigrationRunner: Starting migration for user \(userId)")
         
+        // Log migration start
+        let startTime = Date()
+        ObservabilityLogger.shared.logMigrationStart(userId: userId, version: state.migrationVersion)
+        
         // Mark migration as in progress
         var migrationState = state
         migrationState.markInProgress()
@@ -76,12 +80,20 @@ final class MigrationRunner {
             
             logger.info("MigrationRunner: Migration completed for user \(userId) - \(completionCount + awardCount) records migrated")
             
+            // Log migration end
+            let duration = Date().timeIntervalSince(startTime)
+            ObservabilityLogger.shared.logMigrationEnd(userId: userId, version: migrationState.migrationVersion, success: true, recordsCount: completionCount + awardCount, duration: duration)
+            
         } catch {
             // Mark migration as failed
             migrationState.markFailed(error: error)
             try context.save()
             
             logger.error("MigrationRunner: Migration failed for user \(userId): \(error.localizedDescription)")
+            
+            // Log migration error
+            ObservabilityLogger.shared.logMigrationError(userId: userId, version: migrationState.migrationVersion, error: error)
+            
             throw error
         }
     }
