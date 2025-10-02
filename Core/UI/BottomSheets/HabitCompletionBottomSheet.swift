@@ -122,18 +122,18 @@ struct HabitCompletionBottomSheet: View {
                     
                     // Progress context
                     HStack(spacing: 8) {
-                        if habit.streak > 0 {
+                        if habit.computedStreak() > 0 {
                             HStack(spacing: 4) {
                                 Image(systemName: "flame.fill")
                                     .font(.caption)
                                     .foregroundColor(.orange)
-                                Text("\(habit.streak) day streak")
+                                Text("\(habit.computedStreak()) day streak")
                                     .font(.appBodySmall)
                                     .foregroundColor(.text03)
                             }
                         }
                         
-                        if habit.streak > 0 {
+                        if habit.computedStreak() > 0 {
                             Text("•")
                                 .font(.appBodySmall)
                                 .foregroundColor(.text04)

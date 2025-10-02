@@ -228,7 +228,7 @@ struct MigrationInvariantsValidator {
                 ))
             }
             
-            if habit.streak < 0 {
+            if habit.computedStreak() < 0 {
                 failures.append(ValidationResult.InvariantFailure(
                     type: .dataTypeValidity,
                     message: "Negative streak value",
@@ -479,10 +479,10 @@ struct MigrationInvariantsValidator {
             
             // Rule: Streak should be reasonable (not more than days since start)
             let daysSinceStart = Calendar.current.dateComponents([.day], from: habit.startDate, to: Date()).day ?? 0
-            if habit.streak > daysSinceStart + 7 { // Allow some buffer
+            if habit.computedStreak() > daysSinceStart + 7 { // Allow some buffer
                 warnings.append(ValidationResult.InvariantWarning(
                     type: .businessRuleCompliance,
-                    message: "Streak (\(habit.streak)) seems unusually high for start date",
+                    message: "Streak (\(habit.computedStreak())) seems unusually high for start date",
                     suggestion: "Verify streak calculation logic"
                 ))
             }

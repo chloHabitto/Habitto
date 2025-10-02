@@ -552,8 +552,8 @@ actor CrashSafeHabitStore: ObservableObject {
         
         // 4. Counter monotonicity (streaks >= 0)
         for habit in container.habits {
-            if habit.streak < 0 {
-                throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has negative streak: \(habit.streak)")
+            if habit.computedStreak() < 0 {
+                throw HabitStoreError.dataIntegrityError("Habit \(habit.name) has negative streak: \(habit.computedStreak())")
             }
         }
         
@@ -667,9 +667,9 @@ actor CrashSafeHabitStore: ObservableObject {
             }
             
             // Allow some tolerance for edge cases (e.g., timezone changes, DST)
-            let streakDifference = abs(habit.streak - expectedStreak)
+            let streakDifference = abs(habit.computedStreak() - expectedStreak)
             if streakDifference > 1 {
-                print("⚠️ CrashSafeHabitStore: Streak inconsistency for habit \(habit.name): stored=\(habit.streak), calculated=\(expectedStreak)")
+                print("⚠️ CrashSafeHabitStore: Streak inconsistency for habit \(habit.name): stored=\(habit.computedStreak()), calculated=\(expectedStreak)")
                 // Don't throw error for minor inconsistencies, just log warning
             }
         }
