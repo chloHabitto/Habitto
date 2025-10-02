@@ -7,7 +7,7 @@ extension Habit {
     
     /// Computed completion status for a specific date
     /// Derives from Completion records, not stored denormalized field
-    func isCompleted(for date: Date, userId: String? = nil) -> Bool {
+    func isCompletedForDate(_ date: Date, userId: String? = nil) -> Bool {
         // For now, use the existing completion history
         // In Phase 5, this will read from Completion records in SwiftData
         let dateKey = Self.dateKey(for: date)
@@ -18,7 +18,7 @@ extension Habit {
     /// Computed current completion status (today)
     /// Derives from Completion records, not stored denormalized field
     var currentCompletionStatus: Bool {
-        return isCompleted(for: Date())
+        return isCompletedForDate(Date())
     }
     
     /// Computed streak for this habit

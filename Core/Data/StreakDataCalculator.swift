@@ -84,10 +84,8 @@ class StreakDataCalculator {
         guard !habits.isEmpty else {
             return StreakStatistics(
                 currentStreak: 0,
-                bestStreak: 0,
-                averageStreak: 0,
-                completionRate: 0,
-                consistencyRate: 0
+                longestStreak: 0,
+                totalCompletionDays: 0
             )
         }
         
@@ -116,10 +114,8 @@ class StreakDataCalculator {
         
         return StreakStatistics(
             currentStreak: currentStreak,
-            bestStreak: bestStreak,
-            averageStreak: averageStreak,
-            completionRate: completionRate,
-            consistencyRate: consistencyRate
+            longestStreak: bestStreak,
+            totalCompletionDays: completedHabitsToday
         )
     }
     
@@ -780,7 +776,7 @@ class StreakDataCalculator {
         progress: @escaping (Double) -> Void = { _ in }
     ) async -> [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] {
         return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task.detached {
                 // Performance optimization: Check cache first (year-specific)
                 let cachedData = habits.compactMap { habit in
                     cacheManager.get(forKey: "\(habit.id.uuidString)_\(year)")
@@ -856,14 +852,12 @@ class StreakDataCalculator {
         progress: @escaping (Double) -> Void = { _ in }
     ) async -> StreakStatistics {
         return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            Task.detached {
                 guard !habits.isEmpty else {
                     let result = StreakStatistics(
                         currentStreak: 0,
-                        bestStreak: 0,
-                        averageStreak: 0,
-                        completionRate: 0,
-                        consistencyRate: 0
+                        longestStreak: 0,
+                        totalCompletionDays: 0
                     )
                     continuation.resume(returning: result)
                     return
@@ -911,10 +905,8 @@ class StreakDataCalculator {
                 
                 let result = StreakStatistics(
                     currentStreak: currentStreak,
-                    bestStreak: bestStreak,
-                    averageStreak: averageStreak,
-                    completionRate: completionRate,
-                    consistencyRate: consistencyRate
+                    longestStreak: bestStreak,
+                    totalCompletionDays: completedHabitsToday
                 )
                 
                 continuation.resume(returning: result)
@@ -924,10 +916,4 @@ class StreakDataCalculator {
 }
 
 // MARK: - Data Models
-struct StreakStatistics {
-    let currentStreak: Int
-    let bestStreak: Int
-    let averageStreak: Int
-    let completionRate: Int
-    let consistencyRate: Int
-} 
+// Note: StreakStatistics is defined in Core/Services/StreakService.swift 

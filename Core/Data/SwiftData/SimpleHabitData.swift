@@ -95,7 +95,7 @@ final class SimpleHabitData {
         self.startDate = habit.startDate
         self.endDate = habit.endDate
         self.isCompleted = habit.isCompleted
-        self.streak = habit.streak
+        // self.streak = habit.streak  // ❌ DEPRECATED: Use computedStreak() instead
         self.updatedAt = Date()
         
         // Update JSON histories
@@ -117,8 +117,6 @@ final class SimpleHabitData {
             reminder: reminder,
             startDate: startDate,
             endDate: endDate,
-            isCompleted: isCompleted,
-            streak: streak,
             createdAt: createdAt,
             reminders: [], // TODO: Implement reminders
             baseline: 0, // TODO: Implement baseline

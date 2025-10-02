@@ -102,7 +102,7 @@ final class AchievementData {
     @Attribute(.unique) var id: UUID
     var userId: String  // Reference to user (not indexed, use relationship)
     var title: String
-    var description: String
+    var achievementDescription: String
     var xpReward: Int
     var isUnlocked: Bool
     var unlockedDate: Date?
@@ -130,7 +130,7 @@ final class AchievementData {
         self.id = UUID()
         self.userId = userId
         self.title = title
-        self.description = description
+        self.achievementDescription = description
         self.xpReward = xpReward
         self.isUnlocked = isUnlocked
         self.unlockedDate = unlockedDate
@@ -168,20 +168,18 @@ final class AchievementData {
 extension UserProgressData {
     /// Convert to legacy UserProgress struct for backward compatibility
     func toUserProgress() -> UserProgress {
-        return UserProgress(
-            id: self.id,
-            userId: self.userId,
-            xpTotal: self.xpTotal,
-            level: self.level,
-            xpForCurrentLevel: self.xpForCurrentLevel,
-            xpForNextLevel: self.xpForNextLevel,
-            dailyXP: self.dailyXP,
-            lastCompletedDate: self.lastCompletedDate,
-            streakDays: self.streakDays,
-            achievements: self.achievements.map { $0.toAchievement() },
-            createdAt: self.createdAt,
-            updatedAt: self.updatedAt
-        )
+        var userProgress = UserProgress(userId: self.userId)
+        userProgress.totalXP = self.xpTotal
+        userProgress.currentLevel = self.level
+        userProgress.xpForCurrentLevel = self.xpForCurrentLevel
+        userProgress.xpForNextLevel = self.xpForNextLevel
+        userProgress.dailyXP = self.dailyXP
+        userProgress.lastCompletedDate = self.lastCompletedDate
+        userProgress.streakDays = self.streakDays
+        userProgress.achievements = self.achievements.map { $0.toAchievement() }
+        userProgress.createdAt = self.createdAt
+        userProgress.updatedAt = self.updatedAt
+        return userProgress
     }
 }
 
@@ -209,16 +207,14 @@ extension AchievementData {
         }
         
         return Achievement(
-            id: self.id,
             title: self.title,
-            description: self.description,
+            description: self.achievementDescription,
             xpReward: self.xpReward,
             isUnlocked: self.isUnlocked,
             unlockedDate: self.unlockedDate,
             iconName: self.iconName,
             category: category,
-            requirement: requirement,
-            progress: self.progress
+            requirement: requirement
         )
     }
 }

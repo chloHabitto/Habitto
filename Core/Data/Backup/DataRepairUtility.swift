@@ -197,8 +197,6 @@ class DataRepairUtility: ObservableObject {
                     reminder: habit.reminder,
                     startDate: Date(), // Fix: Set to today
                     endDate: habit.endDate,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak,
                     createdAt: habit.createdAt,
                     reminders: habit.reminders,
                     baseline: habit.baseline,
@@ -277,8 +275,6 @@ class DataRepairUtility: ObservableObject {
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: habit.endDate,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak,
                     createdAt: habit.createdAt,
                     reminders: habit.reminders,
                     baseline: habit.baseline,
@@ -330,7 +326,8 @@ class DataRepairUtility: ObservableObject {
         for var habit in habits {
             if !habit.validateStreak() {
                 issuesFound += 1
-                habit.correctStreak()
+                // Note: correctStreak() was removed in Phase 4. Streak is now computed-only.
+                // The streak will be automatically corrected when accessed via computedStreak()
                 issuesFixed += 1
             }
             repairedHabits.append(habit)

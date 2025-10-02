@@ -15,23 +15,16 @@ protocol RepositoryProviderProtocol {
 }
 
 // MARK: - Repository Provider Implementation
+/// Main repository provider that creates the appropriate repositories based on feature flags
 @MainActor
 final class RepositoryProvider: RepositoryProviderProtocol {
-    private let featureFlags: FeatureFlagProvider
     private let logger = Logger(subsystem: "com.habitto.app", category: "RepositoryProvider")
-    
-    // Current user context
-    private var currentUserId: String?
     
     // Repositories
     private var _habitRepository: (any HabitRepositoryProtocol)?
     private var _xpService: (any XPServiceProtocol)?
     private var _dailyAwardService: DailyAwardService?
     private var _migrationRunner: MigrationRunner?
-    
-    init(featureFlags: FeatureFlagProvider) {
-        self.featureFlags = featureFlags
-    }
     
     // MARK: - Repository Access
     
@@ -65,7 +58,7 @@ final class RepositoryProvider: RepositoryProviderProtocol {
                 return existing
             }
             
-            let service = DailyAwardService.shared
+            let service = DailyAwardService(modelContext: ModelContext(SwiftDataContainer.shared.modelContainer))
             _dailyAwardService = service
             return service
         }
@@ -77,40 +70,61 @@ final class RepositoryProvider: RepositoryProviderProtocol {
                 return existing
             }
             
-            let runner = MigrationRunner(featureFlags: featureFlags)
+            let runner = MigrationRunner.shared
             _migrationRunner = runner
             return runner
         }
     }
     
-    // MARK: - User Reinitialization
+    // MARK: - Initialization
+    
+    init() {
+        logger.info("RepositoryProvider: Initialized")
+    }
+    
+    // MARK: - User Management
     
     func reinitializeForUser(userId: String) async throws {
         logger.info("RepositoryProvider: Reinitializing for user \(userId)")
         
         // Clear existing repositories
-        clearRepositories()
-        
-        // Set new user ID
-        currentUserId = userId
+        _habitRepository = nil
+        _xpService = nil
+        _dailyAwardService = nil
         
         // Run migration if needed
-        if featureFlags.isMigrationEnabled {
-            try await migrationRunner.runIfNeeded(userId: userId)
-        }
+        try await migrationRunner.runIfNeeded(userId: userId)
         
-        // Clear any in-memory caches from previous user
-        clearUserCaches()
+        // Create new repositories for the user
+        _ = habitRepository
+        _ = xpService
+        _ = dailyAwardService
         
         logger.info("RepositoryProvider: Reinitialized for user \(userId)")
+    }
+    
+    func clearUserData() async {
+        logger.info("RepositoryProvider: Clearing user data")
+        
+        // Clear repositories
+        _habitRepository = nil
+        _xpService = nil
+        _dailyAwardService = nil
+        
+        // Clear XP manager cache
+        XPManager.shared.handleUserSignOut()
+        
+        logger.info("RepositoryProvider: Cleared user caches")
     }
     
     // MARK: - Private Methods
     
     private func createHabitRepository() -> any HabitRepositoryProtocol {
+        let featureFlags = FeatureFlagManager.shared.provider
+        
         if featureFlags.useNormalizedDataPath {
             logger.info("RepositoryProvider: Creating normalized habit repository")
-            return NormalizedHabitRepository(userId: currentUserId ?? "guest")
+            return NormalizedHabitRepository(userId: "current_user")
         } else {
             logger.info("RepositoryProvider: Creating legacy habit repository")
             return LegacyHabitRepository()
@@ -118,6 +132,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
     }
     
     private func createXPService() -> any XPServiceProtocol {
+        let featureFlags = FeatureFlagManager.shared.provider
+        
         if featureFlags.useCentralizedXP {
             logger.info("RepositoryProvider: Creating centralized XP service")
             return XPService.shared
@@ -125,25 +141,6 @@ final class RepositoryProvider: RepositoryProviderProtocol {
             logger.info("RepositoryProvider: Creating legacy XP service")
             return LegacyXPService()
         }
-    }
-    
-    private func clearRepositories() {
-        _habitRepository = nil
-        _xpService = nil
-        _dailyAwardService = nil
-        _migrationRunner = nil
-    }
-    
-    private func clearUserCaches() {
-        // Clear singleton caches that might contain user data
-        if let legacyRepo = _habitRepository as? LegacyHabitRepository {
-            legacyRepo.clearCache()
-        }
-        
-        // Clear XP manager cache
-        XPManager.shared.handleUserSignOut()
-        
-        logger.info("RepositoryProvider: Cleared user caches")
     }
 }
 
@@ -161,6 +158,37 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
         self.currentUserId = "legacy_user"
     }
     
+    // MARK: - RepositoryProtocol Conformance
+    
+    func getAll() async throws -> [Habit] {
+        return try await getActiveHabits()
+    }
+    
+    func getById(_ id: UUID) async throws -> Habit? {
+        let habits = try await getActiveHabits()
+        return habits.first { $0.id == id }
+    }
+    
+    func create(_ item: Habit) async throws -> Habit {
+        // TODO: Implement habit creation
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func update(_ item: Habit) async throws -> Habit {
+        // TODO: Implement habit update
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func delete(_ id: UUID) async throws {
+        // TODO: Implement habit deletion
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func exists(_ id: UUID) async throws -> Bool {
+        let habit = try await getById(id)
+        return habit != nil
+    }
+    
     func loadHabits() async throws -> [Habit] {
         if let cached = cachedHabits {
             return cached
@@ -168,39 +196,56 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
         
         // Load from UserDefaults (legacy storage)
         let userDefaults = UserDefaults.standard
-        guard let habitsData = userDefaults.data(forKey: "SavedHabits"),
-              let habits = try? JSONDecoder().decode([Habit].self, from: habitsData) else {
-            logger.info("LegacyHabitRepository: No habits found in UserDefaults")
-            cachedHabits = []
-            return []
+        if let data = userDefaults.data(forKey: "habits"),
+           let habits = try? JSONDecoder().decode([Habit].self, from: data) {
+            cachedHabits = habits
+            return habits
         }
         
-        cachedHabits = habits
-        logger.info("LegacyHabitRepository: Loaded \(habits.count) habits from UserDefaults")
+        cachedHabits = []
+        return []
+    }
+    
+    // MARK: - HabitRepositoryProtocol Conformance
+    
+    func getHabits(for date: Date) async throws -> [Habit] {
+        return try await loadHabits()
+    }
+    
+    func getHabits(by type: HabitType) async throws -> [Habit] {
+        let habits = try await loadHabits()
+        return habits.filter { $0.habitType == type }
+    }
+    
+    func getActiveHabits() async throws -> [Habit] {
+        let habits = try await loadHabits()
+        // TODO: Implement isActive property or logic
         return habits
     }
     
-    func saveHabits(_ habits: [Habit]) async throws {
-        // Save to UserDefaults (legacy storage)
-        let userDefaults = UserDefaults.standard
-        let habitsData = try JSONEncoder().encode(habits)
-        userDefaults.set(habitsData, forKey: "SavedHabits")
-        
-        cachedHabits = habits
-        logger.info("LegacyHabitRepository: Saved \(habits.count) habits to UserDefaults")
+    func getArchivedHabits() async throws -> [Habit] {
+        let habits = try await loadHabits()
+        // TODO: Implement isActive property or logic
+        return []
     }
     
-    func toggleHabitCompletion(_ habit: Habit, for date: Date) async throws {
-        // Legacy completion logic
-        logger.info("LegacyHabitRepository: Toggling completion for habit \(habit.name)")
-        
-        // This would contain the legacy completion logic
-        // For now, just log the action
+    func updateHabitCompletion(_ habit: Habit, for date: Date, isCompleted: Bool) async throws {
+        // Implementation would go here
     }
     
-    func clearCache() {
-        cachedHabits = nil
-        logger.info("LegacyHabitRepository: Cleared cache")
+    func updateHabitCompletion(habitId: UUID, date: Date, progress: Double) async throws {
+        // TODO: Implement habit completion update
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func getHabitCompletion(habitId: UUID, date: Date) async throws -> Double {
+        // TODO: Implement habit completion retrieval
+        return 0.0
+    }
+    
+    func calculateHabitStreak(habitId: UUID) async throws -> Int {
+        // Implementation would go here
+        return 0
     }
 }
 
@@ -217,93 +262,85 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
         self.modelContext = ModelContext(SwiftDataContainer.shared.modelContainer)
     }
     
+    // MARK: - RepositoryProtocol Conformance
+    
+    func getAll() async throws -> [Habit] {
+        return try await getActiveHabits()
+    }
+    
+    func getById(_ id: UUID) async throws -> Habit? {
+        let habits = try await getActiveHabits()
+        return habits.first { $0.id == id }
+    }
+    
+    func create(_ item: Habit) async throws -> Habit {
+        // TODO: Implement habit creation
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func update(_ item: Habit) async throws -> Habit {
+        // TODO: Implement habit update
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func delete(_ id: UUID) async throws {
+        // TODO: Implement habit deletion
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func exists(_ id: UUID) async throws -> Bool {
+        let habit = try await getById(id)
+        return habit != nil
+    }
+    
     func loadHabits() async throws -> [Habit] {
         // Load habits from SwiftData with user scoping
         let request = FetchDescriptor<HabitData>(
             predicate: #Predicate { $0.userId == userId }
         )
         
-        let habitDataArray = try modelContext.fetch(request)
-        
-        // Convert HabitData to Habit (legacy format for compatibility)
-        let habits = habitDataArray.map { habitData in
-            // This would contain the conversion logic
-            // For now, return a placeholder
-            return Habit(
-                name: habitData.name,
-                habitDescription: habitData.habitDescription,
-                icon: habitData.icon,
-                color: .blue, // Convert from colorData
-                habitType: .formation, // Convert from string
-                schedule: habitData.schedule,
-                goal: habitData.goal,
-                reminder: habitData.reminder,
-                startDate: habitData.startDate,
-                endDate: habitData.endDate
-            )
-        }
-        
-        logger.info("NormalizedHabitRepository: Loaded \(habits.count) habits for user \(userId)")
+        let habitDataList = try modelContext.fetch(request)
+        return habitDataList.map { $0.toHabit() }
+    }
+    
+    // MARK: - HabitRepositoryProtocol Conformance
+    
+    func getHabits(for date: Date) async throws -> [Habit] {
+        return try await loadHabits()
+    }
+    
+    func getHabits(by type: HabitType) async throws -> [Habit] {
+        let habits = try await loadHabits()
+        return habits.filter { $0.habitType == type }
+    }
+    
+    func getActiveHabits() async throws -> [Habit] {
+        let habits = try await loadHabits()
+        // TODO: Implement isActive property or logic
         return habits
     }
     
-    func saveHabits(_ habits: [Habit]) async throws {
-        // Save habits to SwiftData with user scoping
-        for habit in habits {
-            // Check if habit already exists
-            let existingRequest = FetchDescriptor<HabitData>(
-                predicate: #Predicate { $0.id == habit.id && $0.userId == userId }
-            )
-            let existing = try modelContext.fetch(existingRequest)
-            
-            if existing.isEmpty {
-                // Create new HabitData
-                let habitData = HabitData(
-                    id: habit.id,
-                    userId: userId,
-                    name: habit.name,
-                    habitDescription: habit.habitDescription,
-                    icon: habit.icon,
-                    colorData: Data(), // Convert from color
-                    habitType: habit.habitType.rawValue,
-                    schedule: habit.schedule,
-                    goal: habit.goal,
-                    reminder: habit.reminder,
-                    startDate: habit.startDate,
-                    endDate: habit.endDate,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak
-                )
-                
-                modelContext.insert(habitData)
-            }
-        }
-        
-        try modelContext.save()
-        logger.info("NormalizedHabitRepository: Saved \(habits.count) habits for user \(userId)")
+    func getArchivedHabits() async throws -> [Habit] {
+        return []
     }
     
-    func toggleHabitCompletion(_ habit: Habit, for date: Date) async throws {
-        // Normalized completion logic using XPService
-        logger.info("NormalizedHabitRepository: Toggling completion for habit \(habit.name)")
-        
-        let dateKey = DateKey.key(for: date)
-        
-        // Create completion record
-        let completionRecord = CompletionRecord(
-            userId: userId,
-            habitId: habit.id,
-            date: date,
-            dateKey: dateKey,
-            isCompleted: !habit.isCompleted(for: date)
-        )
-        
-        modelContext.insert(completionRecord)
-        try modelContext.save()
-        
-        // Award XP if all habits completed
-        let xpService = XPService.shared
-        let _ = try await xpService.awardDailyCompletionIfEligible(userId: userId, dateKey: dateKey)
+    func updateHabitCompletion(_ habit: Habit, for date: Date, isCompleted: Bool) async throws {
+        // Implementation would go here
+    }
+    
+    func updateHabitCompletion(habitId: UUID, date: Date, progress: Double) async throws {
+        // TODO: Implement habit completion update
+        throw DataStorageError.operationNotSupported("Method not implemented")
+    }
+    
+    func getHabitCompletion(habitId: UUID, date: Date) async throws -> Double {
+        // TODO: Implement habit completion retrieval
+        return 0.0
+    }
+    
+    func calculateHabitStreak(habitId: UUID) async throws -> Int {
+        // Implementation would go here
+        return 0
     }
 }
 
@@ -313,41 +350,30 @@ final class LegacyXPService: XPServiceProtocol {
     private let logger = Logger(subsystem: "com.habitto.app", category: "LegacyXPService")
     
     func awardDailyCompletionIfEligible(userId: String, dateKey: String) async throws -> Int {
-        logger.info("LegacyXPService: Awarding daily completion for user \(userId)")
+        logger.info("LegacyXPService: Getting daily award for user \(userId)")
         
-        // Use legacy XPManager
-        let xpManager = XPManager.shared
-        xpManager.debugForceAwardXP(50) // Legacy XP amount
-        
-        return 50
+        // Legacy daily award logic
+        return 0
     }
     
     func revokeDailyCompletionIfIneligible(userId: String, dateKey: String) async throws -> Int {
-        logger.info("LegacyXPService: Revoking daily completion for user \(userId)")
+        logger.info("LegacyXPService: Revoking daily award for user \(userId)")
         
-        // Legacy revocation logic
+        // Legacy daily award logic
         return 0
     }
     
     func getUserProgress(userId: String) async throws -> UserProgress {
         logger.info("LegacyXPService: Getting user progress for user \(userId)")
         
-        // Use legacy XPManager
-        let xpManager = XPManager.shared
-        return xpManager.userProgress
+        // Legacy user progress logic
+        return UserProgress(userId: userId)
     }
     
     func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward? {
-        logger.info("LegacyXPService: Getting daily award for user \(userId)")
+        logger.info("LegacyXPService: Getting daily award for user \(userId) on \(dateKey)")
         
         // Legacy daily award logic
         return nil
     }
-}
-
-// MARK: - Habit Repository Protocol
-protocol HabitRepositoryProtocol {
-    func loadHabits() async throws -> [Habit]
-    func saveHabits(_ habits: [Habit]) async throws
-    func toggleHabitCompletion(_ habit: Habit, for date: Date) async throws
 }

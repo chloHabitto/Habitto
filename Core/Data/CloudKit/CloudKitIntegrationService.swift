@@ -85,8 +85,8 @@ class CloudKitIntegrationService: ObservableObject {
     /// Start CloudKit sync
     func startSync() async {
         // Feature flag protection: Check if CloudKit sync is enabled
-        let featureFlags = FeatureFlagsManager.shared
-        guard featureFlags.isEnabled(.cloudKitSync, forUser: nil) else {
+        let featureFlags = FeatureFlagManager.shared.provider
+        guard featureFlags.useNormalizedDataPath else {
             print("🚩 CloudKitIntegrationService: CloudKit sync disabled by feature flag")
             return
         }

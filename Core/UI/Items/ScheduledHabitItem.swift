@@ -506,9 +506,7 @@ struct ScheduledHabitItem: View {
                 goal: "5 times",
                 reminder: "No reminder",
                 startDate: Date(),
-                endDate: nil,
-                isCompleted: false,
-                streak: 0
+                endDate: nil
             ),
             selectedDate: Date()
         )
@@ -524,9 +522,7 @@ struct ScheduledHabitItem: View {
                 goal: "20 pages",
                 reminder: "No reminder",
                 startDate: Date(),
-                endDate: nil,
-                isCompleted: true,
-                streak: 5
+                endDate: nil
             ),
             selectedDate: Date()
         )
@@ -542,9 +538,7 @@ struct ScheduledHabitItem: View {
                 goal: "8 glasses",
                 reminder: "No reminder",
                 startDate: Date(),
-                endDate: nil,
-                isCompleted: false,
-                streak: 0
+                endDate: nil
             ),
             selectedDate: Date()
         )

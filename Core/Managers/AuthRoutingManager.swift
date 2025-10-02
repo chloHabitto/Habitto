@@ -60,7 +60,7 @@ final class AuthRoutingManager: ObservableObject {
     }
     
     private func handleAuthStateChange(_ authState: AuthenticationState) async {
-        logger.info("AuthRoutingManager: Handling auth state change: \(authState)")
+        logger.info("AuthRoutingManager: Handling auth state change: \(String(describing: authState))")
         
         switch authState {
         case .unauthenticated:
@@ -131,13 +131,13 @@ final class AuthRoutingManager: ObservableObject {
     // MARK: - Repository Provider Creation
     
     private func createRepositoryProvider() -> RepositoryProviderProtocol {
-        return RepositoryProvider(featureFlags: featureFlags)
+        return RepositoryProvider()
     }
     
     // MARK: - Manual User Switching (for testing)
     
     /// Manually switch to a specific user (for testing purposes)
-    func switchToUser(userId: String) async throws {
+    func manuallySwitchToUser(userId: String) async throws {
         await switchToUser(userId: userId)
     }
     

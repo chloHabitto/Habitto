@@ -739,8 +739,6 @@ actor CrashSafeHabitStore: ObservableObject {
                 reminder: habit.reminder,
                 startDate: habit.startDate,
                 endDate: habit.endDate,
-                isCompleted: habit.isCompleted,
-                streak: habit.streak,
                 createdAt: habit.createdAt,
                 reminders: habit.reminders,
                 baseline: habit.baseline,

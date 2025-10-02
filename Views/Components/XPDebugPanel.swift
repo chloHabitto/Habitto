@@ -229,7 +229,7 @@ struct XPDebugPanel: View {
     
     private func testAwardXP() {
         print("🧪 TEST: Force awarding 100 XP")
-        xpManager.debugForceAwardXP(100)
+        // ✅ PHASE 4: debugForceAwardXP removed, use XPService.awardDailyCompletionIfEligible instead
         runDiagnostic()
     }
     

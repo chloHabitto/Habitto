@@ -176,8 +176,6 @@ final class ConflictResolutionManager {
             reminder: resolvedHabit.reminder,
             startDate: resolvedHabit.startDate,
             endDate: resolvedHabit.endDate,
-            isCompleted: resolvedHabit.isCompleted,
-            streak: resolvedHabit.streak,
             createdAt: resolvedHabit.createdAt,
             reminders: resolvedHabit.reminders,
             baseline: resolvedHabit.baseline,

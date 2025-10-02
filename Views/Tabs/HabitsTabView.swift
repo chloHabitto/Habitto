@@ -725,8 +725,7 @@ struct HabitsTabView: View {
 }
 
 #Preview {
-    let mockState = HomeViewState()
-    mockState.habits = [
+    let mockHabits = [
         Habit(
             name: "Read Books",
             description: "Read at least one chapter every day",
@@ -737,9 +736,7 @@ struct HabitsTabView: View {
             goal: "1 chapter",
             reminder: "No reminder",
             startDate: Date(),
-            endDate: nil,
-            isCompleted: false,
-            streak: 5
+            endDate: nil
         ),
         Habit(
             name: "Exercise",
@@ -751,11 +748,12 @@ struct HabitsTabView: View {
             goal: "30 minutes",
             reminder: "No reminder",
             startDate: Date().addingTimeInterval(-7*24*60*60), // 7 days ago
-            endDate: Date().addingTimeInterval(7*24*60*60), // 7 days from now
-            isCompleted: false,
-            streak: 3
+            endDate: Date().addingTimeInterval(7*24*60*60) // 7 days from now
         )
     ]
+    
+    let mockState = HomeViewState()
+    mockState.habits = mockHabits
     
     return HabitsTabView(
         state: mockState,

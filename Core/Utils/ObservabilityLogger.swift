@@ -122,7 +122,7 @@ final class ObservabilityLogger {
         // Simple anonymization: use first 8 characters of hash
         let hash = userId.data(using: .utf8)?.withUnsafeBytes { bytes in
             var hasher = Hasher()
-            hasher.combine(bytes.bindMemory(to: UInt8.self))
+            hasher.combine(bytes: bytes)
             return String(hasher.finalize().magnitude, radix: 16)
         } ?? "unknown"
         

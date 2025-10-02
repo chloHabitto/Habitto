@@ -1,12 +1,13 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - Migration State Model
 /// Tracks migration status for each user to ensure idempotent migrations
 @Model
 final class MigrationState {
     @Attribute(.unique) var id: UUID
-    @Attribute(.indexed) var userId: String
+    var userId: String
     var migrationVersion: Int
     var status: MigrationStatus
     var startedAt: Date
@@ -41,6 +42,36 @@ enum MigrationStatus: String, Codable, CaseIterable {
     case completed = "completed"
     case failed = "failed"
     case rolledBack = "rolled_back"
+    
+    var color: Color {
+        switch self {
+        case .pending:
+            return .orange
+        case .inProgress:
+            return .blue
+        case .completed:
+            return .green
+        case .failed:
+            return .red
+        case .rolledBack:
+            return .gray
+        }
+    }
+    
+    var displayName: String {
+        switch self {
+        case .pending:
+            return "Pending"
+        case .inProgress:
+            return "In Progress"
+        case .completed:
+            return "Completed"
+        case .failed:
+            return "Failed"
+        case .rolledBack:
+            return "Rolled Back"
+        }
+    }
 }
 
 // MARK: - Migration Version Constants
@@ -80,7 +111,7 @@ extension MigrationState {
     }
     
     /// Mark migration as completed
-    mutating func markCompleted(recordsCount: Int) {
+    func markCompleted(recordsCount: Int) {
         self.status = .completed
         self.completedAt = Date()
         self.migratedRecordsCount = recordsCount
@@ -88,20 +119,20 @@ extension MigrationState {
     }
     
     /// Mark migration as failed
-    mutating func markFailed(error: Error) {
+    func markFailed(error: Error) {
         self.status = .failed
         self.errorMessage = error.localizedDescription
         self.updatedAt = Date()
     }
     
     /// Mark migration as in progress
-    mutating func markInProgress() {
+    func markInProgress() {
         self.status = .inProgress
         self.updatedAt = Date()
     }
     
     /// Mark migration as rolled back
-    mutating func markRolledBack() {
+    func markRolledBack() {
         self.status = .rolledBack
         self.updatedAt = Date()
     }

@@ -397,8 +397,7 @@ final actor HabitStore {
                 logger.info("Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
             }
             
-            // Update streak after progress change
-            currentHabits[index].updateStreakWithReset()
+            // ✅ PHASE 4: Streaks are now computed-only, no need to update them
             
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
