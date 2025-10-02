@@ -315,6 +315,24 @@ class HabitRepository: ObservableObject {
         }
     }
     
+    // MARK: - Emergency Recovery Methods
+    
+    /// Emergency method to recover lost habits by forcing a reload
+    func emergencyRecoverHabits() async {
+        print("🚨 HabitRepository: Emergency habit recovery initiated...")
+        
+        // Clear any cached data
+        await MainActor.run {
+            self.habits = []
+            self.objectWillChange.send()
+        }
+        
+        // Force reload from storage
+        await loadHabits(force: true)
+        
+        print("🚨 HabitRepository: Emergency recovery completed. Found \(habits.count) habits.")
+    }
+    
     // MARK: - Debug Methods
     func debugHabitsState() {
         print("🔍 HabitRepository: Debug - Current habits state:")
@@ -610,8 +628,33 @@ class HabitRepository: ObservableObject {
         
         // Update the local habits array immediately for UI responsiveness
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            let _ = habits[index].completionHistory[dateKey] ?? 0  // oldProgress - no longer needed after XP cleanup
+            let oldProgress = habits[index].completionHistory[dateKey] ?? 0
             habits[index].completionHistory[dateKey] = progress
+            
+            // Handle timestamp recording for time-based completion analysis
+            let currentTimestamp = Date()
+            if progress > oldProgress {
+                // Progress increased - record new completion timestamp
+                if habits[index].completionTimestamps[dateKey] == nil {
+                    habits[index].completionTimestamps[dateKey] = []
+                }
+                let newCompletions = progress - oldProgress
+                for _ in 0..<newCompletions {
+                    habits[index].completionTimestamps[dateKey]?.append(currentTimestamp)
+                }
+                print("🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
+                print("🕐 HabitRepository: Total timestamps for \(dateKey): \(habits[index].completionTimestamps[dateKey]?.count ?? 0)")
+            } else if progress < oldProgress {
+                // Progress decreased - remove recent timestamps
+                let removedCompletions = oldProgress - progress
+                for _ in 0..<removedCompletions {
+                    if habits[index].completionTimestamps[dateKey]?.isEmpty == false {
+                        habits[index].completionTimestamps[dateKey]?.removeLast()
+                    }
+                }
+                print("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+            }
+            
             // Update streak after progress change
             habits[index].updateStreakWithReset()
             objectWillChange.send()

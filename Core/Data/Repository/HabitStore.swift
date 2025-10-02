@@ -153,11 +153,20 @@ final actor HabitStore {
         ]
         
         for key in possibleKeys {
-            if let habitsData = UserDefaults.standard.data(forKey: key),
-               let habits = try? JSONDecoder().decode([Habit].self, from: habitsData),
-               !habits.isEmpty {
-                logger.info("Found \(habits.count) habits in UserDefaults key: \(key)")
-                return habits
+            if let habitsData = UserDefaults.standard.data(forKey: key) {
+                logger.info("Found data in UserDefaults key: \(key), size: \(habitsData.count) bytes")
+                do {
+                    let habits = try JSONDecoder().decode([Habit].self, from: habitsData)
+                    if !habits.isEmpty {
+                        logger.info("Successfully decoded \(habits.count) habits from UserDefaults key: \(key)")
+                        return habits
+                    } else {
+                        logger.info("Decoded habits array is empty from key: \(key)")
+                    }
+                } catch {
+                    logger.error("Failed to decode habits from UserDefaults key \(key): \(error.localizedDescription)")
+                    logger.error("Decoding error details: \(error)")
+                }
             }
         }
         
@@ -362,7 +371,31 @@ final actor HabitStore {
         var currentHabits = try await loadHabits()
         
         if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
+            let oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
             currentHabits[index].completionHistory[dateKey] = progress
+            
+            // Handle timestamp recording for time-based completion analysis
+            let currentTimestamp = Date()
+            if progress > oldProgress {
+                // Progress increased - record new completion timestamp
+                if currentHabits[index].completionTimestamps[dateKey] == nil {
+                    currentHabits[index].completionTimestamps[dateKey] = []
+                }
+                let newCompletions = progress - oldProgress
+                for _ in 0..<newCompletions {
+                    currentHabits[index].completionTimestamps[dateKey]?.append(currentTimestamp)
+                }
+                logger.info("Recorded \(newCompletions) completion timestamp(s) for \(habit.name)")
+            } else if progress < oldProgress {
+                // Progress decreased - remove recent timestamps
+                let removedCompletions = oldProgress - progress
+                for _ in 0..<removedCompletions {
+                    if currentHabits[index].completionTimestamps[dateKey]?.isEmpty == false {
+                        currentHabits[index].completionTimestamps[dateKey]?.removeLast()
+                    }
+                }
+                logger.info("Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+            }
             
             // Update streak after progress change
             currentHabits[index].updateStreakWithReset()

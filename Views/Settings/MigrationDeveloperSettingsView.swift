@@ -5,8 +5,10 @@ import SwiftUI
 
 struct MigrationDeveloperSettingsView: View {
     @StateObject private var telemetryManager = EnhancedMigrationTelemetryManager.shared
+    @StateObject private var habitRepository = HabitRepository.shared
     @State private var showingClearConfirmation = false
     @State private var showingConfigDetails = false
+    @State private var showingRecoveryConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -124,6 +126,26 @@ struct MigrationDeveloperSettingsView: View {
                     }
                 }
                 
+                // Emergency Recovery Section
+                Section("Emergency Recovery") {
+                    HStack {
+                        Text("Current Habits")
+                        Spacer()
+                        Text("\(habitRepository.habits.count)")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Button("🚨 Recover Lost Habits") {
+                        showingRecoveryConfirmation = true
+                    }
+                    .foregroundColor(.red)
+                    
+                    Button("Debug Habits State") {
+                        habitRepository.debugHabitsState()
+                    }
+                    .foregroundColor(.blue)
+                }
+                
                 // Test Section
                 Section("Testing") {
                     Button("Test Migration Start") {
@@ -157,6 +179,16 @@ struct MigrationDeveloperSettingsView: View {
                 }
             } message: {
                 Text("This will permanently delete all telemetry data. This action cannot be undone.")
+            }
+            .alert("Recover Lost Habits", isPresented: $showingRecoveryConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Recover", role: .destructive) {
+                    Task {
+                        await habitRepository.emergencyRecoverHabits()
+                    }
+                }
+            } message: {
+                Text("This will attempt to recover your lost habits by forcing a reload from storage. This may help if habits disappeared after the recent update.")
             }
             .sheet(isPresented: $showingConfigDetails) {
                 ConfigDetailsView()

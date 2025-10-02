@@ -3701,6 +3701,37 @@ struct ProgressTabView: View {
                             .font(.appBodySmall)
                             .foregroundColor(.text03)
                             .multilineTextAlignment(.center)
+                        
+                        // Test button to add sample data
+                        Button("Add Sample Time Data (Test)") {
+                            // Add some sample completion data with timestamps for testing
+                            let calendar = Calendar.current
+                            let today = Date()
+                            let testTimes = [
+                                (hour: 8, minute: 30),   // Morning
+                                (hour: 13, minute: 15),  // Lunch
+                                (hour: 18, minute: 45),  // Evening
+                                (hour: 22, minute: 0)    // Night
+                            ]
+                            
+                            for i in 0..<3 {
+                                if let testDate = calendar.date(byAdding: .day, value: -i, to: today) {
+                                    for (hour, minute) in testTimes {
+                                        if let testTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: testDate) {
+                                            habitRepository.setProgress(for: habit, date: testDate, progress: 1)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Button to generate timestamps for existing completions
+                        Button("Generate Timestamps for Existing Completions") {
+                            generateTimestampsForExistingCompletions(for: habit)
+                        }
+                        .font(.appBodySmall)
+                        .foregroundColor(.primaryFocus)
+                        .padding(.top, 8)
                     }
                     .frame(height: 200)
                 } else {
@@ -3727,12 +3758,32 @@ struct ProgressTabView: View {
         let weekStart = selectedWeekStartDate
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
-        // Get all habit completion records for this week
-        let habitLogs = habit.completionHistory.compactMap { (dateString, progress) -> (timestamp: Date, progress: Int)? in
-            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return nil }
-            return (timestamp: date, progress: progress)
-        }.filter { log in
-            return log.timestamp >= weekStart && log.timestamp <= weekEnd
+        // Get all habit completion timestamps for this week
+        let habitLogs = habit.completionTimestamps.flatMap { (dateString, timestamps) -> [(timestamp: Date, progress: Int)] in
+            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return [] }
+            guard date >= weekStart && date <= weekEnd else { return [] }
+            
+            // Convert each timestamp to a log entry
+            return timestamps.map { timestamp in
+                (timestamp: timestamp, progress: 1)
+            }
+        }
+        
+        // Debug: Print timestamp data
+        print("🕐 TimeBaseCompletionChart: Found \(habitLogs.count) completion logs for habit '\(habit.name)'")
+        print("🕐 TimeBaseCompletionChart: completionTimestamps keys: \(habit.completionTimestamps.keys.sorted())")
+        for (dateKey, timestamps) in habit.completionTimestamps {
+            print("🕐   Date \(dateKey): \(timestamps.count) timestamps")
+            for timestamp in timestamps {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                print("🕐     - \(formatter.string(from: timestamp))")
+            }
+        }
+        for log in habitLogs {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            print("🕐   - \(formatter.string(from: log.timestamp))")
         }
         
         // Define time periods
@@ -3762,9 +3813,62 @@ struct ProgressTabView: View {
                 completionCount: completionsInPeriod,
                 totalDays: totalDays
             ))
+            
+            // Debug: Print time period data
+            print("🕐   \(periodName) (\(startHour):00-\(endHour):00): \(completionsInPeriod) completions, \(String(format: "%.1f", completionRate * 100))% rate")
         }
         
+        print("🕐 TimeBaseCompletionChart: Generated \(timeData.count) time periods for chart")
         return timeData
+    }
+    
+    // MARK: - Generate Timestamps for Existing Completions
+    private func generateTimestampsForExistingCompletions(for habit: Habit) {
+        print("🕐 Generating timestamps for existing completions of habit: \(habit.name)")
+        
+        let calendar = Calendar.current
+        let weekStart = selectedWeekStartDate
+        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        
+        // Find existing completions without timestamps
+        for (dateString, completionCount) in habit.completionHistory {
+            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
+            guard date >= weekStart && date <= weekEnd else { continue }
+            guard completionCount > 0 else { continue }
+            
+            // Check if this date already has timestamps
+            if habit.completionTimestamps[dateString]?.isEmpty != false {
+                print("🕐 Generating timestamps for \(dateString) with \(completionCount) completions")
+                
+                // Generate realistic timestamps based on time of day
+                var timestamps: [Date] = []
+                let timeSlots = [
+                    (hour: 8, minute: 30),   // Morning
+                    (hour: 13, minute: 15),  // Lunch
+                    (hour: 18, minute: 45),  // Evening
+                    (hour: 22, minute: 0)    // Night
+                ]
+                
+                for i in 0..<completionCount {
+                    let timeSlot = timeSlots[i % timeSlots.count]
+                    if let timestamp = calendar.date(bySettingHour: timeSlot.hour, minute: timeSlot.minute, second: 0, of: date) {
+                        timestamps.append(timestamp)
+                    }
+                }
+                
+                // Update the habit with generated timestamps
+                if let index = habitRepository.habits.firstIndex(where: { $0.id == habit.id }) {
+                    habitRepository.habits[index].completionTimestamps[dateString] = timestamps
+                    print("🕐 Added \(timestamps.count) timestamps for \(dateString)")
+                }
+            }
+        }
+        
+        // Save the changes
+        Task {
+            try? await habitRepository.habitStore.saveHabits(habitRepository.habits)
+            print("🕐 Saved updated habits with generated timestamps")
+        }
     }
     
     // MARK: - Weekly Difficulty Data Helper
