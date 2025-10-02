@@ -82,6 +82,7 @@ struct Habit: Identifiable, Codable, Equatable {
     var streak: Int = 0
     let createdAt: Date
     var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
+    var completionTimestamps: [String: [Date]] = [:] // Track completion timestamps: "yyyy-MM-dd" -> [completion_times]
     var difficultyHistory: [String: Int] = [:] // Track daily difficulty: "yyyy-MM-dd" -> Int (1-10 scale)
     
     // Habit Breaking specific properties
@@ -89,8 +90,70 @@ struct Habit: Identifiable, Codable, Equatable {
     var target: Int = 0 // Target reduced amount
     var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
     
+    // MARK: - Codable Support for Migration
+    enum CodingKeys: String, CodingKey {
+        case id, name, description, icon, color, habitType, schedule, goal, reminder
+        case startDate, endDate, isCompleted, streak, createdAt, reminders
+        case baseline, target, completionHistory, difficultyHistory, actualUsage
+        case completionTimestamps
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decode(String.self, forKey: .description)
+        icon = try container.decode(String.self, forKey: .icon)
+        color = try container.decode(Color.self, forKey: .color)
+        habitType = try container.decode(HabitType.self, forKey: .habitType)
+        schedule = try container.decode(String.self, forKey: .schedule)
+        goal = try container.decode(String.self, forKey: .goal)
+        reminder = try container.decode(String.self, forKey: .reminder)
+        startDate = try container.decode(Date.self, forKey: .startDate)
+        endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
+        isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
+        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        reminders = try container.decodeIfPresent([ReminderItem].self, forKey: .reminders) ?? []
+        baseline = try container.decodeIfPresent(Int.self, forKey: .baseline) ?? 0
+        target = try container.decodeIfPresent(Int.self, forKey: .target) ?? 0
+        completionHistory = try container.decodeIfPresent([String: Int].self, forKey: .completionHistory) ?? [:]
+        difficultyHistory = try container.decodeIfPresent([String: Int].self, forKey: .difficultyHistory) ?? [:]
+        actualUsage = try container.decodeIfPresent([String: Int].self, forKey: .actualUsage) ?? [:]
+        
+        // Handle migration for new completionTimestamps field
+        completionTimestamps = try container.decodeIfPresent([String: [Date]].self, forKey: .completionTimestamps) ?? [:]
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(description, forKey: .description)
+        try container.encode(icon, forKey: .icon)
+        try container.encode(color, forKey: .color)
+        try container.encode(habitType, forKey: .habitType)
+        try container.encode(schedule, forKey: .schedule)
+        try container.encode(goal, forKey: .goal)
+        try container.encode(reminder, forKey: .reminder)
+        try container.encode(startDate, forKey: .startDate)
+        try container.encodeIfPresent(endDate, forKey: .endDate)
+        try container.encode(isCompleted, forKey: .isCompleted)
+        try container.encode(streak, forKey: .streak)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(reminders, forKey: .reminders)
+        try container.encode(baseline, forKey: .baseline)
+        try container.encode(target, forKey: .target)
+        try container.encode(completionHistory, forKey: .completionHistory)
+        try container.encode(difficultyHistory, forKey: .difficultyHistory)
+        try container.encode(actualUsage, forKey: .actualUsage)
+        try container.encode(completionTimestamps, forKey: .completionTimestamps)
+    }
+    
     // MARK: - Designated Initializer
-    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.description = description
@@ -109,6 +172,7 @@ struct Habit: Identifiable, Codable, Equatable {
         self.baseline = baseline
         self.target = target
         self.completionHistory = completionHistory
+        self.completionTimestamps = completionTimestamps
         self.difficultyHistory = difficultyHistory
         self.actualUsage = actualUsage
     }
@@ -156,17 +220,24 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     // MARK: - Completion History Methods
-    mutating func markCompleted(for date: Date) {
+    mutating func markCompleted(for date: Date, at timestamp: Date = Date()) {
         let dateKey = Self.dateKey(for: date)
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = currentProgress + 1
+        
+        // Store the actual completion timestamp
+        if completionTimestamps[dateKey] == nil {
+            completionTimestamps[dateKey] = []
+        }
+        completionTimestamps[dateKey]?.append(timestamp)
+        
         updateCurrentCompletionStatus()
         
         // Update streak after completion
         updateStreakWithReset()
         
         // Debug: Print completion tracking
-        print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
+        print("🔍 COMPLETION DEBUG - Habit '\(name)' marked completed for \(dateKey) at \(timestamp) | Old: \(currentProgress) | New: \(completionHistory[dateKey] ?? 0)")
     }
     
     // MARK: - Difficulty History Methods
@@ -187,6 +258,12 @@ struct Habit: Identifiable, Codable, Equatable {
         let dateKey = Self.dateKey(for: date)
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = max(0, currentProgress - 1)
+        
+        // Remove the most recent timestamp if there are any
+        if completionTimestamps[dateKey]?.isEmpty == false {
+            completionTimestamps[dateKey]?.removeLast()
+        }
+        
         updateCurrentCompletionStatus()
         
         // Update streak after completion change
