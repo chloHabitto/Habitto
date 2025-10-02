@@ -61,7 +61,7 @@ final class BenchmarkStreakLookup: XCTestCase {
         let improvement = oldMedian / newMedian
         
         print("\n📊 STREAK LOOKUP PERFORMANCE BENCHMARK")
-        print("=" * 50)
+        print(String(repeating: "=", count: 50))
         print("Test Configuration:")
         print("  - User ID: \(userId)")
         print("  - Days seeded: 365")
