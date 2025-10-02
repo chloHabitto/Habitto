@@ -9,7 +9,7 @@ public actor DailyAwardService: ObservableObject {
     private let eventBus: EventBus
     
     // Constants for XP management
-    private static let XP_PER_DAY = 100
+    private static let XP_PER_DAY = 50 // Reduced from 100 to make leveling more challenging
     
     public init(modelContext: ModelContext, eventBus: EventBus = EventBus.shared) {
         self.modelContext = modelContext

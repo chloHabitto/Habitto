@@ -7,7 +7,7 @@ struct UserProgress: Codable, Identifiable {
     var totalXP: Int = 0
     var currentLevel: Int = 1
     var xpForCurrentLevel: Int = 0
-    var xpForNextLevel: Int = 50  // Level 2 starts at 50 XP
+    var xpForNextLevel: Int = 300  // Level 2 starts at 300 XP (challenging progression)
     var dailyXP: Int = 0
     var lastCompletedDate: Date?
     var streakDays: Int = 0
@@ -23,8 +23,8 @@ struct UserProgress: Codable, Identifiable {
     // Computed properties
     var levelProgress: Double {
         // Calculate progress based on XP needed for current level vs XP needed for next level
-        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * 50)
-        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * 50)
+        let currentLevelStartXP = Int(pow(Double(currentLevel - 1), 2) * 300) // Updated to 300 for challenging progression
+        let nextLevelStartXP = Int(pow(Double(currentLevel), 2) * 300) // Updated to 300 for challenging progression
         let xpNeededForNextLevel = nextLevelStartXP - currentLevelStartXP
         let xpInCurrentLevel = totalXP - currentLevelStartXP
         
