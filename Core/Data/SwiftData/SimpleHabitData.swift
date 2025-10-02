@@ -94,7 +94,7 @@ final class SimpleHabitData {
         self.reminder = habit.reminder
         self.startDate = habit.startDate
         self.endDate = habit.endDate
-        self.isCompleted = habit.isCompleted
+        self.isCompleted = habit.isCompletedForDate(Date())
         // self.streak = habit.streak  // ❌ DEPRECATED: Use computedStreak() instead
         self.updatedAt = Date()
         

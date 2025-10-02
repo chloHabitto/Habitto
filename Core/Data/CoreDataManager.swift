@@ -91,7 +91,7 @@ class CoreDataManager: ObservableObject {
         entity.reminder = habit.reminder
         entity.startDate = habit.startDate
         entity.endDate = habit.endDate
-        entity.isCompleted = habit.isCompleted
+        entity.isCompleted = habit.isCompletedForDate(Date())
         entity.baseline = Double(habit.baseline)
         entity.target = Double(habit.target)
         

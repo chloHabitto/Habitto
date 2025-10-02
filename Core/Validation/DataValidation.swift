@@ -344,7 +344,7 @@ class HabitValidator: DataValidator {
         var errors: [ValidationError] = []
         
         // Streak validation
-        if habit.streak < 0 {
+        if habit.computedStreak() < 0 {
             errors.append(ValidationError(
                 field: "streak",
                 message: "Streak cannot be negative",
