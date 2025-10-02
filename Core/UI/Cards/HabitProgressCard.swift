@@ -75,7 +75,7 @@ struct HabitProgressCard: View {
                     
                     // Secondary metric (streak)
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(habitProgress.habit.streak)")
+                        Text("\(habitProgress.habit.computedStreak())")
                             .font(.appBodyMedium)
                             .foregroundColor(.text03)
                             .lineLimit(1)

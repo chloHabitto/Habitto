@@ -204,7 +204,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 existingHabitData.completionHistory.removeAll()
                 for (dateString, isCompleted) in habit.completionHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                        let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                        let completionRecord = CompletionRecord(
+                            userId: "legacy",
+                            habitId: existingHabitData.id,
+                            date: date,
+                            dateKey: Habit.dateKey(for: date),
+                            isCompleted: isCompleted == 1
+                        )
                         existingHabitData.completionHistory.append(completionRecord)
                     }
                 }
@@ -213,7 +219,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 existingHabitData.difficultyHistory.removeAll()
                 for (dateString, difficulty) in habit.difficultyHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                        let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                        let difficultyRecord = DifficultyRecord(
+                            userId: "legacy",
+                            habitId: existingHabitData.id,
+                            date: date,
+                            difficulty: difficulty
+                        )
                         existingHabitData.difficultyHistory.append(difficultyRecord)
                     }
                 }
@@ -221,7 +232,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 // Update usage history
                 existingHabitData.usageHistory.removeAll()
                 for (key, value) in habit.actualUsage {
-                    let usageRecord = UsageRecord(key: key, value: value)
+                    let usageRecord = UsageRecord(
+                        userId: "legacy",
+                        habitId: existingHabitData.id,
+                        key: key,
+                        value: value
+                    )
                     existingHabitData.usageHistory.append(usageRecord)
                 }
             } else {

@@ -161,7 +161,7 @@ class DataIntegrityChecker: ObservableObject {
                 let issue = DataIntegrityIssue(
                     type: .consistency,
                     severity: .warning,
-                    message: "Streak count (\(habit.streak)) doesn't match completion history",
+                    message: "Streak count (\(habit.computedStreak())) doesn't match completion history",
                     field: "habits[\(index)].streak",
                     habitId: habit.id,
                     suggestedFix: "Recalculate streak based on completion history"
@@ -199,7 +199,7 @@ class DataIntegrityChecker: ObservableObject {
         
         // Check for habits with no completion history but positive streak
         for (index, habit) in habits.enumerated() {
-            if habit.streak > 0 && habit.completionHistory.isEmpty {
+            if habit.computedStreak() > 0 && habit.completionHistory.isEmpty {
                 let issue = DataIntegrityIssue(
                     type: .orphaned,
                     severity: .warning,

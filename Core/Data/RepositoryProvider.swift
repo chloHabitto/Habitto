@@ -4,6 +4,7 @@ import OSLog
 
 // MARK: - Repository Provider Protocol
 /// Protocol for providing repositories based on feature flags
+@MainActor
 protocol RepositoryProviderProtocol {
     var habitRepository: any HabitRepositoryProtocol { get }
     var xpService: any XPServiceProtocol { get }
@@ -224,7 +225,7 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
     }
     
     func getArchivedHabits() async throws -> [Habit] {
-        let habits = try await loadHabits()
+        _ = try await loadHabits()
         // TODO: Implement isActive property or logic
         return []
     }
@@ -296,7 +297,7 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
     func loadHabits() async throws -> [Habit] {
         // Load habits from SwiftData with user scoping
         let request = FetchDescriptor<HabitData>(
-            predicate: #Predicate { $0.userId == userId }
+            predicate: #Predicate { $0.userId == self.userId }
         )
         
         let habitDataList = try modelContext.fetch(request)
