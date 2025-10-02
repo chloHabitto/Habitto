@@ -2,6 +2,13 @@ import Foundation
 import SwiftData
 import OSLog
 
+// MARK: - XP Rules Configuration
+struct XP_RULES {
+    static let dailyCompletionXP = 50
+    static let levelBaseXP = 200
+    static let maxLevel = 100
+}
+
 // MARK: - XP Service Protocol
 /// Centralized service for all XP and level mutations
 /// This is the ONLY service allowed to mutate XP/level data
@@ -51,18 +58,22 @@ final class XPService: XPServiceProtocol {
     func awardDailyCompletionIfEligible(userId: String, dateKey: String) async throws -> Int {
         logger.info("XPService: Checking daily completion eligibility for user \(userId) on \(dateKey)")
         
-        // Check if already awarded
+        // Step 1: Check if already awarded (idempotency)
         if let existingAward = try await getDailyAward(userId: userId, dateKey: dateKey) {
-            logger.info("XPService: Daily award already exists for user \(userId) on \(dateKey)")
-            return 0
+            logger.info("XPService: Daily award already exists for user \(userId) on \(dateKey) - XP: \(existingAward.xpGranted)")
+            return 0 // Already awarded, no additional XP
         }
         
-        // Check if all habits are completed for this date
+        // Step 2: Check if all habits are completed for this date
         let allHabitsCompleted = try await checkAllHabitsCompleted(userId: userId, dateKey: dateKey)
         
         if allHabitsCompleted {
-            let xpAmount = 50 // Standard daily completion XP
+            let xpAmount = XP_RULES.dailyCompletionXP
+            
+            // Step 3: Create DailyAward record
             try await createDailyAward(userId: userId, dateKey: dateKey, xpGranted: xpAmount, allHabitsCompleted: true)
+            
+            // Step 4: Update UserProgress (xpTotal/level via pure function)
             try await updateUserProgress(userId: userId, xpToAdd: xpAmount)
             
             logger.info("XPService: Awarded \(xpAmount) XP to user \(userId) for daily completion on \(dateKey)")
@@ -194,13 +205,13 @@ final class XPService: XPServiceProtocol {
     }
     
     private func calculateLevel(xpTotal: Int) -> Int {
-        // Level n needs 200 * n XP (arithmetic progression)
-        return max(1, Int(sqrt(Double(xpTotal) / 200.0)) + 1)
+        // Level n needs XP_RULES.levelBaseXP * n XP (arithmetic progression)
+        return max(1, Int(sqrt(Double(xpTotal) / Double(XP_RULES.levelBaseXP))) + 1)
     }
     
     private func calculateLevelProgress(xpTotal: Int, level: Int) -> Double {
-        let currentLevelXP = 200 * (level - 1)
-        let nextLevelXP = 200 * level
+        let currentLevelXP = XP_RULES.levelBaseXP * (level - 1)
+        let nextLevelXP = XP_RULES.levelBaseXP * level
         let xpInCurrentLevel = xpTotal - currentLevelXP
         let xpNeededForNextLevel = nextLevelXP - currentLevelXP
         return Double(xpInCurrentLevel) / Double(xpNeededForNextLevel)
@@ -219,10 +230,19 @@ final class XPServiceGuard {
     
     /// Validates that XP mutations are only happening through XPService
     func validateXPMutation(caller: String, function: String) {
+        let featureFlags = FeatureFlagManager.shared.provider
+        
+        // Skip validation if strict validation is disabled
+        guard featureFlags.isStrictValidationEnabled else {
+            logger.debug("XP mutation validation disabled by feature flag")
+            return
+        }
+        
         let allowedCallers = [
             "XPService",
             "DailyAwardService", // Legacy service being phased out
-            "XPServiceGuard"
+            "XPServiceGuard",
+            "LegacyXPService" // Legacy service for backward compatibility
         ]
         
         let callerName = String(caller.split(separator: ".").last ?? "")
@@ -231,9 +251,11 @@ final class XPServiceGuard {
             logger.error("🚨 XP MUTATION VIOLATION: \(function) called from \(caller)")
             logger.error("🚨 Only XPService and DailyAwardService are allowed to mutate XP/level data")
             
-            // In debug builds, this will crash to catch violations early
+            // In debug builds with strict validation, this will crash to catch violations early
             #if DEBUG
-            fatalError("XP mutation violation: \(function) called from \(caller)")
+            if featureFlags.strictXPMutationValidation {
+                fatalError("XP mutation violation: \(function) called from \(caller)")
+            }
             #endif
         }
     }
