@@ -49,7 +49,7 @@ class XPManager: ObservableObject {
     }
     
     /// Ensures level is always calculated from current XP (no double-bumping)
-    private func updateLevelFromXP() {
+    func updateLevelFromXP() {
         let calculatedLevel = level(forXP: userProgress.totalXP)
         userProgress.currentLevel = max(1, calculatedLevel)
         updateLevelProgress()
@@ -381,9 +381,8 @@ class XPManager: ObservableObject {
         // Update level from XP (pure function approach)
         let newLevel = level(forXP: userProgress.totalXP)
         if newLevel > oldLevel {
-            // Award level-up bonus (without recursion)
-            awardLevelUpBonus(newLevel: newLevel)
-            logger.info("Level up! Reached level \(newLevel)")
+            // Level up detected - but NO bonus XP to prevent feedback loops
+            logger.info("Level up! Reached level \(newLevel) (no bonus XP to prevent inflation)")
         }
         
         // Always update level from current XP to prevent double-bumping

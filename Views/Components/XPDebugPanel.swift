@@ -86,6 +86,26 @@ struct XPDebugPanel: View {
                            .padding(.vertical, 4)
                            .background(Color.purple.opacity(0.1))
                            .cornerRadius(6)
+                           
+                           Button("XP Investigation") {
+                               investigateXPProgression()
+                           }
+                           .font(.system(size: 11, weight: .medium))
+                           .foregroundColor(.red)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(Color.red.opacity(0.1))
+                           .cornerRadius(6)
+                           
+                           Button("Fix XP Bug") {
+                               fixXPInflationBug()
+                           }
+                           .font(.system(size: 11, weight: .medium))
+                           .foregroundColor(.orange)
+                           .padding(.horizontal, 8)
+                           .padding(.vertical, 4)
+                           .background(Color.orange.opacity(0.1))
+                           .cornerRadius(6)
                     
                     Button("Complete All Habits") {
                         testCompleteAllHabits()
@@ -349,9 +369,255 @@ struct XPDebugPanel: View {
         }
     }
     
+    private func investigateXPProgression() {
+        print("🔍 XP INVESTIGATION: Comprehensive XP Analysis")
+        
+        Task {
+            await MainActor.run {
+                let currentXP = xpManager.userProgress.totalXP
+                let currentLevel = xpManager.userProgress.currentLevel
+                let dailyXP = xpManager.userProgress.dailyXP
+                
+                print("🔍 XP INVESTIGATION: Current Status")
+                print("  Current Level: \(currentLevel)")
+                print("  Total XP: \(currentXP)")
+                print("  Daily XP: \(dailyXP)")
+                
+                // Check if level matches XP
+                let expectedLevel = Int(sqrt(Double(currentXP) / 50.0)) + 1
+                let levelMatches = currentLevel == expectedLevel
+                print("  Expected Level (from XP): \(expectedLevel)")
+                print("  Level Matches XP: \(levelMatches ? "✅ YES" : "❌ NO - BUG DETECTED!")")
+                
+                do {
+                    let userId = getCurrentUserId()
+                    let predicate = #Predicate<DailyAward> { award in
+                        award.userId == userId
+                    }
+                    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+                    let allAwards = try modelContext.fetch(request)
+                    
+                    print("\n🔍 XP INVESTIGATION: Award History")
+                    print("  Total Awards: \(allAwards.count)")
+                    
+                    if allAwards.isEmpty {
+                        print("  ⚠️ NO AWARDS FOUND - This is suspicious if you have XP!")
+                        print("  Possible causes:")
+                        print("    - XP was awarded through debug methods")
+                        print("    - XP was imported from old system")
+                        print("    - XP was manually set")
+                    } else {
+                        // Sort awards by date
+                        let sortedAwards = allAwards.sorted { $0.dateKey < $1.dateKey }
+                        let totalAwardedXP = sortedAwards.reduce(0) { $0 + $1.xpGranted }
+                        
+                        print("  Total Awarded XP: \(totalAwardedXP)")
+                        print("  XPManager Total XP: \(currentXP)")
+                        print("  XP Sources Match: \(totalAwardedXP == currentXP ? "✅ YES" : "❌ NO - BUG DETECTED!")")
+                        
+                        print("\n🔍 XP INVESTIGATION: Daily Award Breakdown")
+                        for (index, award) in sortedAwards.enumerated() {
+                            print("  Award \(index + 1): \(award.dateKey) - \(award.xpGranted) XP - \(award.createdAt)")
+                        }
+                        
+                        // Check for duplicate dates
+                        let dateKeys = sortedAwards.map { $0.dateKey }
+                        let uniqueDates = Set(dateKeys)
+                        let hasDuplicates = dateKeys.count != uniqueDates.count
+                        
+                        print("\n🔍 XP INVESTIGATION: Duplicate Check")
+                        print("  Unique Dates: \(uniqueDates.count)")
+                        print("  Total Awards: \(dateKeys.count)")
+                        print("  Has Duplicates: \(hasDuplicates ? "❌ YES - BUG DETECTED!" : "✅ NO")")
+                        
+                        if hasDuplicates {
+                            let dateCounts = Dictionary(grouping: dateKeys) { $0 }
+                            for (date, count) in dateCounts {
+                                if count.count > 1 {
+                                    print("    Duplicate date: \(date) appears \(count.count) times")
+                                }
+                            }
+                        }
+                        
+                        // Calculate expected days of usage
+                        let expectedDays = Int(ceil(Double(currentXP) / 100.0))
+                        let actualDays = uniqueDates.count
+                        
+                        print("\n🔍 XP INVESTIGATION: Usage Analysis")
+                        print("  Expected Days (XP/100): \(expectedDays)")
+                        print("  Actual Award Days: \(actualDays)")
+                        print("  Usage Matches XP: \(expectedDays == actualDays ? "✅ YES" : "❌ NO - BUG DETECTED!")")
+                        
+                        if !allAwards.isEmpty {
+                            let firstAward = sortedAwards.first!
+                            let lastAward = sortedAwards.last!
+                            let daysSinceFirst = Calendar.current.dateComponents([.day], from: firstAward.createdAt, to: Date()).day ?? 0
+                            let daysSinceLast = Calendar.current.dateComponents([.day], from: lastAward.createdAt, to: Date()).day ?? 0
+                            
+                            print("  First Award: \(firstAward.dateKey) (\(daysSinceFirst) days ago)")
+                            print("  Last Award: \(lastAward.dateKey) (\(daysSinceLast) days ago)")
+                            print("  Average XP per Day: \(String(format: "%.1f", Double(totalAwardedXP) / Double(max(1, daysSinceFirst))))")
+                        }
+                    }
+                    
+                    // Check for debug XP
+                    print("\n🔍 XP INVESTIGATION: Debug XP Check")
+                    let debugXP = xpManager.recentTransactions.filter { $0.description.contains("DEBUG") }
+                    if !debugXP.isEmpty {
+                        print("  ❌ DEBUG XP FOUND: \(debugXP.count) debug transactions")
+                        for transaction in debugXP {
+                            print("    Debug XP: \(transaction.amount) - \(transaction.description)")
+                        }
+                    } else {
+                        print("  ✅ No debug XP found")
+                    }
+                    
+                    // Check for non-standard XP amounts
+                    let nonStandardAwards = allAwards.filter { $0.xpGranted != 100 }
+                    if !nonStandardAwards.isEmpty {
+                        print("  ❌ NON-STANDARD XP FOUND: \(nonStandardAwards.count) awards")
+                        for award in nonStandardAwards {
+                            print("    Non-standard: \(award.dateKey) - \(award.xpGranted) XP")
+                        }
+                    } else {
+                        print("  ✅ All awards are standard 100 XP")
+                    }
+                    
+                } catch {
+                    print("❌ XP INVESTIGATION: Error fetching data: \(error)")
+                }
+                
+                print("\n🔍 XP INVESTIGATION: Summary")
+                if currentXP == 0 {
+                    print("  📊 You have 0 XP - this is normal for new users")
+                } else if currentXP < 100 {
+                    print("  📊 You have \(currentXP) XP - less than one day's worth")
+                    print("  🤔 This suggests partial completion or debug XP")
+                } else {
+                    let daysOfUsage = Int(ceil(Double(currentXP) / 100.0))
+                    print("  📊 You have \(currentXP) XP - equivalent to \(daysOfUsage) days of completing all habits")
+                    print("  🎯 This should put you at level \(expectedLevel)")
+                    
+                    if currentLevel != expectedLevel {
+                        print("  ⚠️ LEVEL MISMATCH: You're level \(currentLevel) but should be level \(expectedLevel)")
+                        print("  🔧 This indicates a bug in the level calculation or XP tracking")
+                    }
+                }
+            }
+        }
+    }
+    
     private func checkSyncStatus() {
         print("🧪 TEST: Checking sync status manually")
         runDiagnostic()
+    }
+    
+    private func fixXPInflationBug() {
+        print("🔧 FIXING XP INFLATION BUG")
+        
+        Task {
+            await MainActor.run {
+                let currentXP = xpManager.userProgress.totalXP
+                let currentLevel = xpManager.userProgress.currentLevel
+                
+                print("🔧 BEFORE FIX:")
+                print("  Current XP: \(currentXP)")
+                print("  Current Level: \(currentLevel)")
+                
+                do {
+                    let userId = getCurrentUserId()
+                    let predicate = #Predicate<DailyAward> { award in
+                        award.userId == userId
+                    }
+                    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+                    let allAwards = try modelContext.fetch(request)
+                    
+                    if allAwards.isEmpty {
+                        print("🔧 NO AWARDS FOUND - This XP is from debug methods or old system!")
+                        print("🔧 Resetting to 0 XP since no legitimate awards exist")
+                        
+                        xpManager.userProgress.totalXP = 0
+                        xpManager.userProgress.dailyXP = 0
+                        xpManager.userProgress.currentLevel = 1
+                        
+                        // Force level recalculation
+                        xpManager.updateLevelFromXP()
+                        
+                        xpManager.saveUserProgress()
+                        print("🔧 AFTER FIX: 0 XP, Level 1")
+                        print("🔧 REMOVED \(currentXP) XP of debug/old system data!")
+                    } else {
+                        // Calculate correct XP from actual awards (excluding level-up bonuses)
+                        let correctXP = allAwards.reduce(0) { total, award in
+                            // Only count standard 100 XP awards, ignore any level-up bonuses
+                            if award.xpGranted == 100 {
+                                return total + award.xpGranted
+                            } else {
+                                print("🔧 Found non-standard award: \(award.dateKey) - \(award.xpGranted) XP (likely level-up bonus)")
+                                return total // Ignore level-up bonuses
+                            }
+                        }
+                        
+                        // Calculate correct level from correct XP
+                        let correctLevel = Int(sqrt(Double(correctXP) / 50.0)) + 1
+                        
+                        // Manual verification of level calculation
+                        print("🔧 LEVEL CALCULATION VERIFICATION:")
+                        print("  correctXP: \(correctXP)")
+                        print("  sqrt(correctXP / 50): \(sqrt(Double(correctXP) / 50.0))")
+                        print("  Int(sqrt(correctXP / 50)): \(Int(sqrt(Double(correctXP) / 50.0)))")
+                        print("  correctLevel: \(correctLevel)")
+                        
+                        // Show what level you should be at for different XP amounts
+                        print("🔧 LEVEL REFERENCE:")
+                        for xp in [0, 50, 100, 200, 300, 400, 500, 600, 700] {
+                            let level = Int(sqrt(Double(xp) / 50.0)) + 1
+                            print("  \(xp) XP = Level \(level)")
+                        }
+                        
+                        print("🔧 CALCULATED CORRECT VALUES:")
+                        print("  Standard Awards: \(allAwards.filter { $0.xpGranted == 100 }.count)")
+                        print("  Level-up Bonuses: \(allAwards.filter { $0.xpGranted != 100 }.count)")
+                        print("  Correct XP: \(correctXP)")
+                        print("  Correct Level: \(correctLevel)")
+                        
+                        // Apply the fix
+                        print("🔧 APPLYING FIX:")
+                        print("  Setting totalXP to: \(correctXP)")
+                        print("  Setting dailyXP to: \(correctXP)")
+                        print("  Setting currentLevel to: \(correctLevel)")
+                        
+                        xpManager.userProgress.totalXP = correctXP
+                        xpManager.userProgress.dailyXP = correctXP
+                        xpManager.userProgress.currentLevel = correctLevel
+                        
+                        // Force level recalculation to ensure it's correct
+                        xpManager.updateLevelFromXP()
+                        
+                        print("🔧 AFTER FORCE RECALCULATION:")
+                        print("  totalXP: \(xpManager.userProgress.totalXP)")
+                        print("  currentLevel: \(xpManager.userProgress.currentLevel)")
+                        
+                        xpManager.saveUserProgress()
+                        
+                        print("🔧 AFTER FIX:")
+                        print("  Fixed XP: \(correctXP)")
+                        print("  Fixed Level: \(correctLevel)")
+                        print("  XP Reduction: \(currentXP - correctXP)")
+                        print("  Level Reduction: \(currentLevel - correctLevel)")
+                        
+                        // Show what was removed
+                        let removedXP = currentXP - correctXP
+                        if removedXP > 0 {
+                            print("🔧 REMOVED \(removedXP) XP of level-up bonus inflation!")
+                        }
+                    }
+                    
+                } catch {
+                    print("❌ FIX FAILED: Error fetching awards: \(error)")
+                }
+            }
+        }
     }
     
     private func clearAllData() {
