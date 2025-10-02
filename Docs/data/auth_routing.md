@@ -300,10 +300,88 @@ The guest/sign-in bug occurs because:
 4. **Hardcoded User IDs**: Storage classes don't use actual user IDs
 5. **Incomplete User Scoping**: Data not properly isolated by userId
 
+## Phase 3 Solution: Feature-Flagged Repository Provider
+
+### New Architecture
+
+```mermaid
+graph TB
+    subgraph "Authentication Layer"
+        AuthManager[AuthenticationManager]
+        AuthRouting[AuthRoutingManager]
+    end
+    
+    subgraph "Feature Flag Layer"
+        FeatureFlags[FeatureFlags]
+        FlagManager[FeatureFlagManager]
+    end
+    
+    subgraph "Repository Provider Layer"
+        RepoProvider[RepositoryProvider]
+        LegacyRepo[LegacyHabitRepository]
+        NormalizedRepo[NormalizedHabitRepository]
+    end
+    
+    subgraph "Service Layer"
+        XPService[XPService]
+        LegacyXP[LegacyXPService]
+        DailyAward[DailyAwardService]
+    end
+    
+    subgraph "Storage Layer"
+        UserDefaults[UserDefaults Storage]
+        SwiftData[SwiftData Storage]
+        Migration[MigrationRunner]
+    end
+    
+    AuthManager --> AuthRouting
+    AuthRouting --> RepoProvider
+    FeatureFlags --> FlagManager
+    FlagManager --> RepoProvider
+    
+    RepoProvider --> LegacyRepo
+    RepoProvider --> NormalizedRepo
+    RepoProvider --> XPService
+    RepoProvider --> LegacyXP
+    RepoProvider --> DailyAward
+    RepoProvider --> Migration
+    
+    LegacyRepo --> UserDefaults
+    NormalizedRepo --> SwiftData
+    XPService --> SwiftData
+    Migration --> SwiftData
+```
+
+### Key Components
+
+1. **AuthRoutingManager**: Handles authentication state changes and repository switching
+2. **RepositoryProvider**: Creates appropriate repositories based on feature flags
+3. **FeatureFlags**: Controls which data path to use (legacy vs normalized)
+4. **MigrationRunner**: Handles migration from legacy to normalized storage
+
+### Feature Flag Control
+
+- **useNormalizedDataPath**: Enables new SwiftData-only storage
+- **useCentralizedXP**: Enables XPService instead of XPManager
+- **useUserScopedContainers**: Enables separate containers per user
+- **enableAutoMigration**: Automatically migrates legacy data
+
+### Auth State Handling
+
+```swift
+// Sign-out → Switch to guest container
+case .unauthenticated:
+    await switchToGuestUser()
+
+// Sign-in → Load account container + run migration
+case .authenticated(let user):
+    await switchToUser(userId: user.uid)
+```
+
 ## Fix Priority
 
-1. **HIGH**: Implement container switching based on auth state
-2. **HIGH**: Clear all singleton caches on sign-out
-3. **MEDIUM**: Fix hardcoded user IDs in storage classes
-4. **MEDIUM**: Ensure all storage operations are user-scoped
-5. **LOW**: Add comprehensive auth routing tests
+1. **HIGH**: Implement container switching based on auth state ✅
+2. **HIGH**: Clear all singleton caches on sign-out ✅
+3. **MEDIUM**: Fix hardcoded user IDs in storage classes ✅
+4. **MEDIUM**: Ensure all storage operations are user-scoped ✅
+5. **LOW**: Add comprehensive auth routing tests ✅
