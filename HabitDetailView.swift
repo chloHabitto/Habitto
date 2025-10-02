@@ -43,12 +43,10 @@ struct HabitDetailView: View {
         // If content height is 0 (not measured yet), check if habit has many reminders as a fallback
         if contentHeight == 0 {
             let hasManyReminders = habit.reminders.count > 3
-            print("🔍 SCROLL CHECK (FALLBACK) - Content not measured yet, Has many reminders: \(hasManyReminders), Should Scroll: \(hasManyReminders)")
             return hasManyReminders
         }
         
         let needsScrolling = contentHeight > (availableHeight - bufferHeight)
-        print("🔍 SCROLL CHECK - Content: \(Int(contentHeight)), Available: \(Int(availableHeight)), Buffer: \(Int(bufferHeight)), Should Scroll: \(needsScrolling)")
         return needsScrolling
     }
     
@@ -67,25 +65,6 @@ struct HabitDetailView: View {
                         .opacity(shouldScroll && scrollOffset > 50 ? 1 : 0)
                         .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
                     
-                    // Debug indicator (remove in production)
-                    VStack {
-                        Text("Content: \(Int(contentHeight)) | Available: \(Int(availableHeight)) | Should Scroll: \(shouldScroll)")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(4)
-                            .background(Color.yellow.opacity(0.8))
-                            .cornerRadius(4)
-                            .multilineTextAlignment(.center)
-                        
-                        if scrollOffset > 0 {
-                            Text("Scroll Offset: \(Int(scrollOffset))")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                .padding(2)
-                                .background(Color.green.opacity(0.8))
-                                .cornerRadius(4)
-                        }
-                    }
                 }
                 .zIndex(1)
                 
@@ -105,8 +84,6 @@ struct HabitDetailView: View {
                             let newHeight = size.height
                             if abs(newHeight - contentHeight) > 1 {
                                 contentHeight = newHeight
-                                print("🔍 CONTENT MEASURED - Height: \(Int(contentHeight)), Available: \(Int(availableHeight))")
-                                print("🔍 SHOULD SCROLL CALCULATION - Content: \(Int(contentHeight)) > (Available: \(Int(availableHeight)) - Buffer: 150) = \(Int(contentHeight)) > \(Int(availableHeight - 150)) = \(contentHeight > (availableHeight - 150))")
                             }
                         }
                     
@@ -127,12 +104,10 @@ struct HabitDetailView: View {
                                 let newOffset = -value
                                 if abs(newOffset - scrollOffset) > 1 {
                                     scrollOffset = newOffset
-                                    print("🔍 Scroll offset: \(scrollOffset)")
                                 }
                             }
                         }
                         .onAppear {
-                            print("🔍 DISPLAY PHASE - Using ScrollView (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
                             
                             // Always recalculate active state based on current habit's dates
                             let calendar = Calendar.current
@@ -150,7 +125,6 @@ struct HabitDetailView: View {
                                 isProcessingToggle = false
                                 hasInitializedActiveState = true
                                 
-                                print("🔍 Active state initialized: \(isActive) (endDate: \(habit.endDate?.description ?? "nil"))")
                             }
                         }
                     } else {
@@ -159,7 +133,6 @@ struct HabitDetailView: View {
                             Spacer(minLength: 0)
                         }
                         .onAppear {
-                            print("🔍 DISPLAY PHASE - Using Static VStack (Content: \(Int(contentHeight)), Available: \(Int(availableHeight)))")
                         }
                     }
                 }
@@ -167,11 +140,9 @@ struct HabitDetailView: View {
             .onAppear {
                 availableHeight = geometry.size.height
                 todayProgress = habit.getProgress(for: selectedDate)
-                print("🔍 SCREEN APPEARED - Available Height: \(Int(availableHeight))")
             }
             .onChange(of: geometry.size.height) { _, newHeight in
                 availableHeight = newHeight
-                print("🔍 SCREEN HEIGHT CHANGED - New: \(Int(newHeight))")
             }
         }
         .navigationBarHidden(true)
@@ -192,7 +163,6 @@ struct HabitDetailView: View {
                 isProcessingToggle = true
                 isActive = calculatedActiveState
                 isProcessingToggle = false
-                print("🔍 Active state updated due to endDate change: \(isActive) (endDate: \(newEndDate?.description ?? "nil"))")
             }
         }
         .onChange(of: selectedDate) { oldDate, newDate in
@@ -207,10 +177,8 @@ struct HabitDetailView: View {
         }
         .fullScreenCover(isPresented: $showingEditView) {
             HabitEditView(habit: habit, onSave: { updatedHabit in
-                print("🔄 HabitDetailView: Habit updated - \(updatedHabit.name)")
                 habit = updatedHabit
                 onUpdateHabit?(updatedHabit)
-                print("🔄 HabitDetailView: onUpdateHabit callback called")
             })
         }
         .sheet(isPresented: $showingReminderSheet) {
@@ -272,9 +240,6 @@ struct HabitDetailView: View {
                     actualUsage: habit.actualUsage
                 )
                 
-                print("✅ Making habit '\(habit.name)' inactive - endDate set to: \(yesterday?.description ?? "nil")")
-                print("   Before: startDate=\(habit.startDate), endDate=\(habit.endDate?.description ?? "nil")")
-                print("   After:  startDate=\(updatedHabit.startDate), endDate=\(updatedHabit.endDate?.description ?? "nil")")
                 
                 // Update habit and notify parent
                 habit = updatedHabit
@@ -531,8 +496,6 @@ struct HabitDetailView: View {
                     .font(.appTitleSmallEmphasised)
                     .foregroundColor(.primary)
                     .onAppear {
-                        print("🔍 HABIT DETAIL - Raw goal: '\(habit.goal)'")
-                        print("🔍 HABIT DETAIL - Sorted goal: '\(sortGoalChronologically(habit.goal))'")
                     }
             }
         }
@@ -662,11 +625,7 @@ struct HabitDetailView: View {
     }
     
     private func deleteReminder(_ reminder: ReminderItem) {
-        print("🗑️ HabitDetailView: Deleting reminder with ID: \(reminder.id)")
-        print("🗑️ HabitDetailView: Current reminders count: \(habit.reminders.count)")
-        
         let updatedReminders = habit.reminders.filter { $0.id != reminder.id }
-        print("🗑️ HabitDetailView: Updated reminders count: \(updatedReminders.count)")
         
         let updatedHabit = Habit(
             id: habit.id,
@@ -694,12 +653,9 @@ struct HabitDetailView: View {
         habit = updatedHabit
         
         // Update notifications for the habit
-        print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders")
         NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
         
-        print("🗑️ HabitDetailView: Calling onUpdateHabit callback")
         onUpdateHabit?(updatedHabit)
-        print("🗑️ HabitDetailView: Delete reminder completed")
     }
     
     // MARK: - Today's Progress Section
@@ -855,7 +811,6 @@ struct HabitDetailView: View {
                         onUpdateHabit?(updatedHabit)
                         
                         isProcessingToggle = false
-                        print("✅ Habit '\(habit.name)' made active")
                     }
                 }
             )) {
@@ -920,7 +875,6 @@ struct HabitDetailView: View {
         // Legacy: "1 time per every friday, every monday" (old habit breaking format)
         // We need to extract and sort the frequency part
         
-        print("🔍 HABIT DETAIL GOAL SORT - Input: '\(goal)'")
         
         if goal.contains(" on ") {
             // Both habit building and new habit breaking format: "1 time on every friday, every monday"  
@@ -931,7 +885,6 @@ struct HabitDetailView: View {
                 
                 let sortedFrequency = sortScheduleChronologically(frequency)
                 let result = "\(beforeOn) on \(sortedFrequency)"
-                print("🔍 HABIT DETAIL GOAL SORT - Result: '\(result)'")
                 return result
             }
         } else if goal.contains(" per ") {
@@ -944,12 +897,10 @@ struct HabitDetailView: View {
                 
                 let sortedFrequency = sortScheduleChronologically(frequency)
                 let result = "\(beforePer) on \(sortedFrequency)" // Changed "per" to "on"
-                print("🔍 HABIT DETAIL GOAL SORT - Converted legacy 'per' to 'on': '\(result)'")
                 return result
             }
         }
         
-        print("🔍 HABIT DETAIL GOAL SORT - No sorting needed, returning as-is")
         return goal
     }
     
@@ -958,7 +909,6 @@ struct HabitDetailView: View {
         // Sort weekdays in chronological order for display
         // e.g., "every friday, every monday" → "every monday, every friday"
         
-        print("🔍 HABIT DETAIL SORT - Input: '\(schedule)'")
         let lowercasedSchedule = schedule.lowercased()
         
         // Check if it contains multiple weekdays (be flexible with separators)
@@ -968,7 +918,6 @@ struct HabitDetailView: View {
             lowercasedSchedule.contains("saturday") || lowercasedSchedule.contains("sunday")) && 
            (lowercasedSchedule.contains(",") || lowercasedSchedule.contains(" and ")) {
             
-            print("🔍 HABIT DETAIL SORT - Detected multi-day schedule")
             
             // Handle different separators: ", " or " and " or ", and"
             let dayPhrases: [String]
@@ -980,7 +929,6 @@ struct HabitDetailView: View {
                 dayPhrases = schedule.components(separatedBy: ", ")
             }
             
-            print("🔍 HABIT DETAIL SORT - Day phrases: \(dayPhrases)")
             
             // Sort by weekday order
             let weekdayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -993,18 +941,15 @@ struct HabitDetailView: View {
                 let day1Index = weekdayOrder.firstIndex { lowercased1.contains($0) } ?? 99
                 let day2Index = weekdayOrder.firstIndex { lowercased2.contains($0) } ?? 99
                 
-                print("🔍 HABIT DETAIL SORT - '\(phrase1.trimmingCharacters(in: .whitespacesAndNewlines))' (index \(day1Index)) vs '\(phrase2.trimmingCharacters(in: .whitespacesAndNewlines))' (index \(day2Index))")
                 return day1Index < day2Index
             }
             
             // Clean up whitespace and rejoin
             let cleanedPhrases = sortedPhrases.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             let result = cleanedPhrases.joined(separator: ", ")
-            print("🔍 HABIT DETAIL SORT - Sorted result: '\(result)'")
             return result
         }
         
-        print("🔍 HABIT DETAIL SORT - Not a multi-day schedule, returning as-is")
         // Return as-is if it's not a multi-day weekday schedule
         return schedule
     }
@@ -1126,7 +1071,6 @@ struct ReminderEditSheet: View {
             )
             
             // Update notifications for the habit
-            print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders (editing)")
             NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
             
             onSave(updatedHabit)
@@ -1158,7 +1102,6 @@ struct ReminderEditSheet: View {
             )
             
             // Update notifications for the habit
-            print("🔄 HabitDetailView: Updating notifications for habit '\(updatedHabit.name)' with \(updatedReminders.count) reminders (creating new)")
             NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
             
             onSave(updatedHabit)
