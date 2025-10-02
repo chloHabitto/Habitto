@@ -22,6 +22,9 @@ struct HomeTabView: View {
     @State private var cancellables = Set<AnyCancellable>()
     @State private var lastHabitJustCompleted = false
     
+    // ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
+    @State private var completionStatusMap: [UUID: Bool] = [:]
+    
     #if DEBUG
     // Runtime tracking: verify service is called exactly once per flow
     @State private var debugGrantCalls: Int = 0
@@ -96,6 +99,11 @@ struct HomeTabView: View {
                 // Initialize sorted habits
                 resortHabits()
                 
+                // ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
+                Task {
+                    await prefetchCompletionStatus()
+                }
+                
                 // Subscribe to event bus
                 eventBus.publisher()
                     .receive(on: DispatchQueue.main)
@@ -123,6 +131,10 @@ struct HomeTabView: View {
             }
             .onChange(of: selectedDate) { oldDate, newDate in
                 handleSelectedDateChange(oldDate, newDate)
+                // ✅ PHASE 5: Refetch completion status when date changes
+                Task {
+                    await prefetchCompletionStatus()
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .vacationModeEnded), perform: handleVacationModeEnded)
             .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
@@ -443,6 +455,11 @@ struct HomeTabView: View {
                 } else {
                     onHabitUncompleted(habit)
                 }
+                
+                // ✅ PHASE 5: Update completion status map after progress change
+                Task {
+                    await prefetchCompletionStatus()
+                }
             },
             onEdit: {
                 selectedHabit = habit
@@ -475,8 +492,9 @@ struct HomeTabView: View {
         // Since tabs are hidden, show all habits (like the Total tab was doing)
         // Sort habits so completed ones appear at the bottom
         let finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
-            let habit1Completed = habit1.isCompleted(for: selectedDate)
-            let habit2Completed = habit2.isCompleted(for: selectedDate)
+            // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
+            let habit1Completed = completionStatusMap[habit1.id] ?? false
+            let habit2Completed = completionStatusMap[habit2.id] ?? false
             
             // If one is completed and the other isn't, put the incomplete one first
             if habit1Completed != habit2Completed {
@@ -824,8 +842,9 @@ struct HomeTabView: View {
         let habitsForDate = baseHabitsForSelectedDate
         return [
             ("Total", habitsForDate.count),
-            ("Undone", habitsForDate.filter { !$0.isCompleted(for: selectedDate) }.count),
-            ("Done", habitsForDate.filter { $0.isCompleted(for: selectedDate) }.count)
+            // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
+            ("Undone", habitsForDate.filter { !(completionStatusMap[$0.id] ?? false) }.count),
+            ("Done", habitsForDate.filter { completionStatusMap[$0.id] ?? false }.count)
         ]
     }
     
@@ -839,6 +858,9 @@ struct HomeTabView: View {
         // Refresh habits data from Core Data
         // Force reload habits from Core Data
         await HabitRepository.shared.loadHabits(force: true)
+        
+        // ✅ PHASE 5: Refetch completion status after refresh
+        await prefetchCompletionStatus()
         
         // Provide haptic feedback for successful refresh
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -868,8 +890,9 @@ struct HomeTabView: View {
         
         // Sort: Incomplete first by originalOrder, then completed by completedAt then originalOrder
         sortedHabits = todayHabits.sorted(by: { habit1, habit2 in
-            let isCompleted1 = habit1.isCompleted(for: selectedDate)
-            let isCompleted2 = habit2.isCompleted(for: selectedDate)
+            // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
+            let isCompleted1 = completionStatusMap[habit1.id] ?? false
+            let isCompleted2 = completionStatusMap[habit2.id] ?? false
             
             if isCompleted1 != isCompleted2 {
                 return !isCompleted1 // Incomplete first
@@ -896,8 +919,9 @@ struct HomeTabView: View {
         deferResort = true
         
         // Check if this is the last habit to be completed
+        // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
         let remainingHabits = baseHabitsForSelectedDate.filter { h in
-            h.id != habit.id && !h.isCompleted(for: selectedDate)
+            h.id != habit.id && !(completionStatusMap[h.id] ?? false)
         }
         
         if remainingHabits.isEmpty {
