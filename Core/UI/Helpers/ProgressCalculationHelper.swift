@@ -273,12 +273,12 @@ class ProgressCalculationHelper {
     
     /// Get current streak for a specific habit
     static func getHabitCurrentStreak(for habit: Habit) -> Int {
-        return habit.streak
+        return habit.computedStreak()
     }
     
     /// Get best streak for a specific habit (for now, return current streak)
     static func getHabitBestStreak(for habit: Habit) -> Int {
-        return habit.streak
+        return habit.computedStreak()
     }
     
     /// Get days completed this month for a specific habit

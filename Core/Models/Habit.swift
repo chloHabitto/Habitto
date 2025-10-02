@@ -142,8 +142,7 @@ struct Habit: Identifiable, Codable, Equatable {
         try container.encode(reminder, forKey: .reminder)
         try container.encode(startDate, forKey: .startDate)
         try container.encodeIfPresent(endDate, forKey: .endDate)
-        try container.encode(isCompleted, forKey: .isCompleted)
-        try container.encode(streak, forKey: .streak)
+        // Note: isCompleted and streak are computed-only fields, not encoded
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(reminders, forKey: .reminders)
         try container.encode(baseline, forKey: .baseline)

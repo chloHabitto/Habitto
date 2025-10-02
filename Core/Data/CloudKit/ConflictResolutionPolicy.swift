@@ -384,8 +384,8 @@ final class ConflictResolutionManager {
         case "reminder": return habit.reminder
         case "startDate": return habit.startDate
         case "endDate": return habit.endDate
-        case "isCompleted": return habit.isCompleted
-        case "streak": return habit.streak
+        case "isCompleted": return habit.isCompletedForDate(Date())
+        case "streak": return habit.computedStreak()
         case "createdAt": return habit.createdAt
         case "completionHistory": return habit.completionHistory
         case "difficultyHistory": return habit.difficultyHistory

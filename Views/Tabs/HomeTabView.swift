@@ -756,7 +756,6 @@ struct HomeTabView: View {
             
             // Instance was not completed, so it slides forward
             var currentDate = instance.originalDate
-            var foundCompletion = false
             
             // Slide the instance forward until it's completed or reaches the end of the week
             while currentDate <= DateUtils.endOfWeek(for: targetDate) {
@@ -765,7 +764,6 @@ struct HomeTabView: View {
                 
                 if progress > 0 {
                     // Instance was completed on this date
-                    foundCompletion = true
                     instance.currentDate = currentDate
                     break
                 }
@@ -859,7 +857,7 @@ struct HomeTabView: View {
         let dateKey = Habit.dateKey(for: selectedDate)
         
         // Single query to get all completion records for today
-        let request = FetchDescriptor<CompletionRecord>(
+        let request: FetchDescriptor<CompletionRecord> = FetchDescriptor(
             predicate: #Predicate { 
                 $0.userId == userId && 
                 $0.dateKey == dateKey

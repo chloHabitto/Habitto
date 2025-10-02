@@ -181,7 +181,7 @@ final class StreakService {
         
         var longestStreak = 0
         var currentStreak = 0
-        let calendar = Calendar.current
+        _ = Calendar.current
         
         // Sort by date key to process chronologically
         let sortedAwards = dailyAwards.sorted { $0.dateKey < $1.dateKey }

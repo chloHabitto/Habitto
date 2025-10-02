@@ -61,6 +61,7 @@ final class HabitData {
         self.reminder = reminder
         self.startDate = startDate
         self.endDate = endDate
+        // Note: isCompleted and streak are deprecated - use computed properties instead
         self.isCompleted = isCompleted
         self.streak = streak
         self.createdAt = Date()
@@ -128,8 +129,9 @@ final class HabitData {
         self.reminder = habit.reminder
         self.startDate = habit.startDate
         self.endDate = habit.endDate
-        self.isCompleted = habit.isCompleted
-        self.streak = habit.streak
+        // Note: Using deprecated fields for backward compatibility
+        self.isCompleted = habit.isCompletedForDate(Date())
+        self.streak = habit.computedStreak()
         self.updatedAt = Date()
     }
     

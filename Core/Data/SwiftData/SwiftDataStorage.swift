@@ -87,14 +87,20 @@ final class SwiftDataStorage: HabitStorageProtocol {
                         reminder: habit.reminder,
                         startDate: habit.startDate,
                         endDate: habit.endDate,
-                        isCompleted: habit.isCompleted,
-                        streak: habit.streak
+                        isCompleted: habit.isCompletedForDate(Date()),
+                        streak: habit.computedStreak()
                     )
                     
                     // Add completion history
                     for (dateString, isCompleted) in habit.completionHistory {
                         if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                            let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                            let completionRecord = CompletionRecord(
+                                userId: "legacy",
+                                habitId: habitData.id,
+                                date: date,
+                                dateKey: Habit.dateKey(for: date),
+                                isCompleted: isCompleted == 1
+                            )
                             habitData.completionHistory.append(completionRecord)
                         }
                     }
@@ -102,14 +108,24 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     // Add difficulty history
                     for (dateString, difficulty) in habit.difficultyHistory {
                         if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                            let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                            let difficultyRecord = DifficultyRecord(
+                                userId: "legacy",
+                                habitId: habitData.id,
+                                date: date,
+                                difficulty: difficulty
+                            )
                             habitData.difficultyHistory.append(difficultyRecord)
                         }
                     }
                     
                     // Add usage history
                     for (key, value) in habit.actualUsage {
-                        let usageRecord = UsageRecord(key: key, value: value)
+                        let usageRecord = UsageRecord(
+                            userId: "legacy",
+                            habitId: habitData.id,
+                            key: key,
+                            value: value
+                        )
                         habitData.usageHistory.append(usageRecord)
                     }
                     
@@ -223,14 +239,20 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: habit.endDate,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak
+                    isCompleted: habit.isCompletedForDate(Date()),
+                    streak: habit.computedStreak()
                 )
                 
                 // Add completion history
                 for (dateString, isCompleted) in habit.completionHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                        let completionRecord = CompletionRecord(date: date, isCompleted: isCompleted == 1)
+                        let completionRecord = CompletionRecord(
+                            userId: "legacy",
+                            habitId: habitData.id,
+                            date: date,
+                            dateKey: Habit.dateKey(for: date),
+                            isCompleted: isCompleted == 1
+                        )
                         habitData.completionHistory.append(completionRecord)
                     }
                 }
@@ -238,14 +260,24 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 // Add difficulty history
                 for (dateString, difficulty) in habit.difficultyHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-                        let difficultyRecord = DifficultyRecord(date: date, difficulty: difficulty)
+                        let difficultyRecord = DifficultyRecord(
+                            userId: "legacy",
+                            habitId: habitData.id,
+                            date: date,
+                            difficulty: difficulty
+                        )
                         habitData.difficultyHistory.append(difficultyRecord)
                     }
                 }
                 
                 // Add usage history
                 for (key, value) in habit.actualUsage {
-                    let usageRecord = UsageRecord(key: key, value: value)
+                    let usageRecord = UsageRecord(
+                        userId: "legacy",
+                        habitId: habitData.id,
+                        key: key,
+                        value: value
+                    )
                     habitData.usageHistory.append(usageRecord)
                 }
                 

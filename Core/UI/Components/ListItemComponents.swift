@@ -52,7 +52,7 @@ struct ListItemComponents {
                                     .font(.appLabelSmall)
                                     .foregroundColor(.red500)
                                 
-                                Text("\(habit.streak) day streak")
+                                Text("\(habit.computedStreak()) day streak")
                                     .font(.appLabelSmall)
                                     .foregroundColor(.text02)
                             }

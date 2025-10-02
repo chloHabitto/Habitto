@@ -301,7 +301,7 @@ class XPManager: ObservableObject {
     }
     
     private func calculateStreakBonus(for habit: Habit) -> Int {
-        let streak = habit.streak
+        let streak = habit.computedStreak()
         switch streak {
         case 0...6: return 0
         case 7...13: return 5
