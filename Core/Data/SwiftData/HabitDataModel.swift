@@ -62,6 +62,7 @@ final class HabitData {
         self.startDate = startDate
         self.endDate = endDate
         // Note: isCompleted and streak are deprecated - use computed properties instead
+        // Required for SwiftData initialization - will be removed once migration is complete
         self.isCompleted = isCompleted
         self.streak = streak
         self.createdAt = Date()
@@ -129,7 +130,8 @@ final class HabitData {
         self.reminder = habit.reminder
         self.startDate = habit.startDate
         self.endDate = habit.endDate
-        // Note: Using deprecated fields for backward compatibility
+        // Note: isCompleted and streak are deprecated - use computed properties instead
+        // Required for SwiftData initialization - will be removed once migration is complete
         self.isCompleted = habit.isCompletedForDate(Date())
         self.streak = habit.computedStreak()
         self.updatedAt = Date()
@@ -139,6 +141,7 @@ final class HabitData {
     
     /// Recomputes the isCompleted field from completionHistory
     /// Call this after modifying completionHistory to keep denormalized field in sync
+    @available(*, deprecated, message: "isCompleted field is deprecated, use isCompletedForDate() instead")
     func recomputeCompletionStatus() {
         let today = Calendar.current.startOfDay(for: Date())
         self.isCompleted = isCompletedForDate(today)
@@ -146,12 +149,14 @@ final class HabitData {
     
     /// Recomputes the streak field from completionHistory
     /// Call this after modifying completionHistory to keep denormalized field in sync
+    @available(*, deprecated, message: "streak field is deprecated, use calculateTrueStreak() instead")
     func recomputeStreak() {
         self.streak = calculateTrueStreak()
     }
     
     /// Recomputes both denormalized fields
     /// Call this after bulk completionHistory changes
+    @available(*, deprecated, message: "Denormalized fields are deprecated, use computed properties instead")
     func recomputeDenormalizedFields() {
         recomputeCompletionStatus()
         recomputeStreak()
@@ -214,6 +219,7 @@ final class HabitData {
             actualUsage: actualUsageDict
         )
     }
+    
 }
 
 // MARK: - Completion Record
