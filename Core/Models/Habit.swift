@@ -78,8 +78,9 @@ struct Habit: Identifiable, Codable, Equatable {
     let reminders: [ReminderItem] // New field for storing reminder items
     let startDate: Date
     let endDate: Date?
-    var isCompleted: Bool = false
-    var streak: Int = 0
+    // ❌ REMOVED: Denormalized fields in Phase 4
+    // var isCompleted: Bool = false  // Use isCompleted(for:) instead
+    // var streak: Int = 0           // Use computedStreak() instead
     let createdAt: Date
     var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
     var completionTimestamps: [String: [Date]] = [:] // Track completion timestamps: "yyyy-MM-dd" -> [completion_times]
@@ -112,8 +113,9 @@ struct Habit: Identifiable, Codable, Equatable {
         reminder = try container.decode(String.self, forKey: .reminder)
         startDate = try container.decode(Date.self, forKey: .startDate)
         endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
-        isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
-        streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
+        // ❌ REMOVED: Denormalized field decoding in Phase 4
+        // isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
+        // streak = try container.decodeIfPresent(Int.self, forKey: .streak) ?? 0
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         reminders = try container.decodeIfPresent([ReminderItem].self, forKey: .reminders) ?? []
         baseline = try container.decodeIfPresent(Int.self, forKey: .baseline) ?? 0
@@ -153,7 +155,7 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     // MARK: - Designated Initializer
-    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.description = description
@@ -166,8 +168,9 @@ struct Habit: Identifiable, Codable, Equatable {
         self.reminders = reminders
         self.startDate = startDate
         self.endDate = endDate
-        self.isCompleted = isCompleted
-        self.streak = streak
+        // ❌ REMOVED: Denormalized field assignments in Phase 4
+        // self.isCompleted = isCompleted  // Use isCompleted(for:) instead
+        // self.streak = streak           // Use computedStreak() instead
         self.createdAt = createdAt
         self.baseline = baseline
         self.target = target
@@ -178,7 +181,7 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     // MARK: - Convenience Initializers
-    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, isCompleted: Bool = false, streak: Int = 0, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
+    init(name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0) {
         self.init(
             id: UUID(),
             name: name,
@@ -191,8 +194,9 @@ struct Habit: Identifiable, Codable, Equatable {
             reminder: reminder,
             startDate: startDate,
             endDate: endDate,
-            isCompleted: isCompleted,
-            streak: streak,
+            // ❌ REMOVED: Denormalized field parameters in Phase 4
+            // isCompleted: isCompleted,  // Use isCompleted(for:) instead
+            // streak: streak,           // Use computedStreak() instead
             createdAt: Date(),
             reminders: reminders,
             baseline: baseline,
@@ -373,7 +377,7 @@ struct Habit: Identifiable, Codable, Equatable {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let vacationManager = VacationManager.shared
-        var streak = 0
+        var calculatedStreak = 0
         var currentDate = today
         var debugInfo: [String] = []
         
@@ -386,7 +390,7 @@ struct Habit: Identifiable, Codable, Equatable {
             
             // Only increment streak for actually completed days (not vacation days)
             if isCompleted {
-                streak += 1
+                calculatedStreak += 1
                 debugInfo.append("\(dateKey): completed=true, vacation=\(isVacation)")
             } else {
                 debugInfo.append("\(dateKey): completed=false, vacation=\(isVacation)")
@@ -396,9 +400,9 @@ struct Habit: Identifiable, Codable, Equatable {
             currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
         }
         
-        print("🔍 STREAK CALCULATION DEBUG - Habit '\(name)': calculated streak=\(streak), details: \(debugInfo.joined(separator: ", "))")
+        print("🔍 STREAK CALCULATION DEBUG - Habit '\(name)': calculated streak=\(calculatedStreak), details: \(debugInfo.joined(separator: ", "))")
         
-        return streak
+        return calculatedStreak
     }
     
     /// ❌ REMOVED: updateStreakWithReset method
@@ -411,12 +415,11 @@ struct Habit: Identifiable, Codable, Equatable {
     /// Validates if the current streak matches actual consecutive completions
     func validateStreak() -> Bool {
         let actualStreak = calculateTrueStreak()
-        let isValid = streak == actualStreak
+        // ❌ REMOVED: Denormalized field comparison in Phase 4
+        // Streak validation now always returns true since we only use computed values
+        let isValid = true
         
-        // Debug logging to understand streak validation issues
-        if !isValid {
-            print("🔍 STREAK VALIDATION DEBUG - Habit '\(name)': stored streak=\(streak), calculated streak=\(actualStreak), valid=\(isValid)")
-        }
+        print("🔍 STREAK VALIDATION DEBUG - Habit '\(name)': calculated streak=\(actualStreak), valid=\(isValid) (computed-only)")
         
         return isValid
     }
@@ -439,7 +442,7 @@ struct Habit: Identifiable, Codable, Equatable {
     func debugStreakInfo() {
         let trueStreak = calculateTrueStreak()
         let isValid = validateStreak()
-        print("🔍 Habit '\(name)': stored streak=\(streak), true streak=\(trueStreak), valid=\(isValid)")
+        print("🔍 Habit '\(name)': computed streak=\(trueStreak), valid=\(isValid) (computed-only)")
     }
     
     static func dateKey(for date: Date) -> String {
