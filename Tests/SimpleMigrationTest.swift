@@ -21,9 +21,9 @@ class SimpleMigrationTest {
         print("🧪 Step 1: Seeding legacy data...")
         
         // Simulate initial data
-        var initialCompletionCount = 2
-        var initialAwardCount = 1
-        var initialProgressCount = 1
+        let initialCompletionCount = 2
+        let initialAwardCount = 1
+        let initialProgressCount = 1
         
         print("🧪 Initial counts - Completions: \(initialCompletionCount), Awards: \(initialAwardCount), Progress: \(initialProgressCount)")
         
@@ -78,7 +78,6 @@ class SimpleMigrationTest {
     }
 }
 
-// Run the test if this file is executed directly
-if CommandLine.arguments.contains("--run-migration-test") {
-    SimpleMigrationTest.runMigrationIdempotencyTest()
-}
+// Note: This test is designed to be run as a standalone script
+// In an app target, this conditional execution is not allowed
+// Use: swift Tests/SimpleMigrationTest.swift --run-migration-test
