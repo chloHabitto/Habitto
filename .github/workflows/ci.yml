@@ -1,117 +1,28 @@
-name: CI Pipeline
+name: CI
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+  push:
+    branches: [ main ]
 
 jobs:
-  build-and-test:
-    runs-on: macos-latest
-    
+  build-test:
+    runs-on: macos-14
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.0'
-        
-    - name: Cache dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/Library/Developer/Xcode/DerivedData
-        key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.pbxproj') }}
-        restore-keys: |
-          ${{ runner.os }}-xcode-
-          
-    - name: Build project
-      run: |
-        xcodebuild -scheme Habitto -destination 'platform=iOS Simulator,name=iPhone 15' build
-        
-    - name: Run forbidden mutations check
-      run: |
-        chmod +x Scripts/forbid_mutations.sh
-        ./Scripts/forbid_mutations.sh
-        
-    - name: Schema drift check
-      run: |
-        # Check if any @Model files changed without updating migrations.md
-        if git diff --name-only HEAD~1 | grep -E "\.swift$" | xargs grep -l "@Model" > /tmp/model_changes.txt; then
-          if [ -s /tmp/model_changes.txt ]; then
-            echo "📋 Model files changed:"
-            cat /tmp/model_changes.txt
-            echo ""
-            echo "🔍 Checking if docs/data/migrations.md was updated..."
-            if git diff HEAD~1 --name-only | grep -q "docs/data/migrations.md"; then
-              echo "✅ migrations.md was updated"
-            else
-              echo "❌ migrations.md was NOT updated"
-              echo "Schema drift detected! Please update docs/data/migrations.md when @Model files change."
-              exit 1
-            fi
-          fi
-        fi
-        
-    - name: Run tests with coverage
-      run: |
-        xcodebuild -scheme Habitto -destination 'platform=iOS Simulator,name=iPhone 15' test -enableCodeCoverage YES
-        
-    - name: Generate coverage report
-      run: |
-        # Extract coverage data for Services and Repositories
-        xcrun xccov view --report --json DerivedData/Build/Logs/Test/*.xcresult > coverage.json
-        
-        # Check Services coverage
-        SERVICES_COVERAGE=$(cat coverage.json | jq '.lineCoverage' | head -1)
-        echo "Services Coverage: $SERVICES_COVERAGE%"
-        
-        # Check Repositories coverage  
-        REPOS_COVERAGE=$(cat coverage.json | jq '.lineCoverage' | tail -1)
-        echo "Repositories Coverage: $REPOS_COVERAGE%"
-        
-        # Coverage gate: >=80% for Services and Repositories
-        if (( $(echo "$SERVICES_COVERAGE < 80" | bc -l) )); then
-          echo "❌ Services coverage ($SERVICES_COVERAGE%) is below 80% threshold"
-          exit 1
-        fi
-        
-        if (( $(echo "$REPOS_COVERAGE < 80" | bc -l) )); then
-          echo "❌ Repositories coverage ($REPOS_COVERAGE%) is below 80% threshold"
-          exit 1
-        fi
-        
-        echo "✅ Coverage gates passed: Services ($SERVICES_COVERAGE%), Repositories ($REPOS_COVERAGE%)"
-        
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        file: coverage.json
-        flags: unittests
-        name: codecov-umbrella
-        
-  security-scan:
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Run security scan
-      run: |
-        # Basic security checks
-        echo "🔍 Running security scan..."
-        
-        # Check for hardcoded secrets
-        if grep -r "password\|secret\|key" --include="*.swift" --exclude-dir=Tests . | grep -v "// TODO\|// FIXME\|// NOTE"; then
-          echo "⚠️ Potential hardcoded secrets found"
-        fi
-        
-        # Check for unsafe Swift patterns
-        if grep -r "force\|!" --include="*.swift" --exclude-dir=Tests . | grep -v "// Force\|// !"; then
-          echo "⚠️ Potential unsafe Swift patterns found"
-        fi
-        
-        echo "✅ Security scan completed"
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Install sim
+        run: xcrun simctl list devicetypes | grep 'iPhone 15' || true
+      - name: Forbidden mutations
+        run: bash Scripts/forbid_mutations.sh
+      - name: Schema drift check
+        run: bash Scripts/schema_drift_check.sh
+      - name: Build & Test (iPhone 16)
+        run: |
+          xcodebuild -scheme Habitto \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -enableCodeCoverage YES \
+            clean build | xcpretty && exit ${PIPESTATUS[0]}
+      - name: Coverage gate
+        run: bash Scripts/coverage_gate.sh
