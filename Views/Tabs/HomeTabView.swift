@@ -951,6 +951,10 @@ struct HomeTabView: View {
         // Mark complete and present difficulty sheet
         deferResort = true
         
+        // ✅ FIX: Update completion status map immediately for this habit
+        // This ensures the last habit detection works correctly
+        completionStatusMap[habit.id] = true
+        
         // Check if this is the last habit to be completed
         // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
         let remainingHabits = baseHabitsForSelectedDate.filter { h in
@@ -970,6 +974,10 @@ struct HomeTabView: View {
     }
     
     private func onHabitUncompleted(_ habit: Habit) {
+        // ✅ FIX: Update completion status map immediately for this habit
+        // This ensures the last habit detection works correctly
+        completionStatusMap[habit.id] = false
+        
         // Call award service
         Task {
             #if DEBUG
