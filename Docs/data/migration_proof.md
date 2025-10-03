@@ -62,7 +62,7 @@ guard existingAwards.isEmpty else {
 ```
 🧪 Starting Migration Idempotency Test
 =====================================
-🧪 Test User ID: test_migration_idempotent_C5D7628F
+🧪 Test User ID: test_migration_idempotent_492394BD
 🧪 Step 1: Seeding legacy data...
 🧪 Initial counts - Completions: 2, Awards: 1, Progress: 1
 🧪 Step 2: First MigrationRunner.runIfNeeded call...
@@ -83,5 +83,6 @@ guard existingAwards.isEmpty else {
 ```
 
 **Test Execution Date:** 2025-10-03
-**Test File:** `Tests/SimpleMigrationTest.swift`
+**Test File:** `TestsScripts/SimpleMigrationTest.swift`
+**Command:** `swift ../TestsScripts/SimpleMigrationTest.swift --run-migration-test`
 **Exit Code:** 0 (Success)
