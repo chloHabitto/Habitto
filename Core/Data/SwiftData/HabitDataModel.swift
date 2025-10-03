@@ -217,6 +217,54 @@ final class CompletionRecord {
         self.userIdHabitIdDateKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
     }
     
+    // ✅ CRITICAL FIX: Fallback for database corruption
+    static func createCompletionRecordIfNeeded(
+        userId: String,
+        habitId: UUID,
+        date: Date,
+        isCompleted: Bool,
+        modelContext: ModelContext
+    ) -> Bool {
+        let dateKey = ISO8601DateHelper.shared.string(from: date)
+        let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
+        
+        do {
+            // Check if record already exists
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userIdHabitIdDateKey == uniqueKey
+            }
+            let request = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            let existingRecords = try modelContext.fetch(request)
+            
+            if existingRecords.isEmpty {
+                // Create new record
+                let record = CompletionRecord(
+                    userId: userId,
+                    habitId: habitId,
+                    date: date,
+                    dateKey: dateKey,
+                    isCompleted: isCompleted
+                )
+                modelContext.insert(record)
+                try modelContext.save()
+                return true
+            } else {
+                // Update existing record
+                if let existingRecord = existingRecords.first {
+                    existingRecord.isCompleted = isCompleted
+                    try modelContext.save()
+                    return true
+                }
+            }
+        } catch {
+            print("❌ CompletionRecord creation failed: \(error)")
+            // ✅ FALLBACK: If database is corrupted, return false but don't crash
+            return false
+        }
+        
+        return false
+    }
+    
     // Legacy initializer for backward compatibility
     @available(*, deprecated, message: "Use init(userId:habitId:date:dateKey:isCompleted:) instead")
     init(date: Date, isCompleted: Bool) {
