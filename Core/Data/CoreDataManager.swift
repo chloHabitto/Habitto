@@ -8,17 +8,28 @@ class CoreDataManager: ObservableObject {
     
     // MARK: - Properties
     lazy var persistentContainer: NSPersistentContainer = {
-        // Create an in-memory container to avoid model loading issues
-        let container = NSPersistentContainer(name: "Dummy")
-        let description = NSPersistentStoreDescription()
-        description.type = NSInMemoryStoreType
-        description.shouldAddStoreAsynchronously = false
-        container.persistentStoreDescriptions = [description]
+        // Create a minimal in-memory container without a model to avoid loading issues
+        // Create a custom managed object model with no entities
+        let model = NSManagedObjectModel()
+        model.entities = []
+        
+        // Create container with the custom empty model
+        let container = NSPersistentContainer(name: "EmptyContainer", managedObjectModel: model)
+        
+        // Set up in-memory store
+        container.persistentStoreDescriptions = []
+        container.persistentStoreDescriptions.append({
+            let description = NSPersistentStoreDescription()
+            description.type = NSInMemoryStoreType
+            description.shouldAddStoreAsynchronously = false
+            return description
+        }())
+        
         container.loadPersistentStores { _, error in
             if let error = error {
                 print("❌ CoreDataManager: Failed to load persistent stores: \(error)")
             } else {
-                print("✅ CoreDataManager: In-memory persistent store loaded successfully")
+                print("✅ CoreDataManager: In-memory persistent store loaded successfully (no entities)")
             }
         }
         return container

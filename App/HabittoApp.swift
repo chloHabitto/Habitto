@@ -85,7 +85,7 @@ struct HabittoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @Environment(\.modelContext) private var modelContext
     @StateObject private var notificationManager = NotificationManager.shared
-    @StateObject private var coreDataManager = CoreDataManager.shared
+    // @StateObject private var coreDataManager = CoreDataManager.shared  // Disabled - using SwiftData only
     @StateObject private var habitRepository = HabitRepository.shared
     @StateObject private var migrationService = MigrationService.shared
     @StateObject private var tutorialManager = TutorialManager()
@@ -121,8 +121,8 @@ struct HabittoApp: App {
                     ZStack {
                         HomeView()
                             .preferredColorScheme(.light) // Force light mode only
-                                   .environment(\.managedObjectContext, coreDataManager.context)
-                                   .environmentObject(coreDataManager)
+                                   // .environment(\.managedObjectContext, coreDataManager.context)  // Disabled - using SwiftData only
+                                   // .environmentObject(coreDataManager)  // Disabled - using SwiftData only
                                    .environmentObject(habitRepository)
                             .environmentObject(tutorialManager)
                             .environmentObject(authManager)
