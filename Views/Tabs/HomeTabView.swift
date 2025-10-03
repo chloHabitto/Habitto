@@ -1074,6 +1074,14 @@ struct HomeTabView: View {
                 let currentXP = XPManager.shared.userProgress.totalXP
                 print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
                 print("🎯 COMPLETION_FLOW: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
+                
+                // ✅ FALLBACK: If event bus doesn't trigger celebration, trigger it directly
+                if result {
+                    print("🎯 COMPLETION_FLOW: Award granted successfully, triggering celebration as fallback")
+                    await MainActor.run {
+                        showCelebration = true
+                    }
+                }
             }
             
             // Reset the flag

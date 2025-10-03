@@ -252,26 +252,40 @@ public actor DailyAwardService: ObservableObject {
     // MARK: - Private Methods
     
     private func areAllHabitsCompleted(dateKey: String, userId: String) async -> Bool {
-        // Get all habits for the user
-        let predicate = #Predicate<HabitData> { habit in
-            habit.userId == userId
+        // Use the same data source as the UI - HabitRepository
+        let habits = await HabitRepository.shared.habits
+        
+        // Filter habits for the user (in debug mode, use all habits)
+        let userHabits = habits.filter { habit in
+            // In debug mode, check all habits; in production, filter by userId
+            #if DEBUG
+            return true
+            #else
+            return habit.userId == userId
+            #endif
         }
         
-        let request = FetchDescriptor<HabitData>(predicate: predicate)
-        let habits = (try? modelContext.fetch(request)) ?? []
+        print("🎯 COMPLETION_CHECK: Checking \(userHabits.count) habits for completion on \(dateKey)")
         
         // Check if all habits are completed for the given date
-        return habits.allSatisfy { habit in
-            // Check if habit is completed for the given date by looking at completion history
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
-            guard let targetDate = formatter.date(from: dateKey) else { return false }
-            
-            return habit.completionHistory.contains { (record: CompletionRecord) in
-                Calendar.current.isDate(record.date, inSameDayAs: targetDate) && record.isCompleted
-            }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+        guard let targetDate = formatter.date(from: dateKey) else { 
+            print("🎯 COMPLETION_CHECK: ❌ Invalid dateKey: \(dateKey)")
+            return false 
         }
+        
+        let completedHabits = userHabits.filter { habit in
+            let isCompleted = habit.isCompleted(for: targetDate)
+            print("🎯 COMPLETION_CHECK: Habit '\(habit.name)': isCompleted=\(isCompleted)")
+            return isCompleted
+        }
+        
+        let allCompleted = completedHabits.count == userHabits.count
+        print("🎯 COMPLETION_CHECK: \(completedHabits.count)/\(userHabits.count) habits completed, allCompleted=\(allCompleted)")
+        
+        return allCompleted
     }
     
     private func calculateDailyXP() async -> Int {
