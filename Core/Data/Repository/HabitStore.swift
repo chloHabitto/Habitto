@@ -689,6 +689,7 @@ final actor HabitStore {
     /// Creates or updates CompletionRecord entries for SwiftData queries
     private func createCompletionRecordIfNeeded(habit: Habit, date: Date, dateKey: String, progress: Int) async {
         let userId = await CurrentUser().idOrGuest
+        logger.info("🎯 createCompletionRecordIfNeeded: Starting for habit '\(habit.name)' on \(dateKey), userId: \(userId)")
         
         do {
             // Get model context on main actor to avoid sendable issues
