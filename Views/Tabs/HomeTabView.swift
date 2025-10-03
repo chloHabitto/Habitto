@@ -878,8 +878,46 @@ struct HomeTabView: View {
             }
             
             print("✅ HomeTabView: Prefetched completion status for \(completions.count) habits")
+            
+            // ✅ FIX: Check if all habits are already completed for today
+            await checkAndTriggerCelebrationIfAllCompleted()
         } catch {
             print("❌ HomeTabView: Failed to prefetch completion status: \(error)")
+        }
+    }
+    
+    // ✅ FIX: Check if all habits are completed and trigger celebration
+    private func checkAndTriggerCelebrationIfAllCompleted() async {
+        // Only check if we're viewing today
+        let today = DateUtils.today()
+        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else {
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: Not today, skipping check")
+            return
+        }
+        
+        // Get habits for today
+        let todayHabits = baseHabitsForSelectedDate
+        
+        // Check if all habits are completed
+        let allCompleted = todayHabits.allSatisfy { habit in
+            completionStatusMap[habit.id] == true
+        }
+        
+        if allCompleted && !todayHabits.isEmpty {
+            print("🎉 checkAndTriggerCelebrationIfAllCompleted: All habits completed! Triggering celebration")
+            
+            // Trigger the celebration by calling DailyAwardService
+            let dateKey = DateKey.key(for: selectedDate)
+            let userId = getCurrentUserId()
+            
+            let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "app_launch_check")
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: grantIfAllComplete result: \(result)")
+            
+            if result {
+                print("🎉 checkAndTriggerCelebrationIfAllCompleted: Celebration triggered successfully!")
+            }
+        } else {
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: Not all habits completed (\(todayHabits.filter { !(completionStatusMap[$0.id] ?? false) }.count) remaining)")
         }
     }
     
