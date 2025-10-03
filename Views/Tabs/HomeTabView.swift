@@ -985,6 +985,11 @@ struct HomeTabView: View {
     
     // MARK: - Habit Completion Logic
     private func onHabitCompleted(_ habit: Habit) {
+        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+        let dateKey = Habit.dateKey(for: selectedDate)
+        
+        print("🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=\(userIdHash)")
+        
         // Mark complete and present difficulty sheet
         deferResort = true
         
@@ -1001,12 +1006,14 @@ struct HomeTabView: View {
         if remainingHabits.isEmpty {
             // This is the last habit - set flag and let difficulty sheet be shown
             // The celebration will be triggered after the difficulty sheet is dismissed
+            print("🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
             onLastHabitCompleted()
             // Don't set selectedHabit = nil here - let the difficulty sheet show
         } else {
             // Present difficulty sheet (existing logic)
             // Don't set selectedHabit here as it triggers habit detail screen
             // The difficulty sheet will be shown by the ScheduledHabitItem
+            print("🎯 COMPLETION_FLOW: Habit completed, \(remainingHabits.count) remaining")
         }
     }
     
@@ -1031,6 +1038,11 @@ struct HomeTabView: View {
     }
     
     private func onDifficultySheetDismissed() {
+        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+        let dateKey = Habit.dateKey(for: selectedDate)
+        
+        print("🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=\(userIdHash), lastHabitJustCompleted=\(lastHabitJustCompleted)")
+        
         deferResort = false
         resortHabits()
         
@@ -1039,10 +1051,9 @@ struct HomeTabView: View {
             // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
             // This is the ONLY place where XP should be awarded for habit completion
             // Do NOT call XPManager methods directly - always use DailyAwardService
-            let dateKey = DateKey.key(for: selectedDate)
             let userId = getCurrentUserId()
-            print("🎉 STEP 2: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
-            print("🎯 STEP 2: userId = \(userId)")
+            print("🎉 COMPLETION_FLOW: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
+            print("🎯 COMPLETION_FLOW: userId = \(userId)")
             
             Task {
                 #if DEBUG
@@ -1055,14 +1066,14 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                print("🎯 STEP 3: Calling DailyAwardService.grantIfAllComplete()")
+                print("🎯 COMPLETION_FLOW: Calling DailyAwardService.grantIfAllComplete()")
                 let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "ui_sheet_dismiss")
-                print("🎯 STEP 3: grantIfAllComplete result: \(result)")
+                print("🎯 COMPLETION_FLOW: grantIfAllComplete result: \(result)")
                 
                 // Check XP after award
                 let currentXP = XPManager.shared.userProgress.totalXP
-                print("🎯 STEP 4: Current XP after award: \(currentXP)")
-                print("🎯 STEP 4: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
+                print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
+                print("🎯 COMPLETION_FLOW: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
             }
             
             // Reset the flag
