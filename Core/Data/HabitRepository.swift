@@ -625,6 +625,7 @@ class HabitRepository: ObservableObject {
     func setProgress(for habit: Habit, date: Date, progress: Int) {
         let dateKey = DateKey.key(for: date)
         print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+        print("🎯 DEBUG: About to call habitStore.setProgress - this should trigger CompletionRecord creation")
         
         // Update the local habits array immediately for UI responsiveness
         if let index = habits.firstIndex(where: { $0.id == habit.id }) {
@@ -679,8 +680,10 @@ class HabitRepository: ObservableObject {
         Task {
             do {
                 // Use the HabitStore actor for data operations
+                print("🎯 DEBUG: Calling habitStore.setProgress now...")
                 try await habitStore.setProgress(for: habit, date: date, progress: progress)
                 print("✅ HabitRepository: Successfully persisted progress for habit '\(habit.name)' on \(dateKey)")
+                print("🎯 DEBUG: habitStore.setProgress completed - CompletionRecord should have been created")
                 
             } catch {
                 print("❌ HabitRepository: Failed to persist progress: \(error.localizedDescription)")
