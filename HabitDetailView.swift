@@ -34,6 +34,8 @@ struct HabitDetailView: View {
     @State private var showingInactiveConfirmation: Bool = false
     @State private var isProcessingToggle: Bool = false
     @State private var hasInitializedActiveState: Bool = false
+    @State private var showingCompletionSheet = false
+    @State private var isCompletingHabit = false
     
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
@@ -263,6 +265,22 @@ struct HabitDetailView: View {
             }
         } message: {
             Text("Are you sure you want to delete this reminder?")
+        }
+        .sheet(isPresented: $showingCompletionSheet) {
+            HabitCompletionBottomSheet(
+                isPresented: $showingCompletionSheet,
+                habit: habit,
+                onDismiss: {
+                    let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                    print("🎯 COMPLETION_FLOW: Detail sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
+                    
+                    // Reset flags
+                    isCompletingHabit = false
+                }
+            )
+            .presentationDetents([.height(500)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(32)
         }
     }
     
@@ -681,7 +699,12 @@ struct HabitDetailView: View {
                 // Decrement button
                 Button(action: {
                     if todayProgress > 0 {
-                        todayProgress -= 1
+                        let newProgress = max(0, todayProgress - 1)
+                        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                        
+                        print("🎯 COMPLETION_FLOW: Detail - button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(extractGoalNumber(from: habit.goal)), reachedGoal=false")
+                        
+                        todayProgress = newProgress
                         updateHabitProgress(todayProgress)
                     }
                 }) {
@@ -701,8 +724,21 @@ struct HabitDetailView: View {
                 
                 // Increment button
                 Button(action: {
-                    todayProgress += 1
+                    let goalAmount = extractGoalNumber(from: habit.goal)
+                    let newProgress = min(todayProgress + 1, goalAmount)
+                    let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                    
+                    print("🎯 COMPLETION_FLOW: Detail + button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
+                    
+                    todayProgress = newProgress
                     updateHabitProgress(todayProgress)
+                    
+                    // Check if habit is completed and show completion sheet
+                    if newProgress >= goalAmount {
+                        isCompletingHabit = true
+                        print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
+                        showingCompletionSheet = true
+                    }
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .medium))
