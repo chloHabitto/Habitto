@@ -32,6 +32,30 @@ final class SwiftDataContainer: ObservableObject {
             logger.info("🔧 SwiftData: Creating model configuration...")
             logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
             
+            // ✅ CRITICAL FIX: Reset database if corrupted
+            let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
+            if FileManager.default.fileExists(atPath: databaseURL.path) {
+                logger.warning("🔧 SwiftData: Database exists, checking for corruption...")
+                // Check if database is corrupted by attempting to open it
+                do {
+                    let testContainer = try ModelContainer(for: schema, configurations: [
+                        ModelConfiguration(url: databaseURL)
+                    ])
+                    let testContext = ModelContext(testContainer)
+                    // Try to query CompletionRecord to check if table exists
+                    let testRequest = FetchDescriptor<CompletionRecord>()
+                    _ = try testContext.fetch(testRequest)
+                    logger.info("✅ SwiftData: Database is healthy")
+                } catch {
+                    logger.error("❌ SwiftData: Database corruption detected: \(error)")
+                    logger.info("🔧 SwiftData: Resetting corrupted database...")
+                    try? FileManager.default.removeItem(at: databaseURL)
+                    logger.info("✅ SwiftData: Corrupted database removed")
+                }
+            } else {
+                logger.info("🔧 SwiftData: No existing database found, creating new one")
+            }
+            
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false
@@ -150,6 +174,45 @@ final class SwiftDataContainer: ObservableObject {
         } catch {
             logger.error("Failed to get migration history: \(error.localizedDescription)")
             return []
+        }
+    }
+    
+    // MARK: - Database Health Check
+    
+    func checkDatabaseHealth() -> Bool {
+        do {
+            // Try to query CompletionRecord to check if table exists
+            let testRequest = FetchDescriptor<CompletionRecord>()
+            _ = try modelContext.fetch(testRequest)
+            return true
+        } catch {
+            logger.error("❌ SwiftData: Database health check failed: \(error)")
+            return false
+        }
+    }
+    
+    func resetCorruptedDatabase() {
+        logger.warning("🔧 SwiftData: Resetting corrupted database...")
+        let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
+        try? FileManager.default.removeItem(at: databaseURL)
+        logger.info("✅ SwiftData: Corrupted database removed - app will need to restart")
+        
+        // Also remove any related database files
+        let databaseDir = databaseURL.deletingLastPathComponent()
+        let databaseName = databaseURL.deletingPathExtension().lastPathComponent
+        
+        // Remove all related files
+        let fileManager = FileManager.default
+        do {
+            let files = try fileManager.contentsOfDirectory(at: databaseDir, includingPropertiesForKeys: nil)
+            for file in files {
+                if file.lastPathComponent.hasPrefix(databaseName) {
+                    try? fileManager.removeItem(at: file)
+                    logger.info("🔧 SwiftData: Removed related file: \(file.lastPathComponent)")
+                }
+            }
+        } catch {
+            logger.error("❌ SwiftData: Failed to clean up related files: \(error)")
         }
     }
     

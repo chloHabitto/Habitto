@@ -31,7 +31,8 @@ public actor DailyAwardService: ObservableObject {
         
         // Check if all habits are completed for this date
         print("🎯 STEP 6: Checking if all habits are completed for \(dateKey)")
-        guard await areAllHabitsCompleted(dateKey: dateKey, userId: userId) else {
+        let allCompleted = await areAllHabitsCompleted(dateKey: dateKey, userId: userId)
+        guard allCompleted else {
             print("🎯 STEP 6: ❌ Not all habits completed, no award granted")
             #if DEBUG
             print("  ↳ Not all habits completed, no award granted")

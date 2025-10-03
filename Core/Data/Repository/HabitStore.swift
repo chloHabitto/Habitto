@@ -742,6 +742,14 @@ final actor HabitStore {
       } catch {
           logger.error("❌ createCompletionRecordIfNeeded: Failed to create/update CompletionRecord: \(error)")
           logger.error("❌ createCompletionRecordIfNeeded: Error details: \(error.localizedDescription)")
+          
+          // ✅ CRITICAL FIX: If database is corrupted, reset it
+          if error.localizedDescription.contains("no such table") || error.localizedDescription.contains("ZCOMPLETIONRECORD") {
+              logger.error("🔧 HabitStore: Database corruption detected, resetting database...")
+              await MainActor.run {
+                  SwiftDataContainer.shared.resetCorruptedDatabase()
+              }
+          }
       }
   }
 }
