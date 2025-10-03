@@ -86,9 +86,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
                         goal: habit.goal,
                         reminder: habit.reminder,
                         startDate: habit.startDate,
-                        endDate: habit.endDate,
-                        isCompleted: habit.isCompletedForDate(Date()),
-                        streak: habit.computedStreak()
+                        endDate: habit.endDate
                     )
                     
                     // Add completion history
@@ -254,9 +252,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     goal: habit.goal,
                     reminder: habit.reminder,
                     startDate: habit.startDate,
-                    endDate: habit.endDate,
-                    isCompleted: habit.isCompletedForDate(Date()),
-                    streak: habit.computedStreak()
+                    endDate: habit.endDate
                 )
                 
                 // Add completion history

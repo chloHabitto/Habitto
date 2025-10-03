@@ -488,9 +488,7 @@ class BackupManager: ObservableObject {
                 goal: backupHabit.goal,
                 reminder: backupHabit.reminder ?? "",
                 startDate: backupHabit.startDate,
-                endDate: backupHabit.endDate,
-                isCompleted: backupHabit.isCompleted,
-                streak: backupHabit.streak
+                endDate: backupHabit.endDate
             )
             
             // Set creation and update dates
