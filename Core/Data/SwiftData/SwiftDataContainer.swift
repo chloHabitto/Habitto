@@ -29,22 +29,34 @@ final class SwiftDataContainer: ObservableObject {
                 MigrationState.self       // ✅ PHASE 5: Added MigrationState model
             ])
             
+            logger.info("🔧 SwiftData: Creating model configuration...")
+            logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
+            
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false
             )
             
+            logger.info("🔧 SwiftData: Creating ModelContainer...")
             self.modelContainer = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
             
+            logger.info("🔧 SwiftData: Creating ModelContext...")
             self.modelContext = ModelContext(modelContainer)
             
-            logger.info("SwiftData container initialized successfully")
+            logger.info("✅ SwiftData: Container initialized successfully")
+            logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
+            
+            // Test if we can access the CompletionRecord table
+            let testRequest = FetchDescriptor<CompletionRecord>()
+            let testCount = (try? modelContext.fetchCount(testRequest)) ?? -1
+            logger.info("🔧 SwiftData: CompletionRecord table test - count: \(testCount)")
             
         } catch {
-            logger.error("Failed to initialize SwiftData container: \(error.localizedDescription)")
+            logger.error("❌ SwiftData: Failed to initialize container: \(error.localizedDescription)")
+            logger.error("❌ SwiftData: Error details: \(error)")
             fatalError("Failed to initialize SwiftData container: \(error)")
         }
     }
