@@ -1,235 +1,260 @@
-# Entity Relationship Diagram - From Actual Code
+# Entity Relationship Diagram
 
-## Mermaid ER Diagram
+This document provides a Mermaid ER diagram showing the relationships between all persisted models in the Habitto codebase.
+
+## ER Diagram
 
 ```mermaid
 erDiagram
     HabitData {
-        UUID id PK "unique"
-        String userId "indexed"
-        String name
-        String habitDescription
-        String icon
+        UUID id PK
+        string userId
+        string name
+        string habitDescription
+        string icon
         Data colorData
-        String habitType
-        String schedule
-        String goal
-        String reminder
+        string habitType
+        string schedule
+        string goal
+        string reminder
         Date startDate
         Date endDate
-        Bool isCompleted "DENORMALIZED"
-        Int streak "DENORMALIZED"
+        Date createdAt
+        Date updatedAt
+    }
+    
+    CompletionRecord {
+        string userId
+        UUID habitId
+        Date date
+        string dateKey
+        bool isCompleted
+        Date createdAt
+        string userIdHabitIdDateKey UK
+    }
+    
+    DailyAward {
+        UUID id PK
+        string userId
+        string dateKey
+        int xpGranted
+        bool allHabitsCompleted
+        Date createdAt
+        string userIdDateKey UK
+    }
+    
+    UserProgressData {
+        UUID id PK
+        string userId UK
+        int xpTotal
+        int level
+        int xpForCurrentLevel
+        int xpForNextLevel
+        int dailyXP
+        Date lastCompletedDate
+        int streakDays
+        Date createdAt
+        Date updatedAt
+    }
+    
+    AchievementData {
+        UUID id PK
+        string userId
+        string title
+        string achievementDescription
+        int xpReward
+        bool isUnlocked
+        Date unlockedDate
+        string iconName
+        string category
+        string requirementType
+        int requirementTarget
+        int progress
+        Date createdAt
+        Date updatedAt
+    }
+    
+    DifficultyRecord {
+        Date date
+        int difficulty
+        Date createdAt
+    }
+    
+    UsageRecord {
+        string key
+        int value
+        Date createdAt
+    }
+    
+    HabitNote {
+        string content
+        Date createdAt
+        Date updatedAt
+    }
+    
+    StorageHeader {
+        int schemaVersion
+        Date lastMigration
+        Date createdAt
+    }
+    
+    MigrationRecord {
+        int fromVersion
+        int toVersion
+        Date executedAt
+        bool success
+        string errorMessage
+        Date createdAt
+        Date updatedAt
+    }
+    
+    MigrationState {
+        UUID id PK
+        string userId
+        int migrationVersion
+        string status
+        Date startedAt
+        Date completedAt
+        string errorMessage
+        int migratedRecordsCount
         Date createdAt
         Date updatedAt
     }
     
     SimpleHabitData {
-        UUID id PK "unique"
-        String name "NO userId"
-        String habitDescription
-        String icon
-        String colorString
-        String habitType
-        String schedule
-        String goal
-        String reminder
+        UUID id PK
+        string name
+        string habitDescription
+        string icon
+        string colorString
+        string habitType
+        string schedule
+        string goal
+        string reminder
         Date startDate
         Date endDate
-        Bool isCompleted
-        Int streak
+        bool isCompleted
+        int streak
         Date createdAt
         Date updatedAt
-        String completionHistoryJSON
-        String difficultyHistoryJSON
-        String usageHistoryJSON
+        string completionHistoryJSON
+        string difficultyHistoryJSON
+        string usageHistoryJSON
     }
+
+    %% Primary Relationships
+    HabitData ||--o{ CompletionRecord : "has completion history"
+    HabitData ||--o{ DifficultyRecord : "has difficulty records"
+    HabitData ||--o{ UsageRecord : "has usage records"
+    HabitData ||--o{ HabitNote : "has notes"
     
-    DailyAward {
-        UUID id PK "unique"
-        String userId "indexed"
-        String dateKey "indexed"
-        Int xpGranted
-        Date createdAt
-    }
+    UserProgressData ||--o{ AchievementData : "has achievements"
     
-    CompletionRecord {
-        Date date
-        Bool isCompleted
-        Date createdAt "NO userId, NO habitId"
-    }
+    %% User Isolation Relationships
+    HabitData }o--|| UserProgressData : "user isolation"
+    CompletionRecord }o--|| UserProgressData : "user isolation"
+    DailyAward }o--|| UserProgressData : "user isolation"
+    AchievementData }o--|| UserProgressData : "user isolation"
+    MigrationState }o--|| UserProgressData : "user isolation"
     
-    DifficultyRecord {
-        Date date
-        Int difficulty
-        Date createdAt "NO userId, NO habitId"
-    }
-    
-    UsageRecord {
-        String key
-        Int value
-        Date createdAt "NO userId, NO habitId"
-    }
-    
-    HabitNote {
-        String content
-        Date createdAt
-        Date updatedAt "NO userId, NO habitId"
-    }
-    
-    StorageHeader {
-        Int schemaVersion
-        Date lastMigration
-        Date createdAt "NO userId"
-    }
-    
-    MigrationRecord {
-        Int fromVersion
-        Int toVersion
-        Date executedAt
-        Bool success
-        String errorMessage "NO userId"
-    }
-    
-    HabitEntity {
-        UUID id "temporary stub"
-        String name
-        NSSet reminders
-        NSSet completionHistory
-        Date createdAt
-        Date updatedAt
-        Date lastCompleted
-        Bool isArchived
-        String color
-        String emoji
-        Int32 streak
-        String frequency
-        Double targetAmount
-        String unit
-        Int16 difficultyLevel
-        String notes
-        Bool isActive
-        Bool reminderEnabled
-        String weekdays
-        String scheduleDays
-        Date scheduleTime
-        String habitType
-        String timeOfDay
-        String category
-        NSSet difficultyLogs
-        String colorHex
-        String habitDescription
-        String icon
-        String schedule
-        String goal
-        String reminder
-        Date startDate
-        Date endDate
-        Bool isCompleted
-        Double baseline
-        Double target
-        NSSet usageRecords "NO userId"
-    }
-    
-    ReminderItemEntity {
-        UUID id "temporary stub"
-        Date time
-        Bool isActive
-        String message "NO userId"
-    }
-    
-    CompletionRecordEntity {
-        UUID id "temporary stub"
-        Date timestamp
-        Double progress
-        Date date
-        String notes
-        Bool isCompleted
-        String dateKey
-        String timeBlock "NO userId"
-    }
-    
-    DifficultyLogEntity {
-        UUID id "temporary stub"
-        Date timestamp
-        Int16 difficultyLevel
-        Int16 difficulty
-        String context
-        String notes "NO userId"
-    }
-    
-    UsageRecordEntity {
-        UUID id "temporary stub"
-        Date timestamp
-        String action
-        String dateKey
-        Double amount "NO userId"
-    }
-    
-    NoteEntity {
-        UUID id "temporary stub"
-        String content
-        Date timestamp
-        String title
-        String tags
-        Date createdAt
-        Date updatedAt "NO userId"
-    }
-    
-    %% Relationships (from code)
-    HabitData ||--o{ CompletionRecord : "completionHistory (cascade)"
-    HabitData ||--o{ DifficultyRecord : "difficultyHistory (cascade)"
-    HabitData ||--o{ UsageRecord : "usageHistory (cascade)"
-    HabitData ||--o{ HabitNote : "notes (cascade)"
-    
-    %% Missing relationships (issues)
-    %% DailyAward should relate to HabitData but doesn't
-    %% CompletionRecord should have back-reference to HabitData but doesn't
-    %% DifficultyRecord should have back-reference to HabitData but doesn't
-    %% UsageRecord should have back-reference to HabitData but doesn't
-    %% HabitNote should have back-reference to HabitData but doesn't
-    
-    %% Core Data relationships (temporary stubs)
-    HabitEntity ||--o{ ReminderItemEntity : "reminders"
-    HabitEntity ||--o{ CompletionRecordEntity : "completionHistory"
-    HabitEntity ||--o{ DifficultyLogEntity : "difficultyLogs"
-    HabitEntity ||--o{ UsageRecordEntity : "usageRecords"
-    HabitEntity ||--o{ NoteEntity : "notes"
+    %% Business Logic Relationships
+    DailyAward }o--|| HabitData : "awards based on completion"
+    CompletionRecord }o--|| DailyAward : "triggers daily awards"
 ```
 
-## Relationship Analysis
+## Relationship Details
 
-### Defined Relationships (Working)
-1. **HabitData → CompletionRecord** (1:many, cascade delete)
-2. **HabitData → DifficultyRecord** (1:many, cascade delete)  
-3. **HabitData → UsageRecord** (1:many, cascade delete)
-4. **HabitData → HabitNote** (1:many, cascade delete)
+### Primary Relationships (1:N)
 
-### Missing Relationships (Issues)
-1. **DailyAward → HabitData** - No relationship defined
-2. **CompletionRecord → HabitData** - No inverse relationship
-3. **DifficultyRecord → HabitData** - No inverse relationship
-4. **UsageRecord → HabitData** - No inverse relationship
-5. **HabitNote → HabitData** - No inverse relationship
+1. **HabitData → CompletionRecord** (1:N)
+   - **Type:** One-to-Many
+   - **Delete Rule:** Cascade
+   - **Purpose:** Track daily completion status for each habit
+   - **Key:** `HabitData.id` → `CompletionRecord.habitId`
 
-### User Scoping Issues
-- **DailyAward**: ✅ Has `userId`
-- **HabitData**: ✅ Has `userId`
-- **All other SwiftData models**: ❌ Missing `userId`
-- **All Core Data models**: ❌ Missing `userId`
+2. **HabitData → DifficultyRecord** (1:N)
+   - **Type:** One-to-Many
+   - **Delete Rule:** Cascade
+   - **Purpose:** Track daily difficulty ratings
+   - **Key:** `HabitData.id` → `DifficultyRecord.habitId` (implied)
 
-### Denormalized Fields
-- **HabitData.isCompleted**: ⚠️ DENORMALIZED - should be computed from CompletionRecord
-- **HabitData.streak**: ⚠️ DENORMALIZED - should be computed from CompletionRecord
+3. **HabitData → UsageRecord** (1:N)
+   - **Type:** One-to-Many
+   - **Delete Rule:** Cascade
+   - **Purpose:** Track usage metrics for habit breaking
+   - **Key:** `HabitData.id` → `UsageRecord.habitId` (implied)
 
-### Indexing Issues
-- **userId** should be indexed on all models for efficient user-scoped queries
-- **dateKey** should be indexed on DailyAward for efficient date-based queries
-- **habitId** should be added to CompletionRecord, DifficultyRecord, UsageRecord, HabitNote for efficient habit-based queries
+4. **HabitData → HabitNote** (1:N)
+   - **Type:** One-to-Many
+   - **Delete Rule:** Cascade
+   - **Purpose:** Associate notes with habits
+   - **Key:** `HabitData.id` → `HabitNote.habitId` (implied)
 
-## Critical Problems
+5. **UserProgressData → AchievementData** (1:N)
+   - **Type:** One-to-Many
+   - **Delete Rule:** Cascade
+   - **Purpose:** Track user achievements and progress
+   - **Key:** `UserProgressData.userId` → `AchievementData.userId`
 
-1. **No User Isolation**: Most models lack `userId`, allowing data leakage between users
-2. **Broken Relationships**: Related models have no back-references, making queries inefficient
-3. **Denormalized Data**: `isCompleted` and `streak` can become inconsistent
-4. **Missing Foreign Keys**: DailyAward cannot track which habits contributed to XP
-5. **Dual Storage**: Both SwiftData and CoreData models exist, creating confusion
+### User Isolation Relationships (1:1)
+
+All models are scoped by `userId` for user data isolation:
+
+6. **UserProgressData** (1:1 per user)
+   - **Constraint:** `@Attribute(.unique) var userId: String`
+   - **Purpose:** Single progress record per user
+
+### Business Logic Relationships (Implicit)
+
+7. **DailyAward ↔ CompletionRecord** (Implicit)
+   - **Purpose:** Daily awards are granted when all habits are completed
+   - **Logic:** Service-level relationship, not direct foreign key
+
+8. **DailyAward ↔ UserProgressData** (Implicit)
+   - **Purpose:** Daily awards contribute to user XP and level progression
+   - **Logic:** Service-level relationship, not direct foreign key
+
+## Key Constraints and Indexes
+
+### Primary Keys
+- All models have `id: UUID` with `@Attribute(.unique)`
+
+### Unique Constraints
+1. **CompletionRecord.userIdHabitIdDateKey**
+   - **Purpose:** Prevent duplicate completions per habit per day
+   - **Format:** `"userId#habitId#dateKey"`
+
+2. **DailyAward.userIdDateKey**
+   - **Purpose:** Prevent duplicate daily awards per user per day
+   - **Format:** `"userId#dateKey"`
+
+3. **UserProgressData.userId**
+   - **Purpose:** Ensure one progress record per user
+   - **Type:** Single field unique constraint
+
+### Indexing Notes
+- SwiftData limitations prevent explicit indexing on `userId` fields
+- Composite unique constraints provide implicit indexing
+- Date-based queries use `dateKey` strings for performance
+
+## Data Flow Summary
+
+```
+User → UserProgressData (1:1)
+  ↓
+User → HabitData[] (1:N)
+  ↓
+HabitData → CompletionRecord[] (1:N)
+  ↓
+CompletionRecord[] → DailyAward (business logic)
+  ↓
+DailyAward → UserProgressData.xpTotal (service update)
+```
+
+## Migration and Legacy Models
+
+- **MigrationState:** Tracks migration status per user
+- **MigrationRecord:** Logs migration execution history
+- **StorageHeader:** Schema versioning
+- **SimpleHabitData:** Legacy storage (deprecated)
+- **DifficultyRecord, UsageRecord, HabitNote:** Legacy models with limited functionality
