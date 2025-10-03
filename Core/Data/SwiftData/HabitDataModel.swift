@@ -63,6 +63,8 @@ final class HabitData {
         self.endDate = endDate
         // Note: isCompleted and streak are deprecated - use computed properties instead
         // Required for SwiftData initialization - will be removed once migration is complete
+        // Direct assignment required for SwiftData initialization
+        // These warnings are expected during the migration period
         self.isCompleted = isCompleted
         self.streak = streak
         self.createdAt = Date()
@@ -132,6 +134,8 @@ final class HabitData {
         self.endDate = habit.endDate
         // Note: isCompleted and streak are deprecated - use computed properties instead
         // Required for SwiftData initialization - will be removed once migration is complete
+        // Direct assignment required for SwiftData initialization
+        // These warnings are expected during the migration period
         self.isCompleted = habit.isCompletedForDate(Date())
         self.streak = habit.computedStreak()
         self.updatedAt = Date()
