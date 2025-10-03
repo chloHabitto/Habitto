@@ -985,10 +985,10 @@ struct HomeTabView: View {
     
     // MARK: - Habit Completion Logic
     private func onHabitCompleted(_ habit: Habit) {
-        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
         let dateKey = Habit.dateKey(for: selectedDate)
         
-        print("🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=\(userIdHash)")
+        print("🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
         
         // Mark complete and present difficulty sheet
         deferResort = true
@@ -1038,10 +1038,10 @@ struct HomeTabView: View {
     }
     
     private func onDifficultySheetDismissed() {
-        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
         let dateKey = Habit.dateKey(for: selectedDate)
         
-        print("🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=\(userIdHash), lastHabitJustCompleted=\(lastHabitJustCompleted)")
+        print("🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
         
         deferResort = false
         resortHabits()
