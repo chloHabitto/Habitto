@@ -17,13 +17,6 @@ final class HabitData {
     var reminder: String
     var startDate: Date
     var endDate: Date?
-    // MARK: - Denormalized Fields (Computed from completionHistory)
-    // WARNING: These fields are cached/denormalized for performance
-    // Use recomputeCompletionStatus() and recomputeStreak() to refresh them
-    @available(*, deprecated, message: "Derived field - use isCompleted(for:) for truth")
-    var isCompleted: Bool // ⚠️ DENORMALIZED - use isCompleted(for:) for truth
-    @available(*, deprecated, message: "Derived field - use calculateTrueStreak() for truth")
-    var streak: Int // ⚠️ DENORMALIZED - use calculateTrueStreak() for truth
     var createdAt: Date
     var updatedAt: Date
     
@@ -45,9 +38,7 @@ final class HabitData {
         goal: String,
         reminder: String,
         startDate: Date,
-        endDate: Date? = nil,
-        isCompleted: Bool = false,
-        streak: Int = 0
+        endDate: Date? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -61,12 +52,6 @@ final class HabitData {
         self.reminder = reminder
         self.startDate = startDate
         self.endDate = endDate
-        // Note: isCompleted and streak are deprecated - use computed properties instead
-        // Required for SwiftData initialization - will be removed once migration is complete
-        // Direct assignment required for SwiftData initialization
-        // These warnings are expected during the migration period
-        self.isCompleted = isCompleted
-        self.streak = streak
         self.createdAt = Date()
         self.updatedAt = Date()
         
@@ -132,38 +117,20 @@ final class HabitData {
         self.reminder = habit.reminder
         self.startDate = habit.startDate
         self.endDate = habit.endDate
-        // Note: isCompleted and streak are deprecated - use computed properties instead
-        // Required for SwiftData initialization - will be removed once migration is complete
-        // Direct assignment required for SwiftData initialization
-        // These warnings are expected during the migration period
-        self.isCompleted = habit.isCompletedForDate(Date())
-        self.streak = habit.computedStreak()
         self.updatedAt = Date()
+        // Note: isCompleted and streak are now computed properties
     }
     
-    // MARK: - Denormalized Field Recompute Methods
+    // MARK: - Computed Properties
     
-    /// Recomputes the isCompleted field from completionHistory
-    /// Call this after modifying completionHistory to keep denormalized field in sync
-    @available(*, deprecated, message: "isCompleted field is deprecated, use isCompletedForDate() instead")
-    func recomputeCompletionStatus() {
-        let today = Calendar.current.startOfDay(for: Date())
-        self.isCompleted = isCompletedForDate(today)
+    /// Computed property for current completion status
+    var isCompleted: Bool {
+        isCompletedForDate(Date())
     }
     
-    /// Recomputes the streak field from completionHistory
-    /// Call this after modifying completionHistory to keep denormalized field in sync
-    @available(*, deprecated, message: "streak field is deprecated, use calculateTrueStreak() instead")
-    func recomputeStreak() {
-        self.streak = calculateTrueStreak()
-    }
-    
-    /// Recomputes both denormalized fields
-    /// Call this after bulk completionHistory changes
-    @available(*, deprecated, message: "Denormalized fields are deprecated, use computed properties instead")
-    func recomputeDenormalizedFields() {
-        recomputeCompletionStatus()
-        recomputeStreak()
+    /// Computed property for current streak
+    var streak: Int {
+        calculateTrueStreak()
     }
     
     /// Check if habit is completed for a specific date (source of truth)
