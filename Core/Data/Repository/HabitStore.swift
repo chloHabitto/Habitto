@@ -356,6 +356,7 @@ final actor HabitStore {
     func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
         let dateKey = CoreDataManager.dateKey(for: date)
         logger.info("Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+        logger.info("🎯 DEBUG: HabitStore.setProgress called - will create CompletionRecord")
         
         // Record user analytics for habit completion
         if progress > 0 {
