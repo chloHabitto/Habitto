@@ -907,7 +907,6 @@ struct HomeTabView: View {
             print("🎉 checkAndTriggerCelebrationIfAllCompleted: All habits completed! Triggering celebration")
             
             // Trigger the celebration by calling DailyAwardService
-            let dateKey = DateKey.key(for: selectedDate)
             let userId = getCurrentUserId()
             
             let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "app_launch_check")
