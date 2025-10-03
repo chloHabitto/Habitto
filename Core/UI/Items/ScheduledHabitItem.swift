@@ -199,7 +199,7 @@ struct ScheduledHabitItem: View {
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
         .gesture(
-            DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            DragGesture(minimumDistance: 5, coordinateSpace: .local)
                 .onChanged { value in
                     print("🔄 Drag onChanged: translation=\(value.translation), velocity=\(value.velocity)")
                     dragOffset = value.translation.width
@@ -212,10 +212,15 @@ struct ScheduledHabitItem: View {
                     
                     print("🔄 TranslationX: \(translationX), VelocityX: \(velocityX)")
                     
-                    // Very simple threshold-based detection
-                    let threshold: CGFloat = 10
+                    // More responsive threshold-based detection with velocity fallback
+                    let threshold: CGFloat = 5
+                    let velocityThreshold: CGFloat = 100
                     
-                    if translationX > threshold {
+                    // Check both translation and velocity for more reliable detection
+                    let isRightSwipe = translationX > threshold || (translationX > 0 && velocityX > velocityThreshold)
+                    let isLeftSwipe = translationX < -threshold || (translationX < 0 && velocityX < -velocityThreshold)
+                    
+                    if isRightSwipe {
                         // Swipe right - increase progress by 1, clamped to goal
                         let goalAmount = extractNumericGoalAmount(from: habit.goal)
                         let newProgress = min(currentProgress + 1, goalAmount)
@@ -259,7 +264,7 @@ struct ScheduledHabitItem: View {
                         impactFeedback.impactOccurred()
                         
                         // UI should update automatically due to @State currentProgress
-                    } else if translationX < -threshold {
+                    } else if isLeftSwipe {
                         // Swipe left - decrease progress by 1 (minimum 0)
                         let newProgress = max(0, currentProgress - 1)
                         let _ = "debug_user_id" // TODO: Get actual user ID hash
