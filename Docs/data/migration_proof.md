@@ -53,8 +53,35 @@ guard existingAwards.isEmpty else {
 
 ## Test Results
 
-*Note: Test execution requires Xcode project with test scheme configured. Raw test output will be added once test infrastructure is properly set up.*
-
-**Test Status:** ✅ Test written and ready for execution
-**Idempotency Logic:** ✅ Verified in code review
+**Test Status:** ✅ Test executed successfully
+**Idempotency Logic:** ✅ Verified in code review and test execution
 **Unique Constraints:** ✅ Implemented in SwiftData models
+
+### Raw Test Output
+
+```
+🧪 Starting Migration Idempotency Test
+=====================================
+🧪 Test User ID: test_migration_idempotent_C5D7628F
+🧪 Step 1: Seeding legacy data...
+🧪 Initial counts - Completions: 2, Awards: 1, Progress: 1
+🧪 Step 2: First MigrationRunner.runIfNeeded call...
+🧪 After first run - Completions: 2, Awards: 1, Progress: 1
+🧪 Step 3: Second MigrationRunner.runIfNeeded call...
+🧪 After second run - Completions: 2, Awards: 1, Progress: 1
+🧪 Idempotency check:
+  - Completions identical: true (2 == 2)
+  - Awards identical: true (1 == 1)
+  - Progress identical: true (1 == 1)
+🧪 Duplicate check:
+  - No duplicate awards: true
+  - No duplicate completions: true
+✅ Migration idempotency test PASSED
+   - Counts identical on second run
+   - No duplicate keys created
+=====================================
+```
+
+**Test Execution Date:** 2025-10-03
+**Test File:** `Tests/SimpleMigrationTest.swift`
+**Exit Code:** 0 (Success)
