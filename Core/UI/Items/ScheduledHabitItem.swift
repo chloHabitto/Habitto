@@ -219,7 +219,7 @@ struct ScheduledHabitItem: View {
                         // Swipe right - increase progress by 1, clamped to goal
                         let goalAmount = extractNumericGoalAmount(from: habit.goal)
                         let newProgress = min(currentProgress + 1, goalAmount)
-                        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                        let _ = "debug_user_id" // TODO: Get actual user ID hash
                         
                         print("🎯 COMPLETION_FLOW: Swipe right - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
                         
@@ -262,7 +262,7 @@ struct ScheduledHabitItem: View {
                     } else if translationX < -threshold {
                         // Swipe left - decrease progress by 1 (minimum 0)
                         let newProgress = max(0, currentProgress - 1)
-                        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                        let _ = "debug_user_id" // TODO: Get actual user ID hash
                         
                         print("🎯 COMPLETION_FLOW: Swipe left - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(extractNumericGoalAmount(from: habit.goal)), reachedGoal=false")
                         
@@ -385,7 +385,7 @@ struct ScheduledHabitItem: View {
                     isPresented: $showingCompletionSheet,
                     habit: habit,
                     onDismiss: {
-                        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+                        let _ = "debug_user_id" // TODO: Get actual user ID hash
                         print("🎯 COMPLETION_FLOW: Sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
                         
                         // Reset flags immediately
@@ -452,7 +452,7 @@ struct ScheduledHabitItem: View {
     private func completeHabit() {
         let isCompleted = isHabitCompleted()
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        let userIdHash = "debug_user_id" // TODO: Get actual user ID hash
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
         
         print("🎯 COMPLETION_FLOW: Circle tap - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=circle, oldCount=\(currentProgress), goal=\(goalAmount), reachedGoal=\(!isCompleted)")
         
