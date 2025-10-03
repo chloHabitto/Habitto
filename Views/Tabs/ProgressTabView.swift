@@ -179,362 +179,438 @@ struct ProgressTabView: View {
     }
     
     var body: some View {
-        // ✅ TEMPORARY: Simplified view to resolve compilation issues
-        VStack {
-            Text("Progress Tab")
-                .font(.title)
-            Text("Temporarily simplified due to type-checking complexity")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding()
-    }
-    
-    // ✅ TEMPORARY: Commented out complex view to resolve compilation issues
-    /*
-    var body: some View {
-        ZStack {
-            WhiteSheetContainer(
-                headerContent: {
-                    AnyView(headerContent)
-                }
-            ) {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Date Selection
-                        dateSelectionSection
-                        
-                        // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 1 {
-                            if getActiveHabits().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Weekly Progress Card (still show this)
-                                    weeklyProgressCard
-                                    
-                                    // Empty state instead of calendar grid and analysis card
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Weekly Progress Card
-                                    weeklyProgressCard
-                                    
-                                    // Weekly Calendar Grid and Stats Container
-                                    VStack(spacing: 0) {
-                                        // Weekly Calendar Grid
-                                        WeeklyCalendarGridView(
-                                            userHabits: getActiveHabits(),
-                                            selectedWeekStartDate: selectedWeekStartDate
-                                        )
-                                        
-                                        // Summary Statistics
-                                        WeeklySummaryStatsView(
-                                            completionRate: streakStatistics.completionRate,
-                                            bestStreak: streakStatistics.bestStreak,
-                                            consistencyRate: streakStatistics.consistencyRate
-                                        )
-                                        .padding(.horizontal, 16)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 16)
-                                    }
-                                    .background(Color.grey50)
-                                    .cornerRadius(24)
-                                    .entranceAnimation(delay: 0.2)
-                                    
-                                    // Weekly Analysis Card
-                                    weeklyAnalysisCard
-                                        .entranceAnimation(delay: 0.25)
-                                }
-                                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Weekly Content - Only show when individual habit is selected and "Weekly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 1 {
-                            VStack(spacing: 20) {
-                                // Weekly Difficulty Graph
-                                weeklyDifficultyGraph
-                                    .entranceAnimation(delay: 0.05)
-                                
-                                // Time Base Completion Chart
-                                timeBaseCompletionChart
-                                    .entranceAnimation(delay: 0.15)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Monthly Content - Only show when individual habit is selected and "Monthly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 2 {
-                            VStack(spacing: 20) {
-                                // Monthly Difficulty Graph
-                                monthlyDifficultyGraph
-                                    .entranceAnimation(delay: 0.1)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Monthly Content - Only show when "All habits" is selected and "Monthly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 2 {
-                            if getActiveHabitsForSelectedMonth().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Monthly Progress Card (still show this)
-                                    monthlyProgressCard
-                                    
-                                    // Empty state instead of calendar grid
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Monthly Progress Card
-                                    monthlyProgressCard
-                                        .entranceAnimation(delay: 0.05)
-                                    
-                                    // Monthly Calendar Grid
-                                    MonthlyCalendarGridView(
-                                        userHabits: getActiveHabitsForSelectedMonth(),
-                                        selectedMonth: selectedProgressDate
-                                        )
-                                        .entranceAnimation(delay: 0.15)
-                                    }
-                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Yearly Content - Only show when individual habit is selected and "Yearly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 3 {
-                            VStack(spacing: 20) {
-                                // Yearly Calendar Grid for individual habit
-                                YearlyCalendarGridView(
-                                    userHabits: [selectedHabit!],
-                                    selectedWeekStartDate: selectedWeekStartDate,
-                                    yearlyHeatmapData: yearlyHeatmapData,
-                                    isDataLoaded: isDataLoaded,
-                                    isLoadingProgress: isLoadingProgress,
-                                    selectedYear: selectedYear
-                                )
-                                .entranceAnimation(delay: 0.1)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 3 {
-                            if getActiveHabits().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Empty state for yearly view
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Yearly Calendar Grid
-                                    YearlyCalendarGridView(
-                                        userHabits: getActiveHabits(),
-                                        selectedWeekStartDate: selectedWeekStartDate,
-                                        yearlyHeatmapData: yearlyHeatmapData,
-                                        isDataLoaded: isDataLoaded,
-                                        isLoadingProgress: isLoadingProgress,
-                                        selectedYear: selectedYear
-                                    )
-                                    .entranceAnimation(delay: 0.1)
-                                }
-                                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Today's Progress Card - Show when "Daily" tab is active (both "All habits" and individual habits)
-                        if selectedTimePeriod == 0 {
-                            todayProgressCard
-                        }
-                        
-                        // Difficulty Section - Only show when individual habit is selected and scheduled for the date
-                        if selectedHabit != nil && selectedTimePeriod == 0 && getScheduledHabitsCount() > 0 {
-                            difficultySection
-                        }
-                        
-                        // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 0 {
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Header
-                HStack {
-                                Text("Reminders")
-                                    .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                    
-                                Button(action: {
-                                    showingAllReminders = true
-                                }) {
-                        HStack(spacing: 4) {
-                            Text("See more")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.text02)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.text02)
-                                    }
-                        }
-                    }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 20)
-                            .padding(.bottom, 16)
-            
-                            // Reminders Carousel - Only show active reminders
-                            if getActiveRemindersForDate(selectedProgressDate).isEmpty {
-                                // Empty state when no reminders
-                                VStack(spacing: 16) {
-                                    Image("Today-Habit-List-Empty-State@4x")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 120, height: 120)
-                                    
-                                    VStack(spacing: 4) {
-                                        Text("No reminders for today")
-                                            .font(.appTitleLargeEmphasised)
-                                            .foregroundColor(.text04)
-                                        
-                                        Text("You don't have any active reminders scheduled for this date")
-                                            .font(.appTitleSmall)
-                                            .foregroundColor(.text06)
-                                            .multilineTextAlignment(.center)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 0)
-                                .padding(.bottom, 40)
-                                .padding(.horizontal, 20)
-                            } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                                        ForEach(Array(getActiveRemindersForDate(selectedProgressDate).enumerated()), id: \.element.id) { index, reminder in
-                                            reminderCard(for: reminder)
-                                                .entranceAnimation(delay: Double(index) * 0.05)
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 20)
-                                }
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(Color.surface)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(Color.outline3, lineWidth: 1.0)
-                        )
-                        .padding(.horizontal, 20)
-                        }
-                        
-                        
-                    }
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
-                }
+        mainScrollContent
+            .sheet(isPresented: $showingHabitSelector) {
+                habitSelectorSheet
             }
-        }
-        .sheet(isPresented: $showingHabitSelector) {
-            habitSelectorSheet
-        }
-        .sheet(isPresented: $showingDatePicker) {
-            DatePickerModal(
-                isPresented: $showingDatePicker,
-                selectedDate: $selectedProgressDate
-            ) { newDate in
-                print("🔍 DEBUG: Date selected: \(newDate)")
-                selectedProgressDate = newDate
-            }
-            .presentationDetents([.height(520)])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingWeekPicker) {
-            WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
+            .sheet(isPresented: $showingDatePicker) {
+                DatePickerModal(
+                    isPresented: $showingDatePicker,
+                    selectedDate: $selectedProgressDate
+                ) { newDate in
+                    print("🔍 DEBUG: Date selected: \(newDate)")
+                    selectedProgressDate = newDate
+                }
                 .presentationDetents([.height(520)])
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(.regularMaterial)
                 .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingMonthPicker) {
-            MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
-                .presentationDetents([.height(450)])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(.regularMaterial)
-                .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingYearPicker) {
-            YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
-                .presentationDetents([.height(400), .large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(.regularMaterial)
-                .presentationCornerRadius(20)
-        }
-        .overlay(
-            // All Reminders Modal
-            showingAllReminders ? AnyView(
-                allRemindersModal
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingAllReminders)
-            ) : AnyView(EmptyView())
-        )
-        .onAppear {
-            // Calculate streak statistics when view appears
-            updateStreakStatistics()
-            
-            // Load yearly data when view appears
-            loadYearlyData()
-            
-        }
-        .onChange(of: habitRepository.habits) {
-            // Reload yearly data when habits change
-            loadYearlyData()
-        }
-        .onChange(of: selectedWeekStartDate) {
-            // Week changed - no action needed
-        }
-        .onChange(of: selectedYear) {
-            // Reload yearly data when year changes
-            loadYearlyData()
+            }
+            .sheet(isPresented: $showingWeekPicker) {
+                WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
+                    .presentationDetents([.height(520)])
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.regularMaterial)
+                    .presentationCornerRadius(20)
+            }
+            .sheet(isPresented: $showingMonthPicker) {
+                MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
+                    .presentationDetents([.height(450)])
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.regularMaterial)
+                    .presentationCornerRadius(20)
+            }
+            .sheet(isPresented: $showingYearPicker) {
+                YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
+                    .presentationDetents([.height(400), .large])
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.regularMaterial)
+                    .presentationCornerRadius(20)
+            }
+            .overlay(
+                // All Reminders Modal
+                showingAllReminders ? AnyView(
+                    allRemindersModal
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .animation(.easeInOut(duration: 0.3), value: showingAllReminders)
+                ) : AnyView(EmptyView())
+            )
+            .onAppear {
+                // Calculate streak statistics when view appears
+                updateStreakStatistics()
+                
+                // Load yearly data when view appears
+                loadYearlyData()
+            }
+            .onChange(of: habitRepository.habits) {
+                // Reload yearly data when habits change
+                loadYearlyData()
+            }
+            .onChange(of: selectedWeekStartDate) {
+                // Week changed - no action needed
+            }
+            .onChange(of: selectedYear) {
+                // Reload yearly data when year changes
+                loadYearlyData()
+            }
+    }
+    
+    // MARK: - Main Content Sections
+    
+    private var mainScrollContent: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Date Selection
+                dateSelectionSection
+                
+                // Content based on selection
+                contentForCurrentSelection
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 20)
         }
     }
     
-    // MARK: - Habit Selector Sheet
+    @ViewBuilder
+    private var contentForCurrentSelection: some View {
+        // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
+        if selectedHabit == nil && selectedTimePeriod == 1 {
+            weeklyAllHabitsContent
+        }
+        
+        // Weekly Content - Only show when individual habit is selected and "Weekly" tab is active
+        if selectedHabit != nil && selectedTimePeriod == 1 {
+            weeklyIndividualHabitContent
+        }
+        
+        // Monthly Content - Only show when individual habit is selected and "Monthly" tab is active
+        if selectedHabit != nil && selectedTimePeriod == 2 {
+            monthlyIndividualHabitContent
+        }
+        
+        // Monthly Content - Only show when "All habits" is selected and "Monthly" tab is active
+        if selectedHabit == nil && selectedTimePeriod == 2 {
+            monthlyAllHabitsContent
+        }
+        
+        // Yearly Content - Only show when individual habit is selected and "Yearly" tab is active
+        if selectedHabit != nil && selectedTimePeriod == 3 {
+            yearlyIndividualHabitContent
+        }
+        
+        // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
+        if selectedHabit == nil && selectedTimePeriod == 3 {
+            yearlyAllHabitsContent
+        }
+        
+        // Daily Content - Only show when "All habits" is selected and "Daily" tab is active
+        if selectedHabit == nil && selectedTimePeriod == 0 {
+            dailyAllHabitsContent
+        }
+        
+        // Daily Content - Only show when individual habit is selected and "Daily" tab is active
+        if selectedHabit != nil && selectedTimePeriod == 0 {
+            dailyIndividualHabitContent
+        }
+    }
+    
+    @ViewBuilder
+    private var weeklyAllHabitsContent: some View {
+        if getActiveHabits().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Weekly Progress Card (still show this)
+                weeklyProgressCard
+                
+                // Empty state instead of calendar grid and analysis card
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Weekly Progress Card
+                weeklyProgressCard
+                
+                // Weekly Calendar Grid and Stats Container
+                VStack(spacing: 0) {
+                    // Weekly Calendar Grid
+                    WeeklyCalendarGridView(
+                        userHabits: getActiveHabits(),
+                        selectedWeekStartDate: selectedWeekStartDate
+                    )
+                    
+                    // Summary Statistics
+                    WeeklySummaryStatsView(
+                        completionRate: Int((Double(streakStatistics.totalCompletionDays) / Double(max(getScheduledHabitsCount(), 1))) * 100),
+                        bestStreak: streakStatistics.longestStreak,
+                        consistencyRate: Int(streakStatistics.streakPercentage * 100)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                }
+                .background(Color.grey50)
+                .cornerRadius(24)
+                .entranceAnimation(delay: 0.2)
+                
+                // Weekly Analysis Card
+                weeklyAnalysisCard
+                    .entranceAnimation(delay: 0.25)
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var weeklyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Weekly Difficulty Graph
+            weeklyDifficultyGraph
+                .entranceAnimation(delay: 0.05)
+            
+            // Time Base Completion Chart
+            timeBaseCompletionChart
+                .entranceAnimation(delay: 0.15)
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
+    private var monthlyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Monthly Difficulty Graph
+            monthlyDifficultyGraph
+                .entranceAnimation(delay: 0.1)
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
+    private var monthlyAllHabitsContent: some View {
+        if getActiveHabitsForSelectedMonth().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Monthly Progress Card (still show this)
+                monthlyProgressCard
+                
+                // Empty state instead of calendar grid
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Monthly Progress Card
+                monthlyProgressCard
+                    .entranceAnimation(delay: 0.05)
+                
+                // Monthly Calendar Grid
+                MonthlyCalendarGridView(
+                    userHabits: getActiveHabitsForSelectedMonth(),
+                    selectedMonth: selectedProgressDate
+                )
+                .entranceAnimation(delay: 0.15)
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var yearlyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Yearly Calendar Grid for individual habit
+            YearlyCalendarGridView(
+                userHabits: [selectedHabit!],
+                selectedWeekStartDate: selectedWeekStartDate,
+                yearlyHeatmapData: yearlyHeatmapData,
+                isDataLoaded: isDataLoaded,
+                isLoadingProgress: isLoadingProgress,
+                selectedYear: selectedYear
+            )
+            .entranceAnimation(delay: 0.1)
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
+    private var yearlyAllHabitsContent: some View {
+        if getActiveHabits().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Empty state for yearly view
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Yearly Calendar Grid
+                YearlyCalendarGridView(
+                    userHabits: getActiveHabits(),
+                    selectedWeekStartDate: selectedWeekStartDate,
+                    yearlyHeatmapData: yearlyHeatmapData,
+                    isDataLoaded: isDataLoaded,
+                    isLoadingProgress: isLoadingProgress,
+                    selectedYear: selectedYear
+                )
+                .entranceAnimation(delay: 0.1)
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var dailyAllHabitsContent: some View {
+        VStack(spacing: 20) {
+            // Daily Progress Card
+            dailyProgressCard
+                .entranceAnimation(delay: 0.05)
+            
+            // Reminders Section
+            remindersSection
+                .entranceAnimation(delay: 0.1)
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
+    private var dailyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Individual habit daily content
+            if let selectedHabit = selectedHabit {
+                // Habit-specific daily view
+                VStack(spacing: 16) {
+                    // Habit completion status
+                    habitCompletionStatus(for: selectedHabit)
+                    
+                    // Habit difficulty section
+                    difficultySection
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Missing Computed Properties
+    
+    @ViewBuilder
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("Reminders")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingAllReminders = true
+                }) {
+                    HStack(spacing: 4) {
+                        Text("See more")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.text02)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            
+            // Reminders Carousel - Only show active reminders
+            if getActiveRemindersForDate(selectedProgressDate).isEmpty {
+                // Empty state when no reminders
+                VStack(spacing: 16) {
+                    Image("Today-Habit-List-Empty-State@4x")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                    
+                    VStack(spacing: 4) {
+                        Text("No reminders for today")
+                            .font(.appTitleLargeEmphasised)
+                            .foregroundColor(.text04)
+                        
+                        Text("You don't have any active reminders scheduled for this date")
+                            .font(.appTitleSmall)
+                            .foregroundColor(.text06)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 0)
+                .padding(.bottom, 40)
+                .padding(.horizontal, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(Array(getActiveRemindersForDate(selectedProgressDate).enumerated()), id: \.element.id) { index, reminder in
+                            reminderCard(for: reminder)
+                                .entranceAnimation(delay: Double(index) * 0.05)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0)
+        )
+        .padding(.horizontal, 20)
+    }
+    
+    @ViewBuilder
+    private func habitCompletionStatus(for habit: Habit) -> some View {
+        VStack(spacing: 16) {
+            Text("Habit Status")
+                .font(.appTitleMedium)
+                .foregroundColor(.onPrimaryContainer)
+            
+            // Add habit completion status UI here
+            Text("Completion status for \(habit.name)")
+                .font(.appBodyMedium)
+                .foregroundColor(.text02)
+        }
+        .padding()
+        .background(Color.surface)
+        .cornerRadius(16)
+    }
+    
+    private var dailyProgressCard: some View {
+        // Use the existing todayProgressCard as the daily progress card
+        todayProgressCard
+    }
+    
     private var habitSelectorSheet: some View {
         NavigationView {
             VStack(spacing: 0) {
                 habitSelectorHeader
-                allHabitsOption
-                habitList
-                Spacer()
+                
+                ScrollView {
+                    VStack(spacing: 0) {
+                        allHabitsOption
+                        habitList
+                    }
+                }
             }
-            .background(Color(.systemBackground))
         }
         .presentationDetents([.medium, .large])
     }
     
+    // MARK: - Habit Selector Sheet
     private var habitSelectorHeader: some View {
-                                            HStack {
+        HStack {
             Text("Select Habit")
                 .font(.appTitleLarge)
                 .foregroundColor(.onPrimaryContainer)
@@ -2292,7 +2368,7 @@ struct ProgressTabView: View {
         }
         
         let totalDifficulty = scheduledHabits.reduce(0.0) { total, habit in
-            let dateKey = Self.dateKey(for: date)
+            let dateKey = getDateKey(for: date)
             if let difficulty = habit.difficultyHistory[dateKey] {
                 return total + Double(difficulty)
             } else {
@@ -2340,7 +2416,7 @@ struct ProgressTabView: View {
     
     private func getIndividualHabitDifficulty(for habit: Habit, on date: Date) -> IndividualHabitDifficultyData {
         // Get difficulty directly from habit's difficulty history
-        let dateKey = Self.dateKey(for: date)
+        let dateKey = getDateKey(for: date)
         
         if let difficulty = habit.difficultyHistory[dateKey] {
             let difficultyDouble = Double(difficulty)
@@ -2362,12 +2438,6 @@ struct ProgressTabView: View {
         }
     }
     
-    // Helper function to get date key (same as in Habit model)
-    private static func dateKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
-    }
     
     // MARK: - Individual Habit Difficulty Section
     private var difficultySection: some View {
@@ -4849,9 +4919,6 @@ struct WeeklySummaryStatsView: View {
         .background(.surfaceContainer)
         .cornerRadius(16)
     }
-}
-*/
-
 }
 
 #Preview {

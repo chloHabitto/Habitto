@@ -51,20 +51,6 @@ struct HabitDetailView: View {
     }
     
     var body: some View {
-        // ✅ TEMPORARY: Simplified view to resolve compilation issues
-        VStack {
-            Text("Habit Detail")
-                .font(.title)
-            Text("Temporarily simplified due to type-checking complexity")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding()
-    }
-    
-    // ✅ TEMPORARY: Commented out complex view to resolve compilation issues
-    /*
-    var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 // Background
@@ -243,13 +229,12 @@ struct HabitDetailView: View {
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: yesterday,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak,
                     createdAt: habit.createdAt,
                     reminders: habit.reminders,
                     baseline: habit.baseline,
                     target: habit.target,
                     completionHistory: habit.completionHistory,
+                    completionTimestamps: habit.completionTimestamps,
                     difficultyHistory: habit.difficultyHistory,
                     actualUsage: habit.actualUsage
                 )
@@ -1115,9 +1100,6 @@ struct ReminderEditSheet: View {
         
         dismiss()
     }
-}
-*/
-
 }
 
 #Preview {
