@@ -399,6 +399,9 @@ final actor HabitStore {
             
             // ✅ PHASE 4: Streaks are now computed-only, no need to update them
             
+            // ✅ FIX: Create CompletionRecord entries for SwiftData queries
+            await createCompletionRecordIfNeeded(habit: currentHabits[index], date: date, dateKey: dateKey, progress: progress)
+            
             try await saveHabits(currentHabits)
             logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
             
@@ -679,5 +682,53 @@ final actor HabitStore {
         // Note: The storage implementations will handle their own cache clearing
         
         logger.info("All habits cleared successfully")
+    }
+    
+    // MARK: - CompletionRecord Management
+    
+    /// Creates or updates CompletionRecord entries for SwiftData queries
+    private func createCompletionRecordIfNeeded(habit: Habit, date: Date, dateKey: String, progress: Int) async {
+        let userId = await CurrentUser().idOrGuest
+        
+        do {
+            // Get model context on main actor to avoid sendable issues
+            let modelContext = await MainActor.run {
+                SwiftDataContainer.shared.modelContext
+            }
+            
+            // Check if CompletionRecord already exists
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId && 
+                record.habitId == habit.id && 
+                record.dateKey == dateKey
+            }
+            let request = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            let existingRecords: [CompletionRecord] = try modelContext.fetch(request)
+            
+            let isCompleted = progress > 0
+            
+            if let existingRecord = existingRecords.first {
+                // Update existing record
+                existingRecord.isCompleted = isCompleted
+                logger.info("Updated CompletionRecord for habit '\(habit.name)' on \(dateKey): completed=\(isCompleted)")
+            } else {
+                // Create new record
+                let completionRecord = CompletionRecord(
+                    userId: userId,
+                    habitId: habit.id,
+                    date: date,
+                    dateKey: dateKey,
+                    isCompleted: isCompleted
+                )
+                modelContext.insert(completionRecord)
+                logger.info("Created CompletionRecord for habit '\(habit.name)' on \(dateKey): completed=\(isCompleted)")
+            }
+            
+            // Save the context
+            try modelContext.save()
+            
+        } catch {
+            logger.error("Failed to create/update CompletionRecord: \(error)")
+        }
     }
 }
