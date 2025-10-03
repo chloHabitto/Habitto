@@ -743,10 +743,18 @@ final actor HabitStore {
           logger.error("❌ createCompletionRecordIfNeeded: Failed to create/update CompletionRecord: \(error)")
           logger.error("❌ createCompletionRecordIfNeeded: Error details: \(error.localizedDescription)")
           
-          // ✅ CRITICAL FIX: If database is corrupted, reset it
+          // ✅ CRITICAL FIX: If database is corrupted, handle gracefully
           if error.localizedDescription.contains("no such table") || error.localizedDescription.contains("ZCOMPLETIONRECORD") {
-              logger.error("🔧 HabitStore: Database corruption detected, resetting database...")
+              logger.error("🔧 HabitStore: Database corruption detected!")
+              logger.error("🔧 HabitStore: Error: \(error.localizedDescription)")
+              
+              // Mark this habit as having a database issue
               await MainActor.run {
+                  // The progress is already stored in the habit's completionHistory 
+                  // in the setProgress method above, so no need to set it again here
+                  logger.info("🔧 HabitStore: Fallback: Progress \(progress) already stored in habit.completionHistory for \(dateKey)")
+                  
+                  // Reset the corrupted database for next app launch
                   SwiftDataContainer.shared.resetCorruptedDatabase()
               }
           }
