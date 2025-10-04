@@ -130,31 +130,12 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                             .environmentObject(themeManager)
-                            .registerPopups(id: .shared) { config in
-                                config
-                                    .vertical { $0
-                                        .enableDragGesture(true)
-                                        .tapOutsideToDismissPopup(true)
-                                        .cornerRadius(20)
-                                    }
-                                    .center { $0
-                                        .tapOutsideToDismissPopup(false)
-                                        .backgroundColor(.black.opacity(0.4))
-                                    }
-                            }
+                            // MijickPopups removed - using native sheets
                             .onChange(of: authManager.authState) { oldState, newState in
                                 handleAuthStateChange(oldState: oldState, newState: newState, modelContext: modelContext)
                             }
-                        
-                        // DISABLED: Migration view completely disabled per user request
-                        // if habitRepository.shouldShowMigrationView {
-                        //     NavigationView {
-                        //         GuestDataMigrationView()
-                        //     }
-                        //     .zIndex(1)
-                        // }
                     }
-                        .onAppear {
+                    .onAppear {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
                             

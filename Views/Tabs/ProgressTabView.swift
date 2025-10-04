@@ -93,7 +93,7 @@ struct ProgressTabView: View {
     @State private var selectedHabit: Habit?
     @State private var selectedProgressDate = Date()
     @State private var showingHabitSelector = false
-    // showingDatePicker removed - now using MijickPopups
+    @State private var showingDatePicker = false
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
@@ -479,31 +479,40 @@ struct ProgressTabView: View {
         .sheet(isPresented: $showingHabitSelector) {
             habitSelectorSheet
         }
-        // Date picker now uses MijickPopups - no overlay needed
-        .overlay(
-            // Week Picker Modal
-            showingWeekPicker ? AnyView(
-                WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
-            ) : AnyView(EmptyView())
-        )
-        .overlay(
-            // Month Picker Modal
-            showingMonthPicker ? AnyView(
-                MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
-            ) : AnyView(EmptyView())
-        )
-        .overlay(
-            // Year Picker Modal
-            showingYearPicker ? AnyView(
-                YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingYearPicker)
-            ) : AnyView(EmptyView())
-        )
+        .sheet(isPresented: $showingDatePicker) {
+            DatePickerModal(
+                isPresented: $showingDatePicker,
+                selectedDate: $selectedProgressDate
+            ) { newDate in
+                print("🔍 DEBUG: Date selected: \(newDate)")
+                selectedProgressDate = newDate
+            }
+            .presentationDetents([.height(520)])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.regularMaterial)
+            .presentationCornerRadius(20)
+        }
+        .sheet(isPresented: $showingWeekPicker) {
+            WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
+                .presentationDetents([.height(520)])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.regularMaterial)
+                .presentationCornerRadius(20)
+        }
+        .sheet(isPresented: $showingMonthPicker) {
+            MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
+                .presentationDetents([.height(520)])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.regularMaterial)
+                .presentationCornerRadius(20)
+        }
+        .sheet(isPresented: $showingYearPicker) {
+            YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
+                .presentationDetents([.height(400)])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.regularMaterial)
+                .presentationCornerRadius(20)
+        }
         .overlay(
             // All Reminders Modal
             showingAllReminders ? AnyView(
@@ -532,6 +541,7 @@ struct ProgressTabView: View {
             loadYearlyData()
         }
     }
+    
     
     // MARK: - Habit Selector Sheet
     private var habitSelectorSheet: some View {
@@ -808,20 +818,19 @@ struct ProgressTabView: View {
             if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 || selectedTimePeriod == 3 {
                 HStack {
                                         Button(action: {
-                        if selectedTimePeriod == 0 { // Daily
-                            // Use MijickPopups for date selection
-                            Task {
-                                await DatePickerPopup(selectedDate: $selectedProgressDate) { date in
-                                    print("📅 Date selected: \(date)")
-                                }
-                                .present()
+                        Task {
+                            if selectedTimePeriod == 0 { // Daily
+                                print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
+                                print("🔍 DEBUG: Attempting to show DatePickerModal...")
+                                showingDatePicker = true
+                                print("🔍 DEBUG: DatePickerModal showing set to true")
+                            } else if selectedTimePeriod == 1 { // Weekly
+                                showingWeekPicker = true
+                            } else if selectedTimePeriod == 2 { // Monthly
+                                showingMonthPicker = true
+                            } else if selectedTimePeriod == 3 { // Yearly
+                                showingYearPicker = true
                             }
-                        } else if selectedTimePeriod == 1 { // Weekly
-                            showingWeekPicker = true
-                        } else if selectedTimePeriod == 2 { // Monthly
-                            showingMonthPicker = true
-                        } else if selectedTimePeriod == 3 { // Yearly
-                            showingYearPicker = true
                         }
                     }) {
                         HStack(spacing: 8) {

@@ -9,6 +9,7 @@ struct DatePickerPopup: BottomPopup {
     @State private var currentMonth: Date = Date()
     
     init(selectedDate: Binding<Date>, onDateSelected: @escaping (Date) -> Void) {
+        print("📅 DatePickerPopup: Initializing with date: \(selectedDate.wrappedValue)")
         self._selectedDate = selectedDate
         self.onDateSelected = onDateSelected
         self._tempSelectedDate = State(initialValue: selectedDate.wrappedValue)
@@ -17,6 +18,13 @@ struct DatePickerPopup: BottomPopup {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Drag Handle
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(Color.text03)
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+            
             // Header
             HStack {
                 Button("Cancel") {
@@ -24,6 +32,10 @@ struct DatePickerPopup: BottomPopup {
                 }
                 .font(.appButtonText1)
                 .foregroundColor(.text02)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.surfaceContainer)
+                .cornerRadius(12)
                 
                 Spacer()
                 
@@ -37,11 +49,14 @@ struct DatePickerPopup: BottomPopup {
                     confirmSelection()
                 }
                 .font(.appButtonText1)
-                .foregroundColor(.primary)
+                .foregroundColor(.onPrimary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.primary)
+                .cornerRadius(12)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 20)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
             
             // Custom Calendar
             VStack(spacing: 16) {
@@ -49,39 +64,52 @@ struct DatePickerPopup: BottomPopup {
                 HStack {
                     Button(action: { changeMonth(by: -1) }) {
                         Image(systemName: "chevron.left")
-                            .foregroundColor(.text01)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                             .frame(width: 44, height: 44)
+                            .background(Color.surfaceContainer)
+                            .clipShape(Circle())
                     }
                     
                     Spacer()
                     
                     Text(monthYearString)
-                        .font(.appHeadlineMedium)
+                        .font(.appTitleMediumEmphasised)
                         .foregroundColor(.text01)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.surfaceContainer)
+                        .cornerRadius(12)
                     
                     Spacer()
                     
                     Button(action: { changeMonth(by: 1) }) {
                         Image(systemName: "chevron.right")
-                            .foregroundColor(.text01)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                             .frame(width: 44, height: 44)
+                            .background(Color.surfaceContainer)
+                            .clipShape(Circle())
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 
                 // Weekday headers
                 HStack {
                     ForEach(weekdayHeaders, id: \.self) { day in
                         Text(day)
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text04)
+                            .font(.appBodySmall)
+                            .fontWeight(.medium)
+                            .foregroundColor(.text02)
                             .frame(maxWidth: .infinity)
+                            .frame(height: 32)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
                 
                 // Calendar grid
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 12) {
                     ForEach(Array(calendarDays.enumerated()), id: \.offset) { index, date in
                         if let date = date {
                             DatePickerCalendarDayView(
@@ -99,12 +127,14 @@ struct DatePickerPopup: BottomPopup {
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 
                 // Reset to today button
                 if !isTodaySelected {
                     Button(action: {
-                        resetToToday()
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            resetToToday()
+                        }
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "arrow.clockwise")
@@ -112,10 +142,14 @@ struct DatePickerPopup: BottomPopup {
                             Text("Reset to today")
                                 .font(.appBodyMedium)
                         }
-                        .foregroundColor(.text02)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.surfaceContainer)
+                        .cornerRadius(12)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.top, 20)
                 }
             }
@@ -123,31 +157,51 @@ struct DatePickerPopup: BottomPopup {
             Spacer(minLength: 0)
             
             // Selected date display - always at bottom
-            Button(action: {
-                confirmSelection()
-            }) {
-                VStack(spacing: 8) {
+            VStack(spacing: 12) {
+                // Selected date info
+                VStack(spacing: 4) {
                     Text("Selected Date")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.surface)
+                        .font(.appBodySmall)
+                        .foregroundColor(.text02)
                     
                     Text(dateText(from: tempSelectedDate))
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.surface)
+                        .font(.appTitleLargeEmphasised)
+                        .foregroundColor(.text01)
+                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.primary)
-                .cornerRadius(20)
+                .padding(.horizontal, 24)
+                
+                // Confirm button
+                Button(action: {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        confirmSelection()
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Confirm Selection")
+                            .font(.appButtonText1)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(.onPrimary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.primary)
+                    .cornerRadius(16)
+                }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 520)
+        .frame(height: 400) // Reduced height to ensure it fits
         .onAppear {
+            print("📅 DatePickerPopup: onAppear called - popup should be visible now")
+            print("📅 DatePickerPopup: Current month set to: \(currentMonth)")
             currentMonth = tempSelectedDate
         }
+        .background(Color.surface) // Ensure background is set
     }
     
     // MARK: - Helper Functions
@@ -227,9 +281,11 @@ struct DatePickerPopup: BottomPopup {
     
     func configurePopup(config: BottomPopupConfig) -> BottomPopupConfig {
         config
-            .cornerRadius(20)
+            .cornerRadius(24)
             .tapOutsideToDismissPopup(true)
             .enableDragGesture(true)
+            .heightMode(.auto)
+            .backgroundColor(.black.opacity(0.4))
     }
 }
 
@@ -248,23 +304,27 @@ struct DatePickerCalendarDayView: View {
                 if isSelected {
                     Circle()
                         .fill(Color.primary)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 36, height: 36)
+                        .shadow(color: .primary.opacity(0.3), radius: 4, x: 0, y: 2)
                 } else if isToday {
                     Circle()
                         .stroke(Color.primary, lineWidth: 2)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 36, height: 36)
                 }
                 
                 // Date text
                 Text("\(Calendar.current.component(.day, from: date))")
-                    .font(.appBodySmall)
+                    .font(.appBodyMedium)
+                    .fontWeight(isSelected ? .semibold : .regular)
                     .foregroundColor(
-                        isSelected ? .surface :
+                        isSelected ? .onPrimary :
                         isToday ? .primary :
-                        isCurrentMonth ? .text01 : .text04
+                        isCurrentMonth ? .text01 : .text03
                     )
             }
-            .frame(width: 40, height: 40)
+            .frame(width: 44, height: 44)
+            .scaleEffect(isSelected ? 1.1 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
