@@ -81,7 +81,7 @@ struct MonthPickerModal: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.primary)
-                    .cornerRadius(24)
+                    .cornerRadius(32)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)

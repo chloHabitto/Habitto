@@ -102,7 +102,7 @@ struct StreakView: View {
             .presentationDetents([.height(520)])
             .presentationDragIndicator(.hidden)
             .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(20)
+            .presentationCornerRadius(32)
         }
         .sheet(isPresented: $showingMonthPicker) {
             MonthPickerModal(
@@ -112,7 +112,7 @@ struct StreakView: View {
             .presentationDetents([.height(450)])
             .presentationDragIndicator(.hidden)
             .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(20)
+            .presentationCornerRadius(32)
         }
         .sheet(isPresented: $showingYearPicker) {
             YearPickerModal(
@@ -122,7 +122,7 @@ struct StreakView: View {
             .presentationDetents([.height(400), .large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(20)
+            .presentationCornerRadius(32)
         }
     }
     
