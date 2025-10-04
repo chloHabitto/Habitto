@@ -1,5 +1,4 @@
 import SwiftUI
-import ViewAnimator
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
@@ -97,7 +96,6 @@ struct ProgressTabView: View {
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
-    @State private var contentAppeared = false
     @State private var selectedWeekStartDate: Date = {
         let calendar = AppDateFormatter.shared.getUserCalendar()
         let today = Date()
@@ -173,234 +171,296 @@ struct ProgressTabView: View {
                             let impactFeedback = UISelectionFeedbackGenerator()
                             impactFeedback.selectionChanged()
                         }
-                        .padding(.top, 16)
+            .padding(.top, 16)
                         .padding(.bottom, 0)
                     }
     }
     
-    // MARK: - Progress Cards
-    private var todayProgressCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Today's Progress")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            if habits.isEmpty {
-                Text("No habits created yet")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
-            } else {
-                let todayProgress = calculateTodayProgress()
-                Text("\(Int(todayProgress * 100))% complete")
-                    .font(.appTitleLarge)
-                    .foregroundColor(.primary)
-            }
-        }
-        .padding(20)
-        .background(Color.grey50)
-        .cornerRadius(16)
-    }
+    // MARK: - Weekly Content Views
     
-    private var weeklyProgressCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("This Week's Progress")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            if habits.isEmpty {
-                Text("No habits created yet")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
-            } else {
-                let weeklyProgress = calculateWeeklyProgress()
-                Text("\(Int(weeklyProgress * 100))% complete")
-                    .font(.appTitleLarge)
-                    .foregroundColor(.primary)
-            }
-        }
-        .padding(20)
-        .background(Color.grey50)
-        .cornerRadius(16)
-    }
-    
-    private var habitSelectorSheet: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Select Habit")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    
-                    Spacer()
-                    
-                    Button("Cancel") {
-                        showingHabitSelector = false
-                    }
-                    .foregroundColor(.primary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+    @ViewBuilder
+    private var weeklyAllHabitsContent: some View {
+        if getActiveHabits().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Weekly Progress Card (still show this)
+                weeklyProgressCard
                 
-                // All habits option
+                // Empty state instead of calendar grid and analysis card
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Weekly Progress Card
+                weeklyProgressCard
+                
+                // Weekly Calendar Grid and Stats Container
+                VStack(spacing: 0) {
+                    // Weekly Calendar Grid
+                    WeeklyCalendarGridView(
+                        userHabits: getActiveHabits(),
+                        selectedWeekStartDate: selectedWeekStartDate
+                    )
+                    
+                    // Summary Statistics
+                    WeeklySummaryStatsView(
+                        completionRate: 0,
+                        bestStreak: streakStatistics.longestStreak,
+                        consistencyRate: 0
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                }
+                .background(Color.grey50)
+                .cornerRadius(24)
+                
+                // Weekly Analysis Card
+                weeklyAnalysisCard
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var weeklyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Weekly Difficulty Graph
+            weeklyDifficultyGraph
+            
+            // Time Base Completion Chart
+            timeBaseCompletionChart
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Monthly Content Views
+    
+    @ViewBuilder
+    private var monthlyAllHabitsContent: some View {
+        if getActiveHabitsForSelectedMonth().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Monthly Progress Card (still show this)
+                monthlyProgressCard
+                
+                // Empty state instead of calendar grid
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Monthly Progress Card
+                monthlyProgressCard
+                
+                // Monthly Calendar Grid
+                MonthlyCalendarGridView(
+                    userHabits: getActiveHabitsForSelectedMonth(),
+                    selectedMonth: selectedProgressDate
+                )
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var monthlyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Monthly Difficulty Graph
+            monthlyDifficultyGraph
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Yearly Content Views
+    
+    @ViewBuilder
+    private var yearlyAllHabitsContent: some View {
+        if getActiveHabits().isEmpty {
+            // Show empty state when no habits exist
+            VStack(spacing: 20) {
+                // Empty state for yearly view
+                HabitEmptyStateView.noHabitsYet()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 40)
+                    .padding(.bottom, 60)
+            }
+            .padding(.horizontal, 20)
+        } else {
+            // Show normal content when habits exist
+            VStack(spacing: 20) {
+                // Yearly Calendar Grid
+                YearlyCalendarGridView(
+                    userHabits: getActiveHabits(),
+                    selectedWeekStartDate: selectedWeekStartDate,
+                    yearlyHeatmapData: yearlyHeatmapData,
+                    isDataLoaded: isDataLoaded,
+                    isLoadingProgress: isLoadingProgress,
+                    selectedYear: selectedYear
+                )
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    @ViewBuilder
+    private var yearlyIndividualHabitContent: some View {
+        VStack(spacing: 20) {
+            // Yearly Calendar Grid for individual habit
+            YearlyCalendarGridView(
+                userHabits: [selectedHabit!],
+                selectedWeekStartDate: selectedWeekStartDate,
+                yearlyHeatmapData: yearlyHeatmapData,
+                isDataLoaded: isDataLoaded,
+                isLoadingProgress: isLoadingProgress,
+                selectedYear: selectedYear
+            )
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Reminders Section
+    
+    @ViewBuilder
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("Reminders")
+                    .font(.appTitleMediumEmphasised)
+                    .foregroundColor(.onPrimaryContainer)
+                
+                Spacer()
+                
                 Button(action: {
-                    selectedHabit = nil
-                    showingHabitSelector = false
+                    showingAllReminders = true
                 }) {
-                    HStack {
-                        Text("All habits")
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        if selectedHabit == nil {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.primary)
+                    HStack(spacing: 4) {
+                        Text("See more")
+                            .font(.appBodySmall)
+                            .foregroundColor(.text02)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.text02)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+            
+            // Reminders Carousel - Only show active reminders
+            if getActiveRemindersForDate(selectedProgressDate).isEmpty {
+                // Empty state when no reminders
+                VStack(spacing: 16) {
+                    Image("Today-Habit-List-Empty-State@4x")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                    
+                    VStack(spacing: 4) {
+                        Text("No reminders for today")
+                            .font(.appTitleLargeEmphasised)
+                            .foregroundColor(.text04)
+                        
+                        Text("You don't have any active reminders scheduled for this date")
+                            .font(.appTitleSmall)
+                            .foregroundColor(.text06)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 0)
+                .padding(.bottom, 40)
+                .padding(.horizontal, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(getActiveRemindersForDate(selectedProgressDate), id: \.id) { reminder in
+                            reminderCard(for: reminder)
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                }
-                
-                Divider()
-                
-                // Individual habits
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(habits, id: \.id) { habit in
-                            Button(action: {
-                                selectedHabit = habit
-                                showingHabitSelector = false
-                            }) {
-                                HStack {
-                                    Text(habit.name)
-                                        .font(.appBodyLarge)
-                                        .foregroundColor(.text01)
-                                    Spacer()
-                                    if selectedHabit?.id == habit.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.primary)
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                            }
-                            
-                            if habit.id != habits.last?.id {
-                                Divider()
-                            }
-                        }
-                    }
-                }
-            }
-            .background(Color.white)
-            .cornerRadius(16, corners: [.topLeft, .topRight])
-        }
-    }
-    
-    // MARK: - Helper Functions
-    private func loadProgressData() {
-        // Load streak statistics using the correct calculator
-        let allHabits = habits
-        if !allHabits.isEmpty {
-            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: allHabits)
-        } else {
-            streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
-        }
-    }
-    
-    private func calculateTodayProgress() -> Double {
-        let today = Date()
-        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
-        
-        guard !habitsToCheck.isEmpty else { return 0.0 }
-        
-        var completedHabits = 0
-        var totalScheduledHabits = 0
-        
-        for habit in habitsToCheck {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
-                totalScheduledHabits += 1
-                if habit.isCompleted(for: today) {
-                    completedHabits += 1
+                    .padding(.bottom, 20)
                 }
             }
         }
-        
-        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0)
+        )
+        .padding(.horizontal, 20)
     }
     
-    private func calculateWeeklyProgress() -> Double {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
-        
-        guard !habitsToCheck.isEmpty else { return 0.0 }
-        
-        var totalCompletions = 0
-        var totalPossibleCompletions = 0
-        
-        // Check each day of the week
-        for dayOffset in 0..<7 {
-            guard let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
+    // MARK: - Main Content View
+    
+    @ViewBuilder
+    private var mainContentView: some View {
+        VStack(spacing: 20) {
+            // Date Selection
+            dateSelectionSection
             
-            for habit in habitsToCheck {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
-                    totalPossibleCompletions += 1
-                    if habit.isCompleted(for: currentDay) {
-                        totalCompletions += 1
-                    }
-                }
+            // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
+            if selectedHabit == nil && selectedTimePeriod == 1 {
+                weeklyAllHabitsContent
             }
-        }
-        
-        return totalPossibleCompletions > 0 ? Double(totalCompletions) / Double(totalPossibleCompletions) : 0.0
-    }
-    
-    var body: some View {
-        WhiteSheetContainer(
-            headerContent: {
-                AnyView(headerContent)
+            
+            // Weekly Content - Only show when individual habit is selected and "Weekly" tab is active
+            if selectedHabit != nil && selectedTimePeriod == 1 {
+                weeklyIndividualHabitContent
             }
-        ) {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Basic progress content
-                    VStack(spacing: 16) {
-                        Text("Progress Overview")
-                            .font(.appTitleLarge)
-                            .foregroundColor(.text01)
-                        
-                        if habits.isEmpty {
-                            HabitEmptyStateView.noHabitsYet()
-                                .padding(.top, 40)
-                        } else {
-                            // Show basic progress cards
-                            VStack(spacing: 16) {
-                                // Today's Progress Card
-                                todayProgressCard
-                                
-                                // Weekly Progress Card  
-                                weeklyProgressCard
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                    }
-                    .padding(.top, 20)
-                }
-                .padding(.bottom, 40)
+            
+            // Monthly Content - Only show when individual habit is selected and "Monthly" tab is active
+            if selectedHabit != nil && selectedTimePeriod == 2 {
+                monthlyIndividualHabitContent
             }
-        }
-        .sheet(isPresented: $showingHabitSelector) {
-            habitSelectorSheet
-        }
-        .onAppear {
-            loadProgressData()
+            
+            // Monthly Content - Only show when "All habits" is selected and "Monthly" tab is active
+            if selectedHabit == nil && selectedTimePeriod == 2 {
+                monthlyAllHabitsContent
+            }
+            
+            // Yearly Content - Only show when individual habit is selected and "Yearly" tab is active
+            if selectedHabit != nil && selectedTimePeriod == 3 {
+                yearlyIndividualHabitContent
+            }
+            
+            // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
+            if selectedHabit == nil && selectedTimePeriod == 3 {
+                yearlyAllHabitsContent
+            }
+            
+            // Today's Progress Card - Show when "Daily" tab is active (both "All habits" and individual habits)
+            if selectedTimePeriod == 0 {
+                todayProgressCard
+            }
+            
+            // Difficulty Section - Only show when individual habit is selected and scheduled for the date
+            if selectedHabit != nil && selectedTimePeriod == 0 && getScheduledHabitsCount() > 0 {
+                difficultySection
+            }
+            
+            // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
+            if selectedHabit == nil && selectedTimePeriod == 0 {
+                remindersSection
+            }
         }
     }
     
-    // ✅ TEMPORARY: Commented out complex view to resolve compilation issues
-    /*
     var body: some View {
         ZStack {
             WhiteSheetContainer(
@@ -409,296 +469,49 @@ struct ProgressTabView: View {
                 }
             ) {
                 ScrollView {
-                    VStack(spacing: 20) {
-                        // Date Selection
-                        dateSelectionSection
-                        
-                        // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 1 {
-                            if getActiveHabits().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Weekly Progress Card (still show this)
-                                    weeklyProgressCard
-                                    
-                                    // Empty state instead of calendar grid and analysis card
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Weekly Progress Card
-                                    weeklyProgressCard
-                                    
-                                    // Weekly Calendar Grid and Stats Container
-                                    VStack(spacing: 0) {
-                                        // Weekly Calendar Grid
-                                        WeeklyCalendarGridView(
-                                            userHabits: getActiveHabits(),
-                                            selectedWeekStartDate: selectedWeekStartDate
-                                        )
-                                        
-                                        // Summary Statistics
-                                        WeeklySummaryStatsView(
-                                            completionRate: streakStatistics.completionRate,
-                                            bestStreak: streakStatistics.bestStreak,
-                                            consistencyRate: streakStatistics.consistencyRate
-                                        )
-                                        .padding(.horizontal, 16)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 16)
-                                    }
-                                    .background(Color.grey50)
-                                    .cornerRadius(24)
-                                    .entranceAnimation(delay: 0.2)
-                                    
-                                    // Weekly Analysis Card
-                                    weeklyAnalysisCard
-                                        .entranceAnimation(delay: 0.25)
-                                }
-                                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Weekly Content - Only show when individual habit is selected and "Weekly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 1 {
-                            VStack(spacing: 20) {
-                                // Weekly Difficulty Graph
-                                weeklyDifficultyGraph
-                                    .entranceAnimation(delay: 0.05)
-                                
-                                // Time Base Completion Chart
-                                timeBaseCompletionChart
-                                    .entranceAnimation(delay: 0.15)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Monthly Content - Only show when individual habit is selected and "Monthly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 2 {
-                            VStack(spacing: 20) {
-                                // Monthly Difficulty Graph
-                                monthlyDifficultyGraph
-                                    .entranceAnimation(delay: 0.1)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Monthly Content - Only show when "All habits" is selected and "Monthly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 2 {
-                            if getActiveHabitsForSelectedMonth().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Monthly Progress Card (still show this)
-                                    monthlyProgressCard
-                                    
-                                    // Empty state instead of calendar grid
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Monthly Progress Card
-                                    monthlyProgressCard
-                                        .entranceAnimation(delay: 0.05)
-                                    
-                                    // Monthly Calendar Grid
-                                    MonthlyCalendarGridView(
-                                        userHabits: getActiveHabitsForSelectedMonth(),
-                                        selectedMonth: selectedProgressDate
-                                        )
-                                        .entranceAnimation(delay: 0.15)
-                                    }
-                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Yearly Content - Only show when individual habit is selected and "Yearly" tab is active
-                        if selectedHabit != nil && selectedTimePeriod == 3 {
-                            VStack(spacing: 20) {
-                                // Yearly Calendar Grid for individual habit
-                                YearlyCalendarGridView(
-                                    userHabits: [selectedHabit!],
-                                    selectedWeekStartDate: selectedWeekStartDate,
-                                    yearlyHeatmapData: yearlyHeatmapData,
-                                    isDataLoaded: isDataLoaded,
-                                    isLoadingProgress: isLoadingProgress,
-                                    selectedYear: selectedYear
-                                )
-                                .entranceAnimation(delay: 0.1)
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                        // Yearly Content - Only show when "All habits" is selected and "Yearly" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 3 {
-                            if getActiveHabits().isEmpty {
-                                // Show empty state when no habits exist
-                                VStack(spacing: 20) {
-                                    // Empty state for yearly view
-                                    HabitEmptyStateView.noHabitsYet()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.top, 40)
-                                        .padding(.bottom, 60)
-                                }
-                                .padding(.horizontal, 20)
-                            } else {
-                                // Show normal content when habits exist
-                                VStack(spacing: 20) {
-                                    // Yearly Calendar Grid
-                                    YearlyCalendarGridView(
-                                        userHabits: getActiveHabits(),
-                                        selectedWeekStartDate: selectedWeekStartDate,
-                                        yearlyHeatmapData: yearlyHeatmapData,
-                                        isDataLoaded: isDataLoaded,
-                                        isLoadingProgress: isLoadingProgress,
-                                        selectedYear: selectedYear
-                                    )
-                                    .entranceAnimation(delay: 0.1)
-                                }
-                                .padding(.horizontal, 20)
-                            }
-                        }
-                        
-                        // Today's Progress Card - Show when "Daily" tab is active (both "All habits" and individual habits)
-                        if selectedTimePeriod == 0 {
-                            todayProgressCard
-                        }
-                        
-                        // Difficulty Section - Only show when individual habit is selected and scheduled for the date
-                        if selectedHabit != nil && selectedTimePeriod == 0 && getScheduledHabitsCount() > 0 {
-                            difficultySection
-                        }
-                        
-                        // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
-                        if selectedHabit == nil && selectedTimePeriod == 0 {
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Header
-                HStack {
-                                Text("Reminders")
-                                    .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                    
-                                Button(action: {
-                                    showingAllReminders = true
-                                }) {
-                        HStack(spacing: 4) {
-                            Text("See more")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.text02)
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.text02)
-                                    }
-                        }
-                    }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 20)
-                            .padding(.bottom, 16)
-            
-                            // Reminders Carousel - Only show active reminders
-                            if getActiveRemindersForDate(selectedProgressDate).isEmpty {
-                                // Empty state when no reminders
-                                VStack(spacing: 16) {
-                                    Image("Today-Habit-List-Empty-State@4x")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 120, height: 120)
-                                    
-                                    VStack(spacing: 4) {
-                                        Text("No reminders for today")
-                                            .font(.appTitleLargeEmphasised)
-                                            .foregroundColor(.text04)
-                                        
-                                        Text("You don't have any active reminders scheduled for this date")
-                                            .font(.appTitleSmall)
-                                            .foregroundColor(.text06)
-                                            .multilineTextAlignment(.center)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 0)
-                                .padding(.bottom, 40)
-                                .padding(.horizontal, 20)
-                            } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                                        ForEach(Array(getActiveRemindersForDate(selectedProgressDate).enumerated()), id: \.element.id) { index, reminder in
-                                            reminderCard(for: reminder)
-                                                .entranceAnimation(delay: Double(index) * 0.05)
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 20)
-                                }
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(Color.surface)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(Color.outline3, lineWidth: 1.0)
-                        )
-                        .padding(.horizontal, 20)
-                        }
-                        
-                        
-                    }
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
+                    mainContentView
+                        .padding(.top, 20)
+                        .padding(.bottom, 20)
                 }
             }
         }
         .sheet(isPresented: $showingHabitSelector) {
             habitSelectorSheet
         }
-        .sheet(isPresented: $showingDatePicker) {
-            DatePickerModal(
-                isPresented: $showingDatePicker,
-                selectedDate: $selectedProgressDate
-            ) { newDate in
-                print("🔍 DEBUG: Date selected: \(newDate)")
-                selectedProgressDate = newDate
-            }
-            .presentationDetents([.height(520)])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingWeekPicker) {
-            WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
-                .presentationDetents([.height(520)])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(.regularMaterial)
-                .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingMonthPicker) {
-            MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
-                .presentationDetents([.height(450)])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(.regularMaterial)
-                .presentationCornerRadius(20)
-        }
-        .sheet(isPresented: $showingYearPicker) {
-            YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
-                .presentationDetents([.height(400), .large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackground(.regularMaterial)
-                .presentationCornerRadius(20)
-        }
+        .overlay(
+            // Date Picker Modal
+            showingDatePicker ? AnyView(
+                DatePickerModal(isPresented: $showingDatePicker, selectedDate: $selectedProgressDate) { _ in
+                    // Date selection handled by binding
+                }
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Week Picker Modal
+            showingWeekPicker ? AnyView(
+                WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingWeekPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Month Picker Modal
+            showingMonthPicker ? AnyView(
+                MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingMonthPicker)
+            ) : AnyView(EmptyView())
+        )
+        .overlay(
+            // Year Picker Modal
+            showingYearPicker ? AnyView(
+                YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .animation(.easeInOut(duration: 0.3), value: showingYearPicker)
+            ) : AnyView(EmptyView())
+        )
         .overlay(
             // All Reminders Modal
             showingAllReminders ? AnyView(
@@ -995,7 +808,6 @@ struct ProgressTabView: View {
                 .fill(Color.surface)
         )
                                         .padding(.horizontal, 20)
-        .entranceAnimation(delay: 0.0)
     }
     
     // Date selection section
@@ -1006,9 +818,7 @@ struct ProgressTabView: View {
                                         Button(action: {
                         print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                         if selectedTimePeriod == 0 { // Daily
-                            print("🔍 DEBUG: Attempting to show DatePickerModal...")
                             showingDatePicker = true
-                            print("🔍 DEBUG: DatePickerModal showing set to true")
                         } else if selectedTimePeriod == 1 { // Weekly
                             showingWeekPicker = true
                         } else if selectedTimePeriod == 2 { // Monthly
@@ -1660,7 +1470,6 @@ struct ProgressTabView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .padding(.horizontal, 20)
-        .entranceAnimation(delay: 0.1)
     }
     
     // MARK: - Weekly Progress Card
@@ -1699,7 +1508,6 @@ struct ProgressTabView: View {
                 .allowsHitTesting(false)
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .entranceAnimation(delay: 0.05)
     }
     
     // MARK: - Weekly Analysis Card
@@ -3924,37 +3732,6 @@ struct ProgressTabView: View {
                             .font(.appBodySmall)
                             .foregroundColor(.text03)
                             .multilineTextAlignment(.center)
-                        
-                        // Test button to add sample data
-                        Button("Add Sample Time Data (Test)") {
-                            // Add some sample completion data with timestamps for testing
-                            let calendar = Calendar.current
-                            let today = Date()
-                            let testTimes = [
-                                (hour: 8, minute: 30),   // Morning
-                                (hour: 13, minute: 15),  // Lunch
-                                (hour: 18, minute: 45),  // Evening
-                                (hour: 22, minute: 0)    // Night
-                            ]
-                            
-                            for i in 0..<3 {
-                                if let testDate = calendar.date(byAdding: .day, value: -i, to: today) {
-                                    for (hour, minute) in testTimes {
-                                        if let testTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: testDate) {
-                                            habitRepository.setProgress(for: habit, date: testTime, progress: 1)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Button to generate timestamps for existing completions
-                        Button("Generate Timestamps for Existing Completions") {
-                            generateTimestampsForExistingCompletions(for: habit)
-                        }
-                        .font(.appBodySmall)
-                        .foregroundColor(.primaryFocus)
-                        .padding(.top, 8)
                     }
                     .frame(height: 200)
                 } else {
@@ -3981,32 +3758,12 @@ struct ProgressTabView: View {
         let weekStart = selectedWeekStartDate
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
-        // Get all habit completion timestamps for this week
-        let habitLogs = habit.completionTimestamps.flatMap { (dateString, timestamps) -> [(timestamp: Date, progress: Int)] in
-            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return [] }
-            guard date >= weekStart && date <= weekEnd else { return [] }
-            
-            // Convert each timestamp to a log entry
-            return timestamps.map { timestamp in
-                (timestamp: timestamp, progress: 1)
-            }
-        }
-        
-        // Debug: Print timestamp data
-        print("🕐 TimeBaseCompletionChart: Found \(habitLogs.count) completion logs for habit '\(habit.name)'")
-        print("🕐 TimeBaseCompletionChart: completionTimestamps keys: \(habit.completionTimestamps.keys.sorted())")
-        for (dateKey, timestamps) in habit.completionTimestamps {
-            print("🕐   Date \(dateKey): \(timestamps.count) timestamps")
-            for timestamp in timestamps {
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                print("🕐     - \(formatter.string(from: timestamp))")
-            }
-        }
-        for log in habitLogs {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            print("🕐   - \(formatter.string(from: log.timestamp))")
+        // Get all habit completion records for this week
+        let habitLogs = habit.completionHistory.compactMap { (dateString, progress) -> (timestamp: Date, progress: Int)? in
+            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return nil }
+            return (timestamp: date, progress: progress)
+        }.filter { log in
+            return log.timestamp >= weekStart && log.timestamp <= weekEnd
         }
         
         // Define time periods
@@ -4036,65 +3793,9 @@ struct ProgressTabView: View {
                 completionCount: completionsInPeriod,
                 totalDays: totalDays
             ))
-            
-            // Debug: Print time period data
-            print("🕐   \(periodName) (\(startHour):00-\(endHour):00): \(completionsInPeriod) completions, \(String(format: "%.1f", completionRate * 100))% rate")
         }
         
-        print("🕐 TimeBaseCompletionChart: Generated \(timeData.count) time periods for chart")
         return timeData
-    }
-    
-    // MARK: - Generate Timestamps for Existing Completions
-    private func generateTimestampsForExistingCompletions(for habit: Habit) {
-        print("🕐 Generating timestamps for existing completions of habit: \(habit.name)")
-        
-        let calendar = Calendar.current
-        let weekStart = selectedWeekStartDate
-        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        
-        // Find existing completions without timestamps
-        for (dateString, completionCount) in habit.completionHistory {
-            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
-            guard date >= weekStart && date <= weekEnd else { continue }
-            guard completionCount > 0 else { continue }
-            
-            // Check if this date already has timestamps
-            if habit.completionTimestamps[dateString]?.isEmpty != false {
-                print("🕐 Generating timestamps for \(dateString) with \(completionCount) completions")
-                
-                // Generate realistic timestamps based on time of day
-                var timestamps: [Date] = []
-                let timeSlots = [
-                    (hour: 8, minute: 30),   // Morning
-                    (hour: 13, minute: 15),  // Lunch
-                    (hour: 18, minute: 45),  // Evening
-                    (hour: 22, minute: 0)    // Night
-                ]
-                
-                for i in 0..<completionCount {
-                    let timeSlot = timeSlots[i % timeSlots.count]
-                    if let timestamp = calendar.date(bySettingHour: timeSlot.hour, minute: timeSlot.minute, second: 0, of: date) {
-                        timestamps.append(timestamp)
-                    }
-                }
-                
-                // Update the habit with generated timestamps
-                if let index = habitRepository.habits.firstIndex(where: { $0.id == habit.id }) {
-                    var updatedHabit = habitRepository.habits[index]
-                    updatedHabit.completionTimestamps[dateString] = timestamps
-                    habitRepository.habits[index] = updatedHabit
-                    print("🕐 Added \(timestamps.count) timestamps for \(dateString)")
-                }
-            }
-        }
-        
-        // Save the changes
-        Task {
-            // Use the public method to save habits
-            habitRepository.saveHabits(habitRepository.habits)
-            print("🕐 Saved updated habits with generated timestamps")
-        }
     }
     
     // MARK: - Weekly Difficulty Data Helper
@@ -4256,18 +3957,6 @@ struct ProgressTabView: View {
             print("🔍 Monthly data point \(index): Week \(index + 1) - Difficulty: \(point.difficulty), HasData: \(point.hasData)")
         }
         return dataPoints
-    }
-}
-
-// MARK: - Helper Functions
-extension Int {
-    func formatDays() -> String {
-        let count = self
-        if count == 1 {
-            return "1 day"
-        } else {
-            return "\(count) days"
-        }
     }
 }
 
@@ -5071,493 +4760,6 @@ struct WeeklySummaryStatsView: View {
         .cornerRadius(16)
     }
 }
-*/
-
-// MARK: - Time Completion Data Point
-struct TimeCompletionData: Identifiable {
-    let id = UUID()
-    let timePeriod: String
-    let completionRate: Double
-    let completionCount: Int
-    let totalDays: Int
-}
-
-// MARK: - Time Base Completion Chart
-struct TimeBaseCompletionChart: View {
-    let data: [TimeCompletionData]
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Main chart area with Y-axis labels
-            HStack(alignment: .bottom, spacing: 0) {
-                // Y-axis labels
-                VStack(alignment: .trailing, spacing: 0) {
-                    ForEach(0...4, id: \.self) { index in
-                        let percentage = 100 - (index * 25)
-                        Text("\(percentage)%")
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                            .frame(height: 40)
-                    }
-                }
-                .frame(width: 40)
-                
-                // Chart area
-                GeometryReader { geometry in
-                    ZStack {
-                        // Background grid
-                        backgroundGrid(in: geometry)
-                        
-                        // Bars
-                        bars(in: geometry)
-                    }
-                }
-                .frame(height: 160)
-            }
-            
-            // X-axis labels
-            HStack {
-                Spacer().frame(width: 40) // Align with chart area
-                
-                ForEach(data, id: \.id) { item in
-                    Text(item.timePeriod)
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text02)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            
-            // Spacer above banner
-            Spacer()
-                .frame(height: 16)
-            
-            // Time completion banner
-            timeCompletionBanner
-        }
-    }
-    
-    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
-        VStack(spacing: 0) {
-            ForEach(0...4, id: \.self) { _ in
-                Rectangle()
-                    .fill(Color.outline3.opacity(0.2))
-                    .frame(height: 1)
-                Spacer()
-            }
-        }
-    }
-    
-    private func bars(in geometry: GeometryProxy) -> some View {
-        HStack(alignment: .bottom, spacing: 4) {
-            ForEach(data, id: \.id) { item in
-                VStack {
-                    Spacer()
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.primary)
-                        .frame(width: max(4, geometry.size.width / CGFloat(data.count) - 4))
-                        .frame(height: max(4, geometry.size.height * item.completionRate))
-                }
-            }
-        }
-    }
-    
-    private var timeCompletionBanner: some View {
-        HStack {
-            Image(systemName: "clock")
-                .foregroundColor(.primary)
-            
-            Text("Time-based completion tracking")
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
-            
-            Spacer()
-        }
-        .padding(.vertical, 16)
-        .background(.surfaceContainer)
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Difficulty Data Point
-struct DifficultyDataPoint: Identifiable {
-    let id = UUID()
-    let date: Date
-    let difficulty: Double
-    let hasData: Bool
-}
-
-// MARK: - Monthly Difficulty Data Point
-struct MonthlyDifficultyDataPoint: Identifiable {
-    let id = UUID()
-    let date: Date
-    let difficulty: Double
-    let hasData: Bool
-}
-
-// MARK: - Difficulty Line Chart
-struct DifficultyLineChart: View {
-    let data: [DifficultyDataPoint]
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Main chart area with Y-axis labels
-            HStack(alignment: .top, spacing: 0) {
-                // Y-axis labels
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(0..<5, id: \.self) { level in
-                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
-                        
-                        Text(difficultyLabel(for: difficultyLevel))
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                            .frame(height: 140/4, alignment: .center)
-                    }
-                }
-                .frame(width: 60, height: 140)
-                
-                // Main chart area
-                GeometryReader { geometry in
-                    ZStack {
-                        // Background grid
-                        backgroundGrid(in: geometry)
-                        
-                        // Shaded area under the line
-                        shadedArea(in: geometry)
-                        
-                        // Line
-                        line(in: geometry)
-                        
-                        // Data points
-                        dataPoints(in: geometry)
-                    }
-                }
-                .frame(height: 140)
-            }
-            
-            // X-axis labels
-            HStack {
-                Spacer().frame(width: 60) // Align with chart area
-                
-                ForEach(data, id: \.id) { item in
-                    Text(formatDate(item.date))
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text02)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-        }
-    }
-    
-    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
-        VStack(spacing: 0) {
-            ForEach(0..<5, id: \.self) { _ in
-                Rectangle()
-                    .fill(Color.outline3.opacity(0.2))
-                    .frame(height: 1)
-                Spacer()
-            }
-        }
-    }
-    
-    private func shadedArea(in geometry: GeometryProxy) -> some View {
-        Path { path in
-            guard !data.isEmpty else { return }
-            
-            let stepX = geometry.size.width / CGFloat(data.count - 1)
-            
-            path.move(to: CGPoint(x: 0, y: geometry.size.height))
-            
-            for (index, point) in data.enumerated() {
-                let x = CGFloat(index) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-            
-            path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
-            path.closeSubpath()
-        }
-        .fill(Color.primary.opacity(0.1))
-    }
-    
-    private func line(in geometry: GeometryProxy) -> some View {
-        Path { path in
-            guard !data.isEmpty else { return }
-            
-            let stepX = geometry.size.width / CGFloat(data.count - 1)
-            
-            for (index, point) in data.enumerated() {
-                let x = CGFloat(index) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                
-                if index == 0 {
-                    path.move(to: CGPoint(x: x, y: y))
-                } else {
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
-            }
-        }
-        .stroke(Color.primary, lineWidth: 2)
-    }
-    
-    private func dataPoints(in geometry: GeometryProxy) -> some View {
-        HStack(spacing: 0) {
-            ForEach(data, id: \.id) { point in
-                let stepX = geometry.size.width / CGFloat(data.count - 1)
-                let x = CGFloat(data.firstIndex(where: { $0.id == point.id }) ?? 0) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                
-                Circle()
-                    .fill(Color.primary)
-                    .frame(width: 6, height: 6)
-                    .position(x: x, y: y)
-            }
-        }
-    }
-    
-    private func difficultyLabel(for level: Int) -> String {
-        switch level {
-        case 5: return "Very Hard"
-        case 4: return "Hard"
-        case 3: return "Medium"
-        case 2: return "Easy"
-        case 1: return "Very Easy"
-        default: return ""
-        }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - Monthly Difficulty Chart
-struct MonthlyDifficultyChart: View {
-    let data: [MonthlyDifficultyDataPoint]
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // Main chart area with Y-axis labels
-            HStack(alignment: .top, spacing: 0) {
-                // Y-axis labels
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(0..<5, id: \.self) { level in
-                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
-                        
-                        Text(difficultyLabel(for: difficultyLevel))
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                            .frame(height: 140/4, alignment: .center)
-                    }
-                }
-                .frame(width: 60, height: 140)
-                
-                // Main chart area
-                GeometryReader { geometry in
-                    ZStack {
-                        // Background grid
-                        backgroundGrid(in: geometry)
-                        
-                        // Shaded area under the line
-                        shadedArea(in: geometry)
-                        
-                        // Line
-                        line(in: geometry)
-                        
-                        // Data points
-                        dataPoints(in: geometry)
-                    }
-                }
-                .frame(height: 140)
-            }
-            
-            // X-axis labels
-            HStack {
-                Spacer().frame(width: 60) // Align with chart area
-                
-                ForEach(data, id: \.id) { item in
-                    Text(formatDate(item.date))
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text02)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-        }
-    }
-    
-    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
-        VStack(spacing: 0) {
-            ForEach(0..<5, id: \.self) { _ in
-                Rectangle()
-                    .fill(Color.outline3.opacity(0.2))
-                    .frame(height: 1)
-                Spacer()
-            }
-        }
-    }
-    
-    private func shadedArea(in geometry: GeometryProxy) -> some View {
-        Path { path in
-            guard !data.isEmpty else { return }
-            
-            let stepX = geometry.size.width / CGFloat(data.count - 1)
-            
-            path.move(to: CGPoint(x: 0, y: geometry.size.height))
-            
-            for (index, point) in data.enumerated() {
-                let x = CGFloat(index) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-            
-            path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
-            path.closeSubpath()
-        }
-        .fill(Color.primary.opacity(0.1))
-    }
-    
-    private func line(in geometry: GeometryProxy) -> some View {
-        Path { path in
-            guard !data.isEmpty else { return }
-            
-            let stepX = geometry.size.width / CGFloat(data.count - 1)
-            
-            for (index, point) in data.enumerated() {
-                let x = CGFloat(index) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                
-                if index == 0 {
-                    path.move(to: CGPoint(x: x, y: y))
-                } else {
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
-            }
-        }
-        .stroke(Color.primary, lineWidth: 2)
-    }
-    
-    private func dataPoints(in geometry: GeometryProxy) -> some View {
-        HStack(spacing: 0) {
-            ForEach(data, id: \.id) { point in
-                let stepX = geometry.size.width / CGFloat(data.count - 1)
-                let x = CGFloat(data.firstIndex(where: { $0.id == point.id }) ?? 0) * stepX
-                let y = geometry.size.height * (1 - point.difficulty / 5.0)
-                
-                Circle()
-                    .fill(Color.primary)
-                    .frame(width: 6, height: 6)
-                    .position(x: x, y: y)
-            }
-        }
-    }
-    
-    private func difficultyLabel(for level: Int) -> String {
-        switch level {
-        case 5: return "Very Hard"
-        case 4: return "Hard"
-        case 3: return "Medium"
-        case 2: return "Easy"
-        case 1: return "Very Easy"
-        default: return ""
-        }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
-    }
-}
-
-// MARK: - Animated Circular Progress Ring
-struct AnimatedCircularProgressRing: View {
-    let progress: Double
-    let size: CGFloat
-    let lineWidth: CGFloat
-    let color: Color
-    
-    @State private var animatedProgress: Double = 0
-    
-    var body: some View {
-        ZStack {
-            // Background circle
-            Circle()
-                .stroke(color.opacity(0.2), lineWidth: lineWidth)
-                .frame(width: size, height: size)
-            
-            // Progress circle
-            Circle()
-                .trim(from: 0, to: animatedProgress)
-                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                .frame(width: size, height: size)
-                .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 1.0), value: animatedProgress)
-        }
-        .onAppear {
-            animatedProgress = progress
-        }
-        .onChange(of: progress) { newValue in
-            animatedProgress = newValue
-        }
-    }
-}
-
-// MARK: - Weekly Summary Stats View
-struct WeeklySummaryStatsView: View {
-    let completionRate: Double
-    let bestStreak: Int
-    let consistencyRate: Double
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 20) {
-                // Completion Rate
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Completion Rate")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text05)
-                    
-                    Text("\(Int(completionRate * 100))%")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.primary)
-                }
-                
-                Spacer()
-                
-                // Best Streak
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Best Streak")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text05)
-                    
-                    Text("\(bestStreak) days")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.primary)
-                }
-                
-                Spacer()
-                
-                // Consistency Rate
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Consistency")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text05)
-                    
-                    Text("\(Int(consistencyRate * 100))%")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.primary)
-                }
-            }
-        }
-        .padding(.vertical, 16)
-        .background(.surfaceContainer)
-        .cornerRadius(16)
-    }
-}
-}
-
 
 #Preview {
     ProgressTabView()
