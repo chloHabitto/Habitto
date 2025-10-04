@@ -82,7 +82,7 @@ struct YearPickerModal: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.primary)
-                    .cornerRadius(20)
+                    .cornerRadius(24)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)

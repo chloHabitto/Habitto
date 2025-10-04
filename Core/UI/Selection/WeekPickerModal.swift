@@ -92,7 +92,7 @@ struct WeekPickerModal: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.primary)
-                        .cornerRadius(20)
+                        .cornerRadius(24)
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
