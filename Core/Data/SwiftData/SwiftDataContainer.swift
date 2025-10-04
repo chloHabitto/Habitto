@@ -101,8 +101,9 @@ final class SwiftDataContainer: ObservableObject {
             let headers = try modelContext.fetch(descriptor)
             
             if headers.isEmpty {
-                // Create initial storage header
-                let header = StorageHeader(schemaVersion: 1)
+                // ✅ FIX: Use new initializer with userId
+                let userId = getCurrentUserId()
+                let header = StorageHeader(userId: userId, schemaVersion: 1)
                 modelContext.insert(header)
                 
                 try modelContext.save()
@@ -139,7 +140,9 @@ final class SwiftDataContainer: ObservableObject {
                 header.schemaVersion = version
                 header.lastMigration = Date()
             } else {
-                let header = StorageHeader(schemaVersion: version)
+                // ✅ FIX: Use new initializer with userId
+                let userId = getCurrentUserId()
+                let header = StorageHeader(userId: userId, schemaVersion: version)
                 modelContext.insert(header)
             }
             
@@ -153,7 +156,10 @@ final class SwiftDataContainer: ObservableObject {
     // MARK: - Migration Management
     
     func recordMigration(from fromVersion: Int, to toVersion: Int, success: Bool, errorMessage: String? = nil) {
+        // ✅ FIX: Use new initializer with userId
+        let userId = getCurrentUserId()
         let migrationRecord = MigrationRecord(
+            userId: userId,
             fromVersion: fromVersion,
             toVersion: toVersion,
             success: success,
@@ -201,12 +207,12 @@ final class SwiftDataContainer: ObservableObject {
     func performHealthCheck() -> Bool {
         logger.info("🔧 SwiftData: Performing proactive health check...")
         
-        // Test multiple critical tables
-        let tests = [
-            ("HabitData", { try self.modelContext.fetch(FetchDescriptor<HabitData>()) }),
-            ("CompletionRecord", { try self.modelContext.fetch(FetchDescriptor<CompletionRecord>()) }),
-            ("DailyAward", { try self.modelContext.fetch(FetchDescriptor<DailyAward>()) }),
-            ("UserProgressData", { try self.modelContext.fetch(FetchDescriptor<UserProgressData>()) })
+        // ✅ FIX: Discard unused results with _
+        let tests: [(String, () throws -> Void)] = [
+            ("HabitData", { _ = try self.modelContext.fetch(FetchDescriptor<HabitData>()) }),
+            ("CompletionRecord", { _ = try self.modelContext.fetch(FetchDescriptor<CompletionRecord>()) }),
+            ("DailyAward", { _ = try self.modelContext.fetch(FetchDescriptor<DailyAward>()) }),
+            ("UserProgressData", { _ = try self.modelContext.fetch(FetchDescriptor<UserProgressData>()) })
         ]
         
         for (tableName, test) in tests {
@@ -279,8 +285,8 @@ final class SwiftDataContainer: ObservableObject {
                 isStoredInMemoryOnly: false
             )
             
-            // Create new container and context
-            let newContainer = try ModelContainer(
+            // ✅ FIX: Use _ to indicate intentionally unused value
+            _ = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
@@ -322,6 +328,17 @@ final class SwiftDataContainer: ObservableObject {
             logger.error("Failed to validate data integrity: \(error.localizedDescription)")
             return false
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func getCurrentUserId() -> String {
+        // Get user ID from authentication system
+        if let currentUser = AuthenticationManager.shared.currentUser {
+            return currentUser.uid
+        }
+        // Fallback to guest user
+        return "guest"
     }
     
     // MARK: - Cleanup Operations
