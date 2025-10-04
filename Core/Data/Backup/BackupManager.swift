@@ -519,6 +519,8 @@ class BackupManager: ObservableObject {
             if let habitId = backupDifficulty.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let difficulty = DifficultyRecord(
+                    userId: userId,
+                    habitId: habit.id,
                     date: backupDifficulty.date,
                     difficulty: backupDifficulty.difficulty
                 )
@@ -531,6 +533,8 @@ class BackupManager: ObservableObject {
             if let habitId = backupUsage.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let usage = UsageRecord(
+                    userId: userId,
+                    habitId: habit.id,
                     key: backupUsage.key,
                     value: backupUsage.value
                 )
@@ -543,6 +547,8 @@ class BackupManager: ObservableObject {
             if let habitId = backupNote.habitId,
                let habit = restoredHabits.first(where: { $0.id.uuidString == habitId }) {
                 let note = HabitNote(
+                    userId: userId,
+                    habitId: habit.id,
                     content: backupNote.content
                 )
                 habit.notes.append(note)
