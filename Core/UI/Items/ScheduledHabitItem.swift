@@ -57,7 +57,7 @@ struct ScheduledHabitItem: View {
             isAnimating: isCompletingAnimation,
             action: {
                 if !isVacationDay {
-                    completeHabit()
+                    toggleHabitCompletion()
                 }
             }
         )
@@ -132,6 +132,7 @@ struct ScheduledHabitItem: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 
+                
                 // Progress Bar
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
@@ -200,10 +201,12 @@ struct ScheduledHabitItem: View {
             .opacity(abs(dragOffset) > 30 ? 1 : 0)
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
+        .onTapGesture {
+            onRowTap?()
+        }
         .gesture(
-            DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
                 .onChanged { value in
-                    print("🔄 Drag onChanged: translation=\(value.translation), velocity=\(value.velocity)")
                     withAnimation(.interactiveSpring()) {
                         dragOffset = value.translation.width
                     }
@@ -212,47 +215,29 @@ struct ScheduledHabitItem: View {
                     }
                 }
                 .onEnded { value in
-                    print("🔄 Drag onEnded: translation=\(value.translation), velocity=\(value.velocity)")
                     let translationX = value.translation.width
                     let velocityX = value.velocity.width
                     
-                    print("🔄 TranslationX: \(translationX), VelocityX: \(velocityX)")
+                    // Swipe thresholds
+                    let threshold: CGFloat = 50
+                    let velocityThreshold: CGFloat = 200
                     
-                    // More responsive threshold-based detection with velocity fallback
-                    let threshold: CGFloat = 20
-                    let velocityThreshold: CGFloat = 100
+                    let isRightSwipe = (translationX > threshold && velocityX > 0) || velocityX > velocityThreshold
+                    let isLeftSwipe = (translationX < -threshold && velocityX < 0) || velocityX < -velocityThreshold
                     
-                    // Check both translation and velocity for more reliable detection
-                    let isRightSwipe = translationX > threshold || (translationX > 0 && velocityX > velocityThreshold)
-                    let isLeftSwipe = translationX < -threshold || (translationX < 0 && velocityX < -velocityThreshold)
+                    // Reset drag state
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        dragOffset = 0
+                        hasDragged = false
+                    }
                     
                     if isRightSwipe {
                         handleRightSwipe()
                     } else if isLeftSwipe {
                         handleLeftSwipe()
-                    } else {
-                        print("🔄 Swipe not strong enough: translationX=\(translationX)")
-                    }
-                    
-                    // Always reset drag offset and hasDragged flag
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        dragOffset = 0
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        hasDragged = false
                     }
                 }
         )
-        .onTapGesture {
-            // Only trigger tap if no drag has occurred and not processing completion
-            if !hasDragged && !isProcessingCompletion {
-                print("🎯 ScheduledHabitItem: Row tapped for \(habit.name)")
-                onRowTap?()
-            } else {
-                print("🎯 ScheduledHabitItem: Tap ignored due to drag gesture or completion processing")
-            }
-        }
-
         .onLongPressGesture {
             showingActionSheet = true
         }
@@ -274,8 +259,6 @@ struct ScheduledHabitItem: View {
         .onAppear {
             // Initialize currentProgress with the actual saved progress from the habit
             let initialProgress = habit.getProgress(for: selectedDate)
-            print("🔄 ScheduledHabitItem: onAppear for \(habit.name), initializing progress to \(initialProgress)")
-            print("🔄 ScheduledHabitItem: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentProgress = initialProgress
             }
@@ -284,7 +267,6 @@ struct ScheduledHabitItem: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 let updatedProgress = habit.getProgress(for: selectedDate)
                 if updatedProgress != currentProgress {
-                    print("🔄 ScheduledHabitItem: Progress updated after delay from \(currentProgress) to \(updatedProgress)")
                     withAnimation(.easeInOut(duration: 0.2)) {
                         currentProgress = updatedProgress
                     }
@@ -306,7 +288,6 @@ struct ScheduledHabitItem: View {
         }
         .onChange(of: habit.completionHistory) { oldHistory, newHistory in
             let newProgress = habit.getProgress(for: selectedDate)
-            print("🎯 ScheduledHabitItem: completionHistory changed for \(habit.name), updating currentProgress from \(currentProgress) to \(newProgress)")
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentProgress = newProgress
             }
@@ -315,7 +296,6 @@ struct ScheduledHabitItem: View {
             // Sync currentProgress when the habit object itself changes
             let newProgress = newHabit.getProgress(for: selectedDate)
             if newProgress != currentProgress {
-                print("🎯 ScheduledHabitItem: habit object changed for \(newHabit.name), syncing currentProgress from \(currentProgress) to \(newProgress)")
                 withAnimation(.easeInOut(duration: 0.2)) {
                     currentProgress = newProgress
                 }
@@ -326,13 +306,9 @@ struct ScheduledHabitItem: View {
             if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
                updatedHabitId == habit.id {
                 let newProgress = habit.getProgress(for: selectedDate)
-                print("🎯 ScheduledHabitItem: Received progress update for \(habit.name), syncing currentProgress from \(currentProgress) to \(newProgress)")
-                print("🎯 ScheduledHabitItem: Notification userInfo: \(notification.userInfo ?? [:])")
                 withAnimation(.easeInOut(duration: 0.2)) {
                     currentProgress = newProgress
                 }
-            } else {
-                print("🎯 ScheduledHabitItem: Received progress update for different habit: \(notification.userInfo?["habitId"] as? UUID ?? UUID())")
             }
         }
             .sheet(isPresented: $showingCompletionSheet) {
@@ -340,10 +316,8 @@ struct ScheduledHabitItem: View {
                     isPresented: $showingCompletionSheet,
                     habit: habit,
                 onDismiss: {
-                    let _ = "debug_user_id" // TODO: Get actual user ID hash
-                    print("🎯 COMPLETION_FLOW: Sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
                     
-                    // ✅ FIX: End completion flow in CompletionStateManager
+                    // End completion flow in CompletionStateManager
                     let completionManager = CompletionStateManager.shared
                     completionManager.endCompletionFlow(for: habit.id)
                     
@@ -352,7 +326,6 @@ struct ScheduledHabitItem: View {
                     isProcessingCompletion = false
                     
                     // Data is already saved when completion happened, no need to save again
-                    print("🎯 COMPLETION_FLOW: Data already saved on completion, triggering reorder")
                     
                     // Call the original completion dismiss handler
                     onCompletionDismiss?()
@@ -362,7 +335,6 @@ struct ScheduledHabitItem: View {
             .presentationDragIndicator(.hidden)
             .presentationCornerRadius(32)
             .onDisappear {
-                print("🎯 ScheduledHabitItem: Sheet disappeared for habit: \(habit.name)")
             }
         }
     }
@@ -411,13 +383,10 @@ struct ScheduledHabitItem: View {
     private func completeHabit() {
         let isCompleted = isHabitCompleted()
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        let _ = "debug_user_id" // TODO: Get actual user ID hash
         
-        print("🎯 COMPLETION_FLOW: Circle tap - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=circle, oldCount=\(currentProgress), goal=\(goalAmount), reachedGoal=\(!isCompleted)")
         
         if isCompleted {
             // If already completed, uncomplete it (set progress to 0)
-            print("🎯 COMPLETION_FLOW: Uncompleting habit \(habit.name)")
             
             // Update local state immediately for instant UI feedback
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -432,12 +401,10 @@ struct ScheduledHabitItem: View {
             impactFeedback.impactOccurred()
             } else {
                 // If not completed, complete it immediately
-                print("🎯 COMPLETION_FLOW: Completing habit \(habit.name) - setting progress to goal")
                 
-                // ✅ FIX: Use CompletionStateManager to prevent race conditions
+                // Use CompletionStateManager to prevent race conditions
                 let completionManager = CompletionStateManager.shared
                 guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
-                    print("🎯 COMPLETION_FLOW: Completion sheet already showing for \(habit.name), skipping")
                     return
                 }
                 
@@ -451,7 +418,6 @@ struct ScheduledHabitItem: View {
                 }
                 
                 // Save completion data immediately
-                print("🎯 COMPLETION_FLOW: Saving completion data immediately: \(goalAmount)")
                 onProgressChange?(habit, selectedDate, goalAmount)
                 
                 // Haptic feedback for completion
@@ -459,28 +425,54 @@ struct ScheduledHabitItem: View {
                 impactFeedback.impactOccurred()
                 
                 // Show completion sheet immediately (no delay)
-                print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
                 showingCompletionSheet = true
             }
+    }
+    
+    // MARK: - Completion Handlers
+    
+    private func toggleHabitCompletion() {
+        if isHabitCompleted() {
+            // Currently completed, so uncomplete it
+            uncompleteHabit()
+        } else {
+            // Currently not completed, so complete it
+            completeHabit()
+        }
+    }
+    
+    private func uncompleteHabit() {
+        // Set progress to 0 (uncompleted)
+        let newProgress = 0
+        
+        // Update UI immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentProgress = newProgress
+        }
+        
+        // Save progress data
+        if let progressCallback = onProgressChange {
+            progressCallback(habit, selectedDate, newProgress)
+        }
+        
+        // Haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
     }
     
     // MARK: - Swipe Handlers
     
     private func handleRightSwipe() {
-        print("🎯 SWIPE: handleRightSwipe called for \(habit.name)")
-        
-        // ✅ FIX: Debounce rapid interactions
+        // Debounce rapid interactions
         let now = Date()
         let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
-        guard timeSinceLastInteraction > 0.2 else {
-            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
+        guard timeSinceLastInteraction > 0.05 else {
             return
         }
         lastInteractionTime = now
         
-        // ✅ FIX: Prevent concurrent progress updates
+        // Prevent concurrent progress updates
         guard !isUpdatingProgress else {
-            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
             return
         }
         
@@ -489,25 +481,19 @@ struct ScheduledHabitItem: View {
         // Swipe right - increase progress by 1, clamped to goal
         let goalAmount = extractNumericGoalAmount(from: habit.goal)
         let newProgress = min(currentProgress + 1, goalAmount)
-        let _ = "debug_user_id" // TODO: Get actual user ID hash
-        
-        print("🎯 COMPLETION_FLOW: Swipe right - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
         
         // Update UI immediately
         withAnimation(.easeInOut(duration: 0.2)) {
             currentProgress = newProgress
         }
         
-        // Save progress data with error handling
-        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
-        print("🎯 SWIPE: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
-        print("🎯 SWIPE: About to call onProgressChange with habit: \(habit.name), date: \(selectedDate), progress: \(newProgress)")
-        onProgressChange?(habit, selectedDate, newProgress)
-        print("🎯 SWIPE: onProgressChange callback called")
-        print("🎯 SWIPE: After callback, currentProgress is: \(currentProgress)")
+        // Save progress data
+        if let progressCallback = onProgressChange {
+            progressCallback(habit, selectedDate, newProgress)
+        }
         
         // Reset update flag after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             isUpdatingProgress = false
         }
         
@@ -522,20 +508,16 @@ struct ScheduledHabitItem: View {
     }
     
     private func handleLeftSwipe() {
-        print("🎯 SWIPE: handleLeftSwipe called for \(habit.name)")
-        
-        // ✅ FIX: Debounce rapid interactions
+        // Debounce rapid interactions
         let now = Date()
         let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
-        guard timeSinceLastInteraction > 0.2 else {
-            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
+        guard timeSinceLastInteraction > 0.05 else {
             return
         }
         lastInteractionTime = now
         
-        // ✅ FIX: Prevent concurrent progress updates
+        // Prevent concurrent progress updates
         guard !isUpdatingProgress else {
-            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
             return
         }
         
@@ -543,25 +525,19 @@ struct ScheduledHabitItem: View {
         
         // Swipe left - decrease progress by 1 (minimum 0)
         let newProgress = max(0, currentProgress - 1)
-        let _ = "debug_user_id" // TODO: Get actual user ID hash
-        
-        print("🎯 COMPLETION_FLOW: Swipe left - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(extractNumericGoalAmount(from: habit.goal)), reachedGoal=false")
         
         // Update UI immediately
         withAnimation(.easeInOut(duration: 0.2)) {
             currentProgress = newProgress
         }
         
-        // Call the callback to save the progress with error handling
-        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
-        print("🎯 SWIPE: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
-        print("🎯 SWIPE: About to call onProgressChange with habit: \(habit.name), date: \(selectedDate), progress: \(newProgress)")
-        onProgressChange?(habit, selectedDate, newProgress)
-        print("🎯 SWIPE: onProgressChange callback called")
-        print("🎯 SWIPE: After callback, currentProgress is: \(currentProgress)")
+        // Save progress data
+        if let progressCallback = onProgressChange {
+            progressCallback(habit, selectedDate, newProgress)
+        }
         
         // Reset update flag after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             isUpdatingProgress = false
         }
         
@@ -571,10 +547,9 @@ struct ScheduledHabitItem: View {
     }
     
     private func showCompletionSheet() {
-        // ✅ FIX: Use CompletionStateManager to prevent race conditions
+        // Use CompletionStateManager to prevent race conditions
         let completionManager = CompletionStateManager.shared
         guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
-            print("🎯 COMPLETION_FLOW: Completion sheet already showing for \(habit.name), skipping")
             return
         }
         
@@ -595,7 +570,6 @@ struct ScheduledHabitItem: View {
         }
         
         // Show completion sheet immediately
-        print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
         showingCompletionSheet = true
     }
 }
