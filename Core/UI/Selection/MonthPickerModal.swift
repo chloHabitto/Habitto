@@ -13,7 +13,7 @@ struct MonthPickerModal: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 20) {
                 // Header
                 HStack {
                     Button("Cancel") {
@@ -37,15 +37,11 @@ struct MonthPickerModal: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
-                .padding(.bottom, 8)
-                
-                Spacer()
                 
                 // Month Picker
                 MonthPicker(selectedMonth: $tempSelectedMonth)
+                    .frame(height: 300)
                     .padding(.horizontal, 20)
-                
-                Spacer()
                 
                 // Reset button - only show if month is different from current month
                 if !isCurrentMonthSelected {
@@ -62,7 +58,6 @@ struct MonthPickerModal: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 20)
-                    .padding(.top, 12)
                 }
                 
                 // Selected month display
@@ -85,12 +80,12 @@ struct MonthPickerModal: View {
                     .cornerRadius(16)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
-                
-                Spacer()
+                .padding(.bottom, 20)
             }
-            .frame(height: 450)
+            .background(.surface)
+            .cornerRadius(20)
+            .padding(.horizontal, 8)
+            .frame(height: 520)
     }
     
     private var isCurrentMonthSelected: Bool {
@@ -125,7 +120,7 @@ struct MonthPicker: View {
     }
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 16) {
             // Year Navigation
             HStack {
                 Button(action: previousYear) {
@@ -151,7 +146,7 @@ struct MonthPicker: View {
             .padding(.horizontal, 20)
             
             // Month Grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
                 ForEach(1...12, id: \.self) { month in
                     MonthButton(
                         month: month,
@@ -233,7 +228,7 @@ struct MonthButton: View {
                 .font(.appBodyMedium)
                 .foregroundColor(isSelected ? .white : .text01)
                 .frame(maxWidth: .infinity)
-                .frame(height: 36)
+                .frame(height: 44)
                 .background(isSelected ? .primary : .surfaceContainer)
                 .cornerRadius(12)
                 .overlay(

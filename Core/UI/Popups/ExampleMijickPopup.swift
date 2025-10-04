@@ -162,3 +162,90 @@ struct ExampleTopPopup: TopPopup {
 //     .present()
 // }
 
+// MARK: - Test Popup for Debugging
+struct TestMijickPopup: CenterPopup {
+    init() {
+        print("📅 TestMijickPopup: Initializing")
+    }
+    
+    var body: some View {
+        createContent()
+    }
+    
+    func createContent() -> some View {
+        VStack(spacing: 20) {
+            Text("Test Popup")
+                .font(.appHeadlineMedium)
+                .foregroundColor(.white)
+            
+            Text("MijickPopups is working!")
+                .font(.appBodyMedium)
+                .foregroundColor(.white)
+            
+            Button("Close") {
+                print("📅 TestMijickPopup: Close button tapped")
+                Task { await dismissLastPopup() }
+            }
+            .font(.appButtonText1)
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.blue)
+            .cornerRadius(8)
+        }
+        .padding(24)
+        .background(Color.red) // Bright red background to make it obvious
+        .onAppear {
+            print("📅 TestMijickPopup: onAppear called - popup should be visible")
+        }
+    }
+    
+    func configurePopup(config: CenterPopupConfig) -> CenterPopupConfig {
+        config
+            .cornerRadius(20)
+            .tapOutsideToDismissPopup(true)
+            .backgroundColor(.black.opacity(0.5)) // Semi-transparent overlay
+    }
+}
+
+// MARK: - Simple Test Popup for Debugging
+struct SimpleTestPopup: CenterPopup {
+    init() {
+        print("📅 SimpleTestPopup: Initializing")
+    }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Simple Test")
+                .font(.title)
+                .foregroundColor(.white)
+            
+            Text("MijickPopups is working!")
+                .font(.body)
+                .foregroundColor(.white)
+            
+            Button("Close") {
+                print("📅 SimpleTestPopup: Close button tapped")
+                Task { await dismissLastPopup() }
+            }
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.blue)
+            .cornerRadius(8)
+        }
+        .padding(30)
+        .background(Color.red)
+        .cornerRadius(20)
+        .onAppear {
+            print("📅 SimpleTestPopup: onAppear called - popup should be visible")
+        }
+    }
+    
+    func configurePopup(config: CenterPopupConfig) -> CenterPopupConfig {
+        config
+            .cornerRadius(20)
+            .tapOutsideToDismissPopup(true)
+            .backgroundColor(.black.opacity(0.5))
+    }
+}
+
