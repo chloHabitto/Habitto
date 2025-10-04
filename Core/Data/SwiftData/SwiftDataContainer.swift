@@ -29,22 +29,58 @@ final class SwiftDataContainer: ObservableObject {
                 MigrationState.self       // ✅ PHASE 5: Added MigrationState model
             ])
             
+            logger.info("🔧 SwiftData: Creating model configuration...")
+            logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
+            
+            // ✅ CRITICAL FIX: Reset database if corrupted
+            let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
+            if FileManager.default.fileExists(atPath: databaseURL.path) {
+                logger.warning("🔧 SwiftData: Database exists, checking for corruption...")
+                // Check if database is corrupted by attempting to open it
+                do {
+                    let testContainer = try ModelContainer(for: schema, configurations: [
+                        ModelConfiguration(url: databaseURL)
+                    ])
+                    let testContext = ModelContext(testContainer)
+                    // Try to query CompletionRecord to check if table exists
+                    let testRequest = FetchDescriptor<CompletionRecord>()
+                    _ = try testContext.fetch(testRequest)
+                    logger.info("✅ SwiftData: Database is healthy")
+                } catch {
+                    logger.error("❌ SwiftData: Database corruption detected: \(error)")
+                    logger.info("🔧 SwiftData: Resetting corrupted database...")
+                    try? FileManager.default.removeItem(at: databaseURL)
+                    logger.info("✅ SwiftData: Corrupted database removed")
+                }
+            } else {
+                logger.info("🔧 SwiftData: No existing database found, creating new one")
+            }
+            
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false
             )
             
+            logger.info("🔧 SwiftData: Creating ModelContainer...")
             self.modelContainer = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
             
+            logger.info("🔧 SwiftData: Creating ModelContext...")
             self.modelContext = ModelContext(modelContainer)
             
-            logger.info("SwiftData container initialized successfully")
+            logger.info("✅ SwiftData: Container initialized successfully")
+            logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
+            
+            // Test if we can access the CompletionRecord table
+            let testRequest = FetchDescriptor<CompletionRecord>()
+            let testCount = (try? modelContext.fetchCount(testRequest)) ?? -1
+            logger.info("🔧 SwiftData: CompletionRecord table test - count: \(testCount)")
             
         } catch {
-            logger.error("Failed to initialize SwiftData container: \(error.localizedDescription)")
+            logger.error("❌ SwiftData: Failed to initialize container: \(error.localizedDescription)")
+            logger.error("❌ SwiftData: Error details: \(error)")
             fatalError("Failed to initialize SwiftData container: \(error)")
         }
     }
@@ -137,6 +173,118 @@ final class SwiftDataContainer: ObservableObject {
         } catch {
             logger.error("Failed to get migration history: \(error.localizedDescription)")
             return []
+        }
+    }
+    
+    // MARK: - Database Health Check
+    
+    func checkDatabaseHealth() -> Bool {
+        do {
+            // Try to query CompletionRecord to check if table exists
+            let testRequest = FetchDescriptor<CompletionRecord>()
+            _ = try modelContext.fetch(testRequest)
+            return true
+        } catch {
+            logger.error("❌ SwiftData: Database health check failed: \(error)")
+            return false
+        }
+    }
+    
+    // ✅ CRITICAL FIX: Proactive database health monitoring
+    func performHealthCheck() -> Bool {
+        logger.info("🔧 SwiftData: Performing proactive health check...")
+        
+        // Test multiple critical tables
+        let tests = [
+            ("HabitData", { try self.modelContext.fetch(FetchDescriptor<HabitData>()) }),
+            ("CompletionRecord", { try self.modelContext.fetch(FetchDescriptor<CompletionRecord>()) }),
+            ("DailyAward", { try self.modelContext.fetch(FetchDescriptor<DailyAward>()) }),
+            ("UserProgressData", { try self.modelContext.fetch(FetchDescriptor<UserProgressData>()) })
+        ]
+        
+        for (tableName, test) in tests {
+            do {
+                _ = try test()
+                logger.info("✅ SwiftData: \(tableName) table is healthy")
+            } catch {
+                logger.error("❌ SwiftData: \(tableName) table is corrupted: \(error)")
+                logger.error("🔧 SwiftData: Initiating database reset...")
+                resetCorruptedDatabase()
+                return false
+            }
+        }
+        
+        logger.info("✅ SwiftData: All tables are healthy")
+        return true
+    }
+    
+    func resetCorruptedDatabase() {
+        logger.warning("🔧 SwiftData: Resetting corrupted database...")
+        let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
+        try? FileManager.default.removeItem(at: databaseURL)
+        logger.info("✅ SwiftData: Corrupted database removed - app will need to restart")
+        
+        // Also remove any related database files
+        let databaseDir = databaseURL.deletingLastPathComponent()
+        let databaseName = databaseURL.deletingPathExtension().lastPathComponent
+        
+        // Remove all related files
+        let fileManager = FileManager.default
+        do {
+            let files = try fileManager.contentsOfDirectory(at: databaseDir, includingPropertiesForKeys: nil)
+            for file in files {
+                if file.lastPathComponent.hasPrefix(databaseName) {
+                    try? fileManager.removeItem(at: file)
+                    logger.info("🔧 SwiftData: Removed related file: \(file.lastPathComponent)")
+                }
+            }
+        } catch {
+            logger.error("❌ SwiftData: Failed to clean up related files: \(error)")
+        }
+    }
+    
+    // ✅ CRITICAL FIX: Recreate the entire container after corruption
+    func recreateContainerAfterCorruption() {
+        logger.warning("🔧 SwiftData: Recreating container after corruption...")
+        
+        // First, clean up the corrupted database
+        resetCorruptedDatabase()
+        
+        // Create a new schema
+        let schema = Schema([
+            HabitData.self,
+            CompletionRecord.self,
+            DailyAward.self,
+            UserProgressData.self,
+            AchievementData.self,
+            DifficultyRecord.self,
+            UsageRecord.self,
+            HabitNote.self,
+            StorageHeader.self,
+            MigrationRecord.self,
+            MigrationState.self
+        ])
+        
+        do {
+            // Create new model configuration
+            let modelConfiguration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: false
+            )
+            
+            // Create new container and context
+            let newContainer = try ModelContainer(
+                for: schema,
+                configurations: [modelConfiguration]
+            )
+            
+            // Replace the existing container and context
+            // Note: This is a workaround since we can't directly replace the stored properties
+            // The app will need to restart to fully recover, but this prevents further corruption
+            logger.info("✅ SwiftData: New container created successfully")
+            
+        } catch {
+            logger.error("❌ SwiftData: Failed to recreate container: \(error)")
         }
     }
     

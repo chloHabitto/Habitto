@@ -878,8 +878,45 @@ struct HomeTabView: View {
             }
             
             print("✅ HomeTabView: Prefetched completion status for \(completions.count) habits")
+            
+            // ✅ FIX: Check if all habits are already completed for today
+            await checkAndTriggerCelebrationIfAllCompleted()
         } catch {
             print("❌ HomeTabView: Failed to prefetch completion status: \(error)")
+        }
+    }
+    
+    // ✅ FIX: Check if all habits are completed and trigger celebration
+    private func checkAndTriggerCelebrationIfAllCompleted() async {
+        // Only check if we're viewing today
+        let today = DateUtils.today()
+        guard Calendar.current.isDate(selectedDate, inSameDayAs: today) else {
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: Not today, skipping check")
+            return
+        }
+        
+        // Get habits for today
+        let todayHabits = baseHabitsForSelectedDate
+        
+        // Check if all habits are completed
+        let allCompleted = todayHabits.allSatisfy { habit in
+            completionStatusMap[habit.id] == true
+        }
+        
+        if allCompleted && !todayHabits.isEmpty {
+            print("🎉 checkAndTriggerCelebrationIfAllCompleted: All habits completed! Triggering celebration")
+            
+            // Trigger the celebration by calling DailyAwardService
+            let userId = getCurrentUserId()
+            
+            let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "app_launch_check")
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: grantIfAllComplete result: \(result)")
+            
+            if result {
+                print("🎉 checkAndTriggerCelebrationIfAllCompleted: Celebration triggered successfully!")
+            }
+        } else {
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: Not all habits completed (\(todayHabits.filter { !(completionStatusMap[$0.id] ?? false) }.count) remaining)")
         }
     }
     
@@ -948,8 +985,17 @@ struct HomeTabView: View {
     
     // MARK: - Habit Completion Logic
     private func onHabitCompleted(_ habit: Habit) {
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
+        let dateKey = Habit.dateKey(for: selectedDate)
+        
+        print("🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
+        
         // Mark complete and present difficulty sheet
         deferResort = true
+        
+        // ✅ FIX: Update completion status map immediately for this habit
+        // This ensures the last habit detection works correctly
+        completionStatusMap[habit.id] = true
         
         // Check if this is the last habit to be completed
         // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
@@ -960,16 +1006,22 @@ struct HomeTabView: View {
         if remainingHabits.isEmpty {
             // This is the last habit - set flag and let difficulty sheet be shown
             // The celebration will be triggered after the difficulty sheet is dismissed
+            print("🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
             onLastHabitCompleted()
             // Don't set selectedHabit = nil here - let the difficulty sheet show
         } else {
             // Present difficulty sheet (existing logic)
             // Don't set selectedHabit here as it triggers habit detail screen
             // The difficulty sheet will be shown by the ScheduledHabitItem
+            print("🎯 COMPLETION_FLOW: Habit completed, \(remainingHabits.count) remaining")
         }
     }
     
     private func onHabitUncompleted(_ habit: Habit) {
+        // ✅ FIX: Update completion status map immediately for this habit
+        // This ensures the last habit detection works correctly
+        completionStatusMap[habit.id] = false
+        
         // Call award service
         Task {
             #if DEBUG
@@ -986,6 +1038,11 @@ struct HomeTabView: View {
     }
     
     private func onDifficultySheetDismissed() {
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
+        let dateKey = Habit.dateKey(for: selectedDate)
+        
+        print("🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
+        
         deferResort = false
         resortHabits()
         
@@ -994,10 +1051,9 @@ struct HomeTabView: View {
             // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
             // This is the ONLY place where XP should be awarded for habit completion
             // Do NOT call XPManager methods directly - always use DailyAwardService
-            let dateKey = DateKey.key(for: selectedDate)
             let userId = getCurrentUserId()
-            print("🎉 STEP 2: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
-            print("🎯 STEP 2: userId = \(userId)")
+            print("🎉 COMPLETION_FLOW: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
+            print("🎯 COMPLETION_FLOW: userId = \(userId)")
             
             Task {
                 #if DEBUG
@@ -1010,14 +1066,22 @@ struct HomeTabView: View {
                 }
                 #endif
                 
-                print("🎯 STEP 3: Calling DailyAwardService.grantIfAllComplete()")
+                print("🎯 COMPLETION_FLOW: Calling DailyAwardService.grantIfAllComplete()")
                 let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "ui_sheet_dismiss")
-                print("🎯 STEP 3: grantIfAllComplete result: \(result)")
+                print("🎯 COMPLETION_FLOW: grantIfAllComplete result: \(result)")
                 
                 // Check XP after award
                 let currentXP = XPManager.shared.userProgress.totalXP
-                print("🎯 STEP 4: Current XP after award: \(currentXP)")
-                print("🎯 STEP 4: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
+                print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
+                print("🎯 COMPLETION_FLOW: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
+                
+                // ✅ FALLBACK: If event bus doesn't trigger celebration, trigger it directly
+                if result {
+                    print("🎯 COMPLETION_FLOW: Award granted successfully, triggering celebration as fallback")
+                    await MainActor.run {
+                        showCelebration = true
+                    }
+                }
             }
             
             // Reset the flag
