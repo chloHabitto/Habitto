@@ -126,7 +126,7 @@ struct ScheduledHabitItem: View {
                     reminderIcon
                 }
                 
-                Text("\(habit.getProgress(for: selectedDate))/\(extractGoalAmount(from: habit.goal))")
+                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
                     .font(.appBodySmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -201,11 +201,15 @@ struct ScheduledHabitItem: View {
             .animation(.easeInOut(duration: 0.2), value: dragOffset)
         )
         .gesture(
-            DragGesture(minimumDistance: 5, coordinateSpace: .local)
+            DragGesture(minimumDistance: 10, coordinateSpace: .local)
                 .onChanged { value in
                     print("🔄 Drag onChanged: translation=\(value.translation), velocity=\(value.velocity)")
-                    dragOffset = value.translation.width
-                    hasDragged = true
+                    withAnimation(.interactiveSpring()) {
+                        dragOffset = value.translation.width
+                    }
+                    if abs(value.translation.width) > 10 {
+                        hasDragged = true
+                    }
                 }
                 .onEnded { value in
                     print("🔄 Drag onEnded: translation=\(value.translation), velocity=\(value.velocity)")
@@ -215,7 +219,7 @@ struct ScheduledHabitItem: View {
                     print("🔄 TranslationX: \(translationX), VelocityX: \(velocityX)")
                     
                     // More responsive threshold-based detection with velocity fallback
-                    let threshold: CGFloat = 5
+                    let threshold: CGFloat = 20
                     let velocityThreshold: CGFloat = 100
                     
                     // Check both translation and velocity for more reliable detection
@@ -223,131 +227,20 @@ struct ScheduledHabitItem: View {
                     let isLeftSwipe = translationX < -threshold || (translationX < 0 && velocityX < -velocityThreshold)
                     
                     if isRightSwipe {
-                        // ✅ FIX: Debounce rapid interactions
-                        let now = Date()
-                        let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
-                        guard timeSinceLastInteraction > 0.2 else {
-                            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
-                            return
-                        }
-                        lastInteractionTime = now
-                        
-                        // ✅ FIX: Prevent concurrent progress updates
-                        guard !isUpdatingProgress else {
-                            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
-                            return
-                        }
-                        
-                        isUpdatingProgress = true
-                        
-                        // Swipe right - increase progress by 1, clamped to goal
-                        let goalAmount = extractNumericGoalAmount(from: habit.goal)
-                        let newProgress = min(currentProgress + 1, goalAmount)
-                        let _ = "debug_user_id" // TODO: Get actual user ID hash
-                        
-                        print("🎯 COMPLETION_FLOW: Swipe right - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
-                        
-                        // Update UI immediately
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            currentProgress = newProgress
-                        }
-                        
-                        // Save progress data
-                        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
-                        onProgressChange?(habit, selectedDate, newProgress)
-                        
-                        // Reset update flag after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isUpdatingProgress = false
-                        }
-                        
-                        // Check if habit is completed and show completion sheet
-                        if newProgress >= goalAmount {
-                            // ✅ FIX: Use CompletionStateManager to prevent race conditions
-                            let completionManager = CompletionStateManager.shared
-                            guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
-                                print("🎯 COMPLETION_FLOW: Completion sheet already showing for \(habit.name), skipping")
-                                return
-                            }
-                            
-                            completionManager.startCompletionFlow(for: habit.id)
-                            isCompletingHabit = true
-                            isProcessingCompletion = true
-                            
-                            // Fun completion animation for swipe
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
-                                isCompletingAnimation = true
-                            }
-                            
-                            // Reset animation after completion
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    self.isCompletingAnimation = false
-                                }
-                            }
-                            
-                            // Show completion sheet immediately
-                            print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
-                            showingCompletionSheet = true
-                        }
-                        
-                        // Haptic feedback for increase
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
-                        
-                        // UI should update automatically due to @State currentProgress
+                        handleRightSwipe()
                     } else if isLeftSwipe {
-                        // ✅ FIX: Debounce rapid interactions
-                        let now = Date()
-                        let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
-                        guard timeSinceLastInteraction > 0.2 else {
-                            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
-                            return
-                        }
-                        lastInteractionTime = now
-                        
-                        // ✅ FIX: Prevent concurrent progress updates
-                        guard !isUpdatingProgress else {
-                            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
-                            return
-                        }
-                        
-                        isUpdatingProgress = true
-                        
-                        // Swipe left - decrease progress by 1 (minimum 0)
-                        let newProgress = max(0, currentProgress - 1)
-                        let _ = "debug_user_id" // TODO: Get actual user ID hash
-                        
-                        print("🎯 COMPLETION_FLOW: Swipe left - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(extractNumericGoalAmount(from: habit.goal)), reachedGoal=false")
-                        
-                        // Update UI immediately
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            currentProgress = newProgress
-                        }
-                        
-                        // Call the callback to save the progress
-                        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
-                        onProgressChange?(habit, selectedDate, newProgress)
-                        
-                        // Reset update flag after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isUpdatingProgress = false
-                        }
-                        
-                        // Haptic feedback for decrease
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        
-                        // UI should update automatically due to @State currentProgress
+                        handleLeftSwipe()
                     } else {
                         print("🔄 Swipe not strong enough: translationX=\(translationX)")
                     }
                     
                     // Always reset drag offset and hasDragged flag
-                    withAnimation(.easeOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         dragOffset = 0
                     }
-                    hasDragged = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        hasDragged = false
+                    }
                 }
         )
         .onTapGesture {
@@ -434,9 +327,12 @@ struct ScheduledHabitItem: View {
                updatedHabitId == habit.id {
                 let newProgress = habit.getProgress(for: selectedDate)
                 print("🎯 ScheduledHabitItem: Received progress update for \(habit.name), syncing currentProgress from \(currentProgress) to \(newProgress)")
+                print("🎯 ScheduledHabitItem: Notification userInfo: \(notification.userInfo ?? [:])")
                 withAnimation(.easeInOut(duration: 0.2)) {
                     currentProgress = newProgress
                 }
+            } else {
+                print("🎯 ScheduledHabitItem: Received progress update for different habit: \(notification.userInfo?["habitId"] as? UUID ?? UUID())")
             }
         }
             .sheet(isPresented: $showingCompletionSheet) {
@@ -566,6 +462,141 @@ struct ScheduledHabitItem: View {
                 print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
                 showingCompletionSheet = true
             }
+    }
+    
+    // MARK: - Swipe Handlers
+    
+    private func handleRightSwipe() {
+        print("🎯 SWIPE: handleRightSwipe called for \(habit.name)")
+        
+        // ✅ FIX: Debounce rapid interactions
+        let now = Date()
+        let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
+        guard timeSinceLastInteraction > 0.2 else {
+            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
+            return
+        }
+        lastInteractionTime = now
+        
+        // ✅ FIX: Prevent concurrent progress updates
+        guard !isUpdatingProgress else {
+            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
+            return
+        }
+        
+        isUpdatingProgress = true
+        
+        // Swipe right - increase progress by 1, clamped to goal
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
+        let newProgress = min(currentProgress + 1, goalAmount)
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
+        
+        print("🎯 COMPLETION_FLOW: Swipe right - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
+        
+        // Update UI immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentProgress = newProgress
+        }
+        
+        // Save progress data with error handling
+        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
+        print("🎯 SWIPE: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
+        print("🎯 SWIPE: About to call onProgressChange with habit: \(habit.name), date: \(selectedDate), progress: \(newProgress)")
+        onProgressChange?(habit, selectedDate, newProgress)
+        print("🎯 SWIPE: onProgressChange callback called")
+        print("🎯 SWIPE: After callback, currentProgress is: \(currentProgress)")
+        
+        // Reset update flag after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isUpdatingProgress = false
+        }
+        
+        // Check if habit is completed and show completion sheet
+        if newProgress >= goalAmount {
+            showCompletionSheet()
+        }
+        
+        // Haptic feedback for increase
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+    }
+    
+    private func handleLeftSwipe() {
+        print("🎯 SWIPE: handleLeftSwipe called for \(habit.name)")
+        
+        // ✅ FIX: Debounce rapid interactions
+        let now = Date()
+        let timeSinceLastInteraction = now.timeIntervalSince(lastInteractionTime)
+        guard timeSinceLastInteraction > 0.2 else {
+            print("🎯 COMPLETION_FLOW: Interaction too rapid, debouncing (timeSinceLast: \(timeSinceLastInteraction))")
+            return
+        }
+        lastInteractionTime = now
+        
+        // ✅ FIX: Prevent concurrent progress updates
+        guard !isUpdatingProgress else {
+            print("🎯 COMPLETION_FLOW: Progress update already in progress, skipping swipe")
+            return
+        }
+        
+        isUpdatingProgress = true
+        
+        // Swipe left - decrease progress by 1 (minimum 0)
+        let newProgress = max(0, currentProgress - 1)
+        let _ = "debug_user_id" // TODO: Get actual user ID hash
+        
+        print("🎯 COMPLETION_FLOW: Swipe left - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=swipe, oldCount=\(currentProgress), newCount=\(newProgress), goal=\(extractNumericGoalAmount(from: habit.goal)), reachedGoal=false")
+        
+        // Update UI immediately
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentProgress = newProgress
+        }
+        
+        // Call the callback to save the progress with error handling
+        print("🎯 COMPLETION_FLOW: Saving progress data: \(newProgress)")
+        print("🎯 SWIPE: onProgressChange callback is \(onProgressChange != nil ? "available" : "nil")")
+        print("🎯 SWIPE: About to call onProgressChange with habit: \(habit.name), date: \(selectedDate), progress: \(newProgress)")
+        onProgressChange?(habit, selectedDate, newProgress)
+        print("🎯 SWIPE: onProgressChange callback called")
+        print("🎯 SWIPE: After callback, currentProgress is: \(currentProgress)")
+        
+        // Reset update flag after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isUpdatingProgress = false
+        }
+        
+        // Haptic feedback for decrease
+        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+        impactFeedback.impactOccurred()
+    }
+    
+    private func showCompletionSheet() {
+        // ✅ FIX: Use CompletionStateManager to prevent race conditions
+        let completionManager = CompletionStateManager.shared
+        guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
+            print("🎯 COMPLETION_FLOW: Completion sheet already showing for \(habit.name), skipping")
+            return
+        }
+        
+        completionManager.startCompletionFlow(for: habit.id)
+        isCompletingHabit = true
+        isProcessingCompletion = true
+        
+        // Fun completion animation for swipe
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.1)) {
+            isCompletingAnimation = true
+        }
+        
+        // Reset animation after completion
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                self.isCompletingAnimation = false
+            }
+        }
+        
+        // Show completion sheet immediately
+        print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
+        showingCompletionSheet = true
     }
 }
 

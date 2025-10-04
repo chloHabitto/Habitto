@@ -78,6 +78,13 @@ final class SwiftDataContainer: ObservableObject {
             let testCount = (try? modelContext.fetchCount(testRequest)) ?? -1
             logger.info("🔧 SwiftData: CompletionRecord table test - count: \(testCount)")
             
+            // ✅ CRITICAL FIX: Perform comprehensive health check on startup
+            if !performHealthCheck() {
+                logger.error("🔧 SwiftData: Health check failed on startup, resetting database...")
+                resetCorruptedDatabase()
+                logger.info("🔧 SwiftData: Database reset completed - app will need to restart")
+            }
+            
         } catch {
             logger.error("❌ SwiftData: Failed to initialize container: \(error.localizedDescription)")
             logger.error("❌ SwiftData: Error details: \(error)")

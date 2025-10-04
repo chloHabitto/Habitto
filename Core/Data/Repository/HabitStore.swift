@@ -699,6 +699,14 @@ final actor HabitStore {
               let modelContext = SwiftDataContainer.shared.modelContext
               logger.info("🎯 createCompletionRecordIfNeeded: Got modelContext successfully")
               
+              // ✅ CRITICAL FIX: Check database health before attempting operations
+              if !SwiftDataContainer.shared.checkDatabaseHealth() {
+                  logger.error("🔧 HabitStore: Database health check failed, resetting database...")
+                  SwiftDataContainer.shared.resetCorruptedDatabase()
+                  logger.info("🔧 HabitStore: Database reset completed, skipping CompletionRecord creation")
+                  return
+              }
+              
               // Check if CompletionRecord already exists
               logger.info("🎯 createCompletionRecordIfNeeded: Creating predicate...")
               let predicate = #Predicate<CompletionRecord> { record in
@@ -744,7 +752,9 @@ final actor HabitStore {
           logger.error("❌ createCompletionRecordIfNeeded: Error details: \(error.localizedDescription)")
           
           // ✅ CRITICAL FIX: If database is corrupted, handle gracefully
-          if error.localizedDescription.contains("no such table") || error.localizedDescription.contains("ZCOMPLETIONRECORD") {
+          if error.localizedDescription.contains("no such table") || 
+             error.localizedDescription.contains("ZCOMPLETIONRECORD") ||
+             error.localizedDescription.contains("SQLite error code:1") {
               logger.error("🔧 HabitStore: Database corruption detected!")
               logger.error("🔧 HabitStore: Error: \(error.localizedDescription)")
               
