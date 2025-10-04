@@ -178,6 +178,185 @@ struct ProgressTabView: View {
                     }
     }
     
+    // MARK: - Progress Cards
+    private var todayProgressCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Today's Progress")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            if habits.isEmpty {
+                Text("No habits created yet")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
+            } else {
+                let todayProgress = calculateTodayProgress()
+                Text("\(Int(todayProgress * 100))% complete")
+                    .font(.appTitleLarge)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(20)
+        .background(Color.grey50)
+        .cornerRadius(16)
+    }
+    
+    private var weeklyProgressCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("This Week's Progress")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            if habits.isEmpty {
+                Text("No habits created yet")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
+            } else {
+                let weeklyProgress = calculateWeeklyProgress()
+                Text("\(Int(weeklyProgress * 100))% complete")
+                    .font(.appTitleLarge)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(20)
+        .background(Color.grey50)
+        .cornerRadius(16)
+    }
+    
+    private var habitSelectorSheet: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Select Habit")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        showingHabitSelector = false
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                
+                // All habits option
+                Button(action: {
+                    selectedHabit = nil
+                    showingHabitSelector = false
+                }) {
+                    HStack {
+                        Text("All habits")
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        if selectedHabit == nil {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+                
+                Divider()
+                
+                // Individual habits
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(habits, id: \.id) { habit in
+                            Button(action: {
+                                selectedHabit = habit
+                                showingHabitSelector = false
+                            }) {
+                                HStack {
+                                    Text(habit.name)
+                                        .font(.appBodyLarge)
+                                        .foregroundColor(.text01)
+                                    Spacer()
+                                    if selectedHabit?.id == habit.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                            }
+                            
+                            if habit.id != habits.last?.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+            .background(Color.white)
+            .cornerRadius(16, corners: [.topLeft, .topRight])
+        }
+    }
+    
+    // MARK: - Helper Functions
+    private func loadProgressData() {
+        // Load streak statistics using the correct calculator
+        let allHabits = habits
+        if !allHabits.isEmpty {
+            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: allHabits)
+        } else {
+            streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
+        }
+    }
+    
+    private func calculateTodayProgress() -> Double {
+        let today = Date()
+        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
+        
+        guard !habitsToCheck.isEmpty else { return 0.0 }
+        
+        var completedHabits = 0
+        var totalScheduledHabits = 0
+        
+        for habit in habitsToCheck {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
+                totalScheduledHabits += 1
+                if habit.isCompleted(for: today) {
+                    completedHabits += 1
+                }
+            }
+        }
+        
+        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
+    }
+    
+    private func calculateWeeklyProgress() -> Double {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
+        
+        guard !habitsToCheck.isEmpty else { return 0.0 }
+        
+        var totalCompletions = 0
+        var totalPossibleCompletions = 0
+        
+        // Check each day of the week
+        for dayOffset in 0..<7 {
+            guard let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
+            
+            for habit in habitsToCheck {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                    totalPossibleCompletions += 1
+                    if habit.isCompleted(for: currentDay) {
+                        totalCompletions += 1
+                    }
+                }
+            }
+        }
+        
+        return totalPossibleCompletions > 0 ? Double(totalCompletions) / Double(totalPossibleCompletions) : 0.0
+    }
+    
     var body: some View {
         WhiteSheetContainer(
             headerContent: {
@@ -4080,6 +4259,18 @@ struct ProgressTabView: View {
     }
 }
 
+// MARK: - Helper Functions
+extension Int {
+    func formatDays() -> String {
+        let count = self
+        if count == 1 {
+            return "1 day"
+        } else {
+            return "\(count) days"
+        }
+    }
+}
+
 // MARK: - Time Completion Data Point
 struct TimeCompletionData: Identifiable {
     let id = UUID()
@@ -4882,184 +5073,489 @@ struct WeeklySummaryStatsView: View {
 }
 */
 
-    // MARK: - Progress Cards
-    private var todayProgressCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Today's Progress")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            if habits.isEmpty {
-                Text("No habits created yet")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
-            } else {
-                let todayProgress = calculateTodayProgress()
-                Text("\(Int(todayProgress * 100))% complete")
-                    .font(.appTitleLarge)
-                    .foregroundColor(.primary)
+// MARK: - Time Completion Data Point
+struct TimeCompletionData: Identifiable {
+    let id = UUID()
+    let timePeriod: String
+    let completionRate: Double
+    let completionCount: Int
+    let totalDays: Int
+}
+
+// MARK: - Time Base Completion Chart
+struct TimeBaseCompletionChart: View {
+    let data: [TimeCompletionData]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .bottom, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .trailing, spacing: 0) {
+                    ForEach(0...4, id: \.self) { index in
+                        let percentage = 100 - (index * 25)
+                        Text("\(percentage)%")
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 40)
+                    }
+                }
+                .frame(width: 40)
+                
+                // Chart area
+                GeometryReader { geometry in
+                    ZStack {
+                        // Background grid
+                        backgroundGrid(in: geometry)
+                        
+                        // Bars
+                        bars(in: geometry)
+                    }
+                }
+                .frame(height: 160)
             }
+            
+            // X-axis labels
+            HStack {
+                Spacer().frame(width: 40) // Align with chart area
+                
+                ForEach(data, id: \.id) { item in
+                    Text(item.timePeriod)
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text02)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Spacer above banner
+            Spacer()
+                .frame(height: 16)
+            
+            // Time completion banner
+            timeCompletionBanner
         }
-        .padding(20)
-        .background(Color.grey50)
-        .cornerRadius(16)
     }
     
-    private var weeklyProgressCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("This Week's Progress")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            if habits.isEmpty {
-                Text("No habits created yet")
-                    .font(.appBodySmall)
-                    .foregroundColor(.text03)
-            } else {
-                let weeklyProgress = calculateWeeklyProgress()
-                Text("\(Int(weeklyProgress * 100))% complete")
-                    .font(.appTitleLarge)
-                    .foregroundColor(.primary)
+    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            ForEach(0...4, id: \.self) { _ in
+                Rectangle()
+                    .fill(Color.outline3.opacity(0.2))
+                    .frame(height: 1)
+                Spacer()
             }
         }
-        .padding(20)
-        .background(Color.grey50)
-        .cornerRadius(16)
     }
     
-    private var habitSelectorSheet: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Select Habit")
-                        .font(.appTitleMedium)
-                        .foregroundColor(.text01)
-                    
+    private func bars(in geometry: GeometryProxy) -> some View {
+        HStack(alignment: .bottom, spacing: 4) {
+            ForEach(data, id: \.id) { item in
+                VStack {
                     Spacer()
                     
-                    Button("Cancel") {
-                        showingHabitSelector = false
-                    }
-                    .foregroundColor(.primary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                
-                // All habits option
-                Button(action: {
-                    selectedHabit = nil
-                    showingHabitSelector = false
-                }) {
-                    HStack {
-                        Text("All habits")
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                        Spacer()
-                        if selectedHabit == nil {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(.primary)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                }
-                
-                Divider()
-                
-                // Individual habits
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(habits, id: \.id) { habit in
-                            Button(action: {
-                                selectedHabit = habit
-                                showingHabitSelector = false
-                            }) {
-                                HStack {
-                        Text(habit.name)
-                            .font(.appBodyLarge)
-                            .foregroundColor(.text01)
-                                    Spacer()
-                                    if selectedHabit?.id == habit.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.primary)
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                            }
-                            
-                            if habit.id != habits.last?.id {
-                                Divider()
-                            }
-                        }
-                    }
-                }
-            }
-            .background(Color.white)
-            .cornerRadius(16, corners: [.topLeft, .topRight])
-        }
-    }
-
-    // MARK: - Helper Functions
-    private func loadProgressData() {
-        // Load streak statistics using the correct calculator
-        let allHabits = habits
-        if !allHabits.isEmpty {
-            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: allHabits)
-        } else {
-            streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
-        }
-    }
-    
-    private func calculateTodayProgress() -> Double {
-        let today = Date()
-        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
-        
-        guard !habitsToCheck.isEmpty else { return 0.0 }
-        
-        var completedHabits = 0
-        var totalScheduledHabits = 0
-        
-        for habit in habitsToCheck {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
-                totalScheduledHabits += 1
-                if habit.isCompleted(for: today) {
-                    completedHabits += 1
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.primary)
+                        .frame(width: max(4, geometry.size.width / CGFloat(data.count) - 4))
+                        .frame(height: max(4, geometry.size.height * item.completionRate))
                 }
             }
         }
-        
-        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
     }
     
-    private func calculateWeeklyProgress() -> Double {
-        let calendar = Calendar.current
-        let today = Date()
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
-        
-        guard !habitsToCheck.isEmpty else { return 0.0 }
-        
-        var totalCompletions = 0
-        var totalPossibleCompletions = 0
-        
-        // Check each day of the week
-        for dayOffset in 0..<7 {
-            guard let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
+    private var timeCompletionBanner: some View {
+        HStack {
+            Image(systemName: "clock")
+                .foregroundColor(.primary)
             
-            for habit in habitsToCheck {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
-                    totalPossibleCompletions += 1
-                    if habit.isCompleted(for: currentDay) {
-                        totalCompletions += 1
+            Text("Time-based completion tracking")
+                .font(.appBodyMedium)
+                .foregroundColor(.text01)
+            
+            Spacer()
+        }
+        .padding(.vertical, 16)
+        .background(.surfaceContainer)
+        .cornerRadius(16)
+    }
+}
+
+// MARK: - Difficulty Data Point
+struct DifficultyDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let difficulty: Double
+    let hasData: Bool
+}
+
+// MARK: - Monthly Difficulty Data Point
+struct MonthlyDifficultyDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let difficulty: Double
+    let hasData: Bool
+}
+
+// MARK: - Difficulty Line Chart
+struct DifficultyLineChart: View {
+    let data: [DifficultyDataPoint]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .top, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<5, id: \.self) { level in
+                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
+                        
+                        Text(difficultyLabel(for: difficultyLevel))
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 140/4, alignment: .center)
                     }
+                }
+                .frame(width: 60, height: 140)
+                
+                // Main chart area
+                GeometryReader { geometry in
+                    ZStack {
+                        // Background grid
+                        backgroundGrid(in: geometry)
+                        
+                        // Shaded area under the line
+                        shadedArea(in: geometry)
+                        
+                        // Line
+                        line(in: geometry)
+                        
+                        // Data points
+                        dataPoints(in: geometry)
+                    }
+                }
+                .frame(height: 140)
+            }
+            
+            // X-axis labels
+            HStack {
+                Spacer().frame(width: 60) // Align with chart area
+                
+                ForEach(data, id: \.id) { item in
+                    Text(formatDate(item.date))
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text02)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
-        
-        return totalPossibleCompletions > 0 ? Double(totalCompletions) / Double(totalPossibleCompletions) : 0.0
     }
+    
+    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { _ in
+                Rectangle()
+                    .fill(Color.outline3.opacity(0.2))
+                    .frame(height: 1)
+                Spacer()
+            }
+        }
+    }
+    
+    private func shadedArea(in geometry: GeometryProxy) -> some View {
+        Path { path in
+            guard !data.isEmpty else { return }
+            
+            let stepX = geometry.size.width / CGFloat(data.count - 1)
+            
+            path.move(to: CGPoint(x: 0, y: geometry.size.height))
+            
+            for (index, point) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+            path.closeSubpath()
+        }
+        .fill(Color.primary.opacity(0.1))
+    }
+    
+    private func line(in geometry: GeometryProxy) -> some View {
+        Path { path in
+            guard !data.isEmpty else { return }
+            
+            let stepX = geometry.size.width / CGFloat(data.count - 1)
+            
+            for (index, point) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                
+                if index == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(Color.primary, lineWidth: 2)
+    }
+    
+    private func dataPoints(in geometry: GeometryProxy) -> some View {
+        HStack(spacing: 0) {
+            ForEach(data, id: \.id) { point in
+                let stepX = geometry.size.width / CGFloat(data.count - 1)
+                let x = CGFloat(data.firstIndex(where: { $0.id == point.id }) ?? 0) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                
+                Circle()
+                    .fill(Color.primary)
+                    .frame(width: 6, height: 6)
+                    .position(x: x, y: y)
+            }
+        }
+    }
+    
+    private func difficultyLabel(for level: Int) -> String {
+        switch level {
+        case 5: return "Very Hard"
+        case 4: return "Hard"
+        case 3: return "Medium"
+        case 2: return "Easy"
+        case 1: return "Very Easy"
+        default: return ""
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Monthly Difficulty Chart
+struct MonthlyDifficultyChart: View {
+    let data: [MonthlyDifficultyDataPoint]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main chart area with Y-axis labels
+            HStack(alignment: .top, spacing: 0) {
+                // Y-axis labels
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<5, id: \.self) { level in
+                        let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
+                        
+                        Text(difficultyLabel(for: difficultyLevel))
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                            .frame(height: 140/4, alignment: .center)
+                    }
+                }
+                .frame(width: 60, height: 140)
+                
+                // Main chart area
+                GeometryReader { geometry in
+                    ZStack {
+                        // Background grid
+                        backgroundGrid(in: geometry)
+                        
+                        // Shaded area under the line
+                        shadedArea(in: geometry)
+                        
+                        // Line
+                        line(in: geometry)
+                        
+                        // Data points
+                        dataPoints(in: geometry)
+                    }
+                }
+                .frame(height: 140)
+            }
+            
+            // X-axis labels
+            HStack {
+                Spacer().frame(width: 60) // Align with chart area
+                
+                ForEach(data, id: \.id) { item in
+                    Text(formatDate(item.date))
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text02)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+    
+    private func backgroundGrid(in geometry: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { _ in
+                Rectangle()
+                    .fill(Color.outline3.opacity(0.2))
+                    .frame(height: 1)
+                Spacer()
+            }
+        }
+    }
+    
+    private func shadedArea(in geometry: GeometryProxy) -> some View {
+        Path { path in
+            guard !data.isEmpty else { return }
+            
+            let stepX = geometry.size.width / CGFloat(data.count - 1)
+            
+            path.move(to: CGPoint(x: 0, y: geometry.size.height))
+            
+            for (index, point) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+            path.closeSubpath()
+        }
+        .fill(Color.primary.opacity(0.1))
+    }
+    
+    private func line(in geometry: GeometryProxy) -> some View {
+        Path { path in
+            guard !data.isEmpty else { return }
+            
+            let stepX = geometry.size.width / CGFloat(data.count - 1)
+            
+            for (index, point) in data.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                
+                if index == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(Color.primary, lineWidth: 2)
+    }
+    
+    private func dataPoints(in geometry: GeometryProxy) -> some View {
+        HStack(spacing: 0) {
+            ForEach(data, id: \.id) { point in
+                let stepX = geometry.size.width / CGFloat(data.count - 1)
+                let x = CGFloat(data.firstIndex(where: { $0.id == point.id }) ?? 0) * stepX
+                let y = geometry.size.height * (1 - point.difficulty / 5.0)
+                
+                Circle()
+                    .fill(Color.primary)
+                    .frame(width: 6, height: 6)
+                    .position(x: x, y: y)
+            }
+        }
+    }
+    
+    private func difficultyLabel(for level: Int) -> String {
+        switch level {
+        case 5: return "Very Hard"
+        case 4: return "Hard"
+        case 3: return "Medium"
+        case 2: return "Easy"
+        case 1: return "Very Easy"
+        default: return ""
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Animated Circular Progress Ring
+struct AnimatedCircularProgressRing: View {
+    let progress: Double
+    let size: CGFloat
+    let lineWidth: CGFloat
+    let color: Color
+    
+    @State private var animatedProgress: Double = 0
+    
+    var body: some View {
+        ZStack {
+            // Background circle
+            Circle()
+                .stroke(color.opacity(0.2), lineWidth: lineWidth)
+                .frame(width: size, height: size)
+            
+            // Progress circle
+            Circle()
+                .trim(from: 0, to: animatedProgress)
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 1.0), value: animatedProgress)
+        }
+        .onAppear {
+            animatedProgress = progress
+        }
+        .onChange(of: progress) { newValue in
+            animatedProgress = newValue
+        }
+    }
+}
+
+// MARK: - Weekly Summary Stats View
+struct WeeklySummaryStatsView: View {
+    let completionRate: Double
+    let bestStreak: Int
+    let consistencyRate: Double
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 20) {
+                // Completion Rate
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Completion Rate")
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text05)
+                    
+                    Text("\(Int(completionRate * 100))%")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                // Best Streak
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Best Streak")
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text05)
+                    
+                    Text("\(bestStreak) days")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                // Consistency Rate
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Consistency")
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text05)
+                    
+                    Text("\(Int(consistencyRate * 100))%")
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+        .padding(.vertical, 16)
+        .background(.surfaceContainer)
+        .cornerRadius(16)
+    }
+}
 }
 
 
