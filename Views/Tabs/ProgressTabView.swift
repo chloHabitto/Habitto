@@ -179,15 +179,45 @@ struct ProgressTabView: View {
     }
     
     var body: some View {
-        // ✅ TEMPORARY: Simplified view to resolve compilation issues
-        VStack {
-            Text("Progress Tab")
-                .font(.title)
-            Text("Temporarily simplified due to type-checking complexity")
-                .font(.caption)
-                .foregroundColor(.secondary)
+        WhiteSheetContainer(
+            headerContent: {
+                AnyView(headerContent)
+            }
+        ) {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Basic progress content
+                    VStack(spacing: 16) {
+                        Text("Progress Overview")
+                            .font(.appTitleLarge)
+                            .foregroundColor(.text01)
+                        
+                        if habits.isEmpty {
+                            HabitEmptyStateView.noHabitsYet()
+                                .padding(.top, 40)
+                        } else {
+                            // Show basic progress cards
+                            VStack(spacing: 16) {
+                                // Today's Progress Card
+                                todayProgressCard
+                                
+                                // Weekly Progress Card  
+                                weeklyProgressCard
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    .padding(.top, 20)
+                }
+                .padding(.bottom, 40)
+            }
         }
-        .padding()
+        .sheet(isPresented: $showingHabitSelector) {
+            habitSelectorSheet
+        }
+        .onAppear {
+            loadProgressData()
+        }
     }
     
     // ✅ TEMPORARY: Commented out complex view to resolve compilation issues
@@ -4852,7 +4882,186 @@ struct WeeklySummaryStatsView: View {
 }
 */
 
+    // MARK: - Progress Cards
+    private var todayProgressCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Today's Progress")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            if habits.isEmpty {
+                Text("No habits created yet")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
+            } else {
+                let todayProgress = calculateTodayProgress()
+                Text("\(Int(todayProgress * 100))% complete")
+                    .font(.appTitleLarge)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(20)
+        .background(Color.grey50)
+        .cornerRadius(16)
+    }
+    
+    private var weeklyProgressCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("This Week's Progress")
+                .font(.appTitleMedium)
+                .foregroundColor(.text01)
+            
+            if habits.isEmpty {
+                Text("No habits created yet")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text03)
+            } else {
+                let weeklyProgress = calculateWeeklyProgress()
+                Text("\(Int(weeklyProgress * 100))% complete")
+                    .font(.appTitleLarge)
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(20)
+        .background(Color.grey50)
+        .cornerRadius(16)
+    }
+    
+    private var habitSelectorSheet: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Select Habit")
+                        .font(.appTitleMedium)
+                        .foregroundColor(.text01)
+                    
+                    Spacer()
+                    
+                    Button("Cancel") {
+                        showingHabitSelector = false
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                
+                // All habits option
+                Button(action: {
+                    selectedHabit = nil
+                    showingHabitSelector = false
+                }) {
+                    HStack {
+                        Text("All habits")
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                        Spacer()
+                        if selectedHabit == nil {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+                
+                Divider()
+                
+                // Individual habits
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(habits, id: \.id) { habit in
+                            Button(action: {
+                                selectedHabit = habit
+                                showingHabitSelector = false
+                            }) {
+                                HStack {
+                        Text(habit.name)
+                            .font(.appBodyLarge)
+                            .foregroundColor(.text01)
+                                    Spacer()
+                                    if selectedHabit?.id == habit.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.primary)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                            }
+                            
+                            if habit.id != habits.last?.id {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+            .background(Color.white)
+            .cornerRadius(16, corners: [.topLeft, .topRight])
+        }
+    }
+
+    // MARK: - Helper Functions
+    private func loadProgressData() {
+        // Load streak statistics using the correct calculator
+        let allHabits = habits
+        if !allHabits.isEmpty {
+            streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: allHabits)
+        } else {
+            streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
+        }
+    }
+    
+    private func calculateTodayProgress() -> Double {
+        let today = Date()
+        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
+        
+        guard !habitsToCheck.isEmpty else { return 0.0 }
+        
+        var completedHabits = 0
+        var totalScheduledHabits = 0
+        
+        for habit in habitsToCheck {
+            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
+                totalScheduledHabits += 1
+                if habit.isCompleted(for: today) {
+                    completedHabits += 1
+                }
+            }
+        }
+        
+        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
+    }
+    
+    private func calculateWeeklyProgress() -> Double {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+        let habitsToCheck = selectedHabit != nil ? [selectedHabit!] : habits
+        
+        guard !habitsToCheck.isEmpty else { return 0.0 }
+        
+        var totalCompletions = 0
+        var totalPossibleCompletions = 0
+        
+        // Check each day of the week
+        for dayOffset in 0..<7 {
+            guard let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
+            
+            for habit in habitsToCheck {
+                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay) {
+                    totalPossibleCompletions += 1
+                    if habit.isCompleted(for: currentDay) {
+                        totalCompletions += 1
+                    }
+                }
+            }
+        }
+        
+        return totalPossibleCompletions > 0 ? Double(totalCompletions) / Double(totalPossibleCompletions) : 0.0
+    }
 }
+
 
 #Preview {
     ProgressTabView()
