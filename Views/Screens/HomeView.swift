@@ -372,6 +372,7 @@ struct HomeView: View {
                             },
                             onSetProgress: { habit, date, progress in
                                 print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
+                                print("🔄 HomeView: Current state.habits count: \(state.habits.count)")
                                 
                                 // Find the habit by ID from the current state to ensure we have the latest Core Data-synced version
                                 if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
@@ -381,6 +382,7 @@ struct HomeView: View {
                                     print("🔄 HomeView: Progress saved to Core Data using synced habit")
                                 } else {
                                     print("❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
+                                    print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
                                     state.setHabitProgress(habit, for: date, progress: progress)
                                     print("🔄 HomeView: Progress saved to Core Data using original habit")
                                 }

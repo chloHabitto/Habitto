@@ -671,11 +671,13 @@ class HabitRepository: ObservableObject {
             }
             
             // Send notification for UI components to update
+            print("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
             NotificationCenter.default.post(
                 name: .habitProgressUpdated,
                 object: nil,
                 userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey]
             )
+            print("🎯 HabitRepository: Notification posted successfully")
         }
         
         // Persist data in background
