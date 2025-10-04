@@ -3757,12 +3757,27 @@ struct ProgressTabView: View {
         let weekStart = selectedWeekStartDate
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
         
-        // Get all habit completion records for this week
-        let habitLogs = habit.completionHistory.compactMap { (dateString, progress) -> (timestamp: Date, progress: Int)? in
-            guard let date = ISO8601DateHelper.shared.date(from: dateString) else { return nil }
-            return (timestamp: date, progress: progress)
-        }.filter { log in
-            return log.timestamp >= weekStart && log.timestamp <= weekEnd
+        print("🕐 TimeBaseCompletionChart: Getting data for habit '\(habit.name)'")
+        print("🕐 TimeBaseCompletionChart: Week range: \(weekStart) to \(weekEnd)")
+        print("🕐 TimeBaseCompletionChart: Total completion history entries: \(habit.completionHistory.count)")
+        
+        // Get all habit completion timestamps for this week
+        let habitLogs = habit.completionTimestamps.flatMap { (dateString, timestamps) -> [Date] in
+            // Filter timestamps that fall within the week
+            return timestamps.filter { timestamp in
+                return timestamp >= weekStart && timestamp <= weekEnd
+            }
+        }
+        
+        print("🕐 TimeBaseCompletionChart: Found \(habitLogs.count) completion logs for habit '\(habit.name)'")
+        print("🕐 TimeBaseCompletionChart: completionTimestamps keys: \(habit.completionTimestamps.keys.sorted())")
+        
+        // Debug: Print all completion timestamps
+        for (dateKey, timestamps) in habit.completionTimestamps {
+            print("🕐 TimeBaseCompletionChart: Date \(dateKey): \(timestamps.count) timestamps")
+            for timestamp in timestamps {
+                print("🕐 TimeBaseCompletionChart:   - \(timestamp)")
+            }
         }
         
         // Define time periods
@@ -3777,14 +3792,16 @@ struct ProgressTabView: View {
         
         for (periodName, startHour, endHour) in timePeriods {
             // Count completions in this time period
-            let completionsInPeriod = habitLogs.filter { log in
-                let hour = calendar.component(.hour, from: log.timestamp)
+            let completionsInPeriod = habitLogs.filter { timestamp in
+                let hour = calendar.component(.hour, from: timestamp)
                 return hour >= startHour && hour < endHour
             }.count
             
             // Calculate total possible completions (assuming daily habit)
             let totalDays = calendar.dateComponents([.day], from: weekStart, to: weekEnd).day ?? 7
             let completionRate = totalDays > 0 ? Double(completionsInPeriod) / Double(totalDays) : 0.0
+            
+            print("🕐 TimeBaseCompletionChart: \(periodName) (\(startHour)-\(endHour)): \(completionsInPeriod) completions, rate: \(completionRate)")
             
             timeData.append(TimeCompletionData(
                 timePeriod: periodName,
@@ -3794,6 +3811,7 @@ struct ProgressTabView: View {
             ))
         }
         
+        print("🕐 TimeBaseCompletionChart: Generated \(timeData.count) time periods for chart")
         return timeData
     }
     
