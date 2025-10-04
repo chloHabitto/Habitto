@@ -1,6 +1,7 @@
 import CoreData
 import SwiftUI
 import Combine
+import SwiftData
 
 // MARK: - Notification Extensions
 extension Notification.Name {
@@ -238,6 +239,9 @@ class HabitRepository: ObservableObject {
             // Load user data
             await loadHabits(force: true)
             print("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
+            
+            // Load user's XP from SwiftData
+            await loadUserXPFromSwiftData(userId: user.uid)
             
         case .unauthenticated:
             print("🔄 HabitRepository: User signed out, clearing data...")
@@ -660,12 +664,10 @@ class HabitRepository: ObservableObject {
             objectWillChange.send()
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
             
-            // ⚠️  CRITICAL: NO XP WRITES HERE
-            // XP handling is centralized in XPService to prevent duplicates
-            // Do NOT call XPManager.awardXP... or any XP mutation methods
-            // Use XPService.awardDailyCompletionIfEligible() instead (called from UI layer)
-            
-            // Celebration logic is handled in HomeTabView when sheet is dismissed
+            // ✅ XP SYSTEM: Check if all habits are completed and award XP
+            Task {
+                await checkAndAwardXPForDate(date)
+            }
             
             // Send notification for UI components to update
             NotificationCenter.default.post(
@@ -709,6 +711,87 @@ class HabitRepository: ObservableObject {
         // Return empty array to prevent crashes
         print("⚠️ HabitRepository: fetchDifficultyLogs is deprecated - use habit.difficultyHistory directly")
         return []
+    }
+    
+    // MARK: - XP System Integration
+    
+    /// Check if all habits are completed for a date and award XP if so
+    private func checkAndAwardXPForDate(_ date: Date) async {
+        let dateKey = DateKey.key(for: date)
+        let userId = await CurrentUser().idOrGuest
+        
+        print("🎯 XP CHECK: Checking if all habits completed for \(dateKey)")
+        
+        // Check if all habits are completed for this date
+        let allCompleted = habits.allSatisfy { habit in
+            let progress = habit.getProgress(for: date)
+            let goalAmount = extractNumericGoalAmount(from: habit.goal)
+            return progress >= goalAmount
+        }
+        
+        print("🎯 XP CHECK: All habits completed: \(allCompleted)")
+        
+        if allCompleted {
+            print("🎯 XP CHECK: ✅ All habits completed, awarding XP")
+            
+            // Create DailyAwardService and award XP
+            do {
+                let container = try ModelContainer(for: DailyAward.self)
+                let modelContext = ModelContext(container)
+                let awardService = DailyAwardService(modelContext: modelContext)
+                
+                let awarded = await awardService.grantIfAllComplete(date: date, userId: userId, callSite: "habit_repository")
+                print("🎯 XP CHECK: XP awarded: \(awarded)")
+            } catch {
+                print("❌ XP CHECK: Failed to create DailyAwardService: \(error)")
+            }
+        } else {
+            print("🎯 XP CHECK: ❌ Not all habits completed, no XP awarded")
+            
+            // Check if we need to revoke any existing XP
+            do {
+                let container = try ModelContainer(for: DailyAward.self)
+                let modelContext = ModelContext(container)
+                let awardService = DailyAwardService(modelContext: modelContext)
+                
+                let revoked = await awardService.revokeIfAnyIncomplete(date: date, userId: userId, callSite: "habit_repository")
+                if revoked {
+                    print("🎯 XP CHECK: Revoked existing XP award")
+                }
+            } catch {
+                print("❌ XP CHECK: Failed to revoke XP: \(error)")
+            }
+        }
+    }
+    
+    /// Extract numeric goal amount from goal string (e.g., "3 times per day" -> 3)
+    private func extractNumericGoalAmount(from goal: String) -> Int {
+        let components = goal.components(separatedBy: CharacterSet.decimalDigits.inverted)
+        for component in components {
+            if let amount = Int(component), amount > 0 {
+                return amount
+            }
+        }
+        return 1 // Default to 1 if no number found
+    }
+    
+    /// Load user's XP from SwiftData DailyAward records
+    private func loadUserXPFromSwiftData(userId: String) async {
+        print("🎯 XP LOAD: Loading XP from SwiftData for userId: \(userId)")
+        
+        do {
+            let container = try ModelContainer(for: DailyAward.self)
+            let modelContext = ModelContext(container)
+            
+            // Load XP using XPManager's method
+            await MainActor.run {
+                XPManager.shared.loadUserXPFromSwiftData(userId: userId, modelContext: modelContext)
+            }
+            
+            print("✅ XP LOAD: User XP loaded successfully")
+        } catch {
+            print("❌ XP LOAD: Failed to load user XP: \(error)")
+        }
     }
     
     // MARK: - Clean Up Duplicates
