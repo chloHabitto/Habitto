@@ -550,6 +550,7 @@ struct ProgressTabView: View {
             .background(Color(.systemBackground))
         }
         .presentationDetents([.medium, .large])
+        .presentationCornerRadius(32)
     }
     
     private var habitSelectorHeader: some View {
