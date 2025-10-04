@@ -20,6 +20,7 @@ struct ScheduledHabitItem: View {
     @State private var isProcessingCompletion = false
     @State private var isUpdatingProgress = false // ✅ FIX: Prevent concurrent progress updates
     @State private var lastInteractionTime: Date = Date.distantPast // ✅ FIX: Debounce rapid interactions
+    @State private var isLocalUpdateInProgress = false // ✅ FIX: Prevent onChange listeners from overriding local updates
     
     
     // Computed property for background color to simplify complex expression
@@ -287,12 +288,18 @@ struct ScheduledHabitItem: View {
             }
         }
         .onChange(of: habit.completionHistory) { oldHistory, newHistory in
+            // Don't override local updates that are in progress
+            guard !isLocalUpdateInProgress else { return }
+            
             let newProgress = habit.getProgress(for: selectedDate)
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentProgress = newProgress
             }
         }
         .onChange(of: habit) { oldHabit, newHabit in
+            // Don't override local updates that are in progress
+            guard !isLocalUpdateInProgress else { return }
+            
             // Sync currentProgress when the habit object itself changes
             let newProgress = newHabit.getProgress(for: selectedDate)
             if newProgress != currentProgress {
@@ -302,6 +309,9 @@ struct ScheduledHabitItem: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .habitProgressUpdated)) { notification in
+            // Don't override local updates that are in progress
+            guard !isLocalUpdateInProgress else { return }
+            
             // Listen for habit progress updates from the repository
             if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
                updatedHabitId == habit.id {
@@ -388,6 +398,9 @@ struct ScheduledHabitItem: View {
         if isCompleted {
             // If already completed, uncomplete it (set progress to 0)
             
+            // Prevent onChange listeners from overriding this update
+            isLocalUpdateInProgress = true
+            
             // Update local state immediately for instant UI feedback
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentProgress = 0
@@ -395,6 +408,11 @@ struct ScheduledHabitItem: View {
             
             // Then save to data model
             onProgressChange?(habit, selectedDate, 0)
+            
+            // Reset flag after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isLocalUpdateInProgress = false
+            }
             
             // Haptic feedback for uncompletion
             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -412,6 +430,9 @@ struct ScheduledHabitItem: View {
                 isCompletingHabit = true
                 isProcessingCompletion = true
                 
+                // Prevent onChange listeners from overriding this update
+                isLocalUpdateInProgress = true
+                
                 // Update local state immediately for instant UI feedback
                 withAnimation(.easeInOut(duration: 0.2)) {
                     currentProgress = goalAmount
@@ -419,6 +440,11 @@ struct ScheduledHabitItem: View {
                 
                 // Save completion data immediately
                 onProgressChange?(habit, selectedDate, goalAmount)
+                
+                // Reset flag after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isLocalUpdateInProgress = false
+                }
                 
                 // Haptic feedback for completion
                 let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -445,6 +471,9 @@ struct ScheduledHabitItem: View {
         // Set progress to 0 (uncompleted)
         let newProgress = 0
         
+        // Prevent onChange listeners from overriding this update
+        isLocalUpdateInProgress = true
+        
         // Update UI immediately
         withAnimation(.easeInOut(duration: 0.2)) {
             currentProgress = newProgress
@@ -453,6 +482,11 @@ struct ScheduledHabitItem: View {
         // Save progress data
         if let progressCallback = onProgressChange {
             progressCallback(habit, selectedDate, newProgress)
+        }
+        
+        // Reset flag after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isLocalUpdateInProgress = false
         }
         
         // Haptic feedback
@@ -477,10 +511,10 @@ struct ScheduledHabitItem: View {
         }
         
         isUpdatingProgress = true
+        isLocalUpdateInProgress = true
         
-        // Swipe right - increase progress by 1, clamped to goal
-        let goalAmount = extractNumericGoalAmount(from: habit.goal)
-        let newProgress = min(currentProgress + 1, goalAmount)
+        // Swipe right - always increase progress by 1 (no clamping)
+        let newProgress = currentProgress + 1
         
         // Update UI immediately
         withAnimation(.easeInOut(duration: 0.2)) {
@@ -492,12 +526,14 @@ struct ScheduledHabitItem: View {
             progressCallback(habit, selectedDate, newProgress)
         }
         
-        // Reset update flag after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        // Reset update flags after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isUpdatingProgress = false
+            isLocalUpdateInProgress = false
         }
         
         // Check if habit is completed and show completion sheet
+        let goalAmount = extractNumericGoalAmount(from: habit.goal)
         if newProgress >= goalAmount {
             showCompletionSheet()
         }
@@ -522,6 +558,7 @@ struct ScheduledHabitItem: View {
         }
         
         isUpdatingProgress = true
+        isLocalUpdateInProgress = true
         
         // Swipe left - decrease progress by 1 (minimum 0)
         let newProgress = max(0, currentProgress - 1)
@@ -536,9 +573,10 @@ struct ScheduledHabitItem: View {
             progressCallback(habit, selectedDate, newProgress)
         }
         
-        // Reset update flag after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        // Reset update flags after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isUpdatingProgress = false
+            isLocalUpdateInProgress = false
         }
         
         // Haptic feedback for decrease
