@@ -4,6 +4,7 @@ import FirebaseCore
 import GoogleSignIn
 import UserNotifications
 import SwiftData
+import MijickPopups
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -131,6 +132,17 @@ struct HabittoApp: App {
                             .environmentObject(themeManager)
                             .onChange(of: authManager.authState) { oldState, newState in
                                 handleAuthStateChange(oldState: oldState, newState: newState, modelContext: modelContext)
+                            }
+                            .registerPopups(id: .shared) { config in config
+                                .vertical { $0
+                                    .enableDragGesture(true)
+                                    .tapOutsideToDismissPopup(true)
+                                    .cornerRadius(32)
+                                }
+                                .center { $0
+                                    .tapOutsideToDismissPopup(false)
+                                    .backgroundColor(.white)
+                                }
                             }
                     }
                     .onAppear {
