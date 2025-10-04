@@ -4,7 +4,6 @@ import FirebaseCore
 import GoogleSignIn
 import UserNotifications
 import SwiftData
-import MijickPopups
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -130,7 +129,6 @@ struct HabittoApp: App {
                             .environmentObject(vacationManager)
                             .environmentObject(migrationService)
                             .environmentObject(themeManager)
-                            // MijickPopups removed - using native sheets
                             .onChange(of: authManager.authState) { oldState, newState in
                                 handleAuthStateChange(oldState: oldState, newState: newState, modelContext: modelContext)
                             }

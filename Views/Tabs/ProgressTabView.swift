@@ -1,5 +1,4 @@
 import SwiftUI
-import MijickPopups
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
@@ -814,19 +813,17 @@ struct ProgressTabView: View {
             if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 || selectedTimePeriod == 3 {
                 HStack {
                                         Button(action: {
-                        Task {
-                            if selectedTimePeriod == 0 { // Daily
-                                print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
-                                print("🔍 DEBUG: Attempting to show DatePickerModal...")
-                                showingDatePicker = true
-                                print("🔍 DEBUG: DatePickerModal showing set to true")
-                            } else if selectedTimePeriod == 1 { // Weekly
-                                showingWeekPicker = true
-                            } else if selectedTimePeriod == 2 { // Monthly
-                                showingMonthPicker = true
-                            } else if selectedTimePeriod == 3 { // Yearly
-                                showingYearPicker = true
-                            }
+                        if selectedTimePeriod == 0 { // Daily
+                            print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
+                            print("🔍 DEBUG: Attempting to show DatePickerModal...")
+                            showingDatePicker = true
+                            print("🔍 DEBUG: DatePickerModal showing set to true")
+                        } else if selectedTimePeriod == 1 { // Weekly
+                            showingWeekPicker = true
+                        } else if selectedTimePeriod == 2 { // Monthly
+                            showingMonthPicker = true
+                        } else if selectedTimePeriod == 3 { // Yearly
+                            showingYearPicker = true
                         }
                     }) {
                         HStack(spacing: 8) {

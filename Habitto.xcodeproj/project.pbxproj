@@ -18,7 +18,6 @@
 		8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70C2E8A680E00E7B437 /* MCEmojiPicker */; };
 		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
 		897DB9E82E8D22EE00B830CA /* ViewAnimator in Frameworks */ = {isa = PBXBuildFile; productRef = 897DB9E72E8D22EE00B830CA /* ViewAnimator */; };
-		897DB9F62E8D475000B830CA /* MijickPopups in Frameworks */ = {isa = PBXBuildFile; productRef = 897DB9F52E8D475000B830CA /* MijickPopups */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -117,7 +116,6 @@
 				8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */,
 				8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */,
 				8935E7872E7C2204004BF684 /* Lottie in Frameworks */,
-				897DB9F62E8D475000B830CA /* MijickPopups in Frameworks */,
 				8935E78A2E7C2260004BF684 /* FirebaseAnalytics in Frameworks */,
 				8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */,
 				8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */,
@@ -470,7 +468,6 @@
 				8940C70C2E8A680E00E7B437 /* MCEmojiPicker */,
 				8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */,
 				897DB9E72E8D22EE00B830CA /* ViewAnimator */,
-				897DB9F52E8D475000B830CA /* MijickPopups */,
 			);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
@@ -507,7 +504,6 @@
 				8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
 				897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */,
-				897DB9F42E8D475000B830CA /* XCRemoteSwiftPackageReference "Popups" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 89C17A382DF73D8A00B2480F /* Products */;
@@ -1004,14 +1000,6 @@
 				minimumVersion = 3.1.0;
 			};
 		};
-		897DB9F42E8D475000B830CA /* XCRemoteSwiftPackageReference "Popups" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Mijick/Popups.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.2;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1069,11 +1057,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */;
 			productName = ViewAnimator;
-		};
-		897DB9F52E8D475000B830CA /* MijickPopups */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 897DB9F42E8D475000B830CA /* XCRemoteSwiftPackageReference "Popups" */;
-			productName = MijickPopups;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
