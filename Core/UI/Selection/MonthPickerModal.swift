@@ -82,10 +82,6 @@ struct MonthPickerModal: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .background(.surface)
-            .cornerRadius(20)
-            .padding(.horizontal, 8)
-            .frame(height: 520)
     }
     
     private var isCurrentMonthSelected: Bool {
