@@ -488,25 +488,25 @@ struct ProgressTabView: View {
             }
             .presentationDetents([.height(520)])
             .presentationDragIndicator(.hidden)
-            .presentationCornerRadius(24)
+            .presentationCornerRadius(32)
         }
         .sheet(isPresented: $showingWeekPicker) {
             WeekPickerModal(selectedWeekStartDate: $selectedWeekStartDate, isPresented: $showingWeekPicker)
                 .presentationDetents([.height(520)])
                 .presentationDragIndicator(.hidden)
-                .presentationCornerRadius(24)
+                .presentationCornerRadius(32)
         }
         .sheet(isPresented: $showingMonthPicker) {
             MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
                 .presentationDetents([.height(520)])
                 .presentationDragIndicator(.hidden)
-                .presentationCornerRadius(24)
+                .presentationCornerRadius(32)
         }
         .sheet(isPresented: $showingYearPicker) {
             YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
                 .presentationDetents([.height(400)])
                 .presentationDragIndicator(.hidden)
-                .presentationCornerRadius(24)
+                .presentationCornerRadius(32)
         }
         .overlay(
             // All Reminders Modal

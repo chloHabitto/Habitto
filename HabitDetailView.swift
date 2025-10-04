@@ -280,7 +280,7 @@ struct HabitDetailView: View {
             )
             .presentationDetents([.height(500)])
             .presentationDragIndicator(.hidden)
-            .presentationCornerRadius(32)
+            .presentationCornerRadius(40)
         }
     }
     

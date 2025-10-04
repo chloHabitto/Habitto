@@ -283,7 +283,7 @@ struct AddReminderSheet: View {
         .background(.surface)
         .presentationDetents([.height(500)])
         .presentationDragIndicator(.visible)
-        .presentationCornerRadius(20)
+        .presentationCornerRadius(32)
     }
 }
 

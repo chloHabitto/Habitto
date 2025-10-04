@@ -61,7 +61,7 @@ struct HabitCompletionBottomSheet: View {
         .padding(.top, 24)
         .padding(.bottom, 24)
         .background(.surface)
-        .cornerRadius(32, corners: [.topLeft, .topRight])
+        .cornerRadius(40, corners: [.topLeft, .topRight])
 
     }
     
@@ -150,9 +150,9 @@ struct HabitCompletionBottomSheet: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(.surface2)
-            .cornerRadius(16)
+            .cornerRadius(20)
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .stroke(.outline3, lineWidth: 1)
             )
         }
@@ -273,9 +273,9 @@ struct HabitCompletionBottomSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(.surface2)
-                    .cornerRadius(25)
+                    .cornerRadius(30)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 25)
+                        RoundedRectangle(cornerRadius: 30)
                             .stroke(.outline3, lineWidth: 1)
                     )
             }
@@ -296,7 +296,7 @@ struct HabitCompletionBottomSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(selectedDifficulty != nil ? .primary : .disabledBackground)
-                    .cornerRadius(25)
+                    .cornerRadius(30)
             }
             .buttonStyle(PlainButtonStyle())
             .disabled(false)
