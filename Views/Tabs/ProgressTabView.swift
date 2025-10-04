@@ -556,16 +556,15 @@ struct ProgressTabView: View {
     private var habitSelectorHeader: some View {
                                             HStack {
             Text("Select Habit")
-                .font(.appTitleLarge)
-                .foregroundColor(.onPrimaryContainer)
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.text01)
             
             Spacer()
             
             Button("Done") {
                 showingHabitSelector = false
             }
-            .font(.appBodyMedium)
-            .foregroundColor(.primaryFocus)
+            .foregroundColor(.primary)
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
