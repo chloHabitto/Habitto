@@ -41,34 +41,29 @@ struct YearPickerModal: View {
                 
                 // Year Picker
                 YearPicker(selectedYear: $tempSelectedYear)
-                    .frame(height: 300)
+                    .frame(height: 200)
                     .padding(.horizontal, 20)
                     .environmentObject(HabitRepository.shared)
                 
-                // Reset button - always reserve space for consistent height
-                VStack {
-                    if !isCurrentYearSelected {
-                        Button(action: {
-                            resetToCurrentYear()
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.appBodyMedium)
-                                Text("Reset to current year")
-                                    .font(.appBodyMedium)
-                            }
-                            .foregroundColor(.text02)
+                // Reset button - only show if year is different from current year
+                if !isCurrentYearSelected {
+                    Button(action: {
+                        resetToCurrentYear()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.appBodyMedium)
+                            Text("Reset to current year")
+                                .font(.appBodyMedium)
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        .padding(.bottom, 20)
-                    } else {
-                        // Invisible spacer to maintain consistent height
-                        Color.clear
-                            .frame(height: 56) // Height of reset button + padding
+                        .foregroundColor(.text02)
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 }
+                
+                Spacer()
                 
                 // Selected year display
                 Button(action: {
