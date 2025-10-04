@@ -138,12 +138,12 @@ struct HabittoApp: App {
                                         .cornerRadius(20)
                                     }
                                     .center { $0
-                                        .tapOutsideToDismissPopup(true)
-                                        .cornerRadius(20)
+                                        .tapOutsideToDismissPopup(false)
+                                        .backgroundColor(.black.opacity(0.4))
                                     }
                             }
                             .onChange(of: authManager.authState) { oldState, newState in
-                                handleAuthStateChange(oldState: oldState, newState: newState)
+                                handleAuthStateChange(oldState: oldState, newState: newState, modelContext: modelContext)
                             }
                         
                         // DISABLED: Migration view completely disabled per user request
@@ -212,6 +212,7 @@ struct HabittoApp: App {
                             XPManager.shared.resetDailyXP()
                             }
                         }
+                        }
                 }
             }
         }
@@ -234,12 +235,10 @@ struct HabittoApp: App {
             forName: UIApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
-        ) { [weak habitRepository] _ in
-            guard let habitRepository = habitRepository else { return }
-            
+        ) { _ in
             Task { @MainActor in
                 print("🔄 HabittoApp: App became active, reloading habits...")
-                await habitRepository.loadHabits(force: true)
+                await HabitRepository.shared.loadHabits(force: true)
                 
                 // Initialize notification categories first (for snooze functionality)
                 print("🔧 HabittoApp: Initializing notification categories after app became active...")
@@ -248,7 +247,7 @@ struct HabittoApp: App {
                 // Reschedule notifications after a short delay to ensure habits are loaded
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 print("🔄 HabittoApp: Rescheduling notifications after app became active...")
-                let habits = habitRepository.habits
+                let habits = HabitRepository.shared.habits
                 NotificationManager.shared.rescheduleAllNotifications(for: habits)
                 
                 // Schedule daily reminders when app becomes active
@@ -263,12 +262,10 @@ struct HabittoApp: App {
             forName: UIApplication.willResignActiveNotification,
             object: nil,
             queue: .main
-        ) { [weak habitRepository] _ in
-            guard let habitRepository = habitRepository else { return }
-            
+        ) { _ in
             Task { @MainActor in
                 print("🔄 HabittoApp: App going to background, saving data...")
-                let habits = habitRepository.habits
+                let habits = HabitRepository.shared.habits
                 HabitStorageManager.shared.saveHabits(habits, immediate: true)
                 print("✅ HabittoApp: Data saved before background")
             }
@@ -279,12 +276,10 @@ struct HabittoApp: App {
             forName: UIApplication.willTerminateNotification,
             object: nil,
             queue: .main
-        ) { [weak habitRepository] _ in
-            guard let habitRepository = habitRepository else { return }
-            
+        ) { _ in
             Task { @MainActor in
                 print("🔄 HabittoApp: App terminating, saving data...")
-                let habits = habitRepository.habits
+                let habits = HabitRepository.shared.habits
                 HabitStorageManager.shared.saveHabits(habits, immediate: true)
                 print("✅ HabittoApp: Data saved before termination")
             }
@@ -295,12 +290,10 @@ struct HabittoApp: App {
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil,
             queue: .main
-        ) { [weak habitRepository] _ in
-            guard let habitRepository = habitRepository else { return }
-            
+        ) { _ in
             Task { @MainActor in
                 print("🔄 HabittoApp: App entering background, saving data...")
-                let habits = habitRepository.habits
+                let habits = HabitRepository.shared.habits
                 HabitStorageManager.shared.saveHabits(habits, immediate: true)
                 print("✅ HabittoApp: Data saved before entering background")
             }
@@ -311,26 +304,26 @@ struct HabittoApp: App {
             forName: UIApplication.willEnterForegroundNotification,
             object: nil,
             queue: .main
-        ) { [weak habitRepository] _ in
-            guard let habitRepository = habitRepository else { return }
-            
+        ) { _ in
             Task { @MainActor in
                 print("🔄 HabittoApp: App entering foreground, saving data...")
-                let habits = habitRepository.habits
+                let habits = HabitRepository.shared.habits
                 HabitStorageManager.shared.saveHabits(habits, immediate: true)
                 print("✅ HabittoApp: Data saved before entering foreground")
             }
         }
     }
     
-    private func handleAuthStateChange(oldState: AuthenticationState, newState: AuthenticationState) {
+    private func handleAuthStateChange(oldState: AuthenticationState, newState: AuthenticationState, modelContext: ModelContext) {
         print("🎯 AUTH: Auth state changed from \(oldState) to \(newState)")
         
         switch newState {
         case .authenticated(let user):
             print("🎯 AUTH: User signed in: \(user.email ?? "no email")")
             // Load user-specific XP from SwiftData
-            XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
+            Task { @MainActor in
+                XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
+            }
             
         case .unauthenticated:
             print("🎯 AUTH: User signed out")
@@ -343,4 +336,3 @@ struct HabittoApp: App {
             print("❌ AUTH: Authentication error: \(error)")
         }
     }
-}
