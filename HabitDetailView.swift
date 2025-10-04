@@ -34,6 +34,8 @@ struct HabitDetailView: View {
     @State private var showingInactiveConfirmation: Bool = false
     @State private var isProcessingToggle: Bool = false
     @State private var hasInitializedActiveState: Bool = false
+    @State private var showingCompletionSheet = false
+    @State private var isCompletingHabit = false
     
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
@@ -50,476 +52,6 @@ struct HabitDetailView: View {
         return needsScrolling
     }
     
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                headerContent
-                
-                // Main content
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Habit summary card
-                        habitSummaryCard
-                        
-                        // Progress section
-                        progressSection
-                        
-                        // Active/Inactive toggle
-                        activeToggleSection
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-                }
-            }
-            .background(Color.surface2)
-            .navigationBarHidden(true)
-        }
-        .onAppear {
-            todayProgress = habit.getProgress(for: selectedDate)
-            // Initialize active state
-            let calendar = Calendar.current
-            let today = calendar.startOfDay(for: Date())
-            let startDate = calendar.startOfDay(for: habit.startDate)
-            let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-            isActive = today >= startDate && today <= endDate
-        }
-        .fullScreenCover(isPresented: $showingEditView) {
-            HabitEditView(habit: habit, onSave: { updatedHabit in
-                habit = updatedHabit
-                onUpdateHabit?(updatedHabit)
-            })
-        }
-        .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                onDeleteHabit?(habit)
-                dismiss()
-            }
-        } message: {
-            Text("Are you sure you want to delete this habit? This action cannot be undone.")
-        }
-    }
-    
-    // MARK: - Header Content
-    private var headerContent: some View {
-        VStack(spacing: 0) {
-            // Top navigation
-            HStack {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                }
-                
-                Spacer()
-                
-                Menu {
-                    Button(action: {
-                        showingEditView = true
-                    }) {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                    
-                    Button(role: .destructive, action: {
-                        showingDeleteConfirmation = true
-                    }) {
-                        Label("Delete", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-            
-            // Title section
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Habit details")
-                    .font(.appHeadlineSmallEmphasised)
-                    .foregroundColor(.text01)
-                
-                Text("View and edit your habit details.")
-                    .font(.appTitleSmall)
-                    .foregroundColor(.text05)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
-        }
-        .background(Color.surface2)
-    }
-    
-    // MARK: - Habit Summary Card
-    private var habitSummaryCard: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                // Habit Icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.surfaceContainer)
-                        .frame(width: 48, height: 48)
-                    
-                    if habit.icon.hasPrefix("Icon-") {
-                        Image(habit.icon)
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .foregroundColor(.primary)
-                    } else if habit.icon == "None" {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(habit.color)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Text(habit.icon)
-                            .font(.system(size: 24))
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(habit.name)
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.primary)
-                    
-                    Text(habit.description.isEmpty ? "Description" : habit.description)
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text05)
-                }
-                
-                Spacer()
-                
-                // Active status tag
-                Text("Active")
-                    .font(.appLabelSmall)
-                    .foregroundColor(.onPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.secondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            
-            Divider()
-            
-            // Goal
-            HStack {
-                Image(systemName: "flag")
-                    .font(.system(size: 16))
-                    .foregroundColor(.text05)
-                
-                Text("Goal")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                
-                Spacer()
-                
-                Text(sortGoalChronologically(habit.goal))
-                    .font(.appTitleSmallEmphasised)
-                    .foregroundColor(.primary)
-            }
-        }
-        .padding(16)
-        .background(.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-    
-    // MARK: - Progress Section
-    private var progressSection: some View {
-        VStack(spacing: 16) {
-            // Progress header
-            HStack {
-                Text("Progress for \(formattedSelectedDate)")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text05)
-                
-                Spacer()
-            }
-            
-            // Progress bar
-            VStack(spacing: 8) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        // Background
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(.surfaceContainer)
-                            .frame(height: 4)
-                        
-                        // Progress fill
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.primary)
-                            .frame(width: geometry.size.width * min(CGFloat(todayProgress) / CGFloat(extractGoalNumber(from: habit.goal)), 1.0), height: 4)
-                    }
-                }
-                .frame(height: 4)
-                
-                // Progress numbers
-                HStack {
-                    Text("0")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text05)
-                    
-                    Spacer()
-                    
-                    Text("\(extractGoalNumber(from: habit.goal))")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text05)
-                }
-            }
-            
-            // Increment/Decrement controls
-            HStack(spacing: 16) {
-                Spacer()
-                
-                // Decrement button
-                Button(action: {
-                    if todayProgress > 0 {
-                        todayProgress -= 1
-                        updateHabitProgress(todayProgress)
-                    }
-                }) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.onPrimary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.primary)
-                        .clipShape(Circle())
-                }
-                
-                // Current count
-                Text("\(todayProgress)")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.primary)
-                    .frame(width: 40)
-                
-                // Increment button
-                Button(action: {
-                    todayProgress += 1
-                    updateHabitProgress(todayProgress)
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.onPrimary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.primary)
-                        .clipShape(Circle())
-                }
-            }
-        }
-        .padding(16)
-        .background(.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-    
-    // MARK: - Active Toggle Section
-    private var activeToggleSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Toggle(isOn: Binding(
-                get: { isActive },
-                set: { newValue in
-                    guard !isProcessingToggle else { return }
-                    
-                    let oldValue = isActive
-                    
-                    if !newValue && oldValue {
-                        showingInactiveConfirmation = true
-                    } else if newValue && !oldValue {
-                        isProcessingToggle = true
-                        isActive = true
-                        
-                        // Create updated habit with endDate removed
-                        let updatedHabit = Habit(
-                            id: habit.id,
-                            name: habit.name,
-                            description: habit.description,
-                            icon: habit.icon,
-                            color: habit.color,
-                            habitType: habit.habitType,
-                            schedule: habit.schedule,
-                            goal: habit.goal,
-                            reminder: habit.reminder,
-                            startDate: habit.startDate,
-                            endDate: nil,
-                            createdAt: habit.createdAt,
-                            reminders: habit.reminders,
-                            baseline: habit.baseline,
-                            target: habit.target,
-                            completionHistory: habit.completionHistory,
-                            completionTimestamps: habit.completionTimestamps,
-                            difficultyHistory: habit.difficultyHistory,
-                            actualUsage: habit.actualUsage
-                        )
-                        habit = updatedHabit
-                        onUpdateHabit?(updatedHabit)
-                        
-                        isProcessingToggle = false
-                    }
-                }
-            )) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Active")
-                        .font(.appBodyLarge)
-                        .foregroundColor(.text01)
-                    
-                    Text(isActive ? "This habit is currently active and appears in your daily list" : "This habit is inactive and won't appear in your daily list")
-                        .font(.appBodySmall)
-                        .foregroundColor(.text05)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .toggleStyle(SwitchToggleStyle(tint: .green))
-        }
-        .padding(16)
-        .background(Color.surface)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.outline3, lineWidth: 1)
-        )
-        .alert("Make Habit Inactive", isPresented: $showingInactiveConfirmation) {
-            Button("Cancel", role: .cancel) {
-                // No action needed - toggle already reverted
-            }
-            Button("Make Inactive", role: .destructive) {
-                isProcessingToggle = true
-                
-                // Create updated habit with endDate set to yesterday
-                let calendar = Calendar.current
-                let today = calendar.startOfDay(for: Date())
-                let yesterday = calendar.date(byAdding: .day, value: -1, to: today)
-                
-                let updatedHabit = Habit(
-                    id: habit.id,
-                    name: habit.name,
-                    description: habit.description,
-                    icon: habit.icon,
-                    color: habit.color,
-                    habitType: habit.habitType,
-                    schedule: habit.schedule,
-                    goal: habit.goal,
-                    reminder: habit.reminder,
-                    startDate: habit.startDate,
-                    endDate: yesterday,
-                    createdAt: habit.createdAt,
-                    reminders: habit.reminders,
-                    baseline: habit.baseline,
-                    target: habit.target,
-                    completionHistory: habit.completionHistory,
-                    completionTimestamps: habit.completionTimestamps,
-                    difficultyHistory: habit.difficultyHistory,
-                    actualUsage: habit.actualUsage
-                )
-                
-                habit = updatedHabit
-                onUpdateHabit?(updatedHabit)
-                
-                dismiss()
-            }
-        } message: {
-            Text("This habit will be moved to the Inactive tab. You can reactivate it anytime by toggling it back on.")
-        }
-    }
-    
-    // MARK: - Helper Functions
-    private var formattedSelectedDate: String {
-        return AppDateFormatter.shared.formatDisplayDate(selectedDate)
-    }
-    
-    private func extractGoalNumber(from goalString: String) -> Int {
-        // Extract the number from goal strings like "5 times on 1 times a week", "20 pages on everyday", etc.
-        var components = goalString.components(separatedBy: " on ")
-        if components.count < 2 {
-            components = goalString.components(separatedBy: " per ")
-        }
-        let goalAmount = components.first ?? goalString
-        
-        let amountComponents = goalAmount.components(separatedBy: " ")
-        if let firstComponent = amountComponents.first, let number = Int(firstComponent) {
-            return number
-        }
-        return 1
-    }
-    
-    private func updateHabitProgress(_ progress: Int) {
-        var updatedHabit = habit
-        let dateKey = Habit.dateKey(for: selectedDate)
-        updatedHabit.completionHistory[dateKey] = progress
-        
-        habit = updatedHabit
-        onUpdateHabit?(updatedHabit)
-    }
-    
-    private func sortGoalChronologically(_ goal: String) -> String {
-        if goal.contains(" on ") {
-            let parts = goal.components(separatedBy: " on ")
-            if parts.count >= 2 {
-                let beforeOn = parts[0]
-                let frequency = parts[1]
-                
-                let sortedFrequency = sortScheduleChronologically(frequency)
-                let result = "\(beforeOn) on \(sortedFrequency)"
-                return result
-            }
-        } else if goal.contains(" per ") {
-            let parts = goal.components(separatedBy: " per ")
-            if parts.count >= 2 {
-                let beforePer = parts[0]
-                let frequency = parts[1]
-                
-                let sortedFrequency = sortScheduleChronologically(frequency)
-                let result = "\(beforePer) on \(sortedFrequency)"
-                return result
-            }
-        }
-        
-        return goal
-    }
-    
-    private func sortScheduleChronologically(_ schedule: String) -> String {
-        let lowercasedSchedule = schedule.lowercased()
-        
-        if (lowercasedSchedule.contains("every") || lowercasedSchedule.contains("monday") || 
-            lowercasedSchedule.contains("tuesday") || lowercasedSchedule.contains("wednesday") || 
-            lowercasedSchedule.contains("thursday") || lowercasedSchedule.contains("friday") || 
-            lowercasedSchedule.contains("saturday") || lowercasedSchedule.contains("sunday")) && 
-           (lowercasedSchedule.contains(",") || lowercasedSchedule.contains(" and ")) {
-            
-            let dayPhrases: [String]
-            if schedule.contains(", and ") {
-                dayPhrases = schedule.components(separatedBy: ", and ")
-            } else if schedule.contains(" and ") {
-                dayPhrases = schedule.components(separatedBy: " and ")
-            } else {
-                dayPhrases = schedule.components(separatedBy: ", ")
-            }
-            
-            let weekdayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-            
-            let sortedPhrases = dayPhrases.sorted { phrase1, phrase2 in
-                let lowercased1 = phrase1.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                let lowercased2 = phrase2.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                
-                let day1Index = weekdayOrder.firstIndex { lowercased1.contains($0) } ?? 99
-                let day2Index = weekdayOrder.firstIndex { lowercased2.contains($0) } ?? 99
-                
-                return day1Index < day2Index
-            }
-            
-            let cleanedPhrases = sortedPhrases.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            let result = cleanedPhrases.joined(separator: ", ")
-            return result
-        }
-        
-        return schedule
-    }
-    
-    // ✅ TEMPORARY: Commented out complex view to resolve compilation issues
-    /*
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
@@ -699,13 +231,12 @@ struct HabitDetailView: View {
                     reminder: habit.reminder,
                     startDate: habit.startDate,
                     endDate: yesterday,
-                    isCompleted: habit.isCompleted,
-                    streak: habit.streak,
                     createdAt: habit.createdAt,
                     reminders: habit.reminders,
                     baseline: habit.baseline,
                     target: habit.target,
                     completionHistory: habit.completionHistory,
+                    completionTimestamps: habit.completionTimestamps,
                     difficultyHistory: habit.difficultyHistory,
                     actualUsage: habit.actualUsage
                 )
@@ -734,6 +265,22 @@ struct HabitDetailView: View {
             }
         } message: {
             Text("Are you sure you want to delete this reminder?")
+        }
+        .sheet(isPresented: $showingCompletionSheet) {
+            HabitCompletionBottomSheet(
+                isPresented: $showingCompletionSheet,
+                habit: habit,
+                onDismiss: {
+                    let _ = "debug_user_id" // TODO: Get actual user ID hash
+                    print("🎯 COMPLETION_FLOW: Detail sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
+                    
+                    // Reset flags
+                    isCompletingHabit = false
+                }
+            )
+            .presentationDetents([.height(500)])
+            .presentationDragIndicator(.hidden)
+            .presentationCornerRadius(32)
         }
     }
     
@@ -1152,7 +699,12 @@ struct HabitDetailView: View {
                 // Decrement button
                 Button(action: {
                     if todayProgress > 0 {
-                        todayProgress -= 1
+                        let newProgress = max(0, todayProgress - 1)
+                        let _ = "debug_user_id" // TODO: Get actual user ID hash
+                        
+                        print("🎯 COMPLETION_FLOW: Detail - button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(extractGoalNumber(from: habit.goal)), reachedGoal=false")
+                        
+                        todayProgress = newProgress
                         updateHabitProgress(todayProgress)
                     }
                 }) {
@@ -1172,8 +724,21 @@ struct HabitDetailView: View {
                 
                 // Increment button
                 Button(action: {
-                    todayProgress += 1
+                    let goalAmount = extractGoalNumber(from: habit.goal)
+                    let newProgress = min(todayProgress + 1, goalAmount)
+                    let _ = "debug_user_id" // TODO: Get actual user ID hash
+                    
+                    print("🎯 COMPLETION_FLOW: Detail + button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
+                    
+                    todayProgress = newProgress
                     updateHabitProgress(todayProgress)
+                    
+                    // Check if habit is completed and show completion sheet
+                    if newProgress >= goalAmount {
+                        isCompletingHabit = true
+                        print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
+                        showingCompletionSheet = true
+                    }
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 16, weight: .medium))
@@ -1270,7 +835,6 @@ struct HabitDetailView: View {
                             baseline: habit.baseline,
                             target: habit.target,
                             completionHistory: habit.completionHistory,
-                            completionTimestamps: habit.completionTimestamps,
                             difficultyHistory: habit.difficultyHistory,
                             actualUsage: habit.actualUsage
                         )
@@ -1572,9 +1136,6 @@ struct ReminderEditSheet: View {
         
         dismiss()
     }
-}
-*/
-
 }
 
 #Preview {
