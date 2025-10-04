@@ -808,7 +808,6 @@ struct ProgressTabView: View {
             if selectedTimePeriod == 0 || selectedTimePeriod == 1 || selectedTimePeriod == 2 || selectedTimePeriod == 3 {
                 HStack {
                                         Button(action: {
-                        print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                         if selectedTimePeriod == 0 { // Daily
                             // Use MijickPopups for date selection
                             Task {
