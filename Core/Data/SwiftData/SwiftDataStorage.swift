@@ -107,6 +107,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     for (dateString, difficulty) in habit.difficultyHistory {
                         if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
                             let difficultyRecord = DifficultyRecord(
+                                userId: await getCurrentUserId() ?? "",
+                                habitId: habitData.id,
                                 date: date,
                                 difficulty: difficulty
                             )
@@ -117,6 +119,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                     // Add usage history
                     for (key, value) in habit.actualUsage {
                         let usageRecord = UsageRecord(
+                            userId: await getCurrentUserId() ?? "",
+                            habitId: habitData.id,
                             key: key,
                             value: value
                         )
@@ -214,6 +218,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 for (dateString, difficulty) in habit.difficultyHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
                         let difficultyRecord = DifficultyRecord(
+                            userId: await getCurrentUserId() ?? "",
+                            habitId: existingHabitData.id,
                             date: date,
                             difficulty: difficulty
                         )
@@ -225,6 +231,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 existingHabitData.usageHistory.removeAll()
                 for (key, value) in habit.actualUsage {
                     let usageRecord = UsageRecord(
+                        userId: await getCurrentUserId() ?? "",
+                        habitId: existingHabitData.id,
                         key: key,
                         value: value
                     )
@@ -265,6 +273,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 for (dateString, difficulty) in habit.difficultyHistory {
                     if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
                         let difficultyRecord = DifficultyRecord(
+                            userId: await getCurrentUserId() ?? "",
+                            habitId: habitData.id,
                             date: date,
                             difficulty: difficulty
                         )
@@ -275,6 +285,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 // Add usage history
                 for (key, value) in habit.actualUsage {
                     let usageRecord = UsageRecord(
+                        userId: await getCurrentUserId() ?? "",
+                        habitId: habitData.id,
                         key: key,
                         value: value
                     )
