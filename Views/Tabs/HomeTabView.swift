@@ -111,8 +111,13 @@ struct HomeTabView: View {
                         switch event {
                         case .dailyAwardGranted(let dateKey):
                             print("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
-                            print("🎯 STEP 12: Setting showCelebration = true")
-                            showCelebration = true
+                            
+                            // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                print("🎯 STEP 12: Setting showCelebration = true")
+                                showCelebration = true
+                            }
+                            
                         case .dailyAwardRevoked(let dateKey):
                             print("🎯 STEP 12: Received dailyAwardRevoked event for \(dateKey)")
                             print("🎯 STEP 12: Setting showCelebration = false")
@@ -1075,13 +1080,8 @@ struct HomeTabView: View {
                 print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
                 print("🎯 COMPLETION_FLOW: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
                 
-                // ✅ FALLBACK: If event bus doesn't trigger celebration, trigger it directly
-                if result {
-                    print("🎯 COMPLETION_FLOW: Award granted successfully, triggering celebration as fallback")
-                    await MainActor.run {
-                        showCelebration = true
-                    }
-                }
+                // Celebration will be triggered by EventBus when dailyAwardGranted event is received
+                // The delay ensures the sheet is fully dismissed before celebration appears
             }
             
             // Reset the flag
