@@ -1,4 +1,5 @@
 import SwiftUI
+import MijickPopups
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
@@ -92,7 +93,7 @@ struct ProgressTabView: View {
     @State private var selectedHabit: Habit?
     @State private var selectedProgressDate = Date()
     @State private var showingHabitSelector = false
-    @State private var showingDatePicker = false
+    // showingDatePicker removed - now using MijickPopups
     @State private var showingWeekPicker = false
     @State private var showingMonthPicker = false
     @State private var showingYearPicker = false
@@ -478,16 +479,7 @@ struct ProgressTabView: View {
         .sheet(isPresented: $showingHabitSelector) {
             habitSelectorSheet
         }
-        .overlay(
-            // Date Picker Modal
-            showingDatePicker ? AnyView(
-                DatePickerModal(isPresented: $showingDatePicker, selectedDate: $selectedProgressDate) { _ in
-                    // Date selection handled by binding
-                }
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingDatePicker)
-            ) : AnyView(EmptyView())
-        )
+        // Date picker now uses MijickPopups - no overlay needed
         .overlay(
             // Week Picker Modal
             showingWeekPicker ? AnyView(
@@ -818,7 +810,13 @@ struct ProgressTabView: View {
                                         Button(action: {
                         print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
                         if selectedTimePeriod == 0 { // Daily
-                            showingDatePicker = true
+                            // Use MijickPopups for date selection
+                            Task {
+                                await DatePickerPopup(selectedDate: $selectedProgressDate) { date in
+                                    print("📅 Date selected: \(date)")
+                                }
+                                .present()
+                            }
                         } else if selectedTimePeriod == 1 { // Weekly
                             showingWeekPicker = true
                         } else if selectedTimePeriod == 2 { // Monthly
