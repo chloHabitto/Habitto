@@ -169,16 +169,21 @@ struct HabitEditView: View {
             .padding(.bottom, 100) // Add bottom padding to account for fixed button
         }
         .background(.surface2)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Dismiss keyboard when tapping background
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
     
     @ViewBuilder
     private var basicInfoSection: some View {
         VStack(spacing: 16) {
             // Habit Name
-            CustomTextField(placeholder: "Name", text: $habitName, isFocused: $isNameFieldFocused, showTapGesture: true)
+            CustomTextField(placeholder: "Name", text: $habitName, isFocused: $isNameFieldFocused, showTapGesture: false)
             
             // Description
-            CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: true)
+            CustomTextField(placeholder: "Description (Optional)", text: $habitDescription, isFocused: $isDescriptionFieldFocused, showTapGesture: false)
             
             // Color Selection (moved before Icon to match creation flow)
             VisualSelectionRow(
@@ -361,23 +366,22 @@ struct HabitEditView: View {
     private var mainViewWithSheets: some View {
         mainViewContent
             .background(.surface2)
+            // Only sync FROM @FocusState TO @State, not the other way around
+            // This prevents circular dependencies while still allowing the Done button to work
             .onChange(of: isGoalNumberFocused) { _, newValue in
                 goalNumberFocused = newValue
-            }
-            .onChange(of: goalNumberFocused) { _, newValue in
-                isGoalNumberFocused = newValue
             }
             .onChange(of: isBaselineFieldFocused) { _, newValue in
                 baselineFieldFocused = newValue
             }
-            .onChange(of: baselineFieldFocused) { _, newValue in
-                isBaselineFieldFocused = newValue
-            }
             .onChange(of: isTargetFieldFocused) { _, newValue in
                 targetFieldFocused = newValue
             }
-            .onChange(of: targetFieldFocused) { _, newValue in
-                isTargetFieldFocused = newValue
+            .onChange(of: isNameFieldFocused) { oldValue, newValue in
+                print("🔍 HabitEditView: Name field focus changed from \(oldValue) to \(newValue)")
+            }
+            .onChange(of: isDescriptionFieldFocused) { oldValue, newValue in
+                print("🔍 HabitEditView: Description field focus changed from \(oldValue) to \(newValue)")
             }
             .sheet(isPresented: $showingEmojiPicker) {
                 EmojiKeyboardBottomSheet(
@@ -801,7 +805,7 @@ struct HabitEditView: View {
             .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
     }
     
-    // Custom modifier to handle focus and tap gesture (same as CreateHabitStep1View)
+    // Custom modifier to handle focus and tap gesture
     private struct FocusModifier: ViewModifier {
         let isFocused: FocusState<Bool>.Binding?
         let showTapGesture: Bool
@@ -811,7 +815,10 @@ struct HabitEditView: View {
                 content
                     .focused(isFocused)
                     .onTapGesture {
-                        isFocused.wrappedValue = true
+                        // Only focus if explicitly requested via showTapGesture
+                        if showTapGesture {
+                            isFocused.wrappedValue = true
+                        }
                     }
             } else {
                 content
