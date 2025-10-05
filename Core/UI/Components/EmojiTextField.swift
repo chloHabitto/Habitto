@@ -47,11 +47,12 @@ class EmojiTextFieldDelegate: NSObject, UITextFieldDelegate {
         
         // Check if the replacement string contains only emoji
         if string.containsOnlyEmoji {
-            // Limit to single emoji
+            // Limit to single emoji - take only the first emoji
             let singleEmoji = string.emojisPrefix(1)
+            textField.text = singleEmoji // Manually set the text field content
             selectedEmoji = singleEmoji
             onEmojiSelected(singleEmoji)
-            return true
+            return false // We handled the change manually
         }
         
         // Reject non-emoji input
@@ -79,7 +80,7 @@ struct EmojiTextField: UIViewRepresentable {
         let emojiTextField = UIEmojiTextField()
         emojiTextField.delegate = context.coordinator
         emojiTextField.text = selectedEmoji
-        emojiTextField.placeholder = "Tap to select emoji"
+        emojiTextField.placeholder = "Tap to enter emoji"
         emojiTextField.font = UIFont.systemFont(ofSize: 20)
         emojiTextField.textAlignment = .center
         emojiTextField.borderStyle = .none
