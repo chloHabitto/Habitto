@@ -34,8 +34,8 @@ class UserAwareStorage: HabitStorageProtocol {
             return user.uid
         }
         
-        // Fallback to guest user ID if no authenticated user
-        return "guest_user"
+        // Fallback to empty string for guest users (consistent with SwiftDataStorage)
+        return ""
     }
     
     private func getUserSpecificKey(_ baseKey: String) async -> String {

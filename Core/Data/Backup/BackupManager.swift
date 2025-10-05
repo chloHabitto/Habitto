@@ -164,13 +164,13 @@ class BackupManager: ObservableObject {
         if let user = authManager.currentUser {
             return user.uid
         }
-        return "guest_user"
+        return "" // Empty string for guest users (consistent with SwiftDataStorage)
     }
     
     private init() {
         // Create user-specific backup directory
         let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let userId = authManager.currentUser?.uid ?? "guest_user"
+        let userId = authManager.currentUser?.uid ?? "guest"
         backupDirectory = documentsPath.appendingPathComponent("Backups").appendingPathComponent(userId)
         
         // Ensure backup directory exists
