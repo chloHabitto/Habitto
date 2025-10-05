@@ -93,7 +93,8 @@ struct PeriodBottomSheet: View {
                         if let date = calendarDay.date {
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.1)) {
-                                    if isSelectingStartDate && !isDateInPast(date) {
+                                    if isSelectingStartDate {
+                                        // TEMPORARY: Allow past dates for testing
                                         selectedDate = date
                                     } else if !isSelectingStartDate && !isDateBeforeOrEqualToStartDate(date) {
                                         selectedDate = date
@@ -109,7 +110,7 @@ struct PeriodBottomSheet: View {
                             }
                             .frame(width: 48, height: 48)
                             .contentShape(Rectangle())
-                            .disabled((isSelectingStartDate && isDateInPast(date)) || (!isSelectingStartDate && isDateBeforeOrEqualToStartDate(date)))
+                            .disabled((isSelectingStartDate && false) || (!isSelectingStartDate && isDateBeforeOrEqualToStartDate(date))) // TEMPORARY: Allow past dates for testing
                         } else {
                             Color.clear
                                 .frame(width: 40, height: 40)
@@ -214,7 +215,8 @@ struct PeriodBottomSheet: View {
         } else if calendar.isDate(date, inSameDayAs: today) {
             return .primary
         } else if isSelectingStartDate && isDateInPast(date) {
-            return .text06
+            // TEMPORARY: Show past dates as normal for testing
+            return .text01
         } else if !isSelectingStartDate && isDateBeforeOrEqualToStartDate(date) {
             return .text06
         } else {
@@ -223,9 +225,12 @@ struct PeriodBottomSheet: View {
     }
     
     private func isDateInPast(_ date: Date) -> Bool {
-        let calendar = Calendar.current
-        let today = Date()
-        return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
+        // TEMPORARY: Allow past dates for testing purposes
+        // TODO: DISABLE THIS BEFORE LAUNCH - Restore original logic:
+        // let calendar = Calendar.current
+        // let today = Date()
+        // return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
+        return false
     }
     
     private func isDateBeforeOrEqualToStartDate(_ date: Date) -> Bool {
@@ -242,6 +247,7 @@ struct PeriodBottomSheet: View {
         } else if calendar.isDate(date, inSameDayAs: today) && !calendar.isDate(date, inSameDayAs: selectedDate) {
             return Color(hex: "1C274C").opacity(0.2)
         } else if isSelectingStartDate && isDateInPast(date) {
+            // TEMPORARY: Show past dates as normal for testing
             return Color.clear
         } else {
             return Color.clear
