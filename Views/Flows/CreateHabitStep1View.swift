@@ -468,6 +468,10 @@ struct CreateHabitStep1View: View {
                 selectedEmoji: $icon,
                 onClose: {
                     showingEmojiPicker = false
+                },
+                onSave: { emoji in
+                    icon = emoji
+                    showingEmojiPicker = false
                 }
             )
         }

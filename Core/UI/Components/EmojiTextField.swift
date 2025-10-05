@@ -65,6 +65,15 @@ struct EmojiTextField: UIViewRepresentable {
     let onEmojiSelected: (String) -> Void
     let isFocused: Bool
     let onFocusChange: (Bool) -> Void
+    let onTextFieldCreated: ((UIEmojiTextField) -> Void)?
+    
+    init(selectedEmoji: Binding<String>, onEmojiSelected: @escaping (String) -> Void, isFocused: Bool, onFocusChange: @escaping (Bool) -> Void, onTextFieldCreated: ((UIEmojiTextField) -> Void)? = nil) {
+        self._selectedEmoji = selectedEmoji
+        self.onEmojiSelected = onEmojiSelected
+        self.isFocused = isFocused
+        self.onFocusChange = onFocusChange
+        self.onTextFieldCreated = onTextFieldCreated
+    }
     
     func makeUIView(context: Context) -> UIEmojiTextField {
         let emojiTextField = UIEmojiTextField()
@@ -99,35 +108,50 @@ struct EmojiTextField: UIViewRepresentable {
             }
         }
         
+        // Notify parent about the text field creation
+        onTextFieldCreated?(emojiTextField)
+        
+        // Additional aggressive focus attempts - ALWAYS try
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            emojiTextField.becomeFirstResponder()
+            emojiTextField.setEmoji()
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            emojiTextField.becomeFirstResponder()
+            emojiTextField.setEmoji()
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            emojiTextField.becomeFirstResponder()
+            emojiTextField.setEmoji()
+        }
+        
         return emojiTextField
     }
     
     func updateUIView(_ uiView: UIEmojiTextField, context: Context) {
         uiView.text = selectedEmoji
         
-        if isFocused && !uiView.isFirstResponder {
+        // ALWAYS try to focus - no conditions
+        if isFocused {
             DispatchQueue.main.async {
                 uiView.becomeFirstResponder()
                 uiView.setEmoji() // Force emoji keyboard when focusing
             }
             
-            // Additional aggressive attempts
+            // Additional aggressive attempts - ALWAYS try
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if isFocused && !uiView.isFirstResponder {
-                    uiView.becomeFirstResponder()
-                    uiView.setEmoji()
-                }
+                uiView.becomeFirstResponder()
+                uiView.setEmoji()
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                if isFocused && !uiView.isFirstResponder {
-                    uiView.becomeFirstResponder()
-                    uiView.setEmoji()
-                }
+                uiView.becomeFirstResponder()
+                uiView.setEmoji()
             }
-        } else if !isFocused && uiView.isFirstResponder {
-            uiView.resignFirstResponder()
         }
+        // Remove the resignFirstResponder - we want it ALWAYS focused
     }
     
     func makeCoordinator() -> EmojiTextFieldDelegate {
