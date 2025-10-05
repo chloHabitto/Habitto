@@ -40,13 +40,6 @@ struct AllRemindersPopup: View {
                 .padding(.bottom, 20)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.surface)
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
-        .frame(maxWidth: 400, maxHeight: 600)
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Helper Functions
