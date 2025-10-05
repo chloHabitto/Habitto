@@ -3013,7 +3013,7 @@ struct ProgressTabView: View {
                 .clipped()
                 .allowsHitTesting(false)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .clipShape(RoundedRectangle(cornerRadius: 32))
     }
     
     // MARK: - Monthly Analysis Card
@@ -3572,11 +3572,11 @@ struct ProgressTabView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .fill(Color.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .stroke(Color.outline3, lineWidth: 1.0)
         )
     }
@@ -3629,11 +3629,11 @@ struct ProgressTabView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .fill(Color.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .stroke(Color.outline3, lineWidth: 1.0)
         )
     }
@@ -3714,11 +3714,11 @@ struct ProgressTabView: View {
         }
         .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .fill(Color.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 32)
                 .stroke(Color.outline3, lineWidth: 1.0)
         )
     }
@@ -4050,12 +4050,12 @@ struct TimeBaseCompletionChart: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(bestTime.timePeriod)!")
-                        .font(.appBodySmallEmphasised)
+                        .font(.appTitleMediumEmphasised)
                         .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text("Most successful in \(bestTime.timePeriod.lowercased()) at \(bestTime.averageTime)")
-                        .font(.appBodySmallEmphasised)
+                    Text("This habit seems to be most successful in the \(bestTime.timePeriod.lowercased())")
+                        .font(.appBodyMediumEmphasised)
                         .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -4063,16 +4063,17 @@ struct TimeBaseCompletionChart: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 12)
+                .background(Color.red)
                 
                 Image(bestTime.timePeriod)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 150, maxHeight: 80)
+                    .frame(width: 80, height: 80)
                     .clipped()
-                    .padding(.trailing, -20)
+                    .background(Color.yellow)
             }
                     .padding(.leading, 20)
-            .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 24)
@@ -4115,16 +4116,10 @@ struct TimeBaseCompletionChart: View {
                 Spacer().frame(width: 40) // Align with chart area
                 
                 ForEach(data, id: \.id) { item in
-                    VStack(spacing: 2) {
-                        Text(item.timePeriod)
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text02)
-                        
-                        Text(item.averageTime)
-                            .font(.appLabelSmall)
-                            .foregroundColor(.text03)
-                    }
-                    .frame(maxWidth: .infinity)
+                    Text(item.timePeriod)
+                        .font(.appLabelSmall)
+                        .foregroundColor(.text02)
+                        .frame(maxWidth: .infinity)
                 }
             }
             
