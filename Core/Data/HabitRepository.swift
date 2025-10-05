@@ -664,10 +664,8 @@ class HabitRepository: ObservableObject {
             objectWillChange.send()
             print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
             
-            // ✅ XP SYSTEM: Check if all habits are completed and award XP
-            Task {
-                await checkAndAwardXPForDate(date)
-            }
+            // ✅ XP SYSTEM: XP awarding is now handled by the UI layer (HomeTabView)
+            // Removed automatic XP check here to prevent double celebrations
             
             // Send notification for UI components to update
             print("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
