@@ -111,6 +111,9 @@ struct ProgressTabView: View {
     // Difficulty chart data - reactive to habit changes
     @State private var weeklyDifficultyData: [DifficultyDataPoint] = []
     @State private var monthlyDifficultyData: [MonthlyDifficultyDataPoint] = []
+    
+    // Time base completion chart data - reactive to habit changes
+    @State private var timeBaseCompletionData: [TimeCompletionData] = []
     @State private var currentMonthlyHighlightPage = 0
     
     // Yearly view state variables
@@ -543,24 +546,35 @@ struct ProgressTabView: View {
             
             // Update difficulty data when view appears
             updateDifficultyData()
+            
+            // Update time base completion data when view appears
+            updateTimeBaseCompletionData()
         }
         .onChange(of: habitRepository.habits) {
             // Reload yearly data when habits change
             loadYearlyData()
             // Update difficulty data when habits change
             updateDifficultyData()
+            // Update time base completion data when habits change
+            updateTimeBaseCompletionData()
         }
         .onChange(of: selectedHabit) { _, _ in
             // Update difficulty data when selected habit changes
             updateDifficultyData()
+            // Update time base completion data when selected habit changes
+            updateTimeBaseCompletionData()
         }
         .onChange(of: selectedWeekStartDate) {
             // Update difficulty data when week changes
             updateDifficultyData()
+            // Update time base completion data when week changes
+            updateTimeBaseCompletionData()
         }
         .onChange(of: selectedProgressDate) { _, _ in
             // Update difficulty data when month changes
             updateDifficultyData()
+            // Update time base completion data when month changes
+            updateTimeBaseCompletionData()
         }
         .onChange(of: selectedYear) {
             // Reload yearly data when year changes
@@ -3640,10 +3654,8 @@ struct ProgressTabView: View {
             .padding(.bottom, 8)
             
             // Chart content
-            if let habit = selectedHabit {
-                let timeData = getTimeBaseCompletionData(for: habit)
-                
-                if timeData.isEmpty {
+            if selectedHabit != nil {
+                if timeBaseCompletionData.isEmpty {
                     // Empty state
                     VStack(spacing: 12) {
                         Image(systemName: "clock")
@@ -3658,10 +3670,43 @@ struct ProgressTabView: View {
                             .font(.appBodySmall)
                             .foregroundColor(.text03)
                             .multilineTextAlignment(.center)
+                        
+                        // Test button to add sample data
+                        Button("Add Sample Data (Test)") {
+                            // Add some sample completion data for testing
+                            guard let habit = selectedHabit else { return }
+                            let calendar = Calendar.current
+                            let today = Date()
+                            
+                            // Add completions for different time periods
+                            let testCompletions = [
+                                (dayOffset: 0, hour: 8, minute: 30),   // Today at 8:30 AM (Morning)
+                                (dayOffset: -1, hour: 12, minute: 45),  // Yesterday at 12:45 PM (Lunch)
+                                (dayOffset: -2, hour: 18, minute: 15),  // 2 days ago at 6:15 PM (Evening)
+                                (dayOffset: -3, hour: 21, minute: 30),  // 3 days ago at 9:30 PM (Night)
+                                (dayOffset: -4, hour: 7, minute: 0),    // 4 days ago at 7:00 AM (Morning)
+                            ]
+                            
+                            for testCompletion in testCompletions {
+                                if let testDate = calendar.date(byAdding: .day, value: testCompletion.dayOffset, to: today) {
+                                    if let testTime = calendar.date(bySettingHour: testCompletion.hour, minute: testCompletion.minute, second: 0, of: testDate) {
+                                        habitRepository.setProgress(for: habit, date: testDate, progress: 1)
+                                        let dayName = calendar.weekdaySymbols[calendar.component(.weekday, from: testDate) - 1]
+                                        print("🕐 Added test completion for \(habit.name) on \(dayName) at \(testTime)")
+                                    }
+                                }
+                            }
+                            
+                            // Update the chart data
+                            updateTimeBaseCompletionData()
+                        }
+                        .font(.appBodySmall)
+                        .foregroundColor(.primaryFocus)
+                        .padding(.top, 8)
                     }
                     .frame(height: 200)
                 } else {
-                    TimeBaseCompletionChart(data: timeData)
+                    TimeBaseCompletionChart(data: timeBaseCompletionData)
                         .frame(height: 320)
                         .padding(.bottom, 20)
                 }
@@ -3688,24 +3733,16 @@ struct ProgressTabView: View {
         print("🕐 TimeBaseCompletionChart: Week range: \(weekStart) to \(weekEnd)")
         print("🕐 TimeBaseCompletionChart: Total completion history entries: \(habit.completionHistory.count)")
         
-        // Get all habit completion timestamps for this week
-        let habitLogs = habit.completionTimestamps.flatMap { (dateString, timestamps) -> [Date] in
-            // Filter timestamps that fall within the week
-            return timestamps.filter { timestamp in
-                return timestamp >= weekStart && timestamp <= weekEnd
-            }
-        }
-        
-        print("🕐 TimeBaseCompletionChart: Found \(habitLogs.count) completion logs for habit '\(habit.name)'")
+        // Debug: Print all completion timestamps with date keys
         print("🕐 TimeBaseCompletionChart: completionTimestamps keys: \(habit.completionTimestamps.keys.sorted())")
         
-        // Debug: Print all completion timestamps
         for (dateKey, timestamps) in habit.completionTimestamps {
             print("🕐 TimeBaseCompletionChart: Date \(dateKey): \(timestamps.count) timestamps")
             for timestamp in timestamps {
                 print("🕐 TimeBaseCompletionChart:   - \(timestamp)")
             }
         }
+        
         
         // Define time periods
         let timePeriods = [
@@ -3718,23 +3755,73 @@ struct ProgressTabView: View {
         var timeData: [TimeCompletionData] = []
         
         for (periodName, startHour, endHour) in timePeriods {
-            // Count completions in this time period
-            let completionsInPeriod = habitLogs.filter { timestamp in
-                let hour = calendar.component(.hour, from: timestamp)
-                return hour >= startHour && hour < endHour
-            }.count
+            // Collect all completions in this time period from the week
+            var completionsInPeriod: [Date] = []
             
-            // Calculate total possible completions (assuming daily habit)
+            for (dateString, timestamps) in habit.completionTimestamps {
+                // Parse the date key to get the scheduled day
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+                formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+                
+                guard let scheduledDate = formatter.date(from: dateString) else {
+                    continue
+                }
+                
+                // Check if the scheduled date falls within the week range
+                let isInWeek = scheduledDate >= weekStart && scheduledDate <= weekEnd
+                if !isInWeek {
+                    continue
+                }
+                
+                // Filter timestamps that fall within this time period
+                let periodTimestamps = timestamps.filter { timestamp in
+                    let hour = calendar.component(.hour, from: timestamp)
+                    return hour >= startHour && hour < endHour
+                }
+                
+                completionsInPeriod.append(contentsOf: periodTimestamps)
+            }
+            
+            // Calculate average completion time for this period
+            var averageTimeString = "No data"
+            if !completionsInPeriod.isEmpty {
+                let totalSeconds = completionsInPeriod.reduce(0) { sum, timestamp in
+                    let components = calendar.dateComponents([.hour, .minute], from: timestamp)
+                    let seconds = (components.hour ?? 0) * 3600 + (components.minute ?? 0) * 60
+                    return sum + seconds
+                }
+                
+                let averageSeconds = totalSeconds / completionsInPeriod.count
+                let averageHour = averageSeconds / 3600
+                let averageMinute = (averageSeconds % 3600) / 60
+                
+                // Create a date with today's date but the average time
+                let today = Date()
+                if let averageTime = calendar.date(bySettingHour: averageHour, minute: averageMinute, second: 0, of: today) {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "h:mm a"
+                    averageTimeString = formatter.string(from: averageTime)
+                }
+            }
+            
+            // Calculate completion rate for this period (percentage of days in the week)
             let totalDays = calendar.dateComponents([.day], from: weekStart, to: weekEnd).day ?? 7
-            let completionRate = totalDays > 0 ? Double(completionsInPeriod) / Double(totalDays) : 0.0
+            let completionRate = totalDays > 0 ? Double(completionsInPeriod.count) / Double(totalDays) : 0.0
             
-            print("🕐 TimeBaseCompletionChart: \(periodName) (\(startHour)-\(endHour)): \(completionsInPeriod) completions, rate: \(completionRate)")
+            print("🕐 TimeBaseCompletionChart: \(periodName) (\(startHour)-\(endHour)): \(completionsInPeriod.count) completions, rate: \(completionRate) (\(completionRate * 100)%), avg time: \(averageTimeString)")
+            
+            // Debug warning for overflow
+            if completionRate > 1.0 {
+                print("🕐 Bar overflow warning: \(periodName) has rate \(completionRate) (\(completionRate * 100)%), will be capped to 100%")
+            }
             
             timeData.append(TimeCompletionData(
                 timePeriod: periodName,
                 completionRate: completionRate,
-                completionCount: completionsInPeriod,
-                totalDays: totalDays
+                completionCount: completionsInPeriod.count,
+                totalDays: totalDays,
+                averageTime: averageTimeString
             ))
         }
         
@@ -3754,6 +3841,26 @@ struct ProgressTabView: View {
         monthlyDifficultyData = getMonthlyDifficultyData(for: habit)
         
         print("🔍 Updated difficulty data - Weekly: \(weeklyDifficultyData.count) points, Monthly: \(monthlyDifficultyData.count) points")
+    }
+    
+    // MARK: - Time Base Completion Data Update
+    private func updateTimeBaseCompletionData() {
+        guard let habit = selectedHabit else {
+            timeBaseCompletionData = []
+            print("🕐 No habit selected for time base completion data")
+            return
+        }
+        
+        print("🕐 Updating time base completion data for habit: \(habit.name)")
+        print("🕐 Habit completion timestamps count: \(habit.completionTimestamps.count)")
+        print("🕐 Habit completion timestamps keys: \(habit.completionTimestamps.keys.sorted())")
+        
+        timeBaseCompletionData = getTimeBaseCompletionData(for: habit)
+        
+        print("🕐 Updated time base completion data - \(timeBaseCompletionData.count) time periods")
+        for data in timeBaseCompletionData {
+            print("🕐 Period: \(data.timePeriod), rate: \(data.completionRate), count: \(data.completionCount), avg time: \(data.averageTime)")
+        }
     }
     
     // MARK: - Weekly Difficulty Data Helper
@@ -3925,6 +4032,7 @@ struct TimeCompletionData: Identifiable {
     let completionRate: Double
     let completionCount: Int
     let totalDays: Int
+    let averageTime: String // New field for average completion time
 }
 
 // MARK: - Time Base Completion Chart
@@ -3934,9 +4042,9 @@ struct TimeBaseCompletionChart: View {
     private var timeCompletionBanner: some View {
         let bestTime = data.max(by: { $0.completionRate < $1.completionRate })
         
-        guard let bestTime = bestTime else { return AnyView(EmptyView()) }
+        guard let bestTime = bestTime, bestTime.completionRate > 0 else { return AnyView(EmptyView()) }
         
-        let isDayTime = bestTime.timePeriod == "Morning" || bestTime.timePeriod == "Afternoon"
+        let isDayTime = bestTime.timePeriod == "Morning" || bestTime.timePeriod == "Lunch"
         
         return AnyView(
             HStack(spacing: 0) {
@@ -3946,7 +4054,7 @@ struct TimeBaseCompletionChart: View {
                         .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text("This habit tends to be more successful in the \(bestTime.timePeriod.lowercased())")
+                    Text("Most successful in \(bestTime.timePeriod.lowercased()) at \(bestTime.averageTime)")
                         .font(.appBodySmallEmphasised)
                         .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
                         .multilineTextAlignment(.leading)
@@ -4007,10 +4115,16 @@ struct TimeBaseCompletionChart: View {
                 Spacer().frame(width: 40) // Align with chart area
                 
                 ForEach(data, id: \.id) { item in
-                    Text(item.timePeriod)
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text02)
-                        .frame(maxWidth: .infinity)
+                    VStack(spacing: 2) {
+                        Text(item.timePeriod)
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text02)
+                        
+                        Text(item.averageTime)
+                            .font(.appLabelSmall)
+                            .foregroundColor(.text03)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
             
@@ -4049,7 +4163,8 @@ struct TimeBaseCompletionChart: View {
                 // Calculate bar height based on the same coordinate system as grid lines
                 // Each grid line is 40pt apart, so we need to scale the completion rate accordingly
                 let maxBarHeight = 40.0 * 4 // 4 grid intervals (0% to 100%)
-                let barHeight = maxBarHeight * item.completionRate
+                let cappedRate = min(item.completionRate, 1.0) // Cap at 100%
+                let barHeight = maxBarHeight * cappedRate
                 
                 // Position the bar so it starts exactly at the 0% line
                 // The 0% line is at y = height - 20.0 (from the grid calculation)
@@ -4076,6 +4191,7 @@ struct TimeBaseCompletionChart: View {
             }
         }
     }
+    
 }
 
 // MARK: - Difficulty Data Point
