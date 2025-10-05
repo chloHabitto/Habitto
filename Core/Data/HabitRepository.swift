@@ -244,11 +244,10 @@ class HabitRepository: ObservableObject {
             await loadUserXPFromSwiftData(userId: user.uid)
             
         case .unauthenticated:
-            print("🔄 HabitRepository: User signed out, clearing data...")
-            habits = []
-            // Clear any cached data for the previous user
-            await clearUserData()
-            print("✅ HabitRepository: Data cleared for signed out user")
+            print("🔄 HabitRepository: User signed out, loading guest data...")
+            // Instead of clearing data, load guest habits
+            await loadHabits(force: true)
+            print("✅ HabitRepository: Guest data loaded for unauthenticated user")
             
         case .authenticating:
             print("🔄 HabitRepository: User authenticating, keeping current data...")
