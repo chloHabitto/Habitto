@@ -1,4 +1,5 @@
 import SwiftUI
+import MijickPopups
 
 // MARK: - HabitDifficulty Enum
 enum HabitDifficulty: Int, CaseIterable {
@@ -508,14 +509,27 @@ struct ProgressTabView: View {
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(32)
         }
-        .overlay(
-            // All Reminders Modal
-            showingAllReminders ? AnyView(
-                allRemindersModal
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    .animation(.easeInOut(duration: 0.3), value: showingAllReminders)
-            ) : AnyView(EmptyView())
-        )
+        .sheet(isPresented: $showingAllReminders) {
+            AllRemindersPopup(
+                selectedDate: selectedProgressDate,
+                reminders: getAllRemindersForDate(selectedProgressDate),
+                isReminderEnabled: { reminder, date in
+                    isReminderEnabled(for: reminder, on: date)
+                },
+                isReminderTimePassed: { reminder, date in
+                    isReminderTimePassed(for: reminder, on: date)
+                },
+                toggleReminder: { reminder, date in
+                    toggleReminder(for: reminder, on: date)
+                },
+                onDismiss: {
+                    showingAllReminders = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(20)
+        }
         .onAppear {
             // Calculate streak statistics when view appears
             updateStreakStatistics()
@@ -2255,7 +2269,7 @@ struct ProgressTabView: View {
     }
     
     // MARK: - Helper Functions for All Reminders
-    private struct ReminderWithHabit: Identifiable {
+    struct ReminderWithHabit: Identifiable {
         let id = UUID()
         let reminder: ReminderItem
         let habit: Habit
@@ -2509,108 +2523,7 @@ struct ProgressTabView: View {
         .padding(.horizontal, 20)
     }
     
-    // MARK: - All Reminders Modal
-    private var allRemindersModal: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    showingAllReminders = false
-                }
-            
-            // Modal content
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("All Reminders")
-                        .font(.appTitleMediumEmphasised)
-                        .foregroundColor(.onPrimaryContainer)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        showingAllReminders = false
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.text02)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
-                
-                // Reminders list
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(getAllRemindersForDate(selectedProgressDate), id: \.id) { reminder in
-                            allRemindersCard(for: reminder)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.surface)
-                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-            )
-            .frame(maxWidth: 400, maxHeight: 600)
-            .padding(.horizontal, 20)
-        }
-    }
     
-    // Individual reminder card for "see more" modal
-    private func allRemindersCard(for reminderWithHabit: ReminderWithHabit) -> some View {
-        let isEnabled = isReminderEnabled(for: reminderWithHabit.reminder, on: selectedProgressDate)
-        let isTimePassed = isReminderTimePassed(for: reminderWithHabit.reminder, on: selectedProgressDate)
-        
-        return HStack(spacing: 12) {
-            // Habit Icon
-            HabitIconView(habit: reminderWithHabit.habit)
-                .frame(width: 40, height: 40)
-            
-            // Habit Name and Time
-            VStack(alignment: .leading, spacing: 4) {
-                Text(reminderWithHabit.habit.name)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.onPrimaryContainer)
-                    .lineLimit(1)
-                
-                Text(formatReminderTime(reminderWithHabit.reminder.time))
-                    .font(.appBodySmall)
-                    .foregroundColor(.text02)
-            }
-            
-            Spacer()
-            
-            // Toggle Button
-            Toggle("", isOn: Binding(
-                get: { isEnabled },
-                set: { _ in 
-                    if !isTimePassed {
-                        toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate)
-                    }
-                }
-            ))
-            .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
-            .scaleEffect(0.8)
-            .disabled(isTimePassed)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline3, lineWidth: 1)
-                )
-        )
-        .opacity(isTimePassed ? 0.6 : 1.0)
-    }
     
     // MARK: - Motivational Content Functions
     private func getWeeklyMotivationalTip() -> String {
