@@ -34,9 +34,6 @@ struct MoreTabView: View {
     @State private var showingAboutUsView = false
     @State private var showingSignOutAlert = false
     
-    // Debug state variables
-    @State private var showingFakeDataAlert = false
-    @State private var isInjectingFakeData = false
     
     var body: some View {
         WhiteSheetContainer(
@@ -147,18 +144,6 @@ struct MoreTabView: View {
                 secondaryButton: .cancel()
             )
         }
-        .alert(isPresented: $showingFakeDataAlert) {
-            Alert(
-                title: Text("Inject Alex's Fake Data"),
-                message: Text("This will replace all existing data with Alex's 3-month habit tracking scenario. This action cannot be undone."),
-                primaryButton: .destructive(Text("Inject Data")) {
-                    Task {
-                        await injectAlexFakeData()
-                    }
-                },
-                secondaryButton: .cancel()
-            )
-        }
     }
     
     // MARK: - Trial Banner
@@ -253,17 +238,6 @@ struct MoreTabView: View {
                 ]
             )
             
-            // Debug Group (only in debug builds)
-            #if DEBUG
-            settingsGroup(
-                title: "Debug Tools",
-                items: [
-                    SettingItem(title: "Inject Alex's Fake Data", value: nil, hasChevron: false, action: {
-                        showingFakeDataAlert = true
-                    })
-                ]
-            )
-            #endif
             
             // Version Information
             VStack(spacing: 0) {
@@ -422,32 +396,6 @@ struct MoreTabView: View {
         AppRatingManager.shared.requestRating()
     }
     
-    // MARK: - Debug Functions
-    private func injectAlexFakeData() async {
-        isInjectingFakeData = true
-        
-        do {
-            print("🧪 MoreTabView: Starting Alex's fake data injection...")
-            print("🧪 MoreTabView: Current habits count before injection: \(state.habits.count)")
-            
-            try await FakeDataGenerator.shared.injectAlexData()
-            
-            // Refresh the state to show new data
-            await MainActor.run {
-                print("🧪 MoreTabView: Refreshing habits after injection...")
-                state.refreshHabits()
-                print("🧪 MoreTabView: Habits count after refresh: \(state.habits.count)")
-                FakeDataGenerator.shared.printAlexDataSummary()
-            }
-            
-            print("🧪 MoreTabView: ✅ Alex's fake data injection complete!")
-            
-        } catch {
-            print("❌ MoreTabView: Error injecting Alex's fake data: \(error)")
-        }
-        
-        isInjectingFakeData = false
-    }
 }
 
 // MARK: - Setting Item Model

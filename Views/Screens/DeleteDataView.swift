@@ -11,18 +11,6 @@ struct DeleteDataView: View {
     
     enum DeleteOption {
         case deleteAllData
-        
-        var title: String {
-            return "Delete All Data"
-        }
-        
-        var subtitle: String {
-            return "Permanently remove all your data"
-        }
-        
-        var icon: String {
-            return "Icon-TrashBin2_Filled"
-        }
     }
     
     var body: some View {
@@ -64,14 +52,24 @@ struct DeleteDataView: View {
                         .cornerRadius(16)
                         .padding(.horizontal, 20)
                         
-                        // Delete Option
-                        DeleteOptionRow(
-                            option: .deleteAllData,
-                            onTap: {
+                        // Delete Button
+                        VStack(spacing: 16) {
+                            Text("Permanently remove all your data from this device")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.text03)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                            
+                            HabittoButton.largeFillDestructive(
+                                text: "Delete All Data",
+                                state: isDeleting ? .loading : .default
+                            ) {
                                 selectedOption = .deleteAllData
                                 showingConfirmation = true
                             }
-                        )
+                            .padding(.horizontal, 20)
+                        }
+                        .padding(.vertical, 20)
                         .background(Color.surface)
                         .cornerRadius(16)
                         .padding(.horizontal, 20)
@@ -200,43 +198,6 @@ struct DeleteDataView: View {
 }
 
 // MARK: - Supporting Views
-
-struct DeleteOptionRow: View {
-    let option: DeleteDataView.DeleteOption
-    let onTap: () -> Void
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                Image(option.icon)
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(.red)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(option.title)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                    
-                    Text(option.subtitle)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.text03)
-                }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.text03)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 
 struct DeleteCompleteView: View {
