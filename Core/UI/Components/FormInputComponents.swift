@@ -70,12 +70,6 @@ struct FormInputComponents {
                         externalBinding.wrappedValue = newValue
                     }
                 }
-                .onChange(of: externalFocusBinding?.wrappedValue ?? false) { oldValue, newValue in
-                    // Sync external focus state with internal focus state
-                    if newValue != isFocused {
-                        isFocused = newValue
-                    }
-                }
         }
     }
     

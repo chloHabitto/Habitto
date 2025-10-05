@@ -46,12 +46,6 @@ struct UnifiedInputElement: View {
                             isFocused = newValue
                         }
                     }
-                    .onChange(of: isFocused) { oldValue, newValue in
-                        // Debounce focus changes to prevent UI hangs
-                        DispatchQueue.main.async {
-                            internalIsFocused = newValue
-                        }
-                    }
                 
                 // Unit selector button - smaller width
                 Button(action: onUnitTap) {
