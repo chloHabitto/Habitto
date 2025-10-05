@@ -107,6 +107,10 @@ struct ProgressTabView: View {
     @State private var showingAllReminders = false
     @State private var streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
     @State private var currentHighlightPage = 0
+    
+    // Difficulty chart data - reactive to habit changes
+    @State private var weeklyDifficultyData: [DifficultyDataPoint] = []
+    @State private var monthlyDifficultyData: [MonthlyDifficultyDataPoint] = []
     @State private var currentMonthlyHighlightPage = 0
     
     // Yearly view state variables
@@ -537,13 +541,26 @@ struct ProgressTabView: View {
             // Load yearly data when view appears
             loadYearlyData()
             
+            // Update difficulty data when view appears
+            updateDifficultyData()
         }
         .onChange(of: habitRepository.habits) {
             // Reload yearly data when habits change
             loadYearlyData()
+            // Update difficulty data when habits change
+            updateDifficultyData()
+        }
+        .onChange(of: selectedHabit) { _, _ in
+            // Update difficulty data when selected habit changes
+            updateDifficultyData()
         }
         .onChange(of: selectedWeekStartDate) {
-            // Week changed - no action needed
+            // Update difficulty data when week changes
+            updateDifficultyData()
+        }
+        .onChange(of: selectedProgressDate) { _, _ in
+            // Update difficulty data when month changes
+            updateDifficultyData()
         }
         .onChange(of: selectedYear) {
             // Reload yearly data when year changes
@@ -3493,10 +3510,8 @@ struct ProgressTabView: View {
             .padding(.bottom, 8)
             
             // Graph content
-            if let habit = selectedHabit {
-                let difficultyData = getWeeklyDifficultyData(for: habit)
-                
-                if difficultyData.isEmpty {
+            if selectedHabit != nil {
+                if weeklyDifficultyData.isEmpty {
                     // Empty state
                     VStack(spacing: 12) {
                         Image(systemName: "chart.line.downtrend.xyaxis")
@@ -3515,6 +3530,7 @@ struct ProgressTabView: View {
                         // Test button to add sample data
                         Button("Add Sample Data (Test)") {
                             // Add some sample difficulty data for testing
+                            guard let habit = selectedHabit else { return }
                             let calendar = Calendar.current
                             let today = Date()
                             for i in 0..<3 {
@@ -3532,7 +3548,7 @@ struct ProgressTabView: View {
                 } else {
                     // Difficulty chart
                     DifficultyLineChart(
-                        data: difficultyData,
+                        data: weeklyDifficultyData,
                         weekStartDate: selectedWeekStartDate
                     )
                     .frame(height: 200)
@@ -3567,10 +3583,8 @@ struct ProgressTabView: View {
             .padding(.bottom, 8)
             
             // Graph content
-            if let habit = selectedHabit {
-                let difficultyData = getMonthlyDifficultyData(for: habit)
-                
-                if difficultyData.isEmpty {
+            if selectedHabit != nil {
+                if monthlyDifficultyData.isEmpty {
                     // Empty state
                     VStack(spacing: 12) {
                         Image(systemName: "chart.line.downtrend.xyaxis")
@@ -3591,7 +3605,7 @@ struct ProgressTabView: View {
                 } else {
                     // Monthly difficulty chart
                     MonthlyDifficultyChart(
-                        data: difficultyData,
+                        data: monthlyDifficultyData,
                         monthStartDate: selectedProgressDate
                     )
                     .frame(height: 200)
@@ -3726,6 +3740,20 @@ struct ProgressTabView: View {
         
         print("🕐 TimeBaseCompletionChart: Generated \(timeData.count) time periods for chart")
         return timeData
+    }
+    
+    // MARK: - Difficulty Data Update
+    private func updateDifficultyData() {
+        guard let habit = selectedHabit else {
+            weeklyDifficultyData = []
+            monthlyDifficultyData = []
+            return
+        }
+        
+        weeklyDifficultyData = getWeeklyDifficultyData(for: habit)
+        monthlyDifficultyData = getMonthlyDifficultyData(for: habit)
+        
+        print("🔍 Updated difficulty data - Weekly: \(weeklyDifficultyData.count) points, Monthly: \(monthlyDifficultyData.count) points")
     }
     
     // MARK: - Weekly Difficulty Data Helper
