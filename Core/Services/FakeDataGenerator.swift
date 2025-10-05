@@ -145,6 +145,15 @@ class FakeDataGenerator: ObservableObject {
         // Clear existing data first
         try await clearAllData()
         
+        // Verify that habits are actually cleared
+        let remainingHabits = habitRepository.habits
+        if !remainingHabits.isEmpty {
+            print("⚠️ FakeDataGenerator: WARNING - \(remainingHabits.count) habits still exist after clear!")
+            for habit in remainingHabits {
+                print("⚠️ FakeDataGenerator: Remaining habit: \(habit.name)")
+            }
+        }
+        
         // Generate habits with completion history
         let habits = try await generateAlexHabits()
         
@@ -327,16 +336,18 @@ class FakeDataGenerator: ObservableObject {
                     
                     // Add actual usage for habit breaking types
                     if habit.habitType == .breaking {
-                        let baselineVariation = Double.random(in: 0.8...1.2)
-                        actualUsage[dateKey] = Int(Double(habit.target) * baselineVariation)
+                        // For successful days, actual usage should be at or below target
+                        let targetVariation = Double.random(in: 0.5...1.0)
+                        actualUsage[dateKey] = max(0, Int(Double(habit.target) * targetVariation))
                     }
                 } else {
                     // Not completed
                     completionHistory[dateKey] = 0
                     difficultyHistory[dateKey] = Int(difficulty)
                     
-                    // For habit breaking, actual usage might be higher
+                    // For habit breaking, actual usage should be above target (failed)
                     if habit.habitType == .breaking {
+                        // For failed days, actual usage should be above target (closer to baseline)
                         let overuseFactor = Double.random(in: 1.2...2.0)
                         actualUsage[dateKey] = Int(Double(habit.baseline) * overuseFactor)
                     }
@@ -473,14 +484,24 @@ class FakeDataGenerator: ObservableObject {
     private func clearAllData() async throws {
         print("🧪 FakeDataGenerator: Clearing existing data...")
         
-        // Clear habits from repository
+        // Clear all habits using the proper repository method
         let existingHabits = habitRepository.habits
-        for habit in existingHabits {
-            habitRepository.deleteHabit(habit)
-        }
+        print("🧪 FakeDataGenerator: Found \(existingHabits.count) existing habits to clear")
+        
+        try await habitRepository.clearAllHabits()
+        
+        // Wait for the clear operation to complete and UI to update
+        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
+        // Force reload to ensure habits are cleared from memory
+        await habitRepository.loadHabits(force: true)
+        print("🧪 FakeDataGenerator: Habits count after clear: \(habitRepository.habits.count)")
         
         // Clear XP data
         XPManager.shared.clearXPData()
+        
+        // Wait a bit more to ensure everything is cleared
+        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
         
         print("🧪 FakeDataGenerator: ✅ Existing data cleared")
     }
