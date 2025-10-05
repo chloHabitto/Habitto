@@ -384,6 +384,10 @@ struct HabitEditView: View {
                     selectedEmoji: $selectedIcon,
                     onClose: {
                         showingEmojiPicker = false
+                    },
+                    onSave: { emoji in
+                        selectedIcon = emoji
+                        showingEmojiPicker = false
                     }
                 )
             }
