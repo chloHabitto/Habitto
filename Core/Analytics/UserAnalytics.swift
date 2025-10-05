@@ -462,7 +462,7 @@ enum ScreenName: String, Codable, CaseIterable {
     case createHabit = "create_habit"
     case editHabit = "edit_habit"
     case habitDetail = "habit_detail"
-    case streakView = "streak_view"
+    case overviewView = "overview_view"
     case vacationMode = "vacation_mode"
     case notifications = "notifications"
     case dataPrivacy = "data_privacy"

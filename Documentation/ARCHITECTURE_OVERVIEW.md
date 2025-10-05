@@ -11,7 +11,7 @@ This document provides a comprehensive overview of Habitto's current architectur
 │                    Habitto App                              │
 ├─────────────────────────────────────────────────────────────┤
 │  Presentation Layer (SwiftUI Views)                        │
-│  ├── HomeView, HabitEditView, StreakView, etc.             │
+│  ├── HomeView, HabitEditView, OverviewView, etc.             │
 │  └── Tab-based navigation with custom UI components        │
 ├─────────────────────────────────────────────────────────────┤
 │  Business Logic Layer                                       │

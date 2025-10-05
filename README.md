@@ -90,7 +90,7 @@ Core/
 Views/
 ├── Screens/                 # Main screen views
 │   ├── HomeView.swift
-│   ├── StreakView.swift
+│   ├── OverviewView.swift
 │   ├── HabitDetailView.swift
 │   ├── HabitEditView.swift
 │   └── DateCalendarSettingsView.swift

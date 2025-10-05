@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct StreakView: View {
+struct OverviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedProgressTab = 0
     @State private var streakStatistics = StreakStatistics(currentStreak: 0, longestStreak: 0, totalCompletionDays: 0)
@@ -14,7 +14,7 @@ struct StreakView: View {
     
     private var userHabits: [Habit] {
         let habits = homeViewState.habits
-        print("🔍 STREAK VIEW: userHabits computed property called - count: \(habits.count)")
+        print("🔍 OVERVIEW VIEW: userHabits computed property called - count: \(habits.count)")
         return habits
     }
     
@@ -75,19 +75,19 @@ struct StreakView: View {
             NotificationCenter.default.removeObserver(self)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("HabitProgressUpdated"))) { _ in
-            print("🔍 STREAK VIEW DEBUG - Received HabitProgressUpdated notification via onReceive, refreshing data...")
+            print("🔍 OVERVIEW VIEW DEBUG - Received HabitProgressUpdated notification via onReceive, refreshing data...")
             // Force refresh the data when habit progress changes
             isDataLoaded = false
             loadData()
         }
         .onChange(of: userHabits) { oldHabits, newHabits in
-            print("🔍 STREAK VIEW DEBUG - userHabits changed - Old count: \(oldHabits.count), New count: \(newHabits.count)")
+            print("🔍 OVERVIEW VIEW DEBUG - userHabits changed - Old count: \(oldHabits.count), New count: \(newHabits.count)")
             // Force refresh when habits change
             isDataLoaded = false
             loadData()
         }
         .onChange(of: selectedYear) { oldYear, newYear in
-            print("🔍 STREAK VIEW DEBUG - selectedYear changed - Old year: \(oldYear), New year: \(newYear)")
+            print("🔍 OVERVIEW VIEW DEBUG - selectedYear changed - Old year: \(oldYear), New year: \(newYear)")
             // Force refresh yearly data when year changes
             if selectedProgressTab == 2 {
                 isDataLoaded = false
@@ -130,14 +130,14 @@ struct StreakView: View {
     private func loadData() {
         guard !isDataLoaded else { return }
         
-        print("🔍 STREAK VIEW DEBUG - loadData() called with isDataLoaded: \(isDataLoaded)")
+        print("🔍 OVERVIEW VIEW DEBUG - loadData() called with isDataLoaded: \(isDataLoaded)")
         
         // Debug: Print current habit data for troubleshooting
-        print("🔍 STREAK VIEW DEBUG - Loading data for \(userHabits.count) habits")
+        print("🔍 OVERVIEW VIEW DEBUG - Loading data for \(userHabits.count) habits")
         for habit in userHabits {
             let todayKey = DateUtils.dateKey(for: Date())
             let todayProgress = habit.getProgress(for: Date())
-            print("🔍 STREAK VIEW DEBUG - Habit: '\(habit.name)' | Schedule: '\(habit.schedule)' | StartDate: \(DateUtils.dateKey(for: habit.startDate)) | Today(\(todayKey)) Progress: \(todayProgress) | CompletionHistory keys: \(habit.completionHistory.keys.sorted())")
+            print("🔍 OVERVIEW VIEW DEBUG - Habit: '\(habit.name)' | Schedule: '\(habit.schedule)' | StartDate: \(DateUtils.dateKey(for: habit.startDate)) | Today(\(todayKey)) Progress: \(todayProgress) | CompletionHistory keys: \(habit.completionHistory.keys.sorted())")
         }
         
         // Calculate streak statistics from actual user data
@@ -154,7 +154,7 @@ struct StreakView: View {
             object: nil,
             queue: .main
         ) { _ in
-            print("🔍 STREAK VIEW DEBUG - Received HabitProgressUpdated notification, refreshing data...")
+            print("🔍 OVERVIEW VIEW DEBUG - Received HabitProgressUpdated notification, refreshing data...")
             // Force refresh the data when habit progress changes
             isDataLoaded = false
             loadData()
@@ -198,6 +198,6 @@ struct StreakView: View {
 }
 
 #Preview {
-    StreakView()
+    OverviewView()
         .environmentObject(HomeViewState())
 }
