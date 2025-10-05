@@ -528,7 +528,7 @@ struct ProgressTabView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(20)
+            .presentationCornerRadius(32)
         }
         .onAppear {
             // Calculate streak statistics when view appears
