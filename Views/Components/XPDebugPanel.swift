@@ -127,6 +127,16 @@ struct XPDebugPanel: View {
                     .background(Color.primary.opacity(0.1))
                     .cornerRadius(6)
                     
+                    Button("Fix Yesterday XP") {
+                        fixYesterdayXP()
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(6)
+                    
                     Button("Clear All Data") {
                         clearAllData()
                     }
@@ -635,6 +645,84 @@ struct XPDebugPanel: View {
         }
     }
     
+    private func fixYesterdayXP() {
+        print("🔧 FIXING YESTERDAY XP: Checking and awarding missing XP")
+        
+        Task {
+            await MainActor.run {
+                let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+                let yesterdayKey = Habit.dateKey(for: yesterday)
+                let userId = getCurrentUserId()
+                
+                print("🔧 Yesterday date: \(yesterdayKey)")
+                print("🔧 User ID: \(userId)")
+                
+                // Check if all habits were completed yesterday
+                let habits = HabitRepository.shared.habits
+                var completedHabits = 0
+                
+                print("🔧 Checking habit completion status:")
+                for habit in habits {
+                    let isCompleted = habit.isCompleted(for: yesterday)
+                    print("  Habit '\(habit.name)': \(isCompleted ? "✅ Completed" : "❌ Not completed")")
+                    if isCompleted {
+                        completedHabits += 1
+                    }
+                }
+                
+                let allCompleted = completedHabits == habits.count && !habits.isEmpty
+                print("🔧 All habits completed yesterday: \(allCompleted) (\(completedHabits)/\(habits.count))")
+                
+                if allCompleted {
+                    // Check if XP was already awarded
+                    do {
+                        let predicate = #Predicate<DailyAward> { award in
+                            award.userId == userId && award.dateKey == yesterdayKey
+                        }
+                        let request = FetchDescriptor<DailyAward>(predicate: predicate)
+                        let existingAwards = try modelContext.fetch(request)
+                        
+                        if existingAwards.isEmpty {
+                            print("🔧 No XP awarded for yesterday - awarding now...")
+                            
+                            // Award XP through XPManager
+                            let xpToAward = 50 // Standard daily completion XP
+                            xpManager.updateXPFromDailyAward(xpGranted: xpToAward, dateKey: yesterdayKey)
+                            
+                            // Create DailyAward record
+                            let award = DailyAward(
+                                userId: userId,
+                                dateKey: yesterdayKey,
+                                xpGranted: xpToAward,
+                                allHabitsCompleted: true
+                            )
+                            modelContext.insert(award)
+                            try modelContext.save()
+                            
+                            print("🔧 ✅ XP awarded! New total: \(xpManager.userProgress.totalXP)")
+                            print("🔧 ✅ DailyAward record created for \(yesterdayKey)")
+                            
+                        } else {
+                            print("🔧 XP was already awarded for yesterday")
+                            for award in existingAwards {
+                                print("  Award: \(award.dateKey) - \(award.xpGranted) XP")
+                            }
+                        }
+                        
+                    } catch {
+                        print("❌ Error checking/awarding XP: \(error)")
+                    }
+                } else {
+                    print("🔧 ❌ Cannot award XP - not all habits were completed yesterday")
+                    print("🔧 You need to complete all habits to receive daily XP")
+                }
+                
+                // Refresh diagnostic
+                runDiagnostic()
+            }
+        }
+    }
+    
     private func clearAllData() {
         print("🧪 TEST: Clearing all XP data")
         
@@ -670,7 +758,7 @@ struct XPDebugPanel: View {
     }
     
     private func getCurrentUserId() -> String {
-        // Note: Authentication system access needs to be implemented
+        // Use consistent user ID across the system
         let userId = "debug_user_id"
         print("🎯 USER SCOPING: XPDebugPanel.getCurrentUserId() = \(userId) (debug mode)")
         return userId
