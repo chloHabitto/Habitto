@@ -3,6 +3,7 @@ import SwiftUI
 struct ColorBottomSheet: View {
     let onClose: () -> Void
     let onColorSelected: (Color) -> Void
+    let onSave: (Color) -> Void
     
     @State private var selectedColor: Color
     
@@ -17,9 +18,10 @@ struct ColorBottomSheet: View {
         (Color(hex: "21EAF1"), "Teal")
     ]
     
-    init(onClose: @escaping () -> Void, onColorSelected: @escaping (Color) -> Void) {
+    init(onClose: @escaping () -> Void, onColorSelected: @escaping (Color) -> Void, onSave: @escaping (Color) -> Void) {
         self.onClose = onClose
         self.onColorSelected = onColorSelected
+        self.onSave = onSave
         self._selectedColor = State(initialValue: .primary) // Navy is selected by default
     }
     
@@ -27,7 +29,11 @@ struct ColorBottomSheet: View {
         BaseBottomSheet(
             title: "Colour",
             description: "Set a colour for your habit",
-            onClose: onClose
+            onClose: onClose,
+            confirmButton: {
+                onSave(selectedColor)
+            },
+            confirmButtonTitle: "Save"
         ) {
             VStack(spacing: 16) {
                 // First row - 4 colors
@@ -104,6 +110,7 @@ struct ColorButton: View {
 #Preview {
     ColorBottomSheet(
         onClose: {},
-        onColorSelected: { _ in }
+        onColorSelected: { _ in },
+        onSave: { _ in }
     )
 } 
