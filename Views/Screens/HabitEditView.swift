@@ -379,14 +379,14 @@ struct HabitEditView: View {
             .onChange(of: targetFieldFocused) { _, newValue in
                 isTargetFieldFocused = newValue
             }
-            .mcEmojiPicker(
-                isPresented: $showingEmojiPicker,
-                selectedEmoji: $selectedIcon,
-                onEmojiSelected: { selectedEmoji in
-                    selectedIcon = selectedEmoji
-                    showingEmojiPicker = false
-                }
-            )
+            .sheet(isPresented: $showingEmojiPicker) {
+                EmojiKeyboardBottomSheet(
+                    selectedEmoji: $selectedIcon,
+                    onClose: {
+                        showingEmojiPicker = false
+                    }
+                )
+            }
             .sheet(isPresented: $showingColorSheet) {
                 ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
                     selectedColor = color
@@ -499,14 +499,6 @@ struct HabitEditView: View {
     @ViewBuilder
     private var allSheets: some View {
         self
-        .mcEmojiPicker(
-            isPresented: $showingEmojiPicker,
-            selectedEmoji: $selectedIcon,
-            onEmojiSelected: { selectedEmoji in
-                selectedIcon = selectedEmoji
-                showingEmojiPicker = false
-            }
-        )
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
                 selectedColor = color

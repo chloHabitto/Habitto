@@ -463,14 +463,14 @@ struct CreateHabitStep1View: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
 
-        .mcEmojiPicker(
-            isPresented: $showingEmojiPicker,
-            selectedEmoji: $icon,
-            onEmojiSelected: { selectedEmoji in
-                icon = selectedEmoji
-                showingEmojiPicker = false
-            }
-        )
+        .sheet(isPresented: $showingEmojiPicker) {
+            EmojiKeyboardBottomSheet(
+                selectedEmoji: $icon,
+                onClose: {
+                    showingEmojiPicker = false
+                }
+            )
+        }
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(
                 onClose: { showingColorSheet = false },
