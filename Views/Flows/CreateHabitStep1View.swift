@@ -477,17 +477,23 @@ struct CreateHabitStep1View: View {
         }
         .sheet(isPresented: $showingColorSheet) {
             ColorBottomSheet(
-                onClose: { showingColorSheet = false },
+                onClose: { 
+                    print("🔍 CreateHabitStep1View: Color sheet closing")
+                    showingColorSheet = false
+                },
                 onColorSelected: { selectedColor in
+                    print("🔍 CreateHabitStep1View: Color selected: \(selectedColor)")
                     color = selectedColor
                 },
                 onSave: { selectedColor in
+                    print("🔍 CreateHabitStep1View: Color saved: \(selectedColor)")
                     color = selectedColor
                     showingColorSheet = false
                 }
             )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+        }
+        .onChange(of: isDescriptionFieldFocused) { oldValue, newValue in
+            print("🔍 CreateHabitStep1View: Description field focus changed from \(oldValue) to \(newValue)")
         }
     }
 }
