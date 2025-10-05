@@ -9,7 +9,9 @@ public actor DailyAwardService: ObservableObject {
     private let eventBus: EventBus
     
     // Constants for XP management
-    private static let XP_PER_DAY = 50 // Reduced from 100 to make leveling more challenging
+    private static let BASE_XP_PER_DAY = 25 // Base XP for levels 1-9
+    private static let LEVEL_10_XP = 20 // XP for levels 10-19
+    private static let LEVEL_20_XP = 15 // XP for levels 20+
     
     public init(modelContext: ModelContext, eventBus: EventBus = EventBus.shared) {
         self.modelContext = modelContext
@@ -67,13 +69,15 @@ public actor DailyAwardService: ObservableObject {
             print("🎯 STEP 7: XP change: 0")
             return false
         }
+        // Calculate dynamic XP based on user's current level
+        let dynamicXP = await calculateDynamicXP(userId: userId)
         print("🎯 STEP 7: ✅ No duplicate award, creating new award")
         print("🎯 STEP 7: Action taken: award")
-        print("🎯 STEP 7: XP change: +\(Self.XP_PER_DAY)")
+        print("🎯 STEP 7: XP change: +\(dynamicXP)")
         
         // Create and insert award
-        print("🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(Self.XP_PER_DAY)")
-        let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: Self.XP_PER_DAY)
+        print("🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(dynamicXP)")
+        let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: dynamicXP)
         modelContext.insert(award)
         print("🎯 STEP 8: DailyAward record created and inserted")
         
@@ -103,7 +107,7 @@ public actor DailyAwardService: ObservableObject {
                 postXP: postSaveXP,
                 preAwards: preAwardCount,
                 postAwards: postAwardCount,
-                expectedDelta: Self.XP_PER_DAY
+                expectedDelta: dynamicXP
             )
             #endif
             
@@ -114,10 +118,10 @@ public actor DailyAwardService: ObservableObject {
             self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
             
             // ✅ FIX: Update XPManager with the new XP
-            print("🎯 STEP 10: Updating XPManager with \(Self.XP_PER_DAY) XP for \(dateKey)")
+            print("🎯 STEP 10: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
             await MainActor.run {
-                print("🎯 DailyAwardService: Updating XPManager with \(Self.XP_PER_DAY) XP for \(dateKey)")
-                XPManager.shared.updateXPFromDailyAward(xpGranted: Self.XP_PER_DAY, dateKey: dateKey)
+                print("🎯 DailyAwardService: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
+                XPManager.shared.updateXPFromDailyAward(xpGranted: dynamicXP, dateKey: dateKey)
                 print("🎯 DailyAwardService: XPManager updated successfully")
             }
             print("🎯 STEP 10: XPManager update completed")
@@ -178,9 +182,11 @@ public actor DailyAwardService: ObservableObject {
             return false // No award to revoke
         }
         
+        // Calculate dynamic XP based on user's current level (for revocation)
+        let dynamicXP = await calculateDynamicXP(userId: userId)
         print("🎯 REVOKE: ✅ Award found, proceeding with revocation")
         print("🎯 REVOKE: Action taken: revoke")
-        print("🎯 REVOKE: XP change: -\(Self.XP_PER_DAY)")
+        print("🎯 REVOKE: XP change: -\(dynamicXP)")
         
         // Revoke award
         modelContext.delete(award)
@@ -199,10 +205,10 @@ public actor DailyAwardService: ObservableObject {
             try modelContext.save()
             
             // ✅ FIX: Update XPManager with the revoked XP
-            print("🎯 REVOKE: Updating XPManager with -\(Self.XP_PER_DAY) XP for \(dateKey)")
+            print("🎯 REVOKE: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
             await MainActor.run {
-                print("🎯 DailyAwardService: Updating XPManager with -\(Self.XP_PER_DAY) XP for \(dateKey)")
-                XPManager.shared.updateXPFromDailyAward(xpGranted: -Self.XP_PER_DAY, dateKey: dateKey)
+                print("🎯 DailyAwardService: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
+                XPManager.shared.updateXPFromDailyAward(xpGranted: -dynamicXP, dateKey: dateKey)
                 print("🎯 DailyAwardService: XPManager updated successfully")
             }
             print("🎯 REVOKE: XPManager update completed")
@@ -220,7 +226,7 @@ public actor DailyAwardService: ObservableObject {
                 postXP: postSaveXP,
                 preAwards: preAwardCount,
                 postAwards: postAwardCount,
-                expectedDelta: -Self.XP_PER_DAY
+                expectedDelta: -dynamicXP
             )
             #endif
             
@@ -291,8 +297,25 @@ public actor DailyAwardService: ObservableObject {
     
     private func calculateDailyXP() async -> Int {
         // Calculate XP based on completed habits
-        // Using the standardized XP_PER_DAY constant
-        return Self.XP_PER_DAY
+        // Using the standardized BASE_XP_PER_DAY constant
+        return Self.BASE_XP_PER_DAY
+    }
+    
+    /// Calculate dynamic XP based on user's current level
+    private func calculateDynamicXP(userId: String) async -> Int {
+        // Get user's current level from XPManager
+        let currentLevel = await MainActor.run {
+            XPManager.shared.userProgress.currentLevel
+        }
+        
+        // Return XP based on level
+        if currentLevel >= 20 {
+            return Self.LEVEL_20_XP
+        } else if currentLevel >= 10 {
+            return Self.LEVEL_10_XP
+        } else {
+            return Self.BASE_XP_PER_DAY
+        }
     }
     
     // MARK: - Debug Methods
@@ -311,8 +334,9 @@ public actor DailyAwardService: ObservableObject {
         let delta = postXP - preXP
         let awardDelta = postAwards - preAwards
         
-        // Valid deltas: 0 (no-op), +XP_PER_DAY (grant), -XP_PER_DAY (revoke)
-        let validDeltas: Set<Int> = [0, Self.XP_PER_DAY, -Self.XP_PER_DAY]
+        // Valid deltas: 0 (no-op), +dynamic XP (grant), -dynamic XP (revoke)
+        // We need to be more flexible with dynamic XP values
+        let validDeltas: Set<Int> = [0, Self.BASE_XP_PER_DAY, -Self.BASE_XP_PER_DAY, Self.LEVEL_10_XP, -Self.LEVEL_10_XP, Self.LEVEL_20_XP, -Self.LEVEL_20_XP]
         
         if !validDeltas.contains(delta) {
             let awardsForDay = self.getAwardsForDay(userId: userId, dateKey: dateKey)
@@ -380,7 +404,8 @@ public actor DailyAwardService: ObservableObject {
         // Verify only one award exists and XP is within limits
         assert(awards.count <= 1, "Multiple awards found for user \(userId) on \(dateKey)")
         if let award = awards.first {
-            assert(award.xpGranted <= Self.XP_PER_DAY, "Award XP \(award.xpGranted) exceeds daily limit \(Self.XP_PER_DAY)")
+            let maxXP = max(Self.BASE_XP_PER_DAY, Self.LEVEL_10_XP, Self.LEVEL_20_XP)
+            assert(award.xpGranted <= maxXP, "Award XP \(award.xpGranted) exceeds daily limit \(maxXP)")
         }
     }
     #endif
