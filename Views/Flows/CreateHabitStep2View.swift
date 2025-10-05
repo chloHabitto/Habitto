@@ -105,7 +105,7 @@ struct CreateHabitStep2View: View {
     
     // Computed property for Done button visibility
     private var shouldShowDoneButton: Bool {
-        return goalNumberFocused || baselineFieldFocused || targetFieldFocused
+        return isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused
     }
     
 
@@ -220,9 +220,9 @@ struct CreateHabitStep2View: View {
                     HStack {
                         Spacer()
                         HabittoButton.mediumFillPrimaryHugging(text: "Done") {
-                            goalNumberFocused = false
-                            baselineFieldFocused = false
-                            targetFieldFocused = false
+                            isGoalNumberFocused = false
+                            isBaselineFieldFocused = false
+                            isTargetFieldFocused = false
                         }
                         .padding(.trailing, 20)
                         .padding(.bottom, 20)
@@ -233,13 +233,25 @@ struct CreateHabitStep2View: View {
         }
         .sheet(isPresented: $showingReminderSheet) {
             ReminderBottomSheet(
-                onClose: { showingReminderSheet = false },
+                onClose: { 
+                    print("🔍 CreateHabitStep2View: Reminder sheet closing")
+                    showingReminderSheet = false
+                    
+                    // Explicitly unfocus all fields when reminder sheet closes
+                    DispatchQueue.main.async {
+                        isGoalNumberFocused = false
+                        isBaselineFieldFocused = false
+                        isTargetFieldFocused = false
+                    }
+                },
                 onReminderSelected: { selectedReminder in
+                    print("🔍 CreateHabitStep2View: Reminder selected: \(selectedReminder)")
                     reminder = selectedReminder
                     showingReminderSheet = false
                 },
                 initialReminders: reminders,
                 onRemindersUpdated: { updatedReminders in
+                    print("🔍 CreateHabitStep2View: Reminders updated: \(updatedReminders.count) reminders")
                     reminders = updatedReminders
                     let activeReminders = updatedReminders.filter { $0.isActive }
                     if !activeReminders.isEmpty {
@@ -248,8 +260,18 @@ struct CreateHabitStep2View: View {
                         reminder = "No reminder"
                     }
                     showingReminderSheet = false
+                    
+                    // Explicitly unfocus all fields when reminder sheet closes
+                    DispatchQueue.main.async {
+                        isGoalNumberFocused = false
+                        isBaselineFieldFocused = false
+                        isTargetFieldFocused = false
+                    }
                 }
             )
+        }
+        .onChange(of: isGoalNumberFocused) { oldValue, newValue in
+            print("🔍 CreateHabitStep2View: Goal field focus changed from \(oldValue) to \(newValue)")
         }
         .sheet(isPresented: $showingStartDateSheet) {
             PeriodBottomSheet(
@@ -402,26 +424,6 @@ struct CreateHabitStep2View: View {
                 startDate = habit.startDate
                 endDate = habit.endDate
             }
-        }
-        .sheet(isPresented: $showingReminderSheet) {
-            ReminderBottomSheet(
-                onClose: { showingReminderSheet = false },
-                onReminderSelected: { selectedReminder in
-                    reminder = selectedReminder
-                    showingReminderSheet = false
-                },
-                initialReminders: reminders,
-                onRemindersUpdated: { updatedReminders in
-                    reminders = updatedReminders
-                    let activeReminders = updatedReminders.filter { $0.isActive }
-                    if !activeReminders.isEmpty {
-                        reminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
-                    } else {
-                        reminder = "No reminder"
-                    }
-                    showingReminderSheet = false
-                }
-            )
         }
         .sheet(isPresented: $showingStartDateSheet) {
             PeriodBottomSheet(
