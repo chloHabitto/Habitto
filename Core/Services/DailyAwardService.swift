@@ -260,19 +260,10 @@ public actor DailyAwardService: ObservableObject {
     
     private func areAllHabitsCompleted(dateKey: String, userId: String) async -> Bool {
         // Use the same data source as the UI - HabitRepository
+        // Note: HabitRepository already filters habits by current user
         let habits = await HabitRepository.shared.habits
         
-        // Filter habits for the user (in debug mode, use all habits)
-        let userHabits = habits.filter { habit in
-            // In debug mode, check all habits; in production, filter by userId
-            #if DEBUG
-            return true
-            #else
-            return habit.userId == userId
-            #endif
-        }
-        
-        print("🎯 COMPLETION_CHECK: Checking \(userHabits.count) habits for completion on \(dateKey)")
+        print("🎯 COMPLETION_CHECK: Checking \(habits.count) habits for completion on \(dateKey)")
         
         // Check if all habits are completed for the given date
         let formatter = DateFormatter()
@@ -283,14 +274,14 @@ public actor DailyAwardService: ObservableObject {
             return false 
         }
         
-        let completedHabits = userHabits.filter { habit in
+        let completedHabits = habits.filter { habit in
             let isCompleted = habit.isCompleted(for: targetDate)
             print("🎯 COMPLETION_CHECK: Habit '\(habit.name)': isCompleted=\(isCompleted)")
             return isCompleted
         }
         
-        let allCompleted = completedHabits.count == userHabits.count
-        print("🎯 COMPLETION_CHECK: \(completedHabits.count)/\(userHabits.count) habits completed, allCompleted=\(allCompleted)")
+        let allCompleted = completedHabits.count == habits.count
+        print("🎯 COMPLETION_CHECK: \(completedHabits.count)/\(habits.count) habits completed, allCompleted=\(allCompleted)")
         
         return allCompleted
     }
