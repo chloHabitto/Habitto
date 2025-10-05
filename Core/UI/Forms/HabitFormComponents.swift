@@ -126,7 +126,7 @@ struct ReminderSection: View {
     let onTap: () -> Void
     
     private let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
+let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter
     }()
@@ -137,12 +137,24 @@ struct ReminderSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SelectionRow(
-                title: "Reminder",
-                value: reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")",
-                action: onTap
-            )
+            // Main reminder row
+            HStack {
+                Text("Reminder")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+                Spacer()
+                Text(reminders.isEmpty ? "Add" : "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text04)
+                Image(systemName: "chevron.right")
+                    .font(.appLabelMedium)
+                    .foregroundColor(.primaryDim)
+            }
+            .onTapGesture {
+                onTap()
+            }
             
+            // Reminder details inside the same container
             if !reminders.isEmpty {
                 Divider()
                     .background(.outline3)
@@ -167,6 +179,7 @@ struct ReminderSection: View {
                 }
             }
         }
+        .selectionRowStyle()
     }
 }
 
