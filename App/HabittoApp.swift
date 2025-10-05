@@ -15,6 +15,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         FirebaseApp.configure()
         print("✅ Firebase configured successfully")
         
+        // TEMPORARY FIX: Enable migration for guest mode by setting local override
+        print("🔧 AppDelegate: Setting migration override for guest mode...")
+        Task { @MainActor in
+            EnhancedMigrationTelemetryManager.shared.setLocalOverride(true)
+        }
+        
         // Configure Google Sign-In
         print("🔐 Configuring Google Sign-In...")
         let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
