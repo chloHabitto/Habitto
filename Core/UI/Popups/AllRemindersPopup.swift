@@ -14,20 +14,20 @@ struct AllRemindersPopup: View {
             // Header
             HStack {
                 Text("All Reminders")
-                    .font(.appTitleMediumEmphasised)
+                    .font(.appTitleLargeEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
                 Spacer()
                 
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text02)
+                        .font(.system(size: 16, weight: .black))
+                        .foregroundColor(.navy300)
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
+            .padding(.top, 24)
+            .padding(.bottom, 24)
             
             // Reminders list
             ScrollView {
