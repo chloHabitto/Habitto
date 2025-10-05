@@ -73,6 +73,7 @@ struct ColorBottomSheet: View {
             .padding(.bottom, 32)
             Spacer()
         }
+        .presentationDetents([.height(800)])
     }
 }
 
