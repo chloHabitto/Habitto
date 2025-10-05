@@ -299,16 +299,33 @@ struct Habit: Identifiable, Codable, Equatable {
     /// Internal completion check that doesn't consider vacation days
     private func isCompletedInternal(for date: Date) -> Bool {
         let dateKey = Self.dateKey(for: date)
-        let progress = completionHistory[dateKey] ?? 0
         
-        // Parse the goal to get the target amount
-        if let targetAmount = parseGoalAmount(from: goal) {
-            // A habit is complete when progress reaches or exceeds the goal amount
-            return progress >= targetAmount
+        if habitType == .breaking {
+            // For breaking habits, completion is based on actual usage vs target
+            let usage = actualUsage[dateKey] ?? 0
+            let target = self.target
+            
+            print("🔍 COMPLETION DEBUG - Breaking Habit '\(name)' | Date: \(dateKey) | Usage: \(usage) | Target: \(target) | Completed: \(usage <= target)")
+            
+            // A breaking habit is complete when actual usage is at or below target
+            return usage <= target
+        } else {
+            // For formation habits, use completion history as before
+            let progress = completionHistory[dateKey] ?? 0
+            
+            // Parse the goal to get the target amount
+            if let targetAmount = parseGoalAmount(from: goal) {
+                // A habit is complete when progress reaches or exceeds the goal amount
+                let isCompleted = progress >= targetAmount
+                print("🔍 COMPLETION DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Target: \(targetAmount) | Completed: \(isCompleted)")
+                return isCompleted
+            }
+            
+            // Fallback: if we can't parse the goal, consider it complete with any progress
+            let isCompleted = progress > 0
+            print("🔍 COMPLETION DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Completed: \(isCompleted) (fallback)")
+            return isCompleted
         }
-        
-        // Fallback: if we can't parse the goal, consider it complete with any progress
-        return progress > 0
     }
     
     // Helper method to parse goal amount from goal string
@@ -325,12 +342,18 @@ struct Habit: Identifiable, Codable, Equatable {
     
     func getProgress(for date: Date) -> Int {
         let dateKey = Self.dateKey(for: date)
-        let progress = completionHistory[dateKey] ?? 0
         
-        // Debug: Print progress retrieval
-        print("🔍 PROGRESS DEBUG - Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | CompletionHistory keys: \(completionHistory.keys.sorted())")
-        
-        return progress
+        // For breaking habits, return actual usage instead of completion history
+        if habitType == .breaking {
+            let usage = actualUsage[dateKey] ?? 0
+            print("🔍 PROGRESS DEBUG - Breaking Habit '\(name)' | Date: \(dateKey) | Actual Usage: \(usage) | ActualUsage keys: \(actualUsage.keys.sorted())")
+            return usage
+        } else {
+            // For formation habits, use completion history as before
+            let progress = completionHistory[dateKey] ?? 0
+            print("🔍 PROGRESS DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | CompletionHistory keys: \(completionHistory.keys.sorted())")
+            return progress
+        }
     }
     
     // MARK: - Habit Breaking Methods

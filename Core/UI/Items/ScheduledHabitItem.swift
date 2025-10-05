@@ -44,6 +44,18 @@ struct ScheduledHabitItem: View {
         return percentage
     }
     
+    // Computed property for progress display text
+    private var progressDisplayText: String {
+        if habit.habitType == .breaking {
+            // For breaking habits, show actual usage vs baseline
+            let baseline = habit.baseline
+            return "\(currentProgress)/\(baseline)"
+        } else {
+            // For formation habits, show progress vs goal
+            return "\(currentProgress)/\(extractGoalAmount(from: habit.goal))"
+        }
+    }
+    
     // Computed property to check if it's a vacation day and vacation is currently active
     private var isVacationDay: Bool {
         VacationManager.shared.isActive && VacationManager.shared.isVacationDay(selectedDate)
@@ -127,7 +139,7 @@ struct ScheduledHabitItem: View {
                     reminderIcon
                 }
                 
-                Text("\(currentProgress)/\(extractGoalAmount(from: habit.goal))")
+                Text(progressDisplayText)
                     .font(.appBodySmall)
                     .foregroundColor(.text05)
                     .lineLimit(1)
@@ -377,6 +389,11 @@ struct ScheduledHabitItem: View {
         // Extract the first number from the goal string
         let numbers = goalString.components(separatedBy: CharacterSet.decimalDigits.inverted)
             .compactMap { Int($0) }
+        
+        // For breaking habits, use baseline as the goal amount for progress calculation
+        if habit.habitType == .breaking {
+            return habit.baseline > 0 ? habit.baseline : (numbers.first ?? 1)
+        }
         
         // Return the first number found, or default to 1 if none found
         return numbers.first ?? 1
