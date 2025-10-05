@@ -48,10 +48,10 @@ struct EmojiKeyboardBottomSheet: View {
                             .stroke(isTextFieldFocused ? .primary : .outline3, lineWidth: isTextFieldFocused ? 2 : 1.5)
                     )
                     
-                    Text("Only emoji characters will be accepted")
-                        .font(.appLabelSmall)
-                        .foregroundColor(.text03)
-                        .multilineTextAlignment(.center)
+                            Text("Tap to enter an emoji")
+                                .font(.appLabelSmall)
+                                .foregroundColor(.text03)
+                                .multilineTextAlignment(.center)
                 }
                 .onTapGesture {
                     isTextFieldFocused = true
