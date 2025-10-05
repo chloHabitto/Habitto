@@ -186,6 +186,10 @@ final class AccountDeletionService: ObservableObject {
         // Clear all habits from repository
         try await habitRepository.clearAllHabits()
         
+        // Clear XP and level data
+        XPManager.shared.clearXPData()
+        print("✅ AccountDeletionService: XP and level data cleared")
+        
         // Clear any cached data
         // Note: The HabitRepository will handle clearing its own cache
         

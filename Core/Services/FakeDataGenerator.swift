@@ -136,6 +136,10 @@ class FakeDataGenerator: ObservableObject {
     func injectAlexData() async throws {
         print("🧪 FakeDataGenerator: Starting Alex's data injection...")
         
+        // Bypass migration kill switch for fake data injection
+        await EnhancedMigrationTelemetryManager.shared.setLocalOverride(true)
+        print("🧪 FakeDataGenerator: Migration kill switch bypassed for testing")
+        
         // Debug authentication state
         let currentUser = AuthenticationManager.shared.currentUser
         let authState = AuthenticationManager.shared.authState
@@ -161,6 +165,7 @@ class FakeDataGenerator: ObservableObject {
         for habit in habits {
             print("🧪 FakeDataGenerator: Creating habit: \(habit.name)")
             await habitRepository.createHabit(habit)
+            print("🧪 FakeDataGenerator: Created habit: \(habit.name) - Repository now has \(habitRepository.habits.count) habits")
         }
         
         // Generate and save XP data
@@ -173,8 +178,18 @@ class FakeDataGenerator: ObservableObject {
         print("🧪 FakeDataGenerator: Created \(habits.count) habits with 3 months of history")
         
         // Force refresh the repository to show the new data
+        print("🧪 FakeDataGenerator: About to force refresh repository...")
         await habitRepository.loadHabits(force: true)
         print("🧪 FakeDataGenerator: Repository refreshed, now has \(habitRepository.habits.count) habits")
+        
+        // Debug: Print all habit names
+        for (index, habit) in habitRepository.habits.enumerated() {
+            print("🧪 FakeDataGenerator: Habit \(index): \(habit.name) (ID: \(habit.id))")
+        }
+        
+        // Restore migration kill switch to normal operation
+        await EnhancedMigrationTelemetryManager.shared.setLocalOverride(nil)
+        print("🧪 FakeDataGenerator: Migration kill switch restored to normal operation")
     }
     
     // MARK: - Data Generation Methods

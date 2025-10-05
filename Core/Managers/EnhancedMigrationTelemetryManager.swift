@@ -35,7 +35,7 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
             "minAppVersion": "1.0.0",
             "maxFailureRate": 0.15,
             "configVersion": "1.0.0",
-            "lastUpdated": "\(ISO8601DateFormatter().string(from: Date()))"
+            "lastUpdated": \(Date().timeIntervalSince1970)
         }
         """
         let data = json.data(using: .utf8)!
