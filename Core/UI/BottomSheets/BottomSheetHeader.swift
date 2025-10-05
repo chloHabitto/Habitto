@@ -19,7 +19,7 @@ struct BottomSheetHeader: View {
                 Spacer()
             }
             .padding(.horizontal, 4)
-            .padding(.top, 16)
+            .padding(.top, 24)
             
             // Title and description container
             VStack(alignment: .leading, spacing: 4) {
