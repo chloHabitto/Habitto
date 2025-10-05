@@ -480,6 +480,9 @@ struct CreateHabitStep1View: View {
                 onClose: { showingColorSheet = false },
                 onColorSelected: { selectedColor in
                     color = selectedColor
+                },
+                onSave: { selectedColor in
+                    color = selectedColor
                     showingColorSheet = false
                 }
             )

@@ -41,6 +41,9 @@ struct BottomSheetContainer: View {
                         onClose: { manager.dismissSheet() },
                         onColorSelected: { color in
                             onColorSelected(color)
+                        },
+                        onSave: { color in
+                            onColorSelected(color)
                             manager.dismissSheet()
                         }
                     ))

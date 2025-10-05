@@ -392,10 +392,16 @@ struct HabitEditView: View {
                 )
             }
             .sheet(isPresented: $showingColorSheet) {
-                ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
-                    selectedColor = color
-                    showingColorSheet = false
-                })
+                ColorBottomSheet(
+                    onClose: { showingColorSheet = false }, 
+                    onColorSelected: { color in
+                        selectedColor = color
+                    },
+                    onSave: { color in
+                        selectedColor = color
+                        showingColorSheet = false
+                    }
+                )
             }
             .sheet(isPresented: $showingScheduleSheet) {
                 ScheduleBottomSheet(onClose: { showingScheduleSheet = false }, onScheduleSelected: { schedule in
@@ -504,10 +510,16 @@ struct HabitEditView: View {
     private var allSheets: some View {
         self
         .sheet(isPresented: $showingColorSheet) {
-            ColorBottomSheet(onClose: { showingColorSheet = false }, onColorSelected: { color in
-                selectedColor = color
-                showingColorSheet = false
-            })
+            ColorBottomSheet(
+                onClose: { showingColorSheet = false }, 
+                onColorSelected: { color in
+                    selectedColor = color
+                },
+                onSave: { color in
+                    selectedColor = color
+                    showingColorSheet = false
+                }
+            )
         }
         .sheet(isPresented: $showingScheduleSheet) {
             ScheduleBottomSheet(onClose: { showingScheduleSheet = false }, onScheduleSelected: { schedule in
