@@ -52,32 +52,31 @@ struct DeleteDataView: View {
                         .cornerRadius(16)
                         .padding(.horizontal, 20)
                         
-                        // Delete Button
-                        VStack(spacing: 16) {
-                            Text("Permanently remove all your data from this device")
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(.text03)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 20)
-                            
-                            HabittoButton.largeFillDestructive(
-                                text: "Delete All Data",
-                                state: isDeleting ? .loading : .default
-                            ) {
-                                selectedOption = .deleteAllData
-                                showingConfirmation = true
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        .padding(.vertical, 20)
-                        .background(Color.surface)
-                        .cornerRadius(16)
-                        .padding(.horizontal, 20)
-                        
                         Spacer(minLength: 100)
                     }
+                    .padding(.top, 24)
                     .padding(.bottom, 24)
                 }
+                .background(Color.surface2)
+                
+                // Fixed Bottom Section - Delete Button
+                VStack(spacing: 16) {
+                    Text("Permanently remove all your data from this device")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.text03)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                    
+                    HabittoButton.largeFillDestructive(
+                        text: "Delete All Data",
+                        state: isDeleting ? .loading : .default
+                    ) {
+                        selectedOption = .deleteAllData
+                        showingConfirmation = true
+                    }
+                    .padding(.horizontal, 20)
+                }
+                .padding(.vertical, 20)
                 .background(Color.surface2)
             }
             .background(Color.surface2)
