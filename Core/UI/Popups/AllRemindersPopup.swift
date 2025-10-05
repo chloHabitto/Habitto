@@ -83,10 +83,10 @@ struct AllRemindersPopup: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(Color.surface)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(Color.outline3, lineWidth: 1)
                 )
         )
