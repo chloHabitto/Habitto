@@ -58,6 +58,29 @@ class EmojiTextFieldDelegate: NSObject, UITextFieldDelegate {
         // Reject non-emoji input
         return false
     }
+    
+    func textFieldDidChangeSelection(_ textField: UITextField) {
+        // Ensure cursor is always at the end or hidden
+        if let text = textField.text, !text.isEmpty {
+            let newPosition = textField.endOfDocument
+            textField.selectedTextRange = textField.textRange(from: newPosition, to: newPosition)
+        }
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        // When editing starts, clear any "None" text and show placeholder
+        if textField.text == "None" {
+            textField.text = ""
+        }
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        // When editing ends, if empty, set to empty string to show placeholder
+        if textField.text?.isEmpty == true {
+            selectedEmoji = ""
+            onEmojiSelected("")
+        }
+    }
 }
 
 // MARK: - Emoji Text Field UIViewRepresentable
@@ -79,8 +102,8 @@ struct EmojiTextField: UIViewRepresentable {
     func makeUIView(context: Context) -> UIEmojiTextField {
         let emojiTextField = UIEmojiTextField()
         emojiTextField.delegate = context.coordinator
-        emojiTextField.text = selectedEmoji
-        emojiTextField.placeholder = "Tap to enter emoji"
+        emojiTextField.text = (selectedEmoji.isEmpty || selectedEmoji == "None") ? "" : selectedEmoji
+        emojiTextField.placeholder = "None"
         emojiTextField.font = UIFont.systemFont(ofSize: 20)
         emojiTextField.textAlignment = .center
         emojiTextField.borderStyle = .none
@@ -132,7 +155,7 @@ struct EmojiTextField: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIEmojiTextField, context: Context) {
-        uiView.text = selectedEmoji
+        uiView.text = (selectedEmoji.isEmpty || selectedEmoji == "None") ? "" : selectedEmoji
         
         // ALWAYS try to focus - no conditions
         if isFocused {
