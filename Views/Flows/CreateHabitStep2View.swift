@@ -205,21 +205,6 @@ struct CreateHabitStep2View: View {
             .onChange(of: isTargetFieldFocused) { _, newValue in
                 targetFieldFocused = newValue
             }
-            .onChange(of: goalNumberFocused) { _, newValue in
-                if !newValue {
-                    isGoalNumberFocused = false
-                }
-            }
-            .onChange(of: baselineFieldFocused) { _, newValue in
-                if !newValue {
-                    isBaselineFieldFocused = false
-                }
-            }
-            .onChange(of: targetFieldFocused) { _, newValue in
-                if !newValue {
-                    isTargetFieldFocused = false
-                }
-            }
     }
     
     var body: some View {
