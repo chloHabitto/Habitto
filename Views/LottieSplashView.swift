@@ -4,7 +4,6 @@ import Lottie
 struct LottieSplashView: View {
     @State private var animationFailed = false
     @State private var shouldDismiss = false
-    @State private var showLoginView = false
     let onAnimationComplete: (() -> Void)?
     
     init(onAnimationComplete: (() -> Void)? = nil) {
@@ -20,23 +19,13 @@ struct LottieSplashView: View {
                 // Fallback: Show nothing - just empty background
                 EmptyView()
             } else {
-                // Full screen Lottie Animation with Sign In button
-                ZStack {
-                    LottieView(animation: nil, onAnimationComplete: {
-                        print("✅ LottieSplashView: Animation completed")
-                        shouldDismiss = true
-                        onAnimationComplete?()
-                    })
-                    .ignoresSafeArea()
-                    
-                    // Sign In Button positioned at bottom
-                    VStack {
-                        Spacer()
-                        signInButton
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 50) // Safe area padding
-                    }
-                }
+                // Full screen Lottie Animation
+                LottieView(animation: nil, onAnimationComplete: {
+                    print("✅ LottieSplashView: Animation completed")
+                    shouldDismiss = true
+                    onAnimationComplete?()
+                })
+                .ignoresSafeArea()
             }
         }
         .onAppear {
@@ -49,28 +38,12 @@ struct LottieSplashView: View {
                 }
             }
         }
-        .sheet(isPresented: $showLoginView) {
-            LoginView()
-        }
-    }
-    
-    // MARK: - Sign In Button
-    private var signInButton: some View {
-        HabittoButton(
-            size: .large,
-            style: .fillPrimary,
-            content: .text("Sign In"),
-            hugging: false
-        ) {
-            showLoginView = true
-        }
     }
 }
 
 // Alternative approach - better solution
 struct LottieSplashView2: View {
     @State private var isVisible = true
-    @State private var showLoginView = false
     let onAnimationComplete: (() -> Void)?
     
     init(onAnimationComplete: (() -> Void)? = nil) {
@@ -80,28 +53,18 @@ struct LottieSplashView2: View {
     var body: some View {
         Group {
             if isVisible {
-                ZStack {
-                    LottieView(animation: nil, onAnimationComplete: {
-                        print("✅ LottieSplashView: Animation completed")
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            isVisible = false
-                        }
-                        // Small delay to ensure smooth transition
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            onAnimationComplete?()
-                        }
-                    })
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                    
-                    // Sign In Button positioned at bottom
-                    VStack {
-                        Spacer()
-                        signInButton
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 50) // Safe area padding
+                LottieView(animation: nil, onAnimationComplete: {
+                    print("✅ LottieSplashView: Animation completed")
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        isVisible = false
                     }
-                }
+                    // Small delay to ensure smooth transition
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onAnimationComplete?()
+                    }
+                })
+                .ignoresSafeArea()
+                .transition(.opacity)
             }
         }
         .onAppear {
@@ -117,21 +80,6 @@ struct LottieSplashView2: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showLoginView) {
-            LoginView()
-        }
-    }
-    
-    // MARK: - Sign In Button
-    private var signInButton: some View {
-        HabittoButton(
-            size: .large,
-            style: .fillPrimary,
-            content: .text("Sign In"),
-            hugging: false
-        ) {
-            showLoginView = true
         }
     }
 }
