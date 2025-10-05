@@ -14,7 +14,7 @@ struct AllRemindersPopup: View {
             // Header
             HStack {
                 Text("All Reminders")
-                    .font(.appTitleLargeEmphasised)
+                    .font(.appTitleMediumEmphasised)
                     .foregroundColor(.onPrimaryContainer)
                 
                 Spacer()

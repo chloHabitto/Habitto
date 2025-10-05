@@ -351,7 +351,7 @@ struct ProgressTabView: View {
                             .foregroundColor(.text02)
                         
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.text02)
                     }
                 }
