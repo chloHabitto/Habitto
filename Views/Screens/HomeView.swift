@@ -25,7 +25,7 @@ class HomeViewState: ObservableObject {
     @Published var habitToEdit: Habit? = nil
     @Published var showingDeleteConfirmation = false
     @Published var habitToDelete: Habit?
-    @Published var showingStreakView = false
+    @Published var showingOverviewView = false
     @Published var showingNotificationView = false
     
     // Performance optimization: Cache expensive operations
@@ -345,7 +345,7 @@ struct HomeView: View {
                             state.showingCreateHabit = true
                         },
                         onStreakTap: {
-                            state.showingStreakView = true
+                            state.showingOverviewView = true
                         },
                         onNotificationTap: {
                             state.showingNotificationView = true
@@ -494,8 +494,8 @@ struct HomeView: View {
             Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
 
-        .sheet(isPresented: $state.showingStreakView) {
-            StreakView()
+        .sheet(isPresented: $state.showingOverviewView) {
+            OverviewView()
                 .environmentObject(state)
         }
         .sheet(isPresented: $state.showingNotificationView) {

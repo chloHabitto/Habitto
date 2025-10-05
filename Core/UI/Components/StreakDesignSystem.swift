@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Streak View Modern Design System
-// This file contains all the design tokens and styles for the modernized streak view
+// MARK: - Overview View Modern Design System
+// This file contains all the design tokens and styles for the modernized overview view
 
 // MARK: - Color Palette
 struct StreakColors {
