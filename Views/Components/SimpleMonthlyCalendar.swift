@@ -7,6 +7,7 @@ struct SimpleMonthlyCalendar: View {
     
     @State private var currentMonth: Date = Date()
     @State private var showingTodayButton: Bool = false
+    @State private var dragOffset: CGFloat = 0
     
     private var weekdayNames: [String] {
         let calendar = AppDateFormatter.shared.getUserCalendar()
@@ -19,15 +20,16 @@ struct SimpleMonthlyCalendar: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Month/Year Header with Today button
+            // Month/Year Header with navigation buttons
             HStack {
+                // Month/Year text aligned to the left
                 Text(monthYearString)
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.text01)
                 
                 Spacer()
                 
-                // Today button (shown when not on current month)
+                // Today button on the right (shown when not on current month)
                 if showingTodayButton {
                     Button(action: {
                         goToToday()
@@ -46,20 +48,6 @@ struct SimpleMonthlyCalendar: View {
                         .cornerRadius(16)
                     }
                     .buttonStyle(PlainButtonStyle())
-                } else {
-                    // Invisible spacer to maintain consistent height
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.clear)
-                        Text("Today")
-                            .font(.appLabelMedium)
-                            .foregroundColor(.clear)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.clear)
-                    .cornerRadius(16)
                 }
             }
             .frame(height: 44) // Fixed height to prevent layout shifts
@@ -117,7 +105,45 @@ struct SimpleMonthlyCalendar: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
-            .animation(nil, value: currentMonth)
+            .animation(.easeInOut(duration: 0.3), value: currentMonth)
+            .offset(x: dragOffset)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20)
+                    .onChanged { value in
+                        // Only start visual feedback if drag is significant
+                        if abs(value.translation.width) > 10 {
+                            dragOffset = value.translation.width * 0.3 // Scale down the movement for subtle effect
+                        }
+                    }
+                    .onEnded { value in
+                        let threshold: CGFloat = 50
+                        let velocity = value.velocity.width
+                        
+                        // Reset drag offset with animation
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            dragOffset = 0
+                        }
+                        
+                        // Only change month if drag was significant
+                        if abs(value.translation.width) > threshold || abs(velocity) > 500 {
+                            if value.translation.width > 0 {
+                                // Swipe right - go to previous month
+                                print("📅 Calendar: Swipe right detected - going to previous month")
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    changeMonth(by: -1)
+                                }
+                            } else {
+                                // Swipe left - go to next month
+                                print("📅 Calendar: Swipe left detected - going to next month")
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    changeMonth(by: 1)
+                                }
+                            }
+                        } else {
+                            print("📅 Calendar: Swipe gesture too small - translation: \(value.translation.width), velocity: \(velocity)")
+                        }
+                    }
+            )
         }
         .background(Color.white)
         .cornerRadius(24)
