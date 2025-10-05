@@ -113,8 +113,8 @@ struct HomeTabView: View {
                             print("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
                             
                             // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
-                            // Increased delay from 0.5s to 1.2s to ensure difficulty sheet is completely closed
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            // Set delay to 0.8s to ensure difficulty sheet is completely closed
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                                 print("🎯 STEP 12: Setting showCelebration = true")
                                 showCelebration = true
                             }
