@@ -196,15 +196,17 @@ struct CreateHabitStep2View: View {
         .onChange(of: targetNumber) { _, _ in
             uiUpdateTrigger.toggle()
         }
-            .onChange(of: isGoalNumberFocused) { _, newValue in
-                goalNumberFocused = newValue
-            }
-            .onChange(of: isBaselineFieldFocused) { _, newValue in
-                baselineFieldFocused = newValue
-            }
-            .onChange(of: isTargetFieldFocused) { _, newValue in
-                targetFieldFocused = newValue
-            }
+        // Only sync FROM @FocusState TO @State, not the other way around
+        // This prevents circular dependencies while still allowing the Done button to work
+        .onChange(of: isGoalNumberFocused) { _, newValue in
+            goalNumberFocused = newValue
+        }
+        .onChange(of: isBaselineFieldFocused) { _, newValue in
+            baselineFieldFocused = newValue
+        }
+        .onChange(of: isTargetFieldFocused) { _, newValue in
+            targetFieldFocused = newValue
+        }
     }
     
     var body: some View {
