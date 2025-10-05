@@ -56,6 +56,12 @@ actor GDPRDataDeletionManager {
         // Clear any cached data
         await habitStore.clearCache()
         
+        // Clear XP and level data
+        await MainActor.run {
+            XPManager.shared.clearXPData()
+            print("✅ GDPRDataDeletionManager: XP and level data cleared")
+        }
+        
         // Delete any local snapshots
         try await deleteLocalSnapshots()
         

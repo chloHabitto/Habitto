@@ -158,6 +158,12 @@ struct DeleteDataView: View {
             let habitStore = HabitStore.shared
             try await habitStore.clearAllHabits()
             
+            // Clear XP and level data
+            await MainActor.run {
+                XPManager.shared.clearXPData()
+                print("✅ Delete All Data: XP and level data cleared")
+            }
+            
             // Clear UserDefaults (app settings, preferences, etc.)
             await MainActor.run {
                 let defaults = UserDefaults.standard
