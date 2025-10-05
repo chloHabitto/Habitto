@@ -92,7 +92,7 @@ struct EmojiKeyboardBottomSheet: View {
                 aggressiveFocusTimer?.invalidate()
                 aggressiveFocusTimer = nil
             }
-            .onChange(of: textFieldRef) { newRef in
+            .onChange(of: textFieldRef) { _, newRef in
                 // When text field reference is available, ALWAYS try to focus
                 if let textField = newRef {
                     DispatchQueue.main.async {
