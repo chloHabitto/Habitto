@@ -270,6 +270,7 @@ struct HabitDetailView: View {
             HabitCompletionBottomSheet(
                 isPresented: $showingCompletionSheet,
                 habit: habit,
+                completionDate: selectedDate,
                 onDismiss: {
                     let _ = "debug_user_id" // TODO: Get actual user ID hash
                     print("🎯 COMPLETION_FLOW: Detail sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")

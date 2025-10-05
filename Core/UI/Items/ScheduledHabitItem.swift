@@ -337,6 +337,7 @@ struct ScheduledHabitItem: View {
                 HabitCompletionBottomSheet(
                     isPresented: $showingCompletionSheet,
                     habit: habit,
+                    completionDate: selectedDate,
                 onDismiss: {
                     
                     // End completion flow in CompletionStateManager

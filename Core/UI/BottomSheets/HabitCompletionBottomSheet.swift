@@ -3,6 +3,7 @@ import SwiftUI
 struct HabitCompletionBottomSheet: View {
     @Binding var isPresented: Bool
     let habit: Habit
+    let completionDate: Date
     @State private var selectedDifficulty: HabitDifficulty?
     let onDismiss: (() -> Void)?
     
@@ -308,14 +309,14 @@ struct HabitCompletionBottomSheet: View {
         // Convert difficulty to integer (1-5 scale)
         let difficultyValue: Int32 = Int32(difficulty.rawValue)
         
-        // Save to Core Data using HabitRepository
+        // Save to Core Data using HabitRepository with the actual completion date
         HabitRepository.shared.saveDifficultyRating(
             habitId: habit.id,
-            date: Date(),
+            date: completionDate,
             difficulty: difficultyValue
         )
         
-        print("🎯 HabitCompletionBottomSheet: Saved difficulty rating \(difficulty.displayName) for habit '\(habit.name)' on \(Date())")
+        print("🎯 HabitCompletionBottomSheet: Saved difficulty rating \(difficulty.displayName) for habit '\(habit.name)' on \(completionDate)")
     }
 }
 
@@ -341,6 +342,7 @@ extension View {
             startDate: Date(),
             endDate: nil
         ),
+        completionDate: Date(),
         onDismiss: {}
     )
     .background(.surface2)
