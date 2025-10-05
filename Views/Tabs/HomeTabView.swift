@@ -113,7 +113,8 @@ struct HomeTabView: View {
                             print("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
                             
                             // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            // Increased delay from 0.5s to 1.2s to ensure difficulty sheet is completely closed
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                                 print("🎯 STEP 12: Setting showCelebration = true")
                                 showCelebration = true
                             }
@@ -909,17 +910,7 @@ struct HomeTabView: View {
         }
         
         if allCompleted && !todayHabits.isEmpty {
-            print("🎉 checkAndTriggerCelebrationIfAllCompleted: All habits completed! Triggering celebration")
-            
-            // Trigger the celebration by calling DailyAwardService
-            let userId = getCurrentUserId()
-            
-            let result = await awardService.grantIfAllComplete(date: selectedDate, userId: userId, callSite: "app_launch_check")
-            print("🎯 checkAndTriggerCelebrationIfAllCompleted: grantIfAllComplete result: \(result)")
-            
-            if result {
-                print("🎉 checkAndTriggerCelebrationIfAllCompleted: Celebration triggered successfully!")
-            }
+            print("🎯 checkAndTriggerCelebrationIfAllCompleted: All habits completed! (Celebration will be triggered when difficulty sheet is dismissed)")
         } else {
             print("🎯 checkAndTriggerCelebrationIfAllCompleted: Not all habits completed (\(todayHabits.filter { !(completionStatusMap[$0.id] ?? false) }.count) remaining)")
         }
