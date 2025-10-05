@@ -22,7 +22,7 @@ struct AllRemindersPopup: View {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
                         .font(.system(size: 16, weight: .black))
-                        .foregroundColor(.navy300)
+                        .foregroundColor(.navy200)
                 }
             }
             .padding(.horizontal, 20)
