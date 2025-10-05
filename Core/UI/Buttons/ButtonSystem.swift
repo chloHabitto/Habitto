@@ -138,6 +138,21 @@ extension HabittoButton {
         )
     }
     
+    // Large Fill Destructive Button
+    static func largeFillDestructive(
+        text: String,
+        state: ButtonState = .default,
+        action: @escaping () -> Void
+    ) -> HabittoButton {
+        HabittoButton(
+            size: .large,
+            style: .fillDestructive,
+            content: .text(text),
+            state: state,
+            action: action
+        )
+    }
+    
     // Large Fill Neutral Icon Only Button
     static func largeFillNeutralIcon(
         iconName: String,
