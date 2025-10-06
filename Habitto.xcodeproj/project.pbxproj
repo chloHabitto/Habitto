@@ -62,6 +62,7 @@
 		895FD4D12E76F8520091E179 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		895FD64E2E76F8600091E179 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		895FD7CF2E76F9DD0091E179 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		896646E52E93C62C005211A3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8970D0EB2E76C98300217C78 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		897DB6BC2E8C4CDC00B830CA /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8981CB352E78261200F23153 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -287,6 +288,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		896646F62E93C62C005211A3 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		8970D0F02E76C98300217C78 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -504,7 +510,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					89C17A362DF73D8A00B2480F = {
 						CreatedOnToolsVersion = 16.3;
@@ -604,6 +610,10 @@
 				{
 					ProductGroup = 893837702E918E4B00AF39E5 /* Products */;
 					ProjectRef = 893837612E918E4B00AF39E5 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 896646F62E93C62C005211A3 /* Products */;
+					ProjectRef = 896646E52E93C62C005211A3 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 895EC3372E7D87F7003252B5 /* Products */;
@@ -823,6 +833,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -882,6 +893,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
