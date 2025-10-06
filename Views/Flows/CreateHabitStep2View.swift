@@ -105,7 +105,9 @@ struct CreateHabitStep2View: View {
     
     // Computed property for Done button visibility
     private var shouldShowDoneButton: Bool {
-        return isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused
+        let shouldShow = isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused
+        print("🔍 CreateHabitStep2View: shouldShowDoneButton = \(shouldShow) (goal: \(isGoalNumberFocused), baseline: \(isBaselineFieldFocused), target: \(isTargetFieldFocused))")
+        return shouldShow
     }
     
 
@@ -215,11 +217,17 @@ struct CreateHabitStep2View: View {
             
             // Done button positioned above keyboard
             if shouldShowDoneButton {
-            VStack {
-                Spacer()
+                VStack {
+                    Spacer()
                     HStack {
                         Spacer()
-                        HabittoButton.mediumFillPrimaryHugging(text: "Done") {
+                        HabittoButton(
+                            size: .medium,
+                            style: .fillPrimary,
+                            content: .text("Done"),
+                            hugging: true
+                        ) {
+                            print("🔍 CreateHabitStep2View: Done button tapped")
                             isGoalNumberFocused = false
                             isBaselineFieldFocused = false
                             isTargetFieldFocused = false
@@ -227,7 +235,9 @@ struct CreateHabitStep2View: View {
                         .padding(.trailing, 20)
                         .padding(.bottom, 20)
                     }
-
+                }
+                .onAppear {
+                    print("🔍 CreateHabitStep2View: Done button appeared")
                 }
             }
         }
@@ -272,6 +282,15 @@ struct CreateHabitStep2View: View {
         }
         .onChange(of: isGoalNumberFocused) { oldValue, newValue in
             print("🔍 CreateHabitStep2View: Goal field focus changed from \(oldValue) to \(newValue)")
+            print("🔍 CreateHabitStep2View: shouldShowDoneButton = \(shouldShowDoneButton)")
+        }
+        .onChange(of: isBaselineFieldFocused) { oldValue, newValue in
+            print("🔍 CreateHabitStep2View: Baseline field focus changed from \(oldValue) to \(newValue)")
+            print("🔍 CreateHabitStep2View: shouldShowDoneButton = \(shouldShowDoneButton)")
+        }
+        .onChange(of: isTargetFieldFocused) { oldValue, newValue in
+            print("🔍 CreateHabitStep2View: Target field focus changed from \(oldValue) to \(newValue)")
+            print("🔍 CreateHabitStep2View: shouldShowDoneButton = \(shouldShowDoneButton)")
         }
         .sheet(isPresented: $showingStartDateSheet) {
             PeriodBottomSheet(

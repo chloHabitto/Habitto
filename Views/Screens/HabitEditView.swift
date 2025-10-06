@@ -100,6 +100,13 @@ struct HabitEditView: View {
         return basicChanges || scheduleChanges || unifiedChanges
     }
     
+    // Computed property for Done button visibility
+    private var shouldShowDoneButton: Bool {
+        let shouldShow = isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused
+        print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShow) (goal: \(isGoalNumberFocused), baseline: \(isBaselineFieldFocused), target: \(isTargetFieldFocused))")
+        return shouldShow
+    }
+    
     init(habit: Habit, onSave: @escaping (Habit) -> Void) {
         self.habit = habit
         self.onSave = onSave
@@ -364,18 +371,25 @@ struct HabitEditView: View {
     // MARK: - Main View with All Sheets
     @ViewBuilder
     private var mainViewWithSheets: some View {
-        mainViewContent
+        ZStack {
+            mainViewContent
             .background(.surface2)
             // Only sync FROM @FocusState TO @State, not the other way around
             // This prevents circular dependencies while still allowing the Done button to work
             .onChange(of: isGoalNumberFocused) { _, newValue in
                 goalNumberFocused = newValue
+                print("🔍 HabitEditView: Goal field focus changed to \(newValue)")
+                print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }
             .onChange(of: isBaselineFieldFocused) { _, newValue in
                 baselineFieldFocused = newValue
+                print("🔍 HabitEditView: Baseline field focus changed to \(newValue)")
+                print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }
             .onChange(of: isTargetFieldFocused) { _, newValue in
                 targetFieldFocused = newValue
+                print("🔍 HabitEditView: Target field focus changed to \(newValue)")
+                print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }
             .onChange(of: isNameFieldFocused) { oldValue, newValue in
                 print("🔍 HabitEditView: Name field focus changed from \(oldValue) to \(newValue)")
@@ -508,6 +522,33 @@ struct HabitEditView: View {
                     initialSchedule: targetFrequency
                 )
             }
+            
+            // Done button positioned above keyboard
+            if shouldShowDoneButton {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        HabittoButton(
+                            size: .medium,
+                            style: .fillPrimary,
+                            content: .text("Done"),
+                            hugging: true
+                        ) {
+                            print("🔍 HabitEditView: Done button tapped")
+                            isGoalNumberFocused = false
+                            isBaselineFieldFocused = false
+                            isTargetFieldFocused = false
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                    }
+                }
+                .onAppear {
+                    print("🔍 HabitEditView: Done button appeared")
+                }
+            }
+        }
     }
     
     @ViewBuilder
@@ -664,24 +705,6 @@ struct HabitEditView: View {
             // Force UI update when target changes
             uiUpdateTrigger.toggle()
         }
-        .overlay(
-            // Custom Done button overlay for number keyboard
-            VStack {
-                Spacer()
-                if isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused {
-                    HStack {
-                        Spacer()
-                        HabittoButton.mediumFillPrimaryHugging(text: "Done") {
-                            isGoalNumberFocused = false
-                            isBaselineFieldFocused = false
-                            isTargetFieldFocused = false
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
-                    }
-                }
-            }
-        )
     }
     
     // MARK: - Top Navigation Bar
