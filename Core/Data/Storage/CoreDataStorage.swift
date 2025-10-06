@@ -5,7 +5,6 @@ import SwiftUI
 // MARK: - Core Data Storage Implementation (DISABLED)
 /// Core Data implementation of the habit storage protocol
 /// NOTE: This storage is currently disabled due to missing Core Data model
-@MainActor
 class CoreDataStorage: HabitStorageProtocol {
     typealias DataType = Habit
     
