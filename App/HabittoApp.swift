@@ -21,6 +21,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             EnhancedMigrationTelemetryManager.shared.setLocalOverride(true)
         }
         
+        // Perform completion status migration
+        print("🔄 AppDelegate: Starting completion status migration...")
+        Task {
+            await CompletionStatusMigration.shared.performMigrationIfNeeded()
+        }
+        
         // Configure Google Sign-In
         print("🔐 Configuring Google Sign-In...")
         let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"

@@ -635,6 +635,9 @@ class HabitRepository: ObservableObject {
             let oldProgress = habits[index].completionHistory[dateKey] ?? 0
             habits[index].completionHistory[dateKey] = progress
             
+            // Update completion status based on progress
+            habits[index].completionStatus[dateKey] = progress > 0
+            
             // Handle timestamp recording for time-based completion analysis
             let currentTimestamp = Date()
             if progress > oldProgress {
