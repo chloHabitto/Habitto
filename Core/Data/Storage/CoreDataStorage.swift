@@ -10,7 +10,6 @@ class CoreDataStorage: HabitStorageProtocol {
     
     private let coreDataManager: CoreDataManager
     private let context: NSManagedObjectContext
-    private let backgroundQueue = BackgroundQueueManager.shared
     
     init(coreDataManager: CoreDataManager = CoreDataManager.shared) {
         self.coreDataManager = coreDataManager
