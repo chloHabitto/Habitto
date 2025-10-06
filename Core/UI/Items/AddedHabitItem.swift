@@ -61,7 +61,7 @@ struct AddedHabitItem: View {
         HStack(alignment: .top, spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(habit.color)
+                .fill(habit.color.color)
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             

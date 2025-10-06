@@ -461,7 +461,7 @@ struct HabitDetailView: View {
                 } else if habit.icon == "None" {
                     // No icon selected - show colored rounded rectangle
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(habit.color)
+                        .fill(habit.color.color)
                         .frame(width: 24, height: 24)
                 } else {
                     Text(habit.icon)

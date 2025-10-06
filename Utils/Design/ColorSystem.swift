@@ -482,7 +482,7 @@ extension Color {
 }
 
 // MARK: - Codable Color Wrapper
-struct CodableColor: Codable {
+struct CodableColor: Codable, Equatable {
     let color: Color
     
     init(_ color: Color) {
@@ -498,6 +498,11 @@ struct CodableColor: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(color.toHex())
+    }
+    
+    // MARK: - Equatable
+    static func == (lhs: CodableColor, rhs: CodableColor) -> Bool {
+        return lhs.color.toHex() == rhs.color.toHex()
     }
 }
 

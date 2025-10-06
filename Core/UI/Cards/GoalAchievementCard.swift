@@ -7,7 +7,7 @@ struct GoalAchievementCard: View {
         HStack(alignment: .top, spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(habitGoal.habit.color)
+                .fill(habitGoal.habit.color.color)
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             

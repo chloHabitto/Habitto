@@ -111,7 +111,7 @@ final class HabitData {
         self.name = habit.name
         self.habitDescription = habit.description
         self.icon = habit.icon
-        self.color = habit.color
+        self.color = habit.color.color
         self.habitTypeEnum = habit.habitType
         self.schedule = habit.schedule
         self.goal = habit.goal
@@ -179,7 +179,7 @@ final class HabitData {
             name: name,
             description: habitDescription,
             icon: icon,
-            color: color,
+            color: CodableColor(color),
             habitType: habitTypeEnum,
             schedule: schedule,
             goal: goal,

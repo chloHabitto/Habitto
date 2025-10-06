@@ -70,7 +70,7 @@ struct Habit: Identifiable, Codable, Equatable {
     let name: String
     let description: String
     let icon: String // System icon name
-    let color: Color
+    let color: CodableColor
     let habitType: HabitType
     let schedule: String
     let goal: String
@@ -92,6 +92,13 @@ struct Habit: Identifiable, Codable, Equatable {
     var target: Int = 0 // Target reduced amount
     var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
     
+    // MARK: - Computed Properties
+    
+    /// Access the actual Color value for UI usage
+    var colorValue: Color {
+        return color.color
+    }
+    
     // MARK: - Codable Support for Migration
     enum CodingKeys: String, CodingKey {
         case id, name, description, icon, color, habitType, schedule, goal, reminder
@@ -107,7 +114,7 @@ struct Habit: Identifiable, Codable, Equatable {
         name = try container.decode(String.self, forKey: .name)
         description = try container.decode(String.self, forKey: .description)
         icon = try container.decode(String.self, forKey: .icon)
-        color = try container.decode(Color.self, forKey: .color)
+        color = try container.decode(CodableColor.self, forKey: .color)
         habitType = try container.decode(HabitType.self, forKey: .habitType)
         schedule = try container.decode(String.self, forKey: .schedule)
         goal = try container.decode(String.self, forKey: .goal)
@@ -157,7 +164,7 @@ struct Habit: Identifiable, Codable, Equatable {
     }
     
     // MARK: - Designated Initializer
-    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionStatus: [String: Bool] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: CodableColor, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionStatus: [String: Bool] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.description = description
@@ -190,7 +197,7 @@ struct Habit: Identifiable, Codable, Equatable {
             name: name,
             description: description,
             icon: icon,
-            color: color,
+            color: CodableColor(color),
             habitType: habitType,
             schedule: schedule,
             goal: goal,
@@ -213,7 +220,7 @@ struct Habit: Identifiable, Codable, Equatable {
             name: step1Data.0,
             description: step1Data.1,
             icon: step1Data.2,
-            color: step1Data.3,
+            color: CodableColor(step1Data.3),
             habitType: step1Data.4,
             schedule: schedule,
             goal: goal,

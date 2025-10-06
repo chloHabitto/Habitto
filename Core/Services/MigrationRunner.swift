@@ -122,7 +122,7 @@ final class MigrationRunner {
                     name: habit.name,
                     habitDescription: habit.description,
                     icon: habit.icon,
-                    color: habit.color,
+                    color: habit.color.color,
                     habitType: habit.habitType,
                     schedule: habit.schedule,
                     goal: habit.goal,
