@@ -37,7 +37,7 @@ protocol XPServiceProtocol {
     ///   - userId: The user ID
     ///   - dateKey: The date key
     /// - Returns: Daily award if exists
-    func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward?
+    nonisolated func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward?
 }
 
 // MARK: - XP Service Implementation
@@ -138,12 +138,16 @@ final class XPService: XPServiceProtocol {
         }
     }
     
-    func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward? {
+    nonisolated func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward? {
         let request = FetchDescriptor<DailyAward>(
             predicate: #Predicate { $0.userId == userId && $0.dateKey == dateKey }
         )
         
-        let results = try modelContext.fetch(request)
+        // Create a new ModelContext for this nonisolated operation
+        // We need to access the model container in a nonisolated way
+        let container = await MainActor.run { SwiftDataContainer.shared.modelContainer }
+        let context = ModelContext(container)
+        let results = try context.fetch(request)
         return results.first
     }
     
