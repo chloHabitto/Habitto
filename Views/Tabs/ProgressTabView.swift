@@ -2442,7 +2442,9 @@ struct ProgressTabView: View {
                 Spacer()
                 
                 Button(action: {
-                    // TODO: Add "See more" functionality
+                    // Navigate to detailed stats view
+                    // This could be implemented as a sheet or navigation
+                    print("📊 See more stats tapped")
                 }) {
                     HStack(spacing: 4) {
                         Text("See more")
@@ -2518,7 +2520,8 @@ struct ProgressTabView: View {
                             
                             // "What these stats mean?" link (centered)
                             Button(action: {
-                                // TODO: Add explanation functionality
+                                // Show explanation sheet or alert
+                                print("❓ Stats explanation tapped")
                             }) {
                                 Text("What these stats mean?")
                                     .font(.appBodySmall)

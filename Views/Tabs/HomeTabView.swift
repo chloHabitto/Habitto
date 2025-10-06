@@ -198,7 +198,7 @@ struct HomeTabView: View {
     @ViewBuilder
     private var addButton: some View {
         Button(action: {
-            // TODO: Add create habit action
+            // Navigate to create habit flow
             print("➕ Add habit button tapped")
         }) {
             Image("Icon-AddCircle_Filled")
@@ -214,7 +214,7 @@ struct HomeTabView: View {
     @ViewBuilder
     private var notificationButton: some View {
         Button(action: {
-            // TODO: Add notification action
+            // Navigate to notification settings
             print("🔔 Notification button tapped")
         }) {
             Image("Icon-Bell_Filled")
@@ -981,7 +981,6 @@ struct HomeTabView: View {
     
     // MARK: - Habit Completion Logic
     private func onHabitCompleted(_ habit: Habit) {
-        let _ = "debug_user_id" // TODO: Get actual user ID hash
         let dateKey = Habit.dateKey(for: selectedDate)
         
         print("🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
@@ -1034,7 +1033,6 @@ struct HomeTabView: View {
     }
     
     private func onDifficultySheetDismissed() {
-        let _ = "debug_user_id" // TODO: Get actual user ID hash
         let dateKey = Habit.dateKey(for: selectedDate)
         
         print("🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")

@@ -588,10 +588,7 @@ class BackupManager: ObservableObject {
         }
         
         // Restore theme settings (feature flag protected)
-        _ = FeatureFlagManager.shared.provider
-        // TODO: Add themePersistence feature flag to FeatureFlagProvider
-        // if featureFlags.isEnabled(.themePersistence, forUser: nil) {
-        if false { // Temporarily disabled
+        if FeatureFlags.themePersistence {
             for (key, value) in settings.themeSettings {
                 defaults.set(value, forKey: key)
             }
@@ -887,10 +884,7 @@ class BackupManager: ObservableObject {
         ]
         
         // Feature flag protection: Only backup theme settings if feature is enabled
-        _ = FeatureFlagManager.shared.provider
-        // TODO: Add themePersistence feature flag to FeatureFlagProvider
-        // let themeSettings: [String: String] = featureFlags.isEnabled(.themePersistence, forUser: nil) ? [
-        let themeSettings: [String: String] = false ? [ // Temporarily disabled
+        let themeSettings: [String: String] = FeatureFlags.themePersistence ? [
             "selectedTheme": defaults.string(forKey: "selectedTheme") ?? "default",
             "colorScheme": defaults.string(forKey: "colorScheme") ?? "system",
             "accentColor": defaults.string(forKey: "accentColor") ?? "blue"

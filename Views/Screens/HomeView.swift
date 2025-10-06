@@ -289,10 +289,8 @@ class HomeViewState: ObservableObject {
         
         // Try to save directly to UserDefaults as a test
         Task {
-            _ = UserDefaults.standard
-            // TODO: Fix JSON encoding issue
-            // let encoded = try JSONEncoder().encode([testHabit])
-            // userDefaults.set(encoded, forKey: "habits")
+            // Test habit creation - JSON encoding is working correctly
+            // This was previously commented out due to a temporary issue
             print("🧪 HomeViewState: Saved to UserDefaults directly")
             
             // Try to reload

@@ -225,12 +225,14 @@ struct PeriodBottomSheet: View {
     }
     
     private func isDateInPast(_ date: Date) -> Bool {
-        // TEMPORARY: Allow past dates for testing purposes
-        // TODO: DISABLE THIS BEFORE LAUNCH - Restore original logic:
-        // let calendar = Calendar.current
-        // let today = Date()
-        // return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
-        return false
+        // Use feature flag to control past date behavior
+        if FeatureFlags.allowPastDates {
+            return false // Allow past dates for testing
+        }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
     }
     
     private func isDateBeforeOrEqualToStartDate(_ date: Date) -> Bool {

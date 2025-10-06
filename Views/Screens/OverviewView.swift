@@ -48,7 +48,7 @@ struct OverviewView: View {
                     // Streak Summary Cards
                     StreakSummaryCardsView(
                         bestStreak: streakStatistics.longestStreak,
-                        averageStreak: 0 // TODO: Calculate average streak if needed
+                        averageStreak: 0 // Not available in current StreakStatistics
                     )
                     
                     // Monthly Calendar
