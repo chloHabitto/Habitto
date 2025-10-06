@@ -42,10 +42,6 @@ struct HabitEditView: View {
     // Force UI updates when number changes
     @State private var uiUpdateTrigger = false
     
-    // State variables to bind to FocusState (for UnifiedInputElement compatibility)
-    @State private var goalNumberFocused: Bool = false
-    @State private var baselineFieldFocused: Bool = false
-    @State private var targetFieldFocused: Bool = false
     
     // Sheet states
     @State private var showingEmojiPicker = false
@@ -374,20 +370,15 @@ struct HabitEditView: View {
         ZStack {
             mainViewContent
             .background(.surface2)
-            // Only sync FROM @FocusState TO @State, not the other way around
-            // This prevents circular dependencies while still allowing the Done button to work
             .onChange(of: isGoalNumberFocused) { _, newValue in
-                goalNumberFocused = newValue
                 print("🔍 HabitEditView: Goal field focus changed to \(newValue)")
                 print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }
             .onChange(of: isBaselineFieldFocused) { _, newValue in
-                baselineFieldFocused = newValue
                 print("🔍 HabitEditView: Baseline field focus changed to \(newValue)")
                 print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }
             .onChange(of: isTargetFieldFocused) { _, newValue in
-                targetFieldFocused = newValue
                 print("🔍 HabitEditView: Target field focus changed to \(newValue)")
                 print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
             }

@@ -46,6 +46,12 @@ struct UnifiedInputElement: View {
                             isFocused = newValue
                         }
                     }
+                    .onChange(of: isFocused) { oldValue, newValue in
+                        // Sync external focus state with internal FocusState
+                        DispatchQueue.main.async {
+                            internalIsFocused = newValue
+                        }
+                    }
                 
                 // Unit selector button - smaller width
                 Button(action: onUnitTap) {
