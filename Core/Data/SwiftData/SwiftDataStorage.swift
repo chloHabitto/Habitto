@@ -31,7 +31,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         UserDefaults.standard.set(jsonData, forKey: key)
     }
     
-    func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
+    nonisolated func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
         // For generic data, load from UserDefaults fallback
         logger.warning("Generic load called for key: \(key) - consider using specific methods")
         
