@@ -12,7 +12,7 @@ struct UnifiedInputElement: View {
     let onUnitTap: () -> Void
     let onFrequencyTap: () -> Void
     let uiUpdateTrigger: Bool
-    @Binding var isFocused: Bool
+    @FocusState.Binding var isFocused: Bool
     
     @FocusState private var internalIsFocused: Bool
     
@@ -41,7 +41,7 @@ struct UnifiedInputElement: View {
                     .frame(width: 40)
                     .inputFieldStyle()
                     .onChange(of: internalIsFocused) { oldValue, newValue in
-                        // Debounce focus changes to prevent UI hangs
+                        // Sync internal focus state with external FocusState binding
                         DispatchQueue.main.async {
                             isFocused = newValue
                         }
@@ -252,7 +252,7 @@ struct HabitBuildingForm: View {
     let onGoalFrequencyTap: () -> Void
     let reminderSection: ReminderSection
     let periodSection: PeriodSection
-    @Binding var isGoalNumberFocused: Bool
+    @FocusState.Binding var isGoalNumberFocused: Bool
     
     var body: some View {
         VStack(spacing: 16) {
@@ -298,8 +298,8 @@ struct HabitBreakingForm: View {
     let onTargetFrequencyTap: () -> Void
     let reminderSection: ReminderSection
     let periodSection: PeriodSection
-    @Binding var isBaselineFieldFocused: Bool
-    @Binding var isTargetFieldFocused: Bool
+    @FocusState.Binding var isBaselineFieldFocused: Bool
+    @FocusState.Binding var isTargetFieldFocused: Bool
     
     var body: some View {
         VStack(spacing: 16) {

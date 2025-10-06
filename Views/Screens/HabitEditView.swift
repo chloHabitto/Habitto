@@ -222,7 +222,7 @@ struct HabitEditView: View {
                 onUnitTap: { showingGoalUnitSheet = true },
                 onFrequencyTap: { showingGoalFrequencySheet = true },
                 uiUpdateTrigger: uiUpdateTrigger,
-                isFocused: $goalNumberFocused
+                isFocused: $isGoalNumberFocused
             )
         } else {
             // Habit Breaking Form
@@ -239,7 +239,7 @@ struct HabitEditView: View {
                     onUnitTap: { showingBaselineUnitSheet = true },
                     onFrequencyTap: { showingBaselineFrequencySheet = true },
                     uiUpdateTrigger: uiUpdateTrigger,
-                    isFocused: $baselineFieldFocused
+                    isFocused: $isBaselineFieldFocused
                 )
                 
                 // Target - NEW UNIFIED APPROACH
@@ -254,7 +254,7 @@ struct HabitEditView: View {
                     onUnitTap: { showingTargetUnitSheet = true },
                     onFrequencyTap: { showingTargetFrequencySheet = true },
                     uiUpdateTrigger: uiUpdateTrigger,
-                    isFocused: $targetFieldFocused
+                    isFocused: $isTargetFieldFocused
                 )
             }
         }

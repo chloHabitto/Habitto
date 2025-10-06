@@ -600,7 +600,7 @@ struct CreateHabitStep2View: View {
                 onStartDateTap: { showingStartDateSheet = true },
                 onEndDateTap: { showingEndDateSheet = true }
             ),
-            isGoalNumberFocused: $goalNumberFocused
+            isGoalNumberFocused: $isGoalNumberFocused
         )
     }
     
@@ -631,8 +631,8 @@ struct CreateHabitStep2View: View {
                 onStartDateTap: { showingStartDateSheet = true },
                 onEndDateTap: { showingEndDateSheet = true }
             ),
-            isBaselineFieldFocused: $baselineFieldFocused,
-            isTargetFieldFocused: $targetFieldFocused
+            isBaselineFieldFocused: $isBaselineFieldFocused,
+            isTargetFieldFocused: $isTargetFieldFocused
         )
     }
     
