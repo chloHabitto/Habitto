@@ -82,7 +82,8 @@ struct Habit: Identifiable, Codable, Equatable {
     // var isCompleted: Bool = false  // Use isCompleted(for:) instead
     // var streak: Int = 0           // Use computedStreak() instead
     let createdAt: Date
-    var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions)
+    var completionHistory: [String: Int] = [:] // Track daily progress: "yyyy-MM-dd" -> Int (count of completions) - DEPRECATED
+    var completionStatus: [String: Bool] = [:] // Track daily completion status: "yyyy-MM-dd" -> Bool (completed/incomplete)
     var completionTimestamps: [String: [Date]] = [:] // Track completion timestamps: "yyyy-MM-dd" -> [completion_times]
     var difficultyHistory: [String: Int] = [:] // Track daily difficulty: "yyyy-MM-dd" -> Int (1-10 scale)
     
@@ -95,7 +96,7 @@ struct Habit: Identifiable, Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id, name, description, icon, color, habitType, schedule, goal, reminder
         case startDate, endDate, isCompleted, streak, createdAt, reminders
-        case baseline, target, completionHistory, difficultyHistory, actualUsage
+        case baseline, target, completionHistory, completionStatus, difficultyHistory, actualUsage
         case completionTimestamps
     }
     
@@ -121,6 +122,7 @@ struct Habit: Identifiable, Codable, Equatable {
         baseline = try container.decodeIfPresent(Int.self, forKey: .baseline) ?? 0
         target = try container.decodeIfPresent(Int.self, forKey: .target) ?? 0
         completionHistory = try container.decodeIfPresent([String: Int].self, forKey: .completionHistory) ?? [:]
+        completionStatus = try container.decodeIfPresent([String: Bool].self, forKey: .completionStatus) ?? [:]
         difficultyHistory = try container.decodeIfPresent([String: Int].self, forKey: .difficultyHistory) ?? [:]
         actualUsage = try container.decodeIfPresent([String: Int].self, forKey: .actualUsage) ?? [:]
         
@@ -148,13 +150,14 @@ struct Habit: Identifiable, Codable, Equatable {
         try container.encode(baseline, forKey: .baseline)
         try container.encode(target, forKey: .target)
         try container.encode(completionHistory, forKey: .completionHistory)
+        try container.encode(completionStatus, forKey: .completionStatus)
         try container.encode(difficultyHistory, forKey: .difficultyHistory)
         try container.encode(actualUsage, forKey: .actualUsage)
         try container.encode(completionTimestamps, forKey: .completionTimestamps)
     }
     
     // MARK: - Designated Initializer
-    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, color: Color, habitType: HabitType, schedule: String, goal: String, reminder: String, startDate: Date, endDate: Date? = nil, createdAt: Date = Date(), reminders: [ReminderItem] = [], baseline: Int = 0, target: Int = 0, completionHistory: [String: Int] = [:], completionStatus: [String: Bool] = [:], completionTimestamps: [String: [Date]] = [:], difficultyHistory: [String: Int] = [:], actualUsage: [String: Int] = [:]) {
         self.id = id
         self.name = name
         self.description = description
@@ -174,6 +177,7 @@ struct Habit: Identifiable, Codable, Equatable {
         self.baseline = baseline
         self.target = target
         self.completionHistory = completionHistory
+        self.completionStatus = completionStatus
         self.completionTimestamps = completionTimestamps
         self.difficultyHistory = difficultyHistory
         self.actualUsage = actualUsage
@@ -225,6 +229,11 @@ struct Habit: Identifiable, Codable, Equatable {
     // MARK: - Completion History Methods
     mutating func markCompleted(for date: Date, at timestamp: Date = Date()) {
         let dateKey = Self.dateKey(for: date)
+        
+        // Mark as completed in the new boolean system
+        completionStatus[dateKey] = true
+        
+        // Keep the old system for backward compatibility and migration
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = currentProgress + 1
         
@@ -258,6 +267,11 @@ struct Habit: Identifiable, Codable, Equatable {
     
     mutating func markIncomplete(for date: Date) {
         let dateKey = Self.dateKey(for: date)
+        
+        // Mark as incomplete in the new boolean system
+        completionStatus[dateKey] = false
+        
+        // Keep the old system for backward compatibility and migration
         let currentProgress = completionHistory[dateKey] ?? 0
         completionHistory[dateKey] = max(0, currentProgress - 1)
         
@@ -300,6 +314,13 @@ struct Habit: Identifiable, Codable, Equatable {
     private func isCompletedInternal(for date: Date) -> Bool {
         let dateKey = Self.dateKey(for: date)
         
+        // First check the new boolean completion status
+        if let completionStatus = completionStatus[dateKey] {
+            print("🔍 COMPLETION DEBUG - Using boolean status for '\(name)' | Date: \(dateKey) | Completed: \(completionStatus)")
+            return completionStatus
+        }
+        
+        // Fallback to old system for migration purposes
         if habitType == .breaking {
             // For breaking habits, completion is based on actual usage vs target
             let usage = actualUsage[dateKey] ?? 0
@@ -469,6 +490,26 @@ struct Habit: Identifiable, Codable, Equatable {
     
     static func dateKey(for date: Date) -> String {
         return DateUtils.dateKey(for: date)
+    }
+    
+    // MARK: - Migration Methods
+    
+    /// Migrates completion history from count-based to boolean-based system
+    mutating func migrateCompletionHistory() {
+        print("🔄 MIGRATION: Migrating completion history for habit '\(name)'")
+        
+        // Convert completion counts to boolean status
+        for (dateKey, count) in completionHistory {
+            if count > 0 {
+                completionStatus[dateKey] = true
+                print("🔄 MIGRATION: \(dateKey) -> completed (was \(count))")
+            } else {
+                completionStatus[dateKey] = false
+                print("🔄 MIGRATION: \(dateKey) -> incomplete (was \(count))")
+            }
+        }
+        
+        print("🔄 MIGRATION: Completed migration for habit '\(name)' - \(completionStatus.count) days migrated")
     }
     
     // MARK: - Persistence Methods (Optimized)
