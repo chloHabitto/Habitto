@@ -66,6 +66,7 @@ struct SecureHabitDetailsView: View {
                                 .padding(8)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
+                                .keyboardDoneButton()
                         }
                         
                         if let error = errorMessage {
@@ -88,6 +89,7 @@ struct SecureHabitDetailsView: View {
                                 .padding(8)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
+                                .keyboardDoneButton()
                         }
                     }
                     
@@ -104,6 +106,7 @@ struct SecureHabitDetailsView: View {
                                 .padding(8)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
+                                .keyboardDoneButton()
                         }
                     }
                 }

@@ -816,6 +816,7 @@ struct HabitEditView: View {
             .cornerRadius(12)
             .contentShape(Rectangle())
             .allowsHitTesting(true)
+            .keyboardDoneButton()
             .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
     }
     

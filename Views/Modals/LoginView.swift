@@ -111,6 +111,7 @@ struct LoginView: View {
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
+                .keyboardDoneButton()
                 .background(Color.white)
                 .cornerRadius(12)
                 .overlay(
@@ -132,10 +133,12 @@ struct LoginView: View {
                     TextField("Enter your password", text: $password)
                         .textFieldStyle(CustomTextFieldStyle())
                         .textContentType(isSignUp ? .newPassword : .password)
+                        .keyboardDoneButton()
                 } else {
                     SwiftUI.SecureField("Enter your password", text: $password)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
+                        .keyboardDoneButton()
                 }
                 
                 Button(action: {
