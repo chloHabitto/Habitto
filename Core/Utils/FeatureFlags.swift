@@ -55,6 +55,12 @@ struct FeatureFlags {
     /// Enables XP mutation violation detection in debug builds
     static var strictXPMutationValidation: Bool = true
     
+    /// Enables theme persistence in backup/restore
+    static var themePersistence: Bool = false
+    
+    /// Allows past dates for testing purposes (should be false in production)
+    static var allowPastDates: Bool = false
+    
     // MARK: - Feature Flag Management
     
     /// Resets all feature flags to their default values (Phase 4 defaults)
@@ -68,6 +74,8 @@ struct FeatureFlags {
         forceMigration = false
         verboseMigrationLogging = false
         strictXPMutationValidation = true
+        themePersistence = false
+        allowPastDates = false
     }
     
     /// Enables all data layer improvements for testing

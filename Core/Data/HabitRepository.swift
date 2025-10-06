@@ -710,13 +710,6 @@ class HabitRepository: ObservableObject {
         return habit.getProgress(for: date)
     }
     
-    // MARK: - Fetch Difficulty Logs for Habit
-    func fetchDifficultyLogs(for habit: Habit) -> [DifficultyLogEntity] {
-        // This function is deprecated - use habit.difficultyHistory directly instead
-        // Return empty array to prevent crashes
-        print("⚠️ HabitRepository: fetchDifficultyLogs is deprecated - use habit.difficultyHistory directly")
-        return []
-    }
     
     // MARK: - XP System Integration
     

@@ -272,7 +272,6 @@ struct HabitDetailView: View {
                 habit: habit,
                 completionDate: selectedDate,
                 onDismiss: {
-                    let _ = "debug_user_id" // TODO: Get actual user ID hash
                     print("🎯 COMPLETION_FLOW: Detail sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
                     
                     // Reset flags
@@ -701,7 +700,6 @@ struct HabitDetailView: View {
                 Button(action: {
                     if todayProgress > 0 {
                         let newProgress = max(0, todayProgress - 1)
-                        let _ = "debug_user_id" // TODO: Get actual user ID hash
                         
                         print("🎯 COMPLETION_FLOW: Detail - button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(extractGoalNumber(from: habit.goal)), reachedGoal=false")
                         
@@ -727,7 +725,6 @@ struct HabitDetailView: View {
                 Button(action: {
                     let goalAmount = extractGoalNumber(from: habit.goal)
                     let newProgress = min(todayProgress + 1, goalAmount)
-                    let _ = "debug_user_id" // TODO: Get actual user ID hash
                     
                     print("🎯 COMPLETION_FLOW: Detail + button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
                     

@@ -22,7 +22,6 @@ struct MoreTabView: View {
     @State private var showingDataPrivacy = false
     @State private var showingDateCalendar = false
     @State private var showingNotifications = false
-    // @State private var showingPreferences = false // TODO: Uncomment when Preferences is needed
     @State private var showingLanguageView = false
     @State private var showingThemeView = false
     @State private var showingNotificationsView = false
@@ -103,10 +102,6 @@ struct MoreTabView: View {
         .sheet(isPresented: $showingNotifications) {
             NotificationsView()
         }
-        // TODO: Uncomment when Preferences is needed
-        // .sheet(isPresented: $showingPreferences) {
-        //     PreferencesView()
-        // }
         .sheet(isPresented: $showingLanguageView) {
             LanguageView()
         }
@@ -192,10 +187,6 @@ struct MoreTabView: View {
                     SettingItem(title: "Notifications", value: nil, hasChevron: true, action: {
                         showingNotifications = true
                     })
-                    // TODO: Uncomment when Preferences is needed
-                    // SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
-                    //     showingPreferences = true
-                    // })
                 ]
             )
             
