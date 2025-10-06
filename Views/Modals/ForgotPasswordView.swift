@@ -49,6 +49,7 @@ struct ForgotPasswordView: View {
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
+                            .keyboardDoneButton()
                     }
                     
                     // Reset Button

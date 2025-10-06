@@ -121,6 +121,7 @@ struct PersonalInformationView: View {
                         .stroke(Color.outline3, lineWidth: 1.5)
                 )
                 .cornerRadius(12)
+                .keyboardDoneButton()
         }
     }
     
@@ -141,6 +142,7 @@ struct PersonalInformationView: View {
                         .stroke(Color.outline3, lineWidth: 1.5)
                 )
                 .cornerRadius(12)
+                .keyboardDoneButton()
         }
     }
     

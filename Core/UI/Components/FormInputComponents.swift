@@ -64,6 +64,7 @@ struct FormInputComponents {
                         .stroke(borderColor, lineWidth: lineWidth)
                 )
                 .cornerRadius(cornerRadius)
+                .keyboardDoneButton() // Automatically add "Done" button above keyboard
                 .onChange(of: isFocused) { oldValue, newValue in
                     // Sync internal focus state with external focus state
                     if let externalBinding = externalFocusBinding {

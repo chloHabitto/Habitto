@@ -1,5 +1,26 @@
 import SwiftUI
 
+// MARK: - Keyboard Done Button Toolbar
+struct KeyboardDoneButtonToolbar: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(.appBodyMedium)
+                    .foregroundColor(.primary)
+                }
+            }
+    }
+    
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 // MARK: - Unified Keyboard Handling Modifier
 struct KeyboardHandlingModifier: ViewModifier {
     let dismissOnTapOutside: Bool
@@ -11,15 +32,22 @@ struct KeyboardHandlingModifier: ViewModifier {
     }
     
     func body(content: Content) -> some View {
-        content
-            .ignoresSafeArea(.keyboard, edges: .bottom)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if dismissOnTapOutside {
-                    // Only dismiss if tapping outside of text fields
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
+        Group {
+            if showDoneButton {
+                content
+                    .modifier(KeyboardDoneButtonToolbar())
+            } else {
+                content
             }
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if dismissOnTapOutside {
+                // Only dismiss if tapping outside of text fields
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+        }
     }
 }
 
@@ -80,5 +108,10 @@ class FocusStateManager: ObservableObject {
 extension View {
     func keyboardHandling(dismissOnTapOutside: Bool = true, showDoneButton: Bool = false) -> some View {
         self.modifier(KeyboardHandlingModifier(dismissOnTapOutside: dismissOnTapOutside, showDoneButton: showDoneButton))
+    }
+    
+    /// Adds a "Done" button above the keyboard for text input fields
+    func keyboardDoneButton() -> some View {
+        self.modifier(KeyboardDoneButtonToolbar())
     }
 } 
