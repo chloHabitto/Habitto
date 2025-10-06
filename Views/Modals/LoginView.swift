@@ -411,7 +411,7 @@ struct LoginView: View {
                             errorMessage = "Credential import failed. Please try again."
                         case .credentialExport:
                             errorMessage = "Credential export failed. Please try again."
-                        @unknown default:
+                        default:
                             errorMessage = "Apple Sign-In failed: \(error.localizedDescription)"
                         }
                     } else {
