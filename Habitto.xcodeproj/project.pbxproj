@@ -49,6 +49,8 @@
 		894AC2A52E76ED1C0090008F /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894D1C6E2E7C1C9E00C599CA /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8958CA932E92813400AC3DB8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		8958E6692E93AC9800AC3DB8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = HabittoAppIcon.icon; sourceTree = "<group>"; };
 		895EA6582E7C8288003252B5 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		895EAC272E7D8720003252B5 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		895EB1CF2E7D8760003252B5 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -217,6 +219,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		8958E6792E93AC9800AC3DB8 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		895EA65C2E7C8289003252B5 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
@@ -379,6 +386,7 @@
 				89C17A392DF73D8A00B2480F /* . */,
 				890C9EDB2E4E05B7006E28C7 /* Frameworks */,
 				89C17A382DF73D8A00B2480F /* Products */,
+				8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */,
 			);
 			sourceTree = "<group>";
 		};
@@ -714,6 +722,10 @@
 					ProjectRef = 89B2DFB42E8D70FA008AC70D /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 8958E6792E93AC9800AC3DB8 /* Products */;
+					ProjectRef = 8958E6692E93AC9800AC3DB8 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 89B447E52E76EDD900374845 /* Products */;
 					ProjectRef = 89B447E02E76EDD900374845 /* Habitto.xcodeproj */;
 				},
@@ -878,8 +890,9 @@
 		89C17A432DF73D8C00B2480F /* Debug configuration for PBXNativeTarget "Habitto" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = HabittoAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -918,8 +931,9 @@
 		89C17A442DF73D8C00B2480F /* Release configuration for PBXNativeTarget "Habitto" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = HabittoAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Habitto.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
