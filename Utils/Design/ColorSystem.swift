@@ -481,16 +481,29 @@ extension Color {
     }
 }
 
-// MARK: - Color Codable Extension
-extension Color: Codable {
+// MARK: - Codable Color Wrapper
+struct CodableColor: Codable {
+    let color: Color
+    
+    init(_ color: Color) {
+        self.color = color
+    }
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let hex = try container.decode(String.self)
-        self.init(hex: hex)
+        self.color = Color(hex: hex)
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(toHex())
+        try container.encode(color.toHex())
+    }
+}
+
+// MARK: - Convenience Extensions
+extension Color {
+    func codable() -> CodableColor {
+        return CodableColor(self)
     }
 } 
