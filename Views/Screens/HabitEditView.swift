@@ -65,7 +65,7 @@ struct HabitEditView: View {
         let basicChanges = habitName != habit.name ||
                           habitDescription != habit.description ||
                           selectedIcon != habit.icon ||
-                          selectedColor != habit.color ||
+                          selectedColor != habit.color.color ||
                           selectedHabitType != habit.habitType ||
                           selectedReminder != habit.reminder ||
                           reminders != habit.reminders ||
@@ -107,7 +107,7 @@ struct HabitEditView: View {
         self._habitName = State(initialValue: habit.name)
         self._habitDescription = State(initialValue: habit.description)
         self._selectedIcon = State(initialValue: habit.icon)
-        self._selectedColor = State(initialValue: habit.color)
+        self._selectedColor = State(initialValue: habit.color.color)
         self._selectedHabitType = State(initialValue: habit.habitType)
         self._selectedSchedule = State(initialValue: habit.schedule)
         self._selectedReminder = State(initialValue: habit.reminder)

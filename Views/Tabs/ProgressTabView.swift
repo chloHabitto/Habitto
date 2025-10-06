@@ -711,7 +711,7 @@ struct ProgressTabView: View {
                 if selectedHabit?.id == habit.id {
                     ZStack {
                         Circle()
-                            .fill(habit.color)
+                            .fill(habit.color.color)
                             .frame(width: 24, height: 24)
                         
                         Image(systemName: "checkmark")
@@ -728,11 +728,11 @@ struct ProgressTabView: View {
             .padding(.vertical, 16)
         .background(
                             RoundedRectangle(cornerRadius: 16)
-                    .fill(selectedHabit?.id == habit.id ? habit.color.opacity(0.05) : Color.surface)
+                    .fill(selectedHabit?.id == habit.id ? habit.color.color.opacity(0.05) : Color.surface)
             )
                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                    .stroke(selectedHabit?.id == habit.id ? habit.color.opacity(0.2) : Color.outline3.opacity(0.3), lineWidth: 1)
+                    .stroke(selectedHabit?.id == habit.id ? habit.color.color.opacity(0.2) : Color.outline3.opacity(0.3), lineWidth: 1)
             )
         }
     }
@@ -740,7 +740,7 @@ struct ProgressTabView: View {
     private func habitIcon(for habit: Habit) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(habit.color.opacity(0.15))
+                .fill(habit.color.color.opacity(0.15))
                 .frame(width: 48, height: 48)
             
             if habit.icon.hasPrefix("Icon-") {
@@ -748,11 +748,11 @@ struct ProgressTabView: View {
                 Image(habit.icon)
                     .resizable()
                     .frame(width: 20, height: 20)
-                    .foregroundColor(habit.color)
+                    .foregroundColor(habit.color.color)
             } else if habit.icon == "None" {
                 // No icon selected - show colored rounded rectangle
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(habit.color)
+                    .fill(habit.color.color)
                     .frame(width: 20, height: 20)
             } else {
                 // Emoji or system icon

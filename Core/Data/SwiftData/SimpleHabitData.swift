@@ -87,7 +87,7 @@ final class SimpleHabitData {
         self.name = habit.name
         self.habitDescription = habit.description
         self.icon = habit.icon
-        self.colorString = habit.color.toHexString()
+        self.colorString = habit.color.color.toHex()
         self.habitType = habit.habitType.rawValue
         self.schedule = habit.schedule
         self.goal = habit.goal
@@ -110,7 +110,7 @@ final class SimpleHabitData {
             name: name,
             description: habitDescription,
             icon: icon,
-            color: Color.fromHex(colorString),
+            color: CodableColor(Color.fromHex(colorString)),
             habitType: HabitType(rawValue: habitType) ?? .formation,
             schedule: schedule,
             goal: goal,

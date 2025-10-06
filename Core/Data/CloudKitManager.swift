@@ -323,7 +323,7 @@ extension CKRecord {
         self["name"] = habit.name
         self["habitDescription"] = habit.description
         self["icon"] = habit.icon
-        self["colorHex"] = habit.color.toHex()
+        self["colorHex"] = habit.color.color.toHex()
         self["habitType"] = habit.habitType.rawValue
         self["schedule"] = habit.schedule
         self["goal"] = habit.goal

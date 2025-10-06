@@ -217,7 +217,7 @@ final class CloudKitSyncManager {
             name: name,
             description: description,
             icon: icon,
-            color: color,
+            color: CodableColor(color),
             habitType: habitType,
             schedule: schedule,
             goal: goal,

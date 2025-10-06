@@ -7,7 +7,7 @@ struct HabitProgressCard: View {
         HStack(alignment: .top, spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(habitProgress.habit.color)
+                .fill(habitProgress.habit.color.color)
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             

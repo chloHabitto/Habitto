@@ -147,7 +147,7 @@ struct CreateHabitFlowView: View {
                 name = habit.name
                 description = habit.description
                 icon = habit.icon
-                color = habit.color
+                color = habit.color.color
                 habitType = habit.habitType
                 
                 // Initialize Step 2 data from existing habit

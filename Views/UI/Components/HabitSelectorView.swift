@@ -188,7 +188,7 @@ struct HabitSelectorView: View {
         .padding(20)
         .background(habitCardBackground(for: habit))
         .shadow(
-            color: selectedHabit?.id == habit.id ? habit.color.opacity(0.1) : Color.black.opacity(0.05),
+            color: selectedHabit?.id == habit.id ? habit.color.color.opacity(0.1) : Color.black.opacity(0.05),
             radius: selectedHabit?.id == habit.id ? 12 : 8,
             x: 0,
             y: selectedHabit?.id == habit.id ? 6 : 4
@@ -209,7 +209,7 @@ struct HabitSelectorView: View {
     private func habitIcon(for habit: Habit) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(habit.color.opacity(0.15))
+                .fill(habit.color.color.opacity(0.15))
                 .frame(width: 30, height: 30)
             
             if habit.icon.hasPrefix("Icon-") {
@@ -217,11 +217,11 @@ struct HabitSelectorView: View {
                 Image(habit.icon)
                     .resizable()
                     .frame(width: 14, height: 14)
-                    .foregroundColor(habit.color)
+                    .foregroundColor(habit.color.color)
             } else if habit.icon == "None" {
                 // No icon selected - show colored rounded rectangle
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(habit.color)
+                    .fill(habit.color.color)
                     .frame(width: 14, height: 14)
             } else {
                 // Emoji or system icon
@@ -238,7 +238,7 @@ struct HabitSelectorView: View {
             if selectedHabit?.id == habit.id {
                 ZStack {
                     Circle()
-                        .fill(habit.color)
+                        .fill(habit.color.color)
                         .frame(width: 24, height: 24)
                     
                     Image(systemName: "checkmark")
@@ -259,7 +259,7 @@ struct HabitSelectorView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(
-                        selectedHabit?.id == habit.id ? habit.color.opacity(0.3) : Color.outline3.opacity(0.2),
+                        selectedHabit?.id == habit.id ? habit.color.color.opacity(0.3) : Color.outline3.opacity(0.2),
                         lineWidth: selectedHabit?.id == habit.id ? 2 : 1
                     )
             )

@@ -256,7 +256,7 @@ extension CloudKitIntegrationService {
                 name: habit.name,
                 description: habit.description,
                 icon: habit.icon,
-                colorHex: habit.color.toHex(),
+                colorHex: habit.color.color.toHex(),
                 habitType: habit.habitType.rawValue,
                 schedule: habit.schedule,
                 goal: habit.goal,

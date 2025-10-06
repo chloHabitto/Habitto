@@ -9,7 +9,7 @@ struct SecureHabit: Identifiable, Codable, Equatable {
     var name: String
     var description: String
     var icon: String
-    var color: Color
+    var color: CodableColor
     var habitType: HabitType
     var schedule: String
     var goal: String
@@ -31,14 +31,74 @@ struct SecureHabit: Identifiable, Codable, Equatable {
     @SecureField private var personalGoals: String
     @SecureField private var motivation: String
     
+    // MARK: - Computed Properties
+    
+    /// Access the actual Color value for UI usage
+    var colorValue: Color {
+        return color.color
+    }
+    
     // MARK: - Initialization
     
+    // Convenience initializer that accepts Color and converts to CodableColor
     init(
         id: UUID = UUID(),
         name: String,
         description: String,
         icon: String,
         color: Color,
+        habitType: HabitType,
+        schedule: String,
+        goal: String,
+        reminder: String,
+        startDate: Date,
+        endDate: Date? = nil,
+        isCompleted: Bool = false,
+        streak: Int = 0,
+        createdAt: Date = Date(),
+        reminders: [ReminderItem] = [],
+        baseline: Int = 0,
+        target: Int = 0,
+        completionHistory: [String: Int] = [:],
+        difficultyHistory: [String: Int] = [:],
+        actualUsage: [String: Int] = [:],
+        notes: String = "",
+        personalGoals: String = "",
+        motivation: String = ""
+    ) {
+        self.init(
+            id: id,
+            name: name,
+            description: description,
+            icon: icon,
+            color: CodableColor(color),
+            habitType: habitType,
+            schedule: schedule,
+            goal: goal,
+            reminder: reminder,
+            startDate: startDate,
+            endDate: endDate,
+            isCompleted: isCompleted,
+            streak: streak,
+            createdAt: createdAt,
+            reminders: reminders,
+            baseline: baseline,
+            target: target,
+            completionHistory: completionHistory,
+            difficultyHistory: difficultyHistory,
+            actualUsage: actualUsage,
+            notes: notes,
+            personalGoals: personalGoals,
+            motivation: motivation
+        )
+    }
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        description: String,
+        icon: String,
+        color: CodableColor,
         habitType: HabitType,
         schedule: String,
         goal: String,
@@ -208,7 +268,7 @@ struct EncryptedSecureHabit: Identifiable, Codable {
     var name: String
     var description: String
     var icon: String
-    var color: Color
+    var color: CodableColor
     var habitType: HabitType
     var schedule: String
     var goal: String

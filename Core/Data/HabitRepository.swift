@@ -879,7 +879,7 @@ extension HabitEntity {
             name: self.name ?? "",
             description: self.habitDescription ?? "",
             icon: self.icon ?? "None",
-            color: color,
+            color: CodableColor(color),
             habitType: habitType,
             schedule: (self.schedule ?? "Everyday").capitalized,
             goal: self.goal ?? "1 time",

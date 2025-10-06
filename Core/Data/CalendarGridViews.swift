@@ -21,10 +21,10 @@ struct HabitIconInlineView: View {
                 Image(habit.icon)
                     .resizable()
                     .frame(width: 16, height: 16)
-                    .foregroundColor(habit.color)
+                    .foregroundColor(habit.color.color)
             } else if habit.icon == "None" {
                 RoundedRectangle(cornerRadius: 5)
-                    .fill(habit.color)
+                    .fill(habit.color.color)
                     .frame(width: 16, height: 16)
             } else {
                 Text(habit.icon)

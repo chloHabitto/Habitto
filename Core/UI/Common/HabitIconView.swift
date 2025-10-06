@@ -6,7 +6,7 @@ struct HabitIconView: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
-                .fill(habit.color.opacity(0.15))
+                .fill(habit.color.color.opacity(0.15))
                 .frame(width: 30, height: 30)
             
             if habit.icon.hasPrefix("Icon-") {
@@ -14,11 +14,11 @@ struct HabitIconView: View {
                 Image(habit.icon)
                     .resizable()
                     .frame(width: 14, height: 14)
-                    .foregroundColor(habit.color)
+                    .foregroundColor(habit.color.color)
             } else if habit.icon == "None" {
                 // No icon selected - show colored rounded rectangle
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(habit.color)
+                    .fill(habit.color.color)
                     .frame(width: 14, height: 14)
             } else {
                 // Emoji or system icon

@@ -66,7 +66,7 @@ struct ScheduledHabitItem: View {
         
         return AnimatedCheckbox(
             isChecked: isHabitCompleted(),
-            accentColor: isVacationDay ? .grey400 : habit.color,
+            accentColor: isVacationDay ? .grey400 : habit.color.color,
             isAnimating: isCompletingAnimation,
             action: {
                 if !isVacationDay {
@@ -120,7 +120,7 @@ struct ScheduledHabitItem: View {
         HStack(spacing: 12) {
             // ColorMark
             Rectangle()
-                .fill(habit.color.opacity(0.7))
+                .fill(habit.color.color.opacity(0.7))
                 .frame(width: 8)
                 .frame(maxHeight: .infinity)
             
@@ -156,7 +156,7 @@ struct ScheduledHabitItem: View {
                         
                         // Progress bar
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(habit.color.opacity(isCompletingAnimation ? 1.0 : 0.7))
+                            .fill(habit.color.color.opacity(isCompletingAnimation ? 1.0 : 0.7))
                             .frame(
                                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
                                 height: isCompletingAnimation ? 8 : 6
