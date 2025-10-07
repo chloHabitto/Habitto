@@ -14,8 +14,6 @@ struct UnifiedInputElement: View {
     let uiUpdateTrigger: Bool
     @FocusState.Binding var isFocused: Bool
     
-    @FocusState private var internalIsFocused: Bool
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
@@ -30,28 +28,16 @@ struct UnifiedInputElement: View {
                 .padding(.bottom, 12)
             
             HStack(spacing: 4) {
-                // Number input field - smaller width with optimized focus handling
+                // Number input field - using direct @FocusState binding
                 TextField("1", text: $numberText)
                     .font(.appBodyLarge)
                     .foregroundColor(.text01)
                     .accentColor(.text01)
-                    .keyboardType(.numberPad)
-                    .focused($internalIsFocused)
+                    .keyboardType(.numberPad) // Back to .numberPad - toolbar will work
+                    .focused($isFocused)
                     .multilineTextAlignment(.center)
                     .frame(width: 40)
                     .inputFieldStyle()
-                    .onChange(of: internalIsFocused) { oldValue, newValue in
-                        // Sync internal focus state with external FocusState binding
-                        DispatchQueue.main.async {
-                            isFocused = newValue
-                        }
-                    }
-                    .onChange(of: isFocused) { oldValue, newValue in
-                        // Sync external focus state with internal FocusState
-                        DispatchQueue.main.async {
-                            internalIsFocused = newValue
-                        }
-                    }
                 
                 // Unit selector button - smaller width
                 Button(action: onUnitTap) {
