@@ -179,11 +179,9 @@ struct HabittoApp: App {
                                 await XPDataMigration.shared.checkAndRunMigration(modelContext: modelContext)
                             }
                             
-                            // Check and execute migrations
-                            Task { @MainActor in
-                                print("🔄 HabittoApp: Checking for data migrations...")
-                                await migrationService.checkAndExecuteMigrations()
-                            }
+                            // NOTE: Data migrations are handled automatically in HabitStore.loadHabits()
+                            // Removed redundant call to migrationService.checkAndExecuteMigrations()
+                            // to prevent "Migration already in progress" warnings
                             
                             // Force reload habits after a short delay to ensure data is loaded
                             Task { @MainActor in
