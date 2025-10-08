@@ -113,7 +113,7 @@ class DataMigrationManager: ObservableObject {
         
         // Prevent multiple simultaneous migrations
         guard !isMigrating else {
-            print("⚠️ DataMigrationManager: Migration already in progress, skipping")
+            // This is expected during concurrent app initialization - multiple components may call this
             return
         }
         

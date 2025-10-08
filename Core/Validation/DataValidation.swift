@@ -394,19 +394,23 @@ class HabitValidator: DataValidator {
     
     private func isValidSFSymbol(_ icon: String) -> Bool {
         // Basic validation for SF Symbols
-        // In a real app, you might want to check against a list of valid symbols
-        return !icon.isEmpty && icon.count > 1
+        // Accept single character icons (emojis) or multi-character SF Symbol names
+        // Empty icons will be caught by the isEmpty check earlier
+        return !icon.isEmpty
     }
     
     private func isValidSchedule(_ schedule: String) -> Bool {
-        // Basic schedule validation - accept common schedule formats
+        // Basic schedule validation - accept common schedule formats (case-insensitive)
         let validSchedules = [
             "Everyday", "Weekdays", "Weekends",
             "daily", "weekly", "monthly", "yearly",
+            "everyday", "weekdays", "weekends",  // Add lowercase variants
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
             "Every 2 days", "Every 3 days", "Every 4 days", "Every 5 days", "Every 6 days", "Every 7 days"
         ]
         
-        return validSchedules.contains(schedule) || schedule.isEmpty
+        // Case-insensitive check
+        return validSchedules.contains { $0.lowercased() == schedule.lowercased() } || schedule.isEmpty
     }
     
     private func parseDate(from dateKey: String) -> Date? {
