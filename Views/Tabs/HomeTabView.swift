@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 import SwiftData
-import ViewAnimator
 
 // Note: AuthenticationManager and CurrentUser are automatically available
 // through the app's module since they're in the same target

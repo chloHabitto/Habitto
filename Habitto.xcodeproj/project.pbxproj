@@ -18,7 +18,6 @@
 		89383AAB2E919C8800AF39E5 /* MijickPopups in Frameworks */ = {isa = PBXBuildFile; productRef = 89383AAA2E919C8800AF39E5 /* MijickPopups */; };
 		8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70C2E8A680E00E7B437 /* MCEmojiPicker */; };
 		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
-		897DB9E82E8D22EE00B830CA /* ViewAnimator in Frameworks */ = {isa = PBXBuildFile; productRef = 897DB9E72E8D22EE00B830CA /* ViewAnimator */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +39,7 @@
 		891269F12E76DCE90060E3E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8921B76D2E7B1F9E00E210F3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89276DCC2E7EB29100290FA5 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		892E53E92E96A6B100D6A1E0 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8935E4F92E7C21CE004BF684 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8935F4F52E7C3813004BF684 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		893837612E918E4B00AF39E5 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -116,7 +116,6 @@
 		89C17A342DF73D8A00B2480F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				897DB9E82E8D22EE00B830CA /* ViewAnimator in Frameworks */,
 				8935E7902E7C2260004BF684 /* FirebaseDatabase in Frameworks */,
 				8935E7842E7C21DB004BF684 /* Algorithms in Frameworks */,
 				8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */,
@@ -169,6 +168,11 @@
 			sourceTree = "<group>";
 		};
 		89276DD02E7EB29100290FA5 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		892E53FA2E96A6B100D6A1E0 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -495,7 +499,6 @@
 				8935E7942E7C2278004BF684 /* GoogleSignInSwift */,
 				8940C70C2E8A680E00E7B437 /* MCEmojiPicker */,
 				8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */,
-				897DB9E72E8D22EE00B830CA /* ViewAnimator */,
 				89383AAA2E919C8800AF39E5 /* MijickPopups */,
 			);
 			productName = Habitto;
@@ -532,7 +535,6 @@
 				8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
-				897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */,
 				89383AA92E919C8800AF39E5 /* XCRemoteSwiftPackageReference "Popups" */,
 			);
 			preferredProjectObjectVersion = 90;
@@ -646,6 +648,10 @@
 				{
 					ProductGroup = 895FD4D62E76F8520091E179 /* Products */;
 					ProjectRef = 895FD4D12E76F8520091E179 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 892E53FA2E96A6B100D6A1E0 /* Products */;
+					ProjectRef = 892E53E92E96A6B100D6A1E0 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 8970D0F02E76C98300217C78 /* Products */;
@@ -1050,14 +1056,6 @@
 				minimumVersion = 1.2.5;
 			};
 		};
-		897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/marcosgriselli/ViewAnimator.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.1.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1115,11 +1113,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
 			productName = MCEmojiPickerJSON;
-		};
-		897DB9E72E8D22EE00B830CA /* ViewAnimator */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 897DB9E62E8D22EE00B830CA /* XCRemoteSwiftPackageReference "ViewAnimator" */;
-			productName = ViewAnimator;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,5 +1,4 @@
 import SwiftUI
-import ViewAnimator
 import UniformTypeIdentifiers
 
 // MARK: - Jiggle Animation Modifier
