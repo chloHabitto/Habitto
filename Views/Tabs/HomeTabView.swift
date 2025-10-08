@@ -855,7 +855,7 @@ struct HomeTabView: View {
     // ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
     private func prefetchCompletionStatus() async {
         guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-            print("⚠️ HomeTabView: No user ID for prefetch")
+            // Normal behavior in guest mode - no prefetch needed
             return
         }
         

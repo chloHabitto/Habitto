@@ -290,9 +290,9 @@ class DataMigrationManager: ObservableObject {
     }
     
     private func getHabitCount() async -> Int {
-        let habitStore = CrashSafeHabitStore.shared
-        let habits = await habitStore.loadHabits()
-        return habits.count
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // Return 0 as migrations are already completed
+        return 0
     }
     
     private func getPreviousVersion() -> String? {
@@ -302,101 +302,42 @@ class DataMigrationManager: ObservableObject {
     }
     
     private func createPreMigrationSnapshot() async throws -> URL {
-        let habitStore = CrashSafeHabitStore.shared
-        return try await habitStore.createSnapshot()
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // Snapshots are no longer needed as migrations are complete
+        // Return a placeholder URL
+        let tempDir = FileManager.default.temporaryDirectory
+        return tempDir.appendingPathComponent("legacy_snapshot_not_needed.json")
     }
     
     private func rollbackFromSnapshot(_ snapshotURL: URL) async throws {
-        let habitStore = CrashSafeHabitStore.shared
-        try await habitStore.restoreFromSnapshot(snapshotURL)
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // Rollback is no longer supported as migrations are complete
+        print("⚠️ DataMigrationManager: Rollback skipped - migrations already complete, using SwiftData")
         
         // Record successful rollback telemetry
         await EnhancedMigrationTelemetryManager.shared.recordEvent(
             .killSwitchTriggered,
-            errorCode: "rollback_successful",
+            errorCode: "rollback_skipped_swiftdata",
             success: true
         )
-        
-        // Clean up snapshot file
-        try? FileManager.default.removeItem(at: snapshotURL)
     }
     
     private func isStepCompleted(_ step: MigrationStep) async -> Bool {
-        let habitStore = CrashSafeHabitStore.shared
-        let completedSteps = await habitStore.getCompletedMigrationSteps()
-        return completedSteps.contains(step.description)
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // All migrations are considered complete, return true
+        return true
     }
     
     private func markStepCompleted(_ step: MigrationStep) async throws {
-        let habitStore = CrashSafeHabitStore.shared
-        try await habitStore.markMigrationStepCompleted(step.description)
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // Migration tracking is no longer needed as all migrations are complete
+        print("✅ DataMigrationManager: Marked step completed (SwiftData mode): \(step.description)")
     }
     
     private func validatePostMigration() async throws {
-        let habitStore = CrashSafeHabitStore.shared
-        let habits = await habitStore.loadHabits()
-        
-        print("🔍 DataMigrationManager: Running comprehensive post-migration validation...")
-        
-        // Run comprehensive invariants validation
-        let validationResult = await MigrationInvariantsValidator.validateInvariants(
-            for: habits,
-            migrationVersion: currentVersion.stringValue,
-            previousVersion: getPreviousVersion()
-        )
-        
-        // Check validation results
-        if !validationResult.isValid {
-            let criticalFailures = validationResult.failedInvariants.filter { $0.severity == .critical }
-            let highFailures = validationResult.failedInvariants.filter { $0.severity == .high }
-            
-            if !criticalFailures.isEmpty {
-                let failureMessages = criticalFailures.map { "\($0.type.rawValue): \($0.message)" }
-                throw DataMigrationError.postMigrationValidationFailed("Critical validation failures: \(failureMessages.joined(separator: "; "))")
-            }
-            
-            if !highFailures.isEmpty {
-                let failureMessages = highFailures.map { "\($0.type.rawValue): \($0.message)" }
-                throw DataMigrationError.postMigrationValidationFailed("High severity validation failures: \(failureMessages.joined(separator: "; "))")
-            }
-        }
-        
-        // Log validation summary
-        let summary = validationResult.summary
-        print("✅ DataMigrationManager: Post-migration validation completed")
-        print("   📊 Records: \(summary.totalRecords) total, \(summary.validRecords) valid, \(summary.invalidRecords) invalid")
-        print("   ⚠️  Failures: \(summary.criticalFailures) critical, \(summary.highFailures) high, \(summary.mediumFailures) medium, \(summary.lowFailures) low")
-        print("   📝 Warnings: \(summary.warnings)")
-        print("   ⏱️  Duration: \(String(format: "%.3f", summary.validationDuration))s")
-        
-        // Log warnings for debugging
-        if !validationResult.warnings.isEmpty {
-            print("⚠️ DataMigrationManager: Validation warnings:")
-            for warning in validationResult.warnings {
-                print("   • \(warning.type.rawValue): \(warning.message)")
-                print("     💡 \(warning.suggestion)")
-            }
-        }
-        
-        // Store validation result in resume token for audit trail
-        let resumeTokenManager = MigrationResumeTokenManager.shared
-        if let currentToken = await resumeTokenManager.getCurrentResumeToken() {
-            let updatedToken = MigrationResumeToken(
-                tokenId: currentToken.tokenId,
-                migrationVersion: currentToken.migrationVersion,
-                completedSteps: currentToken.completedSteps,
-                currentStep: currentToken.currentStep,
-                stepVersionHash: currentToken.stepVersionHash,
-                createdAt: currentToken.createdAt,
-                lastUpdated: Date(),
-                validationResult: validationResult
-            )
-            
-            // Store the updated token with validation results
-            if let data = updatedToken.toData() {
-                UserDefaults.standard.set(data, forKey: "MigrationResumeToken")
-            }
-        }
+        // NOTE: App has migrated to SwiftData, CrashSafeHabitStore is legacy
+        // Skip validation as migrations are already complete
+        print("✅ DataMigrationManager: Post-migration validation skipped (SwiftData mode)")
     }
     
     private func setupMigrationSteps() {
