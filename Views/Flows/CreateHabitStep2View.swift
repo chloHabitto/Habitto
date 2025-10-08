@@ -188,7 +188,11 @@ struct CreateHabitStep2View: View {
                     isTargetFieldFocused = false
                 }
                 .font(.appBodyMedium)
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.accentColor)
+                .clipShape(Capsule())
             }
         }
         .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)

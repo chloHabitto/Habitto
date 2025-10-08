@@ -172,20 +172,11 @@ struct HabitEditView: View {
             .padding(.bottom, 100) // Add bottom padding to account for fixed button
         }
         .background(.surface2)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    // Dismiss all focused fields
-                    isGoalNumberFocused = false
-                    isBaselineFieldFocused = false
-                    isTargetFieldFocused = false
-                }
-                .font(.appBodyMedium)
-                .foregroundColor(.primary)
-            }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Dismiss keyboard when tapping background
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
-        .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
     }
     
     @ViewBuilder
@@ -380,6 +371,23 @@ struct HabitEditView: View {
         ZStack {
             mainViewContent
             .background(.surface2)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        // Dismiss all focused fields
+                        isGoalNumberFocused = false
+                        isBaselineFieldFocused = false
+                        isTargetFieldFocused = false
+                    }
+                    .font(.appBodyMedium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .clipShape(Capsule())
+                }
+            }
             .onChange(of: isGoalNumberFocused) { _, newValue in
                 print("🔍 HabitEditView: Goal field focus changed to \(newValue)")
                 print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
@@ -826,7 +834,6 @@ struct HabitEditView: View {
             .cornerRadius(12)
             .contentShape(Rectangle())
             .allowsHitTesting(true)
-            .keyboardDoneButton()
             .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
     }
     
