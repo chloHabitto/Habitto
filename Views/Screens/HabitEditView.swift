@@ -172,11 +172,20 @@ struct HabitEditView: View {
             .padding(.bottom, 100) // Add bottom padding to account for fixed button
         }
         .background(.surface2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            // Dismiss keyboard when tapping background
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    // Dismiss all focused fields
+                    isGoalNumberFocused = false
+                    isBaselineFieldFocused = false
+                    isTargetFieldFocused = false
+                }
+                .font(.appBodyMedium)
+                .foregroundColor(.primary)
+            }
         }
+        .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
     }
     
     @ViewBuilder
@@ -358,6 +367,7 @@ struct HabitEditView: View {
                 bottomButtonDock
             }
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     var body: some View {
