@@ -58,11 +58,9 @@ class UserAwareStorage: HabitStorageProtocol {
     func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
         clearCacheIfUserChanged()
         
-        // Use user-specific key for habits
-        let userKey = await getUserSpecificKey("SavedHabits")
-        
-        // Save to base storage with user-specific key
-        try await baseStorage.save(habits, forKey: userKey, immediate: immediate)
+        // Use the specific saveHabits method from base storage instead of generic save
+        // This avoids the "Generic save called" warning
+        try await baseStorage.saveHabits(habits, immediate: immediate)
         
         // Update cache
         cachedHabits = habits
@@ -76,9 +74,9 @@ class UserAwareStorage: HabitStorageProtocol {
             return cached
         }
         
-        // Load from base storage with user-specific key
-        let userKey = await getUserSpecificKey("SavedHabits")
-        let habits: [Habit] = try await baseStorage.load([Habit].self, forKey: userKey) ?? []
+        // Use the specific loadHabits method from base storage instead of generic load
+        // This avoids the "Generic load called" warning
+        let habits = try await baseStorage.loadHabits()
         
         // Update cache
         cachedHabits = habits
@@ -118,9 +116,8 @@ class UserAwareStorage: HabitStorageProtocol {
     func clearAllHabits() async throws {
         clearCacheIfUserChanged()
         
-        // Clear habits for current user
-        let userKey = await getUserSpecificKey("SavedHabits")
-        try await baseStorage.save([Habit](), forKey: userKey, immediate: true)
+        // Use the specific saveHabits method with empty array instead of generic save
+        try await baseStorage.saveHabits([], immediate: true)
         
         // Clear cache
         cachedHabits = []
