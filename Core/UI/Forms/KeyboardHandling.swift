@@ -11,7 +11,11 @@ struct KeyboardDoneButtonToolbar: ViewModifier {
                         hideKeyboard()
                     }
                     .font(.appBodyMedium)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .clipShape(Capsule())
                 }
             }
     }
