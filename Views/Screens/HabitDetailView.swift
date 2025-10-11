@@ -37,6 +37,11 @@ struct HabitDetailView: View {
     @State private var showingCompletionSheet = false
     @State private var isCompletingHabit = false
     
+    // Check if habit reminders are globally enabled
+    private var habitRemindersEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    }
+    
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
         // Add some buffer to account for safe areas and ensure we detect when scrolling is needed
@@ -542,8 +547,41 @@ struct HabitDetailView: View {
                 }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(.primary)
+                        .foregroundColor(habitRemindersEnabled ? .primary : .text04)
                 }
+                .disabled(!habitRemindersEnabled)
+            }
+            
+            // Warning banner when habit reminders are disabled
+            if !habitRemindersEnabled {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.orange)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Habit reminders are turned off")
+                            .font(.appBodySmallEmphasised)
+                            .foregroundColor(.text01)
+                        
+                        if habit.reminders.isEmpty {
+                            Text("Please enable Habit reminders in Settings before adding a reminder.")
+                                .font(.appBodySmall)
+                                .foregroundColor(.text04)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            Text("These reminders won't notify you until you enable Habit reminders in Settings.")
+                                .font(.appBodySmall)
+                                .foregroundColor(.text04)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding(12)
+                .background(Color.orange.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             
             // Reminders list
@@ -574,7 +612,7 @@ struct HabitDetailView: View {
             // Time text
             Text(formatReminderTime(reminder.time))
                 .font(.appBodyLarge)
-                .foregroundColor(.text01)
+                .foregroundColor(habitRemindersEnabled ? .text01 : .text04)
             
             Spacer()
             
@@ -586,9 +624,10 @@ struct HabitDetailView: View {
                 Image("Icon-Pen_Outlined")
                     .resizable()
                     .frame(width: 18, height: 18)
-                    .foregroundColor(.text03)
+                    .foregroundColor(habitRemindersEnabled ? .text03 : .text05)
                     .padding(8)
             }
+            .disabled(!habitRemindersEnabled)
             
             // Delete button
             Button(action: {
@@ -598,14 +637,16 @@ struct HabitDetailView: View {
                 Image("Icon-TrashBin3_Filled")
                     .resizable()
                     .frame(width: 18, height: 18)
-                    .foregroundColor(.red)
+                    .foregroundColor(habitRemindersEnabled ? .red : .text05)
                     .padding(8)
             }
+            .disabled(!habitRemindersEnabled)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(Color.surfaceContainer.opacity(0.5))
+        .background(Color.surfaceContainer.opacity(habitRemindersEnabled ? 0.5 : 0.3))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .opacity(habitRemindersEnabled ? 1.0 : 0.6)
     }
     
     private func formatReminderTime(_ time: Date) -> String {

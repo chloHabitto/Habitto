@@ -19,7 +19,9 @@ struct NotificationsView: View {
     @State private var originalHabitReminderEnabled = false
     @State private var habitReminderEnabled = false
     
-    
+    // Alert state for habit reminder confirmation
+    @State private var showHabitReminderConfirmation = false
+    @State private var pendingHabitReminderState = false
     
     // Check if any changes were made
     private var hasChanges: Bool {
@@ -74,6 +76,17 @@ struct NotificationsView: View {
         }
         .onAppear {
             loadReminderSettings()
+        }
+        .alert("Turn Off Habit Reminders?", isPresented: $showHabitReminderConfirmation) {
+            Button("Cancel", role: .cancel) {
+                // Keep toggle ON - do nothing
+            }
+            Button("Turn Off", role: .destructive) {
+                // Confirm turning OFF
+                habitReminderEnabled = pendingHabitReminderState
+            }
+        } message: {
+            Text("Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings.")
         }
     }
     
@@ -265,7 +278,19 @@ struct NotificationsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            Toggle("", isOn: $habitReminderEnabled)
+            Toggle("", isOn: Binding(
+                get: { habitReminderEnabled },
+                set: { newValue in
+                    if !newValue && habitReminderEnabled {
+                        // User is trying to turn OFF - show confirmation
+                        pendingHabitReminderState = newValue
+                        showHabitReminderConfirmation = true
+                    } else {
+                        // User is turning ON - allow immediately
+                        habitReminderEnabled = newValue
+                    }
+                }
+            ))
                 .toggleStyle(SwitchToggleStyle(tint: .primary))
                 .scaleEffect(0.8)
                 .padding(.trailing, 0)
