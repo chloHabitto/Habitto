@@ -1,0 +1,116 @@
+# Airbnb Swift Style Guide - SwiftFormat Configuration
+# https://github.com/airbnb/swift
+
+--swiftversion 5.9
+
+# File options
+--exclude Pods,Carthage,vendor,.build,Generated,DerivedData,*.generated.swift
+
+# Format options
+--indent 2
+--indentcase false
+--trimwhitespace always
+--maxwidth 100
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen same-line
+--commas inline
+--decimalgrouping none
+--fractiongrouping disabled
+--exponentgrouping disabled
+--patternlet inline
+--semicolons never
+--stripunusedargs always
+--elseposition same-line
+--guardelse same-line
+--ifdef no-indent
+--organizetypes actor,class,enum,struct,extension
+--extensionacl on-declarations
+--modifierorder override,private,fileprivate,internal,public,package,open,static,class,final,required,convenience,lazy,weak,dynamic,optional,nonisolated,isolated
+--funcattributes prev-line
+--typeattributes prev-line
+--varattributes same-line
+--shortoptionals always
+--emptybraces spaced
+--linebreaks lf
+--wrapternary before-operators
+--wrapconditions after-first
+
+# Rules
+--enable isEmpty
+--enable sortImports
+--enable duplicateImports
+--enable blankLinesAtStartOfScope
+--enable blankLinesAtEndOfScope
+--enable blankLinesBetweenScopes
+--enable consecutiveBlankLines
+--enable consecutiveSpaces
+--enable trailingSpace
+--enable redundantParens
+--enable redundantReturn
+--enable redundantSelf
+--enable redundantInit
+--enable redundantPattern
+--enable redundantGet
+--enable redundantFileprivate
+--enable redundantVoidReturnType
+--enable redundantOptionalBinding
+--enable redundantBreak
+--enable unusedArguments
+--enable void
+--enable trailingCommas
+--enable wrapMultilineStatementBraces
+--enable braces
+--enable elseOnSameLine
+--enable emptyBraces
+--enable hoistPatternLet
+--enable indent
+--enable linebreakAtEndOfFile
+--enable spaceAroundBraces
+--enable spaceAroundBrackets
+--enable spaceAroundComments
+--enable spaceAroundGenerics
+--enable spaceAroundOperators
+--enable spaceAroundParens
+--enable spaceInsideBraces
+--enable spaceInsideBrackets
+--enable spaceInsideComments
+--enable spaceInsideGenerics
+--enable spaceInsideParens
+--enable trailingClosures
+--enable typeSugar
+--enable wrap
+--enable wrapArguments
+--enable andOperator
+--enable anyObjectProtocol
+--enable blankLineAfterSwitchCase
+--enable blockComments
+--enable consistentSwitchCaseSpacing
+--enable docComments
+--enable enumNamespaces
+--enable extensionAccessControl
+--enable markTypes
+--enable modifierOrder
+--enable organizeDeclarations
+--enable redundantType
+--enable redundantInternal
+--enable semicolons
+--enable sortSwitchCases
+--enable strongifiedSelf
+--enable wrapEnumCases
+--enable wrapSwitchCases
+--enable yodaConditions
+
+# Disable rules that might be too aggressive or cause issues
+--disable acronyms
+--disable assertionFailures
+--disable preferKeyPath
+--disable numberFormatting
+
+# Specific rule configurations
+--self init-only
+--importgrouping testable-bottom
+--redundanttype inferred
+--typeblanklines remove
+--header strip
