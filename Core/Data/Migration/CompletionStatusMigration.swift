@@ -19,10 +19,14 @@ class CompletionStatusMigration {
     }
 
     print("🔄 MIGRATION: Starting completion status migration...")
+    
+    // Log migration start for crash debugging
+    CrashlyticsService.shared.logMigrationStart(migrationName: "CompletionStatus")
 
     // Load existing habits
     let habits = Habit.loadHabits()
     print("🔄 MIGRATION: Found \(habits.count) habits to migrate")
+    CrashlyticsService.shared.setValue("\(habits.count)", forKey: "migration_habit_count")
 
     var migratedHabits: [Habit] = []
 
@@ -40,6 +44,9 @@ class CompletionStatusMigration {
 
     // Mark migration as completed
     markMigrationCompleted()
+    
+    // Log migration success
+    CrashlyticsService.shared.logMigrationComplete(migrationName: "CompletionStatus")
 
     print("🔄 MIGRATION: Completion status migration completed successfully")
   }

@@ -86,6 +86,11 @@ class AuthenticationManager: ObservableObject {
         } else if let user = result?.user {
           self?.authState = .authenticated(user)
           self?.currentUser = user
+          
+          // Track user in Crashlytics for crash reports (ready when package added)
+          CrashlyticsService.shared.setUserID(user.uid)
+          CrashlyticsService.shared.setValue(user.email ?? "no_email", forKey: "user_email")
+          
           completion(.success(user))
         }
       }
@@ -203,6 +208,12 @@ class AuthenticationManager: ObservableObject {
               } else if let user = authResult?.user {
                 self?.authState = .authenticated(user)
                 self?.currentUser = user
+                
+                // Track user in Crashlytics
+                CrashlyticsService.shared.setUserID(user.uid)
+                CrashlyticsService.shared.setValue(user.email ?? "google_user", forKey: "user_email")
+                CrashlyticsService.shared.setValue("google", forKey: "auth_provider")
+                
                 completion(.success(user))
               }
             }

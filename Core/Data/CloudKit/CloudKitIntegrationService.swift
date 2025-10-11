@@ -120,6 +120,9 @@ class CloudKitIntegrationService: ObservableObject {
       syncStatus = .error(error)
       errorMessage = error.localizedDescription
       print("❌ CloudKitIntegrationService: CloudKit sync failed - \(error.localizedDescription)")
+      
+      // Log CloudKit sync failure to Crashlytics
+      CrashlyticsService.shared.logCloudKitSyncFailed(error: error)
     }
 
     isSyncing = false
