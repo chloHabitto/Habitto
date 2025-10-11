@@ -32,21 +32,67 @@ final class SwiftDataContainer: ObservableObject {
       let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
       if FileManager.default.fileExists(atPath: databaseURL.path) {
         logger.warning("🔧 SwiftData: Database exists, checking for corruption...")
+        
+        var isCorrupted = false
+        
         // Check if database is corrupted by attempting to open it
         do {
           let testContainer = try ModelContainer(for: schema, configurations: [
             ModelConfiguration(url: databaseURL)
           ])
           let testContext = ModelContext(testContainer)
-          // Try to query CompletionRecord to check if table exists
-          let testRequest = FetchDescriptor<CompletionRecord>()
-          _ = try testContext.fetch(testRequest)
-          logger.info("✅ SwiftData: Database is healthy")
+          
+          // Test all critical tables to ensure they exist and are accessible
+          let habitRequest = FetchDescriptor<HabitData>()
+          let completionRequest = FetchDescriptor<CompletionRecord>()
+          let progressRequest = FetchDescriptor<UserProgressData>()
+          
+          _ = try testContext.fetch(habitRequest)
+          _ = try testContext.fetch(completionRequest)
+          _ = try testContext.fetch(progressRequest)
+          
+          logger.info("✅ SwiftData: Database health check passed - all tables exist")
         } catch {
-          logger.error("❌ SwiftData: Database corruption detected: \(error)")
-          logger.info("🔧 SwiftData: Resetting corrupted database...")
+          let errorDesc = error.localizedDescription
+          logger.error("❌ SwiftData: Database corruption detected: \(errorDesc)")
+          
+          // Check for specific corruption indicators
+          if errorDesc.contains("no such table") ||
+             errorDesc.contains("ZHABITDATA") ||
+             errorDesc.contains("ZCOMPLETIONRECORD") ||
+             errorDesc.contains("SQLite error") ||
+             errorDesc.contains("couldn't be opened") {
+            logger.error("🔧 SwiftData: Confirmed corruption - tables missing or inaccessible")
+            isCorrupted = true
+          }
+        }
+        
+        // If corrupted, remove database and all related files
+        if isCorrupted {
+          logger.warning("🔧 SwiftData: Removing corrupted database and related files...")
+          
+          // Remove main database file
           try? FileManager.default.removeItem(at: databaseURL)
-          logger.info("✅ SwiftData: Corrupted database removed")
+          
+          // Remove related database files (WAL, SHM, etc.)
+          let databaseDir = databaseURL.deletingLastPathComponent()
+          let databaseName = databaseURL.deletingPathExtension().lastPathComponent
+          
+          do {
+            let files = try FileManager.default.contentsOfDirectory(
+              at: databaseDir,
+              includingPropertiesForKeys: nil)
+            for file in files {
+              if file.lastPathComponent.hasPrefix(databaseName) {
+                try? FileManager.default.removeItem(at: file)
+                logger.info("  🗑️ Removed: \(file.lastPathComponent)")
+              }
+            }
+          } catch {
+            logger.error("❌ Failed to clean up related files: \(error)")
+          }
+          
+          logger.info("✅ SwiftData: Corrupted database completely removed - will create fresh database")
         }
       } else {
         logger.info("🔧 SwiftData: No existing database found, creating new one")
