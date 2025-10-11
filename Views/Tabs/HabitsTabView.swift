@@ -149,7 +149,13 @@ struct HabitsTabView: View {
       }
     }
 
-    // Then apply the tab-based filtering
+    // In edit mode, show ALL habits to allow proper reordering
+    // (Can't reorder a filtered view - causes index mismatch)
+    if editMode == .active {
+      return uniqueHabits
+    }
+
+    // Then apply the tab-based filtering (only in normal mode)
     switch selectedStatsTab {
     case 0: // Active
       return uniqueHabits.filter { habit in
@@ -277,18 +283,31 @@ struct HabitsTabView: View {
     let impactFeedback = UIImpactFeedbackGenerator(style: .light)
     impactFeedback.impactOccurred()
 
-    // Reorder in the state
-    var reorderedHabits = Array(habits)
+    guard let sourceIndex = source.first else { return }
+    
+    let habitBeingMoved = filteredHabits[sourceIndex]
+    print("🔄 Moving '\(habitBeingMoved.name)' from index \(sourceIndex) to \(destination)")
+    
+    // Reorder using the filtered habits (which shows ALL habits in edit mode)
+    var reorderedHabits = filteredHabits
     reorderedHabits.move(fromOffsets: source, toOffset: destination)
-
-    // Update each habit to trigger parent updates
-    if let onUpdateHabit {
-      for habit in reorderedHabits {
-        onUpdateHabit(habit)
+    
+    print("✅ New order: \(reorderedHabits.map { $0.name }.joined(separator: ", "))")
+    
+    // Update state immediately for instant UI feedback
+    state.habits = reorderedHabits
+    
+    // Save to persistent storage in background
+    Task {
+      do {
+        try await HabitRepository.shared.habitStore.saveHabits(reorderedHabits)
+        print("✅ Habits order persisted to storage")
+      } catch {
+        print("❌ Failed to save reordered habits: \(error)")
+        // Reload to revert on error
+        await HabitRepository.shared.loadHabits(force: true)
       }
     }
-
-    print("✅ Habits reordered successfully")
   }
 
   /// Handle deletion of habits (native .onDelete)
