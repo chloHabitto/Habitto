@@ -376,6 +376,43 @@ class HabitValidator: DataValidator {
             }
         }
         
+        // Check for duplicate completions on the same day
+        // This validates that each date appears only once in the completion status
+        var seenDates = Set<String>()
+        for dateKey in habit.completionStatus.keys {
+            if seenDates.contains(dateKey) {
+                errors.append(ValidationError(
+                    field: "completionStatus",
+                    message: "Duplicate completion record found for date: \(dateKey)",
+                    severity: .critical
+                ))
+            }
+            seenDates.insert(dateKey)
+        }
+        
+        // Also check completion timestamps for duplicates within same day
+        for (dateKey, timestamps) in habit.completionTimestamps {
+            let uniqueTimestamps = Set(timestamps)
+            if uniqueTimestamps.count < timestamps.count {
+                errors.append(ValidationError(
+                    field: "completionTimestamps",
+                    message: "Duplicate timestamps found for date: \(dateKey)",
+                    severity: .warning
+                ))
+            }
+            
+            // Validate timestamps are not in the future
+            for timestamp in timestamps {
+                if timestamp > now {
+                    errors.append(ValidationError(
+                        field: "completionTimestamps",
+                        message: "Future timestamp found for date: \(dateKey)",
+                        severity: .critical
+                    ))
+                }
+            }
+        }
+        
         // Check for invalid difficulty values
         for (dateKey, difficulty) in habit.difficultyHistory {
             if difficulty < 1 || difficulty > 10 {

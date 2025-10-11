@@ -10,6 +10,7 @@ final class GuestDataMigration: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let fileManager = FileManager.default
     private let authManager = AuthenticationManager.shared
+    private let backupManager = BackupManager.shared
     
     // Keys for guest data
     private let guestHabitsKey = "guest_habits"
@@ -88,19 +89,24 @@ final class GuestDataMigration: ObservableObject {
         migrationStatus = "Starting migration..."
         
         do {
+            // Step 0: Create pre-migration safety backup
+            migrationStatus = "Creating safety backup..."
+            migrationProgress = 0.1
+            try await createPreMigrationBackup(for: currentUser.uid)
+            
             // Step 1: Migrate habits data
             migrationStatus = "Migrating habits..."
-            migrationProgress = 0.2
+            migrationProgress = 0.3
             let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
             
             // Step 2: Migrate backup files
             migrationStatus = "Migrating backups..."
-            migrationProgress = 0.4
+            migrationProgress = 0.5
             try await migrateGuestBackups(to: currentUser.uid)
             
             // Step 3: Save to cloud storage for cross-device sync
             migrationStatus = "Syncing to cloud..."
-            migrationProgress = 0.6
+            migrationProgress = 0.7
             try await syncMigratedDataToCloud(migratedHabits)
             
             // Step 4: Mark migration as complete
@@ -117,6 +123,16 @@ final class GuestDataMigration: ObservableObject {
             
         } catch {
             migrationStatus = "Migration failed: \(error.localizedDescription)"
+            
+            // Inform user about safety backup location
+            let backupLocationKey = "pre_migration_backup_\(currentUser.uid)"
+            if let backupPath = userDefaults.string(forKey: backupLocationKey) {
+                print("❌ GuestDataMigration: Migration failed, but your data is safe!")
+                print("   Pre-migration backup available at: \(backupPath)")
+                print("   You can restore from this backup if needed")
+            }
+            
+            isMigrating = false
             throw error
         }
         
@@ -158,6 +174,62 @@ final class GuestDataMigration: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    /// Create a safety backup before migration starts
+    /// This ensures guest data can be recovered if migration fails
+    private func createPreMigrationBackup(for userId: String) async throws {
+        print("🔐 GuestDataMigration: Creating pre-migration safety backup...")
+        
+        // Check if guest data exists
+        guard let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
+              let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData) else {
+            print("ℹ️ GuestDataMigration: No guest habits to backup")
+            return
+        }
+        
+        // Create backup directory for guest user if it doesn't exist
+        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let guestBackupDir = documentsPath.appendingPathComponent("Backups").appendingPathComponent("guest_user")
+        
+        if !fileManager.fileExists(atPath: guestBackupDir.path) {
+            try fileManager.createDirectory(at: guestBackupDir, withIntermediateDirectories: true)
+        }
+        
+        // Generate backup filename with timestamp
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withFullDate, .withTime, .withDashSeparatorInDate, .withColonSeparatorInTime]
+        let timestamp = dateFormatter.string(from: Date())
+        let backupFilename = "pre_migration_\(timestamp).json"
+        let backupURL = guestBackupDir.appendingPathComponent(backupFilename)
+        
+        // Create backup metadata
+        let backupMetadata: [String: Any] = [
+            "type": "pre_migration_safety",
+            "timestamp": timestamp,
+            "userId": userId,
+            "habitCount": guestHabits.count,
+            "automatic": true,
+            "description": "Automatic safety backup created before guest data migration to user \(userId)"
+        ]
+        
+        // Create backup data structure
+        let backupData: [String: Any] = [
+            "metadata": backupMetadata,
+            "habits": try JSONSerialization.jsonObject(with: guestHabitsData)
+        ]
+        
+        // Write backup to file with atomic operation
+        let backupJSONData = try JSONSerialization.data(withJSONObject: backupData, options: [.prettyPrinted, .sortedKeys])
+        try backupJSONData.write(to: backupURL, options: [.atomic])
+        
+        // Store backup location in UserDefaults for recovery
+        let backupLocationKey = "pre_migration_backup_\(userId)"
+        userDefaults.set(backupURL.path, forKey: backupLocationKey)
+        
+        print("✅ GuestDataMigration: Pre-migration safety backup created at \(backupURL.path)")
+        print("   Backed up \(guestHabits.count) habits")
+        print("   Backup can be restored if migration fails")
+    }
     
     private func migrateGuestHabits(to userId: String) async throws -> [Habit] {
         guard let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
