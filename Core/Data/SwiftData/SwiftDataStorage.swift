@@ -189,10 +189,22 @@ final class SwiftDataStorage: HabitStorageProtocol {
             "  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
         #endif
       } catch {
+        let errorDesc = error.localizedDescription
         #if DEBUG
-        logger.error("❌ ModelContext.save() failed: \(error.localizedDescription)")
+        logger.error("❌ ModelContext.save() failed: \(errorDesc)")
         logger.error("🔧 Database corruption detected - falling back to UserDefaults")
         #endif
+
+        // Check if this is a corruption error that needs database reset
+        if errorDesc.contains("no such table") ||
+           errorDesc.contains("ZHABITDATA") ||
+           errorDesc.contains("ZCOMPLETIONRECORD") ||
+           errorDesc.contains("SQLite error") ||
+           errorDesc.contains("couldn't be opened") {
+          // Set flag so database will be reset on next launch
+          UserDefaults.standard.set(true, forKey: "SwiftDataCorruptionDetected")
+          logger.error("🚨 Corruption flag set - database will be reset on next launch")
+        }
 
         // Fallback: Save to UserDefaults as emergency backup
         let encoder = JSONEncoder()
