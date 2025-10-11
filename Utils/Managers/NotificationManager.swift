@@ -1024,6 +1024,13 @@ class NotificationManager: ObservableObject {
     
     // Schedule friendly reminder notifications for incomplete habits
     func scheduleFriendlyReminders(for date: Date, habits: [Habit]) {
+        // Check if completion reminders are globally enabled
+        let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+        if !completionReminderEnabled {
+            print("🔇 NotificationManager: Completion reminders are disabled, skipping friendly reminders for \(date)")
+            return
+        }
+        
         // Check if vacation mode is active - don't schedule friendly reminders during vacation
         let vacationManager = VacationManager.shared
         if vacationManager.isVacationDay(date) {
@@ -1150,6 +1157,13 @@ class NotificationManager: ObservableObject {
     // Schedule notifications for a specific date (for daily rescheduling)
     func scheduleNotificationsForDate(_ date: Date, habits: [Habit]) {
         print("🔄 NotificationManager: Scheduling notifications for date: \(date)")
+        
+        // Check if habit reminders are globally enabled
+        let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        if !habitReminderEnabled {
+            print("🔇 NotificationManager: Habit reminders are disabled, skipping notifications for \(date)")
+            return
+        }
         
         // Check if vacation mode is active - don't schedule notifications during vacation
         let vacationManager = VacationManager.shared
@@ -1648,6 +1662,13 @@ class NotificationManager: ObservableObject {
     @MainActor
     func forceRescheduleAllHabitReminders() {
         print("🔄 NotificationManager: Force rescheduling all habit reminders...")
+        
+        // Check if habit reminders are globally enabled
+        let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        if !habitReminderEnabled {
+            print("🔇 NotificationManager: Habit reminders are disabled, cannot force reschedule")
+            return
+        }
         
         // First, remove all existing habit reminders
         removeAllHabitReminders()
