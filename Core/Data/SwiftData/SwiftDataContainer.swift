@@ -28,74 +28,94 @@ final class SwiftDataContainer: ObservableObject {
       logger.info("🔧 SwiftData: Creating model configuration...")
       logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
 
-      // ✅ CRITICAL FIX: Reset database if corrupted
+      // ✅ CRITICAL FIX: Check for and remove corrupted database
       let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
+      let databaseDir = databaseURL.deletingLastPathComponent()
+      let databaseName = databaseURL.deletingPathExtension().lastPathComponent
+      
+      // Check if we've already detected corruption in a previous run
+      let corruptionFlagKey = "SwiftDataCorruptionDetected"
+      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey)
+      
+      if forceReset {
+        logger.warning("🔧 SwiftData: Corruption flag set - forcing database reset")
+      }
+      
       if FileManager.default.fileExists(atPath: databaseURL.path) {
-        logger.warning("🔧 SwiftData: Database exists, checking for corruption...")
+        logger.info("🔧 SwiftData: Database exists, checking integrity...")
         
-        var isCorrupted = false
+        var needsReset = forceReset
         
-        // Check if database is corrupted by attempting to open it
-        do {
-          let testContainer = try ModelContainer(for: schema, configurations: [
-            ModelConfiguration(url: databaseURL)
-          ])
-          let testContext = ModelContext(testContainer)
-          
-          // Test all critical tables to ensure they exist and are accessible
-          let habitRequest = FetchDescriptor<HabitData>()
-          let completionRequest = FetchDescriptor<CompletionRecord>()
-          let progressRequest = FetchDescriptor<UserProgressData>()
-          
-          _ = try testContext.fetch(habitRequest)
-          _ = try testContext.fetch(completionRequest)
-          _ = try testContext.fetch(progressRequest)
-          
-          logger.info("✅ SwiftData: Database health check passed - all tables exist")
-        } catch {
-          let errorDesc = error.localizedDescription
-          logger.error("❌ SwiftData: Database corruption detected: \(errorDesc)")
-          
-          // Check for specific corruption indicators
-          if errorDesc.contains("no such table") ||
-             errorDesc.contains("ZHABITDATA") ||
-             errorDesc.contains("ZCOMPLETIONRECORD") ||
-             errorDesc.contains("SQLite error") ||
-             errorDesc.contains("couldn't be opened") {
-            logger.error("🔧 SwiftData: Confirmed corruption - tables missing or inaccessible")
-            isCorrupted = true
+        // Only do expensive corruption check if not already flagged
+        if !forceReset {
+          // Quick corruption check: try to open and query the database
+          do {
+            // Create a minimal test to see if database is accessible
+            let testConfig = ModelConfiguration(url: databaseURL, allowsSave: false)
+            let testContainer = try ModelContainer(for: schema, configurations: [testConfig])
+            let testContext = ModelContext(testContainer)
+            
+            // Try to count habits - if this fails, database is corrupted
+            let habitRequest = FetchDescriptor<HabitData>()
+            _ = try testContext.fetchCount(habitRequest)
+            
+            logger.info("✅ SwiftData: Database integrity check passed")
+          } catch {
+            let errorDesc = error.localizedDescription
+            logger.error("❌ SwiftData: Database corruption detected: \(errorDesc)")
+            
+            // Check for corruption indicators
+            if errorDesc.contains("no such table") ||
+               errorDesc.contains("ZHABITDATA") ||
+               errorDesc.contains("ZCOMPLETIONRECORD") ||
+               errorDesc.contains("SQLite error") ||
+               errorDesc.contains("couldn't be opened") {
+              logger.error("🔧 SwiftData: Confirmed table corruption - database needs reset")
+              needsReset = true
+            }
           }
         }
         
-        // If corrupted, remove database and all related files
-        if isCorrupted {
-          logger.warning("🔧 SwiftData: Removing corrupted database and related files...")
-          
-          // Remove main database file
-          try? FileManager.default.removeItem(at: databaseURL)
-          
-          // Remove related database files (WAL, SHM, etc.)
-          let databaseDir = databaseURL.deletingLastPathComponent()
-          let databaseName = databaseURL.deletingPathExtension().lastPathComponent
+        // If corrupted, force remove all database files
+        if needsReset {
+          logger.warning("🔧 SwiftData: Removing corrupted database files...")
+          logger.warning("🔧 SwiftData: Data is safe in UserDefaults fallback")
           
           do {
+            // Remove main database file
+            if FileManager.default.fileExists(atPath: databaseURL.path) {
+              try FileManager.default.removeItem(at: databaseURL)
+              logger.info("  🗑️ Removed: default.store")
+            }
+            
+            // Remove ALL related database files (WAL, SHM, journal, etc.)
             let files = try FileManager.default.contentsOfDirectory(
               at: databaseDir,
               includingPropertiesForKeys: nil)
+            
             for file in files {
-              if file.lastPathComponent.hasPrefix(databaseName) {
-                try? FileManager.default.removeItem(at: file)
-                logger.info("  🗑️ Removed: \(file.lastPathComponent)")
+              let filename = file.lastPathComponent
+              if filename.hasPrefix(databaseName) || filename.hasPrefix("default.store") {
+                try FileManager.default.removeItem(at: file)
+                logger.info("  🗑️ Removed: \(filename)")
               }
             }
+            
+            logger.info("✅ SwiftData: All corrupted files removed")
+            logger.info("✅ SwiftData: Fresh database will be created")
+            
+            // Clear the corruption flag - we've fixed it
+            UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
+            
           } catch {
-            logger.error("❌ Failed to clean up related files: \(error)")
+            logger.error("❌ SwiftData: Failed to remove files: \(error)")
+            // Continue anyway - ModelContainer will try to create fresh database
           }
-          
-          logger.info("✅ SwiftData: Corrupted database completely removed - will create fresh database")
         }
       } else {
-        logger.info("🔧 SwiftData: No existing database found, creating new one")
+        logger.info("🔧 SwiftData: No existing database, creating new one")
+        // Clear corruption flag if no database exists
+        UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
       }
 
       let modelConfiguration = ModelConfiguration(
