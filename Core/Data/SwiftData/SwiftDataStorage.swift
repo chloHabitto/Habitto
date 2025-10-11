@@ -200,7 +200,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
            errorDesc.contains("ZHABITDATA") ||
            errorDesc.contains("ZCOMPLETIONRECORD") ||
            errorDesc.contains("SQLite error") ||
-           errorDesc.contains("couldn't be opened") {
+           errorDesc.contains("couldn't be opened") ||
+           errorDesc.contains("readonly database") ||
+           errorDesc.contains("SwiftDataError") {
           // Set flag so database will be reset on next launch
           UserDefaults.standard.set(true, forKey: "SwiftDataCorruptionDetected")
           logger.error("🚨 Corruption flag set - database will be reset on next launch")

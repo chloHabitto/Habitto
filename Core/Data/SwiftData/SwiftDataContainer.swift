@@ -50,9 +50,10 @@ final class SwiftDataContainer: ObservableObject {
         if !forceReset {
           // Quick corruption check: try to open and query the database
           do {
-            // Create a minimal test to see if database is accessible
-            let testConfig = ModelConfiguration(url: databaseURL, allowsSave: false)
-            let testContainer = try ModelContainer(for: schema, configurations: [testConfig])
+            // Create a minimal test to see if database is accessible  
+            let testContainer = try ModelContainer(for: schema, configurations: [
+              ModelConfiguration(url: databaseURL)
+            ])
             let testContext = ModelContext(testContainer)
             
             // Try to count habits - if this fails, database is corrupted
@@ -64,15 +65,9 @@ final class SwiftDataContainer: ObservableObject {
             let errorDesc = error.localizedDescription
             logger.error("❌ SwiftData: Database corruption detected: \(errorDesc)")
             
-            // Check for corruption indicators
-            if errorDesc.contains("no such table") ||
-               errorDesc.contains("ZHABITDATA") ||
-               errorDesc.contains("ZCOMPLETIONRECORD") ||
-               errorDesc.contains("SQLite error") ||
-               errorDesc.contains("couldn't be opened") {
-              logger.error("🔧 SwiftData: Confirmed table corruption - database needs reset")
-              needsReset = true
-            }
+            // ANY error during health check means corruption - don't be selective
+            logger.error("🔧 SwiftData: Database needs reset - ANY health check failure is treated as corruption")
+            needsReset = true
           }
         }
         
