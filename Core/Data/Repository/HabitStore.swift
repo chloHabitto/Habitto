@@ -720,13 +720,9 @@ final actor HabitStore {
               let modelContext = SwiftDataContainer.shared.modelContext
               logger.info("🎯 createCompletionRecordIfNeeded: Got modelContext successfully")
               
-              // ✅ CRITICAL FIX: Check database health before attempting operations
-              if !SwiftDataContainer.shared.checkDatabaseHealth() {
-                  logger.error("🔧 HabitStore: Database health check failed, resetting database...")
-                  SwiftDataContainer.shared.resetCorruptedDatabase()
-                  logger.info("🔧 HabitStore: Database reset completed, skipping CompletionRecord creation")
-                  return
-              }
+              // ✅ CRITICAL FIX: Removed database health check to prevent corruption
+              // Health check was deleting database while in use
+              // Database corruption is now handled gracefully with UserDefaults fallback
               
               // Check if CompletionRecord already exists
               logger.info("🎯 createCompletionRecordIfNeeded: Creating predicate...")
