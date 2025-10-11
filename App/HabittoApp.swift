@@ -161,12 +161,10 @@ struct HabittoApp: App {
                             print("🚀 HabittoApp: App started!")
                             setupCoreData()
                             
-                            // ✅ CRITICAL FIX: Perform database health check on app start
-                            print("🔧 HabittoApp: Performing database health check...")
-                            let isHealthy = SwiftDataContainer.shared.performHealthCheck()
-                            if !isHealthy {
-                                print("⚠️ HabittoApp: Database corruption detected and reset - app will continue with clean database")
-                            }
+                            // ✅ CRITICAL FIX: Health check disabled to prevent database corruption
+                            // The health check was deleting the database while in use, causing corruption
+                            // Database corruption is now handled gracefully by saveHabits/loadHabits with UserDefaults fallback
+                            print("🔧 HabittoApp: Health check disabled (corruption handled gracefully)")
                             
                             // DISABLED: Migration completely disabled per user request
                             print("ℹ️ HabittoApp: Migration disabled - skipping migration checks")

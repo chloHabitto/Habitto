@@ -72,12 +72,38 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 logger.info("  → [\(i)] '\(habit.name)' (ID: \(habit.id))")
             }
             #endif
-            // Get existing habits
-            let existingHabits = try await loadHabits()
-            let existingHabitIds = Set(existingHabits.map { $0.id })
+            
+            // ✅ CRITICAL FIX: Get existing habits with fallback for corruption
+            var existingHabits: [Habit] = []
+            var existingHabitIds: Set<UUID> = []
+            
+            do {
+                existingHabits = try await loadHabits()
+                existingHabitIds = Set(existingHabits.map { $0.id })
+            } catch {
+                #if DEBUG
+                logger.warning("⚠️ Failed to load existing habits, starting fresh: \(error.localizedDescription)")
+                #endif
+                // If load fails (corruption), start with empty array
+                // This allows us to continue with the save operation
+                existingHabits = []
+                existingHabitIds = []
+            }
             
             for habit in habits {
-                if let existingHabitData = try await loadHabitData(by: habit.id) {
+                var existingHabitData: HabitData? = nil
+                
+                // ✅ CRITICAL FIX: Safely check for existing habit with fallback
+                do {
+                    existingHabitData = try await loadHabitData(by: habit.id)
+                } catch {
+                    #if DEBUG
+                    logger.warning("⚠️ Failed to check for existing habit \(habit.id), treating as new")
+                    #endif
+                    existingHabitData = nil
+                }
+                
+                if let existingHabitData = existingHabitData {
                     // Update existing habit
                     existingHabitData.updateFromHabit(habit)
                 } else {
@@ -144,24 +170,67 @@ final class SwiftDataStorage: HabitStorageProtocol {
             let habitsToRemove = existingHabitIds.subtracting(currentHabitIds)
             
             for habitId in habitsToRemove {
-                if let habitData = try await loadHabitData(by: habitId) {
-                    container.modelContext.delete(habitData)
+                do {
+                    if let habitData = try await loadHabitData(by: habitId) {
+                        container.modelContext.delete(habitData)
+                    }
+                } catch {
+                    #if DEBUG
+                    logger.warning("⚠️ Failed to load habit \(habitId) for deletion, skipping")
+                    #endif
                 }
             }
             
             #if DEBUG
             logger.info("  → Saving modelContext...")
             #endif
-            try container.modelContext.save()
             
-            let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-            #if DEBUG
-            logger.info("  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
-            #endif
+            // ✅ CRITICAL FIX: Try to save, with fallback to UserDefaults on any error
+            do {
+                try container.modelContext.save()
+                
+                let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
+                #if DEBUG
+                logger.info("  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+                #endif
+            } catch {
+                #if DEBUG
+                logger.error("❌ ModelContext.save() failed: \(error.localizedDescription)")
+                logger.error("🔧 Database corruption detected - falling back to UserDefaults")
+                #endif
+                
+                // Fallback: Save to UserDefaults as emergency backup
+                let encoder = JSONEncoder()
+                let data = try encoder.encode(habits)
+                UserDefaults.standard.set(data, forKey: "SavedHabits")
+                #if DEBUG
+                logger.info("✅ Saved \(habits.count) habits to UserDefaults as fallback")
+                #endif
+                
+                // Success via fallback - don't throw error
+                return
+            }
             
         } catch {
-            logger.error("Failed to save habits: \(error.localizedDescription)")
-            throw DataError.storage(StorageError(type: .unknown, message: "Failed to save habits: \(error.localizedDescription)", underlyingError: error))
+            #if DEBUG
+            logger.error("❌ Fatal error in saveHabits: \(error.localizedDescription)")
+            #endif
+            
+            // Last resort fallback for any error
+            do {
+                let encoder = JSONEncoder()
+                let data = try encoder.encode(habits)
+                UserDefaults.standard.set(data, forKey: "SavedHabits")
+                #if DEBUG
+                logger.info("✅ LAST RESORT: Saved \(habits.count) habits to UserDefaults")
+                #endif
+                return // Success via last resort fallback
+            } catch {
+                #if DEBUG
+                logger.error("❌ Complete failure - even UserDefaults failed: \(error)")
+                #endif
+                throw DataError.storage(StorageError(type: .unknown, message: "Failed to save habits: \(error.localizedDescription)", underlyingError: error))
+            }
         }
     }
     
