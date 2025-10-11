@@ -1,11 +1,10 @@
+import FirebaseCrashlytics
 import Foundation
-// import FirebaseCrashlytics  // Uncomment after adding package
 
 // MARK: - CrashlyticsService
 
 /// Wrapper service for Firebase Crashlytics
 /// Provides crash reporting and logging for production debugging
-@MainActor
 class CrashlyticsService {
   // MARK: Lifecycle
 
@@ -26,8 +25,7 @@ class CrashlyticsService {
   /// Enable crash reporting
   func enableCrashReporting() {
     #if !DEBUG
-    // Uncomment after adding FirebaseCrashlytics package:
-    // Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+    Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
     print("✅ Crashlytics: Crash reporting enabled")
     #else
     print("ℹ️ Crashlytics: Disabled in DEBUG mode")
@@ -36,15 +34,13 @@ class CrashlyticsService {
 
   /// Set user identifier for crash reports
   func setUserID(_ userID: String) {
-    // Uncomment after adding FirebaseCrashlytics package:
-    // Crashlytics.crashlytics().setUserID(userID)
+    Crashlytics.crashlytics().setUserID(userID)
     print("👤 Crashlytics: User ID set to \(userID)")
   }
 
   /// Set custom key-value for crash context
   func setValue(_ value: String, forKey key: String) {
-    // Uncomment after adding FirebaseCrashlytics package:
-    // Crashlytics.crashlytics().setCustomValue(value, forKey: key)
+    Crashlytics.crashlytics().setCustomValue(value, forKey: key)
     print("📝 Crashlytics: Custom value '\(value)' set for key '\(key)'")
   }
 
@@ -52,8 +48,7 @@ class CrashlyticsService {
 
   /// Log a message to Crashlytics (appears in crash reports)
   func log(_ message: String) {
-    // Uncomment after adding FirebaseCrashlytics package:
-    // Crashlytics.crashlytics().log(message)
+    Crashlytics.crashlytics().log(message)
     #if DEBUG
     print("🐛 Crashlytics log: \(message)")
     #endif
@@ -61,8 +56,7 @@ class CrashlyticsService {
 
   /// Log a non-fatal error (tracks issues that don't crash the app)
   func recordError(_ error: Error, additionalInfo: [String: Any] = [:]) {
-    // Uncomment after adding FirebaseCrashlytics package:
-    // Crashlytics.crashlytics().record(error: error, userInfo: additionalInfo)
+    Crashlytics.crashlytics().record(error: error, userInfo: additionalInfo)
     print("⚠️ Crashlytics: Recorded non-fatal error - \(error.localizedDescription)")
   }
 
