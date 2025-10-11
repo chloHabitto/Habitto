@@ -1,413 +1,441 @@
+import Combine
 import Foundation
 import SwiftData
-import Combine
 
 /// Service for managing daily awards and streak/XP calculations
 /// Swift actor ensures thread-safe operations and prevents race conditions
 public actor DailyAwardService: ObservableObject {
-    private let modelContext: ModelContext
-    private let eventBus: EventBus
-    
-    // Constants for XP management
-    private static let BASE_XP_PER_DAY = 25 // Base XP for levels 1-9
-    private static let LEVEL_10_XP = 20 // XP for levels 10-19
-    private static let LEVEL_20_XP = 15 // XP for levels 20+
-    
-    public init(modelContext: ModelContext, eventBus: EventBus = EventBus.shared) {
-        self.modelContext = modelContext
-        self.eventBus = eventBus
-    }
-    
-    /// Idempotent method to grant daily award if all habits are completed
-    /// Returns true if award was granted, false if already exists or not all habits completed
-    public func grantIfAllComplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
-        let dateKey = DateKey.key(for: date)
-        
-        print("🎯 STEP 5: DailyAwardService.grantIfAllComplete() called")
-        print("🎯 STEP 5: userId = \(userId), dateKey = \(dateKey), callSite = \(callSite)")
-        
-        #if DEBUG
-        let preXP = self.computeTotalXPFromLedger(userId: userId)
-        print("🔍 TRACE [grantIfAllComplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
-        #endif
-        
-        // Check if all habits are completed for this date
-        print("🎯 STEP 6: Checking if all habits are completed for \(dateKey)")
-        let allCompleted = await areAllHabitsCompleted(dateKey: dateKey, userId: userId)
-        guard allCompleted else {
-            print("🎯 STEP 6: ❌ Not all habits completed, no award granted")
-            #if DEBUG
-            print("  ↳ Not all habits completed, no award granted")
-            #endif
-            return false
-        }
-        print("🎯 STEP 6: ✅ All habits completed, proceeding with award")
-        
-        // Check if award already exists (idempotency) - ATOMIC CHECK
-        print("🎯 STEP 7: Checking for duplicate award for \(dateKey)")
-        print("🎯 STEP 7: All habits completed: true")
-        print("🎯 STEP 7: Today already awarded: checking...")
-        
-        // Query existing awards for this user and date
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let existingAwards = (try? modelContext.fetch(request)) ?? []
-        
-        print("🎯 STEP 7: Found \(existingAwards.count) existing awards for userId: \(userId), dateKey: \(dateKey)")
-        for (index, award) in existingAwards.enumerated() {
-            print("🎯 STEP 7:   Award \(index + 1): id=\(award.id), xpGranted=\(award.xpGranted), createdAt=\(award.createdAt)")
-        }
-        
-        let todayAlreadyAwarded = !existingAwards.isEmpty
-        print("🎯 STEP 7: Today already awarded: \(todayAlreadyAwarded)")
-        
-        guard existingAwards.isEmpty else {
-            print("🎯 STEP 7: ❌ Duplicate award exists, no award granted")
-            print("🎯 STEP 7: Action taken: skip (already awarded today)")
-            print("🎯 STEP 7: XP change: 0")
-            return false
-        }
-        // Calculate dynamic XP based on user's current level
-        let dynamicXP = await calculateDynamicXP(userId: userId)
-        print("🎯 STEP 7: ✅ No duplicate award, creating new award")
-        print("🎯 STEP 7: Action taken: award")
-        print("🎯 STEP 7: XP change: +\(dynamicXP)")
-        
-        // Create and insert award
-        print("🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(dynamicXP)")
-        let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: dynamicXP)
-        modelContext.insert(award)
-        print("🎯 STEP 8: DailyAward record created and inserted")
-        
-        #if DEBUG
-        // Capture pre-save state for runtime tripwire
-        let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-        let preSaveXP = self.computeTotalXPFromLedger(userId: userId)
-        #endif
-        
-        do {
-            #if DEBUG
-            print("🔒 DailyAwardService.grantIfAllComplete: Executing save() [TRANSACTION START]")
-            #endif
-            
-            try modelContext.save()
-            
-            #if DEBUG
-            print("✅ DailyAwardService.grantIfAllComplete: save() completed [TRANSACTION END]")
-            
-            // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
-            let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let postSaveXP = self.computeTotalXPFromLedger(userId: userId)
-            try self.assertXPDeltaValid(
-                userId: userId,
-                dateKey: dateKey,
-                preXP: preSaveXP,
-                postXP: postSaveXP,
-                preAwards: preAwardCount,
-                postAwards: postAwardCount,
-                expectedDelta: dynamicXP
-            )
-            #endif
-            
-            // Update streak
-            await self.updateStreak(userId: userId, dateKey: dateKey)
-            
-            // Emit event
-            self.eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
-            
-            // ✅ FIX: Update XPManager with the new XP
-            print("🎯 STEP 10: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
-            await MainActor.run {
-                print("🎯 DailyAwardService: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
-                XPManager.shared.updateXPFromDailyAward(xpGranted: dynamicXP, dateKey: dateKey)
-                print("🎯 DailyAwardService: XPManager updated successfully")
-            }
-            print("🎯 STEP 10: XPManager update completed")
-            
-            #if DEBUG
-            // Verify no extra XP was granted
-            try? await self.assertNoExtraXP(userId: userId, dateKey: dateKey)
-            
-            let finalXP = self.computeTotalXPFromLedger(userId: userId)
-            print("  ↳ ✅ Award granted: postXP=\(finalXP), delta=+\(finalXP - preXP)")
-            #endif
-            
-            return true
-        } catch {
-            print("Failed to save daily award: \(error)")
-            #if DEBUG
-            print("  ↳ ❌ Save failed: \(error)")
-            #endif
-            return false
-        }
-    }
-    
-    /// Called when a habit is completed (legacy method for compatibility)
-    /// Returns true if a daily award was granted
-    public func onHabitCompleted(date: Date, userId: String) async -> Bool {
-        return await grantIfAllComplete(date: date, userId: userId)
-    }
-    
-    /// Idempotent method to revoke daily award if any habit is uncompleted
-    /// Returns true if award was revoked, false if no award existed
-    public func revokeIfAnyIncomplete(date: Date, userId: String, callSite: String = #function) async -> Bool {
-        let dateKey = DateKey.key(for: date)
-        
-        print("🎯 REVOKE: Starting revocation check for \(dateKey)")
-        print("🎯 REVOKE: All habits completed: false (uncompleted detected)")
-        print("🎯 REVOKE: Today already awarded: checking...")
-        
-        #if DEBUG
-        let preXP = self.computeTotalXPFromLedger(userId: userId)
-        print("🔍 TRACE [revokeIfAnyIncomplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
-        #endif
-        
-        // Check if award exists for this date
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let existingAwards = (try? modelContext.fetch(request)) ?? []
-        
-        let todayWasAwarded = !existingAwards.isEmpty
-        print("🎯 REVOKE: Today already awarded: \(todayWasAwarded)")
-        
-        guard let award = existingAwards.first else {
-            print("🎯 REVOKE: ❌ No award to revoke")
-            print("🎯 REVOKE: Action taken: skip (no award exists)")
-            print("🎯 REVOKE: XP change: 0")
-            return false // No award to revoke
-        }
-        
-        // Calculate dynamic XP based on user's current level (for revocation)
-        let dynamicXP = await calculateDynamicXP(userId: userId)
-        print("🎯 REVOKE: ✅ Award found, proceeding with revocation")
-        print("🎯 REVOKE: Action taken: revoke")
-        print("🎯 REVOKE: XP change: -\(dynamicXP)")
-        
-        // Revoke award
-        modelContext.delete(award)
-        
-        #if DEBUG
-        // Capture pre-save state for runtime tripwire (after delete, before save)
-        let preAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-        let preSaveXP = self.computeTotalXPFromLedger(userId: userId)
-        #endif
-        
-        do {
-            #if DEBUG
-            print("🔒 DailyAwardService.revokeIfAnyIncomplete: Executing save() [TRANSACTION START]")
-            #endif
-            
-            try modelContext.save()
-            
-            // ✅ FIX: Update XPManager with the revoked XP
-            print("🎯 REVOKE: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
-            await MainActor.run {
-                print("🎯 DailyAwardService: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
-                XPManager.shared.updateXPFromDailyAward(xpGranted: -dynamicXP, dateKey: dateKey)
-                print("🎯 DailyAwardService: XPManager updated successfully")
-            }
-            print("🎯 REVOKE: XPManager update completed")
-            
-            #if DEBUG
-            print("✅ DailyAwardService.revokeIfAnyIncomplete: save() completed [TRANSACTION END]")
-            
-            // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
-            let postAwardCount = self.countAwardsForDay(userId: userId, dateKey: dateKey)
-            let postSaveXP = self.computeTotalXPFromLedger(userId: userId)
-            try self.assertXPDeltaValid(
-                userId: userId,
-                dateKey: dateKey,
-                preXP: preSaveXP,
-                postXP: postSaveXP,
-                preAwards: preAwardCount,
-                postAwards: postAwardCount,
-                expectedDelta: -dynamicXP
-            )
-            #endif
-            
-            // Revert streak
-            await self.revertStreak(userId: userId, dateKey: dateKey)
-            
-            // Emit event
-            self.eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
-            
-            #if DEBUG
-            let finalXP = self.computeTotalXPFromLedger(userId: userId)
-            print("  ↳ ✅ Award revoked: postXP=\(finalXP), delta=\(finalXP - preXP)")
-            #endif
-            
-            return true
-        } catch {
-            print("Failed to revoke daily award: \(error)")
-            #if DEBUG
-            print("  ↳ ❌ Save failed: \(error)")
-            #endif
-            return false
-        }
-    }
-    
-    /// Called when a habit is uncompleted (legacy method for compatibility)
-    public func onHabitUncompleted(date: Date, userId: String) async {
-        _ = await revokeIfAnyIncomplete(date: date, userId: userId)
-    }
-    
-    // MARK: - Private Methods
-    
-    private func areAllHabitsCompleted(dateKey: String, userId: String) async -> Bool {
-        // Use the same data source as the UI - HabitRepository
-        // Note: HabitRepository already filters habits by current user
-        let habits = await HabitRepository.shared.habits
-        
-        print("🎯 COMPLETION_CHECK: Checking \(habits.count) habits for completion on \(dateKey)")
-        
-        // Check if all habits are completed for the given date
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
-        guard let targetDate = formatter.date(from: dateKey) else { 
-            print("🎯 COMPLETION_CHECK: ❌ Invalid dateKey: \(dateKey)")
-            return false 
-        }
-        
-        let completedHabits = habits.filter { habit in
-            let isCompleted = habit.isCompleted(for: targetDate)
-            print("🎯 COMPLETION_CHECK: Habit '\(habit.name)': isCompleted=\(isCompleted)")
-            return isCompleted
-        }
-        
-        let allCompleted = completedHabits.count == habits.count
-        print("🎯 COMPLETION_CHECK: \(completedHabits.count)/\(habits.count) habits completed, allCompleted=\(allCompleted)")
-        
-        return allCompleted
-    }
-    
-    private func calculateDailyXP() async -> Int {
-        // Calculate XP based on completed habits
-        // Using the standardized BASE_XP_PER_DAY constant
-        return Self.BASE_XP_PER_DAY
-    }
-    
-    /// Calculate dynamic XP based on user's current level
-    private func calculateDynamicXP(userId: String) async -> Int {
-        // Get user's current level from XPManager
-        let currentLevel = await MainActor.run {
-            XPManager.shared.userProgress.currentLevel
-        }
-        
-        // Return XP based on level
-        if currentLevel >= 20 {
-            return Self.LEVEL_20_XP
-        } else if currentLevel >= 10 {
-            return Self.LEVEL_10_XP
-        } else {
-            return Self.BASE_XP_PER_DAY
-        }
-    }
-    
-    // MARK: - Debug Methods
-    
+  // MARK: Lifecycle
+
+  public init(modelContext: ModelContext, eventBus: EventBus = EventBus.shared) {
+    self.modelContext = modelContext
+    self.eventBus = eventBus
+  }
+
+  // MARK: Public
+
+  /// Idempotent method to grant daily award if all habits are completed
+  /// Returns true if award was granted, false if already exists or not all habits completed
+  public func grantIfAllComplete(
+    date: Date,
+    userId: String,
+    callSite: String = #function) async -> Bool
+  {
+    let dateKey = DateKey.key(for: date)
+
+    print("🎯 STEP 5: DailyAwardService.grantIfAllComplete() called")
+    print("🎯 STEP 5: userId = \(userId), dateKey = \(dateKey), callSite = \(callSite)")
+
     #if DEBUG
-    /// Runtime tripwire: Assert XP delta is valid after save
-    private func assertXPDeltaValid(
-        userId: String,
-        dateKey: String,
-        preXP: Int,
-        postXP: Int,
-        preAwards: Int,
-        postAwards: Int,
-        expectedDelta: Int
-    ) throws {
-        let delta = postXP - preXP
-        let awardDelta = postAwards - preAwards
-        
-        // Valid deltas: 0 (no-op), +dynamic XP (grant), -dynamic XP (revoke)
-        // We need to be more flexible with dynamic XP values
-        let validDeltas: Set<Int> = [0, Self.BASE_XP_PER_DAY, -Self.BASE_XP_PER_DAY, Self.LEVEL_10_XP, -Self.LEVEL_10_XP, Self.LEVEL_20_XP, -Self.LEVEL_20_XP]
-        
-        if !validDeltas.contains(delta) {
-            let awardsForDay = self.getAwardsForDay(userId: userId, dateKey: dateKey)
-            preconditionFailure("""
-                ❌ XP DELTA INVALID (DUPLICATE XP DETECTED)
-                User: \(userId)
-                Date: \(dateKey)
-                Pre-XP: \(preXP)
-                Post-XP: \(postXP)
-                Delta: \(delta) (expected: \(expectedDelta))
-                Pre-Awards: \(preAwards)
-                Post-Awards: \(postAwards)
-                Award-Delta: \(awardDelta)
-                Awards for day: \(awardsForDay.map { "[\($0.dateKey): \($0.xpGranted) XP]" }.joined(separator: ", "))
-                """)
-        }
-        
-        // Verify delta matches expectation
-        if delta != expectedDelta && delta != 0 {
-            print("⚠️ XP delta mismatch: expected \(expectedDelta), got \(delta) (userId: \(userId), date: \(dateKey))")
-        }
-        
-        print("✅ XP delta valid: \(delta) XP for user \(userId) on \(dateKey)")
-    }
-    
-    /// Count awards for a specific day (within modelContext.perform)
-    private func countAwardsForDay(userId: String, dateKey: String) -> Int {
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let awards = (try? modelContext.fetch(request)) ?? []
-        return awards.count
-    }
-    
-    /// Get awards for a specific day
-    private func getAwardsForDay(userId: String, dateKey: String) -> [DailyAward] {
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        return (try? modelContext.fetch(request)) ?? []
-    }
-    
-    /// Recompute total XP from DailyAward ledger (source of truth)
-    private func computeTotalXPFromLedger(userId: String) -> Int {
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId
-        }
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let awards = (try? modelContext.fetch(request)) ?? []
-        return awards.reduce(0) { $0 + $1.xpGranted }
-    }
-    
-    /// Debug method to verify no extra XP has been granted beyond the daily limit
-    private func assertNoExtraXP(userId: String, dateKey: String) async throws {
-        // Fetch all awards for this user and date
-        let predicate = #Predicate<DailyAward> { award in
-            award.userId == userId && award.dateKey == dateKey
-        }
-        
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        let awards = (try? modelContext.fetch(request)) ?? []
-        
-        // Verify only one award exists and XP is within limits
-        assert(awards.count <= 1, "Multiple awards found for user \(userId) on \(dateKey)")
-        if let award = awards.first {
-            let maxXP = max(Self.BASE_XP_PER_DAY, Self.LEVEL_10_XP, Self.LEVEL_20_XP)
-            assert(award.xpGranted <= maxXP, "Award XP \(award.xpGranted) exceeds daily limit \(maxXP)")
-        }
-    }
+    let preXP = computeTotalXPFromLedger(userId: userId)
+    print(
+      "🔍 TRACE [grantIfAllComplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
     #endif
-    
-    private func updateStreak(userId: String, dateKey: String) async {
-        // Update user streak based on consecutive daily awards
-        // Implementation would depend on your user model
+
+    // Check if all habits are completed for this date
+    print("🎯 STEP 6: Checking if all habits are completed for \(dateKey)")
+    let allCompleted = await areAllHabitsCompleted(dateKey: dateKey, userId: userId)
+    guard allCompleted else {
+      print("🎯 STEP 6: ❌ Not all habits completed, no award granted")
+      #if DEBUG
+      print("  ↳ Not all habits completed, no award granted")
+      #endif
+      return false
     }
-    
-    private func revertStreak(userId: String, dateKey: String) async {
-        // Revert user streak when award is revoked
-        // Implementation would depend on your user model
+    print("🎯 STEP 6: ✅ All habits completed, proceeding with award")
+
+    // Check if award already exists (idempotency) - ATOMIC CHECK
+    print("🎯 STEP 7: Checking for duplicate award for \(dateKey)")
+    print("🎯 STEP 7: All habits completed: true")
+    print("🎯 STEP 7: Today already awarded: checking...")
+
+    // Query existing awards for this user and date
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
     }
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    let existingAwards = (try? modelContext.fetch(request)) ?? []
+
+    print(
+      "🎯 STEP 7: Found \(existingAwards.count) existing awards for userId: \(userId), dateKey: \(dateKey)")
+    for (index, award) in existingAwards.enumerated() {
+      print(
+        "🎯 STEP 7:   Award \(index + 1): id=\(award.id), xpGranted=\(award.xpGranted), createdAt=\(award.createdAt)")
+    }
+
+    let todayAlreadyAwarded = !existingAwards.isEmpty
+    print("🎯 STEP 7: Today already awarded: \(todayAlreadyAwarded)")
+
+    guard existingAwards.isEmpty else {
+      print("🎯 STEP 7: ❌ Duplicate award exists, no award granted")
+      print("🎯 STEP 7: Action taken: skip (already awarded today)")
+      print("🎯 STEP 7: XP change: 0")
+      return false
+    }
+    // Calculate dynamic XP based on user's current level
+    let dynamicXP = await calculateDynamicXP(userId: userId)
+    print("🎯 STEP 7: ✅ No duplicate award, creating new award")
+    print("🎯 STEP 7: Action taken: award")
+    print("🎯 STEP 7: XP change: +\(dynamicXP)")
+
+    // Create and insert award
+    print(
+      "🎯 STEP 8: Creating DailyAward record - userId: \(userId), dateKey: \(dateKey), xpGranted: \(dynamicXP)")
+    let award = DailyAward(userId: userId, dateKey: dateKey, xpGranted: dynamicXP)
+    modelContext.insert(award)
+    print("🎯 STEP 8: DailyAward record created and inserted")
+
+    #if DEBUG
+    // Capture pre-save state for runtime tripwire
+    let preAwardCount = countAwardsForDay(userId: userId, dateKey: dateKey)
+    let preSaveXP = computeTotalXPFromLedger(userId: userId)
+    #endif
+
+    do {
+      #if DEBUG
+      print("🔒 DailyAwardService.grantIfAllComplete: Executing save() [TRANSACTION START]")
+      #endif
+
+      try modelContext.save()
+
+      #if DEBUG
+      print("✅ DailyAwardService.grantIfAllComplete: save() completed [TRANSACTION END]")
+
+      // Runtime tripwire: verify XP delta is exactly +XP_PER_DAY
+      let postAwardCount = countAwardsForDay(userId: userId, dateKey: dateKey)
+      let postSaveXP = computeTotalXPFromLedger(userId: userId)
+      try assertXPDeltaValid(
+        userId: userId,
+        dateKey: dateKey,
+        preXP: preSaveXP,
+        postXP: postSaveXP,
+        preAwards: preAwardCount,
+        postAwards: postAwardCount,
+        expectedDelta: dynamicXP)
+      #endif
+
+      // Update streak
+      await updateStreak(userId: userId, dateKey: dateKey)
+
+      // Emit event
+      eventBus.publish(.dailyAwardGranted(dateKey: dateKey))
+
+      // ✅ FIX: Update XPManager with the new XP
+      print("🎯 STEP 10: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
+      await MainActor.run {
+        print("🎯 DailyAwardService: Updating XPManager with \(dynamicXP) XP for \(dateKey)")
+        XPManager.shared.updateXPFromDailyAward(xpGranted: dynamicXP, dateKey: dateKey)
+        print("🎯 DailyAwardService: XPManager updated successfully")
+      }
+      print("🎯 STEP 10: XPManager update completed")
+
+      #if DEBUG
+      // Verify no extra XP was granted
+      try? await assertNoExtraXP(userId: userId, dateKey: dateKey)
+
+      let finalXP = computeTotalXPFromLedger(userId: userId)
+      print("  ↳ ✅ Award granted: postXP=\(finalXP), delta=+\(finalXP - preXP)")
+      #endif
+
+      return true
+    } catch {
+      print("Failed to save daily award: \(error)")
+      #if DEBUG
+      print("  ↳ ❌ Save failed: \(error)")
+      #endif
+      return false
+    }
+  }
+
+  /// Called when a habit is completed (legacy method for compatibility)
+  /// Returns true if a daily award was granted
+  public func onHabitCompleted(date: Date, userId: String) async -> Bool {
+    await grantIfAllComplete(date: date, userId: userId)
+  }
+
+  /// Idempotent method to revoke daily award if any habit is uncompleted
+  /// Returns true if award was revoked, false if no award existed
+  public func revokeIfAnyIncomplete(
+    date: Date,
+    userId: String,
+    callSite: String = #function) async -> Bool
+  {
+    let dateKey = DateKey.key(for: date)
+
+    print("🎯 REVOKE: Starting revocation check for \(dateKey)")
+    print("🎯 REVOKE: All habits completed: false (uncompleted detected)")
+    print("🎯 REVOKE: Today already awarded: checking...")
+
+    #if DEBUG
+    let preXP = computeTotalXPFromLedger(userId: userId)
+    print(
+      "🔍 TRACE [revokeIfAnyIncomplete]: callSite=\(callSite), user=\(userId), date=\(dateKey), preXP=\(preXP)")
+    #endif
+
+    // Check if award exists for this date
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
+    }
+
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    let existingAwards = (try? modelContext.fetch(request)) ?? []
+
+    let todayWasAwarded = !existingAwards.isEmpty
+    print("🎯 REVOKE: Today already awarded: \(todayWasAwarded)")
+
+    guard let award = existingAwards.first else {
+      print("🎯 REVOKE: ❌ No award to revoke")
+      print("🎯 REVOKE: Action taken: skip (no award exists)")
+      print("🎯 REVOKE: XP change: 0")
+      return false // No award to revoke
+    }
+
+    // Calculate dynamic XP based on user's current level (for revocation)
+    let dynamicXP = await calculateDynamicXP(userId: userId)
+    print("🎯 REVOKE: ✅ Award found, proceeding with revocation")
+    print("🎯 REVOKE: Action taken: revoke")
+    print("🎯 REVOKE: XP change: -\(dynamicXP)")
+
+    // Revoke award
+    modelContext.delete(award)
+
+    #if DEBUG
+    // Capture pre-save state for runtime tripwire (after delete, before save)
+    let preAwardCount = countAwardsForDay(userId: userId, dateKey: dateKey)
+    let preSaveXP = computeTotalXPFromLedger(userId: userId)
+    #endif
+
+    do {
+      #if DEBUG
+      print("🔒 DailyAwardService.revokeIfAnyIncomplete: Executing save() [TRANSACTION START]")
+      #endif
+
+      try modelContext.save()
+
+      // ✅ FIX: Update XPManager with the revoked XP
+      print("🎯 REVOKE: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
+      await MainActor.run {
+        print("🎯 DailyAwardService: Updating XPManager with -\(dynamicXP) XP for \(dateKey)")
+        XPManager.shared.updateXPFromDailyAward(xpGranted: -dynamicXP, dateKey: dateKey)
+        print("🎯 DailyAwardService: XPManager updated successfully")
+      }
+      print("🎯 REVOKE: XPManager update completed")
+
+      #if DEBUG
+      print("✅ DailyAwardService.revokeIfAnyIncomplete: save() completed [TRANSACTION END]")
+
+      // Runtime tripwire: verify XP delta is exactly -XP_PER_DAY
+      let postAwardCount = countAwardsForDay(userId: userId, dateKey: dateKey)
+      let postSaveXP = computeTotalXPFromLedger(userId: userId)
+      try assertXPDeltaValid(
+        userId: userId,
+        dateKey: dateKey,
+        preXP: preSaveXP,
+        postXP: postSaveXP,
+        preAwards: preAwardCount,
+        postAwards: postAwardCount,
+        expectedDelta: -dynamicXP)
+      #endif
+
+      // Revert streak
+      await revertStreak(userId: userId, dateKey: dateKey)
+
+      // Emit event
+      eventBus.publish(.dailyAwardRevoked(dateKey: dateKey))
+
+      #if DEBUG
+      let finalXP = computeTotalXPFromLedger(userId: userId)
+      print("  ↳ ✅ Award revoked: postXP=\(finalXP), delta=\(finalXP - preXP)")
+      #endif
+
+      return true
+    } catch {
+      print("Failed to revoke daily award: \(error)")
+      #if DEBUG
+      print("  ↳ ❌ Save failed: \(error)")
+      #endif
+      return false
+    }
+  }
+
+  /// Called when a habit is uncompleted (legacy method for compatibility)
+  public func onHabitUncompleted(date: Date, userId: String) async {
+    _ = await revokeIfAnyIncomplete(date: date, userId: userId)
+  }
+
+  // MARK: Private
+
+  // Constants for XP management
+  private static let BASE_XP_PER_DAY = 25 // Base XP for levels 1-9
+  private static let LEVEL_10_XP = 20 // XP for levels 10-19
+  private static let LEVEL_20_XP = 15 // XP for levels 20+
+
+  private let modelContext: ModelContext
+  private let eventBus: EventBus
+
+  // MARK: - Private Methods
+
+  private func areAllHabitsCompleted(dateKey: String, userId _: String) async -> Bool {
+    // Use the same data source as the UI - HabitRepository
+    // Note: HabitRepository already filters habits by current user
+    let habits = await HabitRepository.shared.habits
+
+    print("🎯 COMPLETION_CHECK: Checking \(habits.count) habits for completion on \(dateKey)")
+
+    // Check if all habits are completed for the given date
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    guard let targetDate = formatter.date(from: dateKey) else {
+      print("🎯 COMPLETION_CHECK: ❌ Invalid dateKey: \(dateKey)")
+      return false
+    }
+
+    let completedHabits = habits.filter { habit in
+      let isCompleted = habit.isCompleted(for: targetDate)
+      print("🎯 COMPLETION_CHECK: Habit '\(habit.name)': isCompleted=\(isCompleted)")
+      return isCompleted
+    }
+
+    let allCompleted = completedHabits.count == habits.count
+    print(
+      "🎯 COMPLETION_CHECK: \(completedHabits.count)/\(habits.count) habits completed, allCompleted=\(allCompleted)")
+
+    return allCompleted
+  }
+
+  private func calculateDailyXP() async -> Int {
+    // Calculate XP based on completed habits
+    // Using the standardized BASE_XP_PER_DAY constant
+    Self.BASE_XP_PER_DAY
+  }
+
+  /// Calculate dynamic XP based on user's current level
+  private func calculateDynamicXP(userId _: String) async -> Int {
+    // Get user's current level from XPManager
+    let currentLevel = await MainActor.run {
+      XPManager.shared.userProgress.currentLevel
+    }
+
+    // Return XP based on level
+    if currentLevel >= 20 {
+      return Self.LEVEL_20_XP
+    } else if currentLevel >= 10 {
+      return Self.LEVEL_10_XP
+    } else {
+      return Self.BASE_XP_PER_DAY
+    }
+  }
+
+  // MARK: - Debug Methods
+
+  #if DEBUG
+  /// Runtime tripwire: Assert XP delta is valid after save
+  private func assertXPDeltaValid(
+    userId: String,
+    dateKey: String,
+    preXP: Int,
+    postXP: Int,
+    preAwards: Int,
+    postAwards: Int,
+    expectedDelta: Int) throws
+  {
+    let delta = postXP - preXP
+    let awardDelta = postAwards - preAwards
+
+    // Valid deltas: 0 (no-op), +dynamic XP (grant), -dynamic XP (revoke)
+    // We need to be more flexible with dynamic XP values
+    let validDeltas: Set<Int> = [
+      0,
+      Self.BASE_XP_PER_DAY,
+      -Self.BASE_XP_PER_DAY,
+      Self.LEVEL_10_XP,
+      -Self.LEVEL_10_XP,
+      Self.LEVEL_20_XP,
+      -Self.LEVEL_20_XP
+    ]
+
+    if !validDeltas.contains(delta) {
+      let awardsForDay = getAwardsForDay(userId: userId, dateKey: dateKey)
+      preconditionFailure("""
+      ❌ XP DELTA INVALID (DUPLICATE XP DETECTED)
+      User: \(userId)
+      Date: \(dateKey)
+      Pre-XP: \(preXP)
+      Post-XP: \(postXP)
+      Delta: \(delta) (expected: \(expectedDelta))
+      Pre-Awards: \(preAwards)
+      Post-Awards: \(postAwards)
+      Award-Delta: \(awardDelta)
+      Awards for day: \(awardsForDay.map { "[\($0.dateKey): \($0.xpGranted) XP]" }
+        .joined(separator: ", "))
+      """)
+    }
+
+    // Verify delta matches expectation
+    if delta != expectedDelta, delta != 0 {
+      print(
+        "⚠️ XP delta mismatch: expected \(expectedDelta), got \(delta) (userId: \(userId), date: \(dateKey))")
+    }
+
+    print("✅ XP delta valid: \(delta) XP for user \(userId) on \(dateKey)")
+  }
+
+  /// Count awards for a specific day (within modelContext.perform)
+  private func countAwardsForDay(userId: String, dateKey: String) -> Int {
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
+    }
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    let awards = (try? modelContext.fetch(request)) ?? []
+    return awards.count
+  }
+
+  /// Get awards for a specific day
+  private func getAwardsForDay(userId: String, dateKey: String) -> [DailyAward] {
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
+    }
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    return (try? modelContext.fetch(request)) ?? []
+  }
+
+  /// Recompute total XP from DailyAward ledger (source of truth)
+  private func computeTotalXPFromLedger(userId: String) -> Int {
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId
+    }
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    let awards = (try? modelContext.fetch(request)) ?? []
+    return awards.reduce(0) { $0 + $1.xpGranted }
+  }
+
+  /// Debug method to verify no extra XP has been granted beyond the daily limit
+  private func assertNoExtraXP(userId: String, dateKey: String) async throws {
+    // Fetch all awards for this user and date
+    let predicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
+    }
+
+    let request = FetchDescriptor<DailyAward>(predicate: predicate)
+    let awards = (try? modelContext.fetch(request)) ?? []
+
+    // Verify only one award exists and XP is within limits
+    assert(awards.count <= 1, "Multiple awards found for user \(userId) on \(dateKey)")
+    if let award = awards.first {
+      let maxXP = max(Self.BASE_XP_PER_DAY, Self.LEVEL_10_XP, Self.LEVEL_20_XP)
+      assert(award.xpGranted <= maxXP, "Award XP \(award.xpGranted) exceeds daily limit \(maxXP)")
+    }
+  }
+  #endif
+
+  private func updateStreak(userId _: String, dateKey _: String) async {
+    // Update user streak based on consecutive daily awards
+    // Implementation would depend on your user model
+  }
+
+  private func revertStreak(userId _: String, dateKey _: String) async {
+    // Revert user streak when award is revoked
+    // Implementation would depend on your user model
+  }
 }

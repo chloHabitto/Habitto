@@ -1,240 +1,247 @@
 import Foundation
 
 // MARK: - User-Aware Storage Wrapper
+
 /// Wraps any storage implementation to provide user-specific data isolation
 class UserAwareStorage: HabitStorageProtocol {
-    typealias DataType = Habit
-    
-    private let baseStorage: any HabitStorageProtocol
-    private var _authManager: AuthenticationManager?
-    private var authManager: AuthenticationManager {
-        get async {
-            if let existing = _authManager { return existing }
-            let manager = await MainActor.run { AuthenticationManager.shared }
-            _authManager = manager
-            return manager
-        }
+  // MARK: Lifecycle
+
+  init(baseStorage: any HabitStorageProtocol) {
+    self.baseStorage = baseStorage
+  }
+
+  // MARK: Internal
+
+  typealias DataType = Habit
+
+  // MARK: - HabitStorageProtocol Implementation
+
+  func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
+    clearCacheIfUserChanged()
+
+    // Use the specific saveHabits method from base storage instead of generic save
+    // This avoids the "Generic save called" warning
+    try await baseStorage.saveHabits(habits, immediate: immediate)
+
+    // Update cache
+    cachedHabits = habits
+  }
+
+  func loadHabits() async throws -> [Habit] {
+    clearCacheIfUserChanged()
+
+    // Return cached data if available
+    if let cached = cachedHabits {
+      return cached
     }
-    
-    // Cache for current user's data
-    private var cachedHabits: [Habit]?
-    private var currentUserId: String?
-    
-    init(baseStorage: any HabitStorageProtocol) {
-        self.baseStorage = baseStorage
+
+    // Use the specific loadHabits method from base storage instead of generic load
+    // This avoids the "Generic load called" warning
+    let habits = try await baseStorage.loadHabits()
+
+    // Update cache
+    cachedHabits = habits
+    return habits
+  }
+
+  func saveHabit(_ habit: Habit, immediate: Bool = false) async throws {
+    clearCacheIfUserChanged()
+
+    // Load current habits
+    var habits = try await loadHabits()
+
+    // Update or add habit
+    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+      habits[index] = habit
+    } else {
+      habits.append(habit)
     }
-    
-    // MARK: - User ID Management
-    
-    @MainActor
-    private func getCurrentUserId() async -> String {
-        // Get current user ID from authentication manager
-        let manager = await authManager
-        if let user = manager.currentUser {
-            return user.uid
-        }
-        
-        // Fallback to empty string for guest users (consistent with SwiftDataStorage)
-        return ""
+
+    // Save updated habits
+    try await saveHabits(habits, immediate: immediate)
+  }
+
+  func deleteHabit(id: UUID) async throws {
+    clearCacheIfUserChanged()
+
+    // Load current habits
+    var habits = try await loadHabits()
+
+    // Remove habit
+    habits.removeAll { $0.id == id }
+
+    // Save updated habits
+    try await saveHabits(habits, immediate: true)
+  }
+
+  func clearAllHabits() async throws {
+    clearCacheIfUserChanged()
+
+    // Use the specific saveHabits method with empty array instead of generic save
+    try await baseStorage.saveHabits([], immediate: true)
+
+    // Clear cache
+    cachedHabits = []
+  }
+
+  func loadHabit(id: UUID) async throws -> Habit? {
+    clearCacheIfUserChanged()
+
+    // Load all habits and find the one with matching ID
+    let habits = try await loadHabits()
+    return habits.first { $0.id == id }
+  }
+
+  func exists(forKey key: String) async throws -> Bool {
+    clearCacheIfUserChanged()
+    let userKey = await getUserSpecificKey(key)
+    return try await baseStorage.exists(forKey: userKey)
+  }
+
+  func keys(withPrefix prefix: String) async throws -> [String] {
+    clearCacheIfUserChanged()
+    let userPrefix = await getUserSpecificKey(prefix)
+    return try await baseStorage.keys(withPrefix: userPrefix)
+  }
+
+  // MARK: - Generic Data Storage Methods
+
+  func save(_ data: some Codable, forKey key: String, immediate: Bool = false) async throws {
+    clearCacheIfUserChanged()
+    let userKey = await getUserSpecificKey(key)
+    try await baseStorage.save(data, forKey: userKey, immediate: immediate)
+  }
+
+  func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
+    clearCacheIfUserChanged()
+    let userKey = await getUserSpecificKey(key)
+    return try await baseStorage.load(type, forKey: userKey)
+  }
+
+  func load<T: Codable>(forKey key: String) async throws -> T? {
+    clearCacheIfUserChanged()
+    let userKey = await getUserSpecificKey(key)
+    return try await baseStorage.load(T.self, forKey: userKey)
+  }
+
+  func delete(forKey key: String) async throws {
+    clearCacheIfUserChanged()
+    let userKey = await getUserSpecificKey(key)
+    try await baseStorage.delete(forKey: userKey)
+  }
+
+  // MARK: - User Data Management
+
+  /// Clear all data for the current user
+  func clearCurrentUserData() async throws {
+    let userId = await getCurrentUserId()
+    let userKey = await getUserSpecificKey("SavedHabits")
+
+    // Clear habits
+    try await baseStorage.save([Habit](), forKey: userKey, immediate: true)
+
+    // Clear cache
+    cachedHabits = []
+
+    print("🗑️ UserAwareStorage: Cleared all data for user: \(userId)")
+  }
+
+  /// Get all user IDs that have data stored
+  func getAllUserIds() async -> [String] {
+    // This would need to be implemented based on the base storage
+    // For now, return empty array
+    []
+  }
+
+  /// Migrate data from one user to another (for account merging)
+  func migrateData(from oldUserId: String, to newUserId: String) async throws {
+    // This would need to be implemented based on the base storage
+    // For now, just log the request
+    print("🔄 UserAwareStorage: Data migration requested from \(oldUserId) to \(newUserId)")
+  }
+
+  /// Save data as guest data (when user is not authenticated)
+  func saveAsGuest(_ data: some Codable, forKey key: String, immediate: Bool = false) async throws {
+    let guestKey = getGuestKey(key)
+    try await baseStorage.save(data, forKey: guestKey, immediate: immediate)
+  }
+
+  /// Load guest data
+  func loadGuestData<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
+    let guestKey = getGuestKey(key)
+    return try await baseStorage.load(type, forKey: guestKey)
+  }
+
+  /// Check if guest data exists
+  func hasGuestData(forKey key: String) async throws -> Bool {
+    let guestKey = getGuestKey(key)
+    return try await baseStorage.exists(forKey: guestKey)
+  }
+
+  /// Get all guest data keys
+  func getGuestDataKeys() async throws -> [String] {
+    try await baseStorage.keys(withPrefix: "guest_")
+  }
+
+  /// Clear all guest data
+  func clearGuestData() async throws {
+    let guestKeys = try await getGuestDataKeys()
+    for key in guestKeys {
+      try await baseStorage.delete(forKey: key)
     }
-    
-    private func getUserSpecificKey(_ baseKey: String) async -> String {
-        let userId = await getCurrentUserId()
-        return "\(userId)_\(baseKey)"
+    print("🗑️ UserAwareStorage: Cleared all guest data")
+  }
+
+  // MARK: Private
+
+  private let baseStorage: any HabitStorageProtocol
+  private var _authManager: AuthenticationManager?
+  // Cache for current user's data
+  private var cachedHabits: [Habit]?
+  private var currentUserId: String?
+
+  private var authManager: AuthenticationManager {
+    get async {
+      if let existing = _authManager { return existing }
+      let manager = await MainActor.run { AuthenticationManager.shared }
+      _authManager = manager
+      return manager
     }
-    
-    private func clearCacheIfUserChanged() {
-        Task { @MainActor in
-            let currentUserId = await getCurrentUserId()
-            if self.currentUserId != currentUserId {
-                self.cachedHabits = nil
-                self.currentUserId = currentUserId
-            }
-        }
+  }
+
+  // MARK: - User ID Management
+
+  @MainActor
+  private func getCurrentUserId() async -> String {
+    // Get current user ID from authentication manager
+    let manager = await authManager
+    if let user = manager.currentUser {
+      return user.uid
     }
-    
-    // MARK: - HabitStorageProtocol Implementation
-    
-    func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
-        clearCacheIfUserChanged()
-        
-        // Use the specific saveHabits method from base storage instead of generic save
-        // This avoids the "Generic save called" warning
-        try await baseStorage.saveHabits(habits, immediate: immediate)
-        
-        // Update cache
-        cachedHabits = habits
+
+    // Fallback to empty string for guest users (consistent with SwiftDataStorage)
+    return ""
+  }
+
+  private func getUserSpecificKey(_ baseKey: String) async -> String {
+    let userId = await getCurrentUserId()
+    return "\(userId)_\(baseKey)"
+  }
+
+  private func clearCacheIfUserChanged() {
+    Task { @MainActor in
+      let currentUserId = await getCurrentUserId()
+      if self.currentUserId != currentUserId {
+        self.cachedHabits = nil
+        self.currentUserId = currentUserId
+      }
     }
-    
-    func loadHabits() async throws -> [Habit] {
-        clearCacheIfUserChanged()
-        
-        // Return cached data if available
-        if let cached = cachedHabits {
-            return cached
-        }
-        
-        // Use the specific loadHabits method from base storage instead of generic load
-        // This avoids the "Generic load called" warning
-        let habits = try await baseStorage.loadHabits()
-        
-        // Update cache
-        cachedHabits = habits
-        return habits
-    }
-    
-    func saveHabit(_ habit: Habit, immediate: Bool = false) async throws {
-        clearCacheIfUserChanged()
-        
-        // Load current habits
-        var habits = try await loadHabits()
-        
-        // Update or add habit
-        if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-            habits[index] = habit
-        } else {
-            habits.append(habit)
-        }
-        
-        // Save updated habits
-        try await saveHabits(habits, immediate: immediate)
-    }
-    
-    func deleteHabit(id: UUID) async throws {
-        clearCacheIfUserChanged()
-        
-        // Load current habits
-        var habits = try await loadHabits()
-        
-        // Remove habit
-        habits.removeAll { $0.id == id }
-        
-        // Save updated habits
-        try await saveHabits(habits, immediate: true)
-    }
-    
-    func clearAllHabits() async throws {
-        clearCacheIfUserChanged()
-        
-        // Use the specific saveHabits method with empty array instead of generic save
-        try await baseStorage.saveHabits([], immediate: true)
-        
-        // Clear cache
-        cachedHabits = []
-    }
-    
-    func loadHabit(id: UUID) async throws -> Habit? {
-        clearCacheIfUserChanged()
-        
-        // Load all habits and find the one with matching ID
-        let habits = try await loadHabits()
-        return habits.first { $0.id == id }
-    }
-    
-    func exists(forKey key: String) async throws -> Bool {
-        clearCacheIfUserChanged()
-        let userKey = await getUserSpecificKey(key)
-        return try await baseStorage.exists(forKey: userKey)
-    }
-    
-    func keys(withPrefix prefix: String) async throws -> [String] {
-        clearCacheIfUserChanged()
-        let userPrefix = await getUserSpecificKey(prefix)
-        return try await baseStorage.keys(withPrefix: userPrefix)
-    }
-    
-    // MARK: - Generic Data Storage Methods
-    
-    func save<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
-        clearCacheIfUserChanged()
-        let userKey = await getUserSpecificKey(key)
-        try await baseStorage.save(data, forKey: userKey, immediate: immediate)
-    }
-    
-    func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
-        clearCacheIfUserChanged()
-        let userKey = await getUserSpecificKey(key)
-        return try await baseStorage.load(type, forKey: userKey)
-    }
-    
-    func load<T: Codable>(forKey key: String) async throws -> T? {
-        clearCacheIfUserChanged()
-        let userKey = await getUserSpecificKey(key)
-        return try await baseStorage.load(T.self, forKey: userKey)
-    }
-    
-    func delete(forKey key: String) async throws {
-        clearCacheIfUserChanged()
-        let userKey = await getUserSpecificKey(key)
-        try await baseStorage.delete(forKey: userKey)
-    }
-    
-    // MARK: - User Data Management
-    
-    /// Clear all data for the current user
-    func clearCurrentUserData() async throws {
-        let userId = await getCurrentUserId()
-        let userKey = await getUserSpecificKey("SavedHabits")
-        
-        // Clear habits
-        try await baseStorage.save([Habit](), forKey: userKey, immediate: true)
-        
-        // Clear cache
-        cachedHabits = []
-        
-        print("🗑️ UserAwareStorage: Cleared all data for user: \(userId)")
-    }
-    
-    /// Get all user IDs that have data stored
-    func getAllUserIds() async -> [String] {
-        // This would need to be implemented based on the base storage
-        // For now, return empty array
-        return []
-    }
-    
-    /// Migrate data from one user to another (for account merging)
-    func migrateData(from oldUserId: String, to newUserId: String) async throws {
-        // This would need to be implemented based on the base storage
-        // For now, just log the request
-        print("🔄 UserAwareStorage: Data migration requested from \(oldUserId) to \(newUserId)")
-    }
-    
-    // MARK: - Guest Data Management
-    
-    /// Get the storage key for guest data
-    private func getGuestKey(_ baseKey: String) -> String {
-        return "guest_\(baseKey)"
-    }
-    
-    /// Save data as guest data (when user is not authenticated)
-    func saveAsGuest<T: Codable>(_ data: T, forKey key: String, immediate: Bool = false) async throws {
-        let guestKey = getGuestKey(key)
-        try await baseStorage.save(data, forKey: guestKey, immediate: immediate)
-    }
-    
-    /// Load guest data
-    func loadGuestData<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T? {
-        let guestKey = getGuestKey(key)
-        return try await baseStorage.load(type, forKey: guestKey)
-    }
-    
-    /// Check if guest data exists
-    func hasGuestData(forKey key: String) async throws -> Bool {
-        let guestKey = getGuestKey(key)
-        return try await baseStorage.exists(forKey: guestKey)
-    }
-    
-    /// Get all guest data keys
-    func getGuestDataKeys() async throws -> [String] {
-        return try await baseStorage.keys(withPrefix: "guest_")
-    }
-    
-    /// Clear all guest data
-    func clearGuestData() async throws {
-        let guestKeys = try await getGuestDataKeys()
-        for key in guestKeys {
-            try await baseStorage.delete(forKey: key)
-        }
-        print("🗑️ UserAwareStorage: Cleared all guest data")
-    }
+  }
+
+  // MARK: - Guest Data Management
+
+  /// Get the storage key for guest data
+  private func getGuestKey(_ baseKey: String) -> String {
+    "guest_\(baseKey)"
+  }
 }

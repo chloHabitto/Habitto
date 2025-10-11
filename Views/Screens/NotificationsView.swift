@@ -1,577 +1,592 @@
 import SwiftUI
 
+// MARK: - NotificationsView
+
 struct NotificationsView: View {
-    @Environment(\.dismiss) private var dismiss
-    
-    // Plan Reminder State
-    @State private var originalPlanReminderEnabled = false
-    @State private var originalPlanReminderTime = Date().settingHour(8).settingMinute(0)
-    @State private var planReminderEnabled = false
-    @State private var planReminderTime = Date().settingHour(8).settingMinute(0)
-    
-    // Completion Reminder State
-    @State private var originalCompletionReminderEnabled = false
-    @State private var originalCompletionReminderTime = Date().settingHour(20).settingMinute(30)
-    @State private var completionReminderEnabled = false
-    @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
-    
-    // Habit Reminder State
-    @State private var originalHabitReminderEnabled = false
-    @State private var habitReminderEnabled = false
-    
-    // Alert state for habit reminder confirmation
-    @State private var showHabitReminderConfirmation = false
-    @State private var pendingHabitReminderState = false
-    
-    // Check if any changes were made
-    private var hasChanges: Bool {
-        return planReminderEnabled != originalPlanReminderEnabled ||
-               planReminderTime != originalPlanReminderTime ||
-               completionReminderEnabled != originalCompletionReminderEnabled ||
-               completionReminderTime != originalCompletionReminderTime ||
-               habitReminderEnabled != originalHabitReminderEnabled
-    }
-    
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Main content with save button
-                ZStack(alignment: .bottom) {
-                ScrollView {
-                    VStack(spacing: 24) {
-                            // Habit Reminder Section
-                            habitReminderSection
-                            
-                            // Plan Reminder Section
-                            planReminderSection
-                            
-                            // Completion Reminder Section
-                            completionReminderSection
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
-                        .padding(.bottom, 140) // Extra bottom padding for save button
-                    }
-                    
-                    // Save button at bottom
-                    saveButton
-                }
-            }
-            .background(Color.surface2)
-            .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.text01)
-                    }
-                }
-            }
-        }
-        .onAppear {
-            loadReminderSettings()
-        }
-        .alert("Turn Off Habit Reminders?", isPresented: $showHabitReminderConfirmation) {
-            Button("Cancel", role: .cancel) {
-                // Keep toggle ON - do nothing
-            }
-            Button("Turn Off", role: .destructive) {
-                // Confirm turning OFF
-                habitReminderEnabled = pendingHabitReminderState
-            }
-        } message: {
-            Text("Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings.")
-        }
-    }
-    
-    // MARK: - Plan Reminder Section
-    private var planReminderSection: some View {
-        VStack(spacing: 0) {
-            // Options container
-            VStack(spacing: 0) {
-                // Plan Reminder Toggle
-                planReminderToggleRow
-                
-                if planReminderEnabled {
-                    Divider()
-                        .background(Color(.systemGray4))
-                        .padding(.leading, 20)
-                    
-                    planReminderTimeRow
-                }
-            }
-            .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-        }
-    }
-    
-    // MARK: - Habit Reminder Section
-    private var habitReminderSection: some View {
-        VStack(spacing: 0) {
-            // Options container
-            VStack(spacing: 0) {
-                // Habit Reminder Toggle
-                habitReminderToggleRow
-            }
-            .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-        }
-    }
-    
-    // MARK: - Completion Reminder Section
-    private var completionReminderSection: some View {
-        VStack(spacing: 0) {
-            // Options container
-            VStack(spacing: 0) {
-                // Completion Reminder Toggle
-                completionReminderToggleRow
-                
-                if completionReminderEnabled {
-                    Divider()
-                        .background(Color(.systemGray4))
-                        .padding(.leading, 20)
-                    
-                    completionReminderTimeRow
-                }
-            }
-            .background(.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-        }
-    }
-    
-    
-    // MARK: - Plan Reminder Toggle Row
-    private var planReminderToggleRow: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Plan reminder")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                Text("We'll let you know how many habits you have today.")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Toggle("", isOn: $planReminderEnabled)
-                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                .scaleEffect(0.8)
-                .padding(.trailing, 0)
-                .fixedSize()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Plan reminder toggle")
-        .accessibilityHint("Enables or disables daily plan reminders")
-    }
-    
-    // MARK: - Habit Reminder Toggle Row
-    private var habitReminderToggleRow: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Habit reminders")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                Text("Get notified for individual habit reminders you've set.")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
-                    .fixedSize(horizontal: false, vertical: true)
-                
-                if habitReminderEnabled {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("💡 Add reminders to individual habits in their detail screens to receive notifications.")
-                            .font(.appBodySmall)
-                            .foregroundColor(.text05)
-                            .fixedSize(horizontal: false, vertical: true)
-                        
-                        VStack(spacing: 8) {
-                            HStack(spacing: 8) {
-                                Button(action: {
-                                    Task { @MainActor in
-                                        NotificationManager.shared.scheduleTestHabitReminder()
-                                    }
-                                }) {
-                                    Text("🧪 Test Notification (10 seconds)")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.primary)
-                                        .padding(.vertical, 4)
-                                        .padding(.horizontal, 8)
-                                        .background(Color.primary.opacity(0.1))
-                                        .cornerRadius(8)
-                                }
-                                
-                                Button(action: {
-                                    Task { @MainActor in
-                                        await printPendingNotificationsCount()
-                                    }
-                                }) {
-                                    Text("📊 Check Status")
-                                        .font(.appBodySmall)
-                                        .foregroundColor(.blue)
-                                        .padding(.vertical, 4)
-                                        .padding(.horizontal, 8)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(8)
-                                }
-                            }
-                            
-                            Button(action: {
-                                Task { @MainActor in
-                                    NotificationManager.shared.debugHabitRemindersStatus()
-                                }
-                            }) {
-                                Text("🔍 Debug Habit Reminders")
-                                    .font(.appBodySmall)
-                                    .foregroundColor(.secondary)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.secondary.opacity(0.1))
-                                    .cornerRadius(8)
-                            }
-                            
-                            Button(action: {
-                                Task { @MainActor in
-                                    NotificationManager.shared.forceRescheduleAllHabitReminders()
-                                }
-                            }) {
-                                Text("🔄 Force Reschedule All Habit Reminders")
-                                    .font(.appBodySmall)
-                                    .foregroundColor(.orange)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.orange.opacity(0.1))
-                                    .cornerRadius(8)
-                            }
-                            
-                            Button(action: {
-                                Task { @MainActor in
-                                    // Clear all existing habit reminders
-                                    NotificationManager.shared.removeAllHabitReminders()
-                                    // Reschedule with corrected timezone handling
-                                    NotificationManager.shared.forceRescheduleAllHabitReminders()
-                                }
-                            }) {
-                                Text("🔧 Fix Timezone & Reschedule")
-                                    .font(.appBodySmall)
-                                    .foregroundColor(.red)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.red.opacity(0.1))
-                                    .cornerRadius(8)
-                            }
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Toggle("", isOn: Binding(
-                get: { habitReminderEnabled },
-                set: { newValue in
-                    if !newValue && habitReminderEnabled {
-                        // User is trying to turn OFF - show confirmation
-                        pendingHabitReminderState = newValue
-                        showHabitReminderConfirmation = true
-                    } else {
-                        // User is turning ON - allow immediately
-                        habitReminderEnabled = newValue
-                    }
-                }
-            ))
-                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                .scaleEffect(0.8)
-                .padding(.trailing, 0)
-                .fixedSize()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Habit reminders toggle")
-        .accessibilityHint("Enables or disables individual habit reminders")
-    }
-    
-    // MARK: - Plan Reminder Time Row
-    private var planReminderTimeRow: some View {
-        HStack(spacing: 16) {
-            Text("Reminder time")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            Spacer()
-            
-            DatePicker(
-                "",
-                selection: $planReminderTime,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.compact)
-            .labelsHidden()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Plan reminder time")
-        .accessibilityHint("Set the time for daily plan reminders")
-    }
-    
-    
-    // MARK: - Completion Reminder Toggle Row
-    private var completionReminderToggleRow: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Completion reminder")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
-                
-                Text("We'll remind you of any habits you haven't completed today.")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text04)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Toggle("", isOn: $completionReminderEnabled)
-                .toggleStyle(SwitchToggleStyle(tint: .primary))
-                .scaleEffect(0.8)
-                .padding(.trailing, 0)
-                .fixedSize()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Completion reminder toggle")
-        .accessibilityHint("Enables or disables daily completion reminders")
-    }
-    
-    // MARK: - Completion Reminder Time Row
-    private var completionReminderTimeRow: some View {
-        HStack(spacing: 16) {
-            Text("Reminder time")
-                .font(.appTitleMedium)
-                .foregroundColor(.text01)
-            
-            Spacer()
-            
-            DatePicker(
-                "",
-                selection: $completionReminderTime,
-                displayedComponents: .hourAndMinute
-            )
-            .datePickerStyle(.compact)
-            .labelsHidden()
-                    }
-                    .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .accessibilityLabel("Completion reminder time")
-        .accessibilityHint("Set the time for daily completion reminders")
-    }
-    
-    
-    
-    
-    // MARK: - Save Button
-    private var saveButton: some View {
-        VStack(spacing: 0) {
-            // Gradient overlay to fade content behind button
-            LinearGradient(
-                gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 20)
-            
-            // Button container
-            HStack {
-                HabittoButton.largeFillPrimary(
-                    text: "Save",
-                    state: hasChanges ? .default : .disabled,
-                    action: saveChanges
-                )
+  // MARK: Internal
+
+  var body: some View {
+    NavigationView {
+      VStack(spacing: 0) {
+        // Main content with save button
+        ZStack(alignment: .bottom) {
+          ScrollView {
+            VStack(spacing: 24) {
+              // Habit Reminder Section
+              habitReminderSection
+
+              // Plan Reminder Section
+              planReminderSection
+
+              // Completion Reminder Section
+              completionReminderSection
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-            .background(Color.surface2)
+            .padding(.top, 24)
+            .padding(.bottom, 140) // Extra bottom padding for save button
+          }
+
+          // Save button at bottom
+          saveButton
         }
+      }
+      .background(Color.surface2)
+      .navigationTitle("Notifications")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    
-    // MARK: - Debug Helper
-    private func printPendingNotificationsCount() async {
-        let center = UNUserNotificationCenter.current()
-        let requests = await center.pendingNotificationRequests()
-        
-        let habitReminders = requests.filter { $0.identifier.contains("habit_reminder_") }
-        let planReminders = requests.filter { $0.identifier.contains("plan_reminder") }
-        let completionReminders = requests.filter { $0.identifier.contains("completion_reminder") }
-        
-        print("\n📊 PENDING NOTIFICATIONS STATUS:")
-        print("   🔔 Habit reminders: \(habitReminders.count)")
-        print("   📋 Plan reminders: \(planReminders.count)")
-        print("   ✅ Completion reminders: \(completionReminders.count)")
-        print("   📱 Total pending: \(requests.count)\n")
+    .onAppear {
+      loadReminderSettings()
     }
-    
-    // MARK: - Save Action
-    private func saveChanges() {
-        print("\n" + String(repeating: "=", count: 60))
-        print("🔧 NOTIFICATION SETTINGS: Saving changes...")
-        print(String(repeating: "=", count: 60))
-        
-        // Log what changed
-        if planReminderEnabled != originalPlanReminderEnabled {
-            print("📋 Plan Reminder: \(originalPlanReminderEnabled ? "ON" : "OFF") → \(planReminderEnabled ? "ON ✅" : "OFF 🔇")")
+    .alert("Turn Off Habit Reminders?", isPresented: $showHabitReminderConfirmation) {
+      Button("Cancel", role: .cancel) {
+        // Keep toggle ON - do nothing
+      }
+      Button("Turn Off", role: .destructive) {
+        // Confirm turning OFF
+        habitReminderEnabled = pendingHabitReminderState
+      }
+    } message: {
+      Text(
+        "Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings.")
+    }
+  }
+
+  // MARK: Private
+
+  @Environment(\.dismiss) private var dismiss
+
+  // Plan Reminder State
+  @State private var originalPlanReminderEnabled = false
+  @State private var originalPlanReminderTime = Date().settingHour(8).settingMinute(0)
+  @State private var planReminderEnabled = false
+  @State private var planReminderTime = Date().settingHour(8).settingMinute(0)
+
+  // Completion Reminder State
+  @State private var originalCompletionReminderEnabled = false
+  @State private var originalCompletionReminderTime = Date().settingHour(20).settingMinute(30)
+  @State private var completionReminderEnabled = false
+  @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
+
+  // Habit Reminder State
+  @State private var originalHabitReminderEnabled = false
+  @State private var habitReminderEnabled = false
+
+  // Alert state for habit reminder confirmation
+  @State private var showHabitReminderConfirmation = false
+  @State private var pendingHabitReminderState = false
+
+  /// Check if any changes were made
+  private var hasChanges: Bool {
+    planReminderEnabled != originalPlanReminderEnabled ||
+      planReminderTime != originalPlanReminderTime ||
+      completionReminderEnabled != originalCompletionReminderEnabled ||
+      completionReminderTime != originalCompletionReminderTime ||
+      habitReminderEnabled != originalHabitReminderEnabled
+  }
+
+  // MARK: - Plan Reminder Section
+
+  private var planReminderSection: some View {
+    VStack(spacing: 0) {
+      // Options container
+      VStack(spacing: 0) {
+        // Plan Reminder Toggle
+        planReminderToggleRow
+
+        if planReminderEnabled {
+          Divider()
+            .background(Color(.systemGray4))
+            .padding(.leading, 20)
+
+          planReminderTimeRow
         }
-        if completionReminderEnabled != originalCompletionReminderEnabled {
-            print("✅ Completion Reminder: \(originalCompletionReminderEnabled ? "ON" : "OFF") → \(completionReminderEnabled ? "ON ✅" : "OFF 🔇")")
+      }
+      .background(.surface)
+      .clipShape(RoundedRectangle(cornerRadius: 24))
+      .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+  }
+
+  // MARK: - Habit Reminder Section
+
+  private var habitReminderSection: some View {
+    VStack(spacing: 0) {
+      // Options container
+      VStack(spacing: 0) {
+        // Habit Reminder Toggle
+        habitReminderToggleRow
+      }
+      .background(.surface)
+      .clipShape(RoundedRectangle(cornerRadius: 24))
+      .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+  }
+
+  // MARK: - Completion Reminder Section
+
+  private var completionReminderSection: some View {
+    VStack(spacing: 0) {
+      // Options container
+      VStack(spacing: 0) {
+        // Completion Reminder Toggle
+        completionReminderToggleRow
+
+        if completionReminderEnabled {
+          Divider()
+            .background(Color(.systemGray4))
+            .padding(.leading, 20)
+
+          completionReminderTimeRow
         }
-        if habitReminderEnabled != originalHabitReminderEnabled {
-            print("🔔 Habit Reminders: \(originalHabitReminderEnabled ? "ON" : "OFF") → \(habitReminderEnabled ? "ON ✅" : "OFF 🔇")")
-        }
-        if planReminderTime != originalPlanReminderTime {
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            print("⏰ Plan Reminder Time: \(formatter.string(from: originalPlanReminderTime)) → \(formatter.string(from: planReminderTime))")
-        }
-        if completionReminderTime != originalCompletionReminderTime {
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            print("⏰ Completion Reminder Time: \(formatter.string(from: originalCompletionReminderTime)) → \(formatter.string(from: completionReminderTime))")
-        }
-        
-        // Update original values to reflect the new saved state
-        originalPlanReminderEnabled = planReminderEnabled
-        originalPlanReminderTime = planReminderTime
-        originalCompletionReminderEnabled = completionReminderEnabled
-        originalCompletionReminderTime = completionReminderTime
-        originalHabitReminderEnabled = habitReminderEnabled
-        
-        // Save to UserDefaults
-        print("\n💾 Saving preferences to UserDefaults...")
-        UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
-        UserDefaults.standard.set(completionReminderEnabled, forKey: "completionReminderEnabled")
-        UserDefaults.standard.set(habitReminderEnabled, forKey: "habitReminderEnabled")
-        UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
-        UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
-        print("✅ Preferences saved successfully\n")
-        
-        // Schedule daily reminders based on new settings
-        Task { @MainActor in
-            print("\n" + String(repeating: "-", count: 60))
-            print("🔄 RESCHEDULING: Starting notification updates...")
-            print(String(repeating: "-", count: 60))
-            
-            print("\n1️⃣ Rescheduling daily reminders (plan & completion)...")
-            NotificationManager.shared.rescheduleDailyReminders()
-            print("   ✅ Daily reminders updated\n")
-            
-            // Handle habit reminders enable/disable
-            if habitReminderEnabled != originalHabitReminderEnabled {
-                if habitReminderEnabled {
-                    // Habit reminders were just ENABLED - reschedule all existing habits
-                    print("2️⃣ 🔔 Habit reminders ENABLED - scheduling all habit notifications...")
-                    NotificationManager.shared.rescheduleAllHabitReminders()
-                    print("   ✅ All habit notifications scheduled\n")
-                } else {
-                    // Habit reminders were just DISABLED - remove all habit notifications
-                    print("2️⃣ 🔇 Habit reminders DISABLED - removing all habit notifications...")
-                    NotificationManager.shared.removeAllHabitReminders()
-                    
-                    // Wait a moment for removal to complete, then verify
-                    try? await Task.sleep(nanoseconds: 500_000_000)
-                    await printPendingNotificationsCount()
-                    print("   ✅ All habit notifications removed\n")
+      }
+      .background(.surface)
+      .clipShape(RoundedRectangle(cornerRadius: 24))
+      .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+  }
+
+  // MARK: - Plan Reminder Toggle Row
+
+  private var planReminderToggleRow: some View {
+    HStack(spacing: 0) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Plan reminder")
+          .font(.appTitleMedium)
+          .foregroundColor(.text01)
+
+        Text("We'll let you know how many habits you have today.")
+          .font(.appBodyMedium)
+          .foregroundColor(.text04)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      Toggle("", isOn: $planReminderEnabled)
+        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .scaleEffect(0.8)
+        .padding(.trailing, 0)
+        .fixedSize()
+    }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .accessibilityLabel("Plan reminder toggle")
+    .accessibilityHint("Enables or disables daily plan reminders")
+  }
+
+  // MARK: - Habit Reminder Toggle Row
+
+  private var habitReminderToggleRow: some View {
+    HStack(spacing: 0) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Habit reminders")
+          .font(.appTitleMedium)
+          .foregroundColor(.text01)
+
+        Text("Get notified for individual habit reminders you've set.")
+          .font(.appBodyMedium)
+          .foregroundColor(.text04)
+          .fixedSize(horizontal: false, vertical: true)
+
+        if habitReminderEnabled {
+          VStack(alignment: .leading, spacing: 8) {
+            Text(
+              "💡 Add reminders to individual habits in their detail screens to receive notifications.")
+              .font(.appBodySmall)
+              .foregroundColor(.text05)
+              .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 8) {
+              HStack(spacing: 8) {
+                Button(action: {
+                  Task { @MainActor in
+                    NotificationManager.shared.scheduleTestHabitReminder()
+                  }
+                }) {
+                  Text("🧪 Test Notification (10 seconds)")
+                    .font(.appBodySmall)
+                    .foregroundColor(.primary)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color.primary.opacity(0.1))
+                    .cornerRadius(8)
                 }
+
+                Button(action: {
+                  Task { @MainActor in
+                    await printPendingNotificationsCount()
+                  }
+                }) {
+                  Text("📊 Check Status")
+                    .font(.appBodySmall)
+                    .foregroundColor(.blue)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
+              }
+
+              Button(action: {
+                Task { @MainActor in
+                  NotificationManager.shared.debugHabitRemindersStatus()
+                }
+              }) {
+                Text("🔍 Debug Habit Reminders")
+                  .font(.appBodySmall)
+                  .foregroundColor(.secondary)
+                  .padding(.vertical, 4)
+                  .padding(.horizontal, 8)
+                  .background(Color.secondary.opacity(0.1))
+                  .cornerRadius(8)
+              }
+
+              Button(action: {
+                Task { @MainActor in
+                  NotificationManager.shared.forceRescheduleAllHabitReminders()
+                }
+              }) {
+                Text("🔄 Force Reschedule All Habit Reminders")
+                  .font(.appBodySmall)
+                  .foregroundColor(.orange)
+                  .padding(.vertical, 4)
+                  .padding(.horizontal, 8)
+                  .background(Color.orange.opacity(0.1))
+                  .cornerRadius(8)
+              }
+
+              Button(action: {
+                Task { @MainActor in
+                  // Clear all existing habit reminders
+                  NotificationManager.shared.removeAllHabitReminders()
+                  // Reschedule with corrected timezone handling
+                  NotificationManager.shared.forceRescheduleAllHabitReminders()
+                }
+              }) {
+                Text("🔧 Fix Timezone & Reschedule")
+                  .font(.appBodySmall)
+                  .foregroundColor(.red)
+                  .padding(.vertical, 4)
+                  .padding(.horizontal, 8)
+                  .background(Color.red.opacity(0.1))
+                  .cornerRadius(8)
+              }
             }
-            
-            print(String(repeating: "=", count: 60))
-            print("✅ NOTIFICATION SETTINGS: All changes applied successfully!")
-            print(String(repeating: "=", count: 60) + "\n")
+          }
+          .padding(.top, 4)
         }
-        
-        // Dismiss the view
-        dismiss()
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      Toggle("", isOn: Binding(
+        get: { habitReminderEnabled },
+        set: { newValue in
+          if !newValue, habitReminderEnabled {
+            // User is trying to turn OFF - show confirmation
+            pendingHabitReminderState = newValue
+            showHabitReminderConfirmation = true
+          } else {
+            // User is turning ON - allow immediately
+            habitReminderEnabled = newValue
+          }
+        }))
+        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .scaleEffect(0.8)
+        .padding(.trailing, 0)
+        .fixedSize()
     }
-    
-    // MARK: - Data Persistence
-    private func loadReminderSettings() {
-        print("\n" + String(repeating: "=", count: 60))
-        print("📥 NOTIFICATION SETTINGS: Loading preferences from UserDefaults")
-        print(String(repeating: "=", count: 60))
-        
-        let planEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
-        let completionEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
-        let habitEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
-        
-        print("📋 Plan Reminder: \(planEnabled ? "ON ✅" : "OFF 🔇")")
-        print("✅ Completion Reminder: \(completionEnabled ? "ON ✅" : "OFF 🔇")")
-        print("🔔 Habit Reminders: \(habitEnabled ? "ON ✅" : "OFF 🔇")")
-        
-        // Set both original and current values
-        originalPlanReminderEnabled = planEnabled
-        planReminderEnabled = planEnabled
-        
-        originalCompletionReminderEnabled = completionEnabled
-        completionReminderEnabled = completionEnabled
-        
-        originalHabitReminderEnabled = habitEnabled
-        habitReminderEnabled = habitEnabled
-        
-        // Load times
-        if let planTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date {
-            originalPlanReminderTime = planTime
-            planReminderTime = planTime
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            print("⏰ Plan Reminder Time: \(formatter.string(from: planTime))")
-        }
-        if let completionTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date {
-            originalCompletionReminderTime = completionTime
-            completionReminderTime = completionTime
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            print("⏰ Completion Reminder Time: \(formatter.string(from: completionTime))")
-        }
-        
-        print(String(repeating: "=", count: 60) + "\n")
-        
-        // Also check current pending notifications
-        Task {
-            await printPendingNotificationsCount()
-        }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .accessibilityLabel("Habit reminders toggle")
+    .accessibilityHint("Enables or disables individual habit reminders")
+  }
+
+  // MARK: - Plan Reminder Time Row
+
+  private var planReminderTimeRow: some View {
+    HStack(spacing: 16) {
+      Text("Reminder time")
+        .font(.appTitleMedium)
+        .foregroundColor(.text01)
+
+      Spacer()
+
+      DatePicker(
+        "",
+        selection: $planReminderTime,
+        displayedComponents: .hourAndMinute)
+        .datePickerStyle(.compact)
+        .labelsHidden()
     }
-    
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .accessibilityLabel("Plan reminder time")
+    .accessibilityHint("Set the time for daily plan reminders")
+  }
+
+  // MARK: - Completion Reminder Toggle Row
+
+  private var completionReminderToggleRow: some View {
+    HStack(spacing: 0) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Completion reminder")
+          .font(.appTitleMedium)
+          .foregroundColor(.text01)
+
+        Text("We'll remind you of any habits you haven't completed today.")
+          .font(.appBodyMedium)
+          .foregroundColor(.text04)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      Toggle("", isOn: $completionReminderEnabled)
+        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .scaleEffect(0.8)
+        .padding(.trailing, 0)
+        .fixedSize()
+    }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .accessibilityLabel("Completion reminder toggle")
+    .accessibilityHint("Enables or disables daily completion reminders")
+  }
+
+  // MARK: - Completion Reminder Time Row
+
+  private var completionReminderTimeRow: some View {
+    HStack(spacing: 16) {
+      Text("Reminder time")
+        .font(.appTitleMedium)
+        .foregroundColor(.text01)
+
+      Spacer()
+
+      DatePicker(
+        "",
+        selection: $completionReminderTime,
+        displayedComponents: .hourAndMinute)
+        .datePickerStyle(.compact)
+        .labelsHidden()
+    }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .accessibilityLabel("Completion reminder time")
+    .accessibilityHint("Set the time for daily completion reminders")
+  }
+
+  // MARK: - Save Button
+
+  private var saveButton: some View {
+    VStack(spacing: 0) {
+      // Gradient overlay to fade content behind button
+      LinearGradient(
+        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+        startPoint: .top,
+        endPoint: .bottom)
+        .frame(height: 20)
+
+      // Button container
+      HStack {
+        HabittoButton.largeFillPrimary(
+          text: "Save",
+          state: hasChanges ? .default : .disabled,
+          action: saveChanges)
+      }
+      .padding(.horizontal, 20)
+      .padding(.bottom, 40)
+      .background(Color.surface2)
+    }
+  }
+
+  // MARK: - Debug Helper
+
+  private func printPendingNotificationsCount() async {
+    let center = UNUserNotificationCenter.current()
+    let requests = await center.pendingNotificationRequests()
+
+    let habitReminders = requests.filter { $0.identifier.contains("habit_reminder_") }
+    let planReminders = requests.filter { $0.identifier.contains("plan_reminder") }
+    let completionReminders = requests.filter { $0.identifier.contains("completion_reminder") }
+
+    print("\n📊 PENDING NOTIFICATIONS STATUS:")
+    print("   🔔 Habit reminders: \(habitReminders.count)")
+    print("   📋 Plan reminders: \(planReminders.count)")
+    print("   ✅ Completion reminders: \(completionReminders.count)")
+    print("   📱 Total pending: \(requests.count)\n")
+  }
+
+  // MARK: - Save Action
+
+  private func saveChanges() {
+    print("\n" + String(repeating: "=", count: 60))
+    print("🔧 NOTIFICATION SETTINGS: Saving changes...")
+    print(String(repeating: "=", count: 60))
+
+    // Log what changed
+    if planReminderEnabled != originalPlanReminderEnabled {
+      print(
+        "📋 Plan Reminder: \(originalPlanReminderEnabled ? "ON" : "OFF") → \(planReminderEnabled ? "ON ✅" : "OFF 🔇")")
+    }
+    if completionReminderEnabled != originalCompletionReminderEnabled {
+      print(
+        "✅ Completion Reminder: \(originalCompletionReminderEnabled ? "ON" : "OFF") → \(completionReminderEnabled ? "ON ✅" : "OFF 🔇")")
+    }
+    if habitReminderEnabled != originalHabitReminderEnabled {
+      print(
+        "🔔 Habit Reminders: \(originalHabitReminderEnabled ? "ON" : "OFF") → \(habitReminderEnabled ? "ON ✅" : "OFF 🔇")")
+    }
+    if planReminderTime != originalPlanReminderTime {
+      let formatter = DateFormatter()
+      formatter.timeStyle = .short
+      print(
+        "⏰ Plan Reminder Time: \(formatter.string(from: originalPlanReminderTime)) → \(formatter.string(from: planReminderTime))")
+    }
+    if completionReminderTime != originalCompletionReminderTime {
+      let formatter = DateFormatter()
+      formatter.timeStyle = .short
+      print(
+        "⏰ Completion Reminder Time: \(formatter.string(from: originalCompletionReminderTime)) → \(formatter.string(from: completionReminderTime))")
+    }
+
+    // Update original values to reflect the new saved state
+    originalPlanReminderEnabled = planReminderEnabled
+    originalPlanReminderTime = planReminderTime
+    originalCompletionReminderEnabled = completionReminderEnabled
+    originalCompletionReminderTime = completionReminderTime
+    originalHabitReminderEnabled = habitReminderEnabled
+
+    // Save to UserDefaults
+    print("\n💾 Saving preferences to UserDefaults...")
+    UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
+    UserDefaults.standard.set(completionReminderEnabled, forKey: "completionReminderEnabled")
+    UserDefaults.standard.set(habitReminderEnabled, forKey: "habitReminderEnabled")
+    UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
+    UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
+    print("✅ Preferences saved successfully\n")
+
+    // Schedule daily reminders based on new settings
+    Task { @MainActor in
+      print("\n" + String(repeating: "-", count: 60))
+      print("🔄 RESCHEDULING: Starting notification updates...")
+      print(String(repeating: "-", count: 60))
+
+      print("\n1️⃣ Rescheduling daily reminders (plan & completion)...")
+      NotificationManager.shared.rescheduleDailyReminders()
+      print("   ✅ Daily reminders updated\n")
+
+      // Handle habit reminders enable/disable
+      if habitReminderEnabled != originalHabitReminderEnabled {
+        if habitReminderEnabled {
+          // Habit reminders were just ENABLED - reschedule all existing habits
+          print("2️⃣ 🔔 Habit reminders ENABLED - scheduling all habit notifications...")
+          NotificationManager.shared.rescheduleAllHabitReminders()
+          print("   ✅ All habit notifications scheduled\n")
+        } else {
+          // Habit reminders were just DISABLED - remove all habit notifications
+          print("2️⃣ 🔇 Habit reminders DISABLED - removing all habit notifications...")
+          NotificationManager.shared.removeAllHabitReminders()
+
+          // Wait a moment for removal to complete, then verify
+          try? await Task.sleep(nanoseconds: 500_000_000)
+          await printPendingNotificationsCount()
+          print("   ✅ All habit notifications removed\n")
+        }
+      }
+
+      print(String(repeating: "=", count: 60))
+      print("✅ NOTIFICATION SETTINGS: All changes applied successfully!")
+      print(String(repeating: "=", count: 60) + "\n")
+    }
+
+    // Dismiss the view
+    dismiss()
+  }
+
+  // MARK: - Data Persistence
+
+  private func loadReminderSettings() {
+    print("\n" + String(repeating: "=", count: 60))
+    print("📥 NOTIFICATION SETTINGS: Loading preferences from UserDefaults")
+    print(String(repeating: "=", count: 60))
+
+    let planEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+    let completionEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+    let habitEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+
+    print("📋 Plan Reminder: \(planEnabled ? "ON ✅" : "OFF 🔇")")
+    print("✅ Completion Reminder: \(completionEnabled ? "ON ✅" : "OFF 🔇")")
+    print("🔔 Habit Reminders: \(habitEnabled ? "ON ✅" : "OFF 🔇")")
+
+    // Set both original and current values
+    originalPlanReminderEnabled = planEnabled
+    planReminderEnabled = planEnabled
+
+    originalCompletionReminderEnabled = completionEnabled
+    completionReminderEnabled = completionEnabled
+
+    originalHabitReminderEnabled = habitEnabled
+    habitReminderEnabled = habitEnabled
+
+    // Load times
+    if let planTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date {
+      originalPlanReminderTime = planTime
+      planReminderTime = planTime
+      let formatter = DateFormatter()
+      formatter.timeStyle = .short
+      print("⏰ Plan Reminder Time: \(formatter.string(from: planTime))")
+    }
+    if let completionTime = UserDefaults.standard
+      .object(forKey: "completionReminderTime") as? Date
+    {
+      originalCompletionReminderTime = completionTime
+      completionReminderTime = completionTime
+      let formatter = DateFormatter()
+      formatter.timeStyle = .short
+      print("⏰ Completion Reminder Time: \(formatter.string(from: completionTime))")
+    }
+
+    print(String(repeating: "=", count: 60) + "\n")
+
+    // Also check current pending notifications
+    Task {
+      await printPendingNotificationsCount()
+    }
+  }
 }
 
 // MARK: - Date Extensions
+
 extension Date {
-    func settingHour(_ hour: Int) -> Date {
-        let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day], from: self)
-        components.hour = hour
-        components.minute = 0
-        components.second = 0
-        return calendar.date(from: components) ?? self
-    }
-    
-    func settingMinute(_ minute: Int) -> Date {
-        let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day, .hour], from: self)
-        components.minute = minute
-        components.second = 0
-        return calendar.date(from: components) ?? self
-    }
+  func settingHour(_ hour: Int) -> Date {
+    let calendar = Calendar.current
+    var components = calendar.dateComponents([.year, .month, .day], from: self)
+    components.hour = hour
+    components.minute = 0
+    components.second = 0
+    return calendar.date(from: components) ?? self
+  }
+
+  func settingMinute(_ minute: Int) -> Date {
+    let calendar = Calendar.current
+    var components = calendar.dateComponents([.year, .month, .day, .hour], from: self)
+    components.minute = minute
+    components.second = 0
+    return calendar.date(from: components) ?? self
+  }
 }
 
 #Preview {
-    NotificationsView()
+  NotificationsView()
 }
-

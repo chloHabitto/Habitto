@@ -1,518 +1,581 @@
 import Foundation
 
 class ProgressCalculationHelper {
-    
-    // MARK: - Goal Parsing
-    static func parseGoalAmount(from goalString: String) -> Int {
-        return StreakDataCalculator.parseGoalAmount(from: goalString)
+  // MARK: - Goal Parsing
+
+  static func parseGoalAmount(from goalString: String) -> Int {
+    StreakDataCalculator.parseGoalAmount(from: goalString)
+  }
+
+  static func parseGoal(from goalString: String) -> Goal? {
+    let components = goalString.lowercased().components(separatedBy: " ")
+    guard components.count >= 2,
+          let amount = Double(components[0]),
+          let unit = components.last else { return nil }
+
+    return Goal(amount: amount, unit: unit)
+  }
+
+  // MARK: - Day Progress Calculations
+
+  static func getDayProgress(
+    day: Int,
+    currentDate: Date,
+    habits: [Habit],
+    selectedHabitType: HabitType,
+    selectedHabit: Habit?) -> Double
+  {
+    let calendar = Calendar.current
+
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let dateForDay = calendar.date(
+      byAdding: .day,
+      value: day - 1,
+      to: calendar.date(from: monthComponents) ?? Date()) else
+    {
+      return 0.0
     }
-    
-    static func parseGoal(from goalString: String) -> Goal? {
-        let components = goalString.lowercased().components(separatedBy: " ")
-        guard components.count >= 2,
-              let amount = Double(components[0]),
-              let unit = components.last else { return nil }
-        
-        return Goal(amount: amount, unit: unit)
+
+    let habitsForDay: [Habit] = if let selectedHabit {
+      [selectedHabit]
+    } else {
+      habits.filter { $0.habitType == selectedHabitType }
     }
-    
-    // MARK: - Day Progress Calculations
-    static func getDayProgress(day: Int, currentDate: Date, habits: [Habit], selectedHabitType: HabitType, selectedHabit: Habit?) -> Double {
-        let calendar = Calendar.current
-        
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let dateForDay = calendar.date(byAdding: .day, value: day - 1, to: calendar.date(from: monthComponents) ?? Date()) else {
-            return 0.0
-        }
-        
-        let habitsForDay: [Habit]
-        
-        if let selectedHabit = selectedHabit {
-            habitsForDay = [selectedHabit]
-        } else {
-            habitsForDay = habits.filter { $0.habitType == selectedHabitType }
-        }
-        
-        guard !habitsForDay.isEmpty else { return 0.0 }
-        
-        var totalProgress = 0.0
-        var totalGoal = 0.0
-        
-        for habit in habitsForDay {
-            let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: dateForDay)
-            let goalAmount = parseGoalAmount(from: habit.goal)
-            let progress = habit.getProgress(for: dateForDay)
-            
-            if shouldShow {
-                totalGoal += Double(goalAmount)
-                totalProgress += Double(progress)
-            }
-        }
-        
-        return totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+
+    guard !habitsForDay.isEmpty else { return 0.0 }
+
+    var totalProgress = 0.0
+    var totalGoal = 0.0
+
+    for habit in habitsForDay {
+      let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: dateForDay)
+      let goalAmount = parseGoalAmount(from: habit.goal)
+      let progress = habit.getProgress(for: dateForDay)
+
+      if shouldShow {
+        totalGoal += Double(goalAmount)
+        totalProgress += Double(progress)
+      }
     }
-    
-    static func getDayProgress(for date: Date, habits: [Habit], selectedHabitType: HabitType?, selectedHabit: Habit?) -> Double {
-        let habitsForDay: [Habit]
-        
-        if let selectedHabit = selectedHabit {
-            habitsForDay = [selectedHabit]
-        } else if let selectedHabitType = selectedHabitType {
-            // Filter by specific habit type
-            habitsForDay = habits.filter { $0.habitType == selectedHabitType }
-        } else {
-            // No type filter - include all habits
-            habitsForDay = habits
-        }
-        
-        guard !habitsForDay.isEmpty else { return 0.0 }
-        
-        // For daily progress, we want to calculate completion percentage based on habits completed vs scheduled
-        var completedHabits = 0
-        var totalScheduledHabits = 0
-        
-        print("🔍 PROGRESS CALCULATION DEBUG - Date: \(date)")
-        print("  Total habits passed: \(habits.count)")
-        if let selectedHabitType = selectedHabitType {
-            print("  Filtered habits for type \(selectedHabitType): \(habitsForDay.count)")
-        } else {
-            print("  No type filter - including all habits: \(habitsForDay.count)")
-        }
-        
-        for habit in habitsForDay {
-            let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
-            let isCompleted = habit.isCompleted(for: date)
-            
-            print("  Habit '\(habit.name)': shouldShow=\(shouldShow), isCompleted=\(isCompleted)")
-            
-            if shouldShow {
-                totalScheduledHabits += 1
-                
-                // Check if habit is completed for this date
-                if isCompleted {
-                    completedHabits += 1
-                }
-            }
-        }
-        
-        let percentage = totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
-        print("  Final calculation: \(completedHabits)/\(totalScheduledHabits) = \(percentage * 100)%")
-        
-        // Return completion percentage (0.0 to 1.0)
-        return percentage
+
+    return totalGoal == 0 ? 0.0 : min(totalProgress / totalGoal, 1.0)
+  }
+
+  static func getDayProgress(
+    for date: Date,
+    habits: [Habit],
+    selectedHabitType: HabitType?,
+    selectedHabit: Habit?) -> Double
+  {
+    let habitsForDay: [Habit] = if let selectedHabit {
+      [selectedHabit]
+    } else if let selectedHabitType {
+      // Filter by specific habit type
+      habits.filter { $0.habitType == selectedHabitType }
+    } else {
+      // No type filter - include all habits
+      habits
     }
-    
-    // MARK: - Monthly Progress Calculations
-    static func monthlyHabitCompletionRate(for habit: Habit, currentDate: Date) -> Double {
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0.0
-        }
-        
-        var habitProgress = 0.0
-        var habitGoals = 0.0
-        
-        var currentDate = monthStart
-        while currentDate <= monthEnd {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                let goalAmount = parseGoalAmount(from: habit.goal)
-                let progress = habit.getProgress(for: currentDate)
-                
-                habitGoals += Double(goalAmount)
-                habitProgress += Double(progress)
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+
+    guard !habitsForDay.isEmpty else { return 0.0 }
+
+    // For daily progress, we want to calculate completion percentage based on habits completed vs
+    // scheduled
+    var completedHabits = 0
+    var totalScheduledHabits = 0
+
+    print("🔍 PROGRESS CALCULATION DEBUG - Date: \(date)")
+    print("  Total habits passed: \(habits.count)")
+    if let selectedHabitType {
+      print("  Filtered habits for type \(selectedHabitType): \(habitsForDay.count)")
+    } else {
+      print("  No type filter - including all habits: \(habitsForDay.count)")
     }
-    
-    static func monthlyCompletionRate(habits: [Habit], currentDate: Date, selectedHabitType: HabitType, selectedHabit: Habit?) -> Double {
-        guard !habits.isEmpty else { return 0.0 }
-        
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0.0
+
+    for habit in habitsForDay {
+      let shouldShow = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+      let isCompleted = habit.isCompleted(for: date)
+
+      print("  Habit '\(habit.name)': shouldShow=\(shouldShow), isCompleted=\(isCompleted)")
+
+      if shouldShow {
+        totalScheduledHabits += 1
+
+        // Check if habit is completed for this date
+        if isCompleted {
+          completedHabits += 1
         }
-        
-        var totalMonthlyProgress = 0.0
-        var totalMonthlyGoals = 0.0
-        
-        let habitsToCalculate: [Habit]
-        if let selectedHabit = selectedHabit {
-            habitsToCalculate = [selectedHabit]
-        } else {
-            habitsToCalculate = habits.filter({ $0.habitType == selectedHabitType })
-        }
-        
-        for habit in habitsToCalculate {
-            var habitProgress = 0.0
-            var habitGoals = 0.0
-            
-            var currentDate = monthStart
-            while currentDate <= monthEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    habitGoals += Double(goalAmount)
-                    habitProgress += Double(progress)
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            
-            totalMonthlyProgress += habitProgress
-            totalMonthlyGoals += habitGoals
-        }
-        
-        return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+      }
     }
-    
-    static func previousMonthCompletionRate(habits: [Habit], currentDate: Date, selectedHabitType: HabitType) -> Double {
-        guard !habits.isEmpty else { return 0.0 }
-        
-        let calendar = Calendar.current
-        let previousMonth = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? currentDate
-        let monthComponents = calendar.dateComponents([.year, .month], from: previousMonth)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0.0
-        }
-        
-        var totalMonthlyProgress = 0.0
-        var totalMonthlyGoals = 0.0
-        
-        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
-            var habitProgress = 0.0
-            var habitGoals = 0.0
-            
-            var currentDate = monthStart
-            while currentDate <= monthEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    habitGoals += Double(goalAmount)
-                    habitProgress += Double(progress)
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            
-            totalMonthlyProgress += habitProgress
-            totalMonthlyGoals += habitGoals
-        }
-        
-        return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+
+    let percentage = totalScheduledHabits > 0
+      ? Double(completedHabits) / Double(totalScheduledHabits)
+      : 0.0
+    print("  Final calculation: \(completedHabits)/\(totalScheduledHabits) = \(percentage * 100)%")
+
+    // Return completion percentage (0.0 to 1.0)
+    return percentage
+  }
+
+  // MARK: - Monthly Progress Calculations
+
+  static func monthlyHabitCompletionRate(for habit: Habit, currentDate: Date) -> Double {
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0.0
     }
-    
-    // MARK: - Habit-Specific Progress Calculations
-    
-    /// Get progress for a specific habit on a specific date
-    static func getHabitSpecificProgress(for habit: Habit, date: Date) -> Double {
+
+    var habitProgress = 0.0
+    var habitGoals = 0.0
+
+    var currentDate = monthStart
+    while currentDate <= monthEnd {
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
         let goalAmount = parseGoalAmount(from: habit.goal)
-        let progress = habit.getProgress(for: date)
-        
-        guard goalAmount > 0 else { return 0.0 }
-        return min(Double(progress) / Double(goalAmount), 1.0)
+        let progress = habit.getProgress(for: currentDate)
+
+        habitGoals += Double(goalAmount)
+        habitProgress += Double(progress)
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
-    
-    /// Get monthly completion rate for a specific habit
-    static func getHabitMonthlyCompletionRate(for habit: Habit, currentDate: Date) -> Double {
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0.0
-        }
-        
-        var habitProgress = 0.0
-        var habitGoals = 0.0
-        
-        var currentDate = monthStart
-        while currentDate <= monthEnd {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                let goalAmount = parseGoalAmount(from: habit.goal)
-                let progress = habit.getProgress(for: currentDate)
-                
-                habitGoals += Double(goalAmount)
-                habitProgress += Double(progress)
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+
+    return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+  }
+
+  static func monthlyCompletionRate(
+    habits: [Habit],
+    currentDate: Date,
+    selectedHabitType: HabitType,
+    selectedHabit: Habit?) -> Double
+  {
+    guard !habits.isEmpty else { return 0.0 }
+
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0.0
     }
-    
-    /// Get weekly completion rate for a specific habit
-    static func getHabitWeeklyCompletionRate(for habit: Habit, currentDate: Date) -> Double {
-        let calendar = Calendar.current
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: currentDate)?.start ?? currentDate
-        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: currentDate)?.end ?? currentDate
-        
-        var habitProgress = 0.0
-        var habitGoals = 0.0
-        
-        var currentDate = weekStart
-        while currentDate <= weekEnd {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                let goalAmount = parseGoalAmount(from: habit.goal)
-                let progress = habit.getProgress(for: currentDate)
-                
-                habitGoals += Double(goalAmount)
-                habitProgress += Double(progress)
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+
+    var totalMonthlyProgress = 0.0
+    var totalMonthlyGoals = 0.0
+
+    let habitsToCalculate: [Habit] = if let selectedHabit {
+      [selectedHabit]
+    } else {
+      habits.filter { $0.habitType == selectedHabitType }
     }
-    
-    /// Get current streak for a specific habit
-    static func getHabitCurrentStreak(for habit: Habit) -> Int {
-        return habit.computedStreak()
+
+    for habit in habitsToCalculate {
+      var habitProgress = 0.0
+      var habitGoals = 0.0
+
+      var currentDate = monthStart
+      while currentDate <= monthEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          habitGoals += Double(goalAmount)
+          habitProgress += Double(progress)
+        }
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+
+      totalMonthlyProgress += habitProgress
+      totalMonthlyGoals += habitGoals
     }
-    
-    /// Get best streak for a specific habit (for now, return current streak)
-    static func getHabitBestStreak(for habit: Habit) -> Int {
-        return habit.computedStreak()
+
+    return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+  }
+
+  static func previousMonthCompletionRate(
+    habits: [Habit],
+    currentDate: Date,
+    selectedHabitType: HabitType) -> Double
+  {
+    guard !habits.isEmpty else { return 0.0 }
+
+    let calendar = Calendar.current
+    let previousMonth = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? currentDate
+    let monthComponents = calendar.dateComponents([.year, .month], from: previousMonth)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0.0
     }
-    
-    /// Get days completed this month for a specific habit
-    static func getHabitDaysCompletedThisMonth(for habit: Habit, currentDate: Date) -> Int {
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0
+
+    var totalMonthlyProgress = 0.0
+    var totalMonthlyGoals = 0.0
+
+    for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+      var habitProgress = 0.0
+      var habitGoals = 0.0
+
+      var currentDate = monthStart
+      while currentDate <= monthEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          habitGoals += Double(goalAmount)
+          habitProgress += Double(progress)
         }
-        
-        var completedDays = 0
-        var currentDate = monthStart
-        while currentDate <= monthEnd {
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                let progress = habit.getProgress(for: currentDate)
-                if progress > 0 {
-                    completedDays += 1
-                }
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return completedDays
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+
+      totalMonthlyProgress += habitProgress
+      totalMonthlyGoals += habitGoals
     }
-    
-    /// Get total opportunities this month for a specific habit
-    static func getHabitTotalOpportunitiesThisMonth(for habit: Habit, currentDate: Date) -> Int {
-        let calendar = Calendar.current
-        let vacationManager = VacationManager.shared
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0
-        }
-        
-        var totalOpportunities = 0
-        var currentDate = monthStart
-        while currentDate <= monthEnd {
-            // Only count non-vacation days as opportunities
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) && !vacationManager.isVacationDay(currentDate) {
-                totalOpportunities += 1
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return totalOpportunities
+
+    return totalMonthlyGoals > 0 ? min(totalMonthlyProgress / totalMonthlyGoals, 1.0) : 0.0
+  }
+
+  // MARK: - Habit-Specific Progress Calculations
+
+  /// Get progress for a specific habit on a specific date
+  static func getHabitSpecificProgress(for habit: Habit, date: Date) -> Double {
+    let goalAmount = parseGoalAmount(from: habit.goal)
+    let progress = habit.getProgress(for: date)
+
+    guard goalAmount > 0 else { return 0.0 }
+    return min(Double(progress) / Double(goalAmount), 1.0)
+  }
+
+  /// Get monthly completion rate for a specific habit
+  static func getHabitMonthlyCompletionRate(for habit: Habit, currentDate: Date) -> Double {
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0.0
     }
-    
-    // MARK: - Weekly Progress Calculations
-    static func currentWeekCompletionRate(habits: [Habit], selectedHabitType: HabitType) -> Double {
-        guard !habits.isEmpty else { return 0.0 }
-        
-        let calendar = Calendar.current
-        let today = Date()
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
-        
-        var totalWeeklyProgress = 0.0
-        var totalWeeklyGoals = 0.0
-        
-        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
-            var currentDate = weekStart
-            while currentDate < weekEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    totalWeeklyGoals += Double(goalAmount)
-                    totalWeeklyProgress += Double(progress)
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-        }
-        
-        return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
+
+    var habitProgress = 0.0
+    var habitGoals = 0.0
+
+    var currentDate = monthStart
+    while currentDate <= monthEnd {
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+        let goalAmount = parseGoalAmount(from: habit.goal)
+        let progress = habit.getProgress(for: currentDate)
+
+        habitGoals += Double(goalAmount)
+        habitProgress += Double(progress)
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
-    
-    static func previousWeekCompletionRate(habits: [Habit], selectedHabitType: HabitType) -> Double {
-        guard !habits.isEmpty else { return 0.0 }
-        
-        let calendar = Calendar.current
-        let today = Date()
-        let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: today) ?? today
-        let weekStart = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.start ?? previousWeek
-        let weekEnd = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.end ?? previousWeek
-        
-        var totalWeeklyProgress = 0.0
-        var totalWeeklyGoals = 0.0
-        
-        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
-            var currentDate = weekStart
-            while currentDate < weekEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    totalWeeklyGoals += Double(goalAmount)
-                    totalWeeklyProgress += Double(progress)
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-        }
-        
-        return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
+
+    return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+  }
+
+  /// Get weekly completion rate for a specific habit
+  static func getHabitWeeklyCompletionRate(for habit: Habit, currentDate: Date) -> Double {
+    let calendar = Calendar.current
+    let weekStart = calendar.dateInterval(of: .weekOfYear, for: currentDate)?.start ?? currentDate
+    let weekEnd = calendar.dateInterval(of: .weekOfYear, for: currentDate)?.end ?? currentDate
+
+    var habitProgress = 0.0
+    var habitGoals = 0.0
+
+    var currentDate = weekStart
+    while currentDate <= weekEnd {
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+        let goalAmount = parseGoalAmount(from: habit.goal)
+        let progress = habit.getProgress(for: currentDate)
+
+        habitGoals += Double(goalAmount)
+        habitProgress += Double(progress)
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
-    
-    // MARK: - Today's Progress Calculations
-    static func todaysActualCompletionPercentage(habits: [Habit]) -> Double {
-        guard !habits.isEmpty else { return 0.0 }
-        
-        let today = Date()
-        var completedHabits = 0
-        var totalScheduledHabits = 0
-        
-        for habit in habits {
-            // Only count habits that are scheduled for today
-            if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
-                totalScheduledHabits += 1
-                
-                // Check if habit is completed for today
-                if habit.isCompleted(for: today) {
-                    completedHabits += 1
-                }
-            }
-        }
-        
-        // Return completion percentage (0.0 to 1.0)
-        return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
+
+    return habitGoals > 0 ? min(habitProgress / habitGoals, 1.0) : 0.0
+  }
+
+  /// Get current streak for a specific habit
+  static func getHabitCurrentStreak(for habit: Habit) -> Int {
+    habit.computedStreak()
+  }
+
+  /// Get best streak for a specific habit (for now, return current streak)
+  static func getHabitBestStreak(for habit: Habit) -> Int {
+    habit.computedStreak()
+  }
+
+  /// Get days completed this month for a specific habit
+  static func getHabitDaysCompletedThisMonth(for habit: Habit, currentDate: Date) -> Int {
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0
     }
-    
-    // MARK: - Goal Achievement Calculations
-    static func monthlyGoalsMet(habits: [Habit], currentDate: Date, selectedHabitType: HabitType) -> Int {
-        let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
-        guard !filteredHabits.isEmpty else { return 0 }
-        
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0
+
+    var completedDays = 0
+    var currentDate = monthStart
+    while currentDate <= monthEnd {
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+        let progress = habit.getProgress(for: currentDate)
+        if progress > 0 {
+          completedDays += 1
         }
-        
-        var goalsMetCount = 0
-        
-        for habit in filteredHabits {
-            var currentDate = monthStart
-            var hasMetGoal = false
-            
-            while currentDate <= monthEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    if progress >= goalAmount {
-                        hasMetGoal = true
-                        break
-                    }
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            
-            if hasMetGoal {
-                goalsMetCount += 1
-            }
-        }
-        
-        return goalsMetCount
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
-    
-    static func monthlyCompletedHabits(habits: [Habit], currentDate: Date, selectedHabitType: HabitType) -> Int {
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0
-        }
-        
-        var completedCount = 0
-        for habit in habits.filter({ $0.habitType == selectedHabitType }) {
-            var currentDate = monthStart
-            var hasCompletedAnyDay = false
-            
-            while currentDate <= monthEnd {
-                if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
-                    let goalAmount = parseGoalAmount(from: habit.goal)
-                    let progress = habit.getProgress(for: currentDate)
-                    
-                    if progress >= goalAmount {
-                        hasCompletedAnyDay = true
-                        break
-                    }
-                }
-                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-            }
-            
-            if hasCompletedAnyDay {
-                completedCount += 1
-            }
-        }
-        
-        return completedCount
+
+    return completedDays
+  }
+
+  /// Get total opportunities this month for a specific habit
+  static func getHabitTotalOpportunitiesThisMonth(for habit: Habit, currentDate: Date) -> Int {
+    let calendar = Calendar.current
+    let vacationManager = VacationManager.shared
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0
     }
-    
-    static func averageDailyProgress(habits: [Habit], currentDate: Date, selectedHabitType: HabitType, selectedHabit: Habit?) -> Double {
-        let filteredHabits: [Habit]
-        if let selectedHabit = selectedHabit {
-            filteredHabits = [selectedHabit]
-        } else {
-            filteredHabits = habits.filter { $0.habitType == selectedHabitType }
-        }
-        
-        guard !filteredHabits.isEmpty else { return 0.0 }
-        
-        let calendar = Calendar.current
-        let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
-        guard let monthStart = calendar.date(from: monthComponents),
-              let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?.addingTimeInterval(-1) else {
-            return 0.0
-        }
-        
-        var totalDailyProgress = 0.0
-        var totalDays = 0
-        
-        var currentDate = monthStart
-        while currentDate <= monthEnd {
-            let dayProgress = getDayProgress(for: currentDate, habits: habits, selectedHabitType: selectedHabitType, selectedHabit: selectedHabit)
-            if dayProgress > 0 {
-                totalDailyProgress += dayProgress
-                totalDays += 1
-            }
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return totalDays > 0 ? totalDailyProgress / Double(totalDays) : 0.0
+
+    var totalOpportunities = 0
+    var currentDate = monthStart
+    while currentDate <= monthEnd {
+      // Only count non-vacation days as opportunities
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate),
+         !vacationManager.isVacationDay(currentDate)
+      {
+        totalOpportunities += 1
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
+
+    return totalOpportunities
+  }
+
+  // MARK: - Weekly Progress Calculations
+
+  static func currentWeekCompletionRate(habits: [Habit], selectedHabitType: HabitType) -> Double {
+    guard !habits.isEmpty else { return 0.0 }
+
+    let calendar = Calendar.current
+    let today = Date()
+    let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+    let weekEnd = calendar.dateInterval(of: .weekOfYear, for: today)?.end ?? today
+
+    var totalWeeklyProgress = 0.0
+    var totalWeeklyGoals = 0.0
+
+    for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+      var currentDate = weekStart
+      while currentDate < weekEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          totalWeeklyGoals += Double(goalAmount)
+          totalWeeklyProgress += Double(progress)
+        }
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+    }
+
+    return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
+  }
+
+  static func previousWeekCompletionRate(habits: [Habit], selectedHabitType: HabitType) -> Double {
+    guard !habits.isEmpty else { return 0.0 }
+
+    let calendar = Calendar.current
+    let today = Date()
+    let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: today) ?? today
+    let weekStart = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.start ?? previousWeek
+    let weekEnd = calendar.dateInterval(of: .weekOfYear, for: previousWeek)?.end ?? previousWeek
+
+    var totalWeeklyProgress = 0.0
+    var totalWeeklyGoals = 0.0
+
+    for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+      var currentDate = weekStart
+      while currentDate < weekEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          totalWeeklyGoals += Double(goalAmount)
+          totalWeeklyProgress += Double(progress)
+        }
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+    }
+
+    return totalWeeklyGoals > 0 ? min(totalWeeklyProgress / totalWeeklyGoals, 1.0) : 0.0
+  }
+
+  // MARK: - Today's Progress Calculations
+
+  static func todaysActualCompletionPercentage(habits: [Habit]) -> Double {
+    guard !habits.isEmpty else { return 0.0 }
+
+    let today = Date()
+    var completedHabits = 0
+    var totalScheduledHabits = 0
+
+    for habit in habits {
+      // Only count habits that are scheduled for today
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: today) {
+        totalScheduledHabits += 1
+
+        // Check if habit is completed for today
+        if habit.isCompleted(for: today) {
+          completedHabits += 1
+        }
+      }
+    }
+
+    // Return completion percentage (0.0 to 1.0)
+    return totalScheduledHabits > 0 ? Double(completedHabits) / Double(totalScheduledHabits) : 0.0
+  }
+
+  // MARK: - Goal Achievement Calculations
+
+  static func monthlyGoalsMet(
+    habits: [Habit],
+    currentDate: Date,
+    selectedHabitType: HabitType) -> Int
+  {
+    let filteredHabits = habits.filter { $0.habitType == selectedHabitType }
+    guard !filteredHabits.isEmpty else { return 0 }
+
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0
+    }
+
+    var goalsMetCount = 0
+
+    for habit in filteredHabits {
+      var currentDate = monthStart
+      var hasMetGoal = false
+
+      while currentDate <= monthEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          if progress >= goalAmount {
+            hasMetGoal = true
+            break
+          }
+        }
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+
+      if hasMetGoal {
+        goalsMetCount += 1
+      }
+    }
+
+    return goalsMetCount
+  }
+
+  static func monthlyCompletedHabits(
+    habits: [Habit],
+    currentDate: Date,
+    selectedHabitType: HabitType) -> Int
+  {
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0
+    }
+
+    var completedCount = 0
+    for habit in habits.filter({ $0.habitType == selectedHabitType }) {
+      var currentDate = monthStart
+      var hasCompletedAnyDay = false
+
+      while currentDate <= monthEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+
+          if progress >= goalAmount {
+            hasCompletedAnyDay = true
+            break
+          }
+        }
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+      }
+
+      if hasCompletedAnyDay {
+        completedCount += 1
+      }
+    }
+
+    return completedCount
+  }
+
+  static func averageDailyProgress(
+    habits: [Habit],
+    currentDate: Date,
+    selectedHabitType: HabitType,
+    selectedHabit: Habit?) -> Double
+  {
+    let filteredHabits: [Habit] = if let selectedHabit {
+      [selectedHabit]
+    } else {
+      habits.filter { $0.habitType == selectedHabitType }
+    }
+
+    guard !filteredHabits.isEmpty else { return 0.0 }
+
+    let calendar = Calendar.current
+    let monthComponents = calendar.dateComponents([.year, .month], from: currentDate)
+    guard let monthStart = calendar.date(from: monthComponents),
+          let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart)?
+          .addingTimeInterval(-1) else
+    {
+      return 0.0
+    }
+
+    var totalDailyProgress = 0.0
+    var totalDays = 0
+
+    var currentDate = monthStart
+    while currentDate <= monthEnd {
+      let dayProgress = getDayProgress(
+        for: currentDate,
+        habits: habits,
+        selectedHabitType: selectedHabitType,
+        selectedHabit: selectedHabit)
+      if dayProgress > 0 {
+        totalDailyProgress += dayProgress
+        totalDays += 1
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    return totalDays > 0 ? totalDailyProgress / Double(totalDays) : 0.0
+  }
 }

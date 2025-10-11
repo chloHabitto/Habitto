@@ -1,573 +1,606 @@
-import Foundation
 import CryptoKit
+import Foundation
 import Security
 
-// MARK: - Field Level Encryption Manager
+// MARK: - FieldLevelEncryptionManager
+
 // Provides field-level encryption for sensitive data with Keychain storage
 
 actor FieldLevelEncryptionManager {
-    static let shared = FieldLevelEncryptionManager()
-    
-    // MARK: - Properties
-    
-    private let keychain = EncryptionKeychainManager.shared
-    private let encryptionKeyIdentifier = "HabittoFieldEncryptionKey"
-    private var cachedEncryptionKey: SymmetricKey?
-    
-    // MARK: - Encryption Key Management
-    
-    private func getOrCreateEncryptionKey() async throws -> SymmetricKey {
-        if let cachedKey = cachedEncryptionKey {
-            return cachedKey
-        }
-        
-        // Try to load existing key from Keychain
-        if let existingKeyData = try await keychain.loadData(forKey: encryptionKeyIdentifier) {
-            cachedEncryptionKey = SymmetricKey(data: existingKeyData)
-            return cachedEncryptionKey!
-        }
-        
-        // Create new encryption key
-        let newKey = SymmetricKey(size: .bits256)
-        let keyData = newKey.withUnsafeBytes { Data($0) }
-        
-        // Store in Keychain with high security
-        try await keychain.storeData(keyData, forKey: encryptionKeyIdentifier, 
-                                   accessControl: SecAccessControl.biometryAny, 
-                                   accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
-        
-        cachedEncryptionKey = newKey
-        return newKey
+  // MARK: Internal
+
+  static let shared = FieldLevelEncryptionManager()
+
+  // MARK: - Public Encryption Interface
+
+  func encryptField(_ value: String) async throws -> EncryptedField {
+    // Feature flag protection: Check if field-level encryption is enabled
+    let isEnabled = await MainActor.run {
+      // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+      // FeatureFlagManager.shared.provider.fieldLevelEncryption
+      false // Temporarily disabled
     }
-    
-    // MARK: - Public Encryption Interface
-    
-    func encryptField(_ value: String) async throws -> EncryptedField {
-        // Feature flag protection: Check if field-level encryption is enabled
-        let isEnabled = await MainActor.run {
-            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
-            // FeatureFlagManager.shared.provider.fieldLevelEncryption
-            return false // Temporarily disabled
-        }
-        guard isEnabled else {
-            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
-            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
-        }
-        
-        let key = try await getOrCreateEncryptionKey()
-        let data = value.data(using: .utf8) ?? Data()
-        
-        // Encrypt using AES-GCM with separated nonce and auth tag
-        let sealedBox = try AES.GCM.seal(data, using: key)
-        
-        return EncryptedField(
-            encryptedData: sealedBox.ciphertext,
-            algorithm: .aesGCM,
-            keyVersion: "1.0",
-            createdAt: Date(),
-            nonce: Data(sealedBox.nonce),
-            authenticationTag: sealedBox.tag,
-            envelopeVersion: EncryptedField.EnvelopeVersion.v2.rawValue
-        )
+    guard isEnabled else {
+      print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+      throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
     }
-    
-    func decryptField(_ encryptedField: EncryptedField) async throws -> String {
-        // Feature flag protection: Check if field-level encryption is enabled
-        let isEnabled = await MainActor.run {
-            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
-            // FeatureFlagManager.shared.provider.fieldLevelEncryption
-            return false // Temporarily disabled
-        }
-        guard isEnabled else {
-            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
-            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
-        }
-        
-        let key = try await getOrCreateEncryptionKey()
-        
-        let sealedBox: AES.GCM.SealedBox
-        
-        // Handle different envelope versions
-        switch encryptedField.envelopeVersion {
-        case EncryptedField.EnvelopeVersion.v2.rawValue:
-            // v2: Separated nonce, auth tag, and ciphertext
-            sealedBox = try AES.GCM.SealedBox(
-                nonce: try AES.GCM.Nonce(data: encryptedField.nonce),
-                ciphertext: encryptedField.encryptedData,
-                tag: encryptedField.authenticationTag
-            )
-            
-        case EncryptedField.EnvelopeVersion.v1.rawValue:
-            // v1: Combined data (backward compatibility)
-            guard let combinedSealedBox = try? AES.GCM.SealedBox(combined: encryptedField.encryptedData) else {
-                throw EncryptionError.invalidEncryptedData
-            }
-            sealedBox = combinedSealedBox
-            
-        default:
-            throw EncryptionError.unsupportedEnvelopeVersion(encryptedField.envelopeVersion)
-        }
-        
-        let decryptedData = try AES.GCM.open(sealedBox, using: key)
-        guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
-            throw EncryptionError.decryptionFailed
-        }
-        
-        return decryptedString
+
+    let key = try await getOrCreateEncryptionKey()
+    let data = value.data(using: .utf8) ?? Data()
+
+    // Encrypt using AES-GCM with separated nonce and auth tag
+    let sealedBox = try AES.GCM.seal(data, using: key)
+
+    return EncryptedField(
+      encryptedData: sealedBox.ciphertext,
+      algorithm: .aesGCM,
+      keyVersion: "1.0",
+      createdAt: Date(),
+      nonce: Data(sealedBox.nonce),
+      authenticationTag: sealedBox.tag,
+      envelopeVersion: EncryptedField.EnvelopeVersion.v2.rawValue)
+  }
+
+  func decryptField(_ encryptedField: EncryptedField) async throws -> String {
+    // Feature flag protection: Check if field-level encryption is enabled
+    let isEnabled = await MainActor.run {
+      // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+      // FeatureFlagManager.shared.provider.fieldLevelEncryption
+      false // Temporarily disabled
     }
-    
-    func encryptSensitiveFields<T: Codable>(_ object: T, fieldPaths: [String]) async throws -> EncryptedObject<T> {
-        // Feature flag protection: Check if field-level encryption is enabled
-        let isEnabled = await MainActor.run {
-            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
-            // FeatureFlagManager.shared.provider.fieldLevelEncryption
-            return false // Temporarily disabled
-        }
-        guard isEnabled else {
-            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
-            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
-        }
-        
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(object)
-        
-        guard var json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw EncryptionError.serializationFailed
-        }
-        
-        var encryptedFields: [String: EncryptedField] = [:]
-        
-        for fieldPath in fieldPaths {
-            let pathComponents = fieldPath.split(separator: ".")
-            if let value = getNestedValue(from: json, path: pathComponents) as? String {
-                let encryptedValue = try await encryptField(value)
-                encryptedFields[fieldPath] = encryptedValue
-                setNestedValue(in: &json, path: pathComponents, value: "[ENCRYPTED]")
-            }
-        }
-        
-        return EncryptedObject(
-            originalType: String(describing: T.self),
-            encryptedFields: encryptedFields,
-            serializedData: try JSONSerialization.data(withJSONObject: json)
-        )
+    guard isEnabled else {
+      print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+      throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
     }
-    
-    func decryptSensitiveFields<T: Codable>(_ encryptedObject: EncryptedObject<T>) async throws -> T {
-        // Feature flag protection: Check if field-level encryption is enabled
-        let isEnabled = await MainActor.run {
-            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
-            // FeatureFlagManager.shared.provider.fieldLevelEncryption
-            return false // Temporarily disabled
-        }
-        guard isEnabled else {
-            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
-            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
-        }
-        
-        guard var json = try JSONSerialization.jsonObject(with: encryptedObject.serializedData) as? [String: Any] else {
-            throw EncryptionError.deserializationFailed
-        }
-        
-        // Decrypt and restore sensitive fields
-        for (fieldPath, encryptedField) in encryptedObject.encryptedFields {
-            let pathComponents = fieldPath.split(separator: ".")
-            let decryptedValue = try await decryptField(encryptedField)
-            setNestedValue(in: &json, path: pathComponents, value: decryptedValue)
-        }
-        
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        return try decoder.decode(T.self, from: data)
+
+    let key = try await getOrCreateEncryptionKey()
+
+    let sealedBox: AES.GCM.SealedBox
+
+    // Handle different envelope versions
+    switch encryptedField.envelopeVersion {
+    case EncryptedField.EnvelopeVersion.v2.rawValue:
+      // v2: Separated nonce, auth tag, and ciphertext
+      sealedBox = try AES.GCM.SealedBox(
+        nonce: AES.GCM.Nonce(data: encryptedField.nonce),
+        ciphertext: encryptedField.encryptedData,
+        tag: encryptedField.authenticationTag)
+
+    case EncryptedField.EnvelopeVersion.v1.rawValue:
+      // v1: Combined data (backward compatibility)
+      guard let combinedSealedBox = try? AES.GCM.SealedBox(combined: encryptedField.encryptedData) else {
+        throw EncryptionError.invalidEncryptedData
+      }
+      sealedBox = combinedSealedBox
+
+    default:
+      throw EncryptionError.unsupportedEnvelopeVersion(encryptedField.envelopeVersion)
     }
-    
-    // MARK: - Key Rotation
-    
-    func rotateEncryptionKey() async throws {
-        // Feature flag protection: Check if field-level encryption is enabled
-        let isEnabled = await MainActor.run {
-            // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
-            // FeatureFlagManager.shared.provider.fieldLevelEncryption
-            return false // Temporarily disabled
-        }
-        guard isEnabled else {
-            print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
-            throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
-        }
-        
-        // Generate new key
-        let newKey = SymmetricKey(size: .bits256)
-        let newKeyData = newKey.withUnsafeBytes { Data($0) }
-        
-        // Store new key with incremented version
-        let newKeyIdentifier = "\(encryptionKeyIdentifier)_v2"
-        try await keychain.storeData(newKeyData, forKey: newKeyIdentifier,
-                                   accessControl: SecAccessControl.biometryAny,
-                                   accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
-        
-        // Update cached key
-        cachedEncryptionKey = newKey
-        
-        // Store key rotation metadata
-        let rotationMetadata = KeyRotationMetadata(
-            oldKeyIdentifier: encryptionKeyIdentifier,
-            newKeyIdentifier: newKeyIdentifier,
-            rotationDate: Date(),
-            rotationReason: "scheduled_rotation"
-        )
-        
-        if let metadataData = try? JSONEncoder().encode(rotationMetadata) {
-            UserDefaults.standard.set(metadataData, forKey: "KeyRotationMetadata")
-        }
-        
-        // Schedule re-encryption of existing data (background task)
-        Task.detached {
-            await self.reEncryptExistingData(with: newKey)
-        }
-        
-        print("🔑 FieldLevelEncryptionManager: Encryption key rotated successfully.")
+
+    let decryptedData = try AES.GCM.open(sealedBox, using: key)
+    guard let decryptedString = String(data: decryptedData, encoding: .utf8) else {
+      throw EncryptionError.decryptionFailed
     }
-    
-    private func reEncryptExistingData(with newKey: SymmetricKey) async {
-        // This would iterate through existing encrypted data and re-encrypt with new key
-        // Implementation depends on how encrypted data is stored
-        print("🔄 FieldLevelEncryptionManager: Starting background re-encryption with new key")
+
+    return decryptedString
+  }
+
+  func encryptSensitiveFields<T: Codable>(
+    _ object: T,
+    fieldPaths: [String]) async throws -> EncryptedObject<T>
+  {
+    // Feature flag protection: Check if field-level encryption is enabled
+    let isEnabled = await MainActor.run {
+      // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+      // FeatureFlagManager.shared.provider.fieldLevelEncryption
+      false // Temporarily disabled
     }
-    
-    func handleKeychainLoss() async throws -> KeychainLossResponse {
-        // Check if we can recover from backup or if we need to generate new key
-        let hasBackup = await checkForBackupKey()
-        
-        if hasBackup {
-            // Attempt to recover from backup
-            return try await recoverFromBackup()
-        } else {
-            // Generate new key and mark all encrypted data as needing re-encryption
-            return try await handleNewDeviceScenario()
-        }
+    guard isEnabled else {
+      print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+      throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
     }
-    
-    private func checkForBackupKey() async -> Bool {
-        // Check if backup key exists (e.g., in iCloud Keychain)
-        // This is a simplified check - in production, you'd check multiple sources
-        return false
+
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(object)
+
+    guard var json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      throw EncryptionError.serializationFailed
     }
-    
-    private func recoverFromBackup() async throws -> KeychainLossResponse {
-        // Attempt to recover from backup key
-        // This would involve fetching from iCloud Keychain or other backup sources
-        throw EncryptionError.keyGenerationFailed
+
+    var encryptedFields: [String: EncryptedField] = [:]
+
+    for fieldPath in fieldPaths {
+      let pathComponents = fieldPath.split(separator: ".")
+      if let value = getNestedValue(from: json, path: pathComponents) as? String {
+        let encryptedValue = try await encryptField(value)
+        encryptedFields[fieldPath] = encryptedValue
+        setNestedValue(in: &json, path: pathComponents, value: "[ENCRYPTED]")
+      }
     }
-    
-    private func handleNewDeviceScenario() async throws -> KeychainLossResponse {
-        // Generate new key for new device scenario
-        let newKey = SymmetricKey(size: .bits256)
-        let newKeyData = newKey.withUnsafeBytes { Data($0) }
-        
-        // Store new key
-        try await keychain.storeData(newKeyData, forKey: encryptionKeyIdentifier,
-                                   accessControl: SecAccessControl.biometryAny,
-                                   accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
-        
-        cachedEncryptionKey = newKey
-        
-        return KeychainLossResponse(
-            recoveryMethod: .newKeyGenerated,
-            requiresReEncryption: true,
-            affectedRecords: await getAffectedRecordCount()
-        )
+
+    return try EncryptedObject(
+      originalType: String(describing: T.self),
+      encryptedFields: encryptedFields,
+      serializedData: JSONSerialization.data(withJSONObject: json))
+  }
+
+  func decryptSensitiveFields<T: Codable>(_ encryptedObject: EncryptedObject<T>) async throws -> T {
+    // Feature flag protection: Check if field-level encryption is enabled
+    let isEnabled = await MainActor.run {
+      // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+      // FeatureFlagManager.shared.provider.fieldLevelEncryption
+      false // Temporarily disabled
     }
-    
-    private func getAffectedRecordCount() async -> Int {
-        // Count records that need re-encryption
-        // This would query your data store for encrypted records
-        return 0
+    guard isEnabled else {
+      print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+      throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
     }
-    
-    // MARK: - Helper Methods
-    
-    private func getNestedValue(from json: [String: Any], path: [Substring]) -> Any? {
-        var current: Any = json
-        for component in path {
-            if let dict = current as? [String: Any] {
-                current = dict[String(component)] as Any
-            } else {
-                return nil
-            }
-        }
-        return current
+
+    guard var json = try JSONSerialization
+      .jsonObject(with: encryptedObject.serializedData) as? [String: Any] else
+    {
+      throw EncryptionError.deserializationFailed
     }
-    
-    private func setNestedValue(in json: inout [String: Any], path: [Substring], value: Any) {
-        guard !path.isEmpty else { return }
-        
-        // Simplified implementation for single-level paths
-        if path.count == 1 {
-            json[String(path[0])] = value
-        } else {
-            // For multi-level paths, we'd need a more complex implementation
-            // For now, just set the last component
-            json[String(path.last!)] = value
-        }
+
+    // Decrypt and restore sensitive fields
+    for (fieldPath, encryptedField) in encryptedObject.encryptedFields {
+      let pathComponents = fieldPath.split(separator: ".")
+      let decryptedValue = try await decryptField(encryptedField)
+      setNestedValue(in: &json, path: pathComponents, value: decryptedValue)
     }
+
+    let data = try JSONSerialization.data(withJSONObject: json)
+    let decoder = JSONDecoder()
+    return try decoder.decode(T.self, from: data)
+  }
+
+  // MARK: - Key Rotation
+
+  func rotateEncryptionKey() async throws {
+    // Feature flag protection: Check if field-level encryption is enabled
+    let isEnabled = await MainActor.run {
+      // TODO: Add fieldLevelEncryption feature flag to FeatureFlagProvider
+      // FeatureFlagManager.shared.provider.fieldLevelEncryption
+      false // Temporarily disabled
+    }
+    guard isEnabled else {
+      print("🚩 FieldLevelEncryptionManager: Field-level encryption disabled by feature flag")
+      throw EncryptionError.featureDisabled("Field-level encryption disabled by feature flag")
+    }
+
+    // Generate new key
+    let newKey = SymmetricKey(size: .bits256)
+    let newKeyData = newKey.withUnsafeBytes { Data($0) }
+
+    // Store new key with incremented version
+    let newKeyIdentifier = "\(encryptionKeyIdentifier)_v2"
+    try await keychain.storeData(
+      newKeyData,
+      forKey: newKeyIdentifier,
+      accessControl: SecAccessControl.biometryAny,
+      accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
+
+    // Update cached key
+    cachedEncryptionKey = newKey
+
+    // Store key rotation metadata
+    let rotationMetadata = KeyRotationMetadata(
+      oldKeyIdentifier: encryptionKeyIdentifier,
+      newKeyIdentifier: newKeyIdentifier,
+      rotationDate: Date(),
+      rotationReason: "scheduled_rotation")
+
+    if let metadataData = try? JSONEncoder().encode(rotationMetadata) {
+      UserDefaults.standard.set(metadataData, forKey: "KeyRotationMetadata")
+    }
+
+    // Schedule re-encryption of existing data (background task)
+    Task.detached {
+      await self.reEncryptExistingData(with: newKey)
+    }
+
+    print("🔑 FieldLevelEncryptionManager: Encryption key rotated successfully.")
+  }
+
+  func handleKeychainLoss() async throws -> KeychainLossResponse {
+    // Check if we can recover from backup or if we need to generate new key
+    let hasBackup = await checkForBackupKey()
+
+    if hasBackup {
+      // Attempt to recover from backup
+      return try await recoverFromBackup()
+    } else {
+      // Generate new key and mark all encrypted data as needing re-encryption
+      return try await handleNewDeviceScenario()
+    }
+  }
+
+  // MARK: Private
+
+  private let keychain = EncryptionKeychainManager.shared
+  private let encryptionKeyIdentifier = "HabittoFieldEncryptionKey"
+  private var cachedEncryptionKey: SymmetricKey?
+
+  // MARK: - Encryption Key Management
+
+  private func getOrCreateEncryptionKey() async throws -> SymmetricKey {
+    if let cachedKey = cachedEncryptionKey {
+      return cachedKey
+    }
+
+    // Try to load existing key from Keychain
+    if let existingKeyData = try await keychain.loadData(forKey: encryptionKeyIdentifier) {
+      cachedEncryptionKey = SymmetricKey(data: existingKeyData)
+      return cachedEncryptionKey!
+    }
+
+    // Create new encryption key
+    let newKey = SymmetricKey(size: .bits256)
+    let keyData = newKey.withUnsafeBytes { Data($0) }
+
+    // Store in Keychain with high security
+    try await keychain.storeData(
+      keyData,
+      forKey: encryptionKeyIdentifier,
+      accessControl: SecAccessControl.biometryAny,
+      accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
+
+    cachedEncryptionKey = newKey
+    return newKey
+  }
+
+  private func reEncryptExistingData(with _: SymmetricKey) async {
+    // This would iterate through existing encrypted data and re-encrypt with new key
+    // Implementation depends on how encrypted data is stored
+    print("🔄 FieldLevelEncryptionManager: Starting background re-encryption with new key")
+  }
+
+  private func checkForBackupKey() async -> Bool {
+    // Check if backup key exists (e.g., in iCloud Keychain)
+    // This is a simplified check - in production, you'd check multiple sources
+    false
+  }
+
+  private func recoverFromBackup() async throws -> KeychainLossResponse {
+    // Attempt to recover from backup key
+    // This would involve fetching from iCloud Keychain or other backup sources
+    throw EncryptionError.keyGenerationFailed
+  }
+
+  private func handleNewDeviceScenario() async throws -> KeychainLossResponse {
+    // Generate new key for new device scenario
+    let newKey = SymmetricKey(size: .bits256)
+    let newKeyData = newKey.withUnsafeBytes { Data($0) }
+
+    // Store new key
+    try await keychain.storeData(
+      newKeyData,
+      forKey: encryptionKeyIdentifier,
+      accessControl: SecAccessControl.biometryAny,
+      accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
+
+    cachedEncryptionKey = newKey
+
+    return await KeychainLossResponse(
+      recoveryMethod: .newKeyGenerated,
+      requiresReEncryption: true,
+      affectedRecords: getAffectedRecordCount())
+  }
+
+  private func getAffectedRecordCount() async -> Int {
+    // Count records that need re-encryption
+    // This would query your data store for encrypted records
+    0
+  }
+
+  // MARK: - Helper Methods
+
+  private func getNestedValue(from json: [String: Any], path: [Substring]) -> Any? {
+    var current: Any = json
+    for component in path {
+      if let dict = current as? [String: Any] {
+        current = dict[String(component)] as Any
+      } else {
+        return nil
+      }
+    }
+    return current
+  }
+
+  private func setNestedValue(in json: inout [String: Any], path: [Substring], value: Any) {
+    guard !path.isEmpty else { return }
+
+    // Simplified implementation for single-level paths
+    if path.count == 1 {
+      json[String(path[0])] = value
+    } else {
+      // For multi-level paths, we'd need a more complex implementation
+      // For now, just set the last component
+      json[String(path.last!)] = value
+    }
+  }
 }
 
-// MARK: - Encryption Models
+// MARK: - EncryptedField
 
 struct EncryptedField: Codable {
-    let encryptedData: Data
-    let algorithm: EncryptionAlgorithm
-    let keyVersion: String
-    let createdAt: Date
-    let nonce: Data // GCM nonce for verification
-    let authenticationTag: Data // GCM authentication tag
-    let envelopeVersion: String // Version of the encryption envelope format
-    
-    enum EncryptionAlgorithm: String, Codable {
-        case aesGCM = "AES-256-GCM"
-        case aesCBC = "AES-256-CBC"
-    }
-    
-    enum EnvelopeVersion: String, Codable {
-        case v1 = "1.0" // Initial version (combined data)
-        case v2 = "2.0" // Separated nonce and auth tag
-    }
-    
-    init(encryptedData: Data, algorithm: EncryptionAlgorithm, keyVersion: String, createdAt: Date, nonce: Data, authenticationTag: Data, envelopeVersion: String = EnvelopeVersion.v2.rawValue) {
-        self.encryptedData = encryptedData
-        self.algorithm = algorithm
-        self.keyVersion = keyVersion
-        self.createdAt = createdAt
-        self.nonce = nonce
-        self.authenticationTag = authenticationTag
-        self.envelopeVersion = envelopeVersion
-    }
-    
-    // Backward compatibility initializer for v1 envelopes
-    init(legacyData: Data, algorithm: EncryptionAlgorithm, keyVersion: String, createdAt: Date) {
-        // For v1, the nonce and auth tag were combined with the encrypted data
-        self.encryptedData = legacyData
-        self.algorithm = algorithm
-        self.keyVersion = keyVersion
-        self.createdAt = createdAt
-        self.nonce = Data() // Will be extracted during decryption
-        self.authenticationTag = Data() // Will be extracted during decryption
-        self.envelopeVersion = EnvelopeVersion.v1.rawValue
-    }
+  // MARK: Lifecycle
+
+  init(
+    encryptedData: Data,
+    algorithm: EncryptionAlgorithm,
+    keyVersion: String,
+    createdAt: Date,
+    nonce: Data,
+    authenticationTag: Data,
+    envelopeVersion: String = EnvelopeVersion.v2.rawValue)
+  {
+    self.encryptedData = encryptedData
+    self.algorithm = algorithm
+    self.keyVersion = keyVersion
+    self.createdAt = createdAt
+    self.nonce = nonce
+    self.authenticationTag = authenticationTag
+    self.envelopeVersion = envelopeVersion
+  }
+
+  /// Backward compatibility initializer for v1 envelopes
+  init(legacyData: Data, algorithm: EncryptionAlgorithm, keyVersion: String, createdAt: Date) {
+    // For v1, the nonce and auth tag were combined with the encrypted data
+    self.encryptedData = legacyData
+    self.algorithm = algorithm
+    self.keyVersion = keyVersion
+    self.createdAt = createdAt
+    self.nonce = Data() // Will be extracted during decryption
+    self.authenticationTag = Data() // Will be extracted during decryption
+    self.envelopeVersion = EnvelopeVersion.v1.rawValue
+  }
+
+  // MARK: Internal
+
+  enum EncryptionAlgorithm: String, Codable {
+    case aesGCM = "AES-256-GCM"
+    case aesCBC = "AES-256-CBC"
+  }
+
+  enum EnvelopeVersion: String, Codable {
+    case v1 = "1.0" // Initial version (combined data)
+    case v2 = "2.0" // Separated nonce and auth tag
+  }
+
+  let encryptedData: Data
+  let algorithm: EncryptionAlgorithm
+  let keyVersion: String
+  let createdAt: Date
+  let nonce: Data // GCM nonce for verification
+  let authenticationTag: Data // GCM authentication tag
+  let envelopeVersion: String // Version of the encryption envelope format
 }
+
+// MARK: - EncryptedObject
 
 struct EncryptedObject<T: Codable>: Codable {
-    let originalType: String
-    let encryptedFields: [String: EncryptedField]
-    let serializedData: Data
-    
-    func decrypt<U: Codable>(as type: U.Type) async throws -> U {
-        let manager = FieldLevelEncryptionManager.shared
-        return try await manager.decryptSensitiveFields(EncryptedObject<U>(
-            originalType: String(describing: U.self),
-            encryptedFields: encryptedFields,
-            serializedData: serializedData
-        ))
-    }
+  let originalType: String
+  let encryptedFields: [String: EncryptedField]
+  let serializedData: Data
+
+  func decrypt<U: Codable>(as _: U.Type) async throws -> U {
+    let manager = FieldLevelEncryptionManager.shared
+    return try await manager.decryptSensitiveFields(EncryptedObject<U>(
+      originalType: String(describing: U.self),
+      encryptedFields: encryptedFields,
+      serializedData: serializedData))
+  }
 }
 
-// MARK: - Encryption Errors
+// MARK: - EncryptionError
 
 enum EncryptionError: Error, LocalizedError {
-    case keyGenerationFailed
-    case keyStorageFailed
-    case keyRetrievalFailed
-    case encryptionFailed
-    case decryptionFailed
-    case invalidEncryptedData
-    case serializationFailed
-    case deserializationFailed
-    case fieldPathNotFound
-    case keyRotationFailed
-    case unsupportedEnvelopeVersion(String)
-    case featureDisabled(String)
-    
-    var errorDescription: String? {
-        switch self {
-        case .keyGenerationFailed:
-            return "Failed to generate encryption key"
-        case .keyStorageFailed:
-            return "Failed to store encryption key in Keychain"
-        case .keyRetrievalFailed:
-            return "Failed to retrieve encryption key from Keychain"
-        case .encryptionFailed:
-            return "Failed to encrypt data"
-        case .decryptionFailed:
-            return "Failed to decrypt data"
-        case .invalidEncryptedData:
-            return "Invalid encrypted data format"
-        case .serializationFailed:
-            return "Failed to serialize object for encryption"
-        case .deserializationFailed:
-            return "Failed to deserialize decrypted object"
-        case .fieldPathNotFound:
-            return "Field path not found in object"
-        case .keyRotationFailed:
-            return "Failed to rotate encryption key"
-        case .unsupportedEnvelopeVersion(let version):
-            return "Unsupported encryption envelope version: \(version)"
-        case .featureDisabled(let message):
-            return "Feature disabled: \(message)"
-        }
+  case keyGenerationFailed
+  case keyStorageFailed
+  case keyRetrievalFailed
+  case encryptionFailed
+  case decryptionFailed
+  case invalidEncryptedData
+  case serializationFailed
+  case deserializationFailed
+  case fieldPathNotFound
+  case keyRotationFailed
+  case unsupportedEnvelopeVersion(String)
+  case featureDisabled(String)
+
+  // MARK: Internal
+
+  var errorDescription: String? {
+    switch self {
+    case .keyGenerationFailed:
+      "Failed to generate encryption key"
+    case .keyStorageFailed:
+      "Failed to store encryption key in Keychain"
+    case .keyRetrievalFailed:
+      "Failed to retrieve encryption key from Keychain"
+    case .encryptionFailed:
+      "Failed to encrypt data"
+    case .decryptionFailed:
+      "Failed to decrypt data"
+    case .invalidEncryptedData:
+      "Invalid encrypted data format"
+    case .serializationFailed:
+      "Failed to serialize object for encryption"
+    case .deserializationFailed:
+      "Failed to deserialize decrypted object"
+    case .fieldPathNotFound:
+      "Field path not found in object"
+    case .keyRotationFailed:
+      "Failed to rotate encryption key"
+    case .unsupportedEnvelopeVersion(let version):
+      "Unsupported encryption envelope version: \(version)"
+    case .featureDisabled(let message):
+      "Feature disabled: \(message)"
     }
+  }
 }
 
-// MARK: - Encryption Keychain Manager
+// MARK: - EncryptionKeychainManager
 
 actor EncryptionKeychainManager {
-    static let shared = EncryptionKeychainManager()
-    
-    private init() {}
-    
-    func storeData(_ data: Data, forKey key: String, accessControl: SecAccessControl, accessibility: CFString) async throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessControl as String: accessControl,
-            kSecAttrAccessible as String: accessibility
-        ]
-        
-        // Delete existing item
-        SecItemDelete(query as CFDictionary)
-        
-        // Add new item
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw EncryptionError.keyStorageFailed
-        }
+  // MARK: Lifecycle
+
+  private init() { }
+
+  // MARK: Internal
+
+  static let shared = EncryptionKeychainManager()
+
+  func storeData(
+    _ data: Data,
+    forKey key: String,
+    accessControl: SecAccessControl,
+    accessibility: CFString) async throws
+  {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrAccount as String: key,
+      kSecValueData as String: data,
+      kSecAttrAccessControl as String: accessControl,
+      kSecAttrAccessible as String: accessibility
+    ]
+
+    // Delete existing item
+    SecItemDelete(query as CFDictionary)
+
+    // Add new item
+    let status = SecItemAdd(query as CFDictionary, nil)
+    guard status == errSecSuccess else {
+      throw EncryptionError.keyStorageFailed
     }
-    
-    func loadData(forKey key: String) async throws -> Data? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        switch status {
-        case errSecSuccess:
-            return result as? Data
-        case errSecItemNotFound:
-            return nil
-        default:
-            throw EncryptionError.keyRetrievalFailed
-        }
+  }
+
+  func loadData(forKey key: String) async throws -> Data? {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrAccount as String: key,
+      kSecReturnData as String: true,
+      kSecMatchLimit as String: kSecMatchLimitOne
+    ]
+
+    var result: AnyObject?
+    let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+    switch status {
+    case errSecSuccess:
+      return result as? Data
+    case errSecItemNotFound:
+      return nil
+    default:
+      throw EncryptionError.keyRetrievalFailed
     }
-    
-    func deleteData(forKey key: String) async throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key
-        ]
-        
-        let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw EncryptionError.keyRetrievalFailed
-        }
+  }
+
+  func deleteData(forKey key: String) async throws {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrAccount as String: key
+    ]
+
+    let status = SecItemDelete(query as CFDictionary)
+    guard status == errSecSuccess || status == errSecItemNotFound else {
+      throw EncryptionError.keyRetrievalFailed
     }
+  }
 }
 
 // MARK: - Security Access Control Extensions
 
 extension SecAccessControl {
-    static var biometryAny: SecAccessControl {
-        return SecAccessControlCreateWithFlags(
-            kCFAllocatorDefault,
-            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            [.biometryAny, .or, .devicePasscode],
-            nil
-        )!
-    }
-    
-    static var devicePasscode: SecAccessControl {
-        return SecAccessControlCreateWithFlags(
-            kCFAllocatorDefault,
-            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            .devicePasscode,
-            nil
-        )!
-    }
+  static var biometryAny: SecAccessControl {
+    SecAccessControlCreateWithFlags(
+      kCFAllocatorDefault,
+      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      [.biometryAny, .or, .devicePasscode],
+      nil)!
+  }
+
+  static var devicePasscode: SecAccessControl {
+    SecAccessControlCreateWithFlags(
+      kCFAllocatorDefault,
+      kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      .devicePasscode,
+      nil)!
+  }
 }
 
-// MARK: - Key Rotation Metadata
+// MARK: - KeyRotationMetadata
 
 struct KeyRotationMetadata: Codable {
-    let oldKeyIdentifier: String
-    let newKeyIdentifier: String
-    let rotationDate: Date
-    let rotationReason: String // "scheduled_rotation", "security_incident", "manual_rotation"
+  let oldKeyIdentifier: String
+  let newKeyIdentifier: String
+  let rotationDate: Date
+  let rotationReason: String // "scheduled_rotation", "security_incident", "manual_rotation"
 }
 
-// MARK: - Keychain Loss Response
+// MARK: - KeychainLossResponse
 
 struct KeychainLossResponse {
-    let recoveryMethod: RecoveryMethod
-    let requiresReEncryption: Bool
-    let affectedRecords: Int
-    
-    enum RecoveryMethod {
-        case backupRecovered
-        case newKeyGenerated
-        case manualInterventionRequired
-    }
+  enum RecoveryMethod {
+    case backupRecovered
+    case newKeyGenerated
+    case manualInterventionRequired
+  }
+
+  let recoveryMethod: RecoveryMethod
+  let requiresReEncryption: Bool
+  let affectedRecords: Int
 }
 
-// MARK: - Security Policy Table
+// MARK: - SecurityPolicyTable
 
-struct SecurityPolicyTable {
-    static let sensitiveFields: [String] = [
-        "notes",
-        "personalGoals", 
-        "motivation",
-        "medicalNotes",
-        "financialGoals"
-    ]
-    
-    static let nonSensitiveFields: [String] = [
-        "name",
-        "description",
-        "icon",
-        "color",
-        "habitType",
-        "schedule",
-        "goal",
-        "reminder",
-        "startDate",
-        "endDate",
-        "isCompleted",
-        "streak",
-        "createdAt"
-    ]
-    
-    static func isFieldSensitive(_ fieldName: String) -> Bool {
-        return sensitiveFields.contains(fieldName)
+enum SecurityPolicyTable {
+  static let sensitiveFields: [String] = [
+    "notes",
+    "personalGoals",
+    "motivation",
+    "medicalNotes",
+    "financialGoals"
+  ]
+
+  static let nonSensitiveFields: [String] = [
+    "name",
+    "description",
+    "icon",
+    "color",
+    "habitType",
+    "schedule",
+    "goal",
+    "reminder",
+    "startDate",
+    "endDate",
+    "isCompleted",
+    "streak",
+    "createdAt"
+  ]
+
+  static func isFieldSensitive(_ fieldName: String) -> Bool {
+    sensitiveFields.contains(fieldName)
+  }
+
+  static func requiresEncryption(_ fieldName: String) -> Bool {
+    isFieldSensitive(fieldName)
+  }
+
+  static func getEncryptionLevel(_ fieldName: String) -> EncryptionLevel {
+    if isFieldSensitive(fieldName) {
+      .fieldLevel
+    } else {
+      .none
     }
-    
-    static func requiresEncryption(_ fieldName: String) -> Bool {
-        return isFieldSensitive(fieldName)
-    }
-    
-    static func getEncryptionLevel(_ fieldName: String) -> EncryptionLevel {
-        if isFieldSensitive(fieldName) {
-            return .fieldLevel
-        } else {
-            return .none
-        }
-    }
+  }
 }
+
+// MARK: - EncryptionLevel
 
 enum EncryptionLevel {
-    case none
-    case fieldLevel
-    case recordLevel
+  case none
+  case fieldLevel
+  case recordLevel
 }

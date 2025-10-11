@@ -1,51 +1,56 @@
-import Foundation
 import CloudKit
+import Foundation
 
-// MARK: - CloudKit Sync Status
+// MARK: - CloudKitChange
+
 // Using existing CloudKitSyncStatus from CloudKitModels.swift
 
-// MARK: - CloudKit Change
 struct CloudKitChange {
-    let record: CKRecord
-    let changeType: ChangeType
+  let record: CKRecord
+  let changeType: ChangeType
 }
 
-// MARK: - Local Change
+// MARK: - LocalChange
+
 struct LocalChange {
-    let recordID: CKRecord.ID
-    let habit: Habit
-    let changeType: ChangeType
+  let recordID: CKRecord.ID
+  let habit: Habit
+  let changeType: ChangeType
 }
 
-// MARK: - Change Type
+// MARK: - ChangeType
+
 enum ChangeType {
-    case created
-    case modified
-    case deleted
+  case created
+  case modified
+  case deleted
 }
 
-// MARK: - Conflict Resolution Result
+// MARK: - ConflictResolutionResult
+
 struct ConflictResolutionResult {
-    let recordID: CKRecord.ID
-    let localHabit: Habit
-    let remoteHabit: Habit
-    let resolvedHabit: Habit
-    let resolutionMethod: String
+  let recordID: CKRecord.ID
+  let localHabit: Habit
+  let remoteHabit: Habit
+  let resolvedHabit: Habit
+  let resolutionMethod: String
 }
 
-// MARK: - Sync Result
+// MARK: - SyncResult
+
 struct SyncResult {
-    var success: Bool = false
-    var duration: TimeInterval = 0
-    var remoteChangesCount: Int = 0
-    var localChangesCount: Int = 0
-    var conflictsResolved: Int = 0
-    var uploadedCount: Int = 0
-    var downloadedCount: Int = 0
-    var uploadErrors: [Error] = []
-    var downloadErrors: [Error] = []
-    var error: Error?
+  var success = false
+  var duration: TimeInterval = 0
+  var remoteChangesCount = 0
+  var localChangesCount = 0
+  var conflictsResolved = 0
+  var uploadedCount = 0
+  var downloadedCount = 0
+  var uploadErrors: [Error] = []
+  var downloadErrors: [Error] = []
+  var error: Error?
 }
 
 // MARK: - CloudKit Error
+
 // Using existing CloudKitError from CloudKitManager.swift
