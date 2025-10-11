@@ -1013,8 +1013,21 @@ struct ReminderEditSheet: View {
     let onCancel: () -> Void
     
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTime = Date()
-    @State private var isEditing = false
+    @State private var selectedTime: Date
+    
+    // Computed property to determine if we're editing
+    private var isEditing: Bool {
+        reminder != nil
+    }
+    
+    init(habit: Habit, reminder: ReminderItem?, onSave: @escaping (Habit) -> Void, onCancel: @escaping () -> Void) {
+        self.habit = habit
+        self.reminder = reminder
+        self.onSave = onSave
+        self.onCancel = onCancel
+        // Initialize selectedTime with reminder's time or current time
+        _selectedTime = State(initialValue: reminder?.time ?? Date())
+    }
     
     var body: some View {
         NavigationView {
@@ -1054,24 +1067,17 @@ struct ReminderEditSheet: View {
                 }
             }
         }
-        .onAppear {
-            if let reminder = reminder {
-                selectedTime = reminder.time
-                isEditing = true
-            }
-        }
     }
-    
-    // MARK: - Active/Inactive Logic
-    // (Logic moved inline to avoid scope issues)
     
     private func saveReminder() {
         if isEditing, let reminder = reminder {
             // Update existing reminder - preserve the original ID
+            print("📝 ReminderEditSheet: Updating existing reminder with ID: \(reminder.id)")
             let updatedReminders = habit.reminders.map { existingReminder in
                 if existingReminder.id == reminder.id {
                     var updatedReminder = existingReminder
                     updatedReminder.time = selectedTime
+                    print("✅ ReminderEditSheet: Updated reminder time to \(selectedTime)")
                     return updatedReminder
                 }
                 return existingReminder
@@ -1103,6 +1109,7 @@ struct ReminderEditSheet: View {
             onSave(updatedHabit)
         } else {
             // Create new reminder
+            print("➕ ReminderEditSheet: Creating new reminder at \(selectedTime)")
             let newReminder = ReminderItem(time: selectedTime, isActive: true)
             let updatedReminders = habit.reminders + [newReminder]
             
