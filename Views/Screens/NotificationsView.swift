@@ -201,17 +201,31 @@ struct NotificationsView: View {
                                 
                                 Button(action: {
                                     Task { @MainActor in
-                                        NotificationManager.shared.debugHabitRemindersStatus()
+                                        await printPendingNotificationsCount()
                                     }
                                 }) {
-                                    Text("🔍 Debug Status")
+                                    Text("📊 Check Status")
                                         .font(.appBodySmall)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.blue)
                                         .padding(.vertical, 4)
                                         .padding(.horizontal, 8)
-                                        .background(Color.secondary.opacity(0.1))
+                                        .background(Color.blue.opacity(0.1))
                                         .cornerRadius(8)
                                 }
+                            }
+                            
+                            Button(action: {
+                                Task { @MainActor in
+                                    NotificationManager.shared.debugHabitRemindersStatus()
+                                }
+                            }) {
+                                Text("🔍 Debug Habit Reminders")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.secondary)
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .cornerRadius(8)
                             }
                             
                             Button(action: {
@@ -365,8 +379,49 @@ struct NotificationsView: View {
         }
     }
     
+    // MARK: - Debug Helper
+    private func printPendingNotificationsCount() async {
+        let center = UNUserNotificationCenter.current()
+        let requests = await center.pendingNotificationRequests()
+        
+        let habitReminders = requests.filter { $0.identifier.contains("habit_reminder_") }
+        let planReminders = requests.filter { $0.identifier.contains("plan_reminder") }
+        let completionReminders = requests.filter { $0.identifier.contains("completion_reminder") }
+        
+        print("\n📊 PENDING NOTIFICATIONS STATUS:")
+        print("   🔔 Habit reminders: \(habitReminders.count)")
+        print("   📋 Plan reminders: \(planReminders.count)")
+        print("   ✅ Completion reminders: \(completionReminders.count)")
+        print("   📱 Total pending: \(requests.count)\n")
+    }
+    
     // MARK: - Save Action
     private func saveChanges() {
+        print("\n" + String(repeating: "=", count: 60))
+        print("🔧 NOTIFICATION SETTINGS: Saving changes...")
+        print(String(repeating: "=", count: 60))
+        
+        // Log what changed
+        if planReminderEnabled != originalPlanReminderEnabled {
+            print("📋 Plan Reminder: \(originalPlanReminderEnabled ? "ON" : "OFF") → \(planReminderEnabled ? "ON ✅" : "OFF 🔇")")
+        }
+        if completionReminderEnabled != originalCompletionReminderEnabled {
+            print("✅ Completion Reminder: \(originalCompletionReminderEnabled ? "ON" : "OFF") → \(completionReminderEnabled ? "ON ✅" : "OFF 🔇")")
+        }
+        if habitReminderEnabled != originalHabitReminderEnabled {
+            print("🔔 Habit Reminders: \(originalHabitReminderEnabled ? "ON" : "OFF") → \(habitReminderEnabled ? "ON ✅" : "OFF 🔇")")
+        }
+        if planReminderTime != originalPlanReminderTime {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            print("⏰ Plan Reminder Time: \(formatter.string(from: originalPlanReminderTime)) → \(formatter.string(from: planReminderTime))")
+        }
+        if completionReminderTime != originalCompletionReminderTime {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            print("⏰ Completion Reminder Time: \(formatter.string(from: originalCompletionReminderTime)) → \(formatter.string(from: completionReminderTime))")
+        }
+        
         // Update original values to reflect the new saved state
         originalPlanReminderEnabled = planReminderEnabled
         originalPlanReminderTime = planReminderTime
@@ -375,22 +430,46 @@ struct NotificationsView: View {
         originalHabitReminderEnabled = habitReminderEnabled
         
         // Save to UserDefaults
+        print("\n💾 Saving preferences to UserDefaults...")
         UserDefaults.standard.set(planReminderEnabled, forKey: "planReminderEnabled")
         UserDefaults.standard.set(completionReminderEnabled, forKey: "completionReminderEnabled")
         UserDefaults.standard.set(habitReminderEnabled, forKey: "habitReminderEnabled")
         UserDefaults.standard.set(planReminderTime, forKey: "planReminderTime")
         UserDefaults.standard.set(completionReminderTime, forKey: "completionReminderTime")
+        print("✅ Preferences saved successfully\n")
         
         // Schedule daily reminders based on new settings
         Task { @MainActor in
-            print("🔄 NotificationsView: Rescheduling daily reminders after settings change...")
-            NotificationManager.shared.rescheduleDailyReminders()
+            print("\n" + String(repeating: "-", count: 60))
+            print("🔄 RESCHEDULING: Starting notification updates...")
+            print(String(repeating: "-", count: 60))
             
-            // If habit reminders were just enabled, reschedule all existing habits
-            if habitReminderEnabled && !originalHabitReminderEnabled {
-                print("🔄 NotificationsView: Habit reminders just enabled, rescheduling all existing habits...")
-                NotificationManager.shared.rescheduleAllHabitReminders()
+            print("\n1️⃣ Rescheduling daily reminders (plan & completion)...")
+            NotificationManager.shared.rescheduleDailyReminders()
+            print("   ✅ Daily reminders updated\n")
+            
+            // Handle habit reminders enable/disable
+            if habitReminderEnabled != originalHabitReminderEnabled {
+                if habitReminderEnabled {
+                    // Habit reminders were just ENABLED - reschedule all existing habits
+                    print("2️⃣ 🔔 Habit reminders ENABLED - scheduling all habit notifications...")
+                    NotificationManager.shared.rescheduleAllHabitReminders()
+                    print("   ✅ All habit notifications scheduled\n")
+                } else {
+                    // Habit reminders were just DISABLED - remove all habit notifications
+                    print("2️⃣ 🔇 Habit reminders DISABLED - removing all habit notifications...")
+                    NotificationManager.shared.removeAllHabitReminders()
+                    
+                    // Wait a moment for removal to complete, then verify
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await printPendingNotificationsCount()
+                    print("   ✅ All habit notifications removed\n")
+                }
             }
+            
+            print(String(repeating: "=", count: 60))
+            print("✅ NOTIFICATION SETTINGS: All changes applied successfully!")
+            print(String(repeating: "=", count: 60) + "\n")
         }
         
         // Dismiss the view
@@ -399,9 +478,17 @@ struct NotificationsView: View {
     
     // MARK: - Data Persistence
     private func loadReminderSettings() {
+        print("\n" + String(repeating: "=", count: 60))
+        print("📥 NOTIFICATION SETTINGS: Loading preferences from UserDefaults")
+        print(String(repeating: "=", count: 60))
+        
         let planEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
         let completionEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
         let habitEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+        
+        print("📋 Plan Reminder: \(planEnabled ? "ON ✅" : "OFF 🔇")")
+        print("✅ Completion Reminder: \(completionEnabled ? "ON ✅" : "OFF 🔇")")
+        print("🔔 Habit Reminders: \(habitEnabled ? "ON ✅" : "OFF 🔇")")
         
         // Set both original and current values
         originalPlanReminderEnabled = planEnabled
@@ -417,12 +504,24 @@ struct NotificationsView: View {
         if let planTime = UserDefaults.standard.object(forKey: "planReminderTime") as? Date {
             originalPlanReminderTime = planTime
             planReminderTime = planTime
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            print("⏰ Plan Reminder Time: \(formatter.string(from: planTime))")
         }
         if let completionTime = UserDefaults.standard.object(forKey: "completionReminderTime") as? Date {
             originalCompletionReminderTime = completionTime
             completionReminderTime = completionTime
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            print("⏰ Completion Reminder Time: \(formatter.string(from: completionTime))")
         }
         
+        print(String(repeating: "=", count: 60) + "\n")
+        
+        // Also check current pending notifications
+        Task {
+            await printPendingNotificationsCount()
+        }
     }
     
 }
