@@ -84,8 +84,8 @@ struct HabitsTabView: View {
           .padding(.top, 18)
         } else {
           List {
-            ForEach(Array(filteredHabits.enumerated()), id: \.element.id) { index, habit in
-              habitListRow(habit, index: index)
+            ForEach(filteredHabits) { habit in
+              habitListRow(habit)
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -96,6 +96,7 @@ struct HabitsTabView: View {
           .listStyle(.plain)
           .scrollContentBackground(.hidden)
           .environment(\.editMode, $editMode)
+          .animation(.default, value: filteredHabits.map { $0.id })
           .refreshable {
             await refreshHabits()
           }
@@ -126,7 +127,6 @@ struct HabitsTabView: View {
 
   @State private var selectedStatsTab = 0
   @State private var selectedHabit: Habit? = nil
-  @State private var habitAnimationStates: [UUID: CGFloat] = [:]
   @State private var editMode: EditMode = .inactive
 
   /// Computed property for habits
@@ -242,7 +242,7 @@ struct HabitsTabView: View {
   }
 
   /// Simplified habit list row for native List
-  private func habitListRow(_ habit: Habit, index: Int) -> some View {
+  private func habitListRow(_ habit: Habit) -> some View {
     AddedHabitItem(
       habit: habit,
       isEditMode: editMode == .active,
@@ -269,14 +269,6 @@ struct HabitsTabView: View {
           }
         }
       })
-      // Smooth fade-in animation when items appear
-      .opacity(habitAnimationStates[habit.id] ?? 0)
-      .scaleEffect(habitAnimationStates[habit.id] ?? 0.95)
-      .onAppear {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.05)) {
-          habitAnimationStates[habit.id] = 1.0
-        }
-      }
   }
 
   /// Handle reordering of habits (native .onMove)
