@@ -107,11 +107,16 @@ class HomeViewState: ObservableObject {
   }
 
   func createHabit(_ habit: Habit) async {
+    // Log habit creation start for crash debugging
+    CrashlyticsService.shared.logHabitCreationStart(habitName: habit.name)
+    CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_before_create")
+    
     // Check if vacation mode is active
     if VacationManager.shared.isActive {
       #if DEBUG
       print("🚫 HomeViewState: Cannot create habit during vacation mode")
       #endif
+      CrashlyticsService.shared.log("Habit creation blocked: vacation mode active")
       return
     }
 
@@ -123,6 +128,10 @@ class HomeViewState: ObservableObject {
     #endif
 
     await habitRepository.createHabit(habit)
+    
+    // Log successful creation
+    CrashlyticsService.shared.logHabitCreationComplete(habitID: habit.id.uuidString)
+    CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_after_create")
 
     #if DEBUG
     print("  → HabitRepository.createHabit completed")
