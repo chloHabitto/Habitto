@@ -36,11 +36,10 @@ struct HabitDetailView: View {
     @State private var hasInitializedActiveState: Bool = false
     @State private var showingCompletionSheet = false
     @State private var isCompletingHabit = false
+    @State private var showingNotificationsSettings = false
     
-    // Check if habit reminders are globally enabled
-    private var habitRemindersEnabled: Bool {
-        UserDefaults.standard.bool(forKey: "habitReminderEnabled")
-    }
+    // Check if habit reminders are globally enabled - using @AppStorage for automatic updates
+    @AppStorage("habitReminderEnabled") private var habitRemindersEnabled: Bool = false
     
     // Computed property to determine if content should scroll
     private var shouldScroll: Bool {
@@ -286,6 +285,9 @@ struct HabitDetailView: View {
             .presentationDetents([.height(500)])
             .presentationDragIndicator(.hidden)
             .presentationCornerRadius(40)
+        }
+        .fullScreenCover(isPresented: $showingNotificationsSettings) {
+            NotificationsView()
         }
     }
     
@@ -554,30 +556,49 @@ struct HabitDetailView: View {
             
             // Warning banner when habit reminders are disabled
             if !habitRemindersEnabled {
-                HStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.orange)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Habit reminders are turned off")
-                            .font(.appBodySmallEmphasised)
-                            .foregroundColor(.text01)
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.orange)
                         
-                        if habit.reminders.isEmpty {
-                            Text("Please enable Habit reminders in Settings before adding a reminder.")
-                                .font(.appBodySmall)
-                                .foregroundColor(.text04)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else {
-                            Text("These reminders won't notify you until you enable Habit reminders in Settings.")
-                                .font(.appBodySmall)
-                                .foregroundColor(.text04)
-                                .fixedSize(horizontal: false, vertical: true)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Habit reminders are turned off")
+                                .font(.appBodySmallEmphasised)
+                                .foregroundColor(.text01)
+                            
+                            if habit.reminders.isEmpty {
+                                Text("Please enable Habit reminders in Settings before adding a reminder.")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text04)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                Text("These reminders won't notify you until you enable Habit reminders in Settings.")
+                                    .font(.appBodySmall)
+                                    .foregroundColor(.text04)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
+                        
+                        Spacer()
                     }
                     
-                    Spacer()
+                    // Navigation button to Settings
+                    Button(action: {
+                        showingNotificationsSettings = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "gear")
+                                .font(.system(size: 14))
+                            Text("Go to Settings")
+                                .font(.appBodySmallEmphasised)
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
                 }
                 .padding(12)
                 .background(Color.orange.opacity(0.1))
