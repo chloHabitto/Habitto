@@ -123,8 +123,20 @@ struct CreateHabitStep2View: View {
     
     private func saveHabit() {
         let newHabit = createHabit()
+        #if DEBUG
+        print("🎯 [1/8] CreateHabitStep2View.saveHabit: tap Add button")
+        print("  → Habit: '\(newHabit.name)', ID: \(newHabit.id)")
+        print("  → Goal: '\(newHabit.goal)', Type: \(newHabit.habitType)")
+        print("  → Reminders: \(reminders.count)")
+        #endif
         NotificationManager.shared.updateNotifications(for: newHabit, reminders: reminders)
+        #if DEBUG
+        print("  → Notifications updated")
+        #endif
         onSave(newHabit)
+        #if DEBUG
+        print("  → onSave callback invoked")
+        #endif
         dismiss()
     }
     

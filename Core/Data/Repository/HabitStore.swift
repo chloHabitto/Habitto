@@ -178,7 +178,9 @@ final actor HabitStore {
     
     func saveHabits(_ habits: [Habit]) async throws {
         let startTime = CFAbsoluteTimeGetCurrent()
-        logger.info("Saving \(habits.count) habits to storage")
+        #if DEBUG
+        logger.info("🎯 [7/8] HabitStore.saveHabits: persisting \(habits.count) habits")
+        #endif
         
         // Cap history data to prevent unlimited growth
         let capper = await historyCapper
@@ -243,8 +245,10 @@ final actor HabitStore {
     // MARK: - Create Habit
     
     func createHabit(_ habit: Habit) async throws {
-        logger.info("Creating habit: \(habit.name)")
-        logger.info("Habit details - name: '\(habit.name)', goal: '\(habit.goal)', schedule: '\(habit.schedule)'")
+        #if DEBUG
+        logger.info("🎯 [6/8] HabitStore.createHabit: storing habit")
+        logger.info("  → Habit: '\(habit.name)', ID: \(habit.id)")
+        #endif
         
         // Record user analytics
         let analytics = await userAnalytics
@@ -254,13 +258,27 @@ final actor HabitStore {
         ])
         
         // Load current habits
+        #if DEBUG
+        logger.info("  → Loading current habits")
+        #endif
         var currentHabits = try await loadHabits()
+        #if DEBUG
+        logger.info("  → Current count: \(currentHabits.count)")
+        #endif
         currentHabits.append(habit)
+        #if DEBUG
+        logger.info("  → Appended new habit, count: \(currentHabits.count)")
+        #endif
         
         // Save updated habits
+        #if DEBUG
+        logger.info("  → Calling saveHabits")
+        #endif
         try await saveHabits(currentHabits)
         
-        logger.info("Successfully created habit: \(habit.name)")
+        #if DEBUG
+        logger.info("  ✅ Habit created successfully")
+        #endif
     }
     
     // MARK: - Update Habit

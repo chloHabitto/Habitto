@@ -509,28 +509,39 @@ class HabitRepository: ObservableObject {
     
     // MARK: - Create Habit
     func createHabit(_ habit: Habit) async {
-        print("🔄 HabitRepository: Creating habit: \(habit.name)")
-        print("🔄 HabitRepository: Current habits count before creation: \(habits.count)")
-        
-        // Debug the create habit flow
-        debugCreateHabitFlow(habit)
+        #if DEBUG
+        print("🎯 [5/8] HabitRepository.createHabit: persisting habit")
+        print("  → Habit: '\(habit.name)', ID: \(habit.id)")
+        print("  → Current habits count: \(habits.count)")
+        #endif
         
         do {
             // Use the HabitStore actor for data operations
-            print("🔄 HabitRepository: Calling habitStore.createHabit...")
+            #if DEBUG
+            print("  → Calling HabitStore.createHabit")
+            #endif
             try await habitStore.createHabit(habit)
-            print("✅ HabitRepository: habitStore.createHabit completed")
+            #if DEBUG
+            print("  → HabitStore.createHabit completed")
+            #endif
             
             // Reload habits to get the updated list
+            #if DEBUG
+            print("  → Reloading habits from storage")
+            #endif
             await loadHabits(force: true)
-            print("✅ HabitRepository: Successfully created habit: \(habit.name)")
+            #if DEBUG
+            print("  ✅ Success! New habits count: \(habits.count)")
+            #endif
             
         } catch {
-            print("❌ HabitRepository: Failed to create habit: \(error.localizedDescription)")
-            print("❌ HabitRepository: Error type: \(type(of: error))")
+            #if DEBUG
+            print("  ❌ FAILED: \(error.localizedDescription)")
+            print("  ❌ Error type: \(type(of: error))")
             if let dataError = error as? DataError {
-                print("❌ HabitRepository: DataError details: \(dataError)")
+                print("  ❌ DataError: \(dataError)")
             }
+            #endif
         }
     }
     
