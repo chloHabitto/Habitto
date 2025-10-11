@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Privacy Manifest for Habitto -->
+    <!-- Required for iOS 17+ App Store submission -->
+    
+    <!-- NSPrivacyTracking: Declare if app tracks users -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+    
+    <!-- NSPrivacyTrackingDomains: Domains used for tracking (empty if no tracking) -->
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    
+    <!-- NSPrivacyCollectedDataTypes: Data collected by the app -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array>
+        <!-- User Authentication Data (Firebase Auth) -->
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeEmailAddress</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeName</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+        <!-- User ID for data isolation -->
+        <dict>
+            <key>NSPrivacyCollectedDataType</key>
+            <string>NSPrivacyCollectedDataTypeUserID</string>
+            <key>NSPrivacyCollectedDataTypeLinked</key>
+            <true/>
+            <key>NSPrivacyCollectedDataTypeTracking</key>
+            <false/>
+            <key>NSPrivacyCollectedDataTypePurposes</key>
+            <array>
+                <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- NSPrivacyAccessedAPITypes: Required APIs that need disclosure -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!-- UserDefaults API -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: Access user defaults to store app preferences and habit data -->
+                <string>CA92.1</string>
+            </array>
+        </dict>
+        
+        <!-- File Timestamp API -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- C617.1: Access file timestamps for backup management -->
+                <string>C617.1</string>
+            </array>
+        </dict>
+        
+        <!-- System Boot Time API -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- 35F9.1: Measure time intervals for performance monitoring -->
+                <string>35F9.1</string>
+            </array>
+        </dict>
+        
+        <!-- Disk Space API -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- E174.1: Check available disk space before writing backups -->
+                <string>E174.1</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- NSPrivacyAccessedAPICategoryFileTimestamp justification -->
+    <!-- Used for: Backup file management, data migration timestamps -->
+    
+    <!-- NSPrivacyAccessedAPICategoryUserDefaults justification -->
+    <!-- Used for: Local app preferences, habit data storage, migration flags -->
+    
+    <!-- Data Storage Declaration -->
+    <!-- All habit data is stored locally on device -->
+    <!-- Firebase is used ONLY for authentication (Google, Apple, Email/Password) -->
+    <!-- No habit data, completion records, or user preferences are sent to Firebase -->
+    <!-- No analytics, no advertising, no third-party data sharing -->
+    
+    <!-- Keychain Usage -->
+    <!-- Authentication tokens stored in iOS Keychain with kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly -->
+    <!-- User display names and personal identifiers protected by hardware-backed encryption -->
+    
+</dict>
+</plist>
+

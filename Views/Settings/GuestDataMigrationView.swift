@@ -9,6 +9,7 @@ struct GuestDataMigrationView: View {
     @State private var showingMigrationPreview = false
     @State private var migrationError: String?
     @State private var showingError = false
+    @State private var showingMultiDeviceWarning = false
     
     // Repository for handling migration completion
     private let habitRepository = HabitRepository.shared
@@ -33,6 +34,33 @@ struct GuestDataMigrationView: View {
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 20)
+            
+            // Multi-Device Warning Banner
+            if migrationManager.hasGuestData() {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(.title3)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Important: Single Device Only")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Guest mode data is stored only on this device. If you've used Habitto on multiple devices, only this device's data will be migrated to your new account.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+            }
             
             // Migration Preview
             if migrationManager.hasGuestData() {
@@ -65,9 +93,7 @@ struct GuestDataMigrationView: View {
                     VStack(spacing: 12) {
                         // Keep Data Button
                         Button(action: {
-                            Task {
-                                await migrateGuestData()
-                            }
+                            showingMultiDeviceWarning = true
                         }) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
@@ -144,6 +170,16 @@ struct GuestDataMigrationView: View {
             Button("OK") { }
         } message: {
             Text(migrationError ?? "An unknown error occurred")
+        }
+        .alert("Migrate This Device's Data?", isPresented: $showingMultiDeviceWarning) {
+            Button("Cancel", role: .cancel) { }
+            Button("Keep This Device's Data", role: .destructive) {
+                Task {
+                    await migrateGuestData()
+                }
+            }
+        } message: {
+            Text("You're using Habitto in guest mode on this device.\n\nIf you've used guest mode on other devices, their data CANNOT be merged. Only this device's \(migrationManager.getGuestDataPreview()?.habitCount ?? 0) habit(s) will be migrated to your new account.\n\nData from other devices will need to be manually recreated after signing in.")
         }
     }
     
