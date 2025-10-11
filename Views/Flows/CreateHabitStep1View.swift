@@ -37,6 +37,10 @@ struct CreateHabitStep1View: View {
       // Main content with simplified structure
       ScrollView(showsIndicators: false) {
         VStack(spacing: 16) {
+          // Debug: Log when view body is computed
+          Color.clear.frame(height: 0).onAppear {
+            print("⏱️ DEBUG: CreateHabitStep1View appeared at \(Date())")
+          }
           // Name field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Name")
