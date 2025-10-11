@@ -59,11 +59,19 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // MARK: - Habit-Specific Storage Methods
     
     func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
-        logger.info("Saving \(habits.count) habits to SwiftData")
+        #if DEBUG
+        logger.info("🎯 [8/8] SwiftDataStorage.saveHabits: writing to SwiftData")
+        logger.info("  → Count: \(habits.count)")
+        #endif
         
         let startTime = CFAbsoluteTimeGetCurrent()
         
         do {
+            #if DEBUG
+            for (i, habit) in habits.enumerated() {
+                logger.info("  → [\(i)] '\(habit.name)' (ID: \(habit.id))")
+            }
+            #endif
             // Get existing habits
             let existingHabits = try await loadHabits()
             let existingHabitIds = Set(existingHabits.map { $0.id })
@@ -141,10 +149,15 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 }
             }
             
+            #if DEBUG
+            logger.info("  → Saving modelContext...")
+            #endif
             try container.modelContext.save()
             
             let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-            logger.info("Successfully saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+            #if DEBUG
+            logger.info("  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+            #endif
             
         } catch {
             logger.error("Failed to save habits: \(error.localizedDescription)")

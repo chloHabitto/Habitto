@@ -104,25 +104,28 @@ class HomeViewState: ObservableObject {
         print("🔄 HomeViewState: setHabitProgress completed for \(habit.name)")
     }
     
-    func createHabit(_ habit: Habit) {
+    func createHabit(_ habit: Habit) async {
         // Check if vacation mode is active
         if VacationManager.shared.isActive {
+            #if DEBUG
             print("🚫 HomeViewState: Cannot create habit during vacation mode")
+            #endif
             return
         }
         
-        print("🔍 HomeViewState: createHabit called for habit: \(habit.name)")
-        print("🔍 HomeViewState: Habit ID: \(habit.id)")
-        print("🔍 HomeViewState: Current habits count: \(habits.count)")
+        #if DEBUG
+        print("🎯 [3/8] HomeViewState.createHabit: creating habit")
+        print("  → Habit: '\(habit.name)', ID: \(habit.id)")
+        print("  → Current habits count: \(habits.count)")
+        print("🎯 [4/8] HomeViewState.createHabit: calling HabitRepository")
+        #endif
         
-        debugHabitUpdate("Before creating habit")
+        await habitRepository.createHabit(habit)
         
-        Task {
-            await habitRepository.createHabit(habit)
-            print("🔍 HomeViewState: habitRepository.createHabit completed")
-            
-            debugHabitUpdate("After creating habit")
-        }
+        #if DEBUG
+        print("  → HabitRepository.createHabit completed")
+        print("  → New habits count: \(habits.count)")
+        #endif
     }
     
     func backupHabits() {
@@ -258,7 +261,9 @@ class HomeViewState: ObservableObject {
             actualUsage: [:]
         )
         
-        createHabit(testHabit)
+        Task {
+            await createHabit(testHabit)
+        }
     }
     
     // Simple test method that bypasses validation
@@ -456,14 +461,20 @@ struct HomeView: View {
         }
         .sheet(isPresented: $state.showingCreateHabit) {
             CreateHabitFlowView(onSave: { habit in
-                print("🔍 HomeView: CreateHabitFlowView onSave called with habit: \(habit.name)")
-                print("🔍 HomeView: Habit details - ID: \(habit.id), Color: \(habit.color), Icon: \(habit.icon)")
-                print("🔍 HomeView: Current habits count before creation: \(state.habits.count)")
+                #if DEBUG
+                print("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
+                print("  → Habit: '\(habit.name)', ID: \(habit.id)")
+                print("  → Current habits count: \(state.habits.count)")
+                #endif
                 
-                state.createHabit(habit)
-                
-                print("🔍 HomeView: createHabit called, waiting for Core Data update...")
-                state.showingCreateHabit = false
+                // ✅ FIX: Wait for habit creation to complete before dismissing sheet
+                Task { @MainActor in
+                    await state.createHabit(habit)
+                    #if DEBUG
+                    print("  → Habit creation completed, dismissing sheet")
+                    #endif
+                    state.showingCreateHabit = false
+                }
             })
         }
         .fullScreenCover(item: $state.habitToEdit) { habit in
