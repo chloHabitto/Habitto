@@ -95,13 +95,13 @@ struct HabitsTabView: View {
           }
           .listStyle(.plain)
           .scrollContentBackground(.hidden)
-          .environment(\.editMode, $editMode)
           .animation(.default, value: filteredHabits.map { $0.id })
           .refreshable {
             await refreshHabits()
           }
         }
       }
+      .environment(\.editMode, $editMode)
       .fullScreenCover(item: $selectedHabit) { habit in
         HabitDetailView(
           habit: habit,
