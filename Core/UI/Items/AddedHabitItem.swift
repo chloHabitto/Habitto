@@ -71,7 +71,7 @@ struct AddedHabitItem: View {
                 onTap?()
               })
           .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5)
+            LongPressGesture(minimumDuration: 0.25)
               .onEnded { _ in
                 print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
                 onLongPress?()
