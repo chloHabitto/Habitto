@@ -46,6 +46,13 @@ struct CreateHabitStep1View: View {
               text: $name,
               externalFocus: $isNameFieldFocused)
               .onChange(of: name) { _, newValue in
+                // Only validate if name is not empty and has actual content
+                guard !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                  nameValidationError = nil
+                  isNameValid = true
+                  return
+                }
+                
                 // Debounce validation to avoid excessive calls
                 Task { @MainActor in
                   try? await Task.sleep(nanoseconds: 300_000_000) // 300ms delay
@@ -78,9 +85,6 @@ struct CreateHabitStep1View: View {
             RoundedRectangle(cornerRadius: 16)
               .stroke(isNameValid ? .outline3 : .error, lineWidth: 1.5))
           .cornerRadius(16)
-          .onTapGesture {
-            isNameFieldFocused = true
-          }
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
@@ -98,9 +102,6 @@ struct CreateHabitStep1View: View {
             RoundedRectangle(cornerRadius: 16)
               .stroke(.outline3, lineWidth: 1.5))
           .cornerRadius(16)
-          .onTapGesture {
-            isDescriptionFieldFocused = true
-          }
 
           // Colour selection
           HStack(spacing: 12) {
@@ -289,6 +290,10 @@ struct CreateHabitStep1View: View {
       print(
         "🔍 CreateHabitStep1View: Description field focus changed from \(oldValue) to \(newValue)")
     }
+    .onAppear {
+      // Cache habits list once on appear to avoid repeated MainActor calls during validation
+      cachedHabits = HabitRepository.shared.habits
+    }
   }
 
   // MARK: Private
@@ -302,6 +307,9 @@ struct CreateHabitStep1View: View {
   @State private var nameValidationError: String? = nil
   @State private var isNameValid = true
   @State private var validationInProgress = false
+  
+  // Cache existing habits list to avoid repeated MainActor calls during validation
+  @State private var cachedHabits: [Habit] = []
 
   /// Cache screen width to avoid repeated UIScreen.main.bounds.width access
   private let screenWidth = UIScreen.main.bounds.width
@@ -462,13 +470,14 @@ struct CreateHabitStep1View: View {
       return
     }
 
-    // Perform validation
+    // Perform validation using cached habits list to avoid MainActor bottleneck
     let validationResult = ValidationBusinessRulesLogic.validateHabitCreation(
       name: name,
       description: description,
       icon: icon,
       color: color,
-      habitType: habitType)
+      habitType: habitType,
+      existingHabits: cachedHabits)
 
     // Update validation state
     isNameValid = validationResult.isValid
