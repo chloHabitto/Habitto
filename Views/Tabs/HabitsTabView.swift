@@ -7,13 +7,8 @@ struct JiggleAnimationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .offset(y: isEditMode ? -2 : 0) // Enhanced for better visibility
-      .rotationEffect(.degrees(isEditMode ? 3.5 : 0)) // Increased from 0.2 to 3.5 for noticeable jiggle
-      .animation(
-        isEditMode
-          ? Animation.easeInOut(duration: 0.15).repeatForever(autoreverses: true)
-          : .easeInOut(duration: 0.2),
-        value: isEditMode)
+      .rotationEffect(.degrees(isEditMode ? 1 : 0)) // Subtle tilt in edit mode
+      .animation(.easeOut(duration: 0.25), value: isEditMode)
   }
 }
 
@@ -99,11 +94,11 @@ struct HabitsTabView: View {
             .onDelete(perform: deleteHabit)
           }
           .listStyle(.plain)
+          .scrollContentBackground(.hidden)
           .environment(\.editMode, $editMode)
           .refreshable {
             await refreshHabits()
           }
-          .padding(.top, 8)
         }
       }
       .fullScreenCover(item: $selectedHabit) { habit in
@@ -274,10 +269,9 @@ struct HabitsTabView: View {
           }
         }
       })
-      .modifier(JiggleAnimationModifier(isEditMode: editMode == .active))
+      // Smooth fade-in animation when items appear
       .opacity(habitAnimationStates[habit.id] ?? 0)
-      .scaleEffect(habitAnimationStates[habit.id] ?? 0.9)
-      .offset(y: (habitAnimationStates[habit.id] ?? 0) == 1 ? 0 : 15)
+      .scaleEffect(habitAnimationStates[habit.id] ?? 0.95)
       .onAppear {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.05)) {
           habitAnimationStates[habit.id] = 1.0

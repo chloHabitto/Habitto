@@ -77,9 +77,8 @@ struct AddedHabitItem: View {
                 onLongPress?()
               })
 
-          // More button or reorder handle based on edit mode
-          ZStack {
-            // More button (always present, but hidden when in edit mode)
+          // More button (hidden in edit mode to show native List drag handle)
+          if !isEditMode {
             Menu {
               Button(action: {
                 onEdit?()
@@ -100,19 +99,6 @@ struct AddedHabitItem: View {
                 .contentShape(Rectangle())
             }
             .frame(width: 40, height: 40)
-            .opacity(isEditMode ? 0 : 1)
-            .allowsHitTesting(!isEditMode)
-
-            // Reorder handle (only visible in edit mode)
-            if isEditMode {
-              Image(systemName: "line.3.horizontal")
-                .font(.title2)
-                .foregroundColor(.text06)
-                .frame(width: 40, height: 40)
-                .contentShape(Rectangle())
-                .opacity(1)
-                .allowsHitTesting(true)
-            }
           }
         }
 
