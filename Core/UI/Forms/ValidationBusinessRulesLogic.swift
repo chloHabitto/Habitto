@@ -113,7 +113,8 @@ class ValidationBusinessRulesLogic {
     description: String,
     icon: String,
     color _: Color,
-    habitType _: HabitType) -> (isValid: Bool, errorMessage: String?)
+    habitType _: HabitType,
+    existingHabits: [Habit]? = nil) -> (isValid: Bool, errorMessage: String?)
   {
     // Name validation
     if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -125,7 +126,7 @@ class ValidationBusinessRulesLogic {
     }
 
     // Check for duplicate habit names
-    if isDuplicateHabitName(name) {
+    if isDuplicateHabitName(name, existingHabits: existingHabits) {
       return (false, "This habit name already exists. Please choose a different name.")
     }
 
@@ -150,15 +151,16 @@ class ValidationBusinessRulesLogic {
   // MARK: - Duplicate Name Validation
 
   @MainActor
-  static func isDuplicateHabitName(_ name: String) -> Bool {
-    // Access habits through HabitRepository (MainActor isolated)
-    let existingHabits = HabitRepository.shared.habits
+  static func isDuplicateHabitName(_ name: String, existingHabits: [Habit]? = nil) -> Bool {
+    // Use provided habits list if available, otherwise access repository
+    // This avoids repeated MainActor calls during validation
+    let habits = existingHabits ?? HabitRepository.shared.habits
 
     // Normalize the input name (trim and lowercase for comparison)
     let normalizedInputName = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
     // Check if any existing habit has the same normalized name
-    return existingHabits.contains { habit in
+    return habits.contains { habit in
       let normalizedExistingName = habit.name.trimmingCharacters(in: .whitespacesAndNewlines)
         .lowercased()
       return normalizedExistingName == normalizedInputName
