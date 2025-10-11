@@ -1,11 +1,10 @@
+import FirebaseRemoteConfig
 import Foundation
-// import FirebaseRemoteConfig  // Uncomment after adding package
 
 // MARK: - RemoteConfigService
 
 /// Wrapper service for Firebase Remote Config
 /// Provides feature flags and dynamic configuration
-@MainActor
 class RemoteConfigService: ObservableObject {
   // MARK: Lifecycle
 
@@ -34,43 +33,34 @@ class RemoteConfigService: ObservableObject {
   func fetchConfig() async {
     print("🎛️ RemoteConfigService: Fetching remote config...")
 
-    // Uncomment after adding FirebaseRemoteConfig package:
-    /*
-     do {
-       let remoteConfig = RemoteConfig.remoteConfig()
-       let status = try await remoteConfig.fetch()
-       try await remoteConfig.activate()
-       
-       // Update local values
-       updateFromRemoteConfig(remoteConfig)
-       
-       print("✅ RemoteConfigService: Config fetched and activated")
-     } catch {
-       print("❌ RemoteConfigService: Failed to fetch config - \(error.localizedDescription)")
-       // Fall back to local config
-       loadLocalConfig()
-     }
-     */
+    do {
+      let remoteConfig = RemoteConfig.remoteConfig()
+      let status = try await remoteConfig.fetch()
+      try await remoteConfig.activate()
 
-    // For now, use local config
-    loadLocalConfig()
+      // Update local values
+      updateFromRemoteConfig(remoteConfig)
+
+      print("✅ RemoteConfigService: Config fetched and activated")
+    } catch {
+      print("❌ RemoteConfigService: Failed to fetch config - \(error.localizedDescription)")
+      // Fall back to local config
+      loadLocalConfig()
+    }
   }
 
   /// Set default values for Remote Config
   func setDefaults() {
-    // Uncomment after adding FirebaseRemoteConfig package:
-    /*
-     let remoteConfig = RemoteConfig.remoteConfig()
-     remoteConfig.setDefaults([
-       "isMigrationEnabled": true as NSObject,
-       "minAppVersion": "1.0.0" as NSObject,
-       "maxFailureRate": 0.15 as NSObject,
-       "enableCloudKitSync": false as NSObject,
-       "showNewProgressUI": false as NSObject,
-       "enableAdvancedAnalytics": false as NSObject,
-       "maintenanceMode": false as NSObject
-     ])
-     */
+    let remoteConfig = RemoteConfig.remoteConfig()
+    remoteConfig.setDefaults([
+      "isMigrationEnabled": true as NSObject,
+      "minAppVersion": "1.0.0" as NSObject,
+      "maxFailureRate": 0.15 as NSObject,
+      "enableCloudKitSync": false as NSObject,
+      "showNewProgressUI": false as NSObject,
+      "enableAdvancedAnalytics": false as NSObject,
+      "maintenanceMode": false as NSObject,
+    ])
 
     print("🎛️ RemoteConfigService: Defaults set")
   }
@@ -131,23 +121,21 @@ class RemoteConfigService: ObservableObject {
     print("✅ RemoteConfigService: Loaded local config fallback")
   }
 
-  /// Update properties from Remote Config (uncomment after adding package)
-  /*
-   private func updateFromRemoteConfig(_ remoteConfig: RemoteConfig) {
-     isMigrationEnabled = remoteConfig["isMigrationEnabled"].boolValue
-     minAppVersion = remoteConfig["minAppVersion"].stringValue ?? "1.0.0"
-     maxFailureRate = remoteConfig["maxFailureRate"].numberValue.doubleValue
-     enableCloudKitSync = remoteConfig["enableCloudKitSync"].boolValue
-     showNewProgressUI = remoteConfig["showNewProgressUI"].boolValue
-     enableAdvancedAnalytics = remoteConfig["enableAdvancedAnalytics"].boolValue
-     maintenanceMode = remoteConfig["maintenanceMode"].boolValue
-     
-     print("🎛️ RemoteConfigService: Updated from remote config:")
-     print("  - Migration enabled: \(isMigrationEnabled)")
-     print("  - CloudKit sync: \(enableCloudKitSync)")
-     print("  - Maintenance mode: \(maintenanceMode)")
-   }
-   */
+  /// Update properties from Remote Config
+  private func updateFromRemoteConfig(_ remoteConfig: RemoteConfig) {
+    isMigrationEnabled = remoteConfig["isMigrationEnabled"].boolValue
+    minAppVersion = remoteConfig["minAppVersion"].stringValue ?? "1.0.0"
+    maxFailureRate = remoteConfig["maxFailureRate"].numberValue.doubleValue
+    enableCloudKitSync = remoteConfig["enableCloudKitSync"].boolValue
+    showNewProgressUI = remoteConfig["showNewProgressUI"].boolValue
+    enableAdvancedAnalytics = remoteConfig["enableAdvancedAnalytics"].boolValue
+    maintenanceMode = remoteConfig["maintenanceMode"].boolValue
+
+    print("🎛️ RemoteConfigService: Updated from remote config:")
+    print("  - Migration enabled: \(isMigrationEnabled)")
+    print("  - CloudKit sync: \(enableCloudKitSync)")
+    print("  - Maintenance mode: \(maintenanceMode)")
+  }
 }
 
 // MARK: - Feature Flag Keys

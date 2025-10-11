@@ -1,7 +1,7 @@
 import FirebaseCore
 // Note: Add these imports after adding packages in Xcode:
-// import FirebaseCrashlytics
-// import FirebaseRemoteConfig
+import FirebaseCrashlytics
+import FirebaseRemoteConfig
 import GoogleSignIn
 import MijickPopups
 import SwiftData
@@ -23,17 +23,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     print("✅ Firebase configured successfully")
     
     // Initialize Crashlytics (uncomment after adding package)
-    // print("🐛 Initializing Firebase Crashlytics...")
-    // Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
-    // print("✅ Crashlytics initialized")
+     print("🐛 Initializing Firebase Crashlytics...")
+     Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+     print("✅ Crashlytics initialized")
     
     // Initialize Remote Config (uncomment after adding package)
-    // print("🎛️ Initializing Firebase Remote Config...")
-    // let remoteConfig = RemoteConfig.remoteConfig()
-    // let settings = RemoteConfigSettings()
-    // settings.minimumFetchInterval = 3600 // 1 hour for production, 0 for dev
-    // remoteConfig.configSettings = settings
-    // print("✅ Remote Config initialized")
+     print("🎛️ Initializing Firebase Remote Config...")
+     let remoteConfig = RemoteConfig.remoteConfig()
+     let settings = RemoteConfigSettings()
+     settings.minimumFetchInterval = 3600 // 1 hour for production, 0 for dev
+     remoteConfig.configSettings = settings
+     print("✅ Remote Config initialized")
 
     // TEMPORARY FIX: Enable migration for guest mode by setting local override
     print("🔧 AppDelegate: Setting migration override for guest mode...")
