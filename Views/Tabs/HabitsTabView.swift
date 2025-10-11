@@ -297,17 +297,8 @@ struct HabitsTabView: View {
     // Update state immediately for instant UI feedback
     state.habits = reorderedHabits
     
-    // Save to persistent storage in background
-    Task {
-      do {
-        try await HabitRepository.shared.habitStore.saveHabits(reorderedHabits)
-        print("✅ Habits order persisted to storage")
-      } catch {
-        print("❌ Failed to save reordered habits: \(error)")
-        // Reload to revert on error
-        await HabitRepository.shared.loadHabits(force: true)
-      }
-    }
+    // Save to persistent storage using public API
+    HabitRepository.shared.saveHabits(reorderedHabits)
   }
 
   /// Handle deletion of habits (native .onDelete)
