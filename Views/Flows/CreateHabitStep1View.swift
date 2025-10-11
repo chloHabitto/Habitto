@@ -45,6 +45,11 @@ struct CreateHabitStep1View: View {
               placeholder: "Habit name",
               text: $name,
               externalFocus: $isNameFieldFocused)
+              .onChange(of: isNameFieldFocused) { oldValue, newValue in
+                if newValue {
+                  print("⏱️ DEBUG: Text field focused at \(Date())")
+                }
+              }
               .onChange(of: name) { _, newValue in
                 // Only validate if name is not empty and has actual content
                 guard !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -290,9 +295,22 @@ struct CreateHabitStep1View: View {
       print(
         "🔍 CreateHabitStep1View: Description field focus changed from \(oldValue) to \(newValue)")
     }
-    .onAppear {
-      // Cache habits list once on appear to avoid repeated MainActor calls during validation
-      cachedHabits = HabitRepository.shared.habits
+    .task(priority: .userInitiated) {
+      // ⏱️ PERFORMANCE FIX: Load habits asynchronously to prevent UI blocking
+      print("⏱️ DEBUG: Starting async habit load at \(Date())")
+      let startTime = Date()
+      
+      // Load habits asynchronously to avoid blocking text field focus
+      // This happens in the background while user can interact with the text field
+      let habits = await Task { @MainActor in
+        HabitRepository.shared.habits
+      }.value
+      
+      let loadTime = Date().timeIntervalSince(startTime)
+      print("⏱️ DEBUG: Finished async habit load in \(String(format: "%.3f", loadTime))s")
+      
+      cachedHabits = habits
+      print("⏱️ DEBUG: Cached \(habits.count) habits for validation")
     }
   }
 
