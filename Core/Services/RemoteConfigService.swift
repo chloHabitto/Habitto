@@ -35,7 +35,7 @@ class RemoteConfigService: ObservableObject {
 
     do {
       let remoteConfig = RemoteConfig.remoteConfig()
-      let status = try await remoteConfig.fetch()
+      _ = try await remoteConfig.fetch()
       try await remoteConfig.activate()
 
       // Update local values
@@ -124,7 +124,7 @@ class RemoteConfigService: ObservableObject {
   /// Update properties from Remote Config
   private func updateFromRemoteConfig(_ remoteConfig: RemoteConfig) {
     isMigrationEnabled = remoteConfig["isMigrationEnabled"].boolValue
-    minAppVersion = remoteConfig["minAppVersion"].stringValue ?? "1.0.0"
+    minAppVersion = remoteConfig["minAppVersion"].stringValue
     maxFailureRate = remoteConfig["maxFailureRate"].numberValue.doubleValue
     enableCloudKitSync = remoteConfig["enableCloudKitSync"].boolValue
     showNewProgressUI = remoteConfig["showNewProgressUI"].boolValue
