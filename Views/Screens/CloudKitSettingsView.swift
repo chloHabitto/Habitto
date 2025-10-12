@@ -9,21 +9,84 @@ struct CloudKitSettingsView: View {
   var body: some View {
     NavigationView {
       List {
+        // iCloud Status Banner
+        if !isiCloudAvailable {
+          Section {
+            VStack(alignment: .leading, spacing: 12) {
+              HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                  .foregroundColor(.orange)
+                Text("iCloud Not Available")
+                  .font(.headline)
+              }
+              
+              Text("Your habits are saved locally on this device only. To backup your data to iCloud:")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+              
+              VStack(alignment: .leading, spacing: 6) {
+                Text("1. Open Settings app")
+                Text("2. Tap your name at the top")
+                Text("3. Tap iCloud")
+                Text("4. Enable iCloud Drive")
+              }
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .padding(.leading, 8)
+              
+              Button(action: {
+                if let url = URL(string: "App-prefs:CASTLE") {
+                  UIApplication.shared.open(url)
+                }
+              }) {
+                HStack {
+                  Text("Open Settings")
+                  Image(systemName: "arrow.up.forward.app")
+                }
+                .frame(maxWidth: .infinity)
+              }
+              .buttonStyle(.bordered)
+              .tint(.blue)
+            }
+            .padding(.vertical, 8)
+          }
+        } else if isGuestMode {
+          Section {
+            VStack(alignment: .leading, spacing: 12) {
+              HStack {
+                Image(systemName: "info.circle.fill")
+                  .foregroundColor(.blue)
+                Text("Guest Mode")
+                  .font(.headline)
+              }
+              
+              Text("You're using Habitto as a guest. Your habits are saved locally on this device only.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+              
+              Text("Create an account to backup your habits to iCloud and sync across devices.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 8)
+          }
+        }
+        
         // CloudKit Status Section
         Section {
           Text("CloudKit Status")
             .font(.headline)
             .padding(.bottom, 8)
           HStack {
-            Image(systemName: CloudKitManager.shared.isSignedIn
+            Image(systemName: isiCloudAvailable
               ? "checkmark.circle.fill"
               : "xmark.circle.fill")
-              .foregroundColor(CloudKitManager.shared.isSignedIn ? .green : .red)
+              .foregroundColor(isiCloudAvailable ? .green : .orange)
 
             VStack(alignment: .leading) {
-              Text("iCloud Account")
+              Text("iCloud Drive")
                 .font(.headline)
-              Text(CloudKitManager.shared.isSignedIn ? "Signed In" : "Not Signed In")
+              Text(isiCloudAvailable ? "Available" : "Not Available")
                 .font(.caption)
                 .foregroundColor(.secondary)
             }
@@ -166,6 +229,15 @@ struct CloudKitSettingsView: View {
   @StateObject private var conflictResolver = CloudKitConflictResolver()
   @State private var showingSyncDetails = false
   @State private var showingConflictResolution = false
+  
+  // Check iCloud and auth status
+  private var isiCloudAvailable: Bool {
+    FileManager.default.ubiquityIdentityToken != nil
+  }
+  
+  private var isGuestMode: Bool {
+    AuthenticationManager.shared.currentUser == nil
+  }
 }
 
 // MARK: - CloudKitSyncDetailsView

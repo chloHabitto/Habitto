@@ -73,10 +73,31 @@ class CloudKitManager: ObservableObject {
   // MARK: - CloudKit Availability
 
   func isCloudKitAvailable() -> Bool {
-    // For now, return false to disable CloudKit functionality
-    // This prevents crashes when CloudKit isn't properly configured
-    print("ℹ️ CloudKitManager: CloudKit functionality disabled for safety")
-    return false
+    // Check if iCloud is available on this device
+    guard FileManager.default.ubiquityIdentityToken != nil else {
+      print("⚠️ CloudKitManager: iCloud not available (not signed in or disabled)")
+      return false
+    }
+    
+    // Initialize CloudKit container if needed
+    guard initializeCloudKitIfNeeded() else {
+      print("⚠️ CloudKitManager: Failed to initialize CloudKit container")
+      return false
+    }
+    
+    // Check if user is authenticated (either Firebase Auth or guest mode)
+    let hasFirebaseUser = AuthenticationManager.shared.currentUser != nil
+    let isGuestMode = hasFirebaseUser == false
+    
+    // Allow CloudKit for authenticated users, but skip for guest mode
+    // Guest users will use local storage only until they sign in
+    if isGuestMode {
+      print("ℹ️ CloudKitManager: Guest mode - using local storage only")
+      return false
+    }
+    
+    print("✅ CloudKitManager: CloudKit is available and ready")
+    return true
   }
 
   // MARK: - Authentication
