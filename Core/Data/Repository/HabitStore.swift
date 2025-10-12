@@ -18,6 +18,10 @@ final actor HabitStore {
   // MARK: Internal
 
   static let shared = HabitStore()
+  
+  // ⚠️ TEMPORARY: Disable SwiftData to bypass database corruption
+  // This forces UserDefaults-only mode to eliminate 2s UI hangs
+  private let forceUserDefaultsMode = true
 
   // MARK: - Load Habits
 
@@ -43,9 +47,16 @@ final actor HabitStore {
       }
     }
 
-    // Use SwiftData for modern persistence
-    logger.info("HabitStore: Using SwiftData storage...")
-    var habits = try await swiftDataStorage.loadHabits()
+    // ⚠️ TEMPORARY: Skip SwiftData if forced to UserDefaults mode
+    var habits: [Habit] = []
+    
+    if !forceUserDefaultsMode {
+      // Use SwiftData for modern persistence
+      logger.info("HabitStore: Using SwiftData storage...")
+      habits = try await swiftDataStorage.loadHabits()
+    } else {
+      logger.warning("⚠️ FORCED UserDefaults mode - bypassing SwiftData")
+    }
 
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
     if habits.isEmpty {
@@ -117,9 +128,19 @@ final actor HabitStore {
       logger.info("All habits passed validation")
     }
 
-    // Use SwiftData for modern persistence
-    try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
-    logger.info("Successfully saved to SwiftData")
+    // ⚠️ TEMPORARY: Skip SwiftData if forced to UserDefaults mode
+    if !forceUserDefaultsMode {
+      // Use SwiftData for modern persistence
+      try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
+      logger.info("Successfully saved to SwiftData")
+    } else {
+      logger.warning("⚠️ FORCED UserDefaults mode - bypassing SwiftData save")
+      // Just save to UserDefaults directly
+      let encoder = JSONEncoder()
+      let data = try encoder.encode(cappedHabits)
+      UserDefaults.standard.set(data, forKey: "SavedHabits")
+      logger.info("✅ Saved \(cappedHabits.count) habits to UserDefaults (forced mode)")
+    }
 
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
     logger
