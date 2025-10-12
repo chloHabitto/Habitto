@@ -300,14 +300,17 @@ struct CreateHabitStep1View: View {
         "🔍 CreateHabitStep1View: Description field focus changed from \(oldValue) to \(newValue)")
     }
     .task(priority: .userInitiated) {
-      // ⏱️ PERFORMANCE FIX: Load habits asynchronously to prevent UI blocking
+      // ⏱️ PERFORMANCE FIX: Load habits in BACKGROUND thread to prevent UI blocking
       print("⏱️ DEBUG: Starting async habit load at \(Date())")
       let startTime = Date()
       
-      // Load habits asynchronously to avoid blocking text field focus
-      // This happens in the background while user can interact with the text field
-      let habits = await Task { @MainActor in
-        HabitRepository.shared.habits
+      // Use Task.detached to run on background thread, NOT main thread
+      // This allows text field to focus immediately without waiting
+      let habits = await Task.detached(priority: .userInitiated) {
+        // Access MainActor property from background thread
+        await MainActor.run {
+          HabitRepository.shared.habits
+        }
       }.value
       
       let loadTime = Date().timeIntervalSince(startTime)
