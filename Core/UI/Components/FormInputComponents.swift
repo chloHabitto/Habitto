@@ -69,12 +69,10 @@ enum FormInputComponents {
           RoundedRectangle(cornerRadius: cornerRadius)
             .stroke(borderColor, lineWidth: lineWidth))
         .cornerRadius(cornerRadius)
-        .onTapGesture {
-          print("⏱️ DEBUG: TextField container tapped at \(Date())")
-          isFocused = true
-        }
         .onChange(of: isFocused) { oldValue, newValue in
-          print("⏱️ DEBUG: TextField focus changed from \(oldValue) to \(newValue) at \(Date())")
+          if newValue {
+            print("⏱️ DEBUG: TextField focused at \(Date())")
+          }
           // Sync internal focus state with external focus state
           if let externalBinding = externalFocusBinding {
             externalBinding.wrappedValue = newValue
