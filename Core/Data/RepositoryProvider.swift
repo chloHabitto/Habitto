@@ -58,8 +58,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
       return existing
     }
 
-    let service =
-      DailyAwardService(modelContext: ModelContext(SwiftDataContainer.shared.modelContainer))
+    // Use new Firebase-based DailyAwardService
+    let service = DailyAwardService.shared
     _dailyAwardService = service
     return service
   }

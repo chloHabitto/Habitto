@@ -389,6 +389,18 @@ Access the Firebase demo screen to:
 
 ### Troubleshooting
 
+**App startup lag / CloudKit errors**:
+If you see 10-15 second startup lag or CloudKit validation errors in console:
+```bash
+# Run the cleanup script
+./Scripts/shell/clean_cloudkit_artifacts.sh
+
+# Then in Xcode:
+# 1. Product → Clean Build Folder (⌘+Shift+K)
+# 2. Product → Run (⌘+R)
+```
+See `CLOUDKIT_DISABLED_FIX.md` for more details.
+
 **Emulator won't start**:
 ```bash
 # Kill existing emulator processes

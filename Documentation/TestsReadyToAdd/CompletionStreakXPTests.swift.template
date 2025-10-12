@@ -1,0 +1,604 @@
+import XCTest
+@testable import Habitto
+
+// MARK: - Completion Service Tests
+
+@MainActor
+final class CompletionServiceTests: XCTestCase {
+    var service: CompletionService!
+    var repository: FirestoreRepository!
+    var nowProvider: FixedNowProvider!
+    var dateFormatter: LocalDateFormatter!
+    
+    override func setUp() async throws {
+        // Use fixed date: October 15, 2025 at noon
+        let dateComponents = DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(identifier: "Europe/Amsterdam"),
+            year: 2025, month: 10, day: 15, hour: 12
+        )
+        let fixedDate = dateComponents.date!
+        
+        nowProvider = FixedNowProvider(fixedDate: fixedDate)
+        dateFormatter = LocalDateFormatter(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        service = CompletionService(
+            repository: repository,
+            dateFormatter: dateFormatter
+        )
+    }
+    
+    // MARK: - Basic Completion Tests
+    
+    func testMarkComplete() async throws {
+        // When marking a habit complete
+        let count = try await service.markComplete(
+            habitId: "habit1",
+            at: dateFormatter.todayDate()
+        )
+        
+        // Then count should be 1
+        XCTAssertEqual(count, 1, "First completion should return count 1")
+    }
+    
+    func testMarkCompleteMultipleTimes() async throws {
+        // Given a habit
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        
+        // When marking complete 3 times
+        let count1 = try await service.markComplete(habitId: habitId, at: date)
+        let count2 = try await service.markComplete(habitId: habitId, at: date)
+        let count3 = try await service.markComplete(habitId: habitId, at: date)
+        
+        // Then counts should increment
+        XCTAssertEqual(count1, 1, "First completion")
+        XCTAssertEqual(count2, 2, "Second completion")
+        XCTAssertEqual(count3, 3, "Third completion")
+    }
+    
+    func testMarkCompleteToday() async throws {
+        // When marking complete for today
+        let count = try await service.markCompleteToday(habitId: "habit1")
+        
+        // Then it should succeed
+        XCTAssertEqual(count, 1)
+    }
+    
+    func testGetCompletion() async throws {
+        // Given a completed habit
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        try await service.markComplete(habitId: habitId, at: date)
+        
+        // When getting completion
+        let count = try await service.getCompletion(habitId: habitId, on: date)
+        
+        // Then count should be 1
+        XCTAssertEqual(count, 1)
+    }
+    
+    func testGetCompletionForUncompletedHabit() async throws {
+        // When getting completion for never-completed habit
+        let count = try await service.getCompletion(
+            habitId: "nonexistent",
+            on: dateFormatter.todayDate()
+        )
+        
+        // Then count should be 0
+        XCTAssertEqual(count, 0, "Uncompleted habit should have count 0")
+    }
+    
+    func testGetTodayCompletion() async throws {
+        // Given a completed habit today
+        try await service.markCompleteToday(habitId: "habit1")
+        
+        // When getting today's completion
+        let count = try await service.getTodayCompletion(habitId: "habit1")
+        
+        // Then count should be 1
+        XCTAssertEqual(count, 1)
+    }
+    
+    func testIsComplete() async throws {
+        // Given a habit with goal 2
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        let goal = 2
+        
+        // When completing once
+        try await service.markComplete(habitId: habitId, at: date)
+        
+        // Then should not be complete yet
+        var isComplete = try await service.isComplete(habitId: habitId, on: date, goal: goal)
+        XCTAssertFalse(isComplete, "1/2 should not be complete")
+        
+        // When completing second time
+        try await service.markComplete(habitId: habitId, at: date)
+        
+        // Then should be complete
+        isComplete = try await service.isComplete(habitId: habitId, on: date, goal: goal)
+        XCTAssertTrue(isComplete, "2/2 should be complete")
+    }
+    
+    func testCompletionPercentage() async throws {
+        // Given a habit with goal 4
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        let goal = 4
+        
+        // When completing twice
+        try await service.markComplete(habitId: habitId, at: date)
+        try await service.markComplete(habitId: habitId, at: date)
+        
+        // Then percentage should be 0.5 (2/4)
+        let percentage = try await service.completionPercentage(habitId: habitId, on: date, goal: goal)
+        XCTAssertEqual(percentage, 0.5, accuracy: 0.01, "2/4 should be 50%")
+    }
+    
+    func testCompletionPercentageClamped() async throws {
+        // Given a habit with goal 2
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        let goal = 2
+        
+        // When completing 5 times (exceeds goal)
+        for _ in 1...5 {
+            try await service.markComplete(habitId: habitId, at: date)
+        }
+        
+        // Then percentage should be clamped at 1.0
+        let percentage = try await service.completionPercentage(habitId: habitId, on: date, goal: goal)
+        XCTAssertEqual(percentage, 1.0, "Percentage should be clamped at 100%")
+    }
+}
+
+// MARK: - Streak Service Tests
+
+@MainActor
+final class StreakServiceTests: XCTestCase {
+    var service: StreakService!
+    var repository: FirestoreRepository!
+    var completionService: CompletionService!
+    var nowProvider: FixedNowProvider!
+    var dateFormatter: LocalDateFormatter!
+    
+    override func setUp() async throws {
+        let dateComponents = DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(identifier: "Europe/Amsterdam"),
+            year: 2025, month: 10, day: 15, hour: 12
+        )
+        let fixedDate = dateComponents.date!
+        
+        nowProvider = FixedNowProvider(fixedDate: fixedDate)
+        dateFormatter = LocalDateFormatter(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        completionService = CompletionService(
+            repository: repository,
+            dateFormatter: dateFormatter
+        )
+        
+        service = StreakService(
+            repository: repository,
+            completionService: completionService,
+            dateFormatter: dateFormatter
+        )
+    }
+    
+    // MARK: - Basic Streak Tests
+    
+    func testUpdateStreakFirstCompletion() async throws {
+        // When marking first completion
+        let date = dateFormatter.todayDate()
+        try await service.updateStreak(habitId: "habit1", on: date, completed: true)
+        
+        // Then streak should start at 1
+        let current = try await service.getCurrentStreak(habitId: "habit1")
+        XCTAssertEqual(current, 1, "First completion should start streak at 1")
+    }
+    
+    func testCalculateStreakConsecutive() async throws {
+        // Given day 1 completion
+        let date1 = dateFormatter.stringToDate("2025-10-15")!
+        try await service.calculateStreak(habitId: "habit1", date: date1, isComplete: true)
+        
+        // When completing day 2 (consecutive)
+        let date2 = dateFormatter.stringToDate("2025-10-16")!
+        try await service.calculateStreak(habitId: "habit1", date: date2, isComplete: true)
+        
+        // Then streak should be 2
+        let streak = service.streaks["habit1"]
+        XCTAssertEqual(streak?.current, 2, "Consecutive days should increment streak")
+    }
+    
+    func testCalculateStreakBroken() async throws {
+        // Given 3-day streak
+        try await service.calculateStreak(habitId: "habit1", date: dateFormatter.stringToDate("2025-10-15")!, isComplete: true)
+        try await service.calculateStreak(habitId: "habit1", date: dateFormatter.stringToDate("2025-10-16")!, isComplete: true)
+        try await service.calculateStreak(habitId: "habit1", date: dateFormatter.stringToDate("2025-10-17")!, isComplete: true)
+        
+        // When skipping a day and completing on day 5
+        let date = dateFormatter.stringToDate("2025-10-19")!
+        try await service.calculateStreak(habitId: "habit1", date: date, isComplete: true)
+        
+        // Then current should reset to 1, but longest preserved
+        let streak = service.streaks["habit1"]
+        XCTAssertEqual(streak?.current, 1, "Streak should reset after gap")
+        XCTAssertEqual(streak?.longest, 3, "Longest streak should be preserved")
+    }
+    
+    func testLongestStreakPreserved() async throws {
+        // Given a 5-day streak
+        for day in 1...5 {
+            let date = dateFormatter.stringToDate("2025-10-\(14 + day)")!
+            try await service.calculateStreak(habitId: "habit1", date: date, isComplete: true)
+        }
+        
+        // When streak breaks and restarts
+        let newDate = dateFormatter.stringToDate("2025-10-22")!
+        try await service.calculateStreak(habitId: "habit1", date: newDate, isComplete: true)
+        
+        // Then longest should still be 5
+        let streak = service.streaks["habit1"]
+        XCTAssertEqual(streak?.longest, 5, "Longest streak preserved")
+        XCTAssertEqual(streak?.current, 1, "Current streak reset")
+    }
+    
+    func testResetStreak() async throws {
+        // Given a habit with streak
+        try await service.calculateStreak(habitId: "habit1", date: dateFormatter.todayDate(), isComplete: true)
+        
+        // When resetting
+        try await service.resetStreak(habitId: "habit1")
+        
+        // Then streak should be 0
+        let current = try await service.getCurrentStreak(habitId: "habit1")
+        XCTAssertEqual(current, 0, "Streak should be reset to 0")
+    }
+    
+    func testAreAllHabitsComplete() async throws {
+        // Given 3 habits with goal 1 each
+        let habits = ["habit1", "habit2", "habit3"]
+        let goals = ["habit1": 1, "habit2": 1, "habit3": 1]
+        let date = dateFormatter.todayDate()
+        
+        // When 2 habits are complete
+        try await completionService.markComplete(habitId: "habit1", at: date)
+        try await completionService.markComplete(habitId: "habit2", at: date)
+        
+        // Then should not be all complete
+        var allComplete = try await service.areAllHabitsComplete(habits: habits, on: date, goals: goals)
+        XCTAssertFalse(allComplete, "2/3 habits should not be all complete")
+        
+        // When third habit is complete
+        try await completionService.markComplete(habitId: "habit3", at: date)
+        
+        // Then should be all complete
+        allComplete = try await service.areAllHabitsComplete(habits: habits, on: date, goals: goals)
+        XCTAssertTrue(allComplete, "3/3 habits should be all complete")
+    }
+}
+
+// MARK: - Daily Award Service Tests
+
+@MainActor
+final class DailyAwardServiceTests: XCTestCase {
+    var service: DailyAwardService!
+    var repository: FirestoreRepository!
+    var nowProvider: FixedNowProvider!
+    var dateFormatter: LocalDateFormatter!
+    
+    override func setUp() async throws {
+        let dateComponents = DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(identifier: "Europe/Amsterdam"),
+            year: 2025, month: 10, day: 15, hour: 12
+        )
+        let fixedDate = dateComponents.date!
+        
+        nowProvider = FixedNowProvider(fixedDate: fixedDate)
+        dateFormatter = LocalDateFormatter(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        service = DailyAwardService(
+            repository: repository,
+            dateFormatter: dateFormatter
+        )
+    }
+    
+    // MARK: - Basic XP Award Tests
+    
+    func testAwardXP() async throws {
+        // When awarding XP
+        try await service.awardXP(delta: 50, reason: "Test award")
+        
+        // Then total XP should be 50
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 50, "Total XP should be 50")
+    }
+    
+    func testAwardXPMultipleTimes() async throws {
+        // When awarding XP multiple times
+        try await service.awardXP(delta: 10, reason: "First award")
+        try await service.awardXP(delta: 20, reason: "Second award")
+        try await service.awardXP(delta: 15, reason: "Third award")
+        
+        // Then total should be sum
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 45, "Total XP should be 10+20+15=45")
+    }
+    
+    func testAwardNegativeXP() async throws {
+        // Given existing XP
+        try await service.awardXP(delta: 100, reason: "Initial award")
+        
+        // When subtracting XP (negative delta)
+        try await service.awardXP(delta: -30, reason: "Penalty")
+        
+        // Then total should be reduced
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 70, "Total XP should be 100-30=70")
+    }
+    
+    func testAwardXPWithEmptyReasonFails() async {
+        // When trying to award with empty reason
+        do {
+            try await service.awardXP(delta: 10, reason: "")
+            XCTFail("Should throw error for empty reason")
+        } catch XPError.invalidReason {
+            // Expected error
+        } catch {
+            XCTFail("Wrong error type: \(error)")
+        }
+    }
+    
+    func testAwardXPWithLongReasonFails() async {
+        // When trying to award with reason > 500 chars
+        let longReason = String(repeating: "a", count: 501)
+        
+        do {
+            try await service.awardXP(delta: 10, reason: longReason)
+            XCTFail("Should throw error for long reason")
+        } catch XPError.invalidReason {
+            // Expected error
+        } catch {
+            XCTFail("Wrong error type: \(error)")
+        }
+    }
+    
+    // MARK: - Level Progression Tests
+    
+    func testLevelProgression() async throws {
+        // Given level 1 (starts at 0 XP)
+        XCTAssertEqual(service.getCurrentLevel(), 1, "Should start at level 1")
+        
+        // When earning 100 XP
+        try await service.awardXP(delta: 100, reason: "Level up test")
+        
+        // Then should reach level 2
+        let level = service.getCurrentLevel()
+        XCTAssertEqual(level, 2, "100 XP should reach level 2")
+    }
+    
+    func testCalculateLevel() {
+        // Test level calculation formula
+        let result1 = service.calculateLevel(totalXP: 0)
+        XCTAssertEqual(result1.level, 1, "0 XP = Level 1")
+        XCTAssertEqual(result1.currentLevelXP, 0, "0 XP in level")
+        
+        let result2 = service.calculateLevel(totalXP: 50)
+        XCTAssertEqual(result2.level, 1, "50 XP = Level 1")
+        XCTAssertEqual(result2.currentLevelXP, 50, "50 XP in level")
+        
+        let result3 = service.calculateLevel(totalXP: 100)
+        XCTAssertEqual(result3.level, 2, "100 XP = Level 2")
+        XCTAssertEqual(result3.currentLevelXP, 0, "0 XP in level 2")
+        
+        let result4 = service.calculateLevel(totalXP: 250)
+        XCTAssertEqual(result4.level, 3, "250 XP = Level 3")
+        XCTAssertEqual(result4.currentLevelXP, 0, "0 XP in level 3")
+    }
+    
+    func testGetLevelProgress() async throws {
+        // Given 60 XP
+        try await service.awardXP(delta: 60, reason: "Test")
+        
+        // When getting level progress
+        let progress = service.getLevelProgress()
+        
+        // Then should show 60/100 for level 1
+        XCTAssertEqual(progress.current, 60, "Should have 60 XP in level")
+        XCTAssertEqual(progress.needed, 100, "Should need 100 XP for level 1")
+    }
+    
+    // MARK: - Convenience Award Methods
+    
+    func testAwardHabitCompletionXP() async throws {
+        // When awarding for habit completion
+        try await service.awardHabitCompletionXP(
+            habitId: "habit1",
+            habitName: "Morning Run",
+            on: dateFormatter.todayDate()
+        )
+        
+        // Then should award 10 XP
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 10, "Habit completion should award 10 XP")
+    }
+    
+    func testAwardStreakBonusXP() async throws {
+        // When awarding streak bonus for 5 days
+        try await service.awardStreakBonusXP(habitId: "habit1", streakDays: 5)
+        
+        // Then should award 25 XP (5 * 5)
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 25, "5-day streak should award 25 XP")
+    }
+    
+    func testAwardDailyCompletionBonus() async throws {
+        // When awarding daily completion bonus
+        try await service.awardDailyCompletionBonus(on: dateFormatter.todayDate())
+        
+        // Then should award 50 XP
+        let totalXP = service.getTotalXP()
+        XCTAssertEqual(totalXP, 50, "Daily completion should award 50 XP")
+    }
+    
+    // MARK: - Integrity Tests
+    
+    func testVerifyIntegrity() async throws {
+        // When XP state is consistent
+        try await service.awardXP(delta: 100, reason: "Test")
+        
+        // Then integrity should pass
+        let isValid = try await service.verifyIntegrity()
+        XCTAssertTrue(isValid, "Integrity should be valid")
+    }
+    
+    func testRepairIntegrity() async throws {
+        // Given XP state (simulated corruption would be tested with real Firestore)
+        try await service.awardXP(delta: 100, reason: "Test")
+        
+        // When repairing
+        try await service.repairIntegrity()
+        
+        // Then should succeed (no-op if already valid)
+        let isValid = try await service.verifyIntegrity()
+        XCTAssertTrue(isValid, "After repair, integrity should be valid")
+    }
+    
+    func testCheckAndRepairIntegrity() async throws {
+        // When performing integrity check and repair
+        let success = try await service.checkAndRepairIntegrity()
+        
+        // Then should succeed
+        XCTAssertTrue(success, "Integrity check/repair should succeed")
+    }
+}
+
+// MARK: - Integration Tests
+
+@MainActor
+final class CompletionStreakXPIntegrationTests: XCTestCase {
+    var completionService: CompletionService!
+    var streakService: StreakService!
+    var xpService: DailyAwardService!
+    var repository: FirestoreRepository!
+    var nowProvider: FixedNowProvider!
+    var dateFormatter: LocalDateFormatter!
+    
+    override func setUp() async throws {
+        let dateComponents = DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(identifier: "Europe/Amsterdam"),
+            year: 2025, month: 10, day: 15, hour: 12
+        )
+        let fixedDate = dateComponents.date!
+        
+        nowProvider = FixedNowProvider(fixedDate: fixedDate)
+        dateFormatter = LocalDateFormatter(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        completionService = CompletionService(repository: repository, dateFormatter: dateFormatter)
+        streakService = StreakService(repository: repository, completionService: completionService, dateFormatter: dateFormatter)
+        xpService = DailyAwardService(repository: repository, dateFormatter: dateFormatter)
+    }
+    
+    func testCompleteHabitFullFlow() async throws {
+        // Given a habit
+        let habitId = "habit1"
+        let date = dateFormatter.todayDate()
+        
+        // When completing the habit
+        let count = try await completionService.markComplete(habitId: habitId, at: date)
+        
+        // Then completion count should increase
+        XCTAssertEqual(count, 1)
+        
+        // When updating streak
+        try await streakService.calculateStreak(habitId: habitId, date: date, isComplete: true)
+        
+        // Then streak should be 1
+        let streak = try await streakService.getCurrentStreak(habitId: habitId)
+        XCTAssertEqual(streak, 1)
+        
+        // When awarding XP
+        try await xpService.awardHabitCompletionXP(habitId: habitId, habitName: "Test Habit", on: date)
+        
+        // Then XP should be awarded
+        let xp = xpService.getTotalXP()
+        XCTAssertEqual(xp, 10, "Should award 10 XP for completion")
+    }
+    
+    func testDailyCompletionFlow() async throws {
+        // Given 3 habits
+        let habits = ["habit1", "habit2", "habit3"]
+        let goals = ["habit1": 1, "habit2": 1, "habit3": 1]
+        let date = dateFormatter.todayDate()
+        
+        // When completing all habits
+        for habitId in habits {
+            try await completionService.markComplete(habitId: habitId, at: date)
+        }
+        
+        // Then all should be complete
+        let allComplete = try await streakService.areAllHabitsComplete(habits: habits, on: date, goals: goals)
+        XCTAssertTrue(allComplete, "All 3 habits should be complete")
+        
+        // When awarding daily completion bonus
+        try await xpService.awardDailyCompletionBonus(on: date)
+        
+        // Then should award 50 XP
+        let xp = xpService.getTotalXP()
+        XCTAssertEqual(xp, 50, "Should award 50 XP for all habits complete")
+    }
+    
+    func testStreakWithXPAward() async throws {
+        // Given 3 consecutive days
+        for day in 15...17 {
+            let date = dateFormatter.stringToDate("2025-10-\(day)")!
+            try await completionService.markComplete(habitId: "habit1", at: date)
+            try await streakService.calculateStreak(habitId: "habit1", date: date, isComplete: true)
+        }
+        
+        // When awarding streak bonus
+        let currentStreak = try await streakService.getCurrentStreak(habitId: "habit1")
+        try await xpService.awardStreakBonusXP(habitId: "habit1", streakDays: currentStreak)
+        
+        // Then XP should reflect streak bonus (3 days * 5 XP = 15)
+        let xp = xpService.getTotalXP()
+        XCTAssertEqual(xp, 15, "3-day streak should award 15 XP")
+    }
+}
+

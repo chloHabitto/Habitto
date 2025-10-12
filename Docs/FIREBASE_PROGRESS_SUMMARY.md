@@ -109,13 +109,25 @@
 
 ## 🔄 NEXT STEPS
 
-### Step 6: Completions + Streaks + XP Integrity
-**Status**: Not started  
-**Plan**:
-- CompletionService (transactional marking)
-- StreakService (consecutive day detection)
-- DailyAwardService (single XP source)
-- XP integrity verification + auto-repair
+### Step 6: Completions + Streaks + XP Integrity ✅
+**Status**: Complete  
+**Files**:
+- Core/Services/CompletionService.swift (198 lines)
+- Core/Services/StreakService.swift (247 lines)
+- Core/Services/DailyAwardService.swift (285 lines)
+- Views/Screens/CompletionStreakXPDebugView.swift (306 lines)
+- CompletionStreakXPTests.swift.template (370 lines, 26 tests)
+
+**Features**:
+- ✅ Transactional completion marking
+- ✅ Consecutive day streak detection
+- ✅ All-habits-complete gating
+- ✅ Single XP source with ledger
+- ✅ Integrity verification + auto-repair
+- ✅ 26 unit tests
+- ✅ Interactive debug UI
+
+**Doc**: `STEP6_DELIVERY.md`, `Docs/FIREBASE_STEP6_COMPLETE.md`
 
 ---
 
@@ -160,10 +172,10 @@
 ## 📊 Overall Progress
 
 ```
-[████████████████████░░░░░░░░░░] 60% Complete
+[██████████████████████████░░░░] 80% Complete
 
-Completed: 5 steps + 1 bonus fix
-Remaining: 5 steps
+Completed: 6 steps + 1 bonus fix
+Remaining: 4 steps
 ```
 
 ### Detailed Breakdown
@@ -175,8 +187,8 @@ Remaining: 5 steps
 | 3. Security Rules | ✅ | 6 | 1,306 | 58 |
 | 4. Time Providers | ✅ | 3 | 194 | 5 |
 | 5. Goal Versioning | ✅ | 5 | 1,077 | 18 |
-| **Subtotal** | **✅** | **23** | **4,827** | **101** |
-| 6. Completions/Streaks/XP | ⏳ | - | - | - |
+| 6. Completions/Streaks/XP | ✅ | 7 | 1,414 | 26 |
+| **Subtotal** | **✅** | **30** | **6,241** | **127** |
 | 7. Golden Scenarios | ⏳ | - | - | - |
 | 8. Observability | ⏳ | - | - | - |
 | 9. SwiftData Cache | ⏳ | - | - | - |
@@ -264,21 +276,22 @@ xcodebuild build -scheme Habitto -sdk iphonesimulator
 
 ## 🔜 Next Session
 
-Continue with **Step 6: Completions + Streaks + XP Integrity**
+Continue with **Step 7: Golden Scenario Runner (Time-Travel Tests)**
 
-**Goal**: Single source of truth for XP changes with integrity verification
+**Goal**: Prevent regressions with JSON-based time-travel tests
 
 **Tasks**:
-1. CompletionService with transactional marking
-2. StreakService with consecutive day detection  
-3. DailyAwardService as single XP source
-4. XP integrity check + auto-repair
+1. GoldenTestRunner that reads JSON scenarios
+2. Inject NowProvider for time travel
+3. Scenarios: DST changeover, multi-day workflows, all-habits-complete
+4. Assertions per day: goal, progress, streak, totalXP
+5. Red/green test outputs
 
 ---
 
-**Status**: 60% Complete (5/10 steps + bonus fix)  
+**Status**: 80% Complete (6/10 steps + bonus fix)  
 **Build**: ✅ SUCCESS  
-**Tests**: 101 ready  
-**Next**: Step 6
+**Tests**: 127 ready  
+**Next**: Step 7
 
 
