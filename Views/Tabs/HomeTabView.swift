@@ -29,20 +29,24 @@ struct HomeTabView: View {
     self.onDeleteHabit = onDeleteHabit
     self.onCompletionDismiss = onCompletionDismiss
     // Initialize DailyAwardService with proper error handling
+    // ✅ CRITICAL FIX: Disable CloudKit sync for DailyAward to avoid schema constraints
     do {
-      let container = try ModelContainer(for: DailyAward.self)
+      let configuration = ModelConfiguration(cloudKitDatabase: .none)
+      let container = try ModelContainer(for: DailyAward.self, configurations: configuration)
       self
         ._awardService =
         StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(container)))
-    } catch {
-      // Fallback: create a new container as last resort
+    } catch {      // Fallback: create a new container as last resort
       // This should not happen in normal circumstances
       print("⚠️ HomeTabView: Failed to create ModelContainer for DailyAward: \(error)")
       // Create a minimal container for testing/fallback
       do {
+        let fallbackConfiguration = ModelConfiguration(
+          isStoredInMemoryOnly: true,
+          cloudKitDatabase: .none)
         let fallbackContainer = try ModelContainer(
           for: DailyAward.self,
-          configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+          configurations: fallbackConfiguration)
         self
           ._awardService =
           StateObject(

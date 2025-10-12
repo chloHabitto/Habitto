@@ -33,9 +33,17 @@ final class SwiftDataContainer: ObservableObject {
       let databaseDir = databaseURL.deletingLastPathComponent()
       let databaseName = databaseURL.deletingPathExtension().lastPathComponent
       
+      // ✅ ONE-TIME FIX: Force delete database if it has CloudKit enabled (migration to CloudKit-disabled mode)
+      let cloudKitMigrationKey = "SwiftData_CloudKit_Disabled_Migration_v1"
+      let needsCloudKitMigration = !UserDefaults.standard.bool(forKey: cloudKitMigrationKey)
+      
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
-      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey)
+      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration
+      
+      if needsCloudKitMigration {
+        logger.warning("🔧 SwiftData: CloudKit migration needed - will recreate database without CloudKit")
+      }
       
       if forceReset {
         logger.warning("🔧 SwiftData: Corruption flag set - forcing database reset")
@@ -102,6 +110,12 @@ final class SwiftDataContainer: ObservableObject {
             // Clear the corruption flag - we've fixed it
             UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
             
+            // Mark CloudKit migration as complete
+            if needsCloudKitMigration {
+              UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
+              logger.info("✅ SwiftData: CloudKit migration flag set")
+            }
+            
           } catch {
             logger.error("❌ SwiftData: Failed to remove files: \(error)")
             // Continue anyway - ModelContainer will try to create fresh database
@@ -111,6 +125,12 @@ final class SwiftDataContainer: ObservableObject {
         logger.info("🔧 SwiftData: No existing database, creating new one")
         // Clear corruption flag if no database exists
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
+        
+        // Mark CloudKit migration as complete if no database exists
+        if needsCloudKitMigration {
+          UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
+          logger.info("✅ SwiftData: CloudKit migration not needed (fresh install)")
+        }
       }
 
       // ✅ CRITICAL: Explicitly disable CloudKit auto-sync

@@ -17,10 +17,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
-    // Configure Firebase using centralized configuration
+    // Configure Firebase SYNCHRONOUSLY (required for RemoteConfig and other services)
     print("🔥 Configuring Firebase...")
+    FirebaseApp.configure()
+    print("✅ Firebase Core configured")
+    
+    // Configure other Firebase services asynchronously
     Task { @MainActor in
-      FirebaseConfiguration.configure()
+      FirebaseConfiguration.configureFirestore()
+      FirebaseConfiguration.configureAuth()
       
       // Ensure user is authenticated (anonymous if not signed in)
       do {
@@ -31,7 +36,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         print("📝 App will continue with limited functionality")
       }
     }
-    print("✅ Firebase configuration initiated")
     
     // Initialize Crashlytics (uncomment after adding package)
      print("🐛 Initializing Firebase Crashlytics...")

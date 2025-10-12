@@ -35,7 +35,10 @@ Habitto/
 ├── STEP1_COMPLETE.md                          ⭐ NEW (this file)
 └── README.md                                  📝 MODIFIED (+72 lines)
 
-Summary: 5 new files, 3 modified files, 1,117 lines of code added
+Summary: 6 new files, 3 modified files, 1,255 lines of code added
+
+NOTE: Tests are in TestsToAdd/ folder (project has no test target yet).
+      See TestsToAdd/SETUP_TEST_TARGET.md for setup instructions.
 ```
 
 ---

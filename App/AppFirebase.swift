@@ -91,7 +91,7 @@ enum FirebaseConfiguration {
       print("🧪 FirebaseConfiguration: Using Auth Emulator at \(AppEnvironment.authEmulatorHost)")
       let components = AppEnvironment.authEmulatorHost.split(separator: ":")
       if components.count == 2, let port = Int(components[1]) {
-        Auth.auth().useEmulator(withHost: String(components[0]), port: Int(port)!)
+        Auth.auth().useEmulator(withHost: String(components[0]), port: port)
       }
     }
     
@@ -146,6 +146,7 @@ enum FirebaseConfiguration {
 // MARK: - FirebaseService
 
 /// Base protocol for all Firebase services
+@MainActor
 protocol FirebaseService {
   /// Check if Firebase is properly configured
   var isConfigured: Bool { get }
