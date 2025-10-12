@@ -231,18 +231,34 @@ Habitto supports Firebase Firestore for cloud data synchronization. For local de
    npm install -g firebase-tools
    ```
 
-2. **Install Firebase Emulators**:
+2. **Install Node.js Dependencies** (for security rules testing):
    ```bash
-   firebase init emulators
+   cd /Users/chloe/Desktop/Habitto
+   npm install
    ```
-   Select:
-   - ✅ Firestore
-   - ✅ Authentication
 
-### Starting the Emulators
+3. **Firebase Emulators** (auto-configured via `firebase.json`):
+   - ✅ Firestore (port 8080)
+   - ✅ Authentication (port 9099)
+   - ✅ Emulator UI (port 4000)
+
+### Quick Start Commands
 
 ```bash
-# Start all emulators
+# Start emulators only
+npm run emu:start
+
+# Run security rules tests with emulator
+npm run emu:test
+
+# Open emulator UI in browser
+npm run emu:ui
+```
+
+### Starting the Emulators Manually
+
+```bash
+# Start all configured emulators
 firebase emulators:start
 
 # Or start specific emulators
@@ -254,7 +270,56 @@ The emulators will start on:
 - **Auth**: `localhost:9099`
 - **Emulator UI**: `http://localhost:4000`
 
-### Running Tests with Emulator
+### Running Security Rules Tests
+
+Habitto includes comprehensive Firestore security rules tests using Jest and the Firebase Rules Unit Testing library.
+
+**Test Coverage**:
+- ✅ Authentication requirements (50+ tests)
+- ✅ User data isolation
+- ✅ Habit CRUD validation
+- ✅ Goal version immutability
+- ✅ Completion date format validation
+- ✅ XP state integrity
+- ✅ XP ledger immutability (append-only)
+- ✅ Streak validation
+- ✅ Cross-user access prevention
+
+**Run tests**:
+```bash
+# Run all security rules tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage report
+npm run test:coverage
+
+# Run tests with emulator auto-start
+npm run emu:test
+```
+
+**Expected Output**:
+```
+PASS  tests/firestore.rules.test.js
+  Authentication Requirements
+    ✓ Unauthenticated users cannot read any data (45ms)
+    ✓ Unauthenticated users cannot write any data (12ms)
+    ✓ Authenticated users can read their own data (18ms)
+    ✓ Authenticated users cannot read other users data (15ms)
+  Habits Collection Rules
+    ✓ User can create valid habit (22ms)
+    ✓ User cannot create habit without required fields (14ms)
+    ✓ User cannot create habit with invalid type (16ms)
+    ... (50+ more tests)
+
+Test Suites: 1 passed, 1 total
+Tests:       58 passed, 58 total
+Time:        3.421s
+```
+
+### Running iOS Tests with Emulator
 
 ```bash
 # Set environment variables
@@ -262,7 +327,7 @@ export USE_FIREBASE_EMULATOR=true
 export FIRESTORE_EMULATOR_HOST=localhost:8080
 export AUTH_EMULATOR_HOST=localhost:9099
 
-# Run tests
+# Run iOS tests
 xcodebuild test -scheme Habitto -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
@@ -272,6 +337,35 @@ The app automatically detects emulator configuration via environment variables:
 - `USE_FIREBASE_EMULATOR`: Set to "true" to use emulators
 - `FIRESTORE_EMULATOR_HOST`: Firestore emulator address (default: localhost:8080)
 - `AUTH_EMULATOR_HOST`: Auth emulator address (default: localhost:9099)
+
+### Firestore Security Rules
+
+Security rules are defined in `firestore.rules` and enforce:
+
+1. **User-Scoped Access**: Users can only read/write data under `/users/{auth.uid}/`
+2. **Field Validation**:
+   - Habit names: 1-100 characters
+   - Habit types: 'formation' or 'breaking'
+   - Date strings: YYYY-MM-DD format (Europe/Amsterdam)
+   - Goals: >= 0
+   - Completion counts: >= 0
+   - XP: totalXP >= 0, level >= 1
+3. **Immutability**:
+   - Goal versions cannot be updated (only created/deleted)
+   - XP ledger entries are append-only (cannot be updated or deleted)
+4. **Data Integrity**:
+   - Timestamps required on all writes
+   - String length limits enforced
+   - Type validation for all fields
+
+### Firestore Indexes
+
+Indexes are defined in `firestore.indexes.json` for optimized queries:
+- Goal versions by habit and effective date
+- Completions by update time
+- XP ledger by timestamp
+- Habits by active status and creation date
+- Streaks by current streak count
 
 ### Safe Development Mode
 
@@ -291,7 +385,31 @@ Access the Firebase demo screen to:
 - See current authentication status
 - Test offline persistence
 
-**Path**: `Views/Screens/HabitsFirestoreDemoView.swift`
+**Path**: `Views/Screens/FirestoreRepoDemoView.swift`
+
+### Troubleshooting
+
+**Emulator won't start**:
+```bash
+# Kill existing emulator processes
+lsof -ti:8080,9099,4000 | xargs kill -9
+
+# Restart emulators
+npm run emu:start
+```
+
+**Tests failing**:
+```bash
+# Clear emulator data
+firebase emulators:start --clear-data
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Port conflicts**:
+Edit `firebase.json` to change emulator ports if needed.
 
 ## Usage Guidelines
 
