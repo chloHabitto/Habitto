@@ -1,0 +1,89 @@
+{
+  "name": "Multiple Goal Changes in One Day",
+  "timezone": "Europe/Amsterdam",
+  "description": "Test that multiple goal changes on the same day work correctly (last one wins)",
+  "steps": [
+    {
+      "at": "2025-10-12T08:00:00+02:00",
+      "op": "createHabit",
+      "habit": "Meditation",
+      "params": {
+        "color": "pastelBlue500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-12T08:05:00+02:00",
+      "op": "setGoal",
+      "habit": "Meditation",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-12"
+      }
+    },
+    {
+      "at": "2025-10-12T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Meditation",
+      "params": {}
+    },
+    {
+      "at": "2025-10-12T09:10:00+02:00",
+      "op": "assert",
+      "habit": "Meditation",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-10-12T12:00:00+02:00",
+      "op": "setGoal",
+      "habit": "Meditation",
+      "params": {
+        "goal": 3,
+        "effective": "2025-10-12"
+      }
+    },
+    {
+      "at": "2025-10-12T12:05:00+02:00",
+      "op": "assert",
+      "habit": "Meditation",
+      "params": {
+        "expect": {
+          "goal": 3,
+          "progress": 1,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-10-12T14:00:00+02:00",
+      "op": "complete",
+      "habit": "Meditation",
+      "params": {}
+    },
+    {
+      "at": "2025-10-12T16:00:00+02:00",
+      "op": "complete",
+      "habit": "Meditation",
+      "params": {}
+    },
+    {
+      "at": "2025-10-12T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Meditation",
+      "params": {
+        "expect": {
+          "goal": 3,
+          "progress": 3,
+          "streak": 1
+        }
+      }
+    }
+  ]
+}
+

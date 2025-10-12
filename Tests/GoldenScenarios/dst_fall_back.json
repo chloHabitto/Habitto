@@ -1,0 +1,80 @@
+{
+  "name": "DST Fall Back Test",
+  "timezone": "Europe/Amsterdam",
+  "description": "Test that goals and completions work correctly across DST fall back (3AM becomes 2AM)",
+  "steps": [
+    {
+      "at": "2025-10-25T10:00:00+02:00",
+      "op": "createHabit",
+      "habit": "Journal",
+      "params": {
+        "color": "navy500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-25T10:05:00+02:00",
+      "op": "setGoal",
+      "habit": "Journal",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-25"
+      }
+    },
+    {
+      "at": "2025-10-25T14:00:00+02:00",
+      "op": "complete",
+      "habit": "Journal",
+      "params": {}
+    },
+    {
+      "at": "2025-10-25T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Journal",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-10-26T02:30:00+02:00",
+      "op": "complete",
+      "habit": "Journal",
+      "params": {}
+    },
+    {
+      "at": "2025-10-26T04:00:00+01:00",
+      "op": "assert",
+      "habit": "Journal",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 2,
+          "streak": 2
+        }
+      }
+    },
+    {
+      "at": "2025-10-27T10:00:00+01:00",
+      "op": "complete",
+      "habit": "Journal",
+      "params": {}
+    },
+    {
+      "at": "2025-10-27T23:00:00+01:00",
+      "op": "assert",
+      "habit": "Journal",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 3
+        }
+      }
+    }
+  ]
+}
+

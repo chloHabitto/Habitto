@@ -1,0 +1,74 @@
+{
+  "name": "DST Spring Forward Test",
+  "timezone": "Europe/Amsterdam",
+  "description": "Test that goals and completions work correctly across DST spring forward (2AM becomes 3AM)",
+  "steps": [
+    {
+      "at": "2025-03-29T10:00:00+01:00",
+      "op": "createHabit",
+      "habit": "Morning Run",
+      "params": {
+        "color": "green500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-03-29T10:05:00+01:00",
+      "op": "setGoal",
+      "habit": "Morning Run",
+      "params": {
+        "goal": 2,
+        "effective": "2025-03-29"
+      }
+    },
+    {
+      "at": "2025-03-29T14:00:00+01:00",
+      "op": "complete",
+      "habit": "Morning Run",
+      "params": {}
+    },
+    {
+      "at": "2025-03-29T18:00:00+01:00",
+      "op": "complete",
+      "habit": "Morning Run",
+      "params": {}
+    },
+    {
+      "at": "2025-03-29T23:00:00+01:00",
+      "op": "assert",
+      "habit": "Morning Run",
+      "params": {
+        "expect": {
+          "goal": 2,
+          "progress": 2,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-03-30T04:00:00+02:00",
+      "op": "complete",
+      "habit": "Morning Run",
+      "params": {}
+    },
+    {
+      "at": "2025-03-30T10:00:00+02:00",
+      "op": "complete",
+      "habit": "Morning Run",
+      "params": {}
+    },
+    {
+      "at": "2025-03-30T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Morning Run",
+      "params": {
+        "expect": {
+          "goal": 2,
+          "progress": 2,
+          "streak": 2
+        }
+      }
+    }
+  ]
+}
+

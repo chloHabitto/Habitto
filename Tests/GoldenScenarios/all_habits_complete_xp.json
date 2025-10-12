@@ -1,0 +1,113 @@
+{
+  "name": "All Habits Complete XP Gating",
+  "timezone": "Europe/Amsterdam",
+  "description": "Test that XP is only awarded when ALL active habits are completed",
+  "steps": [
+    {
+      "at": "2025-10-15T08:00:00+02:00",
+      "op": "createHabit",
+      "habit": "Read",
+      "params": {
+        "color": "yellow500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-15T08:05:00+02:00",
+      "op": "createHabit",
+      "habit": "Exercise",
+      "params": {
+        "color": "green500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-15T08:10:00+02:00",
+      "op": "createHabit",
+      "habit": "Meditate",
+      "params": {
+        "color": "pastelBlue500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-15T08:15:00+02:00",
+      "op": "setGoal",
+      "habit": "Read",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-15"
+      }
+    },
+    {
+      "at": "2025-10-15T08:16:00+02:00",
+      "op": "setGoal",
+      "habit": "Exercise",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-15"
+      }
+    },
+    {
+      "at": "2025-10-15T08:17:00+02:00",
+      "op": "setGoal",
+      "habit": "Meditate",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-15"
+      }
+    },
+    {
+      "at": "2025-10-15T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Read",
+      "params": {}
+    },
+    {
+      "at": "2025-10-15T09:05:00+02:00",
+      "op": "assert",
+      "habit": "Read",
+      "params": {
+        "expect": {
+          "progress": 1,
+          "totalXP": 10
+        }
+      }
+    },
+    {
+      "at": "2025-10-15T10:00:00+02:00",
+      "op": "complete",
+      "habit": "Exercise",
+      "params": {}
+    },
+    {
+      "at": "2025-10-15T10:05:00+02:00",
+      "op": "assert",
+      "habit": "Exercise",
+      "params": {
+        "expect": {
+          "progress": 1,
+          "totalXP": 20
+        }
+      }
+    },
+    {
+      "at": "2025-10-15T11:00:00+02:00",
+      "op": "complete",
+      "habit": "Meditate",
+      "params": {}
+    },
+    {
+      "at": "2025-10-15T11:05:00+02:00",
+      "op": "assert",
+      "habit": "Meditate",
+      "params": {
+        "expect": {
+          "progress": 1,
+          "totalXP": 80
+        }
+      }
+    }
+  ]
+}
+
