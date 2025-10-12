@@ -1,0 +1,98 @@
+{
+  "name": "Streak Break and Recovery",
+  "timezone": "Europe/Amsterdam",
+  "description": "Test that streaks break when a day is skipped and can recover",
+  "steps": [
+    {
+      "at": "2025-10-10T08:00:00+02:00",
+      "op": "createHabit",
+      "habit": "Push-ups",
+      "params": {
+        "color": "red500",
+        "type": "formation"
+      }
+    },
+    {
+      "at": "2025-10-10T08:05:00+02:00",
+      "op": "setGoal",
+      "habit": "Push-ups",
+      "params": {
+        "goal": 1,
+        "effective": "2025-10-10"
+      }
+    },
+    {
+      "at": "2025-10-10T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Push-ups",
+      "params": {}
+    },
+    {
+      "at": "2025-10-10T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Push-ups",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-10-11T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Push-ups",
+      "params": {}
+    },
+    {
+      "at": "2025-10-11T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Push-ups",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 2
+        }
+      }
+    },
+    {
+      "at": "2025-10-13T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Push-ups",
+      "params": {}
+    },
+    {
+      "at": "2025-10-13T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Push-ups",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 1
+        }
+      }
+    },
+    {
+      "at": "2025-10-14T09:00:00+02:00",
+      "op": "complete",
+      "habit": "Push-ups",
+      "params": {}
+    },
+    {
+      "at": "2025-10-14T23:00:00+02:00",
+      "op": "assert",
+      "habit": "Push-ups",
+      "params": {
+        "expect": {
+          "goal": 1,
+          "progress": 1,
+          "streak": 2
+        }
+      }
+    }
+  ]
+}
+

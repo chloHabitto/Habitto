@@ -1,0 +1,413 @@
+import XCTest
+@testable import Habitto
+
+/// Unit tests for GoldenTestRunner
+///
+/// These tests verify that the golden test runner can execute scenarios correctly
+/// and detect assertion failures. Each test runs a pre-defined scenario and verifies
+/// the expected outcome.
+///
+/// Test Categories:
+/// - Basic scenario execution
+/// - DST transition handling
+/// - Multiple goal changes in one day
+/// - Streak break and recovery
+/// - All habits complete XP gating
+///
+/// To add these tests to your project:
+/// 1. Create a new test target if you don't have one
+/// 2. Copy this file to your Tests directory
+/// 3. Ensure golden scenario JSON files are in Tests/GoldenScenarios/
+/// 4. Run tests with: Product → Test (⌘+U)
+@MainActor
+final class GoldenTestRunnerTests: XCTestCase {
+    
+    var runner: GoldenTestRunner!
+    var mockRepository: MockFirestoreRepository!
+    
+    override func setUp() async throws {
+        try await super.setUp()
+        
+        // Initialize with mock dependencies for testing
+        mockRepository = MockFirestoreRepository()
+        runner = GoldenTestRunner(
+            repository: mockRepository
+        )
+    }
+    
+    override func tearDown() async throws {
+        runner = nil
+        mockRepository = nil
+        try await super.tearDown()
+    }
+    
+    // MARK: - Basic Functionality Tests
+    
+    func testLoadScenarioFromFile() async throws {
+        // Given: A golden scenario JSON file
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "dst_spring_forward",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find dst_spring_forward.json")
+            return
+        }
+        
+        // When: Loading the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: Scenario should execute successfully
+        XCTAssertTrue(result.success, "Scenario should pass")
+        XCTAssertEqual(result.passedSteps, result.totalSteps, "All steps should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+    }
+    
+    func testScenarioWithAllStepsPass() async throws {
+        // Given: A simple passing scenario
+        let scenario = GoldenScenario(
+            name: "Simple Passing Test",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "createHabit",
+                    habit: "Test",
+                    params: ["color": AnyCodable("green500"), "type": AnyCodable("formation")]
+                )
+            ]
+        )
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(scenario)
+        
+        // Then: All steps should pass
+        XCTAssertTrue(result.success)
+        XCTAssertEqual(result.passedSteps, 1)
+        XCTAssertEqual(result.failedSteps, 0)
+    }
+    
+    func testScenarioWithFailedAssertion() async throws {
+        // Given: A scenario with a failing assertion
+        let scenario = GoldenScenario(
+            name: "Failing Assertion Test",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "createHabit",
+                    habit: "Test",
+                    params: ["color": AnyCodable("green500"), "type": AnyCodable("formation")]
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(60),
+                    op: "assert",
+                    habit: "Test",
+                    params: [
+                        "expect": AnyCodable([
+                            "progress": 99  // Incorrect expected value
+                        ])
+                    ]
+                )
+            ]
+        )
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(scenario)
+        
+        // Then: The assertion should fail
+        XCTAssertFalse(result.success)
+        XCTAssertEqual(result.failedSteps, 1)
+        XCTAssertEqual(result.failures.count, 1)
+        XCTAssertEqual(result.failures[0].field, "progress")
+    }
+    
+    // MARK: - DST Tests
+    
+    func testDSTSpringForward() async throws {
+        // Given: DST spring forward scenario (2AM → 3AM)
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "dst_spring_forward",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find dst_spring_forward.json")
+            return
+        }
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: All assertions should pass across DST boundary
+        XCTAssertTrue(result.success, "DST spring forward test should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+        
+        // Verify: Output includes DST transition handling
+        print("✅ DST Spring Forward Test Passed")
+        print("   Total steps: \(result.totalSteps)")
+        print("   Passed: \(result.passedSteps)")
+    }
+    
+    func testDSTFallBack() async throws {
+        // Given: DST fall back scenario (3AM → 2AM)
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "dst_fall_back",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find dst_fall_back.json")
+            return
+        }
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: All assertions should pass across DST boundary
+        XCTAssertTrue(result.success, "DST fall back test should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+        
+        // Verify: Output includes DST transition handling
+        print("✅ DST Fall Back Test Passed")
+        print("   Total steps: \(result.totalSteps)")
+        print("   Passed: \(result.passedSteps)")
+    }
+    
+    // MARK: - Goal Versioning Tests
+    
+    func testMultipleGoalChangesInOneDay() async throws {
+        // Given: Multiple goal changes on the same day
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "multiple_goal_changes",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find multiple_goal_changes.json")
+            return
+        }
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: Latest goal should apply, existing progress preserved
+        XCTAssertTrue(result.success, "Multiple goal changes test should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+        
+        // Verify: Output shows goal changes handled correctly
+        print("✅ Multiple Goal Changes Test Passed")
+        print("   Verified: Latest goal applies")
+        print("   Verified: Existing progress preserved")
+    }
+    
+    // MARK: - Streak Tests
+    
+    func testStreakBreakAndRecovery() async throws {
+        // Given: Streak break scenario (skip a day, then continue)
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "streak_break_and_recovery",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find streak_break_and_recovery.json")
+            return
+        }
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: Streak should reset and rebuild
+        XCTAssertTrue(result.success, "Streak break test should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+        
+        // Verify: Output shows streak break and recovery
+        print("✅ Streak Break and Recovery Test Passed")
+        print("   Verified: Streak resets on skip")
+        print("   Verified: Streak rebuilds after break")
+    }
+    
+    // MARK: - XP Tests
+    
+    func testAllHabitsCompleteXPGating() async throws {
+        // Given: All habits complete scenario
+        let bundle = Bundle(for: type(of: self))
+        guard let fileURL = bundle.url(
+            forResource: "all_habits_complete_xp",
+            withExtension: "json",
+            subdirectory: "GoldenScenarios"
+        ) else {
+            XCTFail("Could not find all_habits_complete_xp.json")
+            return
+        }
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(from: fileURL)
+        
+        // Then: XP should only be awarded when all habits complete
+        XCTAssertTrue(result.success, "All habits complete XP test should pass")
+        XCTAssertEqual(result.failedSteps, 0, "No steps should fail")
+        
+        // Verify: Output shows XP gating logic
+        print("✅ All Habits Complete XP Test Passed")
+        print("   Verified: XP awarded only when all complete")
+        print("   Verified: Daily completion bonus logic")
+    }
+    
+    // MARK: - Error Handling Tests
+    
+    func testUnknownOperation() async throws {
+        // Given: A scenario with an unknown operation
+        let scenario = GoldenScenario(
+            name: "Unknown Operation Test",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "unknownOp",  // Invalid operation
+                    habit: "Test",
+                    params: nil
+                )
+            ]
+        )
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(scenario)
+        
+        // Then: Should record failure
+        XCTAssertFalse(result.success)
+        XCTAssertEqual(result.failedSteps, 1)
+        XCTAssertTrue(result.failures[0].message.contains("Unknown operation"))
+    }
+    
+    func testHabitNotFound() async throws {
+        // Given: A scenario referencing non-existent habit
+        let scenario = GoldenScenario(
+            name: "Habit Not Found Test",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "complete",
+                    habit: "NonExistentHabit",
+                    params: nil
+                )
+            ]
+        )
+        
+        // When: Running the scenario
+        let result = try await runner.runScenario(scenario)
+        
+        // Then: Should record failure
+        XCTAssertFalse(result.success)
+        XCTAssertEqual(result.failedSteps, 1)
+        XCTAssertTrue(result.failures[0].message.contains("Habit not found"))
+    }
+    
+    // MARK: - Red/Green Examples
+    
+    func testRedExample_ProgressMismatch() async throws {
+        // 🔴 RED: Expected progress doesn't match actual
+        let scenario = GoldenScenario(
+            name: "Red Example - Progress Mismatch",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "createHabit",
+                    habit: "Test",
+                    params: ["color": AnyCodable("green500"), "type": AnyCodable("formation")]
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(60),
+                    op: "setGoal",
+                    habit: "Test",
+                    params: ["goal": AnyCodable(1), "effective": AnyCodable("2025-10-12")]
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(120),
+                    op: "assert",
+                    habit: "Test",
+                    params: [
+                        "expect": AnyCodable([
+                            "progress": 5  // 🔴 Wrong! Actual is 0
+                        ])
+                    ]
+                )
+            ]
+        )
+        
+        let result = try await runner.runScenario(scenario)
+        
+        // Verify: Test fails with clear message
+        XCTAssertFalse(result.success, "🔴 Should fail - progress mismatch")
+        XCTAssertEqual(result.failures[0].expected, "5")
+        XCTAssertEqual(result.failures[0].actual, "0")
+        
+        print("🔴 RED Example Output:")
+        print("   Expected: progress = 5")
+        print("   Actual:   progress = 0")
+        print("   Message: \(result.failures[0].message)")
+    }
+    
+    func testGreenExample_CorrectAssertion() async throws {
+        // ✅ GREEN: All assertions match actual values
+        let scenario = GoldenScenario(
+            name: "Green Example - Correct Assertion",
+            timezone: "Europe/Amsterdam",
+            steps: [
+                GoldenScenarioStep(
+                    at: Date(),
+                    op: "createHabit",
+                    habit: "Test",
+                    params: ["color": AnyCodable("green500"), "type": AnyCodable("formation")]
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(60),
+                    op: "setGoal",
+                    habit: "Test",
+                    params: ["goal": AnyCodable(1), "effective": AnyCodable("2025-10-12")]
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(120),
+                    op: "complete",
+                    habit: "Test",
+                    params: nil
+                ),
+                GoldenScenarioStep(
+                    at: Date().addingTimeInterval(180),
+                    op: "assert",
+                    habit: "Test",
+                    params: [
+                        "expect": AnyCodable([
+                            "progress": 1,  // ✅ Correct!
+                            "streak": 1     // ✅ Correct!
+                        ])
+                    ]
+                )
+            ]
+        )
+        
+        let result = try await runner.runScenario(scenario)
+        
+        // Verify: Test passes
+        XCTAssertTrue(result.success, "✅ Should pass - all assertions correct")
+        XCTAssertEqual(result.passedSteps, 4)
+        XCTAssertEqual(result.failedSteps, 0)
+        
+        print("✅ GREEN Example Output:")
+        print("   All steps passed!")
+        print("   Total steps: \(result.totalSteps)")
+        print("   Passed: \(result.passedSteps)")
+    }
+}
+
+// MARK: - Mock Repository for Testing
+
+class MockFirestoreRepository: FirestoreRepository {
+    // Add mock implementations as needed for testing
+    // This allows tests to run without actual Firestore connection
+}
+
