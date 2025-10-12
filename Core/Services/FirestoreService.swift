@@ -62,7 +62,6 @@ struct MockHabit: Codable, Identifiable {
 /// Service for Firestore operations
 /// NOTE: This is a basic implementation. After adding FirebaseFirestore package,
 /// uncomment the Firestore-specific code marked with /* ... */
-@MainActor
 class FirestoreService: FirebaseService, ObservableObject {
   // MARK: Lifecycle
   
@@ -74,12 +73,13 @@ class FirestoreService: FirebaseService, ObservableObject {
   
   static let shared = FirestoreService()
   
-  @Published var habits: [MockHabit] = []
-  @Published var error: FirestoreError?
+  @MainActor @Published var habits: [MockHabit] = []
+  @MainActor @Published var error: FirestoreError?
   
   // MARK: - Habit Operations (Mock Implementation)
   
   /// Create a new habit
+  @MainActor
   func createHabit(name: String, color: String) async throws -> MockHabit {
     print("📝 FirestoreService: Creating habit '\(name)'")
     
@@ -90,7 +90,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       return habit
     }
     
-    guard let userId = currentUserId else {
+    guard currentUserId != nil else {
       throw FirestoreError.notAuthenticated
     }
     
@@ -120,6 +120,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   }
   
   /// Update an existing habit
+  @MainActor
   func updateHabit(id: String, name: String?, color: String?) async throws {
     print("📝 FirestoreService: Updating habit \(id)")
     
@@ -136,7 +137,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       return
     }
     
-    guard let userId = currentUserId else {
+    guard currentUserId != nil else {
       throw FirestoreError.notAuthenticated
     }
     
@@ -177,6 +178,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   }
   
   /// Delete a habit
+  @MainActor
   func deleteHabit(id: String) async throws {
     print("🗑️ FirestoreService: Deleting habit \(id)")
     
@@ -186,7 +188,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       return
     }
     
-    guard let userId = currentUserId else {
+    guard currentUserId != nil else {
       throw FirestoreError.notAuthenticated
     }
     
@@ -204,6 +206,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   }
   
   /// Fetch all habits
+  @MainActor
   func fetchHabits() async throws {
     print("📊 FirestoreService: Fetching habits")
     
@@ -220,7 +223,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       return
     }
     
-    guard let userId = currentUserId else {
+    guard currentUserId != nil else {
       throw FirestoreError.notAuthenticated
     }
     
@@ -257,6 +260,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   }
   
   /// Start listening to habit changes in real-time
+  @MainActor
   func startListening() {
     print("👂 FirestoreService: Starting real-time listener")
     
@@ -265,7 +269,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       return
     }
     
-    guard let userId = currentUserId else {
+    guard currentUserId != nil else {
       print("⚠️ FirestoreService: Not authenticated")
       return
     }
@@ -307,6 +311,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   }
   
   /// Stop listening to habit changes
+  @MainActor
   func stopListening() {
     print("🛑 FirestoreService: Stopping real-time listener")
     /*

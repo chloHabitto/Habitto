@@ -4,6 +4,9 @@
 //
 //  Unit tests for Firebase integration
 //
+//  NOTE: This file is ready to be added to a test target.
+//  See SETUP_TEST_TARGET.md for instructions.
+//
 
 import XCTest
 @testable import Habitto

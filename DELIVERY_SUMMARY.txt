@@ -11,14 +11,18 @@ Status: DELIVERED (awaiting SPM package addition)
 1️⃣  FILE TREE CHANGES
 ================================================================================
 
-NEW FILES (5):
+NEW FILES (6):
   📄 Config/Env.swift                              100 lines
   📄 App/AppFirebase.swift                         166 lines  
   📄 Core/Services/FirestoreService.swift          322 lines
   📄 Views/Screens/HabitsFirestoreDemoView.swift   309 lines
-  📄 Tests/FirebaseIntegrationTests.swift          205 lines
+  📄 TestsToAdd/FirebaseIntegrationTests.swift     205 lines
+  📄 TestsToAdd/SETUP_TEST_TARGET.md               138 lines
   ─────────────────────────────────────────────────────────
-  TOTAL NEW CODE:                                1,102 lines
+  TOTAL NEW CODE:                                1,240 lines
+
+NOTE: Test files are in TestsToAdd/ (project has no test target yet).
+      See TestsToAdd/SETUP_TEST_TARGET.md for setup instructions.
 
 MODIFIED FILES (3):
   📝 App/HabittoApp.swift                          +12 lines
