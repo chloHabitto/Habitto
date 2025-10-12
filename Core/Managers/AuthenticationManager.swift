@@ -68,6 +68,49 @@ class AuthenticationManager: ObservableObject {
 
   @Published var authState: AuthenticationState = .unauthenticated
   @Published var currentUser: UserProtocol?
+  
+  /// Get current user ID (useful for Firestore queries)
+  var currentUserId: String? {
+    currentUser?.uid
+  }
+
+  // MARK: - Anonymous Authentication
+  
+  /// Sign in anonymously (for guest users who want to try the app)
+  func signInAnonymously(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
+    print("🔐 AuthenticationManager: Starting anonymous sign-in")
+    authState = .authenticating
+    
+    Task {
+      do {
+        let result = try await Auth.auth().signInAnonymously()
+        let user = result.user
+        
+        await MainActor.run {
+          self.authState = .authenticated(user)
+          self.currentUser = user
+          
+          // Track anonymous user in Crashlytics
+          CrashlyticsService.shared.setUserID(user.uid)
+          CrashlyticsService.shared.setValue("anonymous", forKey: "auth_provider")
+          
+          print("✅ AuthenticationManager: Anonymous sign-in successful: \(user.uid)")
+          completion(.success(user))
+        }
+      } catch {
+        await MainActor.run {
+          self.authState = .error(error.localizedDescription)
+          print("❌ AuthenticationManager: Anonymous sign-in failed: \(error.localizedDescription)")
+          completion(.failure(error))
+        }
+      }
+    }
+  }
+  
+  /// Check if current user is anonymous
+  var isAnonymous: Bool {
+    Auth.auth().currentUser?.isAnonymous ?? false
+  }
 
   // MARK: - Email/Password Authentication
 

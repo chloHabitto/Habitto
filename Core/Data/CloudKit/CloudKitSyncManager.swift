@@ -1,4 +1,5 @@
 import CloudKit
+import FirebaseAuth
 import Foundation
 import OSLog
 import SwiftUI
@@ -106,7 +107,8 @@ final class CloudKitSyncManager {
     }
     
     // Check if user is authenticated with Firebase (skip for guest mode)
-    guard AuthenticationManager.shared.currentUser != nil else {
+    // Access Firebase Auth directly to avoid main actor isolation issues
+    guard Auth.auth().currentUser != nil else {
       logger.info("Guest mode - CloudKit sync disabled")
       return false
     }

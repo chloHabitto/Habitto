@@ -113,11 +113,15 @@ final class SwiftDataContainer: ObservableObject {
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
       }
 
+      // ✅ CRITICAL: Explicitly disable CloudKit auto-sync
+      // We're using our own custom CloudKit sync layer (CloudKitManager)
+      // NOT SwiftData's built-in CloudKit integration
       let modelConfiguration = ModelConfiguration(
         schema: schema,
-        isStoredInMemoryOnly: false)
+        isStoredInMemoryOnly: false,
+        cloudKitDatabase: .none)  // Disable automatic CloudKit sync
 
-      logger.info("🔧 SwiftData: Creating ModelContainer...")
+      logger.info("🔧 SwiftData: Creating ModelContainer (CloudKit sync: DISABLED)...")
       self.modelContainer = try ModelContainer(
         for: schema,
         configurations: [modelConfiguration])
@@ -322,10 +326,11 @@ final class SwiftDataContainer: ObservableObject {
     ])
 
     do {
-      // Create new model configuration
+      // Create new model configuration (explicitly disable CloudKit)
       let modelConfiguration = ModelConfiguration(
         schema: schema,
-        isStoredInMemoryOnly: false)
+        isStoredInMemoryOnly: false,
+        cloudKitDatabase: .none)  // Disable automatic CloudKit sync
 
       // ✅ FIX: Use _ to indicate intentionally unused value
       _ = try ModelContainer(

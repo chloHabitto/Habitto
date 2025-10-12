@@ -220,6 +220,79 @@ Tests/
 - 🔄 **Conflict Resolution**: CloudKit conflict handling system
 - 🔄 **Advanced Analytics**: AI-powered insights and recommendations
 
+## 🔥 Running with Firebase Emulator Suite
+
+Habitto supports Firebase Firestore for cloud data synchronization. For local development and testing, you can use the Firebase Emulator Suite.
+
+### Prerequisites
+
+1. **Install Firebase CLI**:
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+2. **Install Firebase Emulators**:
+   ```bash
+   firebase init emulators
+   ```
+   Select:
+   - ✅ Firestore
+   - ✅ Authentication
+
+### Starting the Emulators
+
+```bash
+# Start all emulators
+firebase emulators:start
+
+# Or start specific emulators
+firebase emulators:start --only firestore,auth
+```
+
+The emulators will start on:
+- **Firestore**: `localhost:8080`
+- **Auth**: `localhost:9099`
+- **Emulator UI**: `http://localhost:4000`
+
+### Running Tests with Emulator
+
+```bash
+# Set environment variables
+export USE_FIREBASE_EMULATOR=true
+export FIRESTORE_EMULATOR_HOST=localhost:8080
+export AUTH_EMULATOR_HOST=localhost:9099
+
+# Run tests
+xcodebuild test -scheme Habitto -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+### Configuration
+
+The app automatically detects emulator configuration via environment variables:
+- `USE_FIREBASE_EMULATOR`: Set to "true" to use emulators
+- `FIRESTORE_EMULATOR_HOST`: Firestore emulator address (default: localhost:8080)
+- `AUTH_EMULATOR_HOST`: Auth emulator address (default: localhost:9099)
+
+### Safe Development Mode
+
+If `GoogleService-Info.plist` is missing:
+- ✅ App runs with mock data
+- ✅ Unit tests use fake implementations
+- ✅ Banner shows "Firebase not configured"
+- ✅ No crashes or errors
+
+This allows development and testing without requiring Firebase credentials.
+
+### Demo Screen
+
+Access the Firebase demo screen to:
+- View real-time habit synchronization
+- Create, update, and delete habits
+- See current authentication status
+- Test offline persistence
+
+**Path**: `Views/Screens/HabitsFirestoreDemoView.swift`
+
 ## Usage Guidelines
 
 - **Core/UI**: Place reusable UI components here
