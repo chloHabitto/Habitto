@@ -1,152 +1,134 @@
 # CloudKit Disabled for Firebase Migration
 
 **Date**: October 12, 2025  
-**Reason**: Startup lag and schema validation errors  
-**Status**: ✅ FIXED
+**Status**: ✅ Fixed  
+**Impact**: Resolves 10-15 second startup lag and console errors
 
----
+## Context
 
-## 🔍 Problem
+During the Firebase migration (Steps 1-6), we encountered significant startup performance issues caused by SwiftData attempting to validate against CloudKit requirements, even though we're transitioning to Firebase/Firestore as the single source of truth.
 
-During app startup, the following issues occurred:
+## Symptoms
 
-1. **SwiftData + CloudKit Schema Mismatch**:
-   - CloudKit validation was running even though CloudKit sync was disabled
-   - Schema validation errors: non-optional attributes, missing relationship inverses, unique constraints
-   - Caused "Store failed to load" errors
+- **Startup Lag**: 10-15 seconds on first launch
+- **Console Spam**: Hundreds of "no such table: ZHABITDATA" errors
+- **Database Resets**: Continuous corruption detection and database recreation
+- **CloudKit Validation Errors**: "CloudKit integration requires that all relationships have an inverse..." 
 
-2. **Startup Performance**:
-   - 5+ database load attempts, each taking 5+ seconds
-   - Multiple "corruption detected" → database reset → retry cycles
-   - Total startup delay: 10-15 seconds
+## Root Cause
 
-3. **Console Spam**:
-   - Hundreds of CoreData errors
-   - "no such table: ZHABITDATA" repeated errors
-   - SQLite busy statement errors
+The app was previously configured with CloudKit entitlements and SwiftData was trying to maintain backward compatibility with the old CloudKit-enabled database schema, even after we:
+1. Disabled CloudKit in code (`cloudKitDatabase: .none`)
+2. Commented out CloudKit entitlements in `Habitto.entitlements`
 
----
+The issue was that build artifacts and existing database files still contained CloudKit metadata.
 
-## ✅ Solution
+## Solution
 
-**Disabled CloudKit in entitlements** while keeping SwiftData functional.
-
-### Changes Made
-
+### 1. Entitlements Updated
 **File**: `Habitto.entitlements`
 
-```diff
-- <key>com.apple.developer.icloud-container-identifiers</key>
-- <array>
--   <string>iCloud.$(CFBundleIdentifier)</string>
-- </array>
-- <key>com.apple.developer.ubiquity-container-identifiers</key>
-- <array>
--   <string>iCloud.$(CFBundleIdentifier)</string>
-- </array>
-- <key>com.apple.developer.icloud-services</key>
-- <array>
--   <string>CloudKit</string>
--   <string>CloudDocuments</string>
-- </array>
-
-+ <!-- CloudKit disabled - using Firestore as single source of truth -->
-+ <!-- Uncomment if CloudKit sync needed in future -->
+CloudKit-related keys are now commented out:
+```xml
+<!-- CloudKit disabled - using Firestore as single source of truth -->
+<!-- Uncomment below if CloudKit sync is needed in future -->
+<!--
+<key>com.apple.developer.icloud-container-identifiers</key>
+<array>
+    <string>iCloud.$(CFBundleIdentifier)</string>
+</array>
+<key>com.apple.developer.ubiquity-container-identifiers</key>
+<array>
+    <string>iCloud.$(CFBundleIdentifier)</string>
+</array>
+<key>com.apple.developer.icloud-services</key>
+<array>
+    <string>CloudKit</string>
+    <string>CloudDocuments</string>
+</array>
+-->
 ```
 
-**Result**:
-- ✅ No more schema validation errors
-- ✅ Fast startup (< 1 second)
-- ✅ Clean console logs
-- ✅ SwiftData still works (local only)
-- ✅ Ready for Firestore migration
+### 2. SwiftData Configuration
+**File**: `Core/Data/SwiftData/SwiftDataContainer.swift`
 
----
-
-## 📊 Before vs After
-
-### Before (With CloudKit Enabled)
-```
-🔧 SwiftData: Creating model configuration...
-CoreData: error: Store failed to load (134060)
-❌ SwiftData: Database corruption detected
-🔧 SwiftData: Removing corrupted database files...
-Successfully loaded 2 habits in 5.169s
-Failed to load habits: The file couldn't be opened.
-⚠️ Failed to load existing habits, starting fresh
-[Repeat 5+ times]
-Total startup time: ~15 seconds
+ModelConfiguration explicitly disables CloudKit:
+```swift
+let modelConfiguration = ModelConfiguration(
+    schema: schema,
+    isStoredInMemoryOnly: false,
+    cloudKitDatabase: .none)  // Disable automatic CloudKit sync
 ```
 
-### After (CloudKit Disabled)
+### 3. Cleanup Script Created
+**File**: `Scripts/shell/clean_cloudkit_artifacts.sh`
+
+Automated cleanup script that:
+- Removes DerivedData artifacts
+- Uninstalls app from simulator
+- Provides instructions for manual clean build
+
+**Usage**:
+```bash
+./Scripts/shell/clean_cloudkit_artifacts.sh
 ```
-🔧 SwiftData: Creating model configuration...
-✅ SwiftData: Container initialized successfully
-Successfully loaded 2 habits in 0.089s
-Total startup time: < 1 second
-```
 
----
+## Verification
 
-## 🎯 Impact on Firebase Migration
+After applying the fix and rebuilding:
 
-**No Impact** - This change is **aligned** with the Firebase migration plan:
+✅ **Performance**: App starts in < 2 seconds  
+✅ **Console**: Clean logs without CloudKit errors  
+✅ **Database**: No corruption detection loops  
+✅ **Functionality**: All existing features work normally  
 
-1. **Step 1-3**: ✅ Complete (Firebase + Firestore + Security Rules)
-2. **Firestore = Single Source of Truth**: CloudKit not needed
-3. **SwiftData**: Will become optional UI cache (Step 9)
-4. **CloudKit**: Can be re-enabled later if dual-sync needed (Step 10)
+## Future Considerations
 
----
+### If CloudKit Sync is Needed Later
 
-## 🔄 Future Re-enabling (If Needed)
-
-If CloudKit sync is needed later:
-
-1. **Uncomment entitlements**:
-   ```xml
-   <key>com.apple.developer.icloud-services</key>
-   <array>
-     <string>CloudKit</string>
-   </array>
-   ```
-
-2. **Fix SwiftData schema**:
-   - Make all relationships optional with inverses
-   - Add default values to non-optional attributes
+1. **Uncomment entitlements** in `Habitto.entitlements`
+2. **Update SwiftData schema** to meet CloudKit requirements:
+   - All relationships must have inverses
+   - All attributes must be optional or have defaults
+   - Relationships must be optional
    - Remove unique constraints
-   - See `CLOUDKIT_FIX_SWIFTDATA_CONFLICT.md` for details
+3. **Update ModelConfiguration**:
+   ```swift
+   let modelConfiguration = ModelConfiguration(
+       schema: schema,
+       isStoredInMemoryOnly: false,
+       cloudKitDatabase: .automatic)
+   ```
+4. **Test migration path** from non-CloudKit to CloudKit
 
-3. **Enable dual-write** (per Step 10):
-   - RepositoryFacade writes to Firestore primary
-   - Optional CloudKit writes with feature flag
-   - Backfill from CloudKit to Firestore
+### Current Architecture
 
----
+- **Primary Source of Truth**: Firebase Firestore
+- **Local Cache**: SwiftData (CloudKit disabled)
+- **Authentication**: Firebase Anonymous Auth
+- **Sync Strategy**: Firestore offline persistence + real-time listeners
 
-## ✅ Verification
+## Related Files
 
-**Before fixing**:
-- Startup time: 10-15 seconds
-- Console errors: 500+ lines
-- Database resets: Multiple per launch
+- `Habitto.entitlements` - CloudKit entitlements disabled
+- `Core/Data/SwiftData/SwiftDataContainer.swift` - ModelConfiguration
+- `Scripts/shell/clean_cloudkit_artifacts.sh` - Cleanup script
+- `CLOUDKIT_DISABLED_FIX.md` - User-facing fix instructions
 
-**After fixing**:
-- Startup time: < 1 second ✅
-- Console errors: None ✅
-- Database resets: None ✅
+## Testing Checklist
 
----
+- [x] App launches quickly (< 2 seconds)
+- [x] No CloudKit validation errors in console
+- [x] No database corruption loops
+- [x] SwiftData works for local caching
+- [x] Firebase authentication works
+- [x] Firestore operations work
+- [x] Existing user data preserved
 
-## 📚 Related Documentation
+## Migration Impact
 
-- `CLOUDKIT_FIX_SWIFTDATA_CONFLICT.md` - CloudKit schema requirements
-- `STEP2_DELIVERY.md` - Firestore as single source of truth
-- `STEP3_DELIVERY.md` - Security rules and testing
-
----
-
-**Status**: ✅ FIXED  
-**Next**: Continue with Step 5 (Goal Versioning Service)
-
-
+This change is **non-breaking** for users:
+- Existing local data is preserved
+- App functionality remains unchanged
+- Performance significantly improved
+- Ready for Firebase migration steps 5-10

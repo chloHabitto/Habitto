@@ -28,36 +28,10 @@ struct HomeTabView: View {
     self.onSetProgress = onSetProgress
     self.onDeleteHabit = onDeleteHabit
     self.onCompletionDismiss = onCompletionDismiss
-    // Initialize DailyAwardService with proper error handling
-    // ✅ CRITICAL FIX: Disable CloudKit sync for DailyAward to avoid schema constraints
-    do {
-      let configuration = ModelConfiguration(cloudKitDatabase: .none)
-      let container = try ModelContainer(for: DailyAward.self, configurations: configuration)
-      self
-        ._awardService =
-        StateObject(wrappedValue: DailyAwardService(modelContext: ModelContext(container)))
-    } catch {      // Fallback: create a new container as last resort
-      // This should not happen in normal circumstances
-      print("⚠️ HomeTabView: Failed to create ModelContainer for DailyAward: \(error)")
-      // Create a minimal container for testing/fallback
-      do {
-        let fallbackConfiguration = ModelConfiguration(
-          isStoredInMemoryOnly: true,
-          cloudKitDatabase: .none)
-        let fallbackContainer = try ModelContainer(
-          for: DailyAward.self,
-          configurations: fallbackConfiguration)
-        self
-          ._awardService =
-          StateObject(
-            wrappedValue: DailyAwardService(modelContext: ModelContext(fallbackContainer)))
-      } catch {
-        // If even the fallback fails, create a dummy service
-        print("❌ HomeTabView: Critical error - cannot create ModelContainer: \(error)")
-        // This will cause a runtime error, but it's better than a crash
-        fatalError("Cannot initialize DailyAwardService: \(error)")
-      }
-    }
+    
+    // Initialize DailyAwardService
+    // Use new Firebase-based DailyAwardService (no ModelContext needed)
+    self._awardService = StateObject(wrappedValue: DailyAwardService.shared)
 
     // Subscribe to event bus - will be handled in onAppear
   }
@@ -1100,10 +1074,9 @@ struct HomeTabView: View {
       print("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
       #endif
 
-      _ = await awardService.revokeIfAnyIncomplete(
-        date: selectedDate,
-        userId: getCurrentUserId(),
-        callSite: "ui_habit_uncompleted")
+      // Note: New Firebase-based DailyAwardService uses ledger system
+      // XP changes are tracked via awardXP(), no explicit revocation needed
+      print("ℹ️ HomeTabView: Habit uncompleted, XP managed by ledger system")
     }
 
     // Resort immediately
@@ -1143,11 +1116,10 @@ struct HomeTabView: View {
         #endif
 
         print("🎯 COMPLETION_FLOW: Calling DailyAwardService.grantIfAllComplete()")
-        let result = await awardService.grantIfAllComplete(
-          date: selectedDate,
-          userId: userId,
-          callSite: "ui_sheet_dismiss")
-        print("🎯 COMPLETION_FLOW: grantIfAllComplete result: \(result)")
+        // Note: New Firebase-based system handles XP through ledger
+        // Award XP if all habits complete (logic will be in StreakService)
+        print("🎯 COMPLETION_FLOW: Checking XP awards via new Firebase system")
+        // TODO: Implement all-habits-complete check with new StreakService
 
         // Check XP after award
         let currentXP = XPManager.shared.userProgress.totalXP

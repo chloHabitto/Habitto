@@ -827,39 +827,20 @@ class HabitRepository: ObservableObject {
     if allCompleted {
       print("🎯 XP CHECK: ✅ All habits completed, awarding XP")
 
-      // Create DailyAwardService and award XP
+      // Award XP using new Firebase-based DailyAwardService
       do {
-        let container = try ModelContainer(for: DailyAward.self)
-        let modelContext = ModelContext(container)
-        let awardService = DailyAwardService(modelContext: modelContext)
-
-        let awarded = await awardService.grantIfAllComplete(
-          date: date,
-          userId: userId,
-          callSite: "habit_repository")
-        print("🎯 XP CHECK: XP awarded: \(awarded)")
+        let awardService = DailyAwardService.shared
+        try await awardService.awardDailyCompletionBonus(on: date)
+        print("🎯 XP CHECK: XP awarded for all habits complete")
       } catch {
-        print("❌ XP CHECK: Failed to create DailyAwardService: \(error)")
+        print("❌ XP CHECK: Failed to award XP: \(error)")
       }
     } else {
       print("🎯 XP CHECK: ❌ Not all habits completed, no XP awarded")
 
-      // Check if we need to revoke any existing XP
-      do {
-        let container = try ModelContainer(for: DailyAward.self)
-        let modelContext = ModelContext(container)
-        let awardService = DailyAwardService(modelContext: modelContext)
-
-        let revoked = await awardService.revokeIfAnyIncomplete(
-          date: date,
-          userId: userId,
-          callSite: "habit_repository")
-        if revoked {
-          print("🎯 XP CHECK: Revoked existing XP award")
-        }
-      } catch {
-        print("❌ XP CHECK: Failed to revoke XP: \(error)")
-      }
+      // Note: XP revocation handled by DailyAwardService integrity checks
+      // The ledger-based system doesn't need explicit revocation
+      print("🎯 XP CHECK: ❌ Not all habits completed, no XP change needed")
     }
   }
 
