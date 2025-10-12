@@ -17,10 +17,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
-    // Configure Firebase
+    // Configure Firebase using centralized configuration
     print("🔥 Configuring Firebase...")
-    FirebaseApp.configure()
-    print("✅ Firebase configured successfully")
+    Task { @MainActor in
+      FirebaseConfiguration.configure()
+      
+      // Ensure user is authenticated (anonymous if not signed in)
+      do {
+        let uid = try await FirebaseConfiguration.ensureAuthenticated()
+        print("✅ User authenticated with uid: \(uid)")
+      } catch {
+        print("⚠️ Failed to authenticate user: \(error.localizedDescription)")
+        print("📝 App will continue with limited functionality")
+      }
+    }
+    print("✅ Firebase configuration initiated")
     
     // Initialize Crashlytics (uncomment after adding package)
      print("🐛 Initializing Firebase Crashlytics...")

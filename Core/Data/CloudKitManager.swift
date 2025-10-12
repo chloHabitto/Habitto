@@ -1,4 +1,5 @@
 import CloudKit
+import FirebaseAuth
 import SwiftUI
 
 // MARK: - CloudKitError
@@ -86,7 +87,8 @@ class CloudKitManager: ObservableObject {
     }
     
     // Check if user is authenticated (either Firebase Auth or guest mode)
-    let hasFirebaseUser = AuthenticationManager.shared.currentUser != nil
+    // Access Firebase Auth directly to avoid main actor isolation issues
+    let hasFirebaseUser = Auth.auth().currentUser != nil
     let isGuestMode = hasFirebaseUser == false
     
     // Allow CloudKit for authenticated users, but skip for guest mode
