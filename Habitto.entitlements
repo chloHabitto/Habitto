@@ -6,6 +6,9 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- CloudKit disabled - using Firestore as single source of truth -->
+	<!-- Uncomment below if CloudKit sync is needed in future -->
+	<!--
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.$(CFBundleIdentifier)</string>
@@ -19,5 +22,6 @@
 		<string>CloudKit</string>
 		<string>CloudDocuments</string>
 	</array>
+	-->
 </dict>
 </plist>
