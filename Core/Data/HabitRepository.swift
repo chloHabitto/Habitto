@@ -811,7 +811,6 @@ class HabitRepository: ObservableObject {
   /// Check if all habits are completed for a date and award XP if so
   private func checkAndAwardXPForDate(_ date: Date) async {
     let dateKey = DateKey.key(for: date)
-    let userId = await CurrentUser().idOrGuest
 
     print("🎯 XP CHECK: Checking if all habits completed for \(dateKey)")
 
