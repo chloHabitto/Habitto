@@ -1,0 +1,361 @@
+//
+//  FirestoreRepositoryTests.swift
+//  HabittoTests
+//
+//  Unit tests for Firestore Repository (Step 2)
+//
+
+import XCTest
+@testable import Habitto
+
+@MainActor
+final class FirestoreRepositoryTests: XCTestCase {
+  
+  var repository: FirestoreRepository!
+  var fixedDate: Date!
+  
+  override func setUp() async throws {
+    // Use fixed date for deterministic testing
+    let dateComponents = DateComponents(
+      year: 2025,
+      month: 10,
+      day: 15,
+      hour: 12,
+      minute: 0,
+      second: 0)
+    fixedDate = Calendar(identifier: .gregorian).date(from: dateComponents)!
+    
+    let nowProvider = FixedNowProvider(fixedDate: fixedDate)
+    let tzProvider = AmsterdamTimeZoneProvider()
+    
+    repository = FirestoreRepository(nowProvider: nowProvider, timeZoneProvider: tzProvider)
+  }
+  
+  override func tearDown() async throws {
+    repository.stopListening()
+    repository = nil
+  }
+  
+  // MARK: - Habit CRUD Tests
+  
+  func testCreateHabit() async throws {
+    let habitId = try await repository.createHabit(
+      name: "Morning Run",
+      color: "green",
+      type: "formation")
+    
+    XCTAssertFalse(habitId.isEmpty, "Habit ID should not be empty")
+    XCTAssertTrue(repository.habits.contains(where: { $0.id == habitId }), "Habit should be in list")
+    
+    let habit = repository.habits.first(where: { $0.id == habitId })
+    XCTAssertEqual(habit?.name, "Morning Run")
+    XCTAssertEqual(habit?.color, "green")
+    XCTAssertEqual(habit?.type, "formation")
+    XCTAssertTrue(habit?.active ?? false)
+  }
+  
+  func testUpdateHabit() async throws {
+    let habitId = try await repository.createHabit(name: "Original", color: "red")
+    
+    try await repository.updateHabit(id: habitId, name: "Updated", color: "blue")
+    
+    let habit = repository.habits.first(where: { $0.id == habitId })
+    XCTAssertEqual(habit?.name, "Updated")
+    XCTAssertEqual(habit?.color, "blue")
+  }
+  
+  func testDeleteHabit() async throws {
+    let habitId = try await repository.createHabit(name: "To Delete", color: "red")
+    XCTAssertTrue(repository.habits.contains(where: { $0.id == habitId }))
+    
+    try await repository.deleteHabit(id: habitId)
+    
+    XCTAssertFalse(repository.habits.contains(where: { $0.id == habitId }))
+  }
+  
+  // MARK: - Goal Versioning Tests
+  
+  func testSetGoal() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    try await repository.setGoal(
+      habitId: habitId,
+      effectiveLocalDate: "2025-10-15",
+      goal: 3)
+    
+    // Should not throw
+    XCTAssertTrue(true, "Goal set successfully")
+  }
+  
+  func testSetGoalValidation() async {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    // Invalid date format
+    do {
+      try await repository.setGoal(habitId: habitId, effectiveLocalDate: "2025/10/15", goal: 1)
+      XCTFail("Should throw for invalid date format")
+    } catch FirestoreError.invalidData {
+      // Expected
+    } catch {
+      XCTFail("Unexpected error: \(error)")
+    }
+    
+    // Negative goal
+    do {
+      try await repository.setGoal(habitId: habitId, effectiveLocalDate: "2025-10-15", goal: -1)
+      XCTFail("Should throw for negative goal")
+    } catch FirestoreError.invalidData {
+      // Expected
+    } catch {
+      XCTFail("Unexpected error: \(error)")
+    }
+  }
+  
+  func testGetGoal() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    let goal = try await repository.getGoal(habitId: habitId, on: "2025-10-15")
+    XCTAssertEqual(goal, 1, "Default goal should be 1")
+  }
+  
+  // MARK: - Completion Tests
+  
+  func testIncrementCompletion() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    try await repository.incrementCompletion(habitId: habitId, localDate: "2025-10-15")
+    
+    let count = try await repository.getCompletion(habitId: habitId, localDate: "2025-10-15")
+    XCTAssertEqual(count, 1, "Completion count should be 1 after increment")
+    
+    // Increment again
+    try await repository.incrementCompletion(habitId: habitId, localDate: "2025-10-15")
+    
+    let count2 = try await repository.getCompletion(habitId: habitId, localDate: "2025-10-15")
+    XCTAssertEqual(count2, 2, "Completion count should be 2 after second increment")
+  }
+  
+  func testCompletionDateValidation() async {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    // Invalid date format
+    do {
+      try await repository.incrementCompletion(habitId: habitId, localDate: "2025/10/15")
+      XCTFail("Should throw for invalid date format")
+    } catch FirestoreError.invalidData {
+      // Expected
+    } catch {
+      XCTFail("Unexpected error: \(error)")
+    }
+  }
+  
+  // MARK: - XP Tests
+  
+  func testAwardXP() async throws {
+    // Initialize XP state
+    repository.streamXPState()
+    
+    XCTAssertEqual(repository.xpState?.totalXP, 0)
+    XCTAssertEqual(repository.xpState?.level, 1)
+    
+    try await repository.awardXP(delta: 50, reason: "Test reward")
+    
+    XCTAssertEqual(repository.xpState?.totalXP, 50)
+    XCTAssertEqual(repository.xpState?.level, 1)
+    XCTAssertEqual(repository.xpState?.currentLevelXP, 50)
+  }
+  
+  func testXPLevelUp() async throws {
+    repository.streamXPState()
+    
+    try await repository.awardXP(delta: 150, reason: "Level up test")
+    
+    XCTAssertEqual(repository.xpState?.totalXP, 150)
+    XCTAssertEqual(repository.xpState?.level, 2) // 150 XP = level 2
+    XCTAssertEqual(repository.xpState?.currentLevelXP, 50) // 150 % 100 = 50
+  }
+  
+  func testXPIntegrityCheck() async throws {
+    repository.streamXPState()
+    
+    try await repository.awardXP(delta: 100, reason: "Test")
+    
+    let isValid = try await repository.verifyXPIntegrity()
+    XCTAssertTrue(isValid, "XP integrity should be valid")
+  }
+  
+  // MARK: - Streak Tests
+  
+  func testStreakInitial() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-15", completed: true)
+    
+    let streak = repository.streaks[habitId]
+    XCTAssertEqual(streak?.current, 1)
+    XCTAssertEqual(streak?.longest, 1)
+    XCTAssertEqual(streak?.lastCompletionDate, "2025-10-15")
+  }
+  
+  func testStreakConsecutive() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    // Day 1
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-15", completed: true)
+    XCTAssertEqual(repository.streaks[habitId]?.current, 1)
+    
+    // Day 2 (consecutive)
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-16", completed: true)
+    XCTAssertEqual(repository.streaks[habitId]?.current, 2)
+    XCTAssertEqual(repository.streaks[habitId]?.longest, 2)
+  }
+  
+  func testStreakBroken() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    // Day 1
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-15", completed: true)
+    
+    // Day 3 (skip day 2 - not consecutive)
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-17", completed: true)
+    XCTAssertEqual(repository.streaks[habitId]?.current, 1, "Streak should reset to 1")
+    XCTAssertEqual(repository.streaks[habitId]?.longest, 1)
+  }
+  
+  func testStreakReset() async throws {
+    let habitId = try await repository.createHabit(name: "Test", color: "green")
+    
+    // Build streak
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-15", completed: true)
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-16", completed: true)
+    XCTAssertEqual(repository.streaks[habitId]?.current, 2)
+    
+    // Break streak
+    try await repository.updateStreak(habitId: habitId, localDate: "2025-10-17", completed: false)
+    XCTAssertEqual(repository.streaks[habitId]?.current, 0)
+    XCTAssertEqual(repository.streaks[habitId]?.longest, 2, "Longest should be preserved")
+  }
+}
+
+// MARK: - Time Provider Tests
+
+@MainActor
+final class TimeProviderTests: XCTestCase {
+  
+  func testLocalDateFormatter() {
+    let formatter = LocalDateFormatter()
+    
+    let testDate = Date(timeIntervalSince1970: 1697385600) // 2023-10-15 12:00:00 UTC
+    let dateString = formatter.dateToString(testDate)
+    
+    // Should convert to Europe/Amsterdam timezone
+    XCTAssertTrue(dateString.contains("2023-10"), "Should be in October 2023")
+    
+    // Verify round-trip
+    let parsedDate = formatter.stringToDate(dateString)
+    XCTAssertNotNil(parsedDate, "Should parse date string")
+  }
+  
+  func testTodayString() {
+    let fixedDate = Date(timeIntervalSince1970: 1697385600)
+    let nowProvider = FixedNowProvider(fixedDate: fixedDate)
+    let formatter = LocalDateFormatter(nowProvider: nowProvider)
+    
+    let today = formatter.today()
+    XCTAssertTrue(today.matches("^\\d{4}-\\d{2}-\\d{2}$"), "Should match YYYY-MM-DD format")
+  }
+  
+  func testAddDays() {
+    let formatter = LocalDateFormatter()
+    
+    let result = formatter.addDays(1, to: "2025-10-15")
+    XCTAssertEqual(result, "2025-10-16")
+    
+    let result2 = formatter.addDays(-1, to: "2025-10-15")
+    XCTAssertEqual(result2, "2025-10-14")
+  }
+  
+  func testSameDay() {
+    let formatter = LocalDateFormatter()
+    
+    let date1 = Date(timeIntervalSince1970: 1697385600) // 2023-10-15 12:00:00 UTC
+    let date2 = Date(timeIntervalSince1970: 1697399999) // 2023-10-15 15:59:59 UTC
+    
+    XCTAssertTrue(formatter.isSameDay(date1, date2), "Should be same day in Europe/Amsterdam")
+  }
+  
+  func testDSTTransition() {
+    let formatter = LocalDateFormatter()
+    
+    // Test spring forward (last Sunday of March 2025: March 30)
+    let springDate = Date(timeIntervalSince1970: 1743120000) // Around March 30, 2025
+    
+    // Check if DST detection works
+    let isDST = formatter.isDSTTransition(springDate)
+    print("Spring DST transition: \(isDST)")
+    
+    // Test fall back (last Sunday of October 2025: October 26)
+    let fallDate = Date(timeIntervalSince1970: 1761436800) // Around October 26, 2025
+    
+    let isFallDST = formatter.isDSTTransition(fallDate)
+    print("Fall DST transition: \(isFallDST)")
+  }
+}
+
+// MARK: - Integration Tests (Require Emulator)
+
+@MainActor
+final class FirestoreRepositoryIntegrationTests: XCTestCase {
+  
+  func testFullWorkflow() async {
+    guard AppEnvironment.isUsingEmulator else {
+      print("⚠️ Skipping integration test (emulator not configured)")
+      return
+    }
+    
+    let repository = FirestoreRepository.shared
+    
+    // Create habit
+    do {
+      let habitId = try await repository.createHabit(name: "Integration Test", color: "blue")
+      
+      // Set goal
+      try await repository.setGoal(habitId: habitId, effectiveLocalDate: "2025-10-15", goal: 2)
+      
+      // Complete habit
+      try await repository.incrementCompletion(habitId: habitId, localDate: "2025-10-15")
+      
+      // Check completion
+      let count = try await repository.getCompletion(habitId: habitId, localDate: "2025-10-15")
+      XCTAssertEqual(count, 1)
+      
+      // Update streak
+      try await repository.updateStreak(habitId: habitId, localDate: "2025-10-15", completed: true)
+      
+      // Award XP
+      try await repository.awardXP(delta: 20, reason: "Integration test")
+      
+      // Verify XP
+      let isValid = try await repository.verifyXPIntegrity()
+      XCTAssertTrue(isValid)
+      
+      // Cleanup
+      try await repository.deleteHabit(id: habitId)
+      
+      print("✅ Full workflow test passed")
+      
+    } catch {
+      XCTFail("Integration test failed: \(error)")
+    }
+  }
+}
+
+// MARK: - String Extension for Regex
+
+extension String {
+  func matches(_ pattern: String) -> Bool {
+    range(of: pattern, options: .regularExpression) != nil
+  }
+}
+
+
