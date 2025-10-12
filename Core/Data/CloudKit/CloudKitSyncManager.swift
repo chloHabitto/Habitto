@@ -93,8 +93,26 @@ final class CloudKitSyncManager {
 
   /// Checks if CloudKit is available
   func isCloudKitAvailable() -> Bool {
-    // CloudKit is disabled for now to prevent crashes
-    false
+    // Check if iCloud is available on this device
+    guard FileManager.default.ubiquityIdentityToken != nil else {
+      logger.warning("iCloud not available (not signed in or disabled)")
+      return false
+    }
+    
+    // Check if container can be initialized
+    guard container != nil else {
+      logger.warning("CloudKit container not initialized")
+      return false
+    }
+    
+    // Check if user is authenticated with Firebase (skip for guest mode)
+    guard AuthenticationManager.shared.currentUser != nil else {
+      logger.info("Guest mode - CloudKit sync disabled")
+      return false
+    }
+    
+    logger.info("CloudKit is available and ready")
+    return true
   }
 
   // MARK: Private
@@ -105,8 +123,13 @@ final class CloudKitSyncManager {
 
   /// Lazy initialization of CloudKit container
   private var container: CKContainer? {
-    // CloudKit is disabled for now to prevent crashes
-    nil
+    if _container == nil {
+      // Initialize CloudKit container with app's container identifier
+      // This should match your iCloud Container ID in Xcode capabilities
+      _container = CKContainer.default()
+      logger.info("CloudKit container initialized")
+    }
+    return _container
   }
 
   private func checkCloudKitAvailability() async throws {
