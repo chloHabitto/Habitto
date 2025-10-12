@@ -1,0 +1,489 @@
+import XCTest
+@testable import Habitto
+
+@MainActor
+final class GoalVersioningServiceTests: XCTestCase {
+    var service: GoalVersioningService!
+    var repository: FirestoreRepository!
+    var nowProvider: FixedNowProvider!
+    var dateFormatter: LocalDateFormatter!
+    
+    override func setUp() async throws {
+        // Use fixed date: October 15, 2025 at noon in Europe/Amsterdam
+        let dateComponents = DateComponents(
+            calendar: Calendar(identifier: .gregorian),
+            timeZone: TimeZone(identifier: "Europe/Amsterdam"),
+            year: 2025,
+            month: 10,
+            day: 15,
+            hour: 12,
+            minute: 0
+        )
+        let fixedDate = dateComponents.date!
+        
+        nowProvider = FixedNowProvider(fixedDate: fixedDate)
+        dateFormatter = LocalDateFormatter(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        
+        service = GoalVersioningService(
+            repository: repository,
+            dateFormatter: dateFormatter
+        )
+    }
+    
+    // MARK: - Basic Goal Setting Tests
+    
+    func testSetGoal() async throws {
+        // When setting a goal
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 3
+        )
+        
+        // Then goal should be retrievable
+        let goal = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        XCTAssertEqual(goal, 3, "Goal should be 3")
+    }
+    
+    func testSetGoalWithZeroValue() async throws {
+        // Given a goal of 0 (valid for "breaking" habits)
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 0
+        )
+        
+        // Then goal should be 0
+        let goal = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        XCTAssertEqual(goal, 0, "Goal should be 0")
+    }
+    
+    func testSetGoalWithNegativeValueFails() async {
+        // When trying to set a negative goal
+        do {
+            try await service.setGoal(
+                habitId: "habit1",
+                effectiveLocalDate: "2025-10-15",
+                goal: -1
+            )
+            XCTFail("Should throw error for negative goal")
+        } catch GoalVersioningError.invalidGoal {
+            // Expected error
+        } catch {
+            XCTFail("Wrong error type: \(error)")
+        }
+    }
+    
+    func testSetGoalWithInvalidDateFormatFails() async {
+        // When trying to set a goal with invalid date format
+        do {
+            try await service.setGoal(
+                habitId: "habit1",
+                effectiveLocalDate: "2025/10/15", // Wrong format
+                goal: 2
+            )
+            XCTFail("Should throw error for invalid date format")
+        } catch GoalVersioningError.invalidDate {
+            // Expected error
+        } catch {
+            XCTFail("Wrong error type: \(error)")
+        }
+    }
+    
+    // MARK: - Date-Effective Goal Tests
+    
+    func testGoalAppliesFromEffectiveDate() async throws {
+        // Given a goal set to start on Oct 15
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 3
+        )
+        
+        // When querying for dates >= Oct 15
+        let goalOct15 = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        let goalOct16 = try await service.goal(on: "2025-10-16", habitId: "habit1")
+        let goalOct20 = try await service.goal(on: "2025-10-20", habitId: "habit1")
+        
+        // Then goal should be 3 for all dates >= Oct 15
+        XCTAssertEqual(goalOct15, 3, "Goal on Oct 15 should be 3")
+        XCTAssertEqual(goalOct16, 3, "Goal on Oct 16 should be 3")
+        XCTAssertEqual(goalOct20, 3, "Goal on Oct 20 should be 3")
+    }
+    
+    func testPastDaysUseOldGoal() async throws {
+        // Given an initial goal of 1 starting Oct 10
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-10",
+            goal: 1
+        )
+        
+        // When setting a new goal of 3 starting Oct 15
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 3
+        )
+        
+        // Then past days (Oct 10-14) should still have goal 1
+        let goalOct10 = try await service.goal(on: "2025-10-10", habitId: "habit1")
+        let goalOct14 = try await service.goal(on: "2025-10-14", habitId: "habit1")
+        
+        // And current/future days (Oct 15+) should have goal 3
+        let goalOct15 = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        let goalOct20 = try await service.goal(on: "2025-10-20", habitId: "habit1")
+        
+        XCTAssertEqual(goalOct10, 1, "Goal on Oct 10 should be 1 (old goal)")
+        XCTAssertEqual(goalOct14, 1, "Goal on Oct 14 should be 1 (old goal)")
+        XCTAssertEqual(goalOct15, 3, "Goal on Oct 15 should be 3 (new goal)")
+        XCTAssertEqual(goalOct20, 3, "Goal on Oct 20 should be 3 (new goal)")
+    }
+    
+    func testMultipleGoalChangesPerDay() async throws {
+        // Given a goal set in the morning
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 2
+        )
+        
+        // When changing the goal again on the same day (afternoon)
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 5
+        )
+        
+        // Then the latest goal should be 5
+        let goal = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        XCTAssertEqual(goal, 5, "Latest goal should win when multiple changes on same day")
+    }
+    
+    // MARK: - DST Transition Tests
+    
+    func testGoalDuringSpringDSTTransition() async throws {
+        // Given a goal set before DST transition (March 29, 2025)
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-03-29",
+            goal: 2
+        )
+        
+        // When setting a new goal after DST transition (March 31, 2025)
+        // Note: March 30 is when clocks spring forward in Europe/Amsterdam
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-03-31",
+            goal: 4
+        )
+        
+        // Then goals should be correct across DST boundary
+        let goalMar29 = try await service.goal(on: "2025-03-29", habitId: "habit1")
+        let goalMar30 = try await service.goal(on: "2025-03-30", habitId: "habit1")
+        let goalMar31 = try await service.goal(on: "2025-03-31", habitId: "habit1")
+        
+        XCTAssertEqual(goalMar29, 2, "Goal before DST should be 2")
+        XCTAssertEqual(goalMar30, 2, "Goal on DST day should be 2 (old goal still applies)")
+        XCTAssertEqual(goalMar31, 4, "Goal after DST should be 4 (new goal)")
+    }
+    
+    func testGoalDuringFallDSTTransition() async throws {
+        // Given a goal set before fall DST transition (October 25, 2025)
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-25",
+            goal: 1
+        )
+        
+        // When setting a new goal after DST transition (October 27, 2025)
+        // Note: October 26 is when clocks fall back in Europe/Amsterdam
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-27",
+            goal: 3
+        )
+        
+        // Then goals should be correct across DST boundary
+        let goalOct25 = try await service.goal(on: "2025-10-25", habitId: "habit1")
+        let goalOct26 = try await service.goal(on: "2025-10-26", habitId: "habit1")
+        let goalOct27 = try await service.goal(on: "2025-10-27", habitId: "habit1")
+        
+        XCTAssertEqual(goalOct25, 1, "Goal before DST should be 1")
+        XCTAssertEqual(goalOct26, 1, "Goal on DST day should be 1 (old goal still applies)")
+        XCTAssertEqual(goalOct27, 3, "Goal after DST should be 3 (new goal)")
+    }
+    
+    // MARK: - Current Goal Tests
+    
+    func testCurrentGoal() async throws {
+        // Given a goal set for today
+        let today = dateFormatter.today()
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: today,
+            goal: 5
+        )
+        
+        // When getting current goal
+        let currentGoal = try await service.currentGoal(habitId: "habit1")
+        
+        // Then it should return today's goal
+        XCTAssertEqual(currentGoal, 5, "Current goal should be 5")
+    }
+    
+    func testCurrentGoalWithPastVersions() async throws {
+        // Given goals set in the past
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-01",
+            goal: 1
+        )
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-10",
+            goal: 2
+        )
+        
+        // When getting current goal (Oct 15)
+        let currentGoal = try await service.currentGoal(habitId: "habit1")
+        
+        // Then it should return the most recent goal (2)
+        XCTAssertEqual(currentGoal, 2, "Current goal should be 2 (most recent)")
+    }
+    
+    // MARK: - Default Goal Tests
+    
+    func testDefaultGoalWhenNoVersionExists() async throws {
+        // Given no goal versions exist
+        
+        // When querying for a goal
+        let goal = try await service.goal(on: "2025-10-15", habitId: "nonexistent")
+        
+        // Then it should default to 1
+        XCTAssertEqual(goal, 1, "Default goal should be 1 when no version exists")
+    }
+    
+    // MARK: - Migration Tests
+    
+    func testMigrateLegacyGoal() async throws {
+        // Given a habit created on Oct 1 with legacy goal 2
+        let createdAt = dateFormatter.stringToDate("2025-10-01")!
+        
+        // When migrating legacy goal
+        try await service.migrateLegacyGoal(
+            habitId: "habit1",
+            legacyGoal: 2,
+            habitCreatedAt: createdAt
+        )
+        
+        // Then goal should be set effective from creation date
+        let goalOct01 = try await service.goal(on: "2025-10-01", habitId: "habit1")
+        let goalOct15 = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        
+        XCTAssertEqual(goalOct01, 2, "Goal on creation date should be 2")
+        XCTAssertEqual(goalOct15, 2, "Goal on later date should be 2")
+    }
+    
+    func testMigrateLegacyGoalSkipsIfVersionExists() async throws {
+        // Given a goal version already exists
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-01",
+            goal: 5
+        )
+        
+        // When trying to migrate with different goal
+        let createdAt = dateFormatter.stringToDate("2025-10-01")!
+        try await service.migrateLegacyGoal(
+            habitId: "habit1",
+            legacyGoal: 2,
+            habitCreatedAt: createdAt
+        )
+        
+        // Then existing goal should be preserved
+        let goal = try await service.goal(on: "2025-10-01", habitId: "habit1")
+        XCTAssertEqual(goal, 5, "Existing goal should be preserved, not overwritten")
+    }
+    
+    func testBatchMigration() async throws {
+        // Given multiple habits to migrate
+        let habits = [
+            (id: "habit1", goal: 1, createdAt: dateFormatter.stringToDate("2025-10-01")!),
+            (id: "habit2", goal: 2, createdAt: dateFormatter.stringToDate("2025-10-05")!),
+            (id: "habit3", goal: 3, createdAt: dateFormatter.stringToDate("2025-10-10")!)
+        ]
+        
+        // When batch migrating
+        try await service.migrateLegacyGoals(habits: habits)
+        
+        // Then all goals should be set correctly
+        let goal1 = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        let goal2 = try await service.goal(on: "2025-10-15", habitId: "habit2")
+        let goal3 = try await service.goal(on: "2025-10-15", habitId: "habit3")
+        
+        XCTAssertEqual(goal1, 1, "Habit1 goal should be 1")
+        XCTAssertEqual(goal2, 2, "Habit2 goal should be 2")
+        XCTAssertEqual(goal3, 3, "Habit3 goal should be 3")
+    }
+    
+    // MARK: - Edge Case Tests
+    
+    func testGoalOnLeapDay() async throws {
+        // Given a goal set for leap day 2024
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2024-02-29",
+            goal: 4
+        )
+        
+        // When querying leap day
+        let goal = try await service.goal(on: "2024-02-29", habitId: "habit1")
+        
+        // Then goal should be retrievable
+        XCTAssertEqual(goal, 4, "Goal on leap day should work")
+    }
+    
+    func testGoalChangesPreserveHistory() async throws {
+        // Given a history of goal changes
+        try await service.setGoal(habitId: "habit1", effectiveLocalDate: "2025-01-01", goal: 1)
+        try await service.setGoal(habitId: "habit1", effectiveLocalDate: "2025-04-01", goal: 2)
+        try await service.setGoal(habitId: "habit1", effectiveLocalDate: "2025-07-01", goal: 3)
+        try await service.setGoal(habitId: "habit1", effectiveLocalDate: "2025-10-01", goal: 4)
+        
+        // When querying different dates
+        let goalJan = try await service.goal(on: "2025-01-15", habitId: "habit1")
+        let goalApr = try await service.goal(on: "2025-04-15", habitId: "habit1")
+        let goalJul = try await service.goal(on: "2025-07-15", habitId: "habit1")
+        let goalOct = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        
+        // Then each date range should have correct goal
+        XCTAssertEqual(goalJan, 1, "January goal should be 1")
+        XCTAssertEqual(goalApr, 2, "April goal should be 2")
+        XCTAssertEqual(goalJul, 3, "July goal should be 3")
+        XCTAssertEqual(goalOct, 4, "October goal should be 4")
+    }
+    
+    func testFutureGoalChanges() async throws {
+        // Given today is Oct 15
+        // When setting a goal for the future (Oct 20)
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-20",
+            goal: 5
+        )
+        
+        // Then today should use default goal (1)
+        let goalToday = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        XCTAssertEqual(goalToday, 1, "Today should use default goal")
+        
+        // And future date should use new goal
+        let goalFuture = try await service.goal(on: "2025-10-20", habitId: "habit1")
+        XCTAssertEqual(goalFuture, 5, "Future date should use new goal")
+    }
+    
+    // MARK: - Multi-Habit Tests
+    
+    func testDifferentGoalsForDifferentHabits() async throws {
+        // When setting different goals for different habits
+        try await service.setGoal(habitId: "habit1", effectiveLocalDate: "2025-10-15", goal: 1)
+        try await service.setGoal(habitId: "habit2", effectiveLocalDate: "2025-10-15", goal: 3)
+        try await service.setGoal(habitId: "habit3", effectiveLocalDate: "2025-10-15", goal: 5)
+        
+        // Then each habit should have its own goal
+        let goal1 = try await service.goal(on: "2025-10-15", habitId: "habit1")
+        let goal2 = try await service.goal(on: "2025-10-15", habitId: "habit2")
+        let goal3 = try await service.goal(on: "2025-10-15", habitId: "habit3")
+        
+        XCTAssertEqual(goal1, 1, "Habit1 goal should be 1")
+        XCTAssertEqual(goal2, 3, "Habit2 goal should be 3")
+        XCTAssertEqual(goal3, 5, "Habit3 goal should be 5")
+    }
+    
+    // MARK: - Integration Tests
+    
+    func testGoalWithDateObject() async throws {
+        // Given a goal set using date string
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-15",
+            goal: 3
+        )
+        
+        // When querying with Date object
+        let queryDate = dateFormatter.stringToDate("2025-10-15")!
+        let goal = try await service.goal(on: queryDate, habitId: "habit1")
+        
+        // Then goal should be retrievable
+        XCTAssertEqual(goal, 3, "Goal should work with Date object")
+    }
+    
+    func testGoalAcrossYearBoundary() async throws {
+        // Given a goal set in December
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-12-20",
+            goal: 5
+        )
+        
+        // When querying dates across year boundary
+        let goalDec = try await service.goal(on: "2025-12-25", habitId: "habit1")
+        let goalJan = try await service.goal(on: "2026-01-05", habitId: "habit1")
+        
+        // Then goal should carry over to new year
+        XCTAssertEqual(goalDec, 5, "December goal should be 5")
+        XCTAssertEqual(goalJan, 5, "January goal should carry over as 5")
+    }
+    
+    // MARK: - Performance Tests
+    
+    func testGoalQueryPerformance() async throws {
+        // Given a goal version
+        try await service.setGoal(
+            habitId: "habit1",
+            effectiveLocalDate: "2025-10-01",
+            goal: 2
+        )
+        
+        // When querying goal multiple times
+        measure {
+            Task { @MainActor in
+                _ = try? await service.goal(on: "2025-10-15", habitId: "habit1")
+            }
+        }
+        
+        // Then performance should be acceptable
+        // (XCTest will report if performance degrades)
+    }
+}
+
+// MARK: - Mock Repository Tests (Without Firebase)
+
+@MainActor
+final class GoalVersioningServiceMockTests: XCTestCase {
+    func testServiceWorksWithMockRepository() async throws {
+        // Given a service with mock repository
+        let nowProvider = FixedNowProvider(fixedDate: Date())
+        let repository = FirestoreRepository(
+            nowProvider: nowProvider,
+            timeZoneProvider: AmsterdamTimeZoneProvider()
+        )
+        let service = GoalVersioningService(repository: repository)
+        
+        // When setting and getting goals (uses mock implementation)
+        try await service.setGoal(habitId: "test", effectiveLocalDate: "2025-10-15", goal: 3)
+        let goal = try await service.goal(on: "2025-10-15", habitId: "test")
+        
+        // Then it should work with mock data
+        XCTAssertEqual(goal, 3, "Mock repository should return set goal")
+    }
+}
+
