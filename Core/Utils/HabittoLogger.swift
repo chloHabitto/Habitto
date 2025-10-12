@@ -140,24 +140,8 @@ enum HabittoLogger {
     }
 }
 
-// MARK: - Logger Extensions
-
-extension Logger {
-    /// Log with emoji prefix for visual distinction
-    func info(_ message: String, emoji: String = "ℹ️") {
-        self.info("\(emoji) \(message)")
-    }
-    
-    func warning(_ message: String, emoji: String = "⚠️") {
-        self.warning("\(emoji) \(message)")
-    }
-    
-    func error(_ message: String, emoji: String = "❌") {
-        self.error("\(emoji) \(message)")
-    }
-    
-    func debug(_ message: String, emoji: String = "🐛") {
-        self.debug("\(emoji) \(message)")
-    }
-}
+// MARK: - Note
+// Logger already has built-in info(), warning(), error(), debug() methods
+// The HabittoLogger convenience methods (logFirestoreWrite, logXPAward, etc.) 
+// already add emojis and formatting, so no extensions needed here
 
