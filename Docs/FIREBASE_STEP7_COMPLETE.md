@@ -28,7 +28,7 @@ Implemented time-travel testing system with golden scenarios for regression prev
 - ✅ All scenarios validated
 
 ### Documentation
-- ✅ `Tests/GoldenScenarios/README.md` - Usage guide
+- ✅ `Tests/GoldenScenarios/SCENARIOS_GUIDE.md` - Usage guide
 - ✅ `STEP7_DELIVERY.md` - Complete delivery doc
 - ✅ Sample logs and test output
 

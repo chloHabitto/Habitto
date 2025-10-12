@@ -5,10 +5,19 @@ import Foundation
 
 /// Wrapper service for Firebase Crashlytics
 /// Provides crash reporting and logging for production debugging
+///
+/// Features:
+/// - Guarded initialization (won't crash if Firebase not configured)
+/// - Automatic disable in DEBUG mode
+/// - Non-fatal error tracking
+/// - Custom context logging
+/// - Integration with HabittoLogger
 class CrashlyticsService {
   // MARK: Lifecycle
 
   private init() {
+    checkFirebaseAvailability()
+    
     #if DEBUG
     print("🐛 CrashlyticsService: Initialized in DEBUG mode (crashes won't be reported)")
     #else
@@ -19,11 +28,35 @@ class CrashlyticsService {
   // MARK: Internal
 
   static let shared = CrashlyticsService()
+  
+  /// Whether Crashlytics is available (Firebase configured)
+  private(set) var isAvailable: Bool = false
 
   // MARK: - Configuration
+  
+  /// Check if Firebase is properly configured
+  private func checkFirebaseAvailability() {
+    // Check if GoogleService-Info.plist exists
+    guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
+      print("⚠️ Crashlytics: GoogleService-Info.plist not found - Crashlytics disabled")
+      isAvailable = false
+      return
+    }
+    
+    #if !DEBUG
+    isAvailable = true
+    #else
+    isAvailable = false  // Always disabled in DEBUG
+    #endif
+  }
 
   /// Enable crash reporting
   func enableCrashReporting() {
+    guard isAvailable else {
+      print("ℹ️ Crashlytics: Not available (Firebase not configured or DEBUG mode)")
+      return
+    }
+    
     #if !DEBUG
     Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
     print("✅ Crashlytics: Crash reporting enabled")
@@ -34,12 +67,14 @@ class CrashlyticsService {
 
   /// Set user identifier for crash reports
   func setUserID(_ userID: String) {
+    guard isAvailable else { return }
     Crashlytics.crashlytics().setUserID(userID)
     print("👤 Crashlytics: User ID set to \(userID)")
   }
 
   /// Set custom key-value for crash context
   func setValue(_ value: String, forKey key: String) {
+    guard isAvailable else { return }
     Crashlytics.crashlytics().setCustomValue(value, forKey: key)
     print("📝 Crashlytics: Custom value '\(value)' set for key '\(key)'")
   }
@@ -48,6 +83,13 @@ class CrashlyticsService {
 
   /// Log a message to Crashlytics (appears in crash reports)
   func log(_ message: String) {
+    guard isAvailable else {
+      #if DEBUG
+      print("🐛 Crashlytics log (not sent): \(message)")
+      #endif
+      return
+    }
+    
     Crashlytics.crashlytics().log(message)
     #if DEBUG
     print("🐛 Crashlytics log: \(message)")
@@ -56,6 +98,11 @@ class CrashlyticsService {
 
   /// Log a non-fatal error (tracks issues that don't crash the app)
   func recordError(_ error: Error, additionalInfo: [String: Any] = [:]) {
+    guard isAvailable else {
+      print("⚠️ Crashlytics: Would record error (not sent): \(error.localizedDescription)")
+      return
+    }
+    
     Crashlytics.crashlytics().record(error: error, userInfo: additionalInfo)
     print("⚠️ Crashlytics: Recorded non-fatal error - \(error.localizedDescription)")
   }

@@ -16,7 +16,7 @@ Habitto/
 │   └── GoldenTestRunner.swift                          ✅ NEW
 ├── Tests/
 │   └── GoldenScenarios/
-│       ├── README.md                                   ✅ NEW
+│       ├── SCENARIOS_GUIDE.md                          ✅ NEW
 │       ├── dst_spring_forward.json                     ✅ NEW
 │       ├── dst_fall_back.json                          ✅ NEW
 │       ├── multiple_goal_changes.json                  ✅ NEW
@@ -485,7 +485,7 @@ TestResult (passed/failed steps + failure details)
 
 ## Related Documentation
 
-- `Tests/GoldenScenarios/README.md` - Scenario format and usage guide
+- `Tests/GoldenScenarios/SCENARIOS_GUIDE.md` - Scenario format and usage guide
 - `Documentation/TestsReadyToAdd/GoldenTestRunnerTests.swift.template` - Unit tests
 - `Core/Services/GoldenTestRunner.swift` - Implementation details
 

@@ -95,7 +95,7 @@ class GoldenTestRunner {
         self.xpService = xpService ?? DailyAwardService.shared
         self.goalService = goalService ?? GoalVersioningService.shared
         self.nowProvider = MockNowProvider(currentDate: Date())
-        self.timeZoneProvider = timeZoneProvider ?? EuropeAmsterdamTimeZoneProvider()
+        self.timeZoneProvider = timeZoneProvider ?? AmsterdamTimeZoneProvider()
     }
     
     // MARK: - Public Methods
@@ -207,8 +207,8 @@ class GoldenTestRunner {
     private func executeCreateHabit(_ step: GoldenScenarioStep) async throws -> String {
         let habitId = try await repository.createHabit(
             name: step.habit,
-            color: step.params?["color"] as? String ?? "green500",
-            type: step.params?["type"] as? String ?? "formation"
+            color: step.params?["color"]?.value as? String ?? "green500",
+            type: step.params?["type"]?.value as? String ?? "formation"
         )
         return habitId
     }
@@ -218,11 +218,11 @@ class GoldenTestRunner {
             throw GoldenTestError.habitNotFound(step.habit)
         }
         
-        guard let goal = step.params?["goal"] as? Int else {
+        guard let goal = step.params?["goal"]?.value as? Int else {
             throw GoldenTestError.missingParameter("goal")
         }
         
-        guard let effective = step.params?["effective"] as? String else {
+        guard let effective = step.params?["effective"]?.value as? String else {
             throw GoldenTestError.missingParameter("effective")
         }
         
@@ -248,7 +248,7 @@ class GoldenTestRunner {
             throw GoldenTestError.habitNotFound(step.habit)
         }
         
-        guard let expect = step.params?["expect"] as? [String: Any] else {
+        guard let expect = step.params?["expect"]?.value as? [String: Any] else {
             throw GoldenTestError.missingParameter("expect")
         }
         
@@ -270,8 +270,7 @@ class GoldenTestRunner {
         
         // Assert progress
         if let expectedProgress = expect["progress"] as? Int {
-            let completion = try await completionService.getCompletion(habitId: habitId, at: step.at)
-            let actualProgress = completion?.count ?? 0
+            let actualProgress = try await completionService.getCompletion(habitId: habitId, on: step.at)
             if actualProgress != expectedProgress {
                 throw AssertionError(
                     field: "progress",
@@ -332,56 +331,6 @@ struct GoldenScenarioStep: Codable {
     
     enum CodingKeys: String, CodingKey {
         case at, op, habit, params
-    }
-}
-
-// Helper to decode Any type from JSON
-struct AnyCodable: Codable {
-    let value: Any
-    
-    init(_ value: Any) {
-        self.value = value
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        
-        if let bool = try? container.decode(Bool.self) {
-            value = bool
-        } else if let int = try? container.decode(Int.self) {
-            value = int
-        } else if let double = try? container.decode(Double.self) {
-            value = double
-        } else if let string = try? container.decode(String.self) {
-            value = string
-        } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
-        } else if let dictionary = try? container.decode([String: AnyCodable].self) {
-            value = dictionary.mapValues { $0.value }
-        } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported type")
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        
-        switch value {
-        case let bool as Bool:
-            try container.encode(bool)
-        case let int as Int:
-            try container.encode(int)
-        case let double as Double:
-            try container.encode(double)
-        case let string as String:
-            try container.encode(string)
-        case let array as [Any]:
-            try container.encode(array.map { AnyCodable($0) })
-        case let dictionary as [String: Any]:
-            try container.encode(dictionary.mapValues { AnyCodable($0) })
-        default:
-            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [], debugDescription: "Unsupported type"))
-        }
     }
 }
 
