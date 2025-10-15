@@ -54,16 +54,31 @@ class StorageFactory {
   /// - Returns: A habit repository implementation
   @MainActor
   func createHabitRepository(type: StorageType) -> any HabitRepositoryProtocol {
-    let storage = createHabitStorage(type: type)
-    return HabitRepositoryImpl(storage: storage)
+    switch type {
+    case .hybrid:
+      // Use DualWriteHabitRepository for hybrid storage
+      let primaryStorage = createHabitStorage(type: .firestore)
+      let secondaryStorage = createHabitStorage(type: .userDefaults)
+      
+      let primaryRepo = HabitRepositoryImpl(storage: primaryStorage)
+      let secondaryRepo = HabitRepositoryImpl(storage: secondaryStorage)
+      
+      return DualWriteHabitRepository(
+        primary: primaryRepo,
+        secondary: secondaryRepo,
+        fallbackReads: FeatureFlags.enableLegacyReadFallback
+      )
+    default:
+      let storage = createHabitStorage(type: type)
+      return HabitRepositoryImpl(storage: storage)
+    }
   }
 
   /// Get the recommended storage type based on app configuration
   /// - Returns: The recommended storage type
   func getRecommendedStorageType() -> StorageType {
     // Check if Firestore sync is enabled via Remote Config
-    let remoteConfig = RemoteConfigService.shared
-    if remoteConfig.enableFirestoreSync {
+    if FeatureFlags.enableFirestoreSync {
       return .hybrid
     }
     

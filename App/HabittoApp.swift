@@ -9,6 +9,9 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
+// MARK: - Firebase Migration Imports
+// Import the new Firebase migration classes
+
 // MARK: - AppDelegate
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -23,7 +26,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     print("✅ Firebase Core configured")
     
     // Configure other Firebase services asynchronously
-    Task { @MainActor in
+    Task.detached { @MainActor in
       FirebaseConfiguration.configureFirestore()
       FirebaseConfiguration.configureAuth()
       
@@ -31,6 +34,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
       do {
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         print("✅ User authenticated with uid: \(uid)")
+        
+        // Initialize backfill job if Firestore sync is enabled
+        if FeatureFlags.enableFirestoreSync {
+          print("🔄 Starting backfill job for Firestore migration...")
+          await BackfillJob.shared.runIfEnabled()
+        }
       } catch {
         print("⚠️ Failed to authenticate user: \(error.localizedDescription)")
         print("📝 App will continue with limited functionality")
@@ -52,13 +61,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     // TEMPORARY FIX: Enable migration for guest mode by setting local override
     print("🔧 AppDelegate: Setting migration override for guest mode...")
-    Task { @MainActor in
+    Task.detached { @MainActor in
       EnhancedMigrationTelemetryManager.shared.setLocalOverride(true)
     }
 
     // Perform completion status migration
     print("🔄 AppDelegate: Starting completion status migration...")
-    Task {
+    Task.detached {
       await CompletionStatusMigration.shared.performMigrationIfNeeded()
     }
 
@@ -161,7 +170,7 @@ struct HabittoApp: App {
           })
           .onAppear {
             // Fallback: Hide splash after 5 seconds if animation doesn't complete
-            Task { @MainActor in
+            Task.detached { @MainActor in
               try? await Task.sleep(nanoseconds: 5_000_000_000)
               if showSplash {
                 print("⚠️ HabittoApp: Animation timeout, forcing transition")
@@ -219,7 +228,7 @@ struct HabittoApp: App {
             habitRepository.shouldShowMigrationView = false
 
             // Run XP data migration
-            Task {
+            Task.detached {
               await XPDataMigration.shared.checkAndRunMigration(modelContext: modelContext)
             }
 
@@ -228,7 +237,7 @@ struct HabittoApp: App {
             // to prevent "Migration already in progress" warnings
 
             // Force reload habits after a short delay to ensure data is loaded
-            Task { @MainActor in
+            Task.detached { @MainActor in
               try? await Task.sleep(nanoseconds: 500_000_000)
               print("🔄 HabittoApp: Force reloading habits after app start...")
               await habitRepository.loadHabits(force: true)
@@ -296,7 +305,7 @@ private func setupCoreData() {
     object: nil,
     queue: .main)
   { _ in
-    Task { @MainActor in
+    Task.detached { @MainActor in
       print("🔄 HabittoApp: App became active, reloading habits...")
       await HabitRepository.shared.loadHabits(force: true)
 
@@ -323,7 +332,7 @@ private func setupCoreData() {
     object: nil,
     queue: .main)
   { _ in
-    Task { @MainActor in
+    Task.detached { @MainActor in
       print("🔄 HabittoApp: App going to background, saving data...")
       let habits = HabitRepository.shared.habits
       HabitStorageManager.shared.saveHabits(habits, immediate: true)
@@ -337,7 +346,7 @@ private func setupCoreData() {
     object: nil,
     queue: .main)
   { _ in
-    Task { @MainActor in
+    Task.detached { @MainActor in
       print("🔄 HabittoApp: App terminating, saving data...")
       let habits = HabitRepository.shared.habits
       HabitStorageManager.shared.saveHabits(habits, immediate: true)
@@ -351,7 +360,7 @@ private func setupCoreData() {
     object: nil,
     queue: .main)
   { _ in
-    Task { @MainActor in
+    Task.detached { @MainActor in
       print("🔄 HabittoApp: App entering background, saving data...")
       let habits = HabitRepository.shared.habits
       HabitStorageManager.shared.saveHabits(habits, immediate: true)
@@ -365,7 +374,7 @@ private func setupCoreData() {
     object: nil,
     queue: .main)
   { _ in
-    Task { @MainActor in
+    Task.detached { @MainActor in
       print("🔄 HabittoApp: App entering foreground, saving data...")
       let habits = HabitRepository.shared.habits
       HabitStorageManager.shared.saveHabits(habits, immediate: true)
@@ -385,7 +394,7 @@ private func handleAuthStateChange(
   case .authenticated(let user):
     print("🎯 AUTH: User signed in: \(user.email ?? "no email")")
     // Load user-specific XP from SwiftData
-    Task { @MainActor in
+    Task.detached { @MainActor in
       XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
     }
 

@@ -2,6 +2,13 @@
   "isMigrationEnabled": true,
   "minAppVersion": "1.0.0",
   "maxFailureRate": 0.15,
+  "enableCloudKitSync": false,
+  "enableFirestoreSync": false,
+  "enableBackfill": false,
+  "enableLegacyReadFallback": true,
+  "showNewProgressUI": false,
+  "enableAdvancedAnalytics": false,
+  "maintenanceMode": false,
   "configVersion": "1.0.0",
   "lastUpdated": "2024-01-15T10:30:00Z"
 }

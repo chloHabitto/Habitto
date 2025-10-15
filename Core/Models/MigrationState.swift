@@ -87,14 +87,53 @@ enum MigrationStatus: String, Codable, CaseIterable {
 enum MigrationVersions {
   /// Initial migration from legacy storage to normalized SwiftData
   static let initialNormalization = 1
+  
+  /// Firebase migration from local storage to Firestore
+  static let firebaseMigration = 2
 
   /// Current migration version
-  static let current = initialNormalization
+  static let current = firebaseMigration
 
   /// Check if migration is needed
   static func isMigrationNeeded(currentVersion: Int?) -> Bool {
     currentVersion == nil || currentVersion! < current
   }
+}
+
+// MARK: - FirebaseMigrationState
+
+/// Represents the state of a Firebase data migration job, stored in Firestore.
+struct FirebaseMigrationState: Codable, Equatable {
+  // MARK: Lifecycle
+
+  init(
+    status: Status = .notStarted,
+    lastKey: String? = nil,
+    startedAt: Date? = nil,
+    finishedAt: Date? = nil,
+    error: String? = nil)
+  {
+    self.status = status
+    self.lastKey = lastKey
+    self.startedAt = startedAt
+    self.finishedAt = finishedAt
+    self.error = error
+  }
+
+  // MARK: Internal
+
+  enum Status: String, Codable, Equatable {
+    case notStarted = "not_started"
+    case running
+    case complete
+    case failed
+  }
+
+  var status: Status
+  var lastKey: String?
+  var startedAt: Date?
+  var finishedAt: Date?
+  var error: String?
 }
 
 // MARK: - Migration State Extensions

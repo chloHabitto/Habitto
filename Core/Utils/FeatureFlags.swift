@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseRemoteConfig
 
 // MARK: - FeatureFlags
 
@@ -35,6 +36,23 @@ enum FeatureFlags {
   /// When false: No rollback support
   /// When true: Can rollback to legacy storage if issues occur
   static var enableMigrationRollback = false
+
+  // MARK: - Firebase Migration Feature Flags
+
+  /// Enables Firestore sync for cloud storage
+  /// When false: Uses local storage only
+  /// When true: Uses dual-write to both local and Firestore
+  static var enableFirestoreSync: Bool { RemoteConfigService.shared.enableFirestoreSync }
+
+  /// Enables backfill job to migrate existing local data to Firestore
+  /// When false: No backfill runs
+  /// When true: Migrates existing UserDefaults data to Firestore
+  static var enableBackfill: Bool { RemoteConfigService.shared.enableBackfill }
+
+  /// Enables fallback reads from legacy storage when Firestore is empty
+  /// When false: Only reads from Firestore
+  /// When true: Falls back to UserDefaults if Firestore has no data
+  static var enableLegacyReadFallback: Bool { RemoteConfigService.shared.enableLegacyReadFallback }
 
   // MARK: - Testing Feature Flags
 

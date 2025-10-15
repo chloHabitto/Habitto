@@ -7,7 +7,7 @@
 
 import FirebaseAuth
 import FirebaseCore
-// import FirebaseFirestore // Add after package is installed
+import FirebaseFirestore
 import Foundation
 
 // MARK: - FirebaseConfiguration
@@ -53,16 +53,13 @@ enum FirebaseConfiguration {
   /// Configure Firestore settings (offline persistence, emulator, etc.)
   @MainActor
   static func configureFirestore() {
-    // NOTE: After adding FirebaseFirestore package, uncomment this:
-    /*
     print("🔥 FirebaseConfiguration: Configuring Firestore...")
     
     let db = Firestore.firestore()
     let settings = FirestoreSettings()
     
     // Enable offline persistence
-    settings.isPersistenceEnabled = true
-    settings.cacheSizeBytes = FirestoreCacheSizeUnlimited
+    settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: FirestoreCacheSizeUnlimited))
     
     // Use emulator if configured
     if AppEnvironment.isUsingEmulator {
@@ -76,9 +73,6 @@ enum FirebaseConfiguration {
     
     db.settings = settings
     print("✅ FirebaseConfiguration: Firestore configured with offline persistence")
-    */
-    
-    print("ℹ️ FirebaseConfiguration: Firestore configuration pending (add FirebaseFirestore package)")
   }
   
   /// Configure Firebase Auth
