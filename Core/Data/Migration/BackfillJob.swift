@@ -22,7 +22,7 @@ final class BackfillJob: ObservableObject {
   
   @Published var isRunning = false
   @Published var progress: Double = 0.0
-  @Published var status: MigrationStatus = .notStarted
+  @Published var status: FirebaseMigrationState.Status = .notStarted
   @Published var errorMessage: String?
   
   // MARK: - Private
@@ -62,9 +62,9 @@ final class BackfillJob: ObservableObject {
       var migrationState = try await loadMigrationState(userId: userId)
       
       // Check if already completed
-      if migrationState.isComplete {
+      if migrationState.status == .complete {
         logger.info("✅ BackfillJob: Migration already completed")
-        status = .completed
+        status = .complete
         progress = 1.0
         isRunning = false
         return
@@ -87,15 +87,15 @@ final class BackfillJob: ObservableObject {
       try await migrateStreaks(userId: userId, migrationState: &migrationState)
       
       // Mark as completed
-      migrationState.status = .completed
+      migrationState.status = .complete
       migrationState.finishedAt = Date()
       try await saveMigrationState(migrationState, userId: userId)
       
       // End telemetry timer
-      TelemetryService.shared.endTimerAndIncrement("backfill.total", counterKey: "backfill.total_ms")
+      _ = TelemetryService.shared.endTimerAndIncrement("backfill.total", counterKey: "backfill.total_ms")
       
       logger.info("✅ BackfillJob: Migration completed successfully")
-      status = .completed
+      status = .complete
       progress = 1.0
       
     } catch {
@@ -131,7 +131,7 @@ final class BackfillJob: ObservableObject {
     logger.info("🔄 BackfillJob: Resetting migration state for user: \(userId)")
     
     do {
-      let migrationState = MigrationState(status: .notStarted)
+      let migrationState = FirebaseMigrationState(status: .notStarted)
       try await saveMigrationState(migrationState, userId: userId)
       
       status = .notStarted
@@ -151,35 +151,38 @@ final class BackfillJob: ObservableObject {
   }
   
   /// Load migration state from Firestore
-  private func loadMigrationState(userId: String) async throws -> MigrationState {
+  private func loadMigrationState(userId: String) async throws -> FirebaseMigrationState {
     let docRef = db.collection("users").document(userId).collection("meta").document("migration")
     let snapshot = try await docRef.getDocument()
     
     if snapshot.exists,
-       let data = snapshot.data(),
-       let migrationState = MigrationState.fromFirestoreData(data) {
-      return migrationState
+       let data = snapshot.data() {
+      let jsonData = try JSONSerialization.data(withJSONObject: data)
+      return try JSONDecoder().decode(FirebaseMigrationState.self, from: jsonData)
     } else {
       // Create new migration state
-      return MigrationState()
+      return FirebaseMigrationState()
     }
   }
   
   /// Save migration state to Firestore
-  private func saveMigrationState(_ state: MigrationState, userId: String) async throws {
+  private func saveMigrationState(_ state: FirebaseMigrationState, userId: String) async throws {
     let docRef = db.collection("users").document(userId).collection("meta").document("migration")
-    try await docRef.setData(state.toFirestoreData())
+    let data = try JSONEncoder().encode(state)
+    let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    try await docRef.setData(jsonObject ?? [:])
   }
   
   /// Migrate habits from local storage to Firestore
-  private func migrateHabits(userId: String, migrationState: inout MigrationState) async throws {
+  private func migrateHabits(userId: String, migrationState: inout FirebaseMigrationState) async throws {
     logger.info("🔄 BackfillJob: Migrating habits...")
     
     // Load habits from local storage (UserDefaults)
     let localStorage = UserDefaultsStorage()
     let habits = try await localStorage.loadHabits()
     
-    migrationState.totalItems = (migrationState.totalItems ?? 0) + habits.count
+    // Track total habits for progress calculation
+    let totalHabits = habits.count
     
     // Migrate in batches
     for (index, habit) in habits.enumerated() {
@@ -196,12 +199,12 @@ final class BackfillJob: ObservableObject {
       try await docRef.setData(habitData)
       
       // Update progress
-      migrationState.migratedItems = (migrationState.migratedItems ?? 0) + 1
       migrationState.lastKey = habit.id.uuidString
       
       // Update progress every 10 items
       if (index + 1) % 10 == 0 {
-        progress = migrationState.progress
+        let progressValue = Double(index + 1) / Double(totalHabits)
+        progress = progressValue
         try await saveMigrationState(migrationState, userId: userId)
         TelemetryService.shared.logBackfill("habits", count: index + 1)
       }
@@ -212,7 +215,7 @@ final class BackfillJob: ObservableObject {
   }
   
   /// Migrate completion records from local storage to Firestore
-  private func migrateCompletions(userId: String, migrationState: inout MigrationState) async throws {
+  private func migrateCompletions(userId: String, migrationState: inout FirebaseMigrationState) async throws {
     logger.info("🔄 BackfillJob: Migrating completion records...")
     
     // This would need to be implemented based on your completion storage structure
@@ -221,7 +224,7 @@ final class BackfillJob: ObservableObject {
   }
   
   /// Migrate XP data from local storage to Firestore
-  private func migrateXPData(userId: String, migrationState: inout MigrationState) async throws {
+  private func migrateXPData(userId: String, migrationState: inout FirebaseMigrationState) async throws {
     logger.info("🔄 BackfillJob: Migrating XP data...")
     
     // This would need to be implemented based on your XP storage structure
@@ -230,7 +233,7 @@ final class BackfillJob: ObservableObject {
   }
   
   /// Migrate streaks from local storage to Firestore
-  private func migrateStreaks(userId: String, migrationState: inout MigrationState) async throws {
+  private func migrateStreaks(userId: String, migrationState: inout FirebaseMigrationState) async throws {
     logger.info("🔄 BackfillJob: Migrating streaks...")
     
     // This would need to be implemented based on your streak storage structure

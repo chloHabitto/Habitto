@@ -65,7 +65,7 @@ final class DualWriteHabitRepository: HabitRepositoryProtocol, ObservableObject 
     Task {
       do {
         try await secondary.create(item)
-        TelemetryService.shared.increment("dualwrite.habit.create")
+        await TelemetryService.shared.increment("dualwrite.habit.create")
       } catch {
         print("⚠️ DualWrite: Secondary create failed: \(error.localizedDescription)")
       }
@@ -77,7 +77,7 @@ final class DualWriteHabitRepository: HabitRepositoryProtocol, ObservableObject 
     Task {
       do {
         try await secondary.update(item)
-        TelemetryService.shared.increment("dualwrite.habit.update")
+        await TelemetryService.shared.increment("dualwrite.habit.update")
       } catch {
         print("⚠️ DualWrite: Secondary update failed: \(error.localizedDescription)")
       }
@@ -89,7 +89,7 @@ final class DualWriteHabitRepository: HabitRepositoryProtocol, ObservableObject 
     Task {
       do {
         try await secondary.delete(id: id)
-        TelemetryService.shared.increment("dualwrite.habit.delete")
+        await TelemetryService.shared.increment("dualwrite.habit.delete")
       } catch {
         print("⚠️ DualWrite: Secondary delete failed: \(error.localizedDescription)")
       }
@@ -109,7 +109,7 @@ final class DualWriteHabitRepository: HabitRepositoryProtocol, ObservableObject 
     Task {
       do {
         _ = try await secondary.markComplete(habitId: habitId, date: date, count: count)
-        TelemetryService.shared.increment("dualwrite.habit.markComplete")
+        await TelemetryService.shared.increment("dualwrite.habit.markComplete")
       } catch {
         // Secondary write failed, but primary succeeded
         print("⚠️ DualWrite: Secondary markComplete failed: \(error.localizedDescription)")
