@@ -1,167 +1,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isValidDateString(dateStr) {
-      // Validate YYYY-MM-DD format
-      return dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
-    }
-    
-    function isValidGoal(goal) {
-      return goal is int && goal >= 0;
-    }
-    
-    function isValidCount(count) {
-      return count is int && count >= 0;
-    }
-    
-    function isValidXPDelta(delta) {
-      return delta is int;
-    }
-    
     // Users can only access their own data
-    match /users/{userId}/{document=**} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if false; // Prevent wildcard writes, use specific rules below
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    
+    // Generic data collection (for non-habit data)
+    match /generic_data/{document} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
     }
     
     // Habits collection
-    match /users/{userId}/habits/{habitId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['name', 'color', 'type', 'createdAt', 'active'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 100
-        && request.resource.data.color is string
-        && request.resource.data.color.size() > 0
-        && request.resource.data.type is string
-        && request.resource.data.type in ['formation', 'breaking']
-        && request.resource.data.createdAt is timestamp
-        && request.resource.data.active is bool;
-      allow update: if isSignedIn() && isOwner(userId)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'color', 'active']);
-      allow delete: if isSignedIn() && isOwner(userId);
+    match /habits/{habitId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
     }
     
-    // Goal versions collection
-    match /users/{userId}/goalVersions/{habitId}/{versionId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['habitId', 'effectiveLocalDate', 'goal', 'createdAt'])
-        && request.resource.data.habitId is string
-        && request.resource.data.habitId == habitId
-        && request.resource.data.effectiveLocalDate is string
-        && isValidDateString(request.resource.data.effectiveLocalDate)
-        && isValidGoal(request.resource.data.goal)
-        && request.resource.data.createdAt is timestamp;
-      allow update: if false; // Goal versions are immutable
-      allow delete: if isSignedIn() && isOwner(userId);
+    // Allow creation of new documents
+    match /habits/{habitId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
     }
     
-    // Completions collection
-    match /users/{userId}/completions/{dateStr}/{habitId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId)
-        && isValidDateString(dateStr)
-        && request.resource.data.keys().hasAll(['count', 'updatedAt'])
-        && isValidCount(request.resource.data.count)
-        && request.resource.data.updatedAt is timestamp;
-      allow update: if isSignedIn() && isOwner(userId)
-        && isValidDateString(dateStr)
-        && isValidCount(request.resource.data.count)
-        && request.resource.data.updatedAt is timestamp;
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-    
-    // XP state
-    match /users/{userId}/xp/state {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['totalXP', 'level', 'currentLevelXP', 'lastUpdated'])
-        && request.resource.data.totalXP is int
-        && request.resource.data.totalXP >= 0
-        && request.resource.data.level is int
-        && request.resource.data.level >= 1
-        && request.resource.data.currentLevelXP is int
-        && request.resource.data.currentLevelXP >= 0
-        && request.resource.data.lastUpdated is timestamp;
-    }
-    
-    // XP ledger (immutable append-only log)
-    match /users/{userId}/xp/ledger/{eventId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['delta', 'reason', 'timestamp'])
-        && isValidXPDelta(request.resource.data.delta)
-        && request.resource.data.reason is string
-        && request.resource.data.reason.size() > 0
-        && request.resource.data.reason.size() <= 500
-        && request.resource.data.timestamp is timestamp;
-      allow update: if false; // Ledger entries are immutable
-      allow delete: if false; // Ledger entries cannot be deleted
-    }
-    
-    // Streaks collection
-    match /users/{userId}/streaks/{habitId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['current', 'longest', 'updatedAt'])
-        && request.resource.data.current is int
-        && request.resource.data.current >= 0
-        && request.resource.data.longest is int
-        && request.resource.data.longest >= 0
-        && request.resource.data.updatedAt is timestamp
-        && (!request.resource.data.keys().hasAny(['lastCompletionDate']) 
-            || request.resource.data.lastCompletionDate == null 
-            || isValidDateString(request.resource.data.lastCompletionDate));
-    }
-    
-    // Migration metadata collection
-    match /users/{userId}/meta/migration {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && request.resource.data.keys().hasAll(['status', 'version'])
-        && request.resource.data.status is string
-        && request.resource.data.status in ['not_started', 'running', 'paused', 'completed', 'failed', 'cancelled']
-        && request.resource.data.version is string
-        && request.resource.data.version.size() > 0
-        && request.resource.data.version.size() <= 20
-        && (!request.resource.data.keys().hasAny(['itemsProcessed']) 
-            || (request.resource.data.itemsProcessed is int && request.resource.data.itemsProcessed >= 0))
-        && (!request.resource.data.keys().hasAny(['totalItems']) 
-            || (request.resource.data.totalItems is int && request.resource.data.totalItems >= 0))
-        && (!request.resource.data.keys().hasAny(['startedAt']) 
-            || request.resource.data.startedAt is timestamp)
-        && (!request.resource.data.keys().hasAny(['finishedAt']) 
-            || request.resource.data.finishedAt is timestamp)
-        && (!request.resource.data.keys().hasAny(['error']) 
-            || (request.resource.data.error is string && request.resource.data.error.size() <= 1000))
-        && (!request.resource.data.keys().hasAny(['metadata']) 
-            || request.resource.data.metadata is map);
-    }
-    
-    // User settings collection
-    match /users/{userId}/settings {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && request.resource.data is map
-        && request.resource.data.size() <= 50; // Limit settings size
-    }
-    
-    // Deny all other paths
-    match /{document=**} {
-      allow read, write: if false;
+    // Migration state documents
+    match /users/{uid}/meta/migration {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }
-

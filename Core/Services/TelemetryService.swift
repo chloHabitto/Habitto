@@ -1,216 +1,169 @@
 import Foundation
-import Combine
+import OSLog
 
-/// Telemetry service for tracking operational metrics
-///
-/// Tracks:
-/// - Firestore writes (ok/failed)
-/// - Security rules denials
-/// - Transaction retries
-/// - XP awards
-/// - Streak updates
-///
-/// All counters are in-memory and reset on app restart.
-/// Exposed via @Published properties for real-time UI updates.
+// MARK: - TelemetryService
+
+/// Centralized telemetry service for tracking migration and dual-write operations
 @MainActor
-class TelemetryService: ObservableObject {
-    // MARK: - Singleton
-    
-    static let shared = TelemetryService()
-    
-    // MARK: - Published Counters
-    
-    /// Firestore write counters
-    @Published private(set) var firestoreWritesOk: Int = 0
-    @Published private(set) var firestoreWritesFailed: Int = 0
-    
-    /// Security rules denial counter
-    @Published private(set) var rulesDenials: Int = 0
-    
-    /// Transaction retry counter
-    @Published private(set) var transactionRetries: Int = 0
-    
-    /// XP award counters
-    @Published private(set) var xpAwardsTotal: Int = 0
-    @Published private(set) var xpAwardsFailed: Int = 0
-    
-    /// Streak update counters
-    @Published private(set) var streakUpdates: Int = 0
-    @Published private(set) var streakUpdatesFailed: Int = 0
-    
-    /// Completion counters
-    @Published private(set) var completionsMarked: Int = 0
-    @Published private(set) var completionsFailed: Int = 0
-    
-    // MARK: - Computed Properties
-    
-    var totalFirestoreWrites: Int {
-        firestoreWritesOk + firestoreWritesFailed
+final class TelemetryService: ObservableObject {
+  
+  // MARK: - Lifecycle
+  
+  private init() {
+    logger.info("📊 TelemetryService: Initialized")
+  }
+  
+  // MARK: - Internal
+  
+  static let shared = TelemetryService()
+  
+  // MARK: - Counters
+  
+  private var counters: [String: Int] = [:]
+  private var timers: [String: Date] = [:]
+  private let logger = Logger(subsystem: "com.habitto.app", category: "TelemetryService")
+  
+  // MARK: - Counter Methods
+  
+  /// Increment a counter
+  func increment(_ key: String) {
+    self.counters[key, default: 0] += 1
+    logger.debug("📊 Telemetry: \(key) = \(self.counters[key] ?? 0)")
+  }
+  
+  /// Decrement a counter
+  func decrement(_ key: String) {
+    self.counters[key, default: 0] = max(0, (self.counters[key] ?? 0) - 1)
+    logger.debug("📊 Telemetry: \(key) = \(self.counters[key] ?? 0)")
+  }
+  
+  /// Set a counter value
+  func set(_ key: String, value: Int) {
+    counters[key] = value
+    logger.debug("📊 Telemetry: \(key) = \(value)")
+  }
+  
+  /// Get a counter value
+  func get(_ key: String) -> Int {
+    counters[key] ?? 0
+  }
+  
+  // MARK: - Timer Methods
+  
+  /// Start a timer
+  func startTimer(_ key: String) {
+    timers[key] = Date()
+    logger.debug("📊 Telemetry: Started timer for \(key)")
+  }
+  
+  /// End a timer and log duration
+  func endTimer(_ key: String) -> TimeInterval? {
+    guard let startTime = timers[key] else {
+      logger.warning("⚠️ Telemetry: No start time found for timer \(key)")
+      return nil
     }
     
-    var firestoreWriteSuccessRate: Double {
-        guard totalFirestoreWrites > 0 else { return 1.0 }
-        return Double(firestoreWritesOk) / Double(totalFirestoreWrites)
+    let duration = Date().timeIntervalSince(startTime)
+    timers.removeValue(forKey: key)
+    
+    logger.info("📊 Telemetry: Timer \(key) completed in \(String(format: "%.2f", duration))s")
+    return duration
+  }
+  
+  /// End a timer and increment a counter with the duration
+  func endTimerAndIncrement(_ key: String, counterKey: String) -> TimeInterval? {
+    guard let duration = endTimer(key) else { return nil }
+    
+    // Store duration in milliseconds
+    let durationMs = Int(duration * 1000)
+    set("\(counterKey)_ms", value: durationMs)
+    
+    return duration
+  }
+  
+  // MARK: - Event Logging
+  
+  /// Log an event with optional data
+  func logEvent(_ event: String, data: [String: Any] = [:]) {
+    let dataString = data.isEmpty ? "" : " | Data: \(data)"
+    logger.info("📊 Telemetry Event: \(event)\(dataString)")
+    
+    // Also increment counter for the event
+    increment(event)
+  }
+  
+  /// Log an error event
+  func logError(_ event: String, error: Error, data: [String: Any] = [:]) {
+    var errorData = data
+    errorData["error"] = error.localizedDescription
+    errorData["error_code"] = (error as NSError).code
+    
+    logEvent("\(event).error", data: errorData)
+  }
+  
+  // MARK: - Migration-Specific Telemetry
+  
+  /// Log dual-write operations
+  func logDualWrite(_ operation: String, success: Bool, error: Error? = nil) {
+    let event = "dualwrite.habit.\(operation).\(success ? "success" : "failed")"
+    
+    if let error = error {
+      logError(event, error: error)
+    } else {
+      increment(event)
     }
+  }
+  
+  /// Log backfill operations
+  func logBackfill(_ operation: String, count: Int? = nil, error: Error? = nil) {
+    let event = "backfill.\(operation)"
     
-    var totalXPAwards: Int {
-        xpAwardsTotal + xpAwardsFailed
+    if let error = error {
+      logError(event, error: error)
+    } else {
+      increment(event)
+      if let count = count {
+        set("\(event).items", value: count)
+      }
     }
+  }
+  
+  /// Log Firestore operations
+  func logFirestore(_ operation: String, success: Bool, error: Error? = nil) {
+    let event = "firestore.\(operation).\(success ? "success" : "failed")"
     
-    var xpAwardSuccessRate: Double {
-        guard totalXPAwards > 0 else { return 1.0 }
-        return Double(xpAwardsTotal) / Double(totalXPAwards)
+    if let error = error {
+      logError(event, error: error)
+    } else {
+      increment(event)
     }
-    
-    var totalStreakUpdates: Int {
-        streakUpdates + streakUpdatesFailed
-    }
-    
-    var streakUpdateSuccessRate: Double {
-        guard totalStreakUpdates > 0 else { return 1.0 }
-        return Double(streakUpdates) / Double(totalStreakUpdates)
-    }
-    
-    var totalCompletions: Int {
-        completionsMarked + completionsFailed
-    }
-    
-    var completionSuccessRate: Double {
-        guard totalCompletions > 0 else { return 1.0 }
-        return Double(completionsMarked) / Double(totalCompletions)
-    }
-    
-    // MARK: - Initialization
-    
-    private init() {
-        HabittoLogger.telemetry.info("TelemetryService initialized")
-    }
-    
-    // MARK: - Firestore Metrics
-    
-    func incrementFirestoreWrite(success: Bool) {
-        if success {
-            firestoreWritesOk += 1
-        } else {
-            firestoreWritesFailed += 1
-        }
-    }
-    
-    func incrementRulesDenial() {
-        rulesDenials += 1
-    }
-    
-    func incrementTransactionRetry() {
-        transactionRetries += 1
-    }
-    
-    // MARK: - XP Metrics
-    
-    func incrementXPAward(success: Bool) {
-        if success {
-            xpAwardsTotal += 1
-        } else {
-            xpAwardsFailed += 1
-        }
-    }
-    
-    // MARK: - Streak Metrics
-    
-    func incrementStreakUpdate(success: Bool) {
-        if success {
-            streakUpdates += 1
-        } else {
-            streakUpdatesFailed += 1
-        }
-    }
-    
-    // MARK: - Completion Metrics
-    
-    func incrementCompletion(success: Bool) {
-        if success {
-            completionsMarked += 1
-        } else {
-            completionsFailed += 1
-        }
-    }
-    
-    // MARK: - Reset
-    
-    func resetCounters() {
-        firestoreWritesOk = 0
-        firestoreWritesFailed = 0
-        rulesDenials = 0
-        transactionRetries = 0
-        xpAwardsTotal = 0
-        xpAwardsFailed = 0
-        streakUpdates = 0
-        streakUpdatesFailed = 0
-        completionsMarked = 0
-        completionsFailed = 0
-        
-        HabittoLogger.telemetry.info("Telemetry counters reset")
-    }
-    
-    // MARK: - Summary
-    
-    func getSummary() -> TelemetrySummary {
-        TelemetrySummary(
-            firestoreWrites: OperationMetric(
-                success: firestoreWritesOk,
-                failed: firestoreWritesFailed,
-                successRate: firestoreWriteSuccessRate
-            ),
-            xpAwards: OperationMetric(
-                success: xpAwardsTotal,
-                failed: xpAwardsFailed,
-                successRate: xpAwardSuccessRate
-            ),
-            streakUpdates: OperationMetric(
-                success: streakUpdates,
-                failed: streakUpdatesFailed,
-                successRate: streakUpdateSuccessRate
-            ),
-            completions: OperationMetric(
-                success: completionsMarked,
-                failed: completionsFailed,
-                successRate: completionSuccessRate
-            ),
-            rulesDenials: rulesDenials,
-            transactionRetries: transactionRetries
-        )
-    }
+  }
+  
+  // MARK: - Debug Methods
+  
+  /// Get all counters
+  func getAllCounters() -> [String: Int] {
+    counters
+  }
+  
+  /// Get all active timers
+  func getActiveTimers() -> [String: Date] {
+    timers
+  }
+  
+  /// Reset all telemetry data
+  func reset() {
+    counters.removeAll()
+    timers.removeAll()
+    logger.info("📊 TelemetryService: Reset all data")
+  }
+  
+  /// Export telemetry data for debugging
+  func exportData() -> [String: Any] {
+    return [
+      "counters": counters,
+      "active_timers": timers.mapValues { $0.timeIntervalSince1970 },
+      "timestamp": Date().timeIntervalSince1970
+    ]
+  }
 }
-
-// MARK: - Models
-
-struct TelemetrySummary {
-    let firestoreWrites: OperationMetric
-    let xpAwards: OperationMetric
-    let streakUpdates: OperationMetric
-    let completions: OperationMetric
-    let rulesDenials: Int
-    let transactionRetries: Int
-    
-    var hasIssues: Bool {
-        firestoreWrites.successRate < 0.95 ||
-        xpAwards.successRate < 0.95 ||
-        streakUpdates.successRate < 0.95 ||
-        completions.successRate < 0.95 ||
-        rulesDenials > 0
-    }
-}
-
-struct OperationMetric {
-    let success: Int
-    let failed: Int
-    let successRate: Double
-    
-    var total: Int {
-        success + failed
-    }
-    
-    var successPercentage: String {
-        String(format: "%.1f%%", successRate * 100)
-    }
-}
-

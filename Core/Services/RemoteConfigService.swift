@@ -24,6 +24,8 @@ class RemoteConfigService: ObservableObject {
   @Published var maxFailureRate = 0.15
   @Published var enableCloudKitSync = false
   @Published var enableFirestoreSync = false
+  @Published var enableBackfill = false
+  @Published var enableLegacyReadFallback = true
   @Published var showNewProgressUI = false
   @Published var enableAdvancedAnalytics = false
   @Published var maintenanceMode = false
@@ -59,6 +61,8 @@ class RemoteConfigService: ObservableObject {
       "maxFailureRate": 0.15 as NSObject,
       "enableCloudKitSync": false as NSObject,
       "enableFirestoreSync": false as NSObject,
+      "enableBackfill": false as NSObject,
+      "enableLegacyReadFallback": true as NSObject,
       "showNewProgressUI": false as NSObject,
       "enableAdvancedAnalytics": false as NSObject,
       "maintenanceMode": false as NSObject,
@@ -78,6 +82,10 @@ class RemoteConfigService: ObservableObject {
       return enableCloudKitSync
     case "firestore_sync":
       return enableFirestoreSync
+    case "backfill":
+      return enableBackfill
+    case "legacy_read_fallback":
+      return enableLegacyReadFallback
     case "new_progress_ui":
       return showNewProgressUI
     case "advanced_analytics":
@@ -132,6 +140,8 @@ class RemoteConfigService: ObservableObject {
     maxFailureRate = remoteConfig["maxFailureRate"].numberValue.doubleValue
     enableCloudKitSync = remoteConfig["enableCloudKitSync"].boolValue
     enableFirestoreSync = remoteConfig["enableFirestoreSync"].boolValue
+    enableBackfill = remoteConfig["enableBackfill"].boolValue
+    enableLegacyReadFallback = remoteConfig["enableLegacyReadFallback"].boolValue
     showNewProgressUI = remoteConfig["showNewProgressUI"].boolValue
     enableAdvancedAnalytics = remoteConfig["enableAdvancedAnalytics"].boolValue
     maintenanceMode = remoteConfig["maintenanceMode"].boolValue
@@ -140,6 +150,8 @@ class RemoteConfigService: ObservableObject {
     print("  - Migration enabled: \(isMigrationEnabled)")
     print("  - CloudKit sync: \(enableCloudKitSync)")
     print("  - Firestore sync: \(enableFirestoreSync)")
+    print("  - Backfill enabled: \(enableBackfill)")
+    print("  - Legacy read fallback: \(enableLegacyReadFallback)")
     print("  - Maintenance mode: \(maintenanceMode)")
   }
 }
@@ -152,6 +164,8 @@ enum RemoteConfigKey: String {
   case maxFailureRate = "maxFailureRate"
   case enableCloudKitSync = "enableCloudKitSync"
   case enableFirestoreSync = "enableFirestoreSync"
+  case enableBackfill = "enableBackfill"
+  case enableLegacyReadFallback = "enableLegacyReadFallback"
   case showNewProgressUI = "showNewProgressUI"
   case enableAdvancedAnalytics = "enableAdvancedAnalytics"
   case maintenanceMode = "maintenanceMode"
