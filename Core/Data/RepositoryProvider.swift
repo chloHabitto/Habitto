@@ -170,12 +170,12 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
     return habits.first { $0.id == id }
   }
 
-  func create(_: Habit) async throws -> Habit {
+  func create(_ habit: Habit) async throws {
     // TODO: Implement habit creation
     throw DataStorageError.operationNotSupported("Method not implemented")
   }
 
-  func update(_: Habit) async throws -> Habit {
+  func update(_ habit: Habit) async throws {
     // TODO: Implement habit update
     throw DataStorageError.operationNotSupported("Method not implemented")
   }
@@ -250,6 +250,62 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
     0
   }
 
+  // MARK: - HabitRepositoryProtocol Required Methods
+
+  nonisolated func habits() -> AsyncThrowingStream<[Habit], Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let habits = try await loadHabits()
+          continuation.yield(habits)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  nonisolated func habit(by id: String) -> AsyncThrowingStream<Habit?, Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          guard let uuid = UUID(uuidString: id) else {
+            continuation.yield(nil)
+            continuation.finish()
+            return
+          }
+          let habit = try await getById(uuid)
+          continuation.yield(habit)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  func habits(for date: Date) async throws -> [Habit] {
+    return try await getHabits(for: date)
+  }
+
+  func delete(id: String) async throws {
+    guard let uuid = UUID(uuidString: id) else {
+      throw DataStorageError.operationNotSupported("Invalid habit ID")
+    }
+    try await delete(uuid)
+  }
+
+  func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
+    // TODO: Implement habit completion
+    throw DataStorageError.operationNotSupported("Method not implemented")
+  }
+
+  func getCompletionCount(habitId: String, date: Date) async throws -> Int {
+    // TODO: Implement completion count retrieval
+    return 0
+  }
+
   // MARK: Private
 
   private let logger = Logger(subsystem: "com.habitto.app", category: "LegacyHabitRepository")
@@ -284,12 +340,12 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
     return habits.first { $0.id == id }
   }
 
-  func create(_: Habit) async throws -> Habit {
+  func create(_ habit: Habit) async throws {
     // TODO: Implement habit creation
     throw DataStorageError.operationNotSupported("Method not implemented")
   }
 
-  func update(_: Habit) async throws -> Habit {
+  func update(_ habit: Habit) async throws {
     // TODO: Implement habit update
     throw DataStorageError.operationNotSupported("Method not implemented")
   }
@@ -352,6 +408,62 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
   func calculateHabitStreak(habitId _: UUID) async throws -> Int {
     // Implementation would go here
     0
+  }
+
+  // MARK: - HabitRepositoryProtocol Required Methods
+
+  nonisolated func habits() -> AsyncThrowingStream<[Habit], Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let habits = try await loadHabits()
+          continuation.yield(habits)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  nonisolated func habit(by id: String) -> AsyncThrowingStream<Habit?, Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          guard let uuid = UUID(uuidString: id) else {
+            continuation.yield(nil)
+            continuation.finish()
+            return
+          }
+          let habit = try await getById(uuid)
+          continuation.yield(habit)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  func habits(for date: Date) async throws -> [Habit] {
+    return try await getHabits(for: date)
+  }
+
+  func delete(id: String) async throws {
+    guard let uuid = UUID(uuidString: id) else {
+      throw DataStorageError.operationNotSupported("Invalid habit ID")
+    }
+    try await delete(uuid)
+  }
+
+  func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
+    // TODO: Implement habit completion
+    throw DataStorageError.operationNotSupported("Method not implemented")
+  }
+
+  func getCompletionCount(habitId: String, date: Date) async throws -> Int {
+    // TODO: Implement completion count retrieval
+    return 0
   }
 
   // MARK: Private

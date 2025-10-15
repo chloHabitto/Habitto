@@ -126,6 +126,38 @@ service cloud.firestore {
             || isValidDateString(request.resource.data.lastCompletionDate));
     }
     
+    // Migration metadata collection
+    match /users/{userId}/meta/migration {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['status', 'version'])
+        && request.resource.data.status is string
+        && request.resource.data.status in ['not_started', 'running', 'paused', 'completed', 'failed', 'cancelled']
+        && request.resource.data.version is string
+        && request.resource.data.version.size() > 0
+        && request.resource.data.version.size() <= 20
+        && (!request.resource.data.keys().hasAny(['itemsProcessed']) 
+            || (request.resource.data.itemsProcessed is int && request.resource.data.itemsProcessed >= 0))
+        && (!request.resource.data.keys().hasAny(['totalItems']) 
+            || (request.resource.data.totalItems is int && request.resource.data.totalItems >= 0))
+        && (!request.resource.data.keys().hasAny(['startedAt']) 
+            || request.resource.data.startedAt is timestamp)
+        && (!request.resource.data.keys().hasAny(['finishedAt']) 
+            || request.resource.data.finishedAt is timestamp)
+        && (!request.resource.data.keys().hasAny(['error']) 
+            || (request.resource.data.error is string && request.resource.data.error.size() <= 1000))
+        && (!request.resource.data.keys().hasAny(['metadata']) 
+            || request.resource.data.metadata is map);
+    }
+    
+    // User settings collection
+    match /users/{userId}/settings {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId)
+        && request.resource.data is map
+        && request.resource.data.size() <= 50; // Limit settings size
+    }
+    
     // Deny all other paths
     match /{document=**} {
       allow read, write: if false;
