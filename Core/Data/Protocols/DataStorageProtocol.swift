@@ -11,12 +11,12 @@ protocol DataStorageProtocol {
   ///   - data: The data to save
   ///   - key: The storage key
   ///   - immediate: Whether to save immediately or use debouncing
-  func save(_ data: some Codable, forKey key: String, immediate: Bool) async throws
+  func save(_ data: some Codable & Sendable, forKey key: String, immediate: Bool) async throws
 
   /// Load data from storage
   /// - Parameter key: The storage key
   /// - Returns: The loaded data, or nil if not found
-  func load<T: Codable>(_ type: T.Type, forKey key: String) async throws -> T?
+  func load<T: Codable & Sendable>(_ type: T.Type, forKey key: String) async throws -> T?
 
   /// Delete data from storage
   /// - Parameter key: The storage key

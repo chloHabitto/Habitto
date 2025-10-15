@@ -6,7 +6,7 @@
 //
 
 import Foundation
-// import FirebaseFirestore // Uncomment after adding package
+import FirebaseFirestore
 
 // MARK: - FirestoreHabit
 

@@ -7,6 +7,8 @@ enum StorageType {
   case coreData
   case swiftData
   case cloudKit
+  case firestore
+  case hybrid
 }
 
 // MARK: - StorageFactory
@@ -36,6 +38,14 @@ class StorageFactory {
     case .cloudKit:
       // For now, return UserDefaults as CloudKit is not fully implemented
       UserDefaultsStorage()
+    case .firestore:
+      FirestoreStorage()
+    case .hybrid:
+      // Create HybridStorage with UserDefaults + Firestore
+      HybridStorage(
+        localStorage: UserDefaultsStorage(),
+        cloudStorage: FirestoreStorage()
+      )
     }
   }
 
@@ -51,12 +61,18 @@ class StorageFactory {
   /// Get the recommended storage type based on app configuration
   /// - Returns: The recommended storage type
   func getRecommendedStorageType() -> StorageType {
+    // Check if Firestore sync is enabled via Remote Config
+    let remoteConfig = RemoteConfigService.shared
+    if remoteConfig.enableFirestoreSync {
+      return .hybrid
+    }
+    
     // Use SwiftData as the recommended storage type for modern iOS apps
     // Fall back to UserDefaults if SwiftData is not available
     if isStorageTypeAvailable(.swiftData) {
-      .swiftData
+      return .swiftData
     } else {
-      .userDefaults
+      return .userDefaults
     }
   }
 
@@ -73,6 +89,10 @@ class StorageFactory {
       true // SwiftData is available on iOS 17+
     case .cloudKit:
       true // For now, assume CloudKit is available
+    case .firestore:
+      true // Firestore is available if Firebase is configured
+    case .hybrid:
+      true // Hybrid is available if both UserDefaults and Firestore are available
     }
   }
 }
@@ -140,6 +160,10 @@ extension StorageType: CaseIterable {
       self = .swiftData
     case "cloudKit":
       self = .cloudKit
+    case "firestore":
+      self = .firestore
+    case "hybrid":
+      self = .hybrid
     default:
       return nil
     }
@@ -157,6 +181,10 @@ extension StorageType: CaseIterable {
       "swiftData"
     case .cloudKit:
       "cloudKit"
+    case .firestore:
+      "firestore"
+    case .hybrid:
+      "hybrid"
     }
   }
 
@@ -170,6 +198,10 @@ extension StorageType: CaseIterable {
       "SwiftData"
     case .cloudKit:
       "CloudKit"
+    case .firestore:
+      "Firestore"
+    case .hybrid:
+      "Hybrid (UserDefaults + Firestore)"
     }
   }
 
@@ -183,6 +215,10 @@ extension StorageType: CaseIterable {
       "Modern Swift-native persistence framework with type safety"
     case .cloudKit:
       "Cloud-based storage with automatic sync across devices"
+    case .firestore:
+      "Google Cloud Firestore with real-time sync and offline support"
+    case .hybrid:
+      "Dual-write to both local and cloud storage for safe migration"
     }
   }
 }

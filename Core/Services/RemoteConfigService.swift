@@ -23,6 +23,7 @@ class RemoteConfigService: ObservableObject {
   @Published var minAppVersion = "1.0.0"
   @Published var maxFailureRate = 0.15
   @Published var enableCloudKitSync = false
+  @Published var enableFirestoreSync = false
   @Published var showNewProgressUI = false
   @Published var enableAdvancedAnalytics = false
   @Published var maintenanceMode = false
@@ -57,6 +58,7 @@ class RemoteConfigService: ObservableObject {
       "minAppVersion": "1.0.0" as NSObject,
       "maxFailureRate": 0.15 as NSObject,
       "enableCloudKitSync": false as NSObject,
+      "enableFirestoreSync": false as NSObject,
       "showNewProgressUI": false as NSObject,
       "enableAdvancedAnalytics": false as NSObject,
       "maintenanceMode": false as NSObject,
@@ -74,6 +76,8 @@ class RemoteConfigService: ObservableObject {
       return isMigrationEnabled
     case "cloudkit_sync":
       return enableCloudKitSync
+    case "firestore_sync":
+      return enableFirestoreSync
     case "new_progress_ui":
       return showNewProgressUI
     case "advanced_analytics":
@@ -127,6 +131,7 @@ class RemoteConfigService: ObservableObject {
     minAppVersion = remoteConfig["minAppVersion"].stringValue
     maxFailureRate = remoteConfig["maxFailureRate"].numberValue.doubleValue
     enableCloudKitSync = remoteConfig["enableCloudKitSync"].boolValue
+    enableFirestoreSync = remoteConfig["enableFirestoreSync"].boolValue
     showNewProgressUI = remoteConfig["showNewProgressUI"].boolValue
     enableAdvancedAnalytics = remoteConfig["enableAdvancedAnalytics"].boolValue
     maintenanceMode = remoteConfig["maintenanceMode"].boolValue
@@ -134,6 +139,7 @@ class RemoteConfigService: ObservableObject {
     print("🎛️ RemoteConfigService: Updated from remote config:")
     print("  - Migration enabled: \(isMigrationEnabled)")
     print("  - CloudKit sync: \(enableCloudKitSync)")
+    print("  - Firestore sync: \(enableFirestoreSync)")
     print("  - Maintenance mode: \(maintenanceMode)")
   }
 }
@@ -145,6 +151,7 @@ enum RemoteConfigKey: String {
   case minAppVersion = "minAppVersion"
   case maxFailureRate = "maxFailureRate"
   case enableCloudKitSync = "enableCloudKitSync"
+  case enableFirestoreSync = "enableFirestoreSync"
   case showNewProgressUI = "showNewProgressUI"
   case enableAdvancedAnalytics = "enableAdvancedAnalytics"
   case maintenanceMode = "maintenanceMode"
