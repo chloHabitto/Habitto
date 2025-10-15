@@ -46,7 +46,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
 
   typealias DataType = Habit
 
-  @Published var habits: [Habit] = []
+  @Published var habitList: [Habit] = []
 
   // MARK: - Repository Protocol Implementation
 
@@ -54,24 +54,63 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     try await storage.loadHabits()
   }
 
+  func habits() -> AsyncThrowingStream<[Habit], Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let habits = try await storage.loadHabits()
+          continuation.yield(habits)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
   func getById(_ id: UUID) async throws -> Habit? {
     try await storage.loadHabit(id: id)
   }
 
-  func create(_ item: Habit) async throws -> Habit {
-    try await storage.saveHabit(item, immediate: true)
-    await loadHabits()
-    return item
+  func habit(by id: String) -> AsyncThrowingStream<Habit?, Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          guard let uuid = UUID(uuidString: id) else {
+            continuation.yield(nil)
+            continuation.finish()
+            return
+          }
+          let habit = try await storage.loadHabit(id: uuid)
+          continuation.yield(habit)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
   }
 
-  func update(_ item: Habit) async throws -> Habit {
+  func create(_ item: Habit) async throws {
     try await storage.saveHabit(item, immediate: true)
     await loadHabits()
-    return item
+  }
+
+  func update(_ item: Habit) async throws {
+    try await storage.saveHabit(item, immediate: true)
+    await loadHabits()
   }
 
   func delete(_ id: UUID) async throws {
     try await storage.deleteHabit(id: id)
+    await loadHabits()
+  }
+
+  func delete(id: String) async throws {
+    guard let uuid = UUID(uuidString: id) else {
+      throw RepositoryError.invalidData
+    }
+    try await storage.deleteHabit(id: uuid)
     await loadHabits()
   }
 
@@ -89,6 +128,10 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       let endDate = habit.endDate ?? Date.distantFuture
       return date >= startDate && date <= endDate
     }
+  }
+
+  func habits(for date: Date) async throws -> [Habit] {
+    return try await getHabits(for: date)
   }
 
   func getHabits(by type: HabitType) async throws -> [Habit] {
@@ -130,6 +173,19 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     return Double(progress) / 100.0 // Convert from percentage
   }
 
+  func getCompletionCount(habitId: String, date: Date) async throws -> Int {
+    guard let uuid = UUID(uuidString: habitId) else {
+      throw RepositoryError.invalidData
+    }
+    guard let habit = try await getById(uuid) else {
+      throw RepositoryError.habitNotFound
+    }
+
+    let dateKey = DateUtils.dateKey(for: date)
+    let progress = habit.completionHistory[dateKey] ?? 0
+    return Int(Double(progress) / 100.0) // Convert from percentage to count
+  }
+
   func calculateHabitStreak(habitId: UUID) async throws -> Int {
     guard let habit = try await getById(habitId) else {
       throw RepositoryError.habitNotFound
@@ -150,7 +206,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       let loadedHabits = try await storage.loadHabits()
 
       await MainActor.run {
-        self.habits = loadedHabits
+        self.habitList = loadedHabits
         self.lastHabitsUpdate = Date()
         self.objectWillChange.send()
       }
@@ -179,7 +235,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     try await storage.saveHabits(habits, immediate: immediate)
 
     await MainActor.run {
-      self.habits = habits
+      self.habitList = habits
       self.objectWillChange.send()
     }
   }
@@ -192,6 +248,22 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     // For now, this is a no-op since we're already using UserDefaults
     // In the future, this would migrate from UserDefaults to Core Data
     print("✅ HabitRepositoryImpl: Migration completed (no-op for UserDefaults)")
+  }
+
+  func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
+    guard let uuid = UUID(uuidString: habitId) else {
+      throw RepositoryError.invalidData
+    }
+    guard var habit = try await getById(uuid) else {
+      throw RepositoryError.habitNotFound
+    }
+
+    let dateKey = DateUtils.dateKey(for: date)
+    habit.completionHistory[dateKey] = count
+    habit.completionStatus[dateKey] = count > 0
+    
+    try await update(habit)
+    return count
   }
 
   // MARK: Private
@@ -224,7 +296,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       guard let self else { return }
       Task {
         do {
-          try await self.storage.saveHabits(self.habits, immediate: true)
+          try await self.storage.saveHabits(self.habitList, immediate: true)
         } catch {
           print("❌ HabitRepositoryImpl: Failed to save habits on app resign: \(error)")
         }

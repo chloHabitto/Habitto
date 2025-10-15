@@ -36,78 +36,125 @@ class HabitRepositoryNew: HabitRepositoryProtocol, ObservableObject {
 
   static let shared = HabitRepositoryNew()
 
-  @Published var habits: [Habit] = []
+  @Published var habitList: [Habit] = []
 
   // MARK: - Repository Protocol Implementation
 
-  func getAll() async throws -> [Habit] {
-    try await repository.getAll()
+  nonisolated func habits() -> AsyncThrowingStream<[Habit], Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let habits = try await repository.habits().firstValue() ?? []
+          continuation.yield(habits)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  nonisolated func habit(by id: String) -> AsyncThrowingStream<Habit?, Error> {
+    AsyncThrowingStream { continuation in
+      Task {
+        do {
+          let habit = try await repository.habit(by: id).firstValue()
+          continuation.yield(habit ?? nil)
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+    }
+  }
+
+  func habits(for date: Date) async throws -> [Habit] {
+    try await repository.habits(for: date)
   }
 
   func getById(_ id: UUID) async throws -> Habit? {
-    try await repository.getById(id)
+    try await repository.habit(by: id.uuidString).firstValue() ?? nil
   }
 
-  func create(_ item: Habit) async throws -> Habit {
-    let createdHabit = try await repository.create(item)
+  func create(_ item: Habit) async throws {
+    try await repository.create(item)
     await loadHabits()
-    return createdHabit
   }
 
-  func update(_ item: Habit) async throws -> Habit {
-    let updatedHabit = try await repository.update(item)
+  func update(_ item: Habit) async throws {
+    try await repository.update(item)
     await loadHabits()
-    return updatedHabit
   }
 
   func delete(_ id: UUID) async throws {
-    try await repository.delete(id)
+    try await repository.delete(id: id.uuidString)
+    await loadHabits()
+  }
+
+  func delete(id: String) async throws {
+    try await repository.delete(id: id)
     await loadHabits()
   }
 
   func exists(_ id: UUID) async throws -> Bool {
-    try await repository.exists(id)
+    let habit = try await repository.habit(by: id.uuidString).firstValue()
+    return habit != nil
   }
 
   // MARK: - Habit-Specific Repository Methods
 
   func getHabits(for date: Date) async throws -> [Habit] {
-    try await repository.getHabits(for: date)
+    try await repository.habits(for: date)
   }
 
   func getHabits(by type: HabitType) async throws -> [Habit] {
-    try await repository.getHabits(by: type)
+    // TODO: Implement filtering by type
+    let allHabits = try await repository.habits().firstValue() ?? []
+    return allHabits.filter { $0.habitType == type }
   }
 
   func getActiveHabits() async throws -> [Habit] {
-    try await repository.getActiveHabits()
+    // TODO: Implement active habits filtering
+    return try await repository.habits().firstValue() ?? []
   }
 
   func getArchivedHabits() async throws -> [Habit] {
-    try await repository.getArchivedHabits()
+    // TODO: Implement archived habits filtering
+    return []
   }
 
   func updateHabitCompletion(habitId: UUID, date: Date, progress: Double) async throws {
-    try await repository.updateHabitCompletion(habitId: habitId, date: date, progress: progress)
+    let count = Int(progress * 100)
+    _ = try await repository.markComplete(habitId: habitId.uuidString, date: date, count: count)
     await loadHabits()
   }
 
   func getHabitCompletion(habitId: UUID, date: Date) async throws -> Double {
-    try await repository.getHabitCompletion(habitId: habitId, date: date)
+    let count = try await repository.getCompletionCount(habitId: habitId.uuidString, date: date)
+    return Double(count) / 100.0
+  }
+
+  func getCompletionCount(habitId: String, date: Date) async throws -> Int {
+    try await repository.getCompletionCount(habitId: habitId, date: date)
+  }
+
+  func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
+    try await repository.markComplete(habitId: habitId, date: date, count: count)
   }
 
   func calculateHabitStreak(habitId: UUID) async throws -> Int {
-    try await repository.calculateHabitStreak(habitId: habitId)
+    // TODO: Implement streak calculation
+    return 0
   }
 
   // MARK: - Additional Convenience Methods
 
   func loadHabits(force _: Bool = false) async {
     do {
-      let loadedHabits = try await getAll()
+      let loadedHabits = try await repository.habits().firstValue() ?? []
 
       await MainActor.run {
-        self.habits = loadedHabits
+        self.habitList = loadedHabits
         self.objectWillChange.send()
       }
     } catch {
@@ -118,7 +165,7 @@ class HabitRepositoryNew: HabitRepositoryProtocol, ObservableObject {
   func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
     // Update the published habits
     await MainActor.run {
-      self.habits = habits
+      self.habitList = habits
       self.objectWillChange.send()
     }
 
@@ -143,7 +190,7 @@ class HabitRepositoryNew: HabitRepositoryProtocol, ObservableObject {
     }
 
     // Save current habits before switching
-    let currentHabits = habits
+    let currentHabits = habitList
     try? await saveHabits(currentHabits, immediate: true)
 
     // Update configuration
@@ -194,7 +241,7 @@ class HabitRepositoryNew: HabitRepositoryProtocol, ObservableObject {
       guard let self else { return }
       Task {
         do {
-          try await self.saveHabits(self.habits, immediate: true)
+          try await self.saveHabits(self.habitList, immediate: true)
         } catch {
           print("❌ HabitRepositoryNew: Failed to save habits on app resign: \(error)")
         }
