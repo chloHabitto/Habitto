@@ -18,6 +18,7 @@
 		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
 		8980C1512E9AA91C00E491FB /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */; };
 		8980C1532E9AA92400E491FB /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1522E9AA92400E491FB /* FirebaseRemoteConfig */; };
+		8980C2172E9F880500E491FB /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C2162E9F880500E491FB /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -128,6 +129,7 @@
 				8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */,
 				8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */,
 				8935E7872E7C2204004BF684 /* Lottie in Frameworks */,
+				8980C2172E9F880500E491FB /* FirebaseFirestore in Frameworks */,
 				89383AAB2E919C8800AF39E5 /* MijickPopups in Frameworks */,
 				8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */,
 				8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */,
@@ -542,6 +544,7 @@
 				89383AAA2E919C8800AF39E5 /* MijickPopups */,
 				8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */,
 				8980C1522E9AA92400E491FB /* FirebaseRemoteConfig */,
+				8980C2162E9F880500E491FB /* FirebaseFirestore */,
 			);
 			productName = Habitto;
 			productReference = 89C17A372DF73D8A00B2480F /* Habitto.app */;
@@ -1183,6 +1186,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseRemoteConfig;
+		};
+		8980C2162E9F880500E491FB /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -13,7 +13,7 @@ import Foundation
 
 // MARK: - FirestoreError
 
-enum FirestoreError: Error, LocalizedError {
+enum FirestoreServiceError: Error, LocalizedError {
   case notConfigured
   case notAuthenticated
   case invalidData
@@ -74,7 +74,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   static let shared = FirestoreService()
   
   @MainActor @Published var habits: [MockHabit] = []
-  @MainActor @Published var error: FirestoreError?
+  @MainActor @Published var error: FirestoreServiceError?
   
   // MARK: - Habit Operations (Mock Implementation)
   
@@ -91,7 +91,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     guard currentUserId != nil else {
-      throw FirestoreError.notAuthenticated
+      throw FirestoreServiceError.notAuthenticated
     }
     
     /*
@@ -138,7 +138,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     guard currentUserId != nil else {
-      throw FirestoreError.notAuthenticated
+      throw FirestoreServiceError.notAuthenticated
     }
     
     /*
@@ -189,7 +189,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     guard currentUserId != nil else {
-      throw FirestoreError.notAuthenticated
+      throw FirestoreServiceError.notAuthenticated
     }
     
     /*
@@ -224,7 +224,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     guard currentUserId != nil else {
-      throw FirestoreError.notAuthenticated
+      throw FirestoreServiceError.notAuthenticated
     }
     
     /*
