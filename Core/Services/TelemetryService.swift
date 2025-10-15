@@ -166,4 +166,92 @@ final class TelemetryService: ObservableObject {
       "timestamp": Date().timeIntervalSince1970
     ]
   }
+  
+  // MARK: - Debug Overlay Support
+  
+  /// Get summary of all telemetry data for debug overlay
+  func getSummary() -> TelemetrySummary {
+    return TelemetrySummary(
+      firestoreWrites: OperationMetric(
+        success: get("firestore.write.success"),
+        failed: get("firestore.write.failed")
+      ),
+      xpAwards: OperationMetric(
+        success: get("xp.award.success"),
+        failed: get("xp.award.failed")
+      ),
+      streakUpdates: OperationMetric(
+        success: get("streak.update.success"),
+        failed: get("streak.update.failed")
+      ),
+      completions: OperationMetric(
+        success: get("habit.complete.success"),
+        failed: get("habit.complete.failed")
+      ),
+      rulesDenials: get("rules.denied"),
+      transactionRetries: get("transaction.retry")
+    )
+  }
+  
+  /// Reset all counters (alias for reset method)
+  func resetCounters() {
+    reset()
+  }
+  
+  /// Total Firestore writes
+  var totalFirestoreWrites: Int {
+    get {
+      get("firestore.write.success") + get("firestore.write.failed")
+    }
+  }
+  
+  /// Rules denials count
+  var rulesDenials: Int {
+    get {
+      get("rules.denied")
+    }
+  }
+  
+  /// Transaction retries count
+  var transactionRetries: Int {
+    get {
+      get("transaction.retry")
+    }
+  }
+}
+
+// MARK: - TelemetrySummary
+
+struct TelemetrySummary {
+  let firestoreWrites: OperationMetric
+  let xpAwards: OperationMetric
+  let streakUpdates: OperationMetric
+  let completions: OperationMetric
+  let rulesDenials: Int
+  let transactionRetries: Int
+  
+  var hasIssues: Bool {
+    rulesDenials > 0 || transactionRetries > 10
+  }
+}
+
+// MARK: - OperationMetric
+
+struct OperationMetric {
+  let success: Int
+  let failed: Int
+  
+  var total: Int {
+    success + failed
+  }
+  
+  var successRate: Double {
+    guard total > 0 else { return 0.0 }
+    return Double(success) / Double(total)
+  }
+  
+  var successPercentage: String {
+    let percentage = Int(successRate * 100)
+    return "\(percentage)%"
+  }
 }

@@ -217,20 +217,20 @@ enum CacheKeys {
     }
     
     static func habitsForDate(_ date: Date, userId: String) -> String {
-        let dateKey = DateFormatter.dateKeyFormatter.string(from: date)
+        let dateKey = DateUtils.dateKey(for: date)
         return "habits_date_\(dateKey)_\(userId)"
     }
     
     // MARK: - Completion Cache Keys
     
     static func completion(habitId: String, date: Date, userId: String) -> String {
-        let dateKey = DateFormatter.dateKeyFormatter.string(from: date)
+        let dateKey = DateUtils.dateKey(for: date)
         return "completion_\(habitId)_\(dateKey)_\(userId)"
     }
     
     static func completionsForHabit(_ habitId: String, from startDate: Date, to endDate: Date, userId: String) -> String {
-        let startKey = DateFormatter.dateKeyFormatter.string(from: startDate)
-        let endKey = DateFormatter.dateKeyFormatter.string(from: endDate)
+        let startKey = DateUtils.dateKey(for: startDate)
+        let endKey = DateUtils.dateKey(for: endDate)
         return "completions_\(habitId)_\(startKey)_to_\(endKey)_\(userId)"
     }
     
