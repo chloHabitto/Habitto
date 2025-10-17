@@ -42,7 +42,7 @@ struct XPDebugBadge: View {
   
   /// Calculate completed days count (same logic as HomeTabView)
   private func completedDaysCount() -> Int {
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else { return 0 }
+    guard AuthenticationManager.shared.currentUser?.uid != nil else { return 0 }
     
     let habits = habitRepository.habits
     guard !habits.isEmpty else { return 0 }

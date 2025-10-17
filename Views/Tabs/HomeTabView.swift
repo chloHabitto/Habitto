@@ -959,8 +959,6 @@ struct HomeTabView: View {
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   private func prefetchCompletionStatus() async {
-    let dateKey = Habit.dateKey(for: selectedDate)
-
     // ✅ FIX: Build status map from local habit completion history (immediate, no async delay)
     // This is the source of truth and doesn't require SwiftData queries
     var statusMap: [UUID: Bool] = [:]
