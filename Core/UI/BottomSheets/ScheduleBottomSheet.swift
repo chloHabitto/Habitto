@@ -180,7 +180,7 @@ struct ScheduleBottomSheet: View {
                     .background(Color(hex: "1C274C"))
                     .clipShape(Capsule())
                 } else {
-                  Text(weeklyValue == 1 ? "1 day a week" : "\(weeklyValue) days a week")
+                  Text(formatWeeklyFrequency(weeklyValue))
                     .font(.appBodyLarge)
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
@@ -493,6 +493,22 @@ struct ScheduleBottomSheet: View {
     let range = match.range(at: 1)
     let numberString = (schedule as NSString).substring(with: range)
     return Int(numberString)
+  }
+}
+
+// MARK: - Helper Functions
+
+/// Formats weekly frequency text with proper naming
+private func formatWeeklyFrequency(_ days: Int) -> String {
+  switch days {
+  case 1:
+    return "once a week"
+  case 2:
+    return "twice a week"
+  case 7:
+    return "everyday"
+  default:
+    return "\(days) days a week"
   }
 }
 

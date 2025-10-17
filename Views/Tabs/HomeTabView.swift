@@ -666,8 +666,8 @@ struct HomeTabView: View {
           let shouldShow = weekdays.contains(weekday)
           return shouldShow
         }
-      } else if habit.schedule.contains("days a week") {
-        // Handle frequency schedules like "2 days a week"
+      } else if habit.schedule.contains("once a week") || habit.schedule.contains("twice a week") || habit.schedule.contains("day a week") || habit.schedule.contains("days a week") {
+        // Handle frequency schedules like "once a week", "twice a week", or "3 days a week"
         let shouldShow = shouldShowHabitWithFrequency(habit: habit, date: date)
         return shouldShow
       } else if habit.schedule.contains("days a month") {
@@ -750,7 +750,7 @@ struct HomeTabView: View {
   }
 
   private func extractDaysPerWeek(from schedule: String) -> Int? {
-    let pattern = #"(\d+) days a week"#
+    let pattern = #"(\d+) days? a week"#  // Made "s" optional to match both "day" and "days"
     guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
           let match = regex.firstMatch(
             in: schedule,
