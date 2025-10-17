@@ -65,7 +65,7 @@ struct UnifiedInputElement: View {
         // Frequency selector button - larger width for one-line text
         Button(action: onFrequencyTap) {
           HStack {
-            Text(frequencyText.capitalized)
+            Text(frequencyText)
               .font(.appBodyLarge)
               .foregroundColor(isValid ? .text04 : .text06)
               .id(uiUpdateTrigger) // Force re-render when trigger changes
