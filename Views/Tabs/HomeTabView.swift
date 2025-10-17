@@ -58,17 +58,7 @@ struct HomeTabView: View {
     let _ = print("🟢 HomeTabView re-render | xp:", xpManager.totalXP,
                   "| instance:", ObjectIdentifier(xpManager))
     
-    return ZStack(alignment: .topTrailing) {
-      mainContent
-      
-      #if DEBUG
-      // 🔍 Debug overlay - shows live XP calculation
-      XPDebugBadge()
-        .padding(.top, 60)
-        .padding(.trailing, 16)
-        .environmentObject(HabitRepository.shared)
-      #endif
-    }
+    return mainContent
       .onAppear {
         let today = DateUtils.today()
         if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
