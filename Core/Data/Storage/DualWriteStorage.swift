@@ -12,7 +12,6 @@ import OSLog
 
 /// Storage implementation that writes to both Firestore (primary) and local storage (secondary)
 /// Uses non-blocking secondary writes to avoid UX delays
-@MainActor
 final class DualWriteStorage: HabitStorageProtocol {
   // MARK: Lifecycle
   
@@ -80,7 +79,7 @@ final class DualWriteStorage: HabitStorageProtocol {
     // Try primary storage first (Firestore)
     do {
       try await primaryStorage.fetchHabits()
-      let habits = primaryStorage.habits
+      let habits = await MainActor.run { primaryStorage.habits }
       dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from primary storage")
       return habits
     } catch {
@@ -152,7 +151,7 @@ final class DualWriteStorage: HabitStorageProtocol {
     do {
       // Delete all habits from Firestore
       try await primaryStorage.fetchHabits()
-      let habits = primaryStorage.habits
+      let habits = await MainActor.run { primaryStorage.habits }
       for habit in habits {
         try await primaryStorage.deleteHabit(id: habit.id.uuidString)
       }
@@ -182,7 +181,7 @@ final class DualWriteStorage: HabitStorageProtocol {
     // Try primary storage first (Firestore)
     do {
       try await primaryStorage.fetchHabits()
-      let habits = primaryStorage.habits
+      let habits = await MainActor.run { primaryStorage.habits }
       let habit = habits.first { $0.id == id }
       dualWriteLogger.info("✅ DualWriteStorage: Loaded habit from primary storage")
       return habit

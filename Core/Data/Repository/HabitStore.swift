@@ -43,20 +43,20 @@ final actor HabitStore {
       }
     }
 
-    // Use SwiftData for modern persistence
-    logger.info("HabitStore: Using SwiftData storage...")
-    var habits = try await swiftDataStorage.loadHabits()
+    // Use active storage (SwiftData or DualWrite based on feature flags)
+    logger.info("HabitStore: Loading habits from active storage...")
+    var habits = try await activeStorage.loadHabits()
 
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
     if habits.isEmpty {
       logger.info("No habits found in SwiftData, checking UserDefaults for migration...")
       let legacyHabits = try await checkForLegacyHabits()
       if !legacyHabits.isEmpty {
-        logger.info("Found \(legacyHabits.count) habits in UserDefaults, migrating to SwiftData...")
+        logger.info("Found \(legacyHabits.count) habits in UserDefaults, migrating to active storage...")
         habits = legacyHabits
-        // Save the migrated habits to SwiftData
-        try await swiftDataStorage.saveHabits(legacyHabits, immediate: true)
-        logger.info("Successfully migrated habits to SwiftData")
+        // Save the migrated habits to active storage (will sync to Firestore if enabled)
+        try await activeStorage.saveHabits(legacyHabits, immediate: true)
+        logger.info("Successfully migrated habits to active storage")
       }
     }
 
@@ -117,8 +117,8 @@ final actor HabitStore {
       logger.info("All habits passed validation")
     }
 
-    // Use SwiftData for modern persistence
-    try await swiftDataStorage.saveHabits(cappedHabits, immediate: true)
+    // Use active storage (SwiftData or DualWrite based on feature flags)
+    try await activeStorage.saveHabits(cappedHabits, immediate: true)
     logger.info("Successfully saved to SwiftData")
 
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
@@ -266,8 +266,8 @@ final actor HabitStore {
     // Save updated habits (complete array)
     try await saveHabits(currentHabits)
 
-    // Also delete the individual habit item from SwiftData
-    try await swiftDataStorage.deleteHabit(id: habit.id)
+    // Also delete the individual habit item from active storage
+    try await activeStorage.deleteHabit(id: habit.id)
 
     logger.info("Successfully deleted habit: \(habit.name)")
   }
@@ -602,8 +602,8 @@ final actor HabitStore {
   func clearAllHabits() async throws {
     logger.info("Clearing all habits for account deletion")
 
-    // Clear from SwiftData storage
-    try await swiftDataStorage.clearAllHabits()
+    // Clear from active storage
+    try await activeStorage.clearAllHabits()
 
     // Clear any cached data
     // Note: The storage implementations will handle their own cache clearing
@@ -623,6 +623,26 @@ final actor HabitStore {
   // User-aware storage wrappers
   private lazy var userDefaultsStorage = UserAwareStorage(baseStorage: baseUserDefaultsStorage)
   private lazy var swiftDataStorage = UserAwareStorage(baseStorage: baseSwiftDataStorage)
+  
+  // MARK: - Active Storage (with Firestore support)
+  
+  /// Returns the appropriate storage based on feature flags
+  /// - If Firestore sync is enabled: returns DualWriteStorage (writes to both SwiftData and Firestore)
+  /// - Otherwise: returns SwiftData storage only
+  private var activeStorage: any HabitStorageProtocol {
+    get {
+      if FeatureFlags.enableFirestoreSync {
+        logger.info("🔥 HabitStore: Firestore sync ENABLED - using DualWriteStorage")
+        return DualWriteStorage(
+          primaryStorage: FirestoreService.shared,
+          secondaryStorage: swiftDataStorage
+        )
+      } else {
+        logger.info("💾 HabitStore: Firestore sync DISABLED - using SwiftData only")
+        return swiftDataStorage
+      }
+    }
+  }
 
   // MARK: - Manager Properties (Actor-Safe)
 
