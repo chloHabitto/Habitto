@@ -361,11 +361,12 @@ struct ScheduledHabitItem: View {
 
   /// Helper function to extract goal amount without schedule
   private func extractGoalAmount(from goal: String) -> String {
-    // Goal format is typically "X unit on frequency" (e.g., "1 time on 1 times a week")
+    // Goal format is typically "X unit on frequency" (e.g., "1 time on Monday, Tuesday")
     // For legacy habits, it might still be "X unit per frequency"
+    // For frequency-based habits, it's "X unit frequency" (e.g., "1 time once a week", "1 time 3 days a week")
     // We want to extract just "X unit" part
 
-    // Try splitting by " on " first (current format)
+    // Try splitting by " on " first (current format for day-based schedules)
     var components = goal.components(separatedBy: " on ")
     if components.count >= 2 {
       return components[0] // Return "X unit" part
@@ -375,6 +376,25 @@ struct ScheduledHabitItem: View {
     components = goal.components(separatedBy: " per ")
     if components.count >= 2 {
       return components[0] // Return "X unit" part
+    }
+
+    // Handle frequency-based schedules using regex to match patterns like:
+    // "once a week", "twice a week", "3 days a week", "5 times per week", etc.
+    let regexPatterns = [
+      #"\s+(once|twice)\s+a\s+(week|month)"#,  // "once a week", "twice a month"
+      #"\s+\d+\s+days?\s+a\s+(week|month)"#,   // "3 days a week", "1 day a month"
+      #"\s+\d+\s+times?\s+(per|a)\s+week"#,    // "3 times per week", "2 times a week"
+      #"\s+(everyday|weekdays|weekends)"#,      // "everyday", "weekdays", "weekends"
+    ]
+    
+    for pattern in regexPatterns {
+      if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+         let match = regex.firstMatch(in: goal, options: [], range: NSRange(location: 0, length: goal.count))
+      {
+        // Extract the part before the frequency pattern
+        let beforeFrequency = (goal as NSString).substring(to: match.range.location)
+        return beforeFrequency.trimmingCharacters(in: .whitespaces)
+      }
     }
 
     return goal // Fallback to original goal if format is unexpected
