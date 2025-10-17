@@ -51,7 +51,17 @@ struct HomeTabView: View {
   let onCompletionDismiss: (() -> Void)?
 
   var body: some View {
-    mainContent
+    ZStack(alignment: .topTrailing) {
+      mainContent
+      
+      #if DEBUG
+      // 🔍 Debug overlay - shows live XP calculation
+      XPDebugBadge()
+        .padding(.top, 60)
+        .padding(.trailing, 16)
+        .environmentObject(HabitRepository.shared)
+      #endif
+    }
       .onAppear {
         let today = DateUtils.today()
         if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
@@ -67,8 +77,13 @@ struct HomeTabView: View {
         Task {
           await prefetchCompletionStatus()
           
-          // ✅ XP is now derived from state, not awarded in .onAppear
-          // XP updates happen ONLY on habit toggles via publishXP()
+          // ✅ FIX: Compute initial XP from persisted habit data
+          print("✅ INITIAL_XP: Computing XP from loaded habits")
+          let completedDaysCount = countCompletedDays()
+          await MainActor.run {
+            XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+          }
+          print("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         }
 
         // Subscribe to event bus
@@ -979,7 +994,7 @@ struct HomeTabView: View {
   /// This is the single source of truth for XP calculation
   @MainActor
   private func countCompletedDays() -> Int {
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else { return 0 }
+    guard AuthenticationManager.shared.currentUser?.uid != nil else { return 0 }
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
@@ -1150,7 +1165,7 @@ struct HomeTabView: View {
       
       // ✅ NEW APPROACH: Always recalculate XP from state (idempotent!)
       print("✅ DERIVED_XP: Recalculating XP after uncomplete")
-      let completedDaysCount = await countCompletedDays()
+      let completedDaysCount = countCompletedDays()
       await MainActor.run {
         XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
       }
@@ -1217,7 +1232,7 @@ struct HomeTabView: View {
         print("✅ DERIVED_XP: Recalculating XP from completed days")
         
         // ✅ NEW APPROACH: Derive XP from state (idempotent!)
-        let completedDaysCount = await countCompletedDays()
+        let completedDaysCount = countCompletedDays()
         await MainActor.run {
           XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
         }

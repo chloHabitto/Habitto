@@ -5,10 +5,11 @@ import SwiftUI
 struct XPLevelDisplay: View {
   // MARK: Internal
 
-  @ObservedObject var xpManager: XPManager
+  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
 
   var body: some View {
-    VStack(spacing: 12) {
+    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.userProgress.totalXP)")  // Diagnostic
+    return VStack(spacing: 12) {
       // Level and XP Info
       HStack(spacing: 16) {
         // Level Badge
@@ -297,7 +298,8 @@ struct XPTransactionRow: View {
 
 #Preview {
   VStack(spacing: 20) {
-    XPLevelDisplay(xpManager: XPManager.shared)
+    XPLevelDisplay()
+      .environmentObject(XPManager.shared)
 
     XPLevelDisplayCompact(xpManager: XPManager.shared)
 

@@ -210,6 +210,7 @@ struct HabittoApp: App {
               .environmentObject(vacationManager)
               .environmentObject(migrationService)
               .environmentObject(themeManager)
+              .environmentObject(xpManager)  // ✅ Inject XPManager as EnvironmentObject
               .onChange(of: authManager.authState) { oldState, newState in
                 handleAuthStateChange(
                   oldState: oldState,
