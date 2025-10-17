@@ -5,7 +5,8 @@ import SwiftUI
 struct XPLevelCard: View {
   // MARK: Internal
 
-  var xpManager: XPManager
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
     VStack(spacing: 16) {
@@ -172,44 +173,7 @@ struct XPLevelCard: View {
 // MARK: - XP Level Card Preview
 
 #Preview {
-  @Previewable @State var highLevelManager = XPManager()
-
-  VStack(spacing: 20) {
-    XPLevelCard(xpManager: XPManager())
-
-    // Example with higher level
-    XPLevelCard(xpManager: highLevelManager)
-      .onAppear {
-        var highLevelProgress = UserProgress()
-        highLevelProgress.currentLevel = 5
-        highLevelProgress.totalXP = 1200
-        highLevelProgress.xpForCurrentLevel = 200
-        highLevelProgress.xpForNextLevel = 300
-        highLevelProgress.dailyXP = 75
-        highLevelManager.userProgress = highLevelProgress
-        highLevelManager.userProgress.streakDays = 12
-        highLevelManager.userProgress.achievements = [
-          Achievement(
-            title: "First Steps",
-            description: "Complete your first habit",
-            xpReward: 25,
-            isUnlocked: true,
-            unlockedDate: Date(),
-            iconName: "star.fill",
-            category: .daily,
-            requirement: .completeHabits(count: 1)),
-          Achievement(
-            title: "Week Warrior",
-            description: "Complete habits for 7 days straight!",
-            xpReward: 150,
-            isUnlocked: true,
-            unlockedDate: Date(),
-            iconName: "flame.fill",
-            category: .streak,
-            requirement: .maintainStreak(days: 7))
-        ]
-      }
-  }
-  .padding()
-  .background(Color.primary)
+  XPLevelCard()
+    .padding()
+    .background(Color.primary)
 }

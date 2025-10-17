@@ -41,7 +41,9 @@ struct HomeTabView: View {
   @Binding var selectedDate: Date
   @Binding var selectedStatsTab: Int
   @EnvironmentObject var themeManager: ThemeManager
-  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
+  
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   let habits: [Habit]
   let isLoadingHabits: Bool

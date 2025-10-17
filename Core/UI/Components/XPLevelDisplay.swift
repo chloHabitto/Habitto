@@ -5,10 +5,11 @@ import SwiftUI
 struct XPLevelDisplay: View {
   // MARK: Internal
 
-  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
+  // ✅ FIX: Direct singleton access - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
-    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP)")  // ✅ Read from @Published property
+    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP) | instance: \(ObjectIdentifier(xpManager))")
     return VStack(spacing: 12) {
       // Level and XP Info
       HStack(spacing: 16) {
@@ -102,12 +103,12 @@ struct XPLevelDisplay: View {
     .offset(y: appeared ? 0 : 10)
     .onAppear {
       print(
-        "🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.totalXP), level: \(xpManager.currentLevel)")  // ✅ Read from @Published properties
+        "🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.totalXP), level: \(xpManager.currentLevel), instance: \(ObjectIdentifier(xpManager))")
       withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.05)) {
         appeared = true
       }
     }
-    .onChange(of: xpManager.totalXP) { oldValue, newValue in  // ✅ Subscribe to @Published property
+    .onChange(of: xpManager.totalXP) { oldValue, newValue in
       print("🎯 UI: XPLevelDisplay XP changed from \(oldValue) to \(newValue)")
     }
   }
@@ -136,7 +137,8 @@ struct XPLevelDisplay: View {
 struct XPLevelDisplayCompact: View {
   // MARK: Internal
 
-  var xpManager: XPManager
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
     HStack(spacing: 12) {
@@ -299,9 +301,8 @@ struct XPTransactionRow: View {
 #Preview {
   VStack(spacing: 20) {
     XPLevelDisplay()
-      .environment(XPManager.shared)
 
-    XPLevelDisplayCompact(xpManager: XPManager.shared)
+    XPLevelDisplayCompact()
 
     XPTransactionRow(transaction: XPTransaction(
       amount: 15,

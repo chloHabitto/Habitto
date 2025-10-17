@@ -11,10 +11,15 @@ struct MoreTabView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var vacationManager: VacationManager
-  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
+  
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
-    WhiteSheetContainer(
+    // 🔍 DEBUG: Log XP value on every body render
+    let _ = print("🟣 MoreTabView body render | xpManager.totalXP: \(xpManager.totalXP) | instance: \(ObjectIdentifier(xpManager))")
+    
+    return WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())
       }) {
@@ -115,6 +120,10 @@ struct MoreTabView: View {
             authManager.signOut()
           },
           secondaryButton: .cancel())
+      }
+      .onAppear {
+        // 🔍 DEBUG: Log XP when tab appears
+        print("🟣 MoreTabView.onAppear | XP: \(xpManager.totalXP) | Level: \(xpManager.currentLevel) | instance: \(ObjectIdentifier(xpManager))")
       }
   }
 
