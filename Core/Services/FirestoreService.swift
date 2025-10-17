@@ -47,14 +47,14 @@ enum FirestoreServiceError: Error, LocalizedError {
 class FirestoreService: FirebaseService, ObservableObject {
   // MARK: Lifecycle
   
-  private init() {
+  nonisolated private init() {
     print("📊 FirestoreService: Initialized")
     setupTelemetry()
   }
   
   // MARK: Internal
   
-  static let shared = FirestoreService()
+  nonisolated static let shared = FirestoreService()
   
   @MainActor @Published var habits: [Habit] = []
   @MainActor @Published var error: FirestoreServiceError?
@@ -66,7 +66,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   private var db: Firestore { Firestore.firestore() }
   
   // Telemetry counters
-  private var telemetryCounters: [String: Int] = [:]
+  nonisolated(unsafe) private var telemetryCounters: [String: Int] = [:]
   
   // MARK: - Habit Operations
   
@@ -258,7 +258,7 @@ class FirestoreService: FirebaseService, ObservableObject {
   
   // MARK: - Telemetry
   
-  private func setupTelemetry() {
+  nonisolated private func setupTelemetry() {
     telemetryCounters = [
       "dualwrite.create.primary_ok": 0,
       "dualwrite.update.primary_ok": 0,
