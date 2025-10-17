@@ -210,7 +210,7 @@ struct HabittoApp: App {
               .environmentObject(vacationManager)
               .environmentObject(migrationService)
               .environmentObject(themeManager)
-              .environmentObject(xpManager)  // ✅ Inject XPManager as EnvironmentObject
+              .environment(xpManager)  // ✅ Inject XPManager via @Observable
               .onChange(of: authManager.authState) { oldState, newState in
                 handleAuthStateChange(
                   oldState: oldState,
@@ -302,7 +302,7 @@ struct HabittoApp: App {
   @StateObject private var authManager = AuthenticationManager.shared
   @StateObject private var vacationManager = VacationManager.shared
   @StateObject private var themeManager = ThemeManager.shared
-  @StateObject private var xpManager = XPManager.shared
+  @State private var xpManager = XPManager.shared
   @State private var showSplash = true
 }
 

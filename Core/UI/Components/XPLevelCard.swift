@@ -5,7 +5,7 @@ import SwiftUI
 struct XPLevelCard: View {
   // MARK: Internal
 
-  @ObservedObject var xpManager: XPManager
+  var xpManager: XPManager
 
   var body: some View {
     VStack(spacing: 16) {

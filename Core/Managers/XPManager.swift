@@ -13,7 +13,8 @@ import SwiftUI
 /// to award or remove XP. Use DailyAwardService.grantIfAllComplete() instead.
 ///
 @MainActor
-class XPManager: ObservableObject {
+@Observable
+class XPManager {
   // MARK: Lifecycle
   
   // 🔍 DIAGNOSTIC: Fail-fast registry for duplicate instances
@@ -60,14 +61,14 @@ class XPManager: ObservableObject {
 
   static let shared = XPManager()
 
-  // ✅ UI-reactive properties (Published directly for instant updates)
-  @Published private(set) var totalXP: Int = 0
-  @Published private(set) var currentLevel: Int = 1
-  @Published private(set) var dailyXP: Int = 0
+  // ✅ UI-reactive properties (@Observable provides automatic change tracking)
+  private(set) var totalXP: Int = 0
+  private(set) var currentLevel: Int = 1
+  private(set) var dailyXP: Int = 0
   
-  // Internal progress struct (kept in sync with published properties)
-  @Published var userProgress = UserProgress()
-  @Published var recentTransactions: [XPTransaction] = []
+  // Internal progress struct (kept in sync with properties)
+  var userProgress = UserProgress()
+  var recentTransactions: [XPTransaction] = []
   
   // MARK: - Derived XP (Idempotent)
   
@@ -93,7 +94,7 @@ class XPManager: ObservableObject {
     // 🔍 DIAGNOSTIC: Log all XP changes
     print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - totalXP)")
     
-    // ✅ Update @Published properties directly (triggers instant UI update)
+    // ✅ Update properties directly (@Observable triggers automatic UI update)
     totalXP = newXP
     
     // Keep userProgress in sync
@@ -130,7 +131,7 @@ class XPManager: ObservableObject {
       return
     }
     
-    // ✅ Update @Published properties directly
+    // ✅ Update properties directly (@Observable triggers automatic UI update)
     currentLevel = newLevel
     
     // Keep userProgress in sync
@@ -296,9 +297,6 @@ class XPManager: ObservableObject {
     saveRecentTransactions()
     saveDailyAwards()
 
-    // Trigger UI update
-    objectWillChange.send()
-
     logger.info("XP data cleared for sign-out - user will start fresh")
   }
 
@@ -309,7 +307,7 @@ class XPManager: ObservableObject {
 
   /// Reset daily XP (used by existing system)
   func resetDailyXP() {
-    // ✅ Update @Published properties directly
+    // ✅ Update properties directly (@Observable triggers automatic UI update)
     dailyXP = 0
     
     // Keep userProgress in sync
@@ -431,7 +429,6 @@ class XPManager: ObservableObject {
     saveUserProgress()
     saveRecentTransactions()
     saveDailyAwards()
-    objectWillChange.send()
     logger.info("Emergency XP reset completed - back to level 1")
   }
   #endif
@@ -530,9 +527,6 @@ class XPManager: ObservableObject {
       // Save data
       saveUserProgress()
       saveRecentTransactions()
-
-      // Trigger UI update
-      objectWillChange.send()
 
       logger.info("Removed \(xpToRemove) XP for uncompleting habits")
     }

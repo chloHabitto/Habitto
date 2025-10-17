@@ -360,7 +360,7 @@ struct HomeView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var themeManager: ThemeManager
-  @EnvironmentObject var xpManager: XPManager  // ✅ Track XP changes to refresh tab switch
+  @Environment(XPManager.self) var xpManager  // ✅ Track XP changes to refresh tab switch
 
   var body: some View {
     // 🔎 PROBE: HomeView re-render when XP changes
