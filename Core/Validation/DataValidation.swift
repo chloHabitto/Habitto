@@ -433,9 +433,44 @@ class HabitValidator: DataValidator {
       "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
       "Every 2 days", "Every 3 days", "Every 4 days", "Every 5 days", "Every 6 days", "Every 7 days"
     ]
+    
+    let lowerSchedule = schedule.lowercased()
 
-    // Case-insensitive check
-    return validSchedules.contains { $0.lowercased() == schedule.lowercased() } || schedule.isEmpty
+    // Case-insensitive check for exact matches
+    if validSchedules.contains(where: { $0.lowercased() == lowerSchedule }) || schedule.isEmpty {
+      return true
+    }
+    
+    // Check for frequency-based patterns
+    let frequencyPatterns = [
+      "once a week",
+      "twice a week",
+      "once a month",
+      "twice a month",
+      "day a week",
+      "days a week",
+      "day a month",
+      "days a month",
+      "time per week",
+      "times per week",
+      "time a week",
+      "times a week",
+      "every monday",
+      "every tuesday",
+      "every wednesday",
+      "every thursday",
+      "every friday",
+      "every saturday",
+      "every sunday"
+    ]
+    
+    for pattern in frequencyPatterns {
+      if lowerSchedule.contains(pattern) {
+        return true
+      }
+    }
+    
+    return false
   }
 
   private func parseDate(from dateKey: String) -> Date? {
