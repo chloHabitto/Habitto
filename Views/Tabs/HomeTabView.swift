@@ -67,9 +67,8 @@ struct HomeTabView: View {
         Task {
           await prefetchCompletionStatus()
           
-          // ✅ FIX: Sync XP with completion status for all days
-          // This needs to run to keep XP in sync with current completion status
-          await checkAndAwardMissingXPForPreviousDays()
+          // ✅ XP is now derived from state, not awarded in .onAppear
+          // XP updates happen ONLY on habit toggles via publishXP()
         }
 
         // Subscribe to event bus
@@ -171,6 +170,12 @@ struct HomeTabView: View {
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
+  
+  /// ✅ FIX: Track processed dates to prevent duplicate XP awards in same session
+  @State private var processedDates = Set<String>()
+  
+  /// ✅ FIX: Prevent concurrent execution of XP check
+  @State private var isCheckingXP = false
 
   #if DEBUG
   // Runtime tracking: verify service is called exactly once per flow
@@ -961,236 +966,67 @@ struct HomeTabView: View {
 
       print("✅ HomeTabView: Prefetched completion status for \(completions.count) habits")
 
-      // ✅ FIX: Check if all habits are already completed for today
-      await checkAndTriggerCelebrationIfAllCompleted()
+      // ✅ XP is now derived from state on habit toggles only
+      // No need to check in prefetch - XP updates happen via publishXP()
     } catch {
       print("❌ HomeTabView: Failed to prefetch completion status: \(error)")
     }
   }
 
-  /// ✅ FIX: Sync XP with completion status for ALL days
-  /// Awards XP for days with all habits completed, removes XP for days with incomplete habits
-  private func checkAndAwardMissingXPForPreviousDays() async {
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      print("🎯 checkAndAwardMissingXPForPreviousDays: No authenticated user, skipping")
-      return
-    }
-    
-    // Skip if no habits
-    guard !habits.isEmpty else {
-      print("🎯 checkAndAwardMissingXPForPreviousDays: No habits found, skipping")
-      return
-    }
+  // MARK: - Derived XP Helpers
+  
+  /// ✅ PURE FUNCTION: Count how many days have all habits completed
+  /// This is the single source of truth for XP calculation
+  @MainActor
+  private func countCompletedDays() -> Int {
+    guard let userId = AuthenticationManager.shared.currentUser?.uid else { return 0 }
+    guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
     let today = DateUtils.today()
     
-    // Find the earliest habit start date (when user started using the app)
-    let earliestStartDate = habits.map { $0.startDate }.min() ?? today
+    // Find the earliest habit start date
+    guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }
     let startDate = DateUtils.startOfDay(for: earliestStartDate)
     
-    // Calculate number of days to check
-    let daysToCheck = DateUtils.daysBetween(startDate, today)
+    var completedCount = 0
+    var currentDate = startDate
     
-    print("🎯 checkAndAwardMissingXPForPreviousDays: Syncing XP for \(daysToCheck + 1) days from \(startDate) to \(today)")
-    
-    var daysAwarded = 0
-    var daysRevoked = 0
-    var totalXPAwarded = 0
-    var totalXPRevoked = 0
-    
-    // Check ALL days from the earliest habit start date to today
-    for daysFromStart in 0...daysToCheck {
-      guard let dateToCheck = calendar.date(byAdding: .day, value: daysFromStart, to: startDate) else {
-        continue
-      }
-      
-      let dateKey = Habit.dateKey(for: dateToCheck)
-      
-      // Get habits for this date
+    // Count all days where all habits are completed
+    while currentDate <= today {
       let habitsForDate = habits.filter { habit in
-        let selected = DateUtils.startOfDay(for: dateToCheck)
+        let selected = DateUtils.startOfDay(for: currentDate)
         let start = DateUtils.startOfDay(for: habit.startDate)
         let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
         
-        guard selected >= start, selected <= end else {
-          return false
-        }
-        
-        return shouldShowHabitOnDate(habit, date: dateToCheck)
+        guard selected >= start, selected <= end else { return false }
+        return shouldShowHabitOnDate(habit, date: currentDate)
       }
       
-      // Skip if no habits for this date
-      guard !habitsForDate.isEmpty else {
-        continue
+      // Check if all habits for this date are completed
+      let allCompleted = !habitsForDate.isEmpty && habitsForDate.allSatisfy { $0.isCompleted(for: currentDate) }
+      
+      if allCompleted {
+        completedCount += 1
       }
       
-      // Check if all habits are completed for this date
-      let allCompleted = habitsForDate.allSatisfy { habit in
-        habit.isCompleted(for: dateToCheck)
-      }
-      
-      // Check if DailyAward already exists for this date
-      let predicate = #Predicate<DailyAward> { award in
-        award.userId == userId && award.dateKey == dateKey
-      }
-      let request = FetchDescriptor<DailyAward>(predicate: predicate)
-      
-      do {
-        let existingAwards = try modelContext.fetch(request)
-        
-        if allCompleted && existingAwards.isEmpty {
-          // ✅ All habits completed BUT no XP awarded yet → Award XP
-          print("🎯 checkAndAwardMissingXPForPreviousDays: All habits completed for \(dateKey), awarding XP!")
-          
-          do {
-            try await awardService.awardDailyCompletionBonus(on: dateToCheck)
-            
-            let xpGranted = 50
-            XPManager.shared.updateXPFromDailyAward(xpGranted: xpGranted, dateKey: dateKey)
-            
-            let dailyAward = DailyAward(
-              userId: userId,
-              dateKey: dateKey,
-              xpGranted: xpGranted,
-              allHabitsCompleted: true
-            )
-            modelContext.insert(dailyAward)
-            try modelContext.save()
-            
-            daysAwarded += 1
-            totalXPAwarded += xpGranted
-            
-            print("✅ XP awarded for \(dateKey)! (+\(xpGranted) XP)")
-          } catch {
-            print("❌ Failed to award XP for \(dateKey): \(error)")
-          }
-          
-        } else if !allCompleted && !existingAwards.isEmpty {
-          // ❌ NOT all habits completed BUT XP was awarded → Remove XP
-          print("🎯 checkAndAwardMissingXPForPreviousDays: Habits incomplete for \(dateKey), removing XP!")
-          
-          do {
-            let xpToRemove = existingAwards.first?.xpGranted ?? 50
-            
-            // Remove XP from XPManager
-            XPManager.shared.userProgress.totalXP = max(0, XPManager.shared.userProgress.totalXP - xpToRemove)
-            XPManager.shared.userProgress.dailyXP = max(0, XPManager.shared.userProgress.dailyXP - xpToRemove)
-            XPManager.shared.updateLevelFromXP()
-            XPManager.shared.saveUserProgress()
-            
-            // Delete DailyAward record
-            for award in existingAwards {
-              modelContext.delete(award)
-            }
-            try modelContext.save()
-            
-            daysRevoked += 1
-            totalXPRevoked += xpToRemove
-            
-            print("✅ XP removed for \(dateKey)! (-\(xpToRemove) XP)")
-          } catch {
-            print("❌ Failed to remove XP for \(dateKey): \(error)")
-          }
-        }
-      } catch {
-        print("❌ Failed to check awards for \(dateKey): \(error)")
-      }
+      guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
+      currentDate = nextDate
     }
     
-    print("✅ checkAndAwardMissingXPForPreviousDays: Sync complete")
-    print("✅ Awarded: \(daysAwarded) days (+\(totalXPAwarded) XP)")
-    print("✅ Revoked: \(daysRevoked) days (-\(totalXPRevoked) XP)")
-    
-    if daysAwarded > 0 || daysRevoked > 0 {
-      let notificationFeedback = UINotificationFeedbackGenerator()
-      notificationFeedback.notificationOccurred(.success)
-    }
+    return completedCount
   }
   
-  /// ✅ FIX: Check if all habits are completed and trigger celebration
-  /// Also awards XP retroactively if habits were completed but XP wasn't awarded
+  /// ❌ DEPRECATED: Old incremental XP approach (replaced by derived XP)
+  @available(*, unavailable, message: "Use countCompletedDays() and publishXP() instead")
+  private func checkAndAwardMissingXPForPreviousDays() async {
+    fatalError("This method is deprecated. Use countCompletedDays() and publishXP() instead.")
+  }
+  
+  /// ❌ DEPRECATED: Old celebration check (replaced by derived XP on toggles)
+  @available(*, unavailable, message: "XP is now derived on habit toggles via publishXP()")
   private func checkAndTriggerCelebrationIfAllCompleted() async {
-    // Get habits for selected date
-    let habitsForDate = baseHabitsForSelectedDate
-    
-    // Skip if no habits
-    guard !habitsForDate.isEmpty else {
-      print("🎯 checkAndTriggerCelebrationIfAllCompleted: No habits for this date, skipping")
-      return
-    }
-
-    // Check if all habits are completed
-    let allCompleted = habitsForDate.allSatisfy { habit in
-      completionStatusMap[habit.id] == true
-    }
-
-    guard allCompleted else {
-      print(
-        "🎯 checkAndTriggerCelebrationIfAllCompleted: Not all habits completed (\(habitsForDate.filter { !(completionStatusMap[$0.id] ?? false) }.count) remaining)")
-      return
-    }
-    
-    print("🎯 checkAndTriggerCelebrationIfAllCompleted: All habits completed for \(Habit.dateKey(for: selectedDate))!")
-    
-    // ✅ FIX: Check if XP has already been awarded for this date
-    let dateKey = Habit.dateKey(for: selectedDate)
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      print("🎯 checkAndTriggerCelebrationIfAllCompleted: No authenticated user, skipping XP check")
-      return
-    }
-    
-    // Check if DailyAward already exists for this date
-    let predicate = #Predicate<DailyAward> { award in
-      award.userId == userId && award.dateKey == dateKey
-    }
-    let request = FetchDescriptor<DailyAward>(predicate: predicate)
-    
-    do {
-      let existingAwards = try modelContext.fetch(request)
-      
-      if existingAwards.isEmpty {
-        // No award exists yet - award XP retroactively!
-        print("🎯 checkAndTriggerCelebrationIfAllCompleted: No XP award found for \(dateKey), awarding retroactively!")
-        
-        // Award XP through DailyAwardService
-        do {
-          try await awardService.awardDailyCompletionBonus(on: selectedDate)
-          print("✅ checkAndTriggerCelebrationIfAllCompleted: Retroactive XP awarded to Firestore!")
-          
-          // Also update XPManager for UI display (sync Firestore -> XPManager)
-          let xpGranted = 50 // Daily completion bonus amount
-          XPManager.shared.updateXPFromDailyAward(xpGranted: xpGranted, dateKey: dateKey)
-          print("✅ checkAndTriggerCelebrationIfAllCompleted: XPManager synced with Firestore XP")
-          
-          // ✅ CRITICAL FIX: Create DailyAward record in SwiftData to prevent duplicate awards
-          let dailyAward = DailyAward(
-            userId: userId,
-            dateKey: dateKey,
-            xpGranted: xpGranted,
-            allHabitsCompleted: true
-          )
-          modelContext.insert(dailyAward)
-          try modelContext.save()
-          print("✅ checkAndTriggerCelebrationIfAllCompleted: DailyAward record created in SwiftData")
-          
-          // Only trigger celebration if viewing today
-          let today = DateUtils.today()
-          if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
-            await MainActor.run {
-              showCelebration = true
-            }
-            print("🎉 checkAndTriggerCelebrationIfAllCompleted: Celebration triggered!")
-          }
-        } catch {
-          print("❌ checkAndTriggerCelebrationIfAllCompleted: Failed to award retroactive XP: \(error)")
-        }
-      } else {
-        print("🎯 checkAndTriggerCelebrationIfAllCompleted: XP already awarded for \(dateKey) ✅")
-      }
-    } catch {
-      print("❌ checkAndTriggerCelebrationIfAllCompleted: Failed to check existing awards: \(error)")
-    }
+    fatalError("This method is deprecated. XP is now derived on habit toggles via publishXP().")
   }
 
   /// Refresh habits data when user pulls down
@@ -1312,12 +1148,17 @@ struct HomeTabView: View {
         h.id == habit.id ? false : (completionStatusMap[h.id] ?? false)
       }
       
+      // ✅ NEW APPROACH: Always recalculate XP from state (idempotent!)
+      print("✅ DERIVED_XP: Recalculating XP after uncomplete")
+      let completedDaysCount = await countCompletedDays()
+      await MainActor.run {
+        XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+      }
+      print("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+      
+      // Clean up DailyAward record if day is no longer complete
       if !allCompleted {
-        // Not all habits completed anymore - remove XP if it was awarded
-        guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-          print("🎯 UNCOMPLETE_FLOW: No authenticated user, skipping XP removal")
-          return
-        }
+        guard let userId = AuthenticationManager.shared.currentUser?.uid else { return }
         
         let predicate = #Predicate<DailyAward> { award in
           award.userId == userId && award.dateKey == dateKey
@@ -1326,29 +1167,13 @@ struct HomeTabView: View {
         
         do {
           let existingAwards = try modelContext.fetch(request)
-          
-          if !existingAwards.isEmpty {
-            // XP was awarded, but day is no longer complete - remove it
-            let xpToRemove = existingAwards.first?.xpGranted ?? 50
-            
-            print("🎯 UNCOMPLETE_FLOW: Removing XP for \(dateKey) (day no longer complete)")
-            
-            // Remove XP from XPManager
-            XPManager.shared.userProgress.totalXP = max(0, XPManager.shared.userProgress.totalXP - xpToRemove)
-            XPManager.shared.userProgress.dailyXP = max(0, XPManager.shared.userProgress.dailyXP - xpToRemove)
-            XPManager.shared.updateLevelFromXP()
-            XPManager.shared.saveUserProgress()
-            
-            // Delete DailyAward record
-            for award in existingAwards {
-              modelContext.delete(award)
-            }
-            try modelContext.save()
-            
-            print("✅ UNCOMPLETE_FLOW: XP removed for \(dateKey)! (-\(xpToRemove) XP)")
+          for award in existingAwards {
+            modelContext.delete(award)
           }
+          try modelContext.save()
+          print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
         } catch {
-          print("❌ UNCOMPLETE_FLOW: Failed to remove XP: \(error)")
+          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
         }
       }
     }
@@ -1389,28 +1214,26 @@ struct HomeTabView: View {
         }
         #endif
 
-        print("🎯 COMPLETION_FLOW: Awarding daily completion bonus via DailyAwardService")
+        print("✅ DERIVED_XP: Recalculating XP from completed days")
+        
+        // ✅ NEW APPROACH: Derive XP from state (idempotent!)
+        let completedDaysCount = await countCompletedDays()
+        await MainActor.run {
+          XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+        }
+        print("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         
         do {
-          // Award 50 XP for completing all habits today
-          try await awardService.awardDailyCompletionBonus(on: selectedDate)
-          print("✅ COMPLETION_FLOW: Daily completion bonus awarded to Firestore!")
-          
-          // Also update XPManager for UI display (sync Firestore -> XPManager)
-          let xpGranted = 50 // Daily completion bonus amount
-          XPManager.shared.updateXPFromDailyAward(xpGranted: xpGranted, dateKey: dateKey)
-          print("✅ COMPLETION_FLOW: XPManager synced with Firestore XP")
-          
-          // ✅ CRITICAL FIX: Create DailyAward record in SwiftData to prevent duplicate awards
+          // Still save DailyAward for history tracking
           let dailyAward = DailyAward(
             userId: userId,
             dateKey: dateKey,
-            xpGranted: xpGranted,
+            xpGranted: 50,
             allHabitsCompleted: true
           )
           modelContext.insert(dailyAward)
           try modelContext.save()
-          print("✅ COMPLETION_FLOW: DailyAward record created in SwiftData")
+          print("✅ COMPLETION_FLOW: DailyAward record created for history")
           
           // Trigger celebration
           showCelebration = true

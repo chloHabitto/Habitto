@@ -15,11 +15,31 @@ import SwiftUI
 @MainActor
 class XPManager: ObservableObject {
   // MARK: Lifecycle
+  
+  // 🔍 DIAGNOSTIC: Fail-fast registry for duplicate instances
+  private static weak var _instance: XPManager?
 
   init() {
+    // 🔍 FAIL-FAST: Prevent multiple instances
+    if let existing = XPManager._instance {
+      let existingId = ObjectIdentifier(existing)
+      let newId = ObjectIdentifier(self)
+      preconditionFailure("""
+        ❌ DUPLICATE XPManager INSTANCE DETECTED!
+        Existing: \(existingId)
+        New:      \(newId)
+        FIX: Ensure only one XPManager is created at app root.
+        """)
+    }
+    XPManager._instance = self
+    
     loadUserProgress()
     loadRecentTransactions()
     loadDailyAwards()
+    
+    // 🔍 DIAGNOSTIC: Prove single instance
+    print("🏪 STORE_INSTANCE XPManager created: \(ObjectIdentifier(self))")
+    
     logger
       .info(
         "XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
@@ -35,12 +55,43 @@ class XPManager: ObservableObject {
     static let levelUp = 25
     static let perfectWeek = 25
     static let achievement = 10
+    static let dailyCompletion = 50  // XP per fully completed day
   }
 
   static let shared = XPManager()
 
   @Published var userProgress = UserProgress()
   @Published var recentTransactions: [XPTransaction] = []
+  
+  // MARK: - Derived XP (Idempotent)
+  
+  /// ✅ PURE FUNCTION: Calculate XP from completed days (idempotent, no state mutation)
+  /// This is the single source of truth for XP calculation.
+  /// Call this after any habit toggle to recalculate and publish XP.
+  ///
+  /// - Parameter completedDaysCount: Number of days where all habits were completed
+  /// - Returns: Total XP (completedDays * baseXP)
+  func recalculateXP(completedDaysCount: Int) -> Int {
+    return completedDaysCount * XPRewards.dailyCompletion
+  }
+  
+  /// ✅ IDEMPOTENT: Set XP from derived calculation
+  /// Use this instead of += or -= operations
+  @MainActor
+  func publishXP(completedDaysCount: Int) {
+    let newXP = recalculateXP(completedDaysCount: completedDaysCount)
+    let oldXP = userProgress.totalXP
+    
+    // Only update if changed
+    guard newXP != oldXP else { return }
+    
+    // 🔍 DIAGNOSTIC: Log all XP changes
+    print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - oldXP)")
+    
+    userProgress.totalXP = newXP
+    updateLevelFromXP()
+    saveUserProgress()
+  }
 
   /// Ensures level is always calculated from current XP (no double-bumping)
   func updateLevelFromXP() {
@@ -49,39 +100,10 @@ class XPManager: ObservableObject {
     updateLevelProgress()
   }
 
-  /// ✅ NEW: Update XP from DailyAwardService
-  /// This method is called by DailyAwardService when XP is granted
+  /// ❌ DEPRECATED: Use publishXP(completedDaysCount:) instead
+  @available(*, unavailable, message: "Use XPManager.publishXP(completedDaysCount:) for idempotent XP updates")
   func updateXPFromDailyAward(xpGranted: Int, dateKey: String) {
-    print("🎯 STEP 11: XPManager.updateXPFromDailyAward() called")
-    print("🎯 STEP 11: xpGranted: \(xpGranted), dateKey: \(dateKey)")
-    print("🎯 STEP 11: Current totalXP before update: \(userProgress.totalXP)")
-
-    // Add XP to total
-    userProgress.totalXP += xpGranted
-    userProgress.dailyXP += xpGranted
-
-    print("🎯 STEP 11: Added \(xpGranted) XP - new totalXP: \(userProgress.totalXP)")
-
-    // Update level from XP (pure function approach)
-    let oldLevel = userProgress.currentLevel
-    updateLevelFromXP()
-    print("🎯 STEP 11: Level updated from \(oldLevel) to \(userProgress.currentLevel)")
-
-    // Add transaction for the award
-    let transaction = XPTransaction(
-      amount: xpGranted,
-      reason: .completeAllHabits,
-      description: "Completed all habits for \(dateKey)")
-    addTransaction(transaction)
-    print("🎯 STEP 11: Transaction added: \(transaction.description)")
-
-    // Save data
-    saveUserProgress()
-    saveRecentTransactions()
-    print("🎯 STEP 11: Data saved to UserDefaults")
-
-    print(
-      "🎯 STEP 11: ✅ XPManager update complete - totalXP: \(userProgress.totalXP), level: \(userProgress.currentLevel)")
+    fatalError("updateXPFromDailyAward is deprecated. Use publishXP(completedDaysCount:) instead.")
   }
 
   /// ❌ REMOVED: Force award XP for testing

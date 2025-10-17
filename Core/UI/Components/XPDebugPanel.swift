@@ -728,11 +728,14 @@ struct XPDebugPanel: View {
             if existingAwards.isEmpty {
               print("🔧 No XP awarded for yesterday - awarding now...")
 
-              // Award XP through XPManager
-              let xpToAward = 50 // Standard daily completion XP
-              xpManager.updateXPFromDailyAward(xpGranted: xpToAward, dateKey: yesterdayKey)
+              // ✅ Use new derived XP approach
+              // Note: This is debug code - in production, XP is derived from countCompletedDays()
+              // For debug purposes, just increment by 1 completed day
+              let currentCompletedDays = xpManager.userProgress.totalXP / 50
+              xpManager.publishXP(completedDaysCount: currentCompletedDays + 1)
 
               // Create DailyAward record
+              let xpToAward = 50
               let award = DailyAward(
                 userId: userId,
                 dateKey: yesterdayKey,
