@@ -74,6 +74,12 @@ class CloudKitManager: ObservableObject {
   // MARK: - CloudKit Availability
 
   func isCloudKitAvailable() -> Bool {
+    // CRITICAL: CloudKit is explicitly disabled (entitlements commented out)
+    // Attempting to use CKContainer.default() will crash without entitlements
+    print("ℹ️ CloudKitManager: CloudKit explicitly disabled (using Firebase instead)")
+    return false
+    
+    /* DISABLED - CloudKit code below
     // Check if iCloud is available on this device
     guard FileManager.default.ubiquityIdentityToken != nil else {
       print("⚠️ CloudKitManager: iCloud not available (not signed in or disabled)")
@@ -100,6 +106,7 @@ class CloudKitManager: ObservableObject {
     
     print("✅ CloudKitManager: CloudKit is available and ready")
     return true
+    */
   }
 
   // MARK: - Authentication
@@ -330,6 +337,11 @@ class CloudKitManager: ObservableObject {
   // MARK: - Safe CloudKit Initialization
 
   private func initializeCloudKitIfNeeded() -> Bool {
+    // CRITICAL: CloudKit is explicitly disabled - never initialize container
+    print("ℹ️ CloudKitManager: CloudKit initialization skipped (disabled)")
+    return false
+    
+    /* DISABLED - CloudKit initialization
     guard container == nil else { return true }
 
     // Try to initialize CloudKit safely
@@ -337,6 +349,7 @@ class CloudKitManager: ObservableObject {
     container = CKContainer.default()
     print("✅ CloudKitManager: CloudKit container initialized safely")
     return true
+    */
   }
 
   private func fetchUserRecordID() {
