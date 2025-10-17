@@ -1024,6 +1024,17 @@ class StreakDataCalculator {
   }
 
   private static func extractDaysPerWeek(from schedule: String) -> Int? {
+    let lowerSchedule = schedule.lowercased()
+    
+    // Handle word-based frequencies
+    if lowerSchedule.contains("once a week") {
+      return 1
+    }
+    if lowerSchedule.contains("twice a week") {
+      return 2
+    }
+    
+    // Handle number-based frequencies like "3 days a week"
     let pattern = #"(\d+)\s+days?\s+a\s+week"#  // Made "s" optional to match both "day" and "days"
     guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
           let match = regex.firstMatch(

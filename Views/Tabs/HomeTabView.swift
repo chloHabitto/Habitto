@@ -193,10 +193,13 @@ struct HomeTabView: View {
       let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
       guard selected >= start, selected <= end else {
+        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' EXCLUDED: outside date range (start: \(start), end: \(end), selected: \(selected))")
         return false
       }
 
-      return shouldShowHabitOnDate(habit, date: selectedDate)
+      let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
+      print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)'): shouldShow = \(shouldShow)")
+      return shouldShow
     }
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
@@ -584,10 +587,12 @@ struct HomeTabView: View {
   }
 
   private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
+    print("🔍 shouldShowHabitOnDate called for '\(habit.name)' with schedule: '\(habit.schedule)'")
     let weekday = DateUtils.weekday(for: date)
 
     // Check if the date is before the habit start date
     if date < DateUtils.startOfDay(for: habit.startDate) {
+      print("🔍 shouldShowHabitOnDate - '\(habit.name)' EXCLUDED: before start date")
       return false
     }
 
@@ -750,6 +755,17 @@ struct HomeTabView: View {
   }
 
   private func extractDaysPerWeek(from schedule: String) -> Int? {
+    let lowerSchedule = schedule.lowercased()
+    
+    // Handle word-based frequencies
+    if lowerSchedule.contains("once a week") {
+      return 1
+    }
+    if lowerSchedule.contains("twice a week") {
+      return 2
+    }
+    
+    // Handle number-based frequencies like "3 days a week"
     let pattern = #"(\d+) days? a week"#  // Made "s" optional to match both "day" and "days"
     guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
           let match = regex.firstMatch(
