@@ -5,8 +5,8 @@ import SwiftUI
 struct XPLevelCard: View {
   // MARK: Internal
 
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     VStack(spacing: 16) {

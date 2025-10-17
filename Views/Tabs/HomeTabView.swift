@@ -42,8 +42,8 @@ struct HomeTabView: View {
   @Binding var selectedStatsTab: Int
   @EnvironmentObject var themeManager: ThemeManager
   
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   let habits: [Habit]
   let isLoadingHabits: Bool
@@ -959,40 +959,20 @@ struct HomeTabView: View {
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   private func prefetchCompletionStatus() async {
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      // Normal behavior in guest mode - no prefetch needed
-      return
-    }
-
     let dateKey = Habit.dateKey(for: selectedDate)
 
-    // Single query to get all completion records for today
-    let request: FetchDescriptor<CompletionRecord> = FetchDescriptor(
-      predicate: #Predicate {
-        $0.userId == userId &&
-          $0.dateKey == dateKey
-      })
-
-    do {
-      let completions = try modelContext.fetch(request)
-
-      // Build completion status map
-      var statusMap: [UUID: Bool] = [:]
-      for completion in completions {
-        statusMap[completion.habitId] = completion.isCompleted
-      }
-
-      await MainActor.run {
-        completionStatusMap = statusMap
-      }
-
-      print("✅ HomeTabView: Prefetched completion status for \(completions.count) habits")
-
-      // ✅ XP is now derived from state on habit toggles only
-      // No need to check in prefetch - XP updates happen via publishXP()
-    } catch {
-      print("❌ HomeTabView: Failed to prefetch completion status: \(error)")
+    // ✅ FIX: Build status map from local habit completion history (immediate, no async delay)
+    // This is the source of truth and doesn't require SwiftData queries
+    var statusMap: [UUID: Bool] = [:]
+    for habit in habits {
+      statusMap[habit.id] = habit.isCompleted(for: selectedDate)
     }
+
+    await MainActor.run {
+      completionStatusMap = statusMap
+    }
+
+    print("✅ HomeTabView: Prefetched completion status for \(statusMap.count) habits from local data")
   }
 
   // MARK: - Derived XP Helpers

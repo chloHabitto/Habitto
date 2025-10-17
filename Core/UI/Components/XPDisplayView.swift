@@ -197,8 +197,8 @@ enum XPStyle {
 // MARK: - XPBadge
 
 struct XPBadge: View {
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     XPDisplayView(
@@ -211,8 +211,8 @@ struct XPBadge: View {
 // MARK: - DailyXPProgress
 
 struct DailyXPProgress: View {
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {

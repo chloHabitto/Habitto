@@ -5,8 +5,8 @@ import SwiftUI
 struct XPLevelDisplay: View {
   // MARK: Internal
 
-  // ✅ FIX: Direct singleton access - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP) | instance: \(ObjectIdentifier(xpManager))")
@@ -137,8 +137,8 @@ struct XPLevelDisplay: View {
 struct XPLevelDisplayCompact: View {
   // MARK: Internal
 
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     HStack(spacing: 12) {
