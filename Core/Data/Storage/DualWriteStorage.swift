@@ -64,10 +64,10 @@ final class DualWriteStorage: HabitStorageProtocol {
     Task.detached { [weak self] in
       do {
         try await self?.secondaryStorage.saveHabits(habits, immediate: immediate)
-        await self?.incrementCounter("dualwrite.update.secondary_ok")
+        self?.incrementCounter("dualwrite.update.secondary_ok")
         print("✅ DualWriteStorage: Secondary write successful")
       } catch {
-        await self?.incrementCounter("dualwrite.secondary_err")
+        self?.incrementCounter("dualwrite.secondary_err")
         print("❌ DualWriteStorage: Secondary write failed: \(error)")
       }
     }
@@ -109,10 +109,10 @@ final class DualWriteStorage: HabitStorageProtocol {
     Task.detached { [weak self] in
       do {
         try await self?.secondaryStorage.saveHabit(habit, immediate: immediate)
-        await self?.incrementCounter("dualwrite.create.secondary_ok")
+        self?.incrementCounter("dualwrite.create.secondary_ok")
         print("✅ DualWriteStorage: Secondary write successful")
       } catch {
-        await self?.incrementCounter("dualwrite.secondary_err")
+        self?.incrementCounter("dualwrite.secondary_err")
         print("❌ DualWriteStorage: Secondary write failed: \(error)")
       }
     }
@@ -135,10 +135,10 @@ final class DualWriteStorage: HabitStorageProtocol {
     Task.detached { [weak self] in
       do {
         try await self?.secondaryStorage.deleteHabit(id: id)
-        await self?.incrementCounter("dualwrite.delete.secondary_ok")
+        self?.incrementCounter("dualwrite.delete.secondary_ok")
         print("✅ DualWriteStorage: Secondary delete successful")
       } catch {
-        await self?.incrementCounter("dualwrite.secondary_err")
+        self?.incrementCounter("dualwrite.secondary_err")
         print("❌ DualWriteStorage: Secondary delete failed: \(error)")
       }
     }
@@ -166,10 +166,10 @@ final class DualWriteStorage: HabitStorageProtocol {
     Task.detached { [weak self] in
       do {
         try await self?.secondaryStorage.clearAllHabits()
-        await self?.incrementCounter("dualwrite.delete.secondary_ok")
+        self?.incrementCounter("dualwrite.delete.secondary_ok")
         print("✅ DualWriteStorage: Secondary clear successful")
       } catch {
-        await self?.incrementCounter("dualwrite.secondary_err")
+        self?.incrementCounter("dualwrite.secondary_err")
         print("❌ DualWriteStorage: Secondary clear failed: \(error)")
       }
     }
