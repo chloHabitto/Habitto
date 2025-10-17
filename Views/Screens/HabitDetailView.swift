@@ -987,18 +987,24 @@ struct HabitDetailView: View {
   private func sortGoalChronologically(_ goal: String) -> String {
     // Goal strings are like "1 time on every friday, every monday" (both habit types now use "on")
     // Legacy: "1 time per every friday, every monday" (old habit breaking format)
-    // We need to extract and sort the frequency part
+    // We need to extract and sort the frequency part, and convert old formats to new ones
 
     if goal.contains(" on ") {
       // Both habit building and new habit breaking format: "1 time on every friday, every monday"
       let parts = goal.components(separatedBy: " on ")
       if parts.count >= 2 {
         let beforeOn = parts[0] // "1 time"
-        let frequency = parts[1] // "every friday, every monday"
+        let frequency = parts[1] // "every friday, every monday" or "1 day a week"
 
         let sortedFrequency = sortScheduleChronologically(frequency)
-        let result = "\(beforeOn) on \(sortedFrequency)"
-        return result
+        let formattedFrequency = formatFrequencyText(sortedFrequency)
+        
+        // Check if we need "on" or not
+        if needsOnPreposition(formattedFrequency) {
+          return "\(beforeOn) on \(formattedFrequency)"
+        } else {
+          return "\(beforeOn) \(formattedFrequency)"
+        }
       }
     } else if goal.contains(" per ") {
       // Legacy habit breaking format: "1 time per every friday, every monday"
@@ -1009,12 +1015,87 @@ struct HabitDetailView: View {
         let frequency = parts[1] // "every friday, every monday"
 
         let sortedFrequency = sortScheduleChronologically(frequency)
-        let result = "\(beforePer) on \(sortedFrequency)" // Changed "per" to "on"
-        return result
+        let formattedFrequency = formatFrequencyText(sortedFrequency)
+        
+        // Check if we need "on" or not
+        if needsOnPreposition(formattedFrequency) {
+          return "\(beforePer) on \(formattedFrequency)"
+        } else {
+          return "\(beforePer) \(formattedFrequency)"
+        }
       }
     }
 
     return goal
+  }
+  
+  /// Converts old frequency formats to new standardized formats
+  private func formatFrequencyText(_ frequency: String) -> String {
+    let lowerFreq = frequency.lowercased()
+    
+    // Check for "X day(s) a week" patterns
+    if lowerFreq.contains("day a week") || lowerFreq.contains("days a week") {
+      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*week"#, options: .caseInsensitive),
+         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
+        let range = match.range(at: 1)
+        if let numberRange = Range(range, in: frequency),
+           let number = Int(frequency[numberRange]) {
+          switch number {
+          case 1: return "once a week"
+          case 2: return "twice a week"
+          case 7: return "everyday"
+          default: return "\(number) days a week"
+          }
+        }
+      }
+    }
+    
+    // Check for "X day(s) a month" patterns
+    if lowerFreq.contains("day a month") || lowerFreq.contains("days a month") {
+      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*month"#, options: .caseInsensitive),
+         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
+        let range = match.range(at: 1)
+        if let numberRange = Range(range, in: frequency),
+           let number = Int(frequency[numberRange]) {
+          switch number {
+          case 1: return "once a month"
+          case 2: return "twice a month"
+          default: return "\(number) days a month"
+          }
+        }
+      }
+    }
+    
+    return frequency
+  }
+  
+  /// Determines if a frequency text needs the "on" preposition
+  private func needsOnPreposition(_ frequencyText: String) -> Bool {
+    let lowerFrequency = frequencyText.lowercased()
+    
+    // Frequency patterns that DON'T need "on"
+    let frequencyPatterns = [
+      "everyday",
+      "once a week",
+      "twice a week",
+      "once a month",
+      "twice a month",
+      "day a week",
+      "days a week",
+      "day a month",
+      "days a month",
+      "time per week",
+      "times per week",
+    ]
+    
+    for pattern in frequencyPatterns {
+      if lowerFrequency.contains(pattern) {
+        return false
+      }
+    }
+    
+    // Everything else (specific weekdays, dates, etc.) needs "on"
+    return true
   }
 
   /// Helper function to sort schedule text chronologically

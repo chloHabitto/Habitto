@@ -132,8 +132,9 @@ struct HabitEditView: View {
       let beforeOn = parts[0] // "3 times"
       let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
 
-      // Sort frequency chronologically before returning
-      let frequency = sortFrequencyChronologically(rawFrequency)
+      // Sort and format frequency before returning
+      let sortedFrequency = sortFrequencyChronologically(rawFrequency)
+      let frequency = formatFrequencyText(sortedFrequency)
 
       // Extract unit from "3 times"
       let unitComponents = beforeOn.components(separatedBy: " ")
@@ -146,8 +147,9 @@ struct HabitEditView: View {
       let beforePer = parts[0] // "1 time"
       let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
 
-      // Sort frequency chronologically before returning
-      let frequency = sortFrequencyChronologically(rawFrequency)
+      // Sort and format frequency before returning
+      let sortedFrequency = sortFrequencyChronologically(rawFrequency)
+      let frequency = formatFrequencyText(sortedFrequency)
 
       // Extract unit from "1 time"
       let unitComponents = beforePer.components(separatedBy: " ")
@@ -158,6 +160,46 @@ struct HabitEditView: View {
       // Fallback for unknown format
       return (number: "1", unit: "time", frequency: "everyday")
     }
+  }
+  
+  /// Converts old frequency formats to new standardized formats
+  static func formatFrequencyText(_ frequency: String) -> String {
+    let lowerFreq = frequency.lowercased()
+    
+    // Check for "X day(s) a week" patterns
+    if lowerFreq.contains("day a week") || lowerFreq.contains("days a week") {
+      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*week"#, options: .caseInsensitive),
+         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
+        let range = match.range(at: 1)
+        if let numberRange = Range(range, in: frequency),
+           let number = Int(frequency[numberRange]) {
+          switch number {
+          case 1: return "once a week"
+          case 2: return "twice a week"
+          case 7: return "everyday"
+          default: return "\(number) days a week"
+          }
+        }
+      }
+    }
+    
+    // Check for "X day(s) a month" patterns
+    if lowerFreq.contains("day a month") || lowerFreq.contains("days a month") {
+      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*month"#, options: .caseInsensitive),
+         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
+        let range = match.range(at: 1)
+        if let numberRange = Range(range, in: frequency),
+           let number = Int(frequency[numberRange]) {
+          switch number {
+          case 1: return "once a month"
+          case 2: return "twice a month"
+          default: return "\(number) days a month"
+          }
+        }
+      }
+    }
+    
+    return frequency
   }
 
   // MARK: Private
