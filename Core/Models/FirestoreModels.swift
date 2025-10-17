@@ -145,7 +145,7 @@ struct FirestoreHabit: Codable, Identifiable {
       return nil
     }
     
-    let color = Color(hex: self.color) ?? Color.blue
+    let color = Color(hex: self.color) ?? .blue
     
     let reminderItems = reminders.compactMap { reminderId in
       ReminderItem(id: UUID(uuidString: reminderId) ?? UUID(), time: Date(), isActive: true)

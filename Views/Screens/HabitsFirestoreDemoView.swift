@@ -228,7 +228,7 @@ struct HabitsFirestoreDemoView: View {
         name: newHabitName,
         description: "",
         icon: "star.fill",
-        color: CodableColor(Color(hex: newHabitColor) ?? Color.blue),
+        color: CodableColor(Color(hex: newHabitColor)),
         habitType: .formation,
         schedule: "Daily",
         goal: "1 time",
