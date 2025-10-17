@@ -82,6 +82,18 @@ class HabitFormLogic {
       "Saturday"
     case "sunday":
       "Sunday"
+    case let freq where freq.contains("once a week"):
+      frequency // Keep lowercase for consistency
+    case let freq where freq.contains("twice a week"):
+      frequency // Keep lowercase for consistency
+    case let freq where freq.contains("once a month"):
+      frequency // Keep lowercase for consistency
+    case let freq where freq.contains("twice a month"):
+      frequency // Keep lowercase for consistency
+    case let freq where freq.contains("day a week") || freq.contains("days a week"):
+      frequency // Keep lowercase for consistency
+    case let freq where freq.contains("day a month") || freq.contains("days a month"):
+      frequency // Keep lowercase for consistency
     case let freq where freq.contains("times a week"):
       frequency // Keep original case
     case let freq where freq.contains("times a month"):

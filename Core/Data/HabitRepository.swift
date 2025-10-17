@@ -931,7 +931,7 @@ extension HabitEntity {
       icon: icon ?? "None",
       color: CodableColor(color),
       habitType: habitType,
-      schedule: (schedule ?? "Everyday").capitalized,
+      schedule: schedule ?? "everyday",
       goal: goal ?? "1 time",
       reminder: reminder ?? "No reminder",
       startDate: startDate ?? Date(),
