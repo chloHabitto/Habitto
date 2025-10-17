@@ -361,8 +361,8 @@ struct HomeView: View {
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var themeManager: ThemeManager
   
-  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
-  private var xpManager: XPManager { XPManager.shared }
+  // ✅ FIX: Use @Environment to properly observe @Observable changes
+  @Environment(XPManager.self) private var xpManager
 
   var body: some View {
     // 🔎 PROBE: HomeView re-render when XP changes
