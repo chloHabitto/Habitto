@@ -14,8 +14,8 @@ struct MoreTabView: View {
   @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
 
   var body: some View {
-    let _ = print("💡 MoreView body re-render with XP: \(xpManager.userProgress.totalXP)")  // Diagnostic
-    WhiteSheetContainer(
+    let _ = print("💡 MoreView body re-render with XP: \(xpManager.totalXP)")  // ✅ Read from @Published property
+    return WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())
       }) {

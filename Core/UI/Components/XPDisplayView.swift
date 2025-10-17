@@ -201,7 +201,7 @@ struct XPBadge: View {
 
   var body: some View {
     XPDisplayView(
-      xp: xpManager.userProgress.totalXP,
+      xp: xpManager.totalXP,  // ✅ Read from @Published property
       isAnimated: false,
       style: .compact)
   }
