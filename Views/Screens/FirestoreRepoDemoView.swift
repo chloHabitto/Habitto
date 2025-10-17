@@ -229,9 +229,9 @@ struct FirestoreRepoDemoView: View {
         statItem(
           icon: "checkmark.circle.fill",
           label: "Today",
-          value: "\(repository.completions[habit.id]?.count ?? 0)")
+          value: "\(repository.completions[habit.id ?? ""]?.count ?? 0)")
         
-        if let streak = repository.streaks[habit.id] {
+        if let streak = repository.streaks[habit.id ?? ""] {
           statItem(
             icon: "flame.fill",
             label: "Streak",
@@ -423,11 +423,11 @@ struct FirestoreRepoDemoView: View {
   }
   
   private func saveGoal() async {
-    guard let habit = selectedHabit else { return }
+    guard let habit = selectedHabit, let habitId = habit.id else { return }
     
     do {
       try await repository.setGoal(
-        habitId: habit.id,
+        habitId: habitId,
         effectiveLocalDate: selectedDate,
         goal: newGoal)
       
@@ -439,12 +439,14 @@ struct FirestoreRepoDemoView: View {
   }
   
   private func completeHabit(_ habit: FirestoreHabit) async {
+    guard let habitId = habit.id else { return }
+    
     do {
       // Increment completion
-      try await repository.incrementCompletion(habitId: habit.id, localDate: selectedDate)
+      try await repository.incrementCompletion(habitId: habitId, localDate: selectedDate)
       
       // Update streak
-      try await repository.updateStreak(habitId: habit.id, localDate: selectedDate, completed: true)
+      try await repository.updateStreak(habitId: habitId, localDate: selectedDate, completed: true)
       
       // Award XP
       try await repository.awardXP(delta: 10, reason: "Completed \(habit.name) on \(selectedDate)")
@@ -455,8 +457,10 @@ struct FirestoreRepoDemoView: View {
   }
   
   private func deleteHabit(_ habit: FirestoreHabit) async {
+    guard let habitId = habit.id else { return }
+    
     do {
-      try await repository.deleteHabit(id: habit.id)
+      try await repository.deleteHabit(id: habitId)
     } catch {
       errorMessage = error.localizedDescription
     }
