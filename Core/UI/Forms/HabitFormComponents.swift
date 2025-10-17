@@ -90,7 +90,7 @@ struct UnifiedInputElement: View {
 
       // Descriptive text showing what the user has selected (for Goal and Current)
       if title == "Goal" {
-        Text("I want to do this habit \(numberText) \(unitText) on \(frequencyText.capitalized)")
+        Text(formatGoalSentence(numberText: numberText, unitText: unitText, frequencyText: frequencyText))
           .font(.appBodyMedium)
           .foregroundColor(.text04)
           .padding(.horizontal, 16)
@@ -99,7 +99,7 @@ struct UnifiedInputElement: View {
           .clipShape(RoundedRectangle(cornerRadius: 8))
           .padding(.top, 8)
       } else if title == "Current" {
-        Text("I do this habit \(numberText) \(unitText) on \(frequencyText.capitalized)")
+        Text(formatCurrentSentence(numberText: numberText, unitText: unitText, frequencyText: frequencyText))
           .font(.appBodyMedium)
           .foregroundColor(.text04)
           .padding(.horizontal, 16)
@@ -398,4 +398,60 @@ struct FormActionButtons: View {
       startPoint: .top,
       endPoint: .bottom)
   }
+}
+
+// MARK: - Helper Functions
+
+/// Formats the goal sentence with proper grammar and capitalization
+private func formatGoalSentence(numberText: String, unitText: String, frequencyText: String) -> String {
+  // Check if frequency needs "on" preposition or not
+  let needsOn = needsOnPreposition(frequencyText)
+  
+  if needsOn {
+    return "I want to do this habit \(numberText) \(unitText) on \(frequencyText.lowercased())"
+  } else {
+    return "I want to do this habit \(numberText) \(unitText) \(frequencyText.lowercased())"
+  }
+}
+
+/// Formats the current sentence with proper grammar and capitalization
+private func formatCurrentSentence(numberText: String, unitText: String, frequencyText: String) -> String {
+  // Check if frequency needs "on" preposition or not
+  let needsOn = needsOnPreposition(frequencyText)
+  
+  if needsOn {
+    return "I do this habit \(numberText) \(unitText) on \(frequencyText.lowercased())"
+  } else {
+    return "I do this habit \(numberText) \(unitText) \(frequencyText.lowercased())"
+  }
+}
+
+/// Determines if a frequency text needs the "on" preposition
+/// - Returns: true for specific days/dates, false for frequency descriptions
+private func needsOnPreposition(_ frequencyText: String) -> Bool {
+  let lowerFrequency = frequencyText.lowercased()
+  
+  // Frequency patterns that DON'T need "on"
+  let frequencyPatterns = [
+    "everyday",
+    "once a week",
+    "twice a week",
+    "once a month",
+    "twice a month",
+    "day a week",
+    "days a week",
+    "day a month",
+    "days a month",
+    "time per week",
+    "times per week",
+  ]
+  
+  for pattern in frequencyPatterns {
+    if lowerFrequency.contains(pattern) {
+      return false
+    }
+  }
+  
+  // Everything else (specific weekdays, dates, etc.) needs "on"
+  return true
 }

@@ -1203,7 +1203,7 @@ struct HabitEditView: View {
       // NEW UNIFIED APPROACH - Habit Building
       let goalNumberInt = Int(goalNumber) ?? 1
       let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-      let goalString = "\(goalNumber) \(pluralizedUnit) on \(goalFrequency)"
+      let goalString = HabitFormLogic.formatGoalString(number: goalNumber, unit: pluralizedUnit, frequency: goalFrequency)
 
       // For habit building, schedule is derived from goal frequency
       let scheduleString = goalFrequency
@@ -1224,7 +1224,7 @@ struct HabitEditView: View {
       // NEW UNIFIED APPROACH - Habit Breaking
       let targetInt = Int(targetNumber) ?? 1
       let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
-      let goalString = "\(targetNumber) \(targetPluralizedUnit) on \(targetFrequency)"
+      let goalString = HabitFormLogic.formatGoalString(number: targetNumber, unit: targetPluralizedUnit, frequency: targetFrequency)
 
       // For habit breaking, schedule is derived from target frequency
       let scheduleString = targetFrequency

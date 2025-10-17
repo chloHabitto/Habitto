@@ -97,6 +97,36 @@ class HabitFormLogic {
     }
   }
 
+  // MARK: - Goal String Formatting
+
+  /// Formats the goal string with proper capitalization and grammar
+  static func formatGoalString(number: String, unit: String, frequency: String) -> String {
+    let lowerFrequency = frequency.lowercased()
+    
+    // Frequency patterns that DON'T need "on"
+    let frequencyPatterns = [
+      "everyday",
+      "once a week",
+      "twice a week",
+      "once a month",
+      "twice a month",
+      "day a week",
+      "days a week",
+      "day a month",
+      "days a month",
+      "time per week",
+      "times per week",
+    ]
+    
+    let needsOn = !frequencyPatterns.contains(where: { lowerFrequency.contains($0) })
+    
+    if needsOn {
+      return "\(number) \(unit) on \(lowerFrequency)"
+    } else {
+      return "\(number) \(unit) \(lowerFrequency)"
+    }
+  }
+
   // MARK: - Habit Creation
 
   static func createHabit(
@@ -129,7 +159,7 @@ class HabitFormLogic {
       // Habit Building
       let goalNumberInt = Int(goalNumber) ?? 1
       let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-      let goalString = "\(goalNumber) \(pluralizedUnit) on \(goalFrequency)"
+      let goalString = formatGoalString(number: goalNumber, unit: pluralizedUnit, frequency: goalFrequency)
 
       let habit = Habit(
         name: step1Data.0,
@@ -150,7 +180,7 @@ class HabitFormLogic {
       // Habit Breaking
       let targetInt = Int(targetNumber) ?? 1
       let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
-      let goalString = "\(targetNumber) \(targetPluralizedUnit) on \(targetFrequency)"
+      let goalString = formatGoalString(number: targetNumber, unit: targetPluralizedUnit, frequency: targetFrequency)
 
       let habit = Habit(
         name: step1Data.0,

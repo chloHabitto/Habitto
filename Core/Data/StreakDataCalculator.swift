@@ -940,20 +940,16 @@ class StreakDataCalculator {
       print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X times a week' schedule")
       return false
 
-    case let s where s.contains("days a week"):
-      if let daysPerWeek = extractDaysPerWeek(from: s) {
-        let calendar = Calendar.current
-        let startDate = calendar.startOfDay(for: habit.startDate)
-        let targetDateStart = calendar.startOfDay(for: targetDate)
-        let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: targetDateStart)
-          .day ?? 0
-        let isScheduled = daysSinceStart >= 0 && daysSinceStart % daysPerWeek == 0
-        print(
-          "🔍 WEEKDAY SCHEDULE DEBUG - \(daysPerWeek) days a week | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
-        return isScheduled
-      }
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X days a week' schedule")
-      return false
+    case let s where s.contains("once a week") || s.contains("twice a week") || s.contains("day a week") || s.contains("days a week"):
+      // "once/twice a week" or "X day(s) a week" means the habit should show every day
+      // Completion tracking will hide it once completed X times that week
+      let calendar = Calendar.current
+      let startDate = calendar.startOfDay(for: habit.startDate)
+      let targetDateStart = calendar.startOfDay(for: targetDate)
+      let isAfterStart = targetDateStart >= startDate
+      print(
+        "🔍 WEEKDAY SCHEDULE DEBUG - 'weekly frequency' schedule | After start date: \(isAfterStart)")
+      return isAfterStart
 
     default:
       // For any unrecognized schedule format, don't show the habit (safer default)
@@ -1028,7 +1024,7 @@ class StreakDataCalculator {
   }
 
   private static func extractDaysPerWeek(from schedule: String) -> Int? {
-    let pattern = #"(\d+)\s+days\s+a\s+week"#
+    let pattern = #"(\d+)\s+days?\s+a\s+week"#  // Made "s" optional to match both "day" and "days"
     guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
           let match = regex.firstMatch(
             in: schedule,
