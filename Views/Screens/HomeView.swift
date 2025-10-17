@@ -360,7 +360,9 @@ struct HomeView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var themeManager: ThemeManager
-  @Environment(XPManager.self) var xpManager  // ✅ Track XP changes to refresh tab switch
+  
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
     // 🔎 PROBE: HomeView re-render when XP changes
@@ -459,7 +461,6 @@ struct HomeView: View {
 
           case .more:
             MoreTabView(state: state)
-              .id("more-\(xpManager.totalXP)")  // ✅ Force recreation when XP changes
           }
         }
       }

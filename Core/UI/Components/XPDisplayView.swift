@@ -197,11 +197,12 @@ enum XPStyle {
 // MARK: - XPBadge
 
 struct XPBadge: View {
-  var xpManager = XPManager.shared
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
     XPDisplayView(
-      xp: xpManager.totalXP,  // ✅ Read from @Published property
+      xp: xpManager.totalXP,
       isAnimated: false,
       style: .compact)
   }
@@ -210,7 +211,8 @@ struct XPBadge: View {
 // MARK: - DailyXPProgress
 
 struct DailyXPProgress: View {
-  var xpManager = XPManager.shared
+  // ✅ FIX: Direct singleton access as computed property - @Observable tracks reads automatically
+  private var xpManager: XPManager { XPManager.shared }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
