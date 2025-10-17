@@ -60,6 +60,12 @@ class XPManager: ObservableObject {
 
   static let shared = XPManager()
 
+  // ✅ UI-reactive properties (Published directly for instant updates)
+  @Published private(set) var totalXP: Int = 0
+  @Published private(set) var currentLevel: Int = 1
+  @Published private(set) var dailyXP: Int = 0
+  
+  // Internal progress struct (kept in sync with published properties)
   @Published var userProgress = UserProgress()
   @Published var recentTransactions: [XPTransaction] = []
   
@@ -80,18 +86,17 @@ class XPManager: ObservableObject {
   @MainActor
   func publishXP(completedDaysCount: Int) {
     let newXP = recalculateXP(completedDaysCount: completedDaysCount)
-    let oldXP = userProgress.totalXP
     
     // Only update if changed
-    guard newXP != oldXP else { return }
+    guard newXP != totalXP else { return }
     
     // 🔍 DIAGNOSTIC: Log all XP changes
-    print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - oldXP)")
+    print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - totalXP)")
     
-    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
-    // This ensures all @ObservedObject/@StateObject subscribers are notified
-    objectWillChange.send()
+    // ✅ Update @Published properties directly (triggers instant UI update)
+    totalXP = newXP
     
+    // Keep userProgress in sync
     var updatedProgress = userProgress
     updatedProgress.totalXP = newXP
     userProgress = updatedProgress
@@ -116,18 +121,19 @@ class XPManager: ObservableObject {
 
   /// Ensures level is always calculated from current XP (no double-bumping)
   func updateLevelFromXP() {
-    let calculatedLevel = level(forXP: userProgress.totalXP)
+    let calculatedLevel = level(forXP: totalXP)
     let newLevel = max(1, calculatedLevel)
     
     // Only update if level changed
-    guard userProgress.currentLevel != newLevel else {
+    guard currentLevel != newLevel else {
       updateLevelProgress()  // Still update progress bar
       return
     }
     
-    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
-    objectWillChange.send()
+    // ✅ Update @Published properties directly
+    currentLevel = newLevel
     
+    // Keep userProgress in sync
     var updatedProgress = userProgress
     updatedProgress.currentLevel = newLevel
     userProgress = updatedProgress
@@ -207,11 +213,13 @@ class XPManager: ObservableObject {
       print("🎯 AUTH: Total XP from SwiftData: \(totalXP)")
 
       // Update XPManager with the calculated XP
-      let oldXP = userProgress.totalXP
+      let oldXP = self.totalXP
       
-      // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
-      objectWillChange.send()
+      // ✅ Update @Published properties directly (triggers instant UI update)
+      self.totalXP = totalXP
+      self.dailyXP = 0
       
+      // Keep userProgress in sync
       var updatedProgress = userProgress
       updatedProgress.totalXP = totalXP
       updatedProgress.dailyXP = 0 // Reset daily XP
@@ -245,10 +253,15 @@ class XPManager: ObservableObject {
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
       userProgress = progress
-      updateLevelFromXP() // Ensure level is calculated from XP
+      // ✅ Sync @Published properties from loaded data
+      totalXP = progress.totalXP
+      dailyXP = progress.dailyXP
+      updateLevelFromXP() // Ensure level is calculated from XP (also syncs currentLevel)
     } else {
       // Initialize with default values
       userProgress = UserProgress()
+      totalXP = 0
+      dailyXP = 0
       updateLevelFromXP()
     }
   }
@@ -296,9 +309,10 @@ class XPManager: ObservableObject {
 
   /// Reset daily XP (used by existing system)
   func resetDailyXP() {
-    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
-    objectWillChange.send()
+    // ✅ Update @Published properties directly
+    dailyXP = 0
     
+    // Keep userProgress in sync
     var updatedProgress = userProgress
     updatedProgress.dailyXP = 0
     userProgress = updatedProgress

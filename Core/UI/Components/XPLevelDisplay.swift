@@ -8,7 +8,7 @@ struct XPLevelDisplay: View {
   @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
 
   var body: some View {
-    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.userProgress.totalXP)")  // Diagnostic
+    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP)")  // ✅ Read from @Published property
     return VStack(spacing: 12) {
       // Level and XP Info
       HStack(spacing: 16) {
@@ -18,7 +18,7 @@ struct XPLevelDisplay: View {
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.text04)
 
-          Text("\(xpManager.userProgress.currentLevel)")
+          Text("\(xpManager.currentLevel)")  // ✅ Read from @Published property
             .font(.system(size: 24, weight: .bold))
             .foregroundColor(.text01)
         }
@@ -56,7 +56,7 @@ struct XPLevelDisplay: View {
           .frame(height: 8)
 
           // Total XP
-          Text("\(xpManager.userProgress.totalXP) total XP")
+          Text("\(xpManager.totalXP) total XP")  // ✅ Read from @Published property
             .font(.system(size: 10, weight: .regular))
             .foregroundColor(.text04)
         }
@@ -102,12 +102,12 @@ struct XPLevelDisplay: View {
     .offset(y: appeared ? 0 : 10)
     .onAppear {
       print(
-        "🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.userProgress.totalXP), level: \(xpManager.userProgress.currentLevel)")
+        "🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.totalXP), level: \(xpManager.currentLevel)")  // ✅ Read from @Published properties
       withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.05)) {
         appeared = true
       }
     }
-    .onChange(of: xpManager.userProgress.totalXP) { oldValue, newValue in
+    .onChange(of: xpManager.totalXP) { oldValue, newValue in  // ✅ Subscribe to @Published property
       print("🎯 UI: XPLevelDisplay XP changed from \(oldValue) to \(newValue)")
     }
   }
@@ -146,7 +146,7 @@ struct XPLevelDisplayCompact: View {
           .font(.system(size: 10, weight: .medium))
           .foregroundColor(.text04)
 
-        Text("\(xpManager.userProgress.currentLevel)")
+        Text("\(xpManager.currentLevel)")  // ✅ Read from @Published property
           .font(.system(size: 18, weight: .bold))
           .foregroundColor(.text01)
       }
@@ -155,7 +155,7 @@ struct XPLevelDisplayCompact: View {
       // XP Info
       VStack(alignment: .leading, spacing: 4) {
         HStack {
-          Text("\(xpManager.userProgress.totalXP) XP")
+          Text("\(xpManager.totalXP) XP")  // ✅ Read from @Published property
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.text01)
 

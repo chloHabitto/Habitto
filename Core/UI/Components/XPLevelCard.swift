@@ -35,7 +35,7 @@ struct XPLevelCard: View {
         Spacer()
 
         // Total XP
-        Text("\(xpManager.userProgress.totalXP) XP")
+        Text("\(xpManager.totalXP) XP")  // ✅ Read from @Published property
           .font(.appLabelMedium)
           .foregroundColor(.text02)
       }
@@ -148,7 +148,7 @@ struct XPLevelCard: View {
         }
       }
     }
-    .onChange(of: xpManager.userProgress.totalXP) { oldXP, newXP in
+    .onChange(of: xpManager.totalXP) { oldXP, newXP in  // ✅ Subscribe to @Published property
       // Show XP gain animation
       if newXP > oldXP {
         xpGainAmount = newXP - oldXP
