@@ -3,12 +3,13 @@
   "minAppVersion": "1.0.0",
   "maxFailureRate": 0.15,
   "enableCloudKitSync": false,
-  "enableFirestoreSync": false,
+  "enableFirestoreSync": true,
   "enableBackfill": false,
   "enableLegacyReadFallback": true,
   "showNewProgressUI": false,
   "enableAdvancedAnalytics": false,
   "maintenanceMode": false,
-  "configVersion": "1.0.0",
-  "lastUpdated": "2024-01-15T10:30:00Z"
+  "configVersion": "1.0.1",
+  "lastUpdated": "2025-10-17T00:00:00Z",
+  "_comment": "LOCAL TEST MODE: Firestore sync enabled for testing. Revert to false before production."
 }
