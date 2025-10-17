@@ -41,6 +41,7 @@ struct HomeTabView: View {
   @Binding var selectedDate: Date
   @Binding var selectedStatsTab: Int
   @EnvironmentObject var themeManager: ThemeManager
+  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
 
   let habits: [Habit]
   let isLoadingHabits: Bool
@@ -51,7 +52,11 @@ struct HomeTabView: View {
   let onCompletionDismiss: (() -> Void)?
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
+    // 🔎 PROBE: Check instance and XP value
+    let _ = print("🟢 HomeTabView re-render | xp:", xpManager.totalXP,
+                  "| instance:", ObjectIdentifier(xpManager))
+    
+    return ZStack(alignment: .topTrailing) {
       mainContent
       
       #if DEBUG
@@ -81,7 +86,7 @@ struct HomeTabView: View {
           print("✅ INITIAL_XP: Computing XP from loaded habits")
           let completedDaysCount = countCompletedDays()
           await MainActor.run {
-            XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+            xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
           }
           print("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         }
@@ -1167,7 +1172,7 @@ struct HomeTabView: View {
       print("✅ DERIVED_XP: Recalculating XP after uncomplete")
       let completedDaysCount = countCompletedDays()
       await MainActor.run {
-        XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+        xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
       }
       print("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
       
@@ -1234,7 +1239,7 @@ struct HomeTabView: View {
         // ✅ NEW APPROACH: Derive XP from state (idempotent!)
         let completedDaysCount = countCompletedDays()
         await MainActor.run {
-          XPManager.shared.publishXP(completedDaysCount: completedDaysCount)
+          xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
         }
         print("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         
@@ -1258,9 +1263,9 @@ struct HomeTabView: View {
         }
 
         // Check XP after award
-        let currentXP = XPManager.shared.userProgress.totalXP
+        let currentXP = xpManager.totalXP  // ✅ Use environment object
         print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
-        print("🎯 COMPLETION_FLOW: XPManager level: \(XPManager.shared.userProgress.currentLevel)")
+        print("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")  // ✅ Use environment object
       }
 
       // Reset the flag
