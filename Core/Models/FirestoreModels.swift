@@ -13,7 +13,7 @@ import SwiftUI
 
 /// Habit document stored in /users/{uid}/habits/{habitId}
 struct FirestoreHabit: Codable, Identifiable {
-  var id: String
+  @DocumentID var id: String?
   var name: String
   var description: String
   var icon: String
@@ -34,54 +34,6 @@ struct FirestoreHabit: Codable, Identifiable {
   var difficultyHistory: [String: Int]
   var actualUsage: [String: Int]
   var isActive: Bool
-  
-  // MARK: Initializers
-  
-  init(
-    id: String,
-    name: String,
-    description: String,
-    icon: String,
-    color: String,
-    habitType: String,
-    schedule: String,
-    goal: String,
-    reminder: String,
-    startDate: Date,
-    endDate: Date?,
-    createdAt: Date,
-    reminders: [String],
-    baseline: Int,
-    target: Int,
-    completionHistory: [String: Int],
-    completionStatus: [String: Bool],
-    completionTimestamps: [String: [Date]],
-    difficultyHistory: [String: Int],
-    actualUsage: [String: Int],
-    isActive: Bool
-  ) {
-    self.id = id
-    self.name = name
-    self.description = description
-    self.icon = icon
-    self.color = color
-    self.habitType = habitType
-    self.schedule = schedule
-    self.goal = goal
-    self.reminder = reminder
-    self.startDate = startDate
-    self.endDate = endDate
-    self.createdAt = createdAt
-    self.reminders = reminders
-    self.baseline = baseline
-    self.target = target
-    self.completionHistory = completionHistory
-    self.completionStatus = completionStatus
-    self.completionTimestamps = completionTimestamps
-    self.difficultyHistory = difficultyHistory
-    self.actualUsage = actualUsage
-    self.isActive = isActive
-  }
   
   // MARK: Firestore conversion
   
@@ -139,8 +91,55 @@ struct FirestoreHabit: Codable, Identifiable {
     self.isActive = true
   }
   
+  init(
+    id: String?,
+    name: String,
+    description: String,
+    icon: String,
+    color: String,
+    habitType: String,
+    schedule: String,
+    goal: String,
+    reminder: String,
+    startDate: Date,
+    endDate: Date?,
+    createdAt: Date,
+    reminders: [String],
+    baseline: Int,
+    target: Int,
+    completionHistory: [String: Int],
+    completionStatus: [String: Bool],
+    completionTimestamps: [String: [Date]],
+    difficultyHistory: [String: Int],
+    actualUsage: [String: Int],
+    isActive: Bool
+  ) {
+    self.id = id
+    self.name = name
+    self.description = description
+    self.icon = icon
+    self.color = color
+    self.habitType = habitType
+    self.schedule = schedule
+    self.goal = goal
+    self.reminder = reminder
+    self.startDate = startDate
+    self.endDate = endDate
+    self.createdAt = createdAt
+    self.reminders = reminders
+    self.baseline = baseline
+    self.target = target
+    self.completionHistory = completionHistory
+    self.completionStatus = completionStatus
+    self.completionTimestamps = completionTimestamps
+    self.difficultyHistory = difficultyHistory
+    self.actualUsage = actualUsage
+    self.isActive = isActive
+  }
+  
   func toHabit() -> Habit? {
-    guard let uuid = UUID(uuidString: id),
+    guard let id = id,
+          let uuid = UUID(uuidString: id),
           let habitType = HabitType(rawValue: self.habitType) else {
       return nil
     }
@@ -175,7 +174,7 @@ struct FirestoreHabit: Codable, Identifiable {
     )
   }
   
-  static func from(id: String, data: [String: Any]) -> FirestoreHabit? {
+  static func from(id: String?, data: [String: Any]) -> FirestoreHabit? {
     guard let name = data["name"] as? String,
           let description = data["description"] as? String,
           let icon = data["icon"] as? String,
