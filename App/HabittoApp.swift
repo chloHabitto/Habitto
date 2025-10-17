@@ -51,13 +51,30 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
      Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
      print("✅ Crashlytics initialized")
     
-    // Initialize Remote Config (uncomment after adding package)
+    // Initialize Remote Config with defaults
      print("🎛️ Initializing Firebase Remote Config...")
      let remoteConfig = RemoteConfig.remoteConfig()
      let settings = RemoteConfigSettings()
      settings.minimumFetchInterval = 3600 // 1 hour for production, 0 for dev
      remoteConfig.configSettings = settings
-     print("✅ Remote Config initialized")
+     
+     // Set default values from plist
+     remoteConfig.setDefaults(fromPlist: "RemoteConfigDefaults")
+     print("✅ Remote Config initialized with defaults from plist")
+     
+     // Fetch and activate remote values (async)
+     Task {
+       do {
+         let status = try await remoteConfig.fetchAndActivate()
+         if status == .successFetchedFromRemote {
+           print("✅ Remote Config: Fetched new values from Firebase")
+         } else {
+           print("ℹ️ Remote Config: Using cached or default values")
+         }
+       } catch {
+         print("⚠️ Remote Config: Failed to fetch - \(error.localizedDescription)")
+       }
+     }
 
     // TEMPORARY FIX: Enable migration for guest mode by setting local override
     print("🔧 AppDelegate: Setting migration override for guest mode...")

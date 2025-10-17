@@ -84,7 +84,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     let firestoreHabit = FirestoreHabit(from: habit)
-    let habitData = try firestoreHabit.toDictionary()
+    let habitData = firestoreHabit.toFirestoreData()
     
     try await db.collection("users")
       .document(userId)
@@ -116,7 +116,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     }
     
     let firestoreHabit = FirestoreHabit(from: habit)
-    let habitData = try firestoreHabit.toDictionary()
+    let habitData = firestoreHabit.toFirestoreData()
     
     try await db.collection("users")
       .document(userId)
@@ -284,16 +284,6 @@ class FirestoreService: FirebaseService, ObservableObject {
     for (key, value) in telemetryCounters.sorted(by: { $0.key < $1.key }) {
       print("  \(key): \(value)")
     }
-  }
-}
-
-// MARK: - FirestoreHabit Extensions
-
-extension FirestoreHabit {
-  func toDictionary() throws -> [String: Any] {
-    let data = try JSONEncoder().encode(self)
-    let json = try JSONSerialization.jsonObject(with: data)
-    return json as? [String: Any] ?? [:]
   }
 }
 

@@ -43,9 +43,13 @@ enum FeatureFlags {
   /// When false: Uses local storage only
   /// When true: Uses dual-write to both local and Firestore
   static var enableFirestoreSync: Bool { 
+    // TEMPORARY: Force enable for testing
+    // TODO: Revert this to use Remote Config after Firebase Console is set up
+    return true
+    
     // Use Remote Config if available, otherwise use local defaults
-    let remoteConfig = RemoteConfig.remoteConfig()
-    return remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
+    // let remoteConfig = RemoteConfig.remoteConfig()
+    // return remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
   }
 
   /// Enables backfill job to migrate existing local data to Firestore
