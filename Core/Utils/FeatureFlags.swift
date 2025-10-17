@@ -44,30 +44,24 @@ enum FeatureFlags {
   /// When true: Uses dual-write to both local and Firestore
   static var enableFirestoreSync: Bool { 
     // Use Remote Config if available, otherwise use local defaults
-    if let remoteConfig = try? RemoteConfig.remoteConfig() {
-      return remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
-    }
-    return UserDefaults.standard.object(forKey: "enableFirestoreSync") as? Bool ?? false
+    let remoteConfig = RemoteConfig.remoteConfig()
+    return remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
   }
 
   /// Enables backfill job to migrate existing local data to Firestore
   /// When false: No backfill runs
   /// When true: Migrates existing UserDefaults data to Firestore
   static var enableBackfill: Bool { 
-    if let remoteConfig = try? RemoteConfig.remoteConfig() {
-      return remoteConfig.configValue(forKey: "enableBackfill").boolValue
-    }
-    return UserDefaults.standard.object(forKey: "enableBackfill") as? Bool ?? false
+    let remoteConfig = RemoteConfig.remoteConfig()
+    return remoteConfig.configValue(forKey: "enableBackfill").boolValue
   }
 
   /// Enables fallback reads from legacy storage when Firestore is empty
   /// When false: Only reads from Firestore
   /// When true: Falls back to UserDefaults if Firestore has no data
   static var enableLegacyReadFallback: Bool { 
-    if let remoteConfig = try? RemoteConfig.remoteConfig() {
-      return remoteConfig.configValue(forKey: "enableLegacyReadFallback").boolValue
-    }
-    return UserDefaults.standard.object(forKey: "enableLegacyReadFallback") as? Bool ?? true
+    let remoteConfig = RemoteConfig.remoteConfig()
+    return remoteConfig.configValue(forKey: "enableLegacyReadFallback").boolValue
   }
 
   // MARK: - Testing Feature Flags

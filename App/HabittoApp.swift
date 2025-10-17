@@ -228,8 +228,9 @@ struct HabittoApp: App {
             habitRepository.shouldShowMigrationView = false
 
             // Run XP data migration
+            let context = modelContext
             Task.detached {
-              await XPDataMigration.shared.checkAndRunMigration(modelContext: modelContext)
+              await XPDataMigration.shared.checkAndRunMigration(modelContext: context)
             }
 
             // NOTE: Data migrations are handled automatically in HabitStore.loadHabits()

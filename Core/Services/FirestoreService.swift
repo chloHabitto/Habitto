@@ -86,7 +86,7 @@ class FirestoreService: FirebaseService, ObservableObject {
     let firestoreHabit = FirestoreHabit(from: habit)
     let habitData = try firestoreHabit.toDictionary()
     
-    let docRef = try await db.collection("users")
+    try await db.collection("users")
       .document(userId)
       .collection("habits")
       .document(habit.id.uuidString)
