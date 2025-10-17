@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseFirestore
+import SwiftUI
 
 // MARK: - FirestoreHabit
 
@@ -14,46 +15,214 @@ import FirebaseFirestore
 struct FirestoreHabit: Codable, Identifiable {
   var id: String
   var name: String
-  var color: String
-  var type: String // "formation", "breaking", etc.
+  var description: String
+  var icon: String
+  var color: String // Store as hex string
+  var habitType: String
+  var schedule: String
+  var goal: String
+  var reminder: String
+  var startDate: Date
+  var endDate: Date?
   var createdAt: Date
-  var active: Bool
+  var reminders: [String] // Store as array of strings
+  var baseline: Int
+  var target: Int
+  var completionHistory: [String: Int]
+  var completionStatus: [String: Bool]
+  var completionTimestamps: [String: [Date]]
+  var difficultyHistory: [String: Int]
+  var actualUsage: [String: Int]
+  var isActive: Bool
+  
+  // MARK: Initializers
+  
+  init(
+    id: String,
+    name: String,
+    description: String,
+    icon: String,
+    color: String,
+    habitType: String,
+    schedule: String,
+    goal: String,
+    reminder: String,
+    startDate: Date,
+    endDate: Date?,
+    createdAt: Date,
+    reminders: [String],
+    baseline: Int,
+    target: Int,
+    completionHistory: [String: Int],
+    completionStatus: [String: Bool],
+    completionTimestamps: [String: [Date]],
+    difficultyHistory: [String: Int],
+    actualUsage: [String: Int],
+    isActive: Bool
+  ) {
+    self.id = id
+    self.name = name
+    self.description = description
+    self.icon = icon
+    self.color = color
+    self.habitType = habitType
+    self.schedule = schedule
+    self.goal = goal
+    self.reminder = reminder
+    self.startDate = startDate
+    self.endDate = endDate
+    self.createdAt = createdAt
+    self.reminders = reminders
+    self.baseline = baseline
+    self.target = target
+    self.completionHistory = completionHistory
+    self.completionStatus = completionStatus
+    self.completionTimestamps = completionTimestamps
+    self.difficultyHistory = difficultyHistory
+    self.actualUsage = actualUsage
+    self.isActive = isActive
+  }
   
   // MARK: Firestore conversion
   
   func toFirestoreData() -> [String: Any] {
-    [
+    var data: [String: Any] = [
       "name": name,
+      "description": description,
+      "icon": icon,
       "color": color,
-      "type": type,
-      "createdAt": createdAt, // Will be converted to Timestamp by Firestore
-      "active": active
+      "habitType": habitType,
+      "schedule": schedule,
+      "goal": goal,
+      "reminder": reminder,
+      "startDate": startDate,
+      "createdAt": createdAt,
+      "reminders": reminders,
+      "baseline": baseline,
+      "target": target,
+      "completionHistory": completionHistory,
+      "completionStatus": completionStatus,
+      "completionTimestamps": completionTimestamps,
+      "difficultyHistory": difficultyHistory,
+      "actualUsage": actualUsage,
+      "isActive": isActive
     ]
+    
+    if let endDate = endDate {
+      data["endDate"] = endDate
+    }
+    
+    return data
+  }
+  
+  init(from habit: Habit) {
+    self.id = habit.id.uuidString
+    self.name = habit.name
+    self.description = habit.description
+    self.icon = habit.icon
+    self.color = habit.color.hexString
+    self.habitType = habit.habitType.rawValue
+    self.schedule = habit.schedule
+    self.goal = habit.goal
+    self.reminder = habit.reminder
+    self.startDate = habit.startDate
+    self.endDate = habit.endDate
+    self.createdAt = habit.createdAt
+    self.reminders = habit.reminders.map { $0.id.uuidString }
+    self.baseline = habit.baseline
+    self.target = habit.target
+    self.completionHistory = habit.completionHistory
+    self.completionStatus = habit.completionStatus
+    self.completionTimestamps = habit.completionTimestamps
+    self.difficultyHistory = habit.difficultyHistory
+    self.actualUsage = habit.actualUsage
+    self.isActive = true
+  }
+  
+  func toHabit() -> Habit? {
+    guard let uuid = UUID(uuidString: id),
+          let habitType = HabitType(rawValue: self.habitType) else {
+      return nil
+    }
+    
+    let color = Color(hex: self.color) ?? Color.blue
+    
+    let reminderItems = reminders.compactMap { reminderId in
+      ReminderItem(id: UUID(uuidString: reminderId) ?? UUID(), time: Date(), isActive: true)
+    }
+    
+    return Habit(
+      id: uuid,
+      name: name,
+      description: description,
+      icon: icon,
+      color: CodableColor(color),
+      habitType: habitType,
+      schedule: schedule,
+      goal: goal,
+      reminder: reminder,
+      startDate: startDate,
+      endDate: endDate,
+      createdAt: createdAt,
+      reminders: reminderItems,
+      baseline: baseline,
+      target: target,
+      completionHistory: completionHistory,
+      completionStatus: completionStatus,
+      completionTimestamps: completionTimestamps,
+      difficultyHistory: difficultyHistory,
+      actualUsage: actualUsage
+    )
   }
   
   static func from(id: String, data: [String: Any]) -> FirestoreHabit? {
     guard let name = data["name"] as? String,
+          let description = data["description"] as? String,
+          let icon = data["icon"] as? String,
           let color = data["color"] as? String,
-          let type = data["type"] as? String,
-          let active = data["active"] as? Bool else {
+          let habitType = data["habitType"] as? String,
+          let schedule = data["schedule"] as? String,
+          let goal = data["goal"] as? String,
+          let reminder = data["reminder"] as? String,
+          let startDate = data["startDate"] as? Date,
+          let createdAt = data["createdAt"] as? Date,
+          let reminders = data["reminders"] as? [String],
+          let baseline = data["baseline"] as? Int,
+          let target = data["target"] as? Int,
+          let completionHistory = data["completionHistory"] as? [String: Int],
+          let completionStatus = data["completionStatus"] as? [String: Bool],
+          let completionTimestamps = data["completionTimestamps"] as? [String: [Date]],
+          let difficultyHistory = data["difficultyHistory"] as? [String: Int],
+          let actualUsage = data["actualUsage"] as? [String: Int],
+          let isActive = data["isActive"] as? Bool else {
       return nil
     }
     
-    // Handle Timestamp or Date
-    let createdAt: Date
-    if let timestamp = data["createdAt"] as? Date {
-      createdAt = timestamp
-    } else {
-      createdAt = Date()
-    }
+    let endDate = data["endDate"] as? Date
     
     return FirestoreHabit(
       id: id,
       name: name,
+      description: description,
+      icon: icon,
       color: color,
-      type: type,
+      habitType: habitType,
+      schedule: schedule,
+      goal: goal,
+      reminder: reminder,
+      startDate: startDate,
+      endDate: endDate,
       createdAt: createdAt,
-      active: active)
+      reminders: reminders,
+      baseline: baseline,
+      target: target,
+      completionHistory: completionHistory,
+      completionStatus: completionStatus,
+      completionTimestamps: completionTimestamps,
+      difficultyHistory: difficultyHistory,
+      actualUsage: actualUsage,
+      isActive: isActive
+    )
   }
 }
 

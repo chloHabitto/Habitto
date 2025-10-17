@@ -6,22 +6,29 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
     
-    // Generic data collection (for non-habit data)
-    match /generic_data/{document} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
+    // Specific collections for better organization
+    match /users/{uid}/habits/{habitId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
     
-    // Habits collection
-    match /habits/{habitId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
+    match /users/{uid}/goalVersions/{versionId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
     
-    // Allow creation of new documents
-    match /habits/{habitId} {
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
+    match /users/{uid}/completions/{date}/{habitId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    
+    match /users/{uid}/xp/state {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    
+    match /users/{uid}/xp/ledger/{eventId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    
+    match /users/{uid}/streaks/{habitId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
     
     // Migration state documents
