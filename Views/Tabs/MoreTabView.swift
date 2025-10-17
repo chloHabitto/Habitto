@@ -11,8 +11,10 @@ struct MoreTabView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var vacationManager: VacationManager
+  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
 
   var body: some View {
+    let _ = print("💡 MoreView body re-render with XP: \(xpManager.userProgress.totalXP)")  // Diagnostic
     WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())
@@ -25,7 +27,7 @@ struct MoreTabView: View {
               .entranceAnimation(delay: 0.0)
 
             // XP Level Display (now scrollable)
-            XPLevelDisplay(xpManager: xpManager)
+            XPLevelDisplay()  // ✅ Gets xpManager from EnvironmentObject
               .padding(.bottom, 16)
               .entranceAnimation(delay: 0.05)
 
@@ -119,7 +121,6 @@ struct MoreTabView: View {
 
   // MARK: Private
 
-  @ObservedObject private var xpManager = XPManager.shared
   @State private var showingProfileView = false
   @State private var showingVacationModeSheet = false
   @State private var showingVacationSummary = false
@@ -421,4 +422,6 @@ struct SettingItem {
     .environmentObject(VacationManager.shared)
     .environmentObject(AuthenticationManager.shared)
     .environmentObject(TutorialManager())
+    .environmentObject(ThemeManager.shared)
+    .environmentObject(XPManager.shared)
 }

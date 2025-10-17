@@ -88,15 +88,50 @@ class XPManager: ObservableObject {
     // 🔍 DIAGNOSTIC: Log all XP changes
     print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - oldXP)")
     
-    userProgress.totalXP = newXP
+    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
+    // This ensures all @ObservedObject/@StateObject subscribers are notified
+    objectWillChange.send()
+    
+    var updatedProgress = userProgress
+    updatedProgress.totalXP = newXP
+    userProgress = updatedProgress
+    
     updateLevelFromXP()
     saveUserProgress()
+    
+    #if DEBUG
+    // ✅ INVARIANT: XP must always equal completedDays * 50
+    let expected = completedDaysCount * XPRewards.dailyCompletion
+    if userProgress.totalXP != expected {
+      assertionFailure("""
+        ❌ INVARIANT VIOLATION!
+        Expected XP: \(expected) (completedDays: \(completedDaysCount))
+        Actual XP: \(userProgress.totalXP)
+        Delta: \(userProgress.totalXP - expected)
+        This means XP was mutated outside of publishXP!
+        """)
+    }
+    #endif
   }
 
   /// Ensures level is always calculated from current XP (no double-bumping)
   func updateLevelFromXP() {
     let calculatedLevel = level(forXP: userProgress.totalXP)
-    userProgress.currentLevel = max(1, calculatedLevel)
+    let newLevel = max(1, calculatedLevel)
+    
+    // Only update if level changed
+    guard userProgress.currentLevel != newLevel else {
+      updateLevelProgress()  // Still update progress bar
+      return
+    }
+    
+    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
+    objectWillChange.send()
+    
+    var updatedProgress = userProgress
+    updatedProgress.currentLevel = newLevel
+    userProgress = updatedProgress
+    
     updateLevelProgress()
   }
 
@@ -173,8 +208,14 @@ class XPManager: ObservableObject {
 
       // Update XPManager with the calculated XP
       let oldXP = userProgress.totalXP
-      userProgress.totalXP = totalXP
-      userProgress.dailyXP = 0 // Reset daily XP
+      
+      // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
+      objectWillChange.send()
+      
+      var updatedProgress = userProgress
+      updatedProgress.totalXP = totalXP
+      updatedProgress.dailyXP = 0 // Reset daily XP
+      userProgress = updatedProgress
 
       // Recalculate level based on total XP
       updateLevelFromXP()
@@ -255,7 +296,13 @@ class XPManager: ObservableObject {
 
   /// Reset daily XP (used by existing system)
   func resetDailyXP() {
-    userProgress.dailyXP = 0
+    // ✅ FIX: Notify observers BEFORE reassignment, then reassign struct
+    objectWillChange.send()
+    
+    var updatedProgress = userProgress
+    updatedProgress.dailyXP = 0
+    userProgress = updatedProgress
+    
     saveUserProgress()
   }
 
@@ -336,8 +383,12 @@ class XPManager: ObservableObject {
   /// DO NOT call from production code - this bypasses DailyAwardService
   func resetXPToLevel(_ level: Int) {
     let baseXP = Int(pow(Double(level - 1), 2) * Double(levelBaseXP))
-    userProgress = UserProgress()
-    userProgress.totalXP = baseXP
+    
+    // ✅ FIX: Create new UserProgress with baseXP, then assign once
+    var newProgress = UserProgress()
+    newProgress.totalXP = baseXP
+    userProgress = newProgress
+    
     // Level will be calculated from XP automatically
     recentTransactions = []
     dailyAwards = [:]
