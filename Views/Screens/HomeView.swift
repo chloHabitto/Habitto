@@ -360,9 +360,13 @@ struct HomeView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var themeManager: ThemeManager
+  @EnvironmentObject var xpManager: XPManager  // ✅ Track XP changes to refresh tab switch
 
   var body: some View {
-    VStack(spacing: 0) {
+    // 🔎 PROBE: HomeView re-render when XP changes
+    let _ = print("🔵 HomeView re-render | xp:", xpManager.totalXP, "| selectedTab:", state.selectedTab)
+    
+    return VStack(spacing: 0) {
       // Main content area
       ZStack(alignment: .top) {
         // Dynamic theme background fills entire screen
@@ -455,6 +459,7 @@ struct HomeView: View {
 
           case .more:
             MoreTabView(state: state)
+              .id("more-\(xpManager.totalXP)")  // ✅ Force recreation when XP changes
           }
         }
       }
