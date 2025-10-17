@@ -8,8 +8,9 @@
 import Combine
 import FirebaseAuth
 import FirebaseCore
-// import FirebaseFirestore // Add after package is installed
+import FirebaseFirestore
 import Foundation
+import SwiftUI
 
 // MARK: - FirestoreError
 
@@ -38,143 +39,100 @@ enum FirestoreServiceError: Error, LocalizedError {
   }
 }
 
-// MARK: - MockHabit
-
-/// Mock habit model for demo purposes
-struct MockHabit: Codable, Identifiable {
-  var id: String
-  var name: String
-  var color: String
-  var createdAt: Date
-  var isActive: Bool
-  
-  init(id: String = UUID().uuidString, name: String, color: String, isActive: Bool = true) {
-    self.id = id
-    self.name = name
-    self.color = color
-    self.createdAt = Date()
-    self.isActive = isActive
-  }
-}
+// MARK: - FirestoreHabit (using existing from Core/Models/FirestoreModels.swift)
 
 // MARK: - FirestoreService
 
-/// Service for Firestore operations
-/// NOTE: This is a basic implementation. After adding FirebaseFirestore package,
-/// uncomment the Firestore-specific code marked with /* ... */
+/// Service for Firestore operations with real-time sync
 class FirestoreService: FirebaseService, ObservableObject {
   // MARK: Lifecycle
   
   private init() {
     print("📊 FirestoreService: Initialized")
+    setupTelemetry()
   }
   
   // MARK: Internal
   
   static let shared = FirestoreService()
   
-  @MainActor @Published var habits: [MockHabit] = []
+  @MainActor @Published var habits: [Habit] = []
   @MainActor @Published var error: FirestoreServiceError?
+  @MainActor @Published var isConnected = false
   
-  // MARK: - Habit Operations (Mock Implementation)
+  // MARK: Private
+  
+  private var listener: ListenerRegistration?
+  private var db: Firestore { Firestore.firestore() }
+  
+  // Telemetry counters
+  private var telemetryCounters: [String: Int] = [:]
+  
+  // MARK: - Habit Operations
   
   /// Create a new habit
   @MainActor
-  func createHabit(name: String, color: String) async throws -> MockHabit {
-    print("📝 FirestoreService: Creating habit '\(name)'")
+  func createHabit(_ habit: Habit) async throws -> Habit {
+    print("📝 FirestoreService: Creating habit '\(habit.name)'")
     
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured, using mock data")
-      let habit = MockHabit(name: name, color: color)
-      habits.append(habit)
-      return habit
+      throw FirestoreServiceError.notConfigured
     }
     
-    guard currentUserId != nil else {
+    guard let userId = currentUserId else {
       throw FirestoreServiceError.notAuthenticated
     }
     
-    /*
-    // After adding FirebaseFirestore package, use this code:
-    let db = Firestore.firestore()
-    let habitData: [String: Any] = [
-      "name": name,
-      "color": color,
-      "createdAt": Timestamp(date: Date()),
-      "isActive": true
-    ]
+    let firestoreHabit = FirestoreHabit(from: habit)
+    let habitData = try firestoreHabit.toDictionary()
     
-    let docRef = try await db.collection("users").document(userId).collection("habits").addDocument(data: habitData)
+    let docRef = try await db.collection("users")
+      .document(userId)
+      .collection("habits")
+      .document(habit.id.uuidString)
+      .setData(habitData, merge: true)
     
-    let habit = MockHabit(id: docRef.documentID, name: name, color: color)
+    // Update local cache
     habits.append(habit)
-    print("✅ FirestoreService: Habit created with ID: \(docRef.documentID)")
-    return habit
-    */
     
-    // Mock implementation for now
-    let habit = MockHabit(name: name, color: color)
-    habits.append(habit)
-    print("✅ FirestoreService: Mock habit created with ID: \(habit.id)")
+    // Record telemetry
+    incrementCounter("dualwrite.create.primary_ok")
+    
+    print("✅ FirestoreService: Habit created with ID: \(habit.id.uuidString)")
     return habit
   }
   
   /// Update an existing habit
   @MainActor
-  func updateHabit(id: String, name: String?, color: String?) async throws {
-    print("📝 FirestoreService: Updating habit \(id)")
+  func updateHabit(_ habit: Habit) async throws {
+    print("📝 FirestoreService: Updating habit \(habit.id.uuidString)")
     
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured, updating mock data")
-      if let index = habits.firstIndex(where: { $0.id == id }) {
-        if let name = name {
-          habits[index].name = name
-        }
-        if let color = color {
-          habits[index].color = color
-        }
-      }
-      return
+      throw FirestoreServiceError.notConfigured
     }
     
-    guard currentUserId != nil else {
+    guard let userId = currentUserId else {
       throw FirestoreServiceError.notAuthenticated
     }
     
-    /*
-    // After adding FirebaseFirestore package, use this code:
-    let db = Firestore.firestore()
-    var updateData: [String: Any] = [:]
-    if let name = name {
-      updateData["name"] = name
-    }
-    if let color = color {
-      updateData["color"] = color
+    let firestoreHabit = FirestoreHabit(from: habit)
+    let habitData = try firestoreHabit.toDictionary()
+    
+    try await db.collection("users")
+      .document(userId)
+      .collection("habits")
+      .document(habit.id.uuidString)
+      .setData(habitData, merge: true)
+    
+    // Update local cache
+    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
+      habits[index] = habit
     }
     
-    try await db.collection("users").document(userId).collection("habits").document(id).updateData(updateData)
+    // Record telemetry
+    incrementCounter("dualwrite.update.primary_ok")
     
-    if let index = habits.firstIndex(where: { $0.id == id }) {
-      if let name = name {
-        habits[index].name = name
-      }
-      if let color = color {
-        habits[index].color = color
-      }
-    }
     print("✅ FirestoreService: Habit updated")
-    */
-    
-    // Mock implementation for now
-    if let index = habits.firstIndex(where: { $0.id == id }) {
-      if let name = name {
-        habits[index].name = name
-      }
-      if let color = color {
-        habits[index].color = color
-      }
-    }
-    print("✅ FirestoreService: Mock habit updated")
   }
   
   /// Delete a habit
@@ -183,26 +141,26 @@ class FirestoreService: FirebaseService, ObservableObject {
     print("🗑️ FirestoreService: Deleting habit \(id)")
     
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured, deleting from mock data")
-      habits.removeAll { $0.id == id }
-      return
+      throw FirestoreServiceError.notConfigured
     }
     
-    guard currentUserId != nil else {
+    guard let userId = currentUserId else {
       throw FirestoreServiceError.notAuthenticated
     }
     
-    /*
-    // After adding FirebaseFirestore package, use this code:
-    let db = Firestore.firestore()
-    try await db.collection("users").document(userId).collection("habits").document(id).delete()
-    habits.removeAll { $0.id == id }
-    print("✅ FirestoreService: Habit deleted")
-    */
+    try await db.collection("users")
+      .document(userId)
+      .collection("habits")
+      .document(id)
+      .delete()
     
-    // Mock implementation for now
-    habits.removeAll { $0.id == id }
-    print("✅ FirestoreService: Mock habit deleted")
+    // Update local cache
+    habits.removeAll { $0.id.uuidString == id }
+    
+    // Record telemetry
+    incrementCounter("dualwrite.delete.primary_ok")
+    
+    print("✅ FirestoreService: Habit deleted")
   }
   
   /// Fetch all habits
@@ -211,52 +169,30 @@ class FirestoreService: FirebaseService, ObservableObject {
     print("📊 FirestoreService: Fetching habits")
     
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured, using mock data")
-      // Add some mock data for demonstration
-      if habits.isEmpty {
-        habits = [
-          MockHabit(name: "Morning Run", color: "green"),
-          MockHabit(name: "Read 30min", color: "blue"),
-          MockHabit(name: "Meditate", color: "purple")
-        ]
-      }
-      return
+      throw FirestoreServiceError.notConfigured
     }
     
-    guard currentUserId != nil else {
+    guard let userId = currentUserId else {
       throw FirestoreServiceError.notAuthenticated
     }
     
-    /*
-    // After adding FirebaseFirestore package, use this code:
-    let db = Firestore.firestore()
-    let snapshot = try await db.collection("users").document(userId).collection("habits")
+    let snapshot = try await db.collection("users")
+      .document(userId)
+      .collection("habits")
       .whereField("isActive", isEqualTo: true)
       .getDocuments()
     
     habits = snapshot.documents.compactMap { doc in
-      let data = doc.data()
-      guard let name = data["name"] as? String,
-            let color = data["color"] as? String,
-            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue(),
-            let isActive = data["isActive"] as? Bool else {
+      do {
+        let firestoreHabit = try doc.data(as: FirestoreHabit.self)
+        return firestoreHabit.toHabit()
+      } catch {
+        print("❌ FirestoreService: Failed to decode habit \(doc.documentID): \(error)")
         return nil
       }
-      return MockHabit(id: doc.documentID, name: name, color: color)
     }
     
     print("✅ FirestoreService: Fetched \(habits.count) habits")
-    */
-    
-    // Mock implementation for now
-    if habits.isEmpty {
-      habits = [
-        MockHabit(name: "Morning Run", color: "green"),
-        MockHabit(name: "Read 30min", color: "blue"),
-        MockHabit(name: "Meditate", color: "purple")
-      ]
-    }
-    print("✅ FirestoreService: Fetched \(habits.count) mock habits")
   }
   
   /// Start listening to habit changes in real-time
@@ -265,20 +201,18 @@ class FirestoreService: FirebaseService, ObservableObject {
     print("👂 FirestoreService: Starting real-time listener")
     
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured, mock listener active")
+      print("⚠️ FirestoreService: Not configured")
       return
     }
     
-    guard currentUserId != nil else {
+    guard let userId = currentUserId else {
       print("⚠️ FirestoreService: Not authenticated")
       return
     }
     
-    /*
-    // After adding FirebaseFirestore package, use this code:
-    let db = Firestore.firestore()
-    
-    listener = db.collection("users").document(userId).collection("habits")
+    listener = db.collection("users")
+      .document(userId)
+      .collection("habits")
       .whereField("isActive", isEqualTo: true)
       .addSnapshotListener { [weak self] snapshot, error in
         guard let self = self else { return }
@@ -295,33 +229,88 @@ class FirestoreService: FirebaseService, ObservableObject {
         
         Task { @MainActor in
           self.habits = snapshot.documents.compactMap { doc in
-            let data = doc.data()
-            guard let name = data["name"] as? String,
-                  let color = data["color"] as? String else {
+            do {
+              let firestoreHabit = try doc.data(as: FirestoreHabit.self)
+              return firestoreHabit.toHabit()
+            } catch {
+              print("❌ FirestoreService: Failed to decode habit \(doc.documentID): \(error)")
               return nil
             }
-            return MockHabit(id: doc.documentID, name: name, color: color)
           }
+          
+          // Record telemetry
+          self.incrementCounter("firestore.listener.events")
+          
           print("✅ FirestoreService: Updated \(self.habits.count) habits from listener")
         }
       }
-    */
     
-    print("✅ FirestoreService: Mock listener started")
+    print("✅ FirestoreService: Real-time listener started")
   }
   
   /// Stop listening to habit changes
   @MainActor
   func stopListening() {
     print("🛑 FirestoreService: Stopping real-time listener")
-    /*
     listener?.remove()
     listener = nil
-    */
   }
   
-  // MARK: Private
+  // MARK: - Telemetry
   
-  // private var listener: ListenerRegistration?
+  private func setupTelemetry() {
+    telemetryCounters = [
+      "dualwrite.create.primary_ok": 0,
+      "dualwrite.update.primary_ok": 0,
+      "dualwrite.delete.primary_ok": 0,
+      "dualwrite.create.secondary_ok": 0,
+      "dualwrite.update.secondary_ok": 0,
+      "dualwrite.delete.secondary_ok": 0,
+      "dualwrite.secondary_err": 0,
+      "firestore.listener.events": 0
+    ]
+  }
+  
+  private func incrementCounter(_ key: String) {
+    telemetryCounters[key, default: 0] += 1
+  }
+  
+  func getTelemetryCounters() -> [String: Int] {
+    return telemetryCounters
+  }
+  
+  func logTelemetry() {
+    print("📊 FirestoreService Telemetry:")
+    for (key, value) in telemetryCounters.sorted(by: { $0.key < $1.key }) {
+      print("  \(key): \(value)")
+    }
+  }
+}
+
+// MARK: - FirestoreHabit Extensions
+
+extension FirestoreHabit {
+  func toDictionary() throws -> [String: Any] {
+    let data = try JSONEncoder().encode(self)
+    let json = try JSONSerialization.jsonObject(with: data)
+    return json as? [String: Any] ?? [:]
+  }
+}
+
+// MARK: - Color Extensions (using existing from Core/Utils/Design/ColorSystem.swift)
+
+extension CodableColor {
+  var hexString: String {
+    let uiColor = UIColor(self.color)
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var alpha: CGFloat = 0
+    
+    uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+    
+    let rgb = Int(red * 255) << 16 | Int(green * 255) << 8 | Int(blue * 255) << 0
+    return String(format: "#%06x", rgb)
+  }
 }
 

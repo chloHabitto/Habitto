@@ -1,287 +1,261 @@
-import FirebaseAuth
-import FirebaseFirestore
+//
+//  BackfillJob.swift
+//  Habitto
+//
+//  Backfill job for migrating existing data to Firestore
+//
+
 import Foundation
+import FirebaseFirestore
 import OSLog
 
 // MARK: - BackfillJob
 
-/// Handles migration of local data to Firestore
-/// Provides idempotent, resumable, chunked migration with progress tracking
+/// Handles backfilling existing local data to Firestore
 @MainActor
 final class BackfillJob: ObservableObject {
-  
-  // MARK: - Lifecycle
+  // MARK: Lifecycle
   
   private init() {
-    logger.info("🔄 BackfillJob: Initialized")
+    self.db = Firestore.firestore()
   }
   
-  // MARK: - Internal
+  // MARK: Internal
   
   static let shared = BackfillJob()
   
   @Published var isRunning = false
-  @Published var progress: Double = 0.0
-  @Published var status: FirebaseMigrationState.Status = .notStarted
-  @Published var errorMessage: String?
+  @Published var progress = 0.0
+  @Published var status = "Ready"
+  @Published var error: String?
   
-  // MARK: - Private
+  // MARK: Private
   
-  private let db = Firestore.firestore()
-  private let logger = Logger(subsystem: "com.habitto.app", category: "BackfillJob")
-  private let batchSize = 50 // Firestore batch limit is 500, using 50 for safety
-  private var isCancelled = false
+  private let db: Firestore
+  private let batchSize = 450 // Firestore batch limit
+  private let maxRetries = 3
   
   // MARK: - Public Methods
   
   /// Run backfill if enabled by feature flags
   func runIfEnabled() async {
-    guard FeatureFlags.enableBackfill && FeatureFlags.enableFirestoreSync else {
-      logger.info("ℹ️ BackfillJob: Disabled by feature flags")
+    guard FeatureFlags.enableBackfill else {
+      print("📊 BackfillJob: Backfill disabled by feature flag")
       return
     }
     
-    guard let userId = getCurrentUserId() else {
-      logger.error("❌ BackfillJob: No authenticated user")
-      return
-    }
-    
-    await run(userId: userId)
+    await run()
   }
   
-  /// Run backfill for a specific user
-  func run(userId: String) async {
-    logger.info("🔄 BackfillJob: Starting migration for user: \(userId)")
+  /// Run the backfill process
+  func run() async {
+    guard !isRunning else {
+      print("📊 BackfillJob: Already running")
+      return
+    }
     
     isRunning = true
-    isCancelled = false
-    errorMessage = nil
+    progress = 0.0
+    status = "Starting backfill..."
+    error = nil
     
     do {
-      // Load or create migration state
-      var migrationState = try await loadMigrationState(userId: userId)
+      // Get current user ID
+      guard let userId = FirebaseConfiguration.currentUserId else {
+        throw BackfillError.notAuthenticated
+      }
       
-      // Check if already completed
+      // Check if migration is already complete
+      let migrationState = try await getMigrationState(userId: userId)
       if migrationState.status == .complete {
-        logger.info("✅ BackfillJob: Migration already completed")
-        status = .complete
+        status = "Migration already complete"
         progress = 1.0
         isRunning = false
         return
       }
       
-      // Update status to running
-      migrationState.status = .running
-      migrationState.startedAt = Date()
-      try await saveMigrationState(migrationState, userId: userId)
+      // Update migration state to started
+      try await updateMigrationState(userId: userId, status: .running, startedAt: Date())
       
-      status = .running
+      // Get all local habits
+      let localHabits = try await getLocalHabits()
+      status = "Found \(localHabits.count) habits to migrate"
       
-      // Start telemetry timer
-      TelemetryService.shared.startTimer("backfill.total")
+      if localHabits.isEmpty {
+        status = "No habits to migrate"
+        progress = 1.0
+        try await updateMigrationState(userId: userId, status: .complete, finishedAt: Date())
+        isRunning = false
+        return
+      }
       
-      // Migrate each data type
-      try await migrateHabits(userId: userId, migrationState: &migrationState)
-      try await migrateCompletions(userId: userId, migrationState: &migrationState)
-      try await migrateXPData(userId: userId, migrationState: &migrationState)
-      try await migrateStreaks(userId: userId, migrationState: &migrationState)
+      // Migrate habits in batches
+      let totalBatches = (localHabits.count + batchSize - 1) / batchSize
+      var processedCount = 0
       
-      // Mark as completed
-      migrationState.status = .complete
-      migrationState.finishedAt = Date()
-      try await saveMigrationState(migrationState, userId: userId)
+      for i in 0..<totalBatches {
+        let startIndex = i * batchSize
+        let endIndex = min(startIndex + batchSize, localHabits.count)
+        let batch = Array(localHabits[startIndex..<endIndex])
+        
+        status = "Migrating batch \(i + 1)/\(totalBatches) (\(batch.count) habits)"
+        
+        try await migrateBatch(batch, userId: userId)
+        
+        processedCount += batch.count
+        progress = Double(processedCount) / Double(localHabits.count)
+        
+        // Update last processed key
+        try await updateMigrationState(
+          userId: userId,
+          status: .running,
+          lastKey: batch.last?.id.uuidString
+        )
+      }
       
-      // End telemetry timer
-      _ = TelemetryService.shared.endTimerAndIncrement("backfill.total", counterKey: "backfill.total_ms")
+      // Mark migration as complete
+      try await updateMigrationState(userId: userId, status: .complete, finishedAt: Date())
       
-      logger.info("✅ BackfillJob: Migration completed successfully")
-      status = .complete
+      status = "Migration complete! Migrated \(processedCount) habits"
       progress = 1.0
       
     } catch {
-      logger.error("❌ BackfillJob: Migration failed: \(error.localizedDescription)")
+      self.error = error.localizedDescription
+      status = "Migration failed: \(error.localizedDescription)"
       
-      // Update state with error
+      // Update migration state with error
+      if let userId = FirebaseConfiguration.currentUserId {
+        try? await updateMigrationState(
+          userId: userId,
+          status: .failed,
+          error: error.localizedDescription
+        )
+      }
+    }
+    
+    isRunning = false
+  }
+  
+  // MARK: Private Methods
+  
+  private func getLocalHabits() async throws -> [Habit] {
+    // Use the existing local storage to get habits
+    // This would typically be UserDefaultsStorage or SwiftDataStorage
+    let storage = UserDefaultsStorage()
+    return try await storage.loadHabits()
+  }
+  
+  private func migrateBatch(_ habits: [Habit], userId: String) async throws {
+    let batch = db.batch()
+    
+    for habit in habits {
+      let firestoreHabit = FirestoreHabit(from: habit)
+      let habitData = firestoreHabit.toFirestoreData()
+      
+      let docRef = db.collection("users")
+        .document(userId)
+        .collection("habits")
+        .document(habit.id.uuidString)
+      
+      batch.setData(habitData, forDocument: docRef, merge: true)
+    }
+    
+    // Commit batch with retry logic
+    try await commitBatchWithRetry(batch)
+  }
+  
+  private func commitBatchWithRetry(_ batch: WriteBatch) async throws {
+    var lastError: Error?
+    
+    for attempt in 1...maxRetries {
       do {
-        var migrationState = try await loadMigrationState(userId: userId)
-        migrationState.status = .failed
-        migrationState.error = error.localizedDescription
-        try await saveMigrationState(migrationState, userId: userId)
+        try await batch.commit()
+        return
       } catch {
-        logger.error("❌ BackfillJob: Failed to save error state: \(error.localizedDescription)")
+        lastError = error
+        print("❌ BackfillJob: Batch commit attempt \(attempt) failed: \(error)")
+        
+        if attempt < maxRetries {
+          // Exponential backoff
+          let delay = pow(2.0, Double(attempt)) * 0.1
+          try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+        }
       }
-      
-      status = .failed
-      errorMessage = error.localizedDescription
-      TelemetryService.shared.logBackfill("error", error: error)
     }
     
-    isRunning = false
+    throw lastError ?? BackfillError.batchCommitFailed
   }
   
-  /// Cancel running migration
-  func cancel() {
-    logger.info("🛑 BackfillJob: Cancelling migration")
-    isCancelled = true
-    isRunning = false
-  }
-  
-  /// Reset migration state (for testing)
-  func reset(userId: String) async {
-    logger.info("🔄 BackfillJob: Resetting migration state for user: \(userId)")
+  private func getMigrationState(userId: String) async throws -> FirebaseMigrationState {
+    let docRef = db.collection("users")
+      .document(userId)
+      .collection("meta")
+      .document("migration")
     
-    do {
-      let migrationState = FirebaseMigrationState(status: .notStarted)
-      try await saveMigrationState(migrationState, userId: userId)
-      
-      status = .notStarted
-      progress = 0.0
-      errorMessage = nil
-      
-    } catch {
-      logger.error("❌ BackfillJob: Failed to reset migration state: \(error.localizedDescription)")
-    }
-  }
-  
-  // MARK: - Private Methods
-  
-  /// Get current authenticated user ID
-  private func getCurrentUserId() -> String? {
-    Auth.auth().currentUser?.uid
-  }
-  
-  /// Load migration state from Firestore
-  private func loadMigrationState(userId: String) async throws -> FirebaseMigrationState {
-    let docRef = db.collection("users").document(userId).collection("meta").document("migration")
-    let snapshot = try await docRef.getDocument()
+    let document = try await docRef.getDocument()
     
-    if snapshot.exists,
-       let data = snapshot.data() {
-      let jsonData = try JSONSerialization.data(withJSONObject: data)
-      return try JSONDecoder().decode(FirebaseMigrationState.self, from: jsonData)
+    if document.exists {
+      return try document.data(as: FirebaseMigrationState.self)
     } else {
-      // Create new migration state
-      return FirebaseMigrationState()
+      return FirebaseMigrationState(status: .notStarted, lastKey: nil, startedAt: nil, finishedAt: nil, error: nil)
     }
   }
   
-  /// Save migration state to Firestore
-  private func saveMigrationState(_ state: FirebaseMigrationState, userId: String) async throws {
-    let docRef = db.collection("users").document(userId).collection("meta").document("migration")
-    let data = try JSONEncoder().encode(state)
-    let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-    try await docRef.setData(jsonObject ?? [:])
-  }
-  
-  /// Migrate habits from local storage to Firestore
-  private func migrateHabits(userId: String, migrationState: inout FirebaseMigrationState) async throws {
-    logger.info("🔄 BackfillJob: Migrating habits...")
+  private func updateMigrationState(
+    userId: String,
+    status: FirebaseMigrationState.Status,
+    lastKey: String? = nil,
+    startedAt: Date? = nil,
+    finishedAt: Date? = nil,
+    error: String? = nil
+  ) async throws {
+    let docRef = db.collection("users")
+      .document(userId)
+      .collection("meta")
+      .document("migration")
     
-    // Load habits from local storage (UserDefaults)
-    let localStorage = UserDefaultsStorage()
-    let habits = try await localStorage.loadHabits()
+    var data: [String: Any] = ["status": status.rawValue]
     
-    // Track total habits for progress calculation
-    let totalHabits = habits.count
-    
-    // Migrate in batches
-    for (index, habit) in habits.enumerated() {
-      if isCancelled {
-        throw BackfillError.cancelled
-      }
-      
-      // Create Firestore document
-      let docRef = db.collection("users").document(userId).collection("habits").document(habit.id.uuidString)
-      
-      // Convert habit to Firestore data
-      let habitData = habitToFirestoreData(habit, userId: userId)
-      
-      try await docRef.setData(habitData)
-      
-      // Update progress
-      migrationState.lastKey = habit.id.uuidString
-      
-      // Update progress every 10 items
-      if (index + 1) % 10 == 0 {
-        let progressValue = Double(index + 1) / Double(totalHabits)
-        progress = progressValue
-        try await saveMigrationState(migrationState, userId: userId)
-        TelemetryService.shared.logBackfill("habits", count: index + 1)
-      }
+    if let lastKey = lastKey {
+      data["lastKey"] = lastKey
+    }
+    if let startedAt = startedAt {
+      data["startedAt"] = Timestamp(date: startedAt)
+    }
+    if let finishedAt = finishedAt {
+      data["finishedAt"] = Timestamp(date: finishedAt)
+    }
+    if let error = error {
+      data["error"] = error
     }
     
-    logger.info("✅ BackfillJob: Migrated \(habits.count) habits")
-    TelemetryService.shared.logBackfill("habits.completed", count: habits.count)
-  }
-  
-  /// Migrate completion records from local storage to Firestore
-  private func migrateCompletions(userId: String, migrationState: inout FirebaseMigrationState) async throws {
-    logger.info("🔄 BackfillJob: Migrating completion records...")
-    
-    // This would need to be implemented based on your completion storage structure
-    // For now, we'll skip this as it depends on the specific data model
-    logger.info("ℹ️ BackfillJob: Completion migration not implemented yet")
-  }
-  
-  /// Migrate XP data from local storage to Firestore
-  private func migrateXPData(userId: String, migrationState: inout FirebaseMigrationState) async throws {
-    logger.info("🔄 BackfillJob: Migrating XP data...")
-    
-    // This would need to be implemented based on your XP storage structure
-    // For now, we'll skip this as it depends on the specific data model
-    logger.info("ℹ️ BackfillJob: XP migration not implemented yet")
-  }
-  
-  /// Migrate streaks from local storage to Firestore
-  private func migrateStreaks(userId: String, migrationState: inout FirebaseMigrationState) async throws {
-    logger.info("🔄 BackfillJob: Migrating streaks...")
-    
-    // This would need to be implemented based on your streak storage structure
-    // For now, we'll skip this as it depends on the specific data model
-    logger.info("ℹ️ BackfillJob: Streak migration not implemented yet")
-  }
-  
-  /// Convert habit to Firestore data format
-  private func habitToFirestoreData(_ habit: Habit, userId: String) -> [String: Any] {
-    do {
-      // Convert habit to JSON data
-      let jsonData = try JSONEncoder().encode(habit)
-      let jsonObject = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] ?? [:]
-      
-      // Add Firestore-specific fields
-      var firestoreData = jsonObject
-      firestoreData["userId"] = userId
-      firestoreData["updatedAt"] = Timestamp(date: Date())
-      
-      return firestoreData
-    } catch {
-      logger.error("❌ BackfillJob: Failed to convert habit to Firestore data: \(error.localizedDescription)")
-      return [
-        "id": habit.id.uuidString,
-        "name": habit.name,
-        "description": habit.description,
-        "userId": userId,
-        "updatedAt": Timestamp(date: Date())
-      ]
-    }
+    try await docRef.setData(data, merge: true)
   }
 }
+
+// MARK: - MigrationState (using existing from Core/Models/MigrationState.swift)
 
 // MARK: - BackfillError
 
 enum BackfillError: LocalizedError {
-  case cancelled
-  case noUser
-  case firestoreError(Error)
+  case notAuthenticated
+  case batchCommitFailed
+  case migrationInProgress
   
   var errorDescription: String? {
     switch self {
-    case .cancelled:
-      return "Migration was cancelled"
-    case .noUser:
-      return "No authenticated user"
-    case .firestoreError(let error):
-      return "Firestore error: \(error.localizedDescription)"
+    case .notAuthenticated:
+      return "User not authenticated"
+    case .batchCommitFailed:
+      return "Failed to commit batch to Firestore"
+    case .migrationInProgress:
+      return "Migration already in progress"
     }
   }
 }
+
+// MARK: - FirestoreHabit (using existing from Core/Models/FirestoreModels.swift)
+
+// MARK: - Logging
+
+private let backfillLogger = Logger(subsystem: "com.habitto.app", category: "BackfillJob")

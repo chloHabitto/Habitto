@@ -41,10 +41,10 @@ class StorageFactory {
     case .firestore:
       FirestoreStorage()
     case .hybrid:
-      // Create HybridStorage with UserDefaults + Firestore
-      HybridStorage(
-        localStorage: UserDefaultsStorage(),
-        cloudStorage: FirestoreStorage()
+      // Create DualWriteStorage with Firestore + UserDefaults
+      DualWriteStorage(
+        primaryStorage: FirestoreService.shared,
+        secondaryStorage: UserDefaultsStorage()
       )
     }
   }
@@ -56,18 +56,9 @@ class StorageFactory {
   func createHabitRepository(type: StorageType) -> any HabitRepositoryProtocol {
     switch type {
     case .hybrid:
-      // Use DualWriteHabitRepository for hybrid storage
-      let primaryStorage = createHabitStorage(type: .firestore)
-      let secondaryStorage = createHabitStorage(type: .userDefaults)
-      
-      let primaryRepo = HabitRepositoryImpl(storage: primaryStorage)
-      let secondaryRepo = HabitRepositoryImpl(storage: secondaryStorage)
-      
-      return DualWriteHabitRepository(
-        primary: primaryRepo,
-        secondary: secondaryRepo,
-        fallbackReads: FeatureFlags.enableLegacyReadFallback
-      )
+      // Use DualWriteStorage directly
+      let storage = createHabitStorage(type: .hybrid)
+      return HabitRepositoryImpl(storage: storage)
     default:
       let storage = createHabitStorage(type: type)
       return HabitRepositoryImpl(storage: storage)

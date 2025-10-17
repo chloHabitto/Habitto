@@ -224,7 +224,18 @@ struct HabitsFirestoreDemoView: View {
   
   private func addHabit() async {
     do {
-      _ = try await firestoreService.createHabit(name: newHabitName, color: newHabitColor)
+      let habit = Habit(
+        name: newHabitName,
+        description: "",
+        icon: "star.fill",
+        color: CodableColor(Color(hex: newHabitColor) ?? Color.blue),
+        habitType: .formation,
+        schedule: "Daily",
+        goal: "1 time",
+        reminder: "9:00 AM",
+        startDate: Date()
+      )
+      _ = try await firestoreService.createHabit(habit)
       showAddHabit = false
       newHabitName = ""
       newHabitColor = "green"
@@ -233,9 +244,9 @@ struct HabitsFirestoreDemoView: View {
     }
   }
   
-  private func deleteHabit(_ habit: MockHabit) async {
+  private func deleteHabit(_ habit: Habit) async {
     do {
-      try await firestoreService.deleteHabit(id: habit.id)
+      try await firestoreService.deleteHabit(id: habit.id.uuidString)
     } catch {
       errorMessage = error.localizedDescription
     }
@@ -257,20 +268,20 @@ struct HabitsFirestoreDemoView: View {
 // MARK: - HabitRow
 
 struct HabitRow: View {
-  let habit: MockHabit
+  let habit: Habit
   let onDelete: () -> Void
   
   var body: some View {
     HStack {
       Circle()
-        .fill(colorForName(habit.color))
+        .fill(habit.colorValue)
         .frame(width: 12, height: 12)
       
       VStack(alignment: .leading, spacing: 4) {
         Text(habit.name)
           .font(.body)
           .fontWeight(.medium)
-        Text(habit.id)
+        Text(habit.id.uuidString)
           .font(.caption2)
           .foregroundColor(.secondary)
           .lineLimit(1)

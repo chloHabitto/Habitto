@@ -211,7 +211,7 @@ struct FirestoreRepoDemoView: View {
         
         Spacer()
         
-        Text(habit.type.capitalized)
+        Text(habit.habitType.capitalized)
           .font(.caption)
           .padding(.horizontal, 8)
           .padding(.vertical, 4)

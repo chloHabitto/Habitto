@@ -124,7 +124,7 @@ enum MigrationFeatureFlags {
         let shouldEnable = userPercentage < backfillRolloutPercentage
         
         if debugMigration {
-            logger.info("🎯 MigrationFeatureFlags: User \(userId) backfill check - hash: \(userPercentage), threshold: \(backfillRolloutPercentage), enabled: \(shouldEnable)")
+            migrationLogger.info("🎯 MigrationFeatureFlags: User \(userId) backfill check - hash: \(userPercentage), threshold: \(backfillRolloutPercentage), enabled: \(shouldEnable)")
         }
         
         return shouldEnable
@@ -153,19 +153,19 @@ enum MigrationFeatureFlags {
     /// Log current flag status (for debugging)
     static func logCurrentStatus() {
         let status = getMigrationStatus()
-        logger.info("🚩 MigrationFeatureFlags Status:")
-        logger.info("  dualWriteEnabled: \(status.dualWriteEnabled)")
-        logger.info("  backfillEnabled: \(status.backfillEnabled)")
-        logger.info("  legacyReadFallbackEnabled: \(status.legacyReadFallbackEnabled)")
-        logger.info("  uiCacheEnabled: \(status.uiCacheEnabled)")
-        logger.info("  backfillRolloutPercentage: \(status.backfillRolloutPercentage)%")
-        logger.info("  migrationTelemetryEnabled: \(status.migrationTelemetryEnabled)")
-        logger.info("  forceMigrationComplete: \(status.forceMigrationComplete)")
-        logger.info("  migrationBatchSize: \(status.migrationBatchSize)")
-        logger.info("  migrationTimeoutSeconds: \(status.migrationTimeoutSeconds)")
-        logger.info("  migrationRetryEnabled: \(status.migrationRetryEnabled)")
-        logger.info("  showMigrationProgress: \(status.showMigrationProgress)")
-        logger.info("  showMigrationSuccess: \(status.showMigrationSuccess)")
+        migrationLogger.info("🚩 MigrationFeatureFlags Status:")
+        migrationLogger.info("  dualWriteEnabled: \(status.dualWriteEnabled)")
+        migrationLogger.info("  backfillEnabled: \(status.backfillEnabled)")
+        migrationLogger.info("  legacyReadFallbackEnabled: \(status.legacyReadFallbackEnabled)")
+        migrationLogger.info("  uiCacheEnabled: \(status.uiCacheEnabled)")
+        migrationLogger.info("  backfillRolloutPercentage: \(status.backfillRolloutPercentage)%")
+        migrationLogger.info("  migrationTelemetryEnabled: \(status.migrationTelemetryEnabled)")
+        migrationLogger.info("  forceMigrationComplete: \(status.forceMigrationComplete)")
+        migrationLogger.info("  migrationBatchSize: \(status.migrationBatchSize)")
+        migrationLogger.info("  migrationTimeoutSeconds: \(status.migrationTimeoutSeconds)")
+        migrationLogger.info("  migrationRetryEnabled: \(status.migrationRetryEnabled)")
+        migrationLogger.info("  showMigrationProgress: \(status.showMigrationProgress)")
+        migrationLogger.info("  showMigrationSuccess: \(status.showMigrationSuccess)")
     }
 }
 
@@ -229,4 +229,4 @@ extension MigrationFeatureFlags {
 
 // MARK: - Logging
 
-private let logger = Logger(subsystem: "com.habitto.app", category: "MigrationFeatureFlags")
+private let migrationLogger = Logger(subsystem: "com.habitto.app", category: "MigrationFeatureFlags")
