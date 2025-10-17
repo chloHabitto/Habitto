@@ -670,8 +670,8 @@ struct HomeTabView: View {
         // Handle frequency schedules like "once a week", "twice a week", or "3 days a week"
         let shouldShow = shouldShowHabitWithFrequency(habit: habit, date: date)
         return shouldShow
-      } else if habit.schedule.contains("days a month") {
-        // Handle monthly frequency schedules like "3 days a month"
+      } else if habit.schedule.contains("once a month") || habit.schedule.contains("twice a month") || habit.schedule.contains("day a month") || habit.schedule.contains("days a month") {
+        // Handle monthly frequency schedules like "once a month", "twice a month", or "3 days a month"
         let shouldShow = shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
         return shouldShow
       } else if habit.schedule.contains("times per week") {
@@ -878,20 +878,31 @@ struct HomeTabView: View {
     }
 
     // Extract days per month from schedule
-    let pattern = #"(\d+) days a month"#
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-          let match = regex.firstMatch(
-            in: habit.schedule,
-            options: [],
-            range: NSRange(location: 0, length: habit.schedule.count)) else
-    {
-      return false
-    }
+    let lowerSchedule = habit.schedule.lowercased()
+    let daysPerMonth: Int
+    
+    if lowerSchedule.contains("once a month") {
+      daysPerMonth = 1
+    } else if lowerSchedule.contains("twice a month") {
+      daysPerMonth = 2
+    } else {
+      // Extract number from "X day(s) a month"
+      let pattern = #"(\d+) days? a month"#
+      guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+            let match = regex.firstMatch(
+              in: habit.schedule,
+              options: [],
+              range: NSRange(location: 0, length: habit.schedule.count)) else
+      {
+        return false
+      }
 
-    let range = match.range(at: 1)
-    let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
-    guard let daysPerMonth = Int(daysPerMonthString) else {
-      return false
+      let range = match.range(at: 1)
+      let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
+      guard let days = Int(daysPerMonthString) else {
+        return false
+      }
+      daysPerMonth = days
     }
 
     // For monthly frequency, show the habit on the first N days of each month

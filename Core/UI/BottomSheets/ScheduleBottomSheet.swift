@@ -172,7 +172,7 @@ struct ScheduleBottomSheet: View {
 
               HStack {
                 if selectedFrequency == "Monthly" {
-                  Text(monthlyValue == 1 ? "1 day a month" : "\(monthlyValue) days a month")
+                  Text(formatMonthlyFrequency(monthlyValue))
                     .font(.appBodyLarge)
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
@@ -397,9 +397,9 @@ struct ScheduleBottomSheet: View {
     } else {
       // Frequency tab
       if selectedFrequency == "Weekly" {
-        return "\(weeklyValue) day\(weeklyValue == 1 ? "" : "s") a week"
+        return formatWeeklyFrequency(weeklyValue)
       } else if selectedFrequency == "Monthly" {
-        return "\(monthlyValue) day\(monthlyValue == 1 ? "" : "s") a month"
+        return formatMonthlyFrequency(monthlyValue)
       }
     }
     return "Not Selected"
@@ -442,8 +442,22 @@ struct ScheduleBottomSheet: View {
       selectedWeekDays = parsedDays
       print("🔍 SCHEDULE SHEET INIT - Set selectedWeekDays: \(selectedWeekDays)")
 
-    } else if lowercasedSchedule.contains("days a week") {
-      // Handle frequency-based schedules like "2 days a week"
+    } else if lowercasedSchedule.contains("once a week") {
+      // Handle "once a week"
+      selectedTab = 1 // Frequency tab
+      selectedFrequency = "Weekly"
+      weeklyValue = 1
+      print("🔍 SCHEDULE SHEET INIT - Set weeklyValue: 1 (once a week)")
+
+    } else if lowercasedSchedule.contains("twice a week") {
+      // Handle "twice a week"
+      selectedTab = 1 // Frequency tab
+      selectedFrequency = "Weekly"
+      weeklyValue = 2
+      print("🔍 SCHEDULE SHEET INIT - Set weeklyValue: 2 (twice a week)")
+
+    } else if lowercasedSchedule.contains("days a week") || lowercasedSchedule.contains("day a week") {
+      // Handle frequency-based schedules like "3 days a week"
       selectedTab = 1 // Frequency tab
       selectedFrequency = "Weekly"
 
@@ -453,7 +467,21 @@ struct ScheduleBottomSheet: View {
         print("🔍 SCHEDULE SHEET INIT - Set weeklyValue: \(weeklyValue)")
       }
 
-    } else if lowercasedSchedule.contains("days a month") {
+    } else if lowercasedSchedule.contains("once a month") {
+      // Handle "once a month"
+      selectedTab = 1 // Frequency tab
+      selectedFrequency = "Monthly"
+      monthlyValue = 1
+      print("🔍 SCHEDULE SHEET INIT - Set monthlyValue: 1 (once a month)")
+
+    } else if lowercasedSchedule.contains("twice a month") {
+      // Handle "twice a month"
+      selectedTab = 1 // Frequency tab
+      selectedFrequency = "Monthly"
+      monthlyValue = 2
+      print("🔍 SCHEDULE SHEET INIT - Set monthlyValue: 2 (twice a month)")
+
+    } else if lowercasedSchedule.contains("days a month") || lowercasedSchedule.contains("day a month") {
       // Handle monthly frequency schedules like "3 days a month"
       selectedTab = 1 // Frequency tab
       selectedFrequency = "Monthly"
@@ -509,6 +537,18 @@ private func formatWeeklyFrequency(_ days: Int) -> String {
     return "everyday"
   default:
     return "\(days) days a week"
+  }
+}
+
+/// Formats monthly frequency text with proper naming
+private func formatMonthlyFrequency(_ days: Int) -> String {
+  switch days {
+  case 1:
+    return "once a month"
+  case 2:
+    return "twice a month"
+  default:
+    return "\(days) days a month"
   }
 }
 
