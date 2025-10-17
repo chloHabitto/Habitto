@@ -197,7 +197,7 @@ enum XPStyle {
 // MARK: - XPBadge
 
 struct XPBadge: View {
-  @ObservedObject var xpManager = XPManager.shared
+  var xpManager = XPManager.shared
 
   var body: some View {
     XPDisplayView(
@@ -210,7 +210,7 @@ struct XPBadge: View {
 // MARK: - DailyXPProgress
 
 struct DailyXPProgress: View {
-  @ObservedObject var xpManager = XPManager.shared
+  var xpManager = XPManager.shared
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {

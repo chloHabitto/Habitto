@@ -3,7 +3,7 @@ import SwiftUI
 // 🔬 MINIMAL TEST: Add this to your project temporarily
 
 struct TestXPSubscriptionView: View {
-  @EnvironmentObject var xpManager: XPManager
+  @Environment(XPManager.self) var xpManager
   
   var body: some View {
     let _ = print("🧪 TestXPSubscription re-render | xp:", xpManager.totalXP,
@@ -36,7 +36,7 @@ struct TestXPSubscriptionView: View {
       
       Text("If this view updates when you tap buttons,")
         .font(.caption)
-      Text("then the @EnvironmentObject subscription works!")
+      Text("then the @Observable subscription works!")
         .font(.caption)
         .foregroundColor(.green)
     }
@@ -52,6 +52,6 @@ case .more:
 
 #Preview {
   TestXPSubscriptionView()
-    .environmentObject(XPManager.shared)
+    .environment(XPManager.shared)
 }
 

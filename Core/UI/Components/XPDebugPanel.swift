@@ -168,7 +168,7 @@ struct XPDebugPanel: View {
   // MARK: Private
 
   @Environment(\.modelContext) private var modelContext
-  @ObservedObject private var xpManager = XPManager.shared
+  private var xpManager = XPManager.shared
   @State private var debugInfo = XPDebugInfo()
   @State private var isRunningDiagnostic = false
 

@@ -6,7 +6,7 @@ struct DailyCompletionSheet: View {
   // MARK: Internal
 
   @Binding var isPresented: Bool
-  @ObservedObject var xpManager: XPManager
+  var xpManager: XPManager
 
   let completedHabits: [Habit]
   let xpEarned: Int

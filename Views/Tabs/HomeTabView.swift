@@ -41,7 +41,7 @@ struct HomeTabView: View {
   @Binding var selectedDate: Date
   @Binding var selectedStatsTab: Int
   @EnvironmentObject var themeManager: ThemeManager
-  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
+  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
 
   let habits: [Habit]
   let isLoadingHabits: Bool

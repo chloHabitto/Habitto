@@ -11,39 +11,16 @@ struct MoreTabView: View {
   @EnvironmentObject var tutorialManager: TutorialManager
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var vacationManager: VacationManager
-  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
+  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
 
   var body: some View {
-    // 🔎 PROBE: Check instance and XP value
-    let _ = print("🟣 MoreTabView re-render | xp:", xpManager.totalXP,
-                  "| instance:", ObjectIdentifier(xpManager))
-    
-    // ✅ FIX: Force SwiftUI to track XP changes by reading it in a binding expression
-    let currentXP = xpManager.totalXP  // Capture in local var to force dependency tracking
-    
-    return WhiteSheetContainer(
+    WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())
       }) {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
-            // 🔎 PROBE: Raw XP display - must update instantly if subscribed
-            VStack(spacing: 8) {
-              Text("🔎 XP Live: \(currentXP)")  // Use captured var
-                .font(.headline)
-                .foregroundColor(.red)
-              Circle()
-                .fill(currentXP.isMultiple(of: 50) ? Color.green : Color.orange)
-                .frame(width: 15, height: 15)
-            }
-            .padding()
-            .background(Color.yellow.opacity(0.2))
-            .cornerRadius(8)
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .id(currentXP)  // ✅ Force view identity change when XP changes
-            
             // Trial Banner (now scrollable)
             trialBanner
               .entranceAnimation(delay: 0.0)
@@ -138,9 +115,6 @@ struct MoreTabView: View {
             authManager.signOut()
           },
           secondaryButton: .cancel())
-      }
-      .onChange(of: xpManager.totalXP) { oldValue, newValue in
-        print("🔔 MoreTabView .onChange detected XP change: \(oldValue) → \(newValue)")
       }
   }
 
@@ -448,5 +422,5 @@ struct SettingItem {
     .environmentObject(AuthenticationManager.shared)
     .environmentObject(TutorialManager())
     .environmentObject(ThemeManager.shared)
-    .environmentObject(XPManager.shared)
+    .environment(XPManager.shared)
 }

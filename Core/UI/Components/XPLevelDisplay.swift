@@ -5,7 +5,7 @@ import SwiftUI
 struct XPLevelDisplay: View {
   // MARK: Internal
 
-  @EnvironmentObject var xpManager: XPManager  // ✅ Subscribe via EnvironmentObject
+  @Environment(XPManager.self) var xpManager  // ✅ Subscribe via @Observable
 
   var body: some View {
     let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP)")  // ✅ Read from @Published property
@@ -136,7 +136,7 @@ struct XPLevelDisplay: View {
 struct XPLevelDisplayCompact: View {
   // MARK: Internal
 
-  @ObservedObject var xpManager: XPManager
+  var xpManager: XPManager
 
   var body: some View {
     HStack(spacing: 12) {
@@ -299,7 +299,7 @@ struct XPTransactionRow: View {
 #Preview {
   VStack(spacing: 20) {
     XPLevelDisplay()
-      .environmentObject(XPManager.shared)
+      .environment(XPManager.shared)
 
     XPLevelDisplayCompact(xpManager: XPManager.shared)
 
