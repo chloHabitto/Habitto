@@ -228,13 +228,20 @@ final class SwiftDataContainer: ObservableObject {
 
       logger.info("🔧 SwiftData: Creating ModelContext...")
       self.modelContext = ModelContext(modelContainer)
+      
+      // ✅ FIX #8: Disable autosave on fresh databases to prevent Persistent History issues
+      if !databaseExists {
+        modelContext.autosaveEnabled = false
+        logger.info("🔧 SwiftData: Fresh database - autosave disabled to prevent history truncation")
+      }
 
       logger.info("✅ SwiftData: Container initialized successfully")
       logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
 
-      // ✅ FIX #7: Force table creation on fresh database
+      // ✅ FIX #7 & #8: Force table creation on fresh database
       // SwiftData doesn't always auto-create tables on first fetch
       // We insert a dummy HabitData and immediately delete it to force schema creation
+      // Autosave is disabled during this process to prevent Persistent History from deleting tables
       if !databaseExists {
         do {
           logger.info("🔧 SwiftData: Fresh database - forcing table creation...")
@@ -258,9 +265,14 @@ final class SwiftDataContainer: ObservableObject {
           modelContext.delete(dummyHabit)
           try modelContext.save()
           
+          // Re-enable autosave after table creation is complete
+          modelContext.autosaveEnabled = true
           logger.info("✅ SwiftData: Tables created successfully via dummy insert/delete")
+          logger.info("✅ SwiftData: Autosave re-enabled")
         } catch {
           logger.warning("⚠️ SwiftData: Failed to force table creation: \(error.localizedDescription)")
+          // Re-enable autosave even on failure
+          modelContext.autosaveEnabled = true
           // Continue anyway - tables will be created on first real insert
         }
       }
