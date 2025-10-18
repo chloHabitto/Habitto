@@ -195,17 +195,22 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.error("🔧 Database corruption detected - falling back to UserDefaults")
         #endif
 
-        // Check if this is a corruption error that needs database reset
+        // ✅ IMPROVED: Check if this is a corruption error that needs database reset
         if errorDesc.contains("no such table") ||
            errorDesc.contains("ZHABITDATA") ||
            errorDesc.contains("ZCOMPLETIONRECORD") ||
+           errorDesc.contains("ZDAILYAWARD") ||
+           errorDesc.contains("ZUSERPROGRESSDATA") ||
            errorDesc.contains("SQLite error") ||
            errorDesc.contains("couldn't be opened") ||
            errorDesc.contains("readonly database") ||
+           errorDesc.contains("I/O error") ||
            errorDesc.contains("SwiftDataError") {
           // Set flag so database will be reset on next launch
           UserDefaults.standard.set(true, forKey: "SwiftDataCorruptionDetected")
-          logger.error("🚨 Corruption flag set - database will be reset on next launch")
+          logger.error("🚨 CORRUPTION DETECTED during save - App will restart on next launch")
+          logger.error("   Error pattern: \(errorDesc)")
+          logger.warning("⚠️ App will crash and restart automatically to fix database")
         }
 
         // Fallback: Save to UserDefaults as emergency backup
@@ -280,10 +285,29 @@ final class SwiftDataStorage: HabitStorageProtocol {
       return habits
 
     } catch {
-      logger.error("Failed to load habits: \(error.localizedDescription)")
+      let errorDesc = error.localizedDescription
+      logger.error("Failed to load habits: \(errorDesc)")
+      
+      // ✅ FIX #3: Detect database corruption and set flag for automatic recovery
+      // Check for common corruption error patterns
+      if errorDesc.contains("no such table") || 
+         errorDesc.contains("ZHABITDATA") ||
+         errorDesc.contains("ZCOMPLETIONRECORD") ||
+         errorDesc.contains("ZDAILYAWARD") ||
+         errorDesc.contains("ZUSERPROGRESSDATA") ||
+         errorDesc.contains("SQLite error") ||
+         errorDesc.contains("couldn't be opened") ||
+         errorDesc.contains("readonly database") ||
+         errorDesc.contains("I/O error") {
+        // Set corruption flag so database will be reset on next launch
+        UserDefaults.standard.set(true, forKey: "SwiftDataCorruptionDetected")
+        logger.error("🚨 Database corruption detected during load - flag set for automatic reset on next launch")
+        logger.error("   Corruption pattern: \(errorDesc)")
+      }
+      
       throw DataError.storage(StorageError(
         type: .unknown,
-        message: "Failed to load habits: \(error.localizedDescription)",
+        message: "Failed to load habits: \(errorDesc)",
         underlyingError: error))
     }
   }
