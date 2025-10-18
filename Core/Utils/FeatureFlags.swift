@@ -43,21 +43,19 @@ enum FeatureFlags {
   /// When false: Uses local storage only
   /// When true: Uses dual-write to both local and Firestore
   static var enableFirestoreSync: Bool { 
-    // Use Remote Config with fallback to local config
+    // Use Remote Config with proper defaults
     let remoteConfig = RemoteConfig.remoteConfig()
     let remoteValue = remoteConfig.configValue(forKey: "enableFirestoreSync")
     
-    // If Remote Config hasn't fetched yet, use local config as fallback
-    if remoteValue.source == .static {
-      // Fallback to local JSON config
-      if let localValue = RemoteConfigService.shared.enableFirestoreSync as Bool? {
-        return localValue
-      }
-      // Ultimate fallback: true (safe default for migration)
-      return true
-    }
+    // Remote Config returns the value from defaults if not fetched yet
+    // The defaults are set from RemoteConfigDefaults.plist
+    let value = remoteValue.boolValue
     
-    return remoteValue.boolValue
+    #if DEBUG
+    print("🎛️ FeatureFlags.enableFirestoreSync = \(value) (source: \(remoteValue.source.rawValue))")
+    #endif
+    
+    return value
   }
 
   /// Enables backfill job to migrate existing local data to Firestore
