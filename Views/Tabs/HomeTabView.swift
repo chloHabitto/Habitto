@@ -939,11 +939,6 @@ struct HomeTabView: View {
     let targetDate = DateUtils.startOfDay(for: date)
     let todayStart = DateUtils.startOfDay(for: today)
 
-    // If the target date is in the past, don't show the habit
-    if targetDate < todayStart {
-      return false
-    }
-
     // Extract days per month from schedule
     let lowerSchedule = habit.schedule.lowercased()
     let daysPerMonth: Int
@@ -972,11 +967,27 @@ struct HomeTabView: View {
       daysPerMonth = days
     }
 
+    // ✅ FIX: Check if habit was completed on this specific date first
+    // This ensures completed habits are considered "scheduled" for that date
+    let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
+    let dateKey = Habit.dateKey(for: targetDate)
+    let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
+    
+    if wasCompletedOnThisDate {
+      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Was completed on \(dateKey) → true")
+      return true
+    }
+
+    // If the target date is in the past (and not completed), don't show the habit
+    if targetDate < todayStart {
+      return false
+    }
+
     // Calculate completions still needed this month
     let completionsThisMonth = countCompletionsForCurrentMonth(habit: habit, currentDate: targetDate)
     let completionsNeeded = daysPerMonth - completionsThisMonth
     
-    // If already completed the monthly goal, don't show
+    // If already completed the monthly goal, don't show for future dates
     if completionsNeeded <= 0 {
       print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
       return false
