@@ -25,6 +25,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     FirebaseApp.configure()
     print("✅ Firebase Core configured")
     
+    // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
+    print("🎛️ Initializing Firebase Remote Config defaults...")
+    let remoteConfig = RemoteConfig.remoteConfig()
+    let settings = RemoteConfigSettings()
+    settings.minimumFetchInterval = 3600 // 1 hour for production, 0 for dev
+    remoteConfig.configSettings = settings
+    
+    // Set default values from plist SYNCHRONOUSLY
+    remoteConfig.setDefaults(fromPlist: "RemoteConfigDefaults")
+    print("✅ Remote Config defaults loaded from plist")
+    
+    // Verify the value is set
+    let firestoreSyncValue = remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
+    print("🔍 Remote Config: enableFirestoreSync = \(firestoreSyncValue)")
+    
     // Configure other Firebase services asynchronously
     Task.detached { @MainActor in
       FirebaseConfiguration.configureFirestore()
@@ -61,20 +76,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
      Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
      print("✅ Crashlytics initialized")
     
-    // Initialize Remote Config with defaults
-     print("🎛️ Initializing Firebase Remote Config...")
-     let remoteConfig = RemoteConfig.remoteConfig()
-     let settings = RemoteConfigSettings()
-     settings.minimumFetchInterval = 3600 // 1 hour for production, 0 for dev
-     remoteConfig.configSettings = settings
-     
-     // Set default values from plist
-     remoteConfig.setDefaults(fromPlist: "RemoteConfigDefaults")
-     print("✅ Remote Config initialized with defaults from plist")
-     
-     // Fetch and activate remote values (async)
+    // Fetch and activate remote values (async) - defaults already loaded above
      Task {
        do {
+         let remoteConfig = RemoteConfig.remoteConfig()
          let status = try await remoteConfig.fetchAndActivate()
          if status == .successFetchedFromRemote {
            print("✅ Remote Config: Fetched new values from Firebase")
