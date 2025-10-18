@@ -346,12 +346,29 @@ struct Habit: Identifiable, Codable, Equatable {
   mutating func markCompleted(for date: Date, at timestamp: Date = Date()) {
     let dateKey = Self.dateKey(for: date)
 
-    // Mark as completed in the new boolean system
-    completionStatus[dateKey] = true
-
     // Keep the old system for backward compatibility and migration
     let currentProgress = completionHistory[dateKey] ?? 0
     completionHistory[dateKey] = currentProgress + 1
+
+    // ✅ FIX: Only mark as completed in boolean system when GOAL is actually met
+    if habitType == .breaking {
+      // For breaking habits, completed when actual usage is at or below target
+      let newProgress = completionHistory[dateKey] ?? 0
+      completionStatus[dateKey] = newProgress <= target
+      print("🔍 COMPLETION FIX - Breaking Habit '\(name)' marked | Progress: \(newProgress) | Target: \(target) | Completed: \(newProgress <= target)")
+    } else {
+      // For formation habits, completed when progress meets or exceeds goal
+      let newProgress = completionHistory[dateKey] ?? 0
+      if let goalAmount = parseGoalAmount(from: goal) {
+        let isComplete = newProgress >= goalAmount
+        completionStatus[dateKey] = isComplete
+        print("🔍 COMPLETION FIX - Formation Habit '\(name)' marked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      } else {
+        // Fallback: if can't parse goal, use progress > 0
+        completionStatus[dateKey] = newProgress > 0
+        print("🔍 COMPLETION FIX - Formation Habit '\(name)' marked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
+      }
+    }
 
     // Store the actual completion timestamp
     if completionTimestamps[dateKey] == nil {
@@ -386,12 +403,29 @@ struct Habit: Identifiable, Codable, Equatable {
   mutating func markIncomplete(for date: Date) {
     let dateKey = Self.dateKey(for: date)
 
-    // Mark as incomplete in the new boolean system
-    completionStatus[dateKey] = false
-
     // Keep the old system for backward compatibility and migration
     let currentProgress = completionHistory[dateKey] ?? 0
     completionHistory[dateKey] = max(0, currentProgress - 1)
+
+    // ✅ FIX: Update completion status based on whether GOAL is still met after decrement
+    if habitType == .breaking {
+      // For breaking habits, completed when actual usage is at or below target
+      let newProgress = completionHistory[dateKey] ?? 0
+      completionStatus[dateKey] = newProgress <= target
+      print("🔍 COMPLETION FIX - Breaking Habit '\(name)' unmarked | Progress: \(newProgress) | Target: \(target) | Completed: \(newProgress <= target)")
+    } else {
+      // For formation habits, completed when progress meets or exceeds goal
+      let newProgress = completionHistory[dateKey] ?? 0
+      if let goalAmount = parseGoalAmount(from: goal) {
+        let isComplete = newProgress >= goalAmount
+        completionStatus[dateKey] = isComplete
+        print("🔍 COMPLETION FIX - Formation Habit '\(name)' unmarked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      } else {
+        // Fallback: if can't parse goal, use progress > 0
+        completionStatus[dateKey] = newProgress > 0
+        print("🔍 COMPLETION FIX - Formation Habit '\(name)' unmarked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
+      }
+    }
 
     // Remove the most recent timestamp if there are any
     if completionTimestamps[dateKey]?.isEmpty == false {
