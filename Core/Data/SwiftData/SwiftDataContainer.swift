@@ -56,7 +56,7 @@ final class SwiftDataContainer: ObservableObject {
         
         // Only do expensive corruption check if not already flagged
         if !forceReset {
-          // Quick corruption check: try to open and query the database
+          // Deep corruption check: verify all critical tables exist and are accessible
           do {
             // Create a minimal test to see if database is accessible  
             let testContainer = try ModelContainer(for: schema, configurations: [
@@ -64,17 +64,46 @@ final class SwiftDataContainer: ObservableObject {
             ])
             let testContext = ModelContext(testContainer)
             
-            // Try to count habits - if this fails, database is corrupted
-            let habitRequest = FetchDescriptor<HabitData>()
-            _ = try testContext.fetchCount(habitRequest)
+            logger.info("🔧 SwiftData: Performing deep integrity check on all tables...")
             
-            logger.info("✅ SwiftData: Database integrity check passed")
+            // ✅ IMPROVED: Test ALL critical tables by fetching actual data
+            // fetchCount() returns 0 for missing tables instead of throwing an error
+            // We need to actually fetch data to detect "no such table" errors
+            let tests: [(String, () throws -> Void)] = [
+              ("HabitData", { 
+                _ = try testContext.fetch(FetchDescriptor<HabitData>()) 
+              }),
+              ("CompletionRecord", { 
+                _ = try testContext.fetch(FetchDescriptor<CompletionRecord>()) 
+              }),
+              ("DailyAward", { 
+                _ = try testContext.fetch(FetchDescriptor<DailyAward>()) 
+              }),
+              ("UserProgressData", { 
+                _ = try testContext.fetch(FetchDescriptor<UserProgressData>()) 
+              })
+            ]
+            
+            for (tableName, test) in tests {
+              do {
+                try test()
+                logger.info("  ✅ Table \(tableName) verified")
+              } catch {
+                // This WILL catch "no such table: ZHABITDATA" errors
+                let errorDesc = error.localizedDescription
+                logger.error("  ❌ Table \(tableName) is corrupted: \(errorDesc)")
+                throw error  // Re-throw to trigger database reset
+              }
+            }
+            
+            logger.info("✅ SwiftData: Deep integrity check passed - all tables healthy")
           } catch {
             let errorDesc = error.localizedDescription
-            logger.error("❌ SwiftData: Database corruption detected: \(errorDesc)")
+            logger.error("❌ SwiftData: Database corruption detected during deep integrity check")
+            logger.error("   Error details: \(errorDesc)")
             
             // ANY error during health check means corruption - don't be selective
-            logger.error("🔧 SwiftData: Database needs reset - ANY health check failure is treated as corruption")
+            logger.error("🔧 SwiftData: Database needs reset - health check failure detected")
             needsReset = true
           }
         }
