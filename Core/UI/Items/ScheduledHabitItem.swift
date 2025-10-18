@@ -195,6 +195,13 @@ struct ScheduledHabitItem: View {
       // Don't override local updates that are in progress
       guard !isLocalUpdateInProgress else { return }
 
+      // ✅ FIX: If user just made a change, wait longer before accepting external updates
+      if let lastUpdate = lastUserUpdateTimestamp,
+         Date().timeIntervalSince(lastUpdate) < 1.0 {
+        print("🔍 RACE FIX: Ignoring completionHistory update within 1s of user action")
+        return
+      }
+
       let newProgress = habit.getProgress(for: selectedDate)
       withAnimation(.easeInOut(duration: 0.2)) {
         currentProgress = newProgress
@@ -203,6 +210,13 @@ struct ScheduledHabitItem: View {
     .onChange(of: habit) { _, newHabit in
       // Don't override local updates that are in progress
       guard !isLocalUpdateInProgress else { return }
+
+      // ✅ FIX: If user just made a change, wait longer before accepting external updates
+      if let lastUpdate = lastUserUpdateTimestamp,
+         Date().timeIntervalSince(lastUpdate) < 1.0 {
+        print("🔍 RACE FIX: Ignoring habit update within 1s of user action")
+        return
+      }
 
       // Sync currentProgress when the habit object itself changes
       let newProgress = newHabit.getProgress(for: selectedDate)
@@ -266,6 +280,7 @@ struct ScheduledHabitItem: View {
   @State private var lastInteractionTime = Date.distantPast // ✅ FIX: Debounce rapid interactions
   @State private var isLocalUpdateInProgress =
     false // ✅ FIX: Prevent onChange listeners from overriding local updates
+  @State private var lastUserUpdateTimestamp: Date? = nil // ✅ FIX: Track when user last made a change
 
   /// Computed property for background color to simplify complex expression
   private var backgroundColor: Color {
@@ -443,8 +458,11 @@ struct ScheduledHabitItem: View {
       // Then save to data model
       onProgressChange?(habit, selectedDate, 0)
 
-      // Reset flag after a short delay
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+      // Record timestamp of this user action
+      lastUserUpdateTimestamp = Date()
+
+      // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         isLocalUpdateInProgress = false
       }
 
@@ -475,8 +493,11 @@ struct ScheduledHabitItem: View {
       // Save completion data immediately
       onProgressChange?(habit, selectedDate, goalAmount)
 
-      // Reset flag after a short delay
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+      // Record timestamp of this user action
+      lastUserUpdateTimestamp = Date()
+
+      // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         isLocalUpdateInProgress = false
       }
 
@@ -518,8 +539,11 @@ struct ScheduledHabitItem: View {
       progressCallback(habit, selectedDate, newProgress)
     }
 
-    // Reset flag after a short delay
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+    // Record timestamp of this user action
+    lastUserUpdateTimestamp = Date()
+
+    // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       isLocalUpdateInProgress = false
     }
 
@@ -560,8 +584,11 @@ struct ScheduledHabitItem: View {
       progressCallback(habit, selectedDate, newProgress)
     }
 
-    // Reset update flags after a short delay
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+    // Record timestamp of this user action
+    lastUserUpdateTimestamp = Date()
+
+    // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       isUpdatingProgress = false
       isLocalUpdateInProgress = false
     }
@@ -607,8 +634,11 @@ struct ScheduledHabitItem: View {
       progressCallback(habit, selectedDate, newProgress)
     }
 
-    // Reset update flags after a short delay
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+    // Record timestamp of this user action
+    lastUserUpdateTimestamp = Date()
+
+    // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       isUpdatingProgress = false
       isLocalUpdateInProgress = false
     }

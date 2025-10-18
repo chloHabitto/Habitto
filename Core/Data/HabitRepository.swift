@@ -709,8 +709,18 @@ class HabitRepository: ObservableObject {
       let oldProgress = habits[index].completionHistory[dateKey] ?? 0
       habits[index].completionHistory[dateKey] = progress
 
-      // Update completion status based on progress
-      habits[index].completionStatus[dateKey] = progress > 0
+      // ✅ FIX: Update completion status based on whether GOAL is met, not just progress > 0
+      if habits[index].habitType == .breaking {
+        // For breaking habits, completed when actual usage is at or below target
+        habits[index].completionStatus[dateKey] = progress <= habits[index].target
+        print("🔍 COMPLETION FIX - Breaking Habit '\(habits[index].name)' | Progress: \(progress) | Target: \(habits[index].target) | Completed: \(progress <= habits[index].target)")
+      } else {
+        // For formation habits, completed when progress meets or exceeds goal
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habits[index].goal)
+        let isComplete = progress >= goalAmount
+        habits[index].completionStatus[dateKey] = isComplete
+        print("🔍 COMPLETION FIX - Formation Habit '\(habits[index].name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      }
 
       // Handle timestamp recording for time-based completion analysis
       let currentTimestamp = Date()
