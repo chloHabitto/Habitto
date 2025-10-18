@@ -489,10 +489,14 @@ struct Habit: Identifiable, Codable, Equatable {
     var currentDate = today
     var debugInfo: [String] = []
 
+    // ✅ FIX #20: Prevent infinite loop for new habits by checking against start date
+    let habitStartDate = calendar.startOfDay(for: startDate)
+
     // Count consecutive completed days backwards from today
     // Skip vacation days only during active vacation periods
-    while isCompleted(for: currentDate) ||
-      (vacationManager.isActive && vacationManager.isVacationDay(currentDate))
+    while (isCompleted(for: currentDate) ||
+      (vacationManager.isActive && vacationManager.isVacationDay(currentDate))) &&
+      currentDate >= habitStartDate  // ✅ FIX #20: Stop at habit start date
     {
       let dateKey = Self.dateKey(for: currentDate)
       let isCompleted = isCompleted(for: currentDate)
