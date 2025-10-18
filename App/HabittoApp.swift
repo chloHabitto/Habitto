@@ -232,8 +232,7 @@ struct HabittoApp: App {
               .onChange(of: authManager.authState) { oldState, newState in
                 handleAuthStateChange(
                   oldState: oldState,
-                  newState: newState,
-                  modelContext: modelContext)
+                  newState: newState)
               }
               .registerPopups(id: .shared) { config in config
                 .vertical { $0
@@ -264,9 +263,11 @@ struct HabittoApp: App {
             habitRepository.shouldShowMigrationView = false
 
             // Run XP data migration
-            let context = modelContext
+            // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
+            // Using @Environment(\.modelContext) was creating a second container
             Task.detached {
-              await XPDataMigration.shared.checkAndRunMigration(modelContext: context)
+              await XPDataMigration.shared.checkAndRunMigration(
+                modelContext: SwiftDataContainer.shared.modelContext)
             }
 
             // NOTE: Data migrations are handled automatically in HabitStore.loadHabits()
@@ -310,7 +311,8 @@ struct HabittoApp: App {
 
   // MARK: Private
 
-  @Environment(\.modelContext) private var modelContext
+  // ✅ FIX #11: Removed @Environment(\.modelContext) - we use SwiftDataContainer.shared.modelContext directly
+  // This prevents SwiftUI from creating a second container with Persistent History enabled
   @StateObject private var notificationManager = NotificationManager.shared
   // @StateObject private var coreDataManager = CoreDataManager.shared  // Disabled - using
   // SwiftData only
@@ -422,8 +424,7 @@ private func setupCoreData() {
 
 private func handleAuthStateChange(
   oldState: AuthenticationState,
-  newState: AuthenticationState,
-  modelContext: ModelContext)
+  newState: AuthenticationState)
 {
   print("🎯 AUTH: Auth state changed from \(oldState) to \(newState)")
 
@@ -431,7 +432,9 @@ private func handleAuthStateChange(
   case .authenticated(let user):
     print("🎯 AUTH: User signed in: \(user.email ?? "no email")")
     // Load user-specific XP from SwiftData
+    // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
     Task.detached { @MainActor in
+      let modelContext = SwiftDataContainer.shared.modelContext
       XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
     }
 

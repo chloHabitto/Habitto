@@ -976,18 +976,12 @@ class HabitRepository: ObservableObject {
   private func loadUserXPFromSwiftData(userId: String) async {
     print("🎯 XP LOAD: Loading XP from SwiftData for userId: \(userId)")
 
-    do {
-      let container = try ModelContainer(for: DailyAward.self)
-      let modelContext = ModelContext(container)
-
-      // Load XP using XPManager's method
-      await MainActor.run {
-        XPManager.shared.loadUserXPFromSwiftData(userId: userId, modelContext: modelContext)
-      }
-
+    // ✅ FIX #10: Use SwiftDataContainer's ModelContext instead of creating a new container
+    // Creating a new container was causing Persistent History to delete tables
+    await MainActor.run {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      XPManager.shared.loadUserXPFromSwiftData(userId: userId, modelContext: modelContext)
       print("✅ XP LOAD: User XP loaded successfully")
-    } catch {
-      print("❌ XP LOAD: Failed to load user XP: \(error)")
     }
   }
 }
