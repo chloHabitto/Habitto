@@ -216,6 +216,9 @@ struct HabittoApp: App {
           ZStack {
             HomeView()
               .preferredColorScheme(.light) // Force light mode only
+              // ✅ CRITICAL: Use SwiftDataContainer's ModelContainer to ensure all code uses the same database
+              // This prevents XPDataMigration from creating a separate container with Persistent History enabled
+              .modelContainer(SwiftDataContainer.shared.modelContainer)
               // .environment(\.managedObjectContext, coreDataManager.context)  // Disabled - using
               // SwiftData only
               // .environmentObject(coreDataManager)  // Disabled - using SwiftData only
