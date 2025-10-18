@@ -41,6 +41,7 @@ struct WhiteSheetContainer<Content: View>: View {
 
       // Content area with custom background
       content
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
     }
     .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
