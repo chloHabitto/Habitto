@@ -195,7 +195,8 @@ struct HomeTabView: View {
   @State private var debugRevokeCalls = 0
   #endif
 
-  @Environment(\.modelContext) private var modelContext
+  // ✅ FIX #12: Use SwiftDataContainer's ModelContext instead of @Environment
+  // This prevents parallel database operations from destroying tables
   @StateObject private var eventBus = EventBus.shared
   @StateObject private var awardService: DailyAwardService
 
@@ -1156,6 +1157,8 @@ struct HomeTabView: View {
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         
         do {
+          // ✅ FIX #12: Use SwiftDataContainer's context
+          let modelContext = SwiftDataContainer.shared.modelContext
           let existingAwards = try modelContext.fetch(request)
           for award in existingAwards {
             modelContext.delete(award)
@@ -1215,6 +1218,8 @@ struct HomeTabView: View {
         
         do {
           // Still save DailyAward for history tracking
+          // ✅ FIX #12: Use SwiftDataContainer's context
+          let modelContext = SwiftDataContainer.shared.modelContext
           let dailyAward = DailyAward(
             userId: userId,
             dateKey: dateKey,
