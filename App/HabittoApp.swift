@@ -263,9 +263,9 @@ struct HabittoApp: App {
             habitRepository.shouldShowMigrationView = false
 
             // Run XP data migration
-            // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
-            // Using @Environment(\.modelContext) was creating a second container
-            Task.detached {
+            // ✅ FIX #17: Use Task (MainActor) instead of Task.detached to avoid Sendable warning
+            // ModelContext is not Sendable and must stay on MainActor
+            Task { @MainActor in
               await XPDataMigration.shared.checkAndRunMigration(
                 modelContext: SwiftDataContainer.shared.modelContext)
             }
