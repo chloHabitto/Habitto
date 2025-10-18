@@ -951,6 +951,12 @@ class StreakDataCalculator {
         "🔍 WEEKDAY SCHEDULE DEBUG - 'weekly frequency' schedule | After start date: \(isAfterStart)")
       return isAfterStart
 
+    case let s where s.contains("once a month") || s.contains("twice a month") || s.contains("day a month") || s.contains("days a month"):
+      // Monthly frequency schedules like "5 days a month"
+      // Use the helper function to determine if habit should show
+      print("🔍 WEEKDAY SCHEDULE DEBUG - Monthly frequency schedule detected")
+      return shouldShowHabitWithMonthlyFrequency(habit: habit, date: targetDate)
+
     default:
       // For any unrecognized schedule format, don't show the habit (safer default)
       print("🔍 WEEKDAY SCHEDULE DEBUG - Unrecognized schedule format: '\(schedule)'")
@@ -1048,6 +1054,97 @@ class StreakDataCalculator {
     let range = match.range(at: 1)
     let numberString = (schedule as NSString).substring(with: range)
     return Int(numberString)
+  }
+
+  // MARK: - Monthly Frequency Helpers
+
+  private static func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
+    let calendar = Calendar.current
+    let today = Date()
+    let targetDate = DateUtils.startOfDay(for: date)
+    let todayStart = DateUtils.startOfDay(for: today)
+
+    // Don't show habits in the past
+    if targetDate < todayStart {
+      return false
+    }
+
+    // Parse the schedule to extract days per month
+    let lowerSchedule = habit.schedule.lowercased()
+    let daysPerMonth: Int
+    
+    if lowerSchedule.contains("once a month") {
+      daysPerMonth = 1
+    } else if lowerSchedule.contains("twice a month") {
+      daysPerMonth = 2
+    } else {
+      // Parse "X days a month" format
+      let pattern = #"(\d+) days? a month"#
+      guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+            let match = regex.firstMatch(
+              in: habit.schedule,
+              options: [],
+              range: NSRange(location: 0, length: habit.schedule.count)) else
+      {
+        return false
+      }
+
+      let range = match.range(at: 1)
+      let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
+      guard let days = Int(daysPerMonthString) else {
+        return false
+      }
+      daysPerMonth = days
+    }
+
+    // Count completions in the current month
+    let completionsThisMonth = countCompletionsForCurrentMonth(habit: habit, currentDate: targetDate)
+    let completionsNeeded = daysPerMonth - completionsThisMonth
+    
+    // If goal already reached, don't show
+    if completionsNeeded <= 0 {
+      print("🔍 STREAK CALCULATOR - Monthly habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
+      return false
+    }
+    
+    // Calculate days remaining in month from today
+    let lastDayOfMonth = calendar.dateInterval(of: .month, for: todayStart)?.end ?? todayStart
+    let lastDayStart = DateUtils.startOfDay(for: lastDayOfMonth.addingTimeInterval(-1))
+    let daysRemainingFromToday = DateUtils.daysBetween(todayStart, lastDayStart) + 1
+    
+    // Show for min(completions_needed, days_remaining) days starting from today
+    let daysToShow = min(completionsNeeded, daysRemainingFromToday)
+    
+    // Check if target date is within the window
+    let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
+    let shouldShow = daysUntilTarget >= 0 && daysUntilTarget < daysToShow
+    
+    print("🔍 STREAK CALCULATOR - Monthly habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
+    
+    return shouldShow
+  }
+
+  private static func countCompletionsForCurrentMonth(habit: Habit, currentDate: Date) -> Int {
+    let calendar = Calendar.current
+    let month = calendar.component(.month, from: currentDate)
+    let year = calendar.component(.year, from: currentDate)
+    
+    var count = 0
+    
+    for (dateKey, progress) in habit.completionHistory {
+      let components = dateKey.split(separator: "-")
+      guard components.count == 3,
+            let keyYear = Int(components[0]),
+            let keyMonth = Int(components[1]) else {
+        continue
+      }
+      
+      if keyYear == year && keyMonth == month && progress > 0 {
+        count += 1
+      }
+    }
+    
+    return count
   }
 }
 
