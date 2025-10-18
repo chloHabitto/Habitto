@@ -61,16 +61,18 @@ final class DualWriteStorage: HabitStorageProtocol {
       throw error
     }
     
-    // Secondary write (local storage) - non-blocking
-    Task.detached { [weak self] in
-      do {
-        try await self?.secondaryStorage.saveHabits(habits, immediate: immediate)
-        self?.incrementCounter("dualwrite.update.secondary_ok")
-        print("✅ DualWriteStorage: Secondary write successful")
-      } catch {
-        self?.incrementCounter("dualwrite.secondary_err")
-        print("❌ DualWriteStorage: Secondary write failed: \(error)")
-      }
+    // ✅ FIX #22: Secondary write (local storage) - NOW BLOCKING for data safety
+    // Changed from Task.detached (fire-and-forget) to await (blocking)
+    // This ensures local data is saved successfully before continuing
+    do {
+      try await secondaryStorage.saveHabits(habits, immediate: immediate)
+      incrementCounter("dualwrite.update.secondary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) write successful")
+    } catch {
+      incrementCounter("dualwrite.secondary_err")
+      dualWriteLogger.error("❌ CRITICAL: Secondary (local) write failed: \(error)")
+      // Don't throw - primary (cloud) write succeeded, so don't fail the entire operation
+      // But log it as critical since local data is our backup
     }
   }
   
@@ -156,16 +158,15 @@ final class DualWriteStorage: HabitStorageProtocol {
       throw error
     }
     
-    // Secondary write (local storage) - non-blocking
-    Task.detached { [weak self] in
-      do {
-        try await self?.secondaryStorage.saveHabit(habit, immediate: immediate)
-        self?.incrementCounter("dualwrite.create.secondary_ok")
-        print("✅ DualWriteStorage: Secondary write successful")
-      } catch {
-        self?.incrementCounter("dualwrite.secondary_err")
-        print("❌ DualWriteStorage: Secondary write failed: \(error)")
-      }
+    // ✅ FIX #22: Secondary write (local storage) - NOW BLOCKING for data safety
+    do {
+      try await secondaryStorage.saveHabit(habit, immediate: immediate)
+      incrementCounter("dualwrite.create.secondary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) write successful")
+    } catch {
+      incrementCounter("dualwrite.secondary_err")
+      dualWriteLogger.error("❌ CRITICAL: Secondary (local) write failed: \(error)")
+      // Don't throw - primary (cloud) write succeeded
     }
   }
   
@@ -182,16 +183,15 @@ final class DualWriteStorage: HabitStorageProtocol {
       throw error
     }
     
-    // Secondary write (local storage) - non-blocking
-    Task.detached { [weak self] in
-      do {
-        try await self?.secondaryStorage.deleteHabit(id: id)
-        self?.incrementCounter("dualwrite.delete.secondary_ok")
-        print("✅ DualWriteStorage: Secondary delete successful")
-      } catch {
-        self?.incrementCounter("dualwrite.secondary_err")
-        print("❌ DualWriteStorage: Secondary delete failed: \(error)")
-      }
+    // ✅ FIX #22: Secondary delete (local storage) - NOW BLOCKING for data safety
+    do {
+      try await secondaryStorage.deleteHabit(id: id)
+      incrementCounter("dualwrite.delete.secondary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) delete successful")
+    } catch {
+      incrementCounter("dualwrite.secondary_err")
+      dualWriteLogger.error("❌ CRITICAL: Secondary (local) delete failed: \(error)")
+      // Don't throw - primary (cloud) delete succeeded
     }
   }
   
@@ -213,16 +213,15 @@ final class DualWriteStorage: HabitStorageProtocol {
       throw error
     }
     
-    // Secondary write (local storage) - non-blocking
-    Task.detached { [weak self] in
-      do {
-        try await self?.secondaryStorage.clearAllHabits()
-        self?.incrementCounter("dualwrite.delete.secondary_ok")
-        print("✅ DualWriteStorage: Secondary clear successful")
-      } catch {
-        self?.incrementCounter("dualwrite.secondary_err")
-        print("❌ DualWriteStorage: Secondary clear failed: \(error)")
-      }
+    // ✅ FIX #22: Secondary clear (local storage) - NOW BLOCKING for data safety
+    do {
+      try await secondaryStorage.clearAllHabits()
+      incrementCounter("dualwrite.delete.secondary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) clear successful")
+    } catch {
+      incrementCounter("dualwrite.secondary_err")
+      dualWriteLogger.error("❌ CRITICAL: Secondary (local) clear failed: \(error)")
+      // Don't throw - primary (cloud) clear succeeded
     }
   }
   
