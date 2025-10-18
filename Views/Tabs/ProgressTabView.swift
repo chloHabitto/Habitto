@@ -1926,8 +1926,12 @@ struct ProgressTabView: View {
 
   private func getScheduledHabitsCount() -> Int {
     if let selectedHabit {
+      // ✅ FIX: Fetch the latest version of the habit to avoid stale data race conditions
+      // This ensures we check against the most up-to-date completion history
+      let latestHabit = habitRepository.habits.first(where: { $0.id == selectedHabit.id }) ?? selectedHabit
+      
       // For individual habit, check if it's scheduled for the selected date
-      return StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate)
+      return StreakDataCalculator.shouldShowHabitOnDate(latestHabit, date: selectedProgressDate)
         ? 1
         : 0
     } else {
@@ -1941,12 +1945,15 @@ struct ProgressTabView: View {
 
   private func getCompletedHabitsCount() -> Int {
     if let selectedHabit {
+      // ✅ FIX: Fetch the latest version of the habit to avoid stale data race conditions
+      let latestHabit = habitRepository.habits.first(where: { $0.id == selectedHabit.id }) ?? selectedHabit
+      
       // For individual habit, check if it's completed
-      if !StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate) {
+      if !StreakDataCalculator.shouldShowHabitOnDate(latestHabit, date: selectedProgressDate) {
         return 0 // Not scheduled, so not completed
       }
-      let progress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
-      let goalAmount = parseGoalAmount(from: selectedHabit.goal)
+      let progress = habitRepository.getProgress(for: latestHabit, date: selectedProgressDate)
+      let goalAmount = parseGoalAmount(from: latestHabit.goal)
       return progress >= goalAmount ? 1 : 0
     } else {
       // For all habits, count completed habits
@@ -1964,12 +1971,15 @@ struct ProgressTabView: View {
 
   private func getProgressPercentage() -> Double {
     if let selectedHabit {
+      // ✅ FIX: Fetch the latest version of the habit to avoid stale data race conditions
+      let latestHabit = habitRepository.habits.first(where: { $0.id == selectedHabit.id }) ?? selectedHabit
+      
       // For individual habit, calculate its progress percentage
-      if !StreakDataCalculator.shouldShowHabitOnDate(selectedHabit, date: selectedProgressDate) {
+      if !StreakDataCalculator.shouldShowHabitOnDate(latestHabit, date: selectedProgressDate) {
         return 0.0 // Not scheduled, so no progress
       }
-      let progress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
-      let goalAmount = parseGoalAmount(from: selectedHabit.goal)
+      let progress = habitRepository.getProgress(for: latestHabit, date: selectedProgressDate)
+      let goalAmount = parseGoalAmount(from: latestHabit.goal)
       if goalAmount == 0 {
         return 0.0
       }
