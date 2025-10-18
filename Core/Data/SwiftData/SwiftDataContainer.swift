@@ -39,10 +39,20 @@ final class SwiftDataContainer: ObservableObject {
       
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
-      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration
+      
+      // ✅ FIX #2: One-time database reset to fix any existing schema corruption
+      // This ensures all users get a fresh, healthy database after the deep integrity check is deployed
+      let oneTimeSchemaFixKey = "SwiftData_Schema_Corruption_Fix_v1"
+      let needsOneTimeFix = !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
+      
+      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration || needsOneTimeFix
       
       if needsCloudKitMigration {
         logger.warning("🔧 SwiftData: CloudKit migration needed - will recreate database without CloudKit")
+      }
+      
+      if needsOneTimeFix {
+        logger.warning("🔧 SwiftData: One-time schema fix needed - will recreate database with proper schema")
       }
       
       if forceReset {
@@ -145,6 +155,12 @@ final class SwiftDataContainer: ObservableObject {
               logger.info("✅ SwiftData: CloudKit migration flag set")
             }
             
+            // Mark one-time schema fix as complete
+            if needsOneTimeFix {
+              UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
+              logger.info("✅ SwiftData: One-time schema fix flag set")
+            }
+            
           } catch {
             logger.error("❌ SwiftData: Failed to remove files: \(error)")
             // Continue anyway - ModelContainer will try to create fresh database
@@ -159,6 +175,12 @@ final class SwiftDataContainer: ObservableObject {
         if needsCloudKitMigration {
           UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
           logger.info("✅ SwiftData: CloudKit migration not needed (fresh install)")
+        }
+        
+        // Mark one-time schema fix as complete if no database exists
+        if needsOneTimeFix {
+          UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
+          logger.info("✅ SwiftData: One-time schema fix not needed (fresh install)")
         }
       }
 
