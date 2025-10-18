@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>enableFirestoreSync</key>
-	<false/>
+	<true/>
 	<key>enableBackfill</key>
-	<false/>
+	<true/>
 	<key>enableLegacyReadFallback</key>
 	<true/>
 	<key>isMigrationEnabled</key>
