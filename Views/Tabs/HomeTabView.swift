@@ -722,8 +722,11 @@ struct HomeTabView: View {
         let shouldShow = weekdays.contains(weekday)
         return shouldShow
       }
-      // For any unrecognized schedule format, don't show the habit (safer default)
-      return false
+      
+      // ✅ CRITICAL FIX: For any unrecognized schedule format, SHOW the habit (don't hide saved habits)
+      // Previously returned false, which caused successfully saved habits to disappear from UI
+      print("⚠️ shouldShowHabitOnDate - '\(habit.name)' has unrecognized schedule '\(habit.schedule)' - showing by default")
+      return true  // ✅ Changed from false to true - better to show than hide
     }
   }
 

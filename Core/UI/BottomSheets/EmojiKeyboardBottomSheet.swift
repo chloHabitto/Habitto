@@ -34,7 +34,10 @@ struct EmojiKeyboardBottomSheet: View {
               isTextFieldFocused = focused
             },
             onTextFieldCreated: { textField in
-              textFieldRef = textField
+              // ✅ FIX #16: Defer state modification to avoid "Modifying state during view update" warning
+              DispatchQueue.main.async {
+                textFieldRef = textField
+              }
             })
             .frame(height: 50)
             .background(Color.surface2)
