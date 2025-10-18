@@ -650,7 +650,14 @@ final actor HabitStore {
   /// - Otherwise: returns SwiftData storage only
   private var activeStorage: any HabitStorageProtocol {
     get {
-      if FeatureFlags.enableFirestoreSync {
+      // ✅ CRITICAL FIX: Force Firestore sync to TRUE
+      // RemoteConfig access from actor context was causing threading issues
+      // Hardcode TRUE until RemoteConfig is made actor-safe
+      let enableFirestore = true  // FeatureFlags.enableFirestoreSync
+      
+      logger.info("🔍 HabitStore.activeStorage: enableFirestore = \(enableFirestore) (FORCED TRUE)")
+      
+      if enableFirestore {
         logger.info("🔥 HabitStore: Firestore sync ENABLED - using DualWriteStorage")
         return DualWriteStorage(
           primaryStorage: FirestoreService.shared,
