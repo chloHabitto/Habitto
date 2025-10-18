@@ -102,11 +102,23 @@ final actor HabitStore {
 
     // Validate habits before saving
     let validationResult = validationService.validateHabits(cappedHabits)
+    
+    // ✅ FIX #2: Add explicit debug logging for validation results
+    print("🔍 VALIDATION: isValid=\(validationResult.isValid)")
     if !validationResult.isValid {
+      print("🔍 VALIDATION ERRORS:")
+      for error in validationResult.errors {
+        print("   - \(error.field): \(error.message) (severity: \(error.severity))")
+      }
       logger.warning("Validation failed with \(validationResult.errors.count) errors")
       for error in validationResult.errors {
         logger.warning("  - \(error.field): \(error.message)")
       }
+    } else {
+      print("✅ VALIDATION: All \(cappedHabits.count) habits passed validation")
+    }
+    
+    if !validationResult.isValid {
 
       // If there are critical errors, don't save
       let criticalErrors = validationResult.errors.filter { $0.severity == .critical }

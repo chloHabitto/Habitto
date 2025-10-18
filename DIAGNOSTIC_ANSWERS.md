@@ -430,10 +430,34 @@ The completion check logs repeat because SwiftUI body re-evaluation calls `habit
 
 **Your habit is NOT being saved because:**
 1. ✅ Storage is configured correctly (DualWriteStorage active)
-2. ❌ Validation is rejecting the schedule format `"Every Monday, Wednesday, Friday"`
+2. ❌ Validation is rejecting the schedule format `"Every Monday, Wednesday, Friday"` → **✅ FIXED (see below)**
 3. ❓ Firestore might be failing silently (check console)
 
 **The year 742 bug** has already been fixed in the code (line 187-190 in ViewExtensions.swift).
 
 **The infinite loop** is a performance issue from SwiftUI re-renders, not a data corruption issue.
+
+---
+
+## ✅ FIXES APPLIED
+
+### FIX #1: Schedule Validation (CRITICAL) ✅
+**File:** `Core/Validation/DataValidation.swift` (lines 473-493)
+**Status:** APPLIED
+
+Added support for comma-separated day schedules in `isValidSchedule()` function.
+Now validates: "Every Monday, Wednesday, Friday", "Monday, Wednesday", "Every Monday and Wednesday", etc.
+
+### FIX #2: Validation Debug Logging ✅
+**File:** `Core/Data/Repository/HabitStore.swift` (lines 106-119)
+**Status:** APPLIED
+
+Added explicit console logging to show validation results:
+- Success: `✅ VALIDATION: All X habits passed validation`
+- Failure: `🔍 VALIDATION ERRORS: ...`
+
+### Testing Instructions:
+See `SCHEDULE_VALIDATION_FIX_APPLIED.md` for complete testing guide.
+
+**Next Step:** Clean build → Delete app → Rebuild → Test habit creation
 
