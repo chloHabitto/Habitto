@@ -161,12 +161,13 @@ final class SwiftDataContainer: ObservableObject {
               logger.info("✅ SwiftData: One-time schema fix flag set")
             }
             
-            // ✅ FIX #5: Force app restart to ensure clean database creation
-            // We cannot create a fresh ModelContainer in the same initialization cycle
-            // because SwiftData won't properly create the table schemas
-            logger.warning("🔄 SwiftData: App must restart to complete database reset")
-            logger.warning("🔄 SwiftData: Please relaunch the app")
-            fatalError("Database corrupted and cleaned. App will restart to create fresh database.")
+            // ✅ FIX #5 (REVISED): Set flag to skip database creation THIS session
+            // The app will use UserDefaults fallback for this session only
+            // On next natural app launch, a fresh database will be created
+            UserDefaults.standard.set(true, forKey: "SwiftData_Skip_Creation_This_Session")
+            logger.warning("⚠️ SwiftData: Database reset complete, skipping creation this session")
+            logger.warning("⚠️ SwiftData: App will use local storage fallback until next launch")
+            logger.info("✅ SwiftData: Fresh database will be created on next app launch")
             
           } catch {
             logger.error("❌ SwiftData: Failed to remove files: \(error)")
@@ -189,6 +190,26 @@ final class SwiftDataContainer: ObservableObject {
           UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
           logger.info("✅ SwiftData: One-time schema fix not needed (fresh install)")
         }
+      }
+
+      // ✅ FIX #5: Check if we should skip database creation this session
+      let shouldSkipCreation = UserDefaults.standard.bool(forKey: "SwiftData_Skip_Creation_This_Session")
+      if shouldSkipCreation {
+        logger.warning("⚠️ SwiftData: Skipping database creation this session (corruption was just cleaned)")
+        logger.warning("⚠️ SwiftData: App will use UserDefaults fallback for data storage")
+        logger.info("✅ SwiftData: Fresh database will be created on next natural app launch")
+        
+        // Clear the flag so next launch will create the database
+        UserDefaults.standard.removeObject(forKey: "SwiftData_Skip_Creation_This_Session")
+        
+        // Create a dummy in-memory container to satisfy the non-optional property
+        // This container won't actually be used - all operations will fall back to UserDefaults
+        let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        self.modelContainer = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+        self.modelContext = ModelContext(modelContainer)
+        
+        logger.info("✅ SwiftData: Created temporary in-memory container (fallback mode)")
+        return // Skip normal database creation
       }
 
       // ✅ CRITICAL: Explicitly disable CloudKit auto-sync

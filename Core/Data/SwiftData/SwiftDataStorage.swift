@@ -208,9 +208,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
            errorDesc.contains("SwiftDataError") {
           // Set flag so database will be reset on next launch
           UserDefaults.standard.set(true, forKey: "SwiftDataCorruptionDetected")
-          logger.error("🚨 CORRUPTION DETECTED during save - App will restart on next launch")
+          logger.error("🚨 CORRUPTION DETECTED during save - Database will be fixed on next launch")
           logger.error("   Error pattern: \(errorDesc)")
-          logger.warning("⚠️ App will crash and restart automatically to fix database")
+          logger.info("✅ App will continue using UserDefaults fallback (data is safe)")
         }
 
         // Fallback: Save to UserDefaults as emergency backup
