@@ -200,8 +200,8 @@ class HabitInstanceLogic {
   }
 
   static func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
-    // For now, implement a simple monthly frequency
-    // This can be enhanced later with more sophisticated logic
+    // ✅ CORRECT LOGIC: "5 days a month" means show for 5 days, distributed across remaining days
+    // Example: On Oct 28 with 4 days left, show for min(5 needed, 4 remaining) = 4 days
     let calendar = Calendar.current
     let today = Date()
     let targetDate = DateUtils.startOfDay(for: date)
@@ -213,25 +213,82 @@ class HabitInstanceLogic {
     }
 
     // Extract days per month from schedule
-    let pattern = #"(\d+) days a month"#
-    guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-          let match = regex.firstMatch(
-            in: habit.schedule,
-            options: [],
-            range: NSRange(location: 0, length: habit.schedule.count)) else
-    {
-      return false
+    let lowerSchedule = habit.schedule.lowercased()
+    let daysPerMonth: Int
+    
+    if lowerSchedule.contains("once a month") {
+      daysPerMonth = 1
+    } else if lowerSchedule.contains("twice a month") {
+      daysPerMonth = 2
+    } else {
+      // Extract number from "X day(s) a month"
+      let pattern = #"(\d+) days? a month"#
+      guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+            let match = regex.firstMatch(
+              in: habit.schedule,
+              options: [],
+              range: NSRange(location: 0, length: habit.schedule.count)) else
+      {
+        return false
+      }
+
+      let range = match.range(at: 1)
+      let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
+      guard let days = Int(daysPerMonthString) else {
+        return false
+      }
+      daysPerMonth = days
     }
 
-    let range = match.range(at: 1)
-    let daysPerMonthString = (habit.schedule as NSString).substring(with: range)
-    guard let daysPerMonth = Int(daysPerMonthString) else {
+    // Calculate completions still needed this month
+    let completionsThisMonth = countCompletionsForCurrentMonth(habit: habit, currentDate: targetDate)
+    let completionsNeeded = daysPerMonth - completionsThisMonth
+    
+    // If already completed the monthly goal, don't show
+    if completionsNeeded <= 0 {
       return false
     }
-
-    // For monthly frequency, show the habit on the first N days of each month
-    let dayOfMonth = calendar.component(.day, from: targetDate)
-    return dayOfMonth <= daysPerMonth
+    
+    // Calculate days remaining in month from today
+    let lastDayOfMonth = calendar.dateInterval(of: .month, for: todayStart)?.end ?? todayStart
+    let lastDayStart = DateUtils.startOfDay(for: lastDayOfMonth.addingTimeInterval(-1)) // -1 to get last day
+    let daysRemainingFromToday = DateUtils.daysBetween(todayStart, lastDayStart) + 1
+    
+    // Show for minimum of (completions needed, days remaining)
+    let daysToShow = min(completionsNeeded, daysRemainingFromToday)
+    
+    // Check if targetDate is within the next daysToShow days from today
+    let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
+    return daysUntilTarget >= 0 && daysUntilTarget < daysToShow
+  }
+  
+  /// Helper: Count how many times a habit was completed in the current month
+  /// NOTE: This is a static helper. The habit parameter should already be the latest
+  /// version from the caller's habits array to avoid stale data issues
+  static func countCompletionsForCurrentMonth(habit: Habit, currentDate: Date) -> Int {
+    let calendar = Calendar.current
+    let month = calendar.component(.month, from: currentDate)
+    let year = calendar.component(.year, from: currentDate)
+    
+    var count = 0
+    
+    // Iterate through completion history for this month
+    for (dateKey, progress) in habit.completionHistory {
+      // Parse dateKey format "yyyy-MM-dd"
+      let components = dateKey.split(separator: "-")
+      guard components.count == 3,
+            let keyYear = Int(components[0]),
+            let keyMonth = Int(components[1]) else {
+        continue
+      }
+      
+      // Check if completion is in the same month and year
+      if keyYear == year && keyMonth == month && progress > 0 {
+        count += 1
+      }
+    }
+    
+    return count
   }
 
   // MARK: - Habit Instance Management

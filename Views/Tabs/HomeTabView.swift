@@ -220,8 +220,25 @@ struct HomeTabView: View {
       }
 
       let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-      print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)'): shouldShow = \(shouldShow)")
-      return shouldShow
+      
+      // ✅ FIX: Use latest habit data to check completion status (prevent stale data)
+      // The habit parameter might be from a closure capture, so fetch fresh data
+      let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
+      
+      // ✅ FIX: Also show if habit was already completed on this date
+      // This ensures completed habits stay visible (just marked as done)
+      let dateKey = Habit.dateKey(for: selectedDate)
+      let progress = latestHabit.completionHistory[dateKey] ?? 0
+      let wasCompletedOnThisDate = progress > 0
+      
+      let shouldInclude = shouldShow || wasCompletedOnThisDate
+      print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
+      print("   📊 shouldShow = \(shouldShow)")
+      print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
+      print("   📍 dateKey = \(dateKey)")
+      print("   🎯 included = \(shouldInclude)")
+      print("   📝 completionHistory keys: \(latestHabit.completionHistory.keys.sorted())")
+      return shouldInclude
     }
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
@@ -257,7 +274,16 @@ struct HomeTabView: View {
       }
 
       let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-      return shouldShow
+      
+      // ✅ FIX: Use latest habit data to check completion status (prevent stale data)
+      let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
+      
+      // ✅ FIX: Also show if habit was already completed on this date
+      // This ensures completed habits stay visible for stats calculation
+      let dateKey = Habit.dateKey(for: selectedDate)
+      let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
+      
+      return shouldShow || wasCompletedOnThisDate
     }
 
     return filteredHabits
@@ -906,8 +932,8 @@ struct HomeTabView: View {
   }
 
   private func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
-    // For now, implement a simple monthly frequency
-    // This can be enhanced later with more sophisticated logic
+    // ✅ CORRECT LOGIC: "5 days a month" means show for 5 days, distributed across remaining days
+    // Example: On Oct 28 with 4 days left, show for min(5 needed, 4 remaining) = 4 days
     let calendar = Calendar.current
     let today = Date()
     let targetDate = DateUtils.startOfDay(for: date)
@@ -946,9 +972,63 @@ struct HomeTabView: View {
       daysPerMonth = days
     }
 
-    // For monthly frequency, show the habit on the first N days of each month
-    let dayOfMonth = calendar.component(.day, from: targetDate)
-    return dayOfMonth <= daysPerMonth
+    // Calculate completions still needed this month
+    let completionsThisMonth = countCompletionsForCurrentMonth(habit: habit, currentDate: targetDate)
+    let completionsNeeded = daysPerMonth - completionsThisMonth
+    
+    // If already completed the monthly goal, don't show
+    if completionsNeeded <= 0 {
+      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
+      return false
+    }
+    
+    // Calculate days remaining in month from today
+    let lastDayOfMonth = calendar.dateInterval(of: .month, for: todayStart)?.end ?? todayStart
+    let lastDayStart = DateUtils.startOfDay(for: lastDayOfMonth.addingTimeInterval(-1)) // -1 to get last day
+    let daysRemainingFromToday = DateUtils.daysBetween(todayStart, lastDayStart) + 1
+    
+    // Show for minimum of (completions needed, days remaining)
+    let daysToShow = min(completionsNeeded, daysRemainingFromToday)
+    
+    // Check if targetDate is within the next daysToShow days from today
+    let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
+    let shouldShow = daysUntilTarget >= 0 && daysUntilTarget < daysToShow
+    
+    print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
+    
+    return shouldShow
+  }
+  
+  /// Helper: Count how many times a habit was completed in the current month
+  /// ✅ FIX: Use fresh habit data from habits array to prevent stale data issues
+  private func countCompletionsForCurrentMonth(habit: Habit, currentDate: Date) -> Int {
+    let calendar = Calendar.current
+    let month = calendar.component(.month, from: currentDate)
+    let year = calendar.component(.year, from: currentDate)
+    
+    // ✅ FIX: Get the latest habit data from the habits array to avoid stale data
+    // This prevents the race condition where completionHistory is outdated
+    let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
+    
+    var count = 0
+    
+    // Iterate through completion history for this month
+    for (dateKey, progress) in latestHabit.completionHistory {
+      // Parse dateKey format "yyyy-MM-dd"
+      let components = dateKey.split(separator: "-")
+      guard components.count == 3,
+            let keyYear = Int(components[0]),
+            let keyMonth = Int(components[1]) else {
+        continue
+      }
+      
+      // Check if completion is in the same month and year
+      if keyYear == year && keyMonth == month && progress > 0 {
+        count += 1
+      }
+    }
+    
+    return count
   }
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
@@ -1058,7 +1138,15 @@ struct HomeTabView: View {
         return false
       }
 
-      return shouldShowHabitOnDate(habit, date: selectedDate)
+      let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
+      
+      // ✅ FIX: Also include habits that were completed on this date
+      // This ensures completed habits stay visible in the sorted list
+      let dateKey = Habit.dateKey(for: selectedDate)
+      let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
+      let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
+      
+      return shouldShow || wasCompletedOnThisDate
     }
 
     // Sort: Incomplete first by originalOrder, then completed by completedAt then originalOrder
