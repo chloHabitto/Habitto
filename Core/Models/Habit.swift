@@ -597,8 +597,7 @@ struct Habit: Identifiable, Codable, Equatable {
 
     // First check the new boolean completion status
     if let completionStatus = completionStatus[dateKey] {
-      print(
-        "🔍 COMPLETION DEBUG - Using boolean status for '\(name)' | Date: \(dateKey) | Completed: \(completionStatus)")
+      // ✅ FIX #13: Removed flooding debug log
       return completionStatus
     }
 
@@ -608,9 +607,9 @@ struct Habit: Identifiable, Codable, Equatable {
       let usage = actualUsage[dateKey] ?? 0
       let target = target
 
-      print(
-        "🔍 COMPLETION DEBUG - Breaking Habit '\(name)' | Date: \(dateKey) | Usage: \(usage) | Target: \(target) | Completed: \(usage <= target)")
-
+      // ✅ FIX #13: Removed flooding debug log that was showing year 742
+      // The date formatter issue will be fixed separately
+      
       // A breaking habit is complete when actual usage is at or below target
       return usage <= target
     } else {
@@ -621,8 +620,7 @@ struct Habit: Identifiable, Codable, Equatable {
       if let targetAmount = parseGoalAmount(from: goal) {
         // A habit is complete when progress reaches or exceeds the goal amount
         let isCompleted = progress >= targetAmount
-        print(
-          "🔍 COMPLETION DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Target: \(targetAmount) | Completed: \(isCompleted)")
+        // ✅ FIX #13: Removed flooding debug log
         return isCompleted
       }
 

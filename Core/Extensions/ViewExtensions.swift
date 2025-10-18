@@ -184,6 +184,10 @@ enum DateUtils {
   private static let dateKeyFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd"
+    // ✅ FIX #14: Set timezone and calendar to prevent year 742 bug
+    formatter.calendar = Calendar(identifier: .gregorian)
+    formatter.timeZone = TimeZone.current  // ✅ FIX #15: Corrected typo (timeZone not timezone)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
     return formatter
   }()
 
