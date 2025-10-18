@@ -300,6 +300,124 @@ class HabitRepository: ObservableObject {
     }
   }
 
+  /// Debug function to analyze user data distribution
+  func debugUserStats() async {
+    print("\n" + String(repeating: "=", count: 60))
+    print("📊 USER STATISTICS DEBUG REPORT")
+    print(String(repeating: "=", count: 60) + "\n")
+    
+    // 1. Current authentication state
+    let currentUserId = await CurrentUser().id
+    let isGuest = await CurrentUser().isGuest
+    let currentEmail = await CurrentUser().email
+    
+    print("🔐 Current Authentication State:")
+    print("  - User ID: \(currentUserId.isEmpty ? "(guest)" : currentUserId)")
+    print("  - Is Guest: \(isGuest)")
+    print("  - Email: \(currentEmail ?? "N/A")")
+    print()
+    
+    // 2. Load ALL habits from SwiftData (bypassing user filter)
+    do {
+        let container = SwiftDataContainer.shared.modelContainer
+        let context = container.mainContext
+        
+        // Fetch ALL HabitData without filtering
+        let allDescriptor = FetchDescriptor<HabitData>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        let allHabitData = try context.fetch(allDescriptor)
+        
+        // Separate by user type
+        let guestHabits = allHabitData.filter { $0.userId.isEmpty || $0.userId == "" }
+        let authenticatedHabits = allHabitData.filter { !$0.userId.isEmpty && $0.userId != "" }
+        
+        // Get unique user IDs
+        let uniqueUserIds = Set(authenticatedHabits.map { $0.userId })
+        
+        print("📊 SwiftData Analysis:")
+        print("  - Total habits in database: \(allHabitData.count)")
+        print("  - Guest habits (userId=\"\"): \(guestHabits.count)")
+        print("  - Authenticated habits: \(authenticatedHabits.count)")
+        print("  - Unique authenticated users: \(uniqueUserIds.count)")
+        print()
+        
+        // 3. Show guest habit details if any exist
+        if !guestHabits.isEmpty {
+            print("⚠️  GUEST HABITS DETECTED:")
+            for (index, habitData) in guestHabits.prefix(10).enumerated() {
+                let completionCount = habitData.completionHistory.count
+                print("  [\(index + 1)] \(habitData.name)")
+                print("      - Created: \(habitData.createdAt.formatted())")
+                print("      - Completions: \(completionCount)")
+            }
+            if guestHabits.count > 10 {
+                print("  ... and \(guestHabits.count - 10) more")
+            }
+            print()
+        }
+        
+        // 4. Show authenticated user breakdown
+        if !uniqueUserIds.isEmpty {
+            print("👥 AUTHENTICATED USERS:")
+            for userId in uniqueUserIds {
+                let userHabits = authenticatedHabits.filter { $0.userId == userId }
+                let isCurrent = userId == currentUserId
+                print("  - User: \(userId.prefix(8))... \(isCurrent ? "(CURRENT)" : "")")
+                print("    Habits: \(userHabits.count)")
+            }
+            print()
+        }
+        
+        // 5. Check for orphaned data
+        let currentUserHabits = allHabitData.filter { $0.userId == currentUserId }
+        print("🎯 Current User Data:")
+        print("  - Visible habits (published): \(habits.count)")
+        print("  - Habits in SwiftData: \(currentUserHabits.count)")
+        
+        if habits.count != currentUserHabits.count {
+            print("  ⚠️  MISMATCH: Published count doesn't match SwiftData!")
+        }
+        print()
+        
+        // 6. Migration risk assessment
+        print("🚨 RISK ASSESSMENT:")
+        if guestHabits.count > 0 && !isGuest {
+            print("  ⚠️  HIGH RISK: Guest habits exist but user is authenticated!")
+            print("     These habits are ORPHANED and invisible to the user.")
+            print("     User may have lost \(guestHabits.count) habits when they signed in.")
+        } else if guestHabits.count > 0 && isGuest {
+            print("  ⚠️  MEDIUM RISK: User has \(guestHabits.count) guest habits.")
+            print("     These will become orphaned if user signs in without proper migration.")
+        } else if guestHabits.count == 0 && !isGuest {
+            print("  ✅ LOW RISK: No guest habits, user is authenticated.")
+        } else {
+            print("  ✅ LOW RISK: Fresh installation or no data.")
+        }
+        print()
+        
+        // 7. Actionable recommendations
+        print("💡 RECOMMENDATIONS:")
+        if guestHabits.count > 0 && !isGuest {
+            print("  1. User has orphaned guest data - consider migration")
+            print("  2. Run data recovery to restore these habits")
+        } else if guestHabits.count > 0 && isGuest {
+            print("  1. Fix guest migration before user signs in")
+            print("  2. Implement proper data migration flow")
+        } else {
+            print("  1. No immediate action needed")
+        }
+        
+    } catch {
+        print("❌ Error analyzing user data: \(error)")
+        print("   \(error.localizedDescription)")
+    }
+    
+    print("\n" + String(repeating: "=", count: 60))
+    print("END OF DEBUG REPORT")
+    print(String(repeating: "=", count: 60) + "\n")
+  }
+
   // MARK: - Load Habits
 
   func loadHabits(force: Bool = false) async {

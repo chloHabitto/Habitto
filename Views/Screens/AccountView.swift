@@ -44,6 +44,27 @@ struct AccountView: View {
                 .cornerRadius(16)
                 .padding(.horizontal, 20)
 
+                // Developer Tools Section (DEBUG only)
+                #if DEBUG
+                VStack(spacing: 0) {
+                  AccountOptionRow(
+                    icon: "ant.circle.fill",
+                    title: "Debug User Statistics",
+                    subtitle: "View database and user state analysis",
+                    hasChevron: true,
+                    iconColor: .orange)
+                  {
+                    Task {
+                      await HabitRepository.shared.debugUserStats()
+                      showingDebugAlert = true
+                    }
+                  }
+                }
+                .background(Color.surface)
+                .cornerRadius(16)
+                .padding(.horizontal, 20)
+                #endif
+
                 Spacer(minLength: 40)
               }
               .padding(.bottom, 20)
@@ -134,6 +155,11 @@ struct AccountView: View {
     } message: {
       Text("Are you sure you want to sign out?")
     }
+    .alert("Debug Report Generated", isPresented: $showingDebugAlert) {
+      Button("OK", role: .cancel) { }
+    } message: {
+      Text("Check the Xcode console to see the detailed user statistics report.")
+    }
   }
 
   // MARK: Private
@@ -146,6 +172,7 @@ struct AccountView: View {
   @State private var showingPersonalInformation = false
   @State private var showingSignOutAlert = false
   @State private var showingDeleteAccountConfirmation = false
+  @State private var showingDebugAlert = false
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
