@@ -470,6 +470,28 @@ class HabitValidator: DataValidator {
       }
     }
     
+    // ✅ FIX #1: Support comma-separated days like "Every Monday, Wednesday, Friday"
+    if schedule.contains(",") {
+      let validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+      // Split by comma and/or "and"
+      let components = schedule.components(separatedBy: CharacterSet(charactersIn: ","))
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+        .flatMap { $0.components(separatedBy: " and ") }
+        .map { $0.trimmingCharacters(in: .whitespaces) }
+      
+      // Check if at least one valid day is present
+      let hasDays = components.contains(where: { component in
+        validDays.contains(where: { day in 
+          component.lowercased().contains(day.lowercased())
+        })
+      })
+      
+      if hasDays {
+        print("✅ SCHEDULE VALIDATION: Comma-separated days detected and validated: '\(schedule)'")
+        return true
+      }
+    }
+    
     return false
   }
 
