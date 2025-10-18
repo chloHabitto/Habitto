@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 import SwiftData
+import SwiftUI
 
 // MARK: - SwiftData Container Manager
 
@@ -230,6 +231,39 @@ final class SwiftDataContainer: ObservableObject {
 
       logger.info("✅ SwiftData: Container initialized successfully")
       logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
+
+      // ✅ FIX #7: Force table creation on fresh database
+      // SwiftData doesn't always auto-create tables on first fetch
+      // We insert a dummy HabitData and immediately delete it to force schema creation
+      if !databaseExists {
+        do {
+          logger.info("🔧 SwiftData: Fresh database - forcing table creation...")
+          
+          let dummyHabit = HabitData(
+            id: UUID(),
+            userId: "_dummy_",
+            name: "_dummy_",
+            habitDescription: "",
+            icon: "",
+            color: .clear,
+            habitType: .formation,
+            schedule: "everyday",
+            goal: "1 time",
+            reminder: "",
+            startDate: Date(),
+            endDate: nil)
+          
+          modelContext.insert(dummyHabit)
+          try modelContext.save()
+          modelContext.delete(dummyHabit)
+          try modelContext.save()
+          
+          logger.info("✅ SwiftData: Tables created successfully via dummy insert/delete")
+        } catch {
+          logger.warning("⚠️ SwiftData: Failed to force table creation: \(error.localizedDescription)")
+          // Continue anyway - tables will be created on first real insert
+        }
+      }
 
       // Test if we can access the CompletionRecord table
       let testRequest = FetchDescriptor<CompletionRecord>()
