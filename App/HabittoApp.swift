@@ -35,6 +35,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         print("✅ User authenticated with uid: \(uid)")
         
+        // CRITICAL: Migrate guest data to authenticated user first
+        print("🔄 Checking for guest data to migrate...")
+        do {
+          try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(to: uid)
+          print("✅ Guest data migration check complete")
+        } catch {
+          print("⚠️ Guest data migration failed: \(error.localizedDescription)")
+          print("   Data may appear missing until this is resolved")
+        }
+        
         // Initialize backfill job if Firestore sync is enabled
         if FeatureFlags.enableFirestoreSync {
           print("🔄 Starting backfill job for Firestore migration...")
