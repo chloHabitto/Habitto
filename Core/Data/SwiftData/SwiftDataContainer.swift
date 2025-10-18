@@ -33,17 +33,22 @@ final class SwiftDataContainer: ObservableObject {
       let databaseDir = databaseURL.deletingLastPathComponent()
       let databaseName = databaseURL.deletingPathExtension().lastPathComponent
       
+      // ✅ CRITICAL: Check if database file exists FIRST
+      let databaseExists = FileManager.default.fileExists(atPath: databaseURL.path)
+      
       // ✅ ONE-TIME FIX: Force delete database if it has CloudKit enabled (migration to CloudKit-disabled mode)
+      // BUT ONLY if a database actually exists (don't trigger on fresh installs)
       let cloudKitMigrationKey = "SwiftData_CloudKit_Disabled_Migration_v1"
-      let needsCloudKitMigration = !UserDefaults.standard.bool(forKey: cloudKitMigrationKey)
+      let needsCloudKitMigration = databaseExists && !UserDefaults.standard.bool(forKey: cloudKitMigrationKey)
       
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
       
       // ✅ FIX #2: One-time database reset to fix any existing schema corruption
       // This ensures all users get a fresh, healthy database after the deep integrity check is deployed
+      // BUT ONLY if a database actually exists (don't trigger on fresh installs)
       let oneTimeSchemaFixKey = "SwiftData_Schema_Corruption_Fix_v1"
-      let needsOneTimeFix = !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
+      let needsOneTimeFix = databaseExists && !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
       
       let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration || needsOneTimeFix
       
@@ -59,7 +64,7 @@ final class SwiftDataContainer: ObservableObject {
         logger.warning("🔧 SwiftData: Corruption flag set - forcing database reset")
       }
       
-      if FileManager.default.fileExists(atPath: databaseURL.path) {
+      if databaseExists {
         logger.info("🔧 SwiftData: Database exists, checking integrity...")
         
         var needsReset = forceReset
@@ -175,21 +180,16 @@ final class SwiftDataContainer: ObservableObject {
           }
         }
       } else {
-        logger.info("🔧 SwiftData: No existing database, creating new one")
+        logger.info("🔧 SwiftData: No existing database, creating new one (fresh install)")
+        
         // Clear corruption flag if no database exists
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
         
-        // Mark CloudKit migration as complete if no database exists
-        if needsCloudKitMigration {
-          UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
-          logger.info("✅ SwiftData: CloudKit migration not needed (fresh install)")
-        }
-        
-        // Mark one-time schema fix as complete if no database exists
-        if needsOneTimeFix {
-          UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
-          logger.info("✅ SwiftData: One-time schema fix not needed (fresh install)")
-        }
+        // Mark migration flags as complete immediately on fresh install
+        // These should never trigger on fresh installs anyway (due to databaseExists check above)
+        UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
+        UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
+        logger.info("✅ SwiftData: Fresh install - marking all migration flags as complete")
       }
 
       // ✅ FIX #5: Check if we should skip database creation this session
