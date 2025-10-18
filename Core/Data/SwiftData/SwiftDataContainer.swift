@@ -144,7 +144,7 @@ final class SwiftDataContainer: ObservableObject {
             }
             
             logger.info("✅ SwiftData: All corrupted files removed")
-            logger.info("✅ SwiftData: Fresh database will be created")
+            logger.info("✅ SwiftData: Fresh database will be created on next launch")
             
             // Clear the corruption flag - we've fixed it
             UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
@@ -160,6 +160,13 @@ final class SwiftDataContainer: ObservableObject {
               UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
               logger.info("✅ SwiftData: One-time schema fix flag set")
             }
+            
+            // ✅ FIX #5: Force app restart to ensure clean database creation
+            // We cannot create a fresh ModelContainer in the same initialization cycle
+            // because SwiftData won't properly create the table schemas
+            logger.warning("🔄 SwiftData: App must restart to complete database reset")
+            logger.warning("🔄 SwiftData: Please relaunch the app")
+            fatalError("Database corrupted and cleaned. App will restart to create fresh database.")
             
           } catch {
             logger.error("❌ SwiftData: Failed to remove files: \(error)")
