@@ -1064,11 +1064,6 @@ class StreakDataCalculator {
     let targetDate = DateUtils.startOfDay(for: date)
     let todayStart = DateUtils.startOfDay(for: today)
 
-    // Don't show habits in the past
-    if targetDate < todayStart {
-      return false
-    }
-
     // Parse the schedule to extract days per month
     let lowerSchedule = habit.schedule.lowercased()
     let daysPerMonth: Int
@@ -1097,11 +1092,26 @@ class StreakDataCalculator {
       daysPerMonth = days
     }
 
+    // Check if habit was completed on this specific date
+    // This is important for Progress tab to show past completions correctly
+    let dateKey = Habit.dateKey(for: targetDate)
+    let wasCompletedOnThisDate = (habit.completionHistory[dateKey] ?? 0) > 0
+    
+    if wasCompletedOnThisDate {
+      print("🔍 STREAK CALCULATOR - Monthly habit '\(habit.name)': Was completed on \(dateKey) → true")
+      return true
+    }
+
+    // Don't show habits in the past (unless completed, checked above)
+    if targetDate < todayStart {
+      return false
+    }
+
     // Count completions in the current month
     let completionsThisMonth = countCompletionsForCurrentMonth(habit: habit, currentDate: targetDate)
     let completionsNeeded = daysPerMonth - completionsThisMonth
     
-    // If goal already reached, don't show
+    // If goal already reached, don't show for future dates
     if completionsNeeded <= 0 {
       print("🔍 STREAK CALCULATOR - Monthly habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
       return false
