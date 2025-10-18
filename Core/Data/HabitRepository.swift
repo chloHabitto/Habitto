@@ -208,18 +208,37 @@ class HabitRepository: ObservableObject {
   func fixRepeatedMigrationIssue() {
     print("🚨 HabitRepository: Applying emergency fix for repeated migration screen...")
 
-    // Clear stale guest data
-    guestDataMigration.clearStaleGuestData()
-
-    // Force mark migration as completed
-    guestDataMigration.forceMarkMigrationCompleted()
-
-    // Hide migration view
-    shouldShowMigrationView = false
-
-    // Reload habits
-    Task {
-      await loadHabits(force: true)
+    // ✅ FIX #23: Actually migrate guest data instead of clearing it
+    if guestDataMigration.hasGuestData() {
+      print("⚠️ HabitRepository: Guest data detected during emergency fix - attempting migration...")
+      Task {
+        do {
+          try await guestDataMigration.migrateGuestData()
+          print("✅ HabitRepository: Guest data migrated successfully during emergency fix")
+        } catch {
+          print("❌ HabitRepository: Guest migration failed, clearing stale data as fallback: \(error)")
+          // Only clear if migration actually fails
+          guestDataMigration.clearStaleGuestData()
+        }
+        
+        // Hide migration view and reload
+        await MainActor.run {
+          shouldShowMigrationView = false
+        }
+        await loadHabits(force: true)
+      }
+    } else {
+      print("ℹ️ HabitRepository: No guest data to migrate")
+      // Force mark migration as completed
+      guestDataMigration.forceMarkMigrationCompleted()
+      
+      // Hide migration view
+      shouldShowMigrationView = false
+      
+      // Reload habits
+      Task {
+        await loadHabits(force: true)
+      }
     }
 
     print("✅ HabitRepository: Emergency fix applied - migration screen should no longer appear")
@@ -869,15 +888,26 @@ class HabitRepository: ObservableObject {
       print(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
-      // DISABLED: Migration screen completely disabled per user request
-      print("ℹ️ HabitRepository: Migration screen disabled - skipping migration check")
-      shouldShowMigrationView = false
-
-      // Clear any stale guest data that might be causing issues
-      guestDataMigration.clearStaleGuestData()
-
-      // Force mark migration as completed to prevent future prompts
-      guestDataMigration.forceMarkMigrationCompleted()
+      // ✅ FIX #23: Properly migrate guest data instead of clearing it
+      if guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData() {
+        print("🔄 HabitRepository: Guest data detected - starting automatic migration...")
+        shouldShowMigrationView = false // Don't show UI, migrate automatically
+        
+        do {
+          try await guestDataMigration.migrateGuestData()
+          print("✅ HabitRepository: Guest data successfully migrated for user \(user.uid)")
+        } catch {
+          print("❌ HabitRepository: Guest data migration failed: \(error.localizedDescription)")
+          print("   Guest data has been preserved. User can retry migration later.")
+          // Don't clear data on failure - let user retry or manually migrate
+        }
+      } else {
+        print("ℹ️ HabitRepository: No guest data to migrate or already migrated")
+        // Mark migration as complete if no guest data exists
+        if !guestDataMigration.hasGuestData() {
+          guestDataMigration.forceMarkMigrationCompleted()
+        }
+      }
 
       // Load user data
       await loadHabits(force: true)

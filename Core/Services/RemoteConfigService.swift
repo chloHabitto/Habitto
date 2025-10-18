@@ -23,8 +23,8 @@ class RemoteConfigService: ObservableObject {
   @Published var minAppVersion = "1.0.0"
   @Published var maxFailureRate = 0.15
   @Published var enableCloudKitSync = false
-  @Published var enableFirestoreSync = false
-  @Published var enableBackfill = false
+  @Published var enableFirestoreSync = true  // ✅ FIX #21: Default to enabled
+  @Published var enableBackfill = true  // ✅ FIX #21: Default to enabled
   @Published var enableLegacyReadFallback = true
   @Published var showNewProgressUI = false
   @Published var enableAdvancedAnalytics = false
@@ -60,8 +60,8 @@ class RemoteConfigService: ObservableObject {
       "minAppVersion": "1.0.0" as NSObject,
       "maxFailureRate": 0.15 as NSObject,
       "enableCloudKitSync": false as NSObject,
-      "enableFirestoreSync": false as NSObject,
-      "enableBackfill": false as NSObject,
+      "enableFirestoreSync": true as NSObject,  // ✅ FIX #21: Enable Firestore sync for cloud backup
+      "enableBackfill": true as NSObject,  // ✅ FIX #21: Enable backfill to migrate existing data
       "enableLegacyReadFallback": true as NSObject,
       "showNewProgressUI": false as NSObject,
       "enableAdvancedAnalytics": false as NSObject,
