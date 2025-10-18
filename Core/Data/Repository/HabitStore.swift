@@ -18,6 +18,9 @@ final actor HabitStore {
   // MARK: Internal
 
   static let shared = HabitStore()
+  
+  // ✅ FIX #18: Track cleanup per app session to prevent excessive runs
+  private static var hasRunCleanupThisSession = false
 
   // MARK: - Load Habits
 
@@ -31,15 +34,19 @@ final actor HabitStore {
       try await migrationMgr.executeMigrations()
     }
 
+    // ✅ FIX #18: Only run cleanup once per app session to improve performance
     // Check if data retention cleanup is needed
-    let retentionMgr = await retentionManager
-    if retentionMgr.currentPolicy.autoCleanupEnabled {
-      // Handle the result of the try? operation
-      let cleanupResult = try? await retentionMgr.performCleanup()
-      if cleanupResult != nil {
-        logger.info("Data retention cleanup completed")
-      } else {
-        logger.warning("Data retention cleanup failed")
+    if !Self.hasRunCleanupThisSession {
+      Self.hasRunCleanupThisSession = true
+      let retentionMgr = await retentionManager
+      if retentionMgr.currentPolicy.autoCleanupEnabled {
+        // Handle the result of the try? operation
+        let cleanupResult = try? await retentionMgr.performCleanup()
+        if cleanupResult != nil {
+          logger.info("Data retention cleanup completed")
+        } else {
+          logger.warning("Data retention cleanup failed")
+        }
       }
     }
 
