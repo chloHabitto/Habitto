@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 import OSLog
 
 // MARK: - DualWriteStorage
@@ -76,19 +77,69 @@ final class DualWriteStorage: HabitStorageProtocol {
   func loadHabits() async throws -> [Habit] {
     dualWriteLogger.info("DualWriteStorage: Loading habits")
     
-    // Try primary storage first (Firestore)
+    // CRITICAL: Check migration status first
+    // If migration hasn't completed, ALWAYS use local storage
+    let migrationComplete = await checkMigrationComplete()
+    
+    if !migrationComplete {
+      dualWriteLogger.info("⚠️ DualWriteStorage: Migration not complete, using local storage")
+      let habits = try await secondaryStorage.loadHabits()
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from local storage (pre-migration)")
+      return habits
+    }
+    
+    // Try primary storage first (Firestore) only after migration is complete
     do {
       try await primaryStorage.fetchHabits()
       let habits = await MainActor.run { primaryStorage.habits }
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from primary storage")
+      
+      // If Firestore is empty but we haven't disabled legacy fallback, check local storage
+      if habits.isEmpty && FeatureFlags.enableLegacyReadFallback {
+        dualWriteLogger.info("⚠️ DualWriteStorage: Firestore empty, checking local storage...")
+        let localHabits = try await secondaryStorage.loadHabits()
+        if !localHabits.isEmpty {
+          dualWriteLogger.info("✅ DualWriteStorage: Found \(localHabits.count) habits in local storage, using those")
+          return localHabits
+        }
+      }
+      
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from Firestore")
       return habits
     } catch {
-      dualWriteLogger.warning("⚠️ DualWriteStorage: Primary load failed, falling back to secondary: \(error)")
+      dualWriteLogger.warning("⚠️ DualWriteStorage: Firestore load failed, falling back to local: \(error)")
       
       // Fallback to secondary storage
       let habits = try await secondaryStorage.loadHabits()
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from secondary storage")
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from local storage (fallback)")
       return habits
+    }
+  }
+  
+  /// Check if migration to Firestore is complete
+  private func checkMigrationComplete() async -> Bool {
+    let userId = await MainActor.run { FirebaseConfiguration.currentUserId }
+    guard let userId = userId else {
+      return false
+    }
+    
+    do {
+      let docRef = Firestore.firestore()
+        .collection("users")
+        .document(userId)
+        .collection("meta")
+        .document("migration")
+      
+      let document = try await docRef.getDocument()
+      
+      if let data = document.data(),
+         let status = data["status"] as? String {
+        return status == "complete"
+      }
+      
+      return false
+    } catch {
+      dualWriteLogger.warning("Failed to check migration status: \(error)")
+      return false
     }
   }
   
