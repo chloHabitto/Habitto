@@ -651,9 +651,25 @@ final actor HabitStore {
   private var activeStorage: any HabitStorageProtocol {
     get {
       // ✅ CRITICAL FIX: Force Firestore sync to TRUE
-      // RemoteConfig access from actor context was causing threading issues
-      // Hardcode TRUE until RemoteConfig is made actor-safe
-      let enableFirestore = true  // FeatureFlags.enableFirestoreSync
+      // 
+      // BACKGROUND:
+      // RemoteConfig access from actor context causes Swift concurrency isolation issues.
+      // RemoteConfig.remoteConfig() is @MainActor, but HabitStore is an Actor.
+      // Cross-isolation access returns static defaults (FALSE) instead of plist defaults (TRUE).
+      // 
+      // SOLUTION:
+      // Hardcode TRUE to ensure Firestore sync is always enabled.
+      // 
+      // TODO (Optional - Only if remote toggle needed):
+      // - See ACTOR_ISOLATION_FIX_PLAN.md for proper actor-safe implementation
+      // - Use "Pass at Init" approach to read RemoteConfig on MainActor during startup
+      // - Pass boolean to HabitStore initializer to avoid cross-actor access
+      // 
+      // PRODUCTION DECISION:
+      // For apps where Firestore sync should ALWAYS be enabled, hardcoding is
+      // the correct approach (not technical debt). Remote toggle capability
+      // would require app restart anyway.
+      let enableFirestore = true  // Hardcoded - see comment above
       
       logger.info("🔍 HabitStore.activeStorage: enableFirestore = \(enableFirestore) (FORCED TRUE)")
       
