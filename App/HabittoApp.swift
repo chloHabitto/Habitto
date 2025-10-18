@@ -36,9 +36,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     remoteConfig.setDefaults(fromPlist: "RemoteConfigDefaults")
     print("✅ Remote Config defaults loaded from plist")
     
-    // Verify the value is set
+    // Verify the value is set from defaults
     let firestoreSyncValue = remoteConfig.configValue(forKey: "enableFirestoreSync").boolValue
-    print("🔍 Remote Config: enableFirestoreSync = \(firestoreSyncValue)")
+    let source = remoteConfig.configValue(forKey: "enableFirestoreSync").source
+    print("🔍 Remote Config: enableFirestoreSync = \(firestoreSyncValue) (source: \(source.rawValue))")
+    
+    if !firestoreSyncValue {
+      print("⚠️ WARNING: enableFirestoreSync is FALSE from RemoteConfig defaults!")
+      print("   Check RemoteConfigDefaults.plist to ensure it has <key>enableFirestoreSync</key><true/>")
+    }
     
     // Configure other Firebase services asynchronously
     Task.detached { @MainActor in

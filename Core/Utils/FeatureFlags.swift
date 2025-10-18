@@ -50,12 +50,20 @@ enum FeatureFlags {
     // Remote Config returns the value from defaults if not fetched yet
     // The defaults are set from RemoteConfigDefaults.plist
     let value = remoteValue.boolValue
+    let source = remoteValue.source
+    
+    // ✅ FIX: If source is .static (0), defaults weren't loaded properly
+    // Fall back to TRUE to ensure Firestore sync is enabled
+    let finalValue = (source == .static) ? true : value
     
     #if DEBUG
-    print("🎛️ FeatureFlags.enableFirestoreSync = \(value) (source: \(remoteValue.source.rawValue))")
+    print("🎛️ FeatureFlags.enableFirestoreSync = \(finalValue) (source: \(source.rawValue), raw: \(value))")
+    if source == .static {
+      print("⚠️ RemoteConfig source is .static - defaulting to TRUE for Firestore sync")
+    }
     #endif
     
-    return value
+    return finalValue
   }
 
   /// Enables backfill job to migrate existing local data to Firestore
