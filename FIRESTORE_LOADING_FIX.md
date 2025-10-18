@@ -230,3 +230,4 @@ If you still don't see your habits, check:
 - Console logs for migration status
 - Firebase Console to verify data structure matches expected format
 
+
