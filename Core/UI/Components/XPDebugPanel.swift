@@ -167,7 +167,10 @@ struct XPDebugPanel: View {
 
   // MARK: Private
 
-  @Environment(\.modelContext) private var modelContext
+  // ✅ FIX #12: Use SwiftDataContainer's ModelContext instead of @Environment
+  private var modelContext: ModelContext {
+    SwiftDataContainer.shared.modelContext
+  }
   private var xpManager = XPManager.shared
   @State private var debugInfo = XPDebugInfo()
   @State private var isRunningDiagnostic = false
