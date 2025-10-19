@@ -72,6 +72,19 @@ struct AccountView: View {
                   {
                     showingMigrationDebug = true
                   }
+                  
+                  Divider()
+                    .padding(.leading, 56)
+                  
+                  AccountOptionRow(
+                    icon: "flag.fill",
+                    title: "Feature Flags",
+                    subtitle: "Toggle new architecture features",
+                    hasChevron: true,
+                    iconColor: .green)
+                  {
+                    showingFeatureFlags = true
+                  }
                 }
                 .background(Color.surface)
                 .cornerRadius(16)
@@ -178,6 +191,11 @@ struct AccountView: View {
         MigrationDebugView()
       }
     }
+    .sheet(isPresented: $showingFeatureFlags) {
+      NavigationStack {
+        FeatureFlagsDebugView()
+      }
+    }
   }
 
   // MARK: Private
@@ -192,6 +210,7 @@ struct AccountView: View {
   @State private var showingDeleteAccountConfirmation = false
   @State private var showingDebugAlert = false
   @State private var showingMigrationDebug = false
+  @State private var showingFeatureFlags = false
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
