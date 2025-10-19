@@ -1,217 +1,149 @@
-# 🐛 DOUBLE-CLICK RACE CONDITION BUG
+# 🐛 Double-Click & Refresh Race Condition Bug
 
 ## Problem Description
-User has to click a habit twice to mark it as completed. After first click, it doesn't appear completed. After second click, it works. But after refreshing, the habit becomes incomplete again.
 
-## Root Cause: Race Condition
+When completing a habit (especially Breaking habits) by clicking the circle button:
+1. **First click doesn't always register** - requires a second click to mark as complete
+2. **After refresh, habit reverts to incomplete** - even though it was just marked as complete
+3. **Affects Breaking habits more than Formation habits** - due to different persistence timing
 
-### The Problematic Flow:
+## Root Cause Analysis
 
-1. **User clicks completion button** (ScheduledHabitItem.swift:428)
-   ```swift
-   isLocalUpdateInProgress = true  // Blocks onChange listeners
-   currentProgress = goalAmount    // UI updates immediately
-   onProgressChange?(habit, selectedDate, goalAmount)  // Triggers save
+### The Race Condition
+
+The bug is a classic race condition in the data flow:
+
+```
+User Action (Click) → Local UI Update → Background Persistence
+                          ↓
+                    Notification Broadcast
+                          ↓
+                    Other UI Components Listen
+                          ↓
+                    Read Data (potentially stale!)
+```
+
+### Specific Issues
+
+1. **Immediate Notification, Delayed Persistence**
+   - `HabitRepository.setProgress()` (line 763-766) posts `habitProgressUpdated` notification IMMEDIATELY
+   - But actual persistence happens asynchronously in a background Task (line 771-794)
+   - UI components receive the notification before persistence completes
    
-   // After 0.1 seconds:
-   isLocalUpdateInProgress = false  // ⚠️ Unblocks listeners!
-   ```
+2. **Missing Timestamp Check in `onReceive` Listener**
+   - `ScheduledHabitItem.swift` has `onChange(of: habit.completionHistory)` with timestamp protection (lines 194-209)
+   - `ScheduledHabitItem.swift` has `onChange(of: habit)` with timestamp protection (lines 210-228)
+   - BUT `onReceive(NotificationCenter...habitProgressUpdated)` (lines 229-242) is **MISSING** the timestamp check!
+   - This allows the notification to override local UI state before persistence completes
 
-2. **HabitRepository receives the save request** (HabitRepository.swift:700-767)
-   ```swift
-   // Updates local array immediately
-   habits[index].completionHistory[dateKey] = progress
-   habits[index].completionStatus[dateKey] = isComplete
-   objectWillChange.send()  // ⚠️ Triggers habit object update!
-   
-   // Persists in background (ASYNC!)
-   Task {
-     try await habitStore.setProgress(...)
-   }
-   ```
+3. **Timing Window**
+   - User clicks → `isLocalUpdateInProgress = true` (0.5s window)
+   - Background persistence starts (can take 300-1000ms+)
+   - Notification fires → triggers `onReceive` → reads potentially stale data
+   - If notification arrives after 0.5s but before persistence completes → UI reverts!
 
-3. **The `objectWillChange.send()` triggers onChange listener** (ScheduledHabitItem.swift:203)
-   ```swift
-   .onChange(of: habit) { _, newHabit in
-     guard !isLocalUpdateInProgress else { return }
-     // ⚠️ Flag is false now (0.1s passed)
-     // Incoming update overwrites local state!
-     currentProgress = newHabit.getProgress(for: selectedDate)
-   }
-   ```
+### Why Breaking Habits Are More Affected
 
-### The Race Condition Timeline:
+Breaking habits may have more complex persistence logic due to:
+- Checking `actualUsage` vs `target`
+- Dual storage (Firestore + SwiftData)
+- Additional validation for "breaking" completion criteria
 
-```
-T=0ms:   User clicks
-T=1ms:   isLocalUpdateInProgress = true
-T=2ms:   currentProgress = goalAmount (UI shows completed)
-T=3ms:   onProgressChange called
-T=5ms:   HabitRepository updates local array
-T=6ms:   objectWillChange.send() triggers
-T=7ms:   onChange(of: habit) fires
-T=8ms:   ⚠️ But data might not be fully consistent yet
-T=100ms: isLocalUpdateInProgress = false ⚠️
-T=150ms: Another update comes through
-T=151ms: onChange accepts it (flag is false)
-T=152ms: ⚠️ currentProgress reverts to old value!
-```
+## The Fix
 
-### Why First Click Fails:
-- The `isLocalUpdateInProgress` flag is only true for 0.1 seconds
-- During this time, multiple onChange events fire
-- After 0.1s, the flag resets and ANY incoming update overwrites local state
-- If persistence hasn't fully completed, stale data can come through
+### Step 1: Add Timestamp Check to `onReceive` Listener
 
-### Why Second Click Works (temporarily):
-- The second click goes through the same process
-- User sees it complete because they're watching
-- But the underlying race condition still exists
+In `Core/UI/Items/ScheduledHabitItem.swift`, update the `onReceive` listener to respect the `lastUserUpdateTimestamp`:
 
-### Why Refresh Makes It Incomplete:
-- When refreshing, `loadHabits()` is called
-- This loads data from storage
-- If the async persistence didn't complete before the refresh, old data is loaded
-- The habit appears incomplete again
-
-## The Problem Areas
-
-### 1. Short Flag Duration (ScheduledHabitItem.swift:479-481)
 ```swift
-DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-  isLocalUpdateInProgress = false  // ⚠️ Too short!
-}
-```
-**Issue**: 0.1 seconds is not enough to guarantee persistence completes
-
-### 2. Async Persistence Without Confirmation (HabitRepository.swift:770-783)
-```swift
-Task {
-  try await habitStore.setProgress(...)  // ⚠️ Async, no completion callback!
-}
-```
-**Issue**: The UI doesn't know when persistence completes
-
-### 3. onChange Listeners Race (ScheduledHabitItem.swift:194-214)
-```swift
-.onChange(of: habit.completionHistory) { _, _ in
+.onReceive(NotificationCenter.default.publisher(for: .habitProgressUpdated)) { notification in
+  // Don't override local updates that are in progress
   guard !isLocalUpdateInProgress else { return }
-  // ⚠️ If flag is false, this overwrites local state
-  currentProgress = habit.getProgress(for: selectedDate)
-}
-```
-**Issue**: No way to distinguish between "user action" vs "storage update"
 
-## Solution Options
-
-### Option 1: Extend Flag Duration ⚠️ (Band-aid)
-Increase the `isLocalUpdateInProgress` duration from 0.1s to 1.0s
-- **Pros**: Simple fix
-- **Cons**: Doesn't solve root cause, could miss legitimate updates
-
-### Option 2: Add Completion Callback ✅ (Proper fix)
-Make `onProgressChange` async and wait for persistence to complete
-```swift
-await onProgressChange?(habit, selectedDate, goalAmount)
-isLocalUpdateInProgress = false  // Only reset after confirmed save
-```
-
-### Option 3: Use Version/Timestamp Checking ✅ (Best)
-Track when changes were made and ignore older updates
-```swift
-@State private var lastUpdateTimestamp: Date?
-
-.onChange(of: habit) { _, newHabit in
-  guard !isLocalUpdateInProgress else { return }
-  
-  // Only accept updates newer than our last change
-  let habitTimestamp = getLatestTimestamp(for: newHabit)
-  if let lastUpdate = lastUpdateTimestamp, habitTimestamp < lastUpdate {
-    return  // Ignore stale update
+  // ✅ FIX: If user just made a change, wait longer before accepting external updates
+  if let lastUpdate = lastUserUpdateTimestamp,
+     Date().timeIntervalSince(lastUpdate) < 1.0 {
+    print("🔍 RACE FIX: Ignoring habitProgressUpdated notification within 1s of user action")
+    return
   }
-  
-  currentProgress = newHabit.getProgress(for: selectedDate)
+
+  // Listen for habit progress updates from the repository
+  if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
+     updatedHabitId == habit.id
+  {
+    let newProgress = habit.getProgress(for: selectedDate)
+    withAnimation(.easeInOut(duration: 0.2)) {
+      currentProgress = newProgress
+    }
+  }
 }
 ```
 
-### Option 4: Single Source of Truth ✅ (Architecture fix)
-Don't maintain local `currentProgress` state. Always read from habit object.
-- **Pros**: No sync issues
-- **Cons**: Requires ensuring habit object updates immediately
+### Step 2: Verify Existing Protections Are in Place
 
-## Recommended Fix
+Confirm these existing fixes are properly implemented:
+- ✅ `isLocalUpdateInProgress` flag with 0.5s delay
+- ✅ `lastUserUpdateTimestamp` tracking in all user action functions
+- ✅ Timestamp checks in `onChange(of: habit.completionHistory)` 
+- ✅ Timestamp checks in `onChange(of: habit)`
 
-**Combination of Option 2 + 3:**
-1. Extend the flag duration to at least 0.5 seconds (temporary safety)
-2. Add completion callback to know when save finishes
-3. Add timestamp checking to ignore stale updates
+## Testing the Fix
 
-## Fix Applied
+### Test Case 1: Breaking Habit Single Click
+1. Create a Breaking habit (e.g., "Reduce coffee" baseline 5, target 3)
+2. Click the completion circle once
+3. **Expected**: Marks complete immediately, stays complete
+4. **Previously**: Required second click
 
-### Changes Made to `ScheduledHabitItem.swift`:
+### Test Case 2: Refresh Persistence
+1. Complete any habit (especially Breaking)
+2. Force refresh the app (swipe up, reopen)
+3. **Expected**: Habit remains complete after refresh
+4. **Previously**: Reverted to incomplete
 
-1. **Added timestamp tracking** (Line 283)
-   ```swift
-   @State private var lastUserUpdateTimestamp: Date? = nil
-   ```
+### Test Case 3: Multiple Habits Rapid Completion
+1. Have 3-4 habits scheduled for today
+2. Rapidly click completion circles in succession
+3. **Expected**: All mark complete correctly without conflicts
+4. **Previously**: Some might not save or revert
 
-2. **Extended flag duration from 0.1s → 0.5s** (Multiple locations)
-   ```swift
-   DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {  // Was 0.1s
-     isLocalUpdateInProgress = false
-   }
-   ```
+## Technical Details
 
-3. **Added timestamp guards to onChange listeners** (Lines 198-203, 214-219)
-   ```swift
-   .onChange(of: habit.completionHistory) { _, _ in
-     guard !isLocalUpdateInProgress else { return }
-     
-     // NEW: Ignore updates within 1s of user action
-     if let lastUpdate = lastUserUpdateTimestamp,
-        Date().timeIntervalSince(lastUpdate) < 1.0 {
-       print("🔍 RACE FIX: Ignoring update within 1s of user action")
-       return
-     }
-     
-     currentProgress = habit.getProgress(for: selectedDate)
-   }
-   ```
+### Files Modified
+- `Core/UI/Items/ScheduledHabitItem.swift` - Added timestamp check to `onReceive` listener
 
-4. **Record timestamp on every user action** (Multiple locations)
-   ```swift
-   lastUserUpdateTimestamp = Date()
-   ```
+### Timing Constants
+- `isLocalUpdateInProgress` window: **0.5 seconds** (increased from 0.1s)
+- `lastUserUpdateTimestamp` grace period: **1.0 seconds**
+- These provide a 1.5s total protection window for async persistence
 
-### How The Fix Works:
+### Debug Logs Added
+```
+🔍 RACE FIX: Ignoring habitProgressUpdated notification within 1s of user action
+🔍 RACE FIX: Ignoring completionHistory update within 1s of user action
+🔍 RACE FIX: Ignoring habit update within 1s of user action
+```
 
-**Before:**
-- User clicks → Flag locks for 0.1s → Flag unlocks
-- Any update after 0.1s overwrites local state
-- Async persistence might not finish in time
-- Race condition causes incomplete state
+## Related Issues
 
-**After:**
-- User clicks → Flag locks for 0.5s (5x longer)
-- Timestamp recorded
-- Flag unlocks after 0.5s
-- For the next 1.0s total, ALL external updates ignored
-- Persistence has time to complete
-- No race condition!
+This fix also prevents:
+- Progress bar flickering during completion
+- Inconsistent XP awards (if completion reverts before XP calculation)
+- Streak calculation errors (if completion state is unstable)
+- Celebration triggering then canceling (if habit completes then uncompletes)
 
-### Benefits:
-✅ Single click now works reliably
-✅ Refresh no longer reverts incomplete state
-✅ Persistence has time to complete (0.5s instead of 0.1s)
-✅ Additional 0.5s buffer via timestamp check (total 1.0s protection)
-✅ Debug logging to verify fix is working
+## Implementation Status
 
-## Status
-✅ **FIXED AND DEPLOYED**
+- [x] Root cause identified
+- [ ] Fix implemented in ScheduledHabitItem.swift
+- [ ] Testing completed
+- [ ] Verified on Breaking habits
+- [ ] Verified on Formation habits
+- [ ] Edge cases tested (rapid clicks, slow network, etc.)
 
-## Date Identified
-October 18, 2025
+---
 
-## Date Fixed
-October 18, 2025
-
+**Date**: October 18, 2025  
+**Severity**: High - Affects data integrity and user trust  
+**Impact**: All habit types, but Breaking habits more affected  
+**Fix Complexity**: Low - Single line addition with timestamp check
