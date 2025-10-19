@@ -1,328 +1,391 @@
 import Foundation
-import OSLog
 import SwiftData
 
-// MARK: - XP_RULES
-
-enum XP_RULES {
-  static let dailyCompletionXP = 50
-  static let levelBaseXP = 200
-  static let maxLevel = 100
-}
-
-// MARK: - XPServiceProtocol
-
-/// Centralized service for all XP and level mutations
-/// This is the ONLY service allowed to mutate XP/level data
-protocol XPServiceProtocol {
-  /// Awards daily completion XP if user is eligible
-  /// - Parameters:
-  ///   - userId: The user ID to award XP to
-  ///   - dateKey: The date key for the completion
-  /// - Returns: The amount of XP awarded (0 if not eligible)
-  func awardDailyCompletionIfEligible(userId: String, dateKey: String) async throws -> Int
-
-  /// Revokes daily completion XP if user becomes ineligible
-  /// - Parameters:
-  ///   - userId: The user ID to revoke XP from
-  ///   - dateKey: The date key for the completion
-  /// - Returns: The amount of XP revoked (0 if not eligible)
-  func revokeDailyCompletionIfIneligible(userId: String, dateKey: String) async throws -> Int
-
-  /// Gets current user progress
-  /// - Parameter userId: The user ID
-  /// - Returns: Current user progress
-  func getUserProgress(userId: String) async throws -> UserProgress
-
-  /// Gets daily award for specific date
-  /// - Parameters:
-  ///   - userId: The user ID
-  ///   - dateKey: The date key
-  /// - Returns: Daily award if exists
-  nonisolated func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward?
-}
-
-// MARK: - XPService
-
+/// Service for managing XP (Experience Points) and user leveling
+/// **Responsibilities:**
+/// - Award XP for daily habit completion
+/// - Remove XP when progress is undone
+/// - Calculate user levels from XP
+/// - Track XP transactions (audit log)
 @MainActor
-final class XPService: XPServiceProtocol {
-  // MARK: Lifecycle
-
-  private init() {
-    // TODO: In Phase 3, this will be user-scoped
-    self.modelContext = ModelContext(SwiftDataContainer.shared.modelContainer)
-  }
-
-  // MARK: Internal
-
-  static let shared = XPService()
-
-  // MARK: - XP Award Methods
-
-  func awardDailyCompletionIfEligible(userId: String, dateKey: String) async throws -> Int {
-    logger.info("XPService: Checking daily completion eligibility for user \(userId) on \(dateKey)")
-
-    // Step 1: Check if already awarded (idempotency)
-    if let existingAward = try await getDailyAward(userId: userId, dateKey: dateKey) {
-      logger
-        .info(
-          "XPService: Daily award already exists for user \(userId) on \(dateKey) - XP: \(existingAward.xpGranted)")
-      return 0 // Already awarded, no additional XP
+class XPService {
+    
+    // MARK: - Constants
+    
+    /// Base XP awarded per completed day (50 XP)
+    private static let baseXPPerDay: Int = 50
+    
+    // MARK: - Properties
+    
+    private let modelContext: ModelContext
+    
+    // MARK: - Initialization
+    
+    init(modelContext: ModelContext) {
+        self.modelContext = modelContext
+        print("✅ XPService: Initialized")
     }
-
-    // Step 2: Check if all habits are completed for this date
-    let allHabitsCompleted = try await checkAllHabitsCompleted(userId: userId, dateKey: dateKey)
-
-    if allHabitsCompleted {
-      let xpAmount = XP_RULES.dailyCompletionXP
-
-      // Step 3: Create DailyAward record
-      try await createDailyAward(
+    
+    // MARK: - User Progress
+    
+    /// Get or create user progress record
+    /// **Returns:** UserProgressModel for the user
+    func getOrCreateProgress(for userId: String) throws -> UserProgressModel {
+        // Try to find existing progress
+        let descriptor = FetchDescriptor<UserProgressModel>(
+            predicate: #Predicate { progress in
+                progress.userId == userId
+            }
+        )
+        
+        if let existing = try modelContext.fetch(descriptor).first {
+            print("📊 XPService: Found existing progress for user '\(userId)'")
+            return existing
+        }
+        
+        // Create new progress
+        let progress = UserProgressModel(userId: userId, totalXP: 0)
+        modelContext.insert(progress)
+        try modelContext.save()
+        
+        print("✨ XPService: Created new progress for user '\(userId)'")
+        return progress
+    }
+    
+    // MARK: - XP Award/Removal
+    
+    /// Award XP for completing all habits on a date
+    /// **Returns:** Amount of XP awarded
+    /// **Side effects:**
+    /// - Creates XP transaction
+    /// - Updates user level if needed
+    func awardDailyCompletion(
+        for userId: String,
+        on date: Date,
+        habits: [HabitModel]
+    ) throws -> Int {
+        let normalizedDate = DateUtils.startOfDay(for: date)
+        let dateKey = DateUtils.dateKey(for: normalizedDate)
+        
+        // Check if XP already awarded for this date
+        if try hasAwardedXP(for: userId, on: normalizedDate) {
+            print("⚠️ XPService: XP already awarded for \(dateKey) - skipping")
+            return 0
+        }
+        
+        let userProgress = try getOrCreateProgress(for: userId)
+        let oldXP = userProgress.totalXP
+        let oldLevel = userProgress.currentLevel
+        
+        // Calculate XP to award
+        let xpAmount = Self.baseXPPerDay
+        let reason = "Daily completion for \(dateKey)"
+        
+        // Add XP
+        userProgress.addXP(xpAmount, reason: reason)
+        
+        // Create transaction record
+        let transaction = XPTransactionModel(
         userId: userId,
-        dateKey: dateKey,
-        xpGranted: xpAmount,
-        allHabitsCompleted: true)
-
-      // Step 4: Update UserProgress (xpTotal/level via pure function)
-      try await updateUserProgress(userId: userId, xpToAdd: xpAmount)
-
-      logger
-        .info(
-          "XPService: Awarded \(xpAmount) XP to user \(userId) for daily completion on \(dateKey)")
-
-      // Log XP award event
-      ObservabilityLogger.shared.logXPAward(
-        userId: userId,
-        dateKey: dateKey,
-        xpGranted: xpAmount,
-        reason: "daily_completion")
+            amount: xpAmount,
+            reason: reason,
+            timestamp: Date()
+        )
+        modelContext.insert(transaction)
+        
+        try modelContext.save()
+        
+        let newXP = userProgress.totalXP
+        let newLevel = userProgress.currentLevel
+        
+        print("⭐ XPService: Awarded \(xpAmount) XP for \(dateKey)")
+        print("   User XP: \(oldXP) → \(newXP)")
+        if newLevel > oldLevel {
+            print("   🎉 LEVEL UP! \(oldLevel) → \(newLevel)")
+        }
 
       return xpAmount
-    } else {
-      logger
-        .info("XPService: Not all habits completed for user \(userId) on \(dateKey), no XP awarded")
+    }
+    
+    /// Remove XP for a date (when progress is undone)
+    /// **Returns:** Amount of XP removed
+    /// **Side effects:**
+    /// - Creates negative XP transaction
+    /// - Updates user level if needed
+    func removeDailyCompletion(
+        for userId: String,
+        on date: Date
+    ) throws -> Int {
+        let normalizedDate = DateUtils.startOfDay(for: date)
+        let dateKey = DateUtils.dateKey(for: normalizedDate)
+        
+        // Check if XP was awarded for this date
+        guard let transaction = try findTransaction(for: userId, on: normalizedDate) else {
+            print("ℹ️ XPService: No XP transaction found for \(dateKey) - skipping removal")
       return 0
     }
-  }
 
-  func revokeDailyCompletionIfIneligible(userId: String, dateKey: String) async throws -> Int {
-    logger
-      .info("XPService: Checking daily completion ineligibility for user \(userId) on \(dateKey)")
-
-    // Check if award exists
-    guard let existingAward = try await getDailyAward(userId: userId, dateKey: dateKey) else {
-      logger.info("XPService: No daily award exists for user \(userId) on \(dateKey)")
-      return 0
-    }
-
-    // Check if all habits are still completed for this date
-    let allHabitsCompleted = try await checkAllHabitsCompleted(userId: userId, dateKey: dateKey)
-
-    if !allHabitsCompleted {
-      let xpAmount = existingAward.xpGranted
-      try await deleteDailyAward(userId: userId, dateKey: dateKey)
-      try await updateUserProgress(userId: userId, xpToAdd: -xpAmount)
-
-      logger
-        .info(
-          "XPService: Revoked \(xpAmount) XP from user \(userId) for daily completion on \(dateKey)")
-
-      // Log XP revocation event
-      ObservabilityLogger.shared.logXPRevocation(
+        let userProgress = try getOrCreateProgress(for: userId)
+        let oldXP = userProgress.totalXP
+        let oldLevel = userProgress.currentLevel
+        
+        let xpAmount = transaction.amount
+        let reason = "Reversal for \(dateKey) (day incomplete)"
+        
+        // Remove XP
+        userProgress.removeXP(xpAmount, reason: reason)
+        
+        // Create reversal transaction
+        let reversal = XPTransactionModel(
         userId: userId,
-        dateKey: dateKey,
-        xpRevoked: xpAmount,
-        reason: "daily_incompletion")
+            amount: -xpAmount,
+            reason: reason,
+            timestamp: Date()
+        )
+        modelContext.insert(reversal)
+        
+        try modelContext.save()
+        
+        let newXP = userProgress.totalXP
+        let newLevel = userProgress.currentLevel
+        
+        print("❌ XPService: Removed \(xpAmount) XP for \(dateKey)")
+        print("   User XP: \(oldXP) → \(newXP)")
+        if newLevel < oldLevel {
+            print("   ⬇️ Level decreased: \(oldLevel) → \(newLevel)")
+        }
 
       return xpAmount
-    } else {
-      logger
-        .info(
-          "XPService: All habits still completed for user \(userId) on \(dateKey), no XP revoked")
-      return 0
     }
-  }
-
-  // MARK: - Query Methods
-
-  func getUserProgress(userId: String) async throws -> UserProgress {
-    let request = FetchDescriptor<UserProgressData>(
-      predicate: #Predicate<UserProgressData> { progress in
-        progress.userId == userId
-      })
-
-    let results = try modelContext.fetch(request)
-    if let existing = results.first {
-      return existing.toUserProgress()
-    } else {
-      // Create new user progress if doesn't exist
-      let newProgress = UserProgressData(userId: userId)
-      modelContext.insert(newProgress)
-      try modelContext.save()
-      return newProgress.toUserProgress()
+    
+    // MARK: - Transaction Queries
+    
+    /// Check if XP has been awarded for a specific date
+    private func hasAwardedXP(
+        for userId: String,
+        on date: Date
+    ) throws -> Bool {
+        return try findTransaction(for: userId, on: date) != nil
     }
-  }
-
-  nonisolated func getDailyAward(userId: String, dateKey: String) async throws -> DailyAward? {
-    let request = FetchDescriptor<DailyAward>(
-      predicate: #Predicate { $0.userId == userId && $0.dateKey == dateKey })
-
-    // Create a new ModelContext for this nonisolated operation
-    // We need to access the model container in a nonisolated way
-    let container = await MainActor.run { SwiftDataContainer.shared.modelContainer }
-    let context = ModelContext(container)
-    let results = try context.fetch(request)
-    return results.first
-  }
-
-  // MARK: Private
-
-  private let logger = Logger(subsystem: "com.habitto.app", category: "XPService")
-  private var modelContext: ModelContext
-
-  // MARK: - Private Helper Methods
-
-  private func checkAllHabitsCompleted(userId: String, dateKey: String) async throws -> Bool {
-    // Get all habits for the user
-    let habitRequest = FetchDescriptor<HabitData>(
-      predicate: #Predicate { $0.userId == userId })
-    let habits = try modelContext.fetch(habitRequest)
-
-    if habits.isEmpty {
-      return false
+    
+    /// Find XP transaction for a specific date
+    /// **Returns:** XPTransactionModel if found, nil otherwise
+    private func findTransaction(
+        for userId: String,
+        on date: Date
+    ) throws -> XPTransactionModel? {
+        let normalizedDate = DateUtils.startOfDay(for: date)
+        let dateKey = DateUtils.dateKey(for: normalizedDate)
+        
+        // Fetch all transactions for this user
+        let descriptor = FetchDescriptor<XPTransactionModel>(
+            predicate: #Predicate { transaction in
+                transaction.userId == userId && transaction.amount > 0
+            },
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        
+        let transactions = try modelContext.fetch(descriptor)
+        
+        // Find transaction matching the date in reason
+        return transactions.first { transaction in
+            transaction.reason.contains(dateKey)
+        }
     }
-
-    // Check if all habits are completed for the date
-    for habit in habits {
-      let isCompleted = try await isHabitCompleted(habit: habit, dateKey: dateKey)
-      if !isCompleted {
-        return false
-      }
+    
+    /// Get all XP transactions for a user
+    func getTransactionHistory(
+        for userId: String,
+        limit: Int? = nil
+    ) throws -> [XPTransactionModel] {
+        var descriptor = FetchDescriptor<XPTransactionModel>(
+            predicate: #Predicate { transaction in
+                transaction.userId == userId
+            },
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        
+        if let limit = limit {
+            descriptor.fetchLimit = limit
+        }
+        
+        return try modelContext.fetch(descriptor)
     }
-
-    return true
-  }
-
-  private func isHabitCompleted(habit: HabitData, dateKey: String) async throws -> Bool {
-    // Check completion history for the specific date
-    let habitId = habit.id
-    let request = FetchDescriptor<CompletionRecord>(
-      predicate: #Predicate<CompletionRecord> { completion in
-        completion.habitId == habitId && completion.dateKey == dateKey && completion
-          .isCompleted == true
-      })
-
-    let results = try modelContext.fetch(request)
-    return !results.isEmpty
-  }
-
-  private func createDailyAward(
-    userId: String,
-    dateKey: String,
-    xpGranted: Int,
-    allHabitsCompleted: Bool) async throws
-  {
-    let award = DailyAward(
-      userId: userId,
-      dateKey: dateKey,
-      xpGranted: xpGranted,
-      allHabitsCompleted: allHabitsCompleted)
-    modelContext.insert(award)
-    try modelContext.save()
-  }
-
-  private func deleteDailyAward(userId: String, dateKey: String) async throws {
-    let request = FetchDescriptor<DailyAward>(
-      predicate: #Predicate { $0.userId == userId && $0.dateKey == dateKey })
-
-    let results = try modelContext.fetch(request)
-    for award in results {
-      modelContext.delete(award)
+    
+    // MARK: - Level Calculations
+    
+    /// Calculate XP required for a specific level
+    /// **Formula:** 1000 * level (Level 1 = 1000 XP, Level 2 = 2000 XP, etc.)
+    nonisolated static func xpRequiredForLevel(_ level: Int) -> Int {
+        return UserProgressModel.xpRequiredForLevel(level)
     }
-    try modelContext.save()
-  }
-
-  private func updateUserProgress(userId: String, xpToAdd: Int) async throws {
-    var progress = try await getUserProgress(userId: userId)
-    let oldLevel = progress.currentLevel
-    progress.totalXP += xpToAdd
-    progress.currentLevel = calculateLevel(xpTotal: progress.totalXP)
-    // progress.levelProgress = calculateLevelProgress(xpTotal: progress.totalXP, level:
-    // progress.currentLevel)  // Read-only property
-    progress.updatedAt = Date()
-
-    // Log level up if it occurred
-    if progress.currentLevel > oldLevel {
-      ObservabilityLogger.shared.logLevelUp(
+    
+    /// Calculate cumulative XP needed to reach a level
+    /// **Example:** To reach level 3, you need 1000 + 2000 = 3000 total XP
+    nonisolated static func cumulativeXPForLevel(_ level: Int) -> Int {
+        return UserProgressModel.cumulativeXPForLevel(level)
+    }
+    
+    /// Calculate level from total XP
+    /// **Example:** 2500 XP = Level 2 (need 3000 for level 3)
+    nonisolated static func calculateLevel(fromXP totalXP: Int) -> Int {
+        return UserProgressModel.calculateLevel(fromXP: totalXP)
+    }
+    
+    // MARK: - User Stats
+    
+    /// Get user's current XP and level information
+    func getUserStats(for userId: String) throws -> UserStats {
+        let userProgress = try getOrCreateProgress(for: userId)
+        
+        // Calculate progress to next level
+        let progressToNext = userProgress.xpForNextLevel > 0 
+            ? Double(userProgress.xpForCurrentLevel) / Double(userProgress.xpForNextLevel)
+            : 0.0
+        
+        return UserStats(
+            totalXP: userProgress.totalXP,
+            currentLevel: userProgress.currentLevel,
+            xpForCurrentLevel: userProgress.xpForCurrentLevel,
+            xpForNextLevel: userProgress.xpForNextLevel,
+            progressToNextLevel: progressToNext
+        )
+    }
+    
+    /// Get total XP earned in a date range
+    func getTotalXPEarned(
+        for userId: String,
+        from startDate: Date,
+        to endDate: Date
+    ) throws -> Int {
+        let descriptor = FetchDescriptor<XPTransactionModel>(
+            predicate: #Predicate { transaction in
+                transaction.userId == userId &&
+                transaction.timestamp >= startDate &&
+                transaction.timestamp <= endDate &&
+                transaction.amount > 0
+            }
+        )
+        
+        let transactions = try modelContext.fetch(descriptor)
+        return transactions.reduce(0) { $0 + $1.amount }
+    }
+    
+    // MARK: - Manual Adjustments
+    
+    /// Manually add XP (for admin/testing purposes)
+    func addXP(
+        _ amount: Int,
+        to userId: String,
+        reason: String
+    ) throws {
+        let userProgress = try getOrCreateProgress(for: userId)
+        let oldXP = userProgress.totalXP
+        
+        userProgress.addXP(amount, reason: reason)
+        
+        let transaction = XPTransactionModel(
         userId: userId,
-        oldLevel: oldLevel,
-        newLevel: progress.currentLevel,
-        totalXP: progress.totalXP)
+            amount: amount,
+            reason: reason,
+            timestamp: Date()
+        )
+        modelContext.insert(transaction)
+        
+        try modelContext.save()
+        
+        print("➕ XPService: Manually added \(amount) XP - \(oldXP) → \(userProgress.totalXP)")
     }
+    
+    /// Manually remove XP (for admin/testing purposes)
+    func removeXP(
+        _ amount: Int,
+        from userId: String,
+        reason: String
+    ) throws {
+        let userProgress = try getOrCreateProgress(for: userId)
+        let oldXP = userProgress.totalXP
+        
+        userProgress.removeXP(amount, reason: reason)
+        
+        let transaction = XPTransactionModel(
+            userId: userId,
+            amount: -amount,
+            reason: reason,
+            timestamp: Date()
+        )
+        modelContext.insert(transaction)
 
     try modelContext.save()
-  }
-
-  private func calculateLevel(xpTotal: Int) -> Int {
-    // Level n needs XP_RULES.levelBaseXP * n XP (arithmetic progression)
-    max(1, Int(sqrt(Double(xpTotal) / Double(XP_RULES.levelBaseXP))) + 1)
-  }
-
-  private func calculateLevelProgress(xpTotal: Int, level: Int) -> Double {
-    let currentLevelXP = XP_RULES.levelBaseXP * (level - 1)
-    let nextLevelXP = XP_RULES.levelBaseXP * level
-    let xpInCurrentLevel = xpTotal - currentLevelXP
-    let xpNeededForNextLevel = nextLevelXP - currentLevelXP
-    return Double(xpInCurrentLevel) / Double(xpNeededForNextLevel)
-  }
+        
+        print("➖ XPService: Manually removed \(amount) XP - \(oldXP) → \(userProgress.totalXP)")
+    }
+    
+    /// Reset user's XP to zero (for testing)
+    func resetXP(for userId: String) throws {
+        let userProgress = try getOrCreateProgress(for: userId)
+        let oldXP = userProgress.totalXP
+        
+        userProgress.setXP(0, reason: "XP reset")
+        
+        let transaction = XPTransactionModel(
+            userId: userId,
+            amount: -oldXP,
+            reason: "XP reset",
+            timestamp: Date()
+        )
+        modelContext.insert(transaction)
+        
+        try modelContext.save()
+        
+        print("🔄 XPService: Reset XP from \(oldXP) to 0")
+    }
 }
 
-// MARK: - XPServiceGuard
+// MARK: - Result Types
 
-/// This class ensures only XPService can mutate XP/level data
-@MainActor
-final class XPServiceGuard {
-  // MARK: Lifecycle
-
-  private init() { }
-
-  // MARK: Internal
-
-  static let shared = XPServiceGuard()
-
-  /// Validates that XP mutations are only happening through XPService
-  func validateXPMutation(caller: String, function: String) {
-    let featureFlags = FeatureFlagManager.shared.provider
-
-    // Skip validation if strict validation is disabled
-    guard featureFlags.isStrictValidationEnabled else {
-      logger.debug("XP mutation validation disabled by feature flag")
-      return
+/// User XP and level statistics
+struct UserStats {
+    let totalXP: Int
+    let currentLevel: Int
+    let xpForCurrentLevel: Int
+    let xpForNextLevel: Int
+    let progressToNextLevel: Double
+    
+    var description: String {
+        return "Level \(currentLevel) - \(totalXP) XP (\(Int(progressToNextLevel * 100))% to next)"
     }
-
-    let allowedCallers = [
-      "XPService",
-      "DailyAwardService", // Legacy service being phased out
-      "XPServiceGuard",
-      "LegacyXPService" // Legacy service for backward compatibility
-    ]
-
-    let callerName = String(caller.split(separator: ".").last ?? "")
-
-    if !allowedCallers.contains(callerName) {
-      logger.error("🚨 XP MUTATION VIOLATION: \(function) called from \(caller)")
-      logger.error("🚨 Only XPService and DailyAwardService are allowed to mutate XP/level data")
-
-      // In debug builds with strict validation, this will crash to catch violations early
-      #if DEBUG
-      if featureFlags.strictXPMutationValidation {
-        fatalError("XP mutation violation: \(function) called from \(caller)")
-      }
-      #endif
+    
+    var nextLevelXP: Int {
+        return XPService.cumulativeXPForLevel(currentLevel + 1)
     }
-  }
+    
+    var xpUntilNextLevel: Int {
+        return nextLevelXP - totalXP
+    }
+}
 
-  // MARK: Private
+// MARK: - Errors
 
-  private let logger = Logger(subsystem: "com.habitto.app", category: "XPServiceGuard")
+enum XPServiceError: LocalizedError {
+    case userNotFound
+    case invalidAmount
+    case transactionNotFound
+    case insufficientXP
+    case databaseError(Error)
+    
+    var errorDescription: String? {
+        switch self {
+        case .userNotFound:
+            return "User not found"
+        case .invalidAmount:
+            return "Invalid XP amount"
+        case .transactionNotFound:
+            return "Transaction not found"
+        case .insufficientXP:
+            return "Insufficient XP"
+        case .databaseError(let error):
+            return "Database error: \(error.localizedDescription)"
+        }
+    }
 }

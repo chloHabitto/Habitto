@@ -10,7 +10,8 @@ struct CompletionStreakXPDebugView: View {
     // MARK: - Services
     
     @StateObject private var completionService = CompletionService.shared
-    @StateObject private var streakService = StreakService.shared
+    // TODO: Update to use new StreakService when integrated (no singleton pattern)
+    // @StateObject private var streakService = StreakService.shared
     @StateObject private var xpService = DailyAwardService.shared
     @StateObject private var repository = FirestoreRepository.shared
     
@@ -191,6 +192,8 @@ struct CompletionStreakXPDebugView: View {
             Text("Streaks")
                 .font(.headline)
             
+            // TODO: Update to use new StreakService API
+            /*
             if streakService.streaks.isEmpty {
                 Text("No streaks yet")
                     .foregroundColor(.secondary)
@@ -201,49 +204,14 @@ struct CompletionStreakXPDebugView: View {
             } else {
                 VStack(spacing: 12) {
                     ForEach(Array(streakService.streaks.values.sorted(by: { $0.current > $1.current })), id: \.habitId) { streak in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(streak.habitId.prefix(8))
-                                .font(.system(.caption, design: .monospaced))
-                            
-                            HStack {
-                                // Current Streak
-                                VStack {
-                                    Text("\(streak.current)")
-                                        .font(.title.bold())
-                                        .foregroundColor(.orange)
-                                    Text("Current")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .frame(maxWidth: .infinity)
-                                
-                                Divider()
-                                
-                                // Longest Streak
-                                VStack {
-                                    Text("\(streak.longest)")
-                                        .font(.title.bold())
-                                        .foregroundColor(.purple)
-                                    Text("Longest")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .frame(height: 60)
-                            
-                            if let lastDate = streak.lastCompletionDate {
-                                Text("Last: \(lastDate)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding()
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(8)
-                    }
-                }
-            }
+            */
+            // Placeholder for new StreakService integration
+            Text("Streak display temporarily disabled - awaiting new StreakService integration")
+                .foregroundColor(.secondary)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
         }
     }
     
@@ -289,7 +257,8 @@ struct CompletionStreakXPDebugView: View {
                         
                         do {
                             let count = try await completionService.markComplete(habitId: habitId, at: selectedDate)
-                            try await streakService.calculateStreak(habitId: habitId, date: selectedDate, isComplete: true)
+                            // TODO: Update to use new StreakService API
+                            // try await streakService.calculateStreak(habitId: habitId, date: selectedDate, isComplete: true)
                             try await xpService.awardHabitCompletionXP(habitId: habitId, habitName: "Test", on: selectedDate)
                             print("✅ Completed habit, count: \(count)")
                         } catch {

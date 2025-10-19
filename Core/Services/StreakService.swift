@@ -1,289 +1,322 @@
 import Foundation
-import Combine
+import SwiftData
 
-/// Service for managing habit streaks with consecutive day detection
-///
-/// Responsibilities:
-/// - Track consecutive days of habit completion
-/// - Maintain current streak and longest streak
-/// - Detect streak breaks (non-consecutive days)
-/// - Support "all habits complete" gating for daily streaks
-/// - Handle streak resets
-///
-/// Streak Logic:
-/// - Streak increments when a habit is completed on consecutive days
-/// - Streak breaks if a day is skipped
-/// - Longest streak is preserved even when current streak breaks
+/// Service for managing global habit streak
+/// **Responsibilities:**
+/// - Track single global streak across ALL habits
+/// - Increment only when ALL scheduled habits complete
+/// - Handle vacation days (pause streak, don't break)
+/// - Recalculate streak from historical data
 @MainActor
-class StreakService: ObservableObject {
-    // MARK: - Singleton
+class StreakService {
     
-    static let shared = StreakService()
+    // MARK: - Properties
     
-    // MARK: - Published Properties
-    
-    /// Current streaks by habit ID
-    @Published private(set) var streaks: [String: Streak] = [:]
-    
-    /// Error state
-    @Published private(set) var error: StreakError?
-    
-    // MARK: - Dependencies
-    
-    private let repository: FirestoreRepository
-    private let completionService: CompletionService
-    private let dateFormatter: LocalDateFormatter
+    private let modelContext: ModelContext
+    private let progressService: ProgressService
     
     // MARK: - Initialization
     
-    init(
-        repository: FirestoreRepository? = nil,
-        completionService: CompletionService? = nil,
-        dateFormatter: LocalDateFormatter? = nil
-    ) {
-        self.repository = repository ?? FirestoreRepository.shared
-        self.completionService = completionService ?? CompletionService.shared
-        self.dateFormatter = dateFormatter ?? LocalDateFormatter()
+    init(modelContext: ModelContext, progressService: ProgressService) {
+        self.modelContext = modelContext
+        self.progressService = progressService
+        print("✅ StreakService: Initialized")
     }
     
-    // MARK: - Streak Methods
+    // MARK: - Streak Queries
     
-    /// Update streak after a habit is marked complete
-    ///
-    /// Logic:
-    /// - If last completion was yesterday → increment streak
-    /// - If last completion was today → no change (already counted)
-    /// - If last completion was >1 day ago → reset to 1
-    /// - If no last completion → start at 1
-    ///
-    /// - Parameters:
-    ///   - habitId: The habit identifier
-    ///   - date: The date of completion
-    ///   - completed: Whether the habit was completed (true) or uncompleted (false)
-    func updateStreak(habitId: String, on date: Date, completed: Bool) async throws {
-        let localDateString = dateFormatter.dateToString(date)
-        
-        print("📈 StreakService: Updating streak for habit \(habitId) on \(localDateString)")
-        
-        do {
-            // Delegate to repository
-            try await repository.updateStreak(habitId: habitId, localDate: localDateString, completed: completed)
-            
-            // Refresh streak from repository
-            // In production, this would come from real-time listener
-            print("✅ StreakService: Streak updated for habit \(habitId)")
-            
-        } catch {
-            print("❌ StreakService: Failed to update streak: \(error)")
-            self.error = .updateFailed(error.localizedDescription)
-            throw error
-        }
-    }
-    
-    /// Calculate and update streak based on completion status
-    ///
-    /// This is the main logic that determines streak continuation vs reset.
-    ///
-    /// - Parameters:
-    ///   - habitId: The habit identifier
-    ///   - date: The date of the completion
-    ///   - isComplete: Whether the goal was reached on this date
-    func calculateStreak(habitId: String, date: Date, isComplete: Bool) async throws {
-        let localDateString = dateFormatter.dateToString(date)
-        
-        // Get current streak data
-        let currentStreak = streaks[habitId] ?? Streak(
-            habitId: habitId,
-            current: 0,
-            longest: 0,
-            lastCompletionDate: nil,
-            updatedAt: Date()
-        )
-        
-        guard isComplete else {
-            // If not complete, don't update streak
-            print("ℹ️ StreakService: Habit \(habitId) not complete on \(localDateString), no streak update")
-            return
-        }
-        
-        let newCurrent: Int
-        let yesterday = dateFormatter.addDays(-1, to: localDateString)
-        
-        if let lastCompletionDate = currentStreak.lastCompletionDate {
-            if lastCompletionDate == yesterday {
-                // Consecutive day → increment
-                newCurrent = currentStreak.current + 1
-                print("📈 StreakService: Consecutive day detected, streak: \(currentStreak.current) → \(newCurrent)")
-            } else if lastCompletionDate == localDateString {
-                // Same day → no change
-                newCurrent = currentStreak.current
-                print("ℹ️ StreakService: Same day completion, streak unchanged: \(newCurrent)")
-            } else {
-                // Gap detected → reset to 1
-                newCurrent = 1
-                print("⚠️ StreakService: Streak broken for \(habitId), resetting to 1")
+    /// Get or create global streak for a user
+    /// **Returns:** GlobalStreakModel for the user
+    func getOrCreateStreak(for userId: String) throws -> GlobalStreakModel {
+        // Try to find existing streak
+        let descriptor = FetchDescriptor<GlobalStreakModel>(
+            predicate: #Predicate { streak in
+                streak.userId == userId
             }
-        } else {
-            // First completion ever
-            newCurrent = 1
-            print("🎉 StreakService: First completion for \(habitId), streak: 1")
-        }
-        
-        let newLongest = max(currentStreak.longest, newCurrent)
-        
-        // Update streak in repository
-        try await updateStreak(habitId: habitId, on: date, completed: true)
-        
-        // Update local cache
-        streaks[habitId] = Streak(
-            habitId: habitId,
-            current: newCurrent,
-            longest: newLongest,
-            lastCompletionDate: localDateString,
-            updatedAt: Date()
         )
         
-        print("✅ StreakService: Updated streak - Current: \(newCurrent), Longest: \(newLongest)")
-    }
-    
-    /// Get current streak for a habit
-    ///
-    /// - Parameter habitId: The habit identifier
-    /// - Returns: Current streak count
-    func getCurrentStreak(habitId: String) async throws -> Int {
-        // Check cache first
-        if let cached = streaks[habitId] {
-            return cached.current
+        if let existing = try modelContext.fetch(descriptor).first {
+            print("🔥 StreakService: Found existing streak for user '\(userId)'")
+            return existing
         }
         
-        // Fetch from repository
-        // In production, this would query Firestore
-        return 0
+        // Create new streak
+        let streak = GlobalStreakModel(userId: userId)
+        modelContext.insert(streak)
+        try modelContext.save()
+        
+        print("✨ StreakService: Created new streak for user '\(userId)'")
+        return streak
     }
     
-    /// Get longest streak for a habit
-    ///
-    /// - Parameter habitId: The habit identifier
-    /// - Returns: Longest streak count
-    func getLongestStreak(habitId: String) async throws -> Int {
-        // Check cache first
-        if let cached = streaks[habitId] {
-            return cached.longest
+    // MARK: - Completion Checking
+    
+    /// Check if all scheduled habits are complete for a date
+    /// **Logic:**
+    /// - Only counts habits that should appear on this date
+    /// - ALL must be complete for day to be "complete"
+    /// - Empty list = false (no habits scheduled)
+    func areAllHabitsComplete(
+        on date: Date,
+        habits: [HabitModel]
+    ) throws -> Bool {
+        let normalizedDate = DateUtils.startOfDay(for: date)
+        
+        // Filter to habits scheduled for this date
+        let scheduledHabits = habits.filter { habit in
+            habit.schedule.shouldAppear(on: normalizedDate, habitStartDate: habit.startDate)
         }
         
-        // Fetch from repository
-        return 0
-    }
-    
-    /// Reset streak for a habit (e.g., after deletion or user request)
-    ///
-    /// - Parameter habitId: The habit identifier
-    func resetStreak(habitId: String) async throws {
-        print("🔄 StreakService: Resetting streak for habit \(habitId)")
-        
-        // Update in repository with 0 values
-        let today = dateFormatter.today()
-        try await repository.updateStreak(habitId: habitId, localDate: today, completed: false)
-        
-        // Update cache
-        streaks[habitId] = Streak(
-            habitId: habitId,
-            current: 0,
-            longest: 0,
-            lastCompletionDate: nil,
-            updatedAt: Date()
-        )
-        
-        print("✅ StreakService: Streak reset for habit \(habitId)")
-    }
-    
-    // MARK: - All Habits Complete Logic
-    
-    /// Check if all active habits are complete for a given date
-    ///
-    /// This is used for "daily streak" logic where XP is only awarded
-    /// when ALL habits for the day are completed.
-    ///
-    /// - Parameters:
-    ///   - habits: Array of active habits for the date
-    ///   - date: The date to check
-    ///
-    /// - Returns: True if all habits are complete
-    func areAllHabitsComplete(habits: [String], on date: Date, goals: [String: Int]) async throws -> Bool {
-        guard !habits.isEmpty else {
-            print("ℹ️ StreakService: No habits to check")
+        guard !scheduledHabits.isEmpty else {
+            print("ℹ️ StreakService: No habits scheduled on \(DateUtils.dateKey(for: normalizedDate))")
             return false
         }
         
-        print("🔍 StreakService: Checking if all \(habits.count) habits complete on \(dateFormatter.dateToString(date))")
-        
-        for habitId in habits {
-            let goal = goals[habitId] ?? 1
-            let count = try await completionService.getCompletion(habitId: habitId, on: date)
-            
-            if count < goal {
-                print("ℹ️ StreakService: Habit \(habitId) not complete (\(count)/\(goal))")
+        // Check if each scheduled habit is complete
+        for habit in scheduledHabits {
+            let isComplete = try progressService.isComplete(habit: habit, on: normalizedDate)
+            if !isComplete {
+                print("⏸️ StreakService: '\(habit.name)' incomplete on \(DateUtils.dateKey(for: normalizedDate))")
                 return false
             }
         }
         
-        print("✅ StreakService: All \(habits.count) habits complete!")
+        print("✅ StreakService: All \(scheduledHabits.count) habits complete on \(DateUtils.dateKey(for: normalizedDate))")
         return true
     }
     
-    /// Update overall daily streak (when all habits are complete)
-    ///
-    /// This maintains a special "all" streak that tracks consecutive days
-    /// where ALL active habits were completed.
-    ///
-    /// - Parameter date: The date to update
-    func updateDailyStreak(on date: Date) async throws {
-        let localDateString = dateFormatter.dateToString(date)
-        
-        print("📈 StreakService: Updating daily streak for \(localDateString)")
-        
-        // Update special "all" streak
-        try await updateStreak(habitId: "all", on: date, completed: true)
-        
-        print("✅ StreakService: Daily streak updated")
+    /// Check if a date is a vacation day
+    /// **Note:** For now, returns false. Vacation logic will be added later.
+    private func isVacationDay(_ date: Date) -> Bool {
+        // TODO: Implement vacation day checking from UserDefaults or database
+        return false
     }
     
-    // MARK: - Real-time Updates
+    // MARK: - Streak Updates
     
-    /// Start streaming today's completions for UI updates
-    private func startTodayCompletionsStream() {
-        let today = dateFormatter.today()
-        print("👂 StreakService: Starting completions stream for \(today)")
+    /// Update streak after a progress change
+    /// **Call this after:**
+    /// - Incrementing progress (habit becomes complete)
+    /// - Decrementing progress (day becomes incomplete)
+    func updateStreakIfNeeded(
+        on date: Date,
+        habits: [HabitModel],
+        userId: String
+    ) throws {
+        let normalizedDate = DateUtils.startOfDay(for: date)
+        let dateKey = DateUtils.dateKey(for: normalizedDate)
         
-        // In production, subscribe to repository.completions publisher
-        // For now, set up the structure
+        let streak = try getOrCreateStreak(for: userId)
+        let allComplete = try areAllHabitsComplete(on: normalizedDate, habits: habits)
+        
+        // Check if this is the most recent date
+        let today = DateUtils.startOfDay(for: Date())
+        let isToday = normalizedDate == today
+        let isPast = normalizedDate < today
+        
+        if allComplete {
+            // Day is complete
+            if isToday {
+                // Today just became complete - increment streak
+                let oldStreak = streak.currentStreak
+                streak.incrementStreak(on: normalizedDate)
+                let newStreak = streak.currentStreak
+                
+                try modelContext.save()
+                print("🔥 StreakService: Streak incremented \(oldStreak) → \(newStreak) on \(dateKey)")
+            } else if isPast {
+                // Past day became complete - recalculate entire streak
+                print("🔄 StreakService: Past day (\(dateKey)) completed - recalculating streak")
+                try recalculateStreak(for: userId, habits: habits)
+            }
+        } else {
+            // Day is incomplete
+            if isToday {
+                // Today became incomplete - may break streak
+                let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+                let yesterdayComplete = try areAllHabitsComplete(on: yesterday, habits: habits)
+                
+                if yesterdayComplete && streak.currentStreak > 0 {
+                    // We had a streak going, but today broke it
+                    let oldStreak = streak.currentStreak
+                    streak.breakStreak()
+                    try modelContext.save()
+                    print("💔 StreakService: Streak broken \(oldStreak) → 0 (today incomplete)")
+                }
+            } else if isPast {
+                // Past day became incomplete - recalculate entire streak
+                print("🔄 StreakService: Past day (\(dateKey)) became incomplete - recalculating streak")
+                try recalculateStreak(for: userId, habits: habits)
+            }
+        }
     }
     
-    /// Refresh all streaks from repository
-    func refreshStreaks() async {
-        print("🔄 StreakService: Refreshing all streaks")
+    // MARK: - Recalculation
+    
+    /// Recalculate streak from scratch based on historical data
+    /// **Use cases:**
+    /// - After migration
+    /// - When past data changes
+    /// - When streak seems incorrect
+    func recalculateStreak(
+        for userId: String,
+        habits: [HabitModel]
+    ) throws {
+        print("🔄 StreakService: Starting full streak recalculation for user '\(userId)'")
         
-        // In production with real Firestore, this would come from real-time listeners
-        // For mock mode, update from repository state
-        streaks = repository.streaks
+        let streak = try getOrCreateStreak(for: userId)
+        
+        // Find date range to check
+        let today = DateUtils.startOfDay(for: Date())
+        
+        // Get earliest habit start date
+        guard let earliestStart = habits.map({ $0.startDate }).min() else {
+            print("ℹ️ StreakService: No habits found - resetting streak to 0")
+            streak.currentStreak = 0
+            streak.lastCompleteDate = nil
+            try modelContext.save()
+            return
+        }
+        
+        let startDate = DateUtils.startOfDay(for: earliestStart)
+        
+        // Walk through each day from earliest start to today
+        var currentStreakCount = 0
+        var longestStreakCount = 0
+        var totalCompleteDays = 0
+        var lastCompleteDate: Date? = nil
+        
+        var checkDate = startDate
+        while checkDate <= today {
+            let isVacation = isVacationDay(checkDate)
+            
+            if isVacation {
+                // Vacation day: don't break streak, don't increment
+                print("🏖️ StreakService: Vacation day on \(DateUtils.dateKey(for: checkDate))")
+            } else {
+                let isComplete = try areAllHabitsComplete(on: checkDate, habits: habits)
+                
+                if isComplete {
+                    // Day complete: increment streak
+                    currentStreakCount += 1
+                    totalCompleteDays += 1
+                    lastCompleteDate = checkDate
+                    
+                    if currentStreakCount > longestStreakCount {
+                        longestStreakCount = currentStreakCount
+                    }
+                } else {
+                    // Day incomplete: break streak (unless it's future)
+                    if checkDate <= today {
+                        currentStreakCount = 0
+                    }
+                }
+            }
+            
+            checkDate = Calendar.current.date(byAdding: .day, value: 1, to: checkDate)!
+        }
+        
+        // Update streak model
+        streak.currentStreak = currentStreakCount
+        streak.longestStreak = max(streak.longestStreak, longestStreakCount)
+        streak.totalCompleteDays = totalCompleteDays
+        streak.lastCompleteDate = lastCompleteDate
+        streak.lastUpdated = Date()
+        
+        try modelContext.save()
+        
+        print("✅ StreakService: Recalculation complete")
+        print("   Current: \(currentStreakCount) days")
+        print("   Longest: \(longestStreakCount) days")
+        print("   Total: \(totalCompleteDays) days")
+    }
+    
+    // MARK: - Manual Adjustments
+    
+    /// Manually break the streak (for testing or user request)
+    func breakStreak(for userId: String) throws {
+        let streak = try getOrCreateStreak(for: userId)
+        let oldStreak = streak.currentStreak
+        
+        streak.breakStreak()
+        try modelContext.save()
+        
+        print("💔 StreakService: Manually broke streak \(oldStreak) → 0")
+    }
+    
+    /// Manually increment streak (for testing or data correction)
+    func incrementStreak(for userId: String, on date: Date) throws {
+        let streak = try getOrCreateStreak(for: userId)
+        let oldStreak = streak.currentStreak
+        
+        streak.incrementStreak(on: date)
+        try modelContext.save()
+        
+        print("🔥 StreakService: Manually incremented streak \(oldStreak) → \(streak.currentStreak)")
+    }
+    
+    // MARK: - Analytics
+    
+    /// Get streak statistics for display
+    func getStreakStats(for userId: String) throws -> StreakStats {
+        let streak = try getOrCreateStreak(for: userId)
+        
+        return StreakStats(
+            currentStreak: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            totalCompleteDays: streak.totalCompleteDays,
+            lastCompleteDate: streak.lastCompleteDate,
+            isOnStreak: streak.currentStreak > 0
+        )
+    }
+    
+    /// Check if user maintained their streak today
+    func didMaintainStreakToday(
+        for userId: String,
+        habits: [HabitModel]
+    ) throws -> Bool {
+        let today = DateUtils.startOfDay(for: Date())
+        return try areAllHabitsComplete(on: today, habits: habits)
+    }
+}
+
+// MARK: - Result Types
+
+/// Streak statistics for display
+struct StreakStats {
+    let currentStreak: Int
+    let longestStreak: Int
+    let totalCompleteDays: Int
+    let lastCompleteDate: Date?
+    let isOnStreak: Bool
+    
+    var description: String {
+        if isOnStreak {
+            return "🔥 \(currentStreak) day streak! (Best: \(longestStreak))"
+        } else {
+            return "Best streak: \(longestStreak) days"
+        }
     }
 }
 
 // MARK: - Errors
 
 enum StreakError: LocalizedError {
-    case updateFailed(String)
-    case calculationFailed(String)
-    case invalidDate(String)
+    case userNotFound
+    case noHabitsScheduled
+    case invalidDate
+    case databaseError(Error)
     
     var errorDescription: String? {
         switch self {
-        case .updateFailed(let message):
-            return "Failed to update streak: \(message)"
-        case .calculationFailed(let message):
-            return "Failed to calculate streak: \(message)"
-        case .invalidDate(let message):
-            return "Invalid date: \(message)"
+        case .userNotFound:
+            return "User not found"
+        case .noHabitsScheduled:
+            return "No habits scheduled for this date"
+        case .invalidDate:
+            return "Invalid date provided"
+        case .databaseError(let error):
+            return "Database error: \(error.localizedDescription)"
         }
     }
 }
