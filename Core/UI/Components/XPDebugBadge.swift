@@ -48,7 +48,7 @@ struct XPDebugBadge: View {
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
-    let today = DateUtils.today()
+    let today = DateUtils.startOfDay(for: Date())
     
     guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }
     let startDate = DateUtils.startOfDay(for: earliestStartDate)

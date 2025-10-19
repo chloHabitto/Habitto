@@ -52,18 +52,14 @@ class XPMigrator {
             print("⚠️ Level mismatch: stored=\(currentLevel), calculated=\(calculatedLevel). Using calculated.")
         }
         
-        // Calculate XP for current level and next level
-        let xpForCurrentLevel = UserProgressModel.calculateXPForLevel(calculatedLevel)
-        let xpForNextLevel = UserProgressModel.calculateXPForLevel(calculatedLevel + 1)
-        
-        // Create UserProgressModel
+        // Create UserProgressModel (init will calculate levels automatically)
         let userProgress = UserProgressModel(
             userId: userId,
-            totalXP: totalXP,
-            currentLevel: calculatedLevel,
-            xpForCurrentLevel: xpForCurrentLevel,
-            xpForNextLevel: xpForNextLevel
+            totalXP: totalXP
         )
+        
+        // Update level progress (calculates current/next level XP)
+        userProgress.updateLevelProgress()
         
         if !dryRun {
             modelContext.insert(userProgress)
@@ -98,22 +94,26 @@ class XPMigrator {
         
         // Try to load XP history from UserDefaults
         // Format: Array of [date: String, amount: Int, reason: String]
+        struct XPHistoryEntry: Codable {
+            let date: String
+            let amount: Int
+            let reason: String
+        }
+        
         if let historyData = UserDefaults.standard.data(forKey: "xp_history_\(userId)"),
-           let history = try? JSONDecoder().decode([[String: Any]].self, from: historyData) {
+           let history = try? JSONDecoder().decode([XPHistoryEntry].self, from: historyData) {
             
             // Migrate each transaction
             for entry in history {
-                guard let dateString = entry["date"] as? String,
-                      let amount = entry["amount"] as? Int,
-                      let reason = entry["reason"] as? String,
-                      let date = parseDate(dateString) else {
+                guard let date = parseDate(entry.date) else {
+                    print("⚠️ Invalid date in XP history: \(entry.date)")
                     continue
                 }
                 
                 let transaction = XPTransactionModel(
                     userId: userId,
-                    amount: amount,
-                    reason: reason,
+                    amount: entry.amount,
+                    reason: entry.reason,
                     timestamp: date
                 )
                 

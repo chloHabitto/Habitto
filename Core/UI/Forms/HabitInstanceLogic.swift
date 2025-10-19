@@ -7,7 +7,7 @@ class HabitInstanceLogic {
   // MARK: - Habit Display Logic
 
   static func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
-    let weekday = DateUtils.weekday(for: date)
+    let weekday = Calendar.current.component(.weekday, from: date)
 
     // Check if the date is before the habit start date
     if date < DateUtils.startOfDay(for: habit.startDate) {

@@ -54,9 +54,9 @@ extension View {
   }
 }
 
-// MARK: - DateUtils
+// MARK: - LegacyDateUtils
 
-enum DateUtils {
+enum LegacyDateUtils {
   // MARK: Internal
 
   static let calendar = Calendar.current
@@ -65,22 +65,22 @@ enum DateUtils {
 
   static func today() -> Date {
     let now = Date()
-    print("🔍 DateUtils.today() - Raw Date(): \(now)")
-    print("🔍 DateUtils.today() - Current timezone: \(TimeZone.current)")
+    print("🔍 LegacyDateUtils.today() - Raw Date(): \(now)")
+    print("🔍 LegacyDateUtils.today() - Current timezone: \(TimeZone.current)")
 
     // Get today's date components in the current timezone
     let components = calendar.dateComponents([.year, .month, .day], from: now)
     let today = calendar.date(from: components) ?? now
 
-    print("🔍 DateUtils.today() - Calculated today: \(today)")
-    print("🔍 DateUtils.today() - Today components: \(components)")
+    print("🔍 LegacyDateUtils.today() - Calculated today: \(today)")
+    print("🔍 LegacyDateUtils.today() - Today components: \(components)")
 
     return today
   }
 
   /// Force refresh today's date (useful for debugging timezone issues)
   static func forceRefreshToday() -> Date {
-    print("🔄 DateUtils.forceRefreshToday() - Clearing date cache and recalculating...")
+    print("🔄 LegacyDateUtils.forceRefreshToday() - Clearing date cache and recalculating...")
     clearDateCache()
 
     // Force timezone refresh
@@ -90,9 +90,9 @@ enum DateUtils {
     robustCalendar.locale = Locale.current
 
     let today = robustCalendar.startOfDay(for: now)
-    print("🔄 DateUtils.forceRefreshToday() - New today: \(today)")
+    print("🔄 LegacyDateUtils.forceRefreshToday() - New today: \(today)")
     print(
-      "🔄 DateUtils.forceRefreshToday() - New components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
+      "🔄 LegacyDateUtils.forceRefreshToday() - New components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
 
     return today
   }

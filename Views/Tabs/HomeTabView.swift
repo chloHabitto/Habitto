@@ -60,7 +60,7 @@ struct HomeTabView: View {
     
     return mainContent
       .onAppear {
-        let today = DateUtils.today()
+        let today = LegacyDateUtils.today()
         if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
           // No update needed
         } else {
@@ -636,7 +636,7 @@ struct HomeTabView: View {
 
   private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
     print("🔍 shouldShowHabitOnDate called for '\(habit.name)' with schedule: '\(habit.schedule)'")
-    let weekday = DateUtils.weekday(for: date)
+    let weekday = Calendar.current.component(.weekday, from: date)
 
     // Check if the date is before the habit start date
     if date < DateUtils.startOfDay(for: habit.startDate) {
@@ -1068,7 +1068,7 @@ struct HomeTabView: View {
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
-    let today = DateUtils.today()
+    let today = LegacyDateUtils.today()
     
     // Find the earliest habit start date
     guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }

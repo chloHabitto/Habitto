@@ -23,10 +23,10 @@ final class AchievementModel {
     @Attribute(.unique) var id: String
     
     /// User ID
-    @Attribute(.index) var userId: String
+    var userId: String
     
     /// Unique achievement identifier (e.g., "first_habit", "streak_7")
-    @Attribute(.index) var achievementId: String
+    var achievementId: String
     
     // MARK: - Achievement Data
     

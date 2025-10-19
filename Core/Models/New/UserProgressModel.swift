@@ -19,7 +19,7 @@ final class UserProgressModel {
     @Attribute(.unique) var id: UUID
     
     /// User ID for multi-user support
-    @Attribute(.index) var userId: String
+    var userId: String
     
     // MARK: - XP Data
     
@@ -127,7 +127,7 @@ final class UserProgressModel {
         
         // Calculate XP within current level
         let currentLevelStartXP = Self.cumulativeXPForLevel(newLevel)
-        let nextLevelStartXP = Self.cumulativeXPForLevel(newLevel + 1)
+        _ = Self.cumulativeXPForLevel(newLevel + 1) // nextLevelStartXP (unused but kept for reference)
         
         xpForCurrentLevel = totalXP - currentLevelStartXP
         xpForNextLevel = Self.xpRequiredForLevel(newLevel)

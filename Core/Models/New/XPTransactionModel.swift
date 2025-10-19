@@ -18,7 +18,7 @@ final class XPTransactionModel {
     @Attribute(.unique) var id: UUID
     
     /// User ID (indexed for fast user queries)
-    @Attribute(.index) var userId: String
+    var userId: String
     
     // MARK: - Transaction Data
     
@@ -29,7 +29,7 @@ final class XPTransactionModel {
     var reason: String
     
     /// When transaction occurred
-    @Attribute(.index) var timestamp: Date
+    var timestamp: Date
     
     // MARK: - Initialization
     

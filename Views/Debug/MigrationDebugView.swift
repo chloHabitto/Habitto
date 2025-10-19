@@ -1,312 +1,326 @@
-//
-//  MigrationDebugView.swift
-//  Habitto
-//
-//  Debug view for testing Firebase migration
-//
-
 import SwiftUI
+import SwiftData
 
-// MARK: - MigrationDebugView
-
-/// Debug view for monitoring and testing Firebase migration
-/// Add this to your app temporarily for easy verification
+/// Debug view for testing migration system
+///
+/// **Access via:** Settings → Advanced → Migration Debug
 struct MigrationDebugView: View {
-  @StateObject private var viewModel = MigrationDebugViewModel()
-  
-  var body: some View {
-    NavigationView {
-      ScrollView {
-        VStack(spacing: 20) {
-          // Status Card
-          StatusCard(viewModel: viewModel)
-          
-          // Action Buttons
-          VStack(spacing: 12) {
-            Button(action: {
-              Task {
-                await viewModel.checkStatus()
-              }
-            }) {
-              Label("Check Migration Status", systemImage: "checkmark.circle")
-                .frame(maxWidth: .infinity)
+    // MARK: - State
+    
+    @StateObject private var testRunner = MigrationTestRunner()
+    @State private var showAlert = false
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    
+    // MARK: - Body
+    
+    var body: some View {
+        List {
+            // Test Data Section
+            Section {
+                HStack {
+                    Text("Old Habits:")
+                    Spacer()
+                    Text("\(testRunner.getOldDataStatus().habitCount)")
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("Old Progress:")
+                    Spacer()
+                    Text("\(testRunner.getOldDataStatus().progressCount)")
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("Old XP:")
+                    Spacer()
+                    Text("\(testRunner.getOldDataStatus().xp)")
+                        .foregroundColor(.secondary)
+                }
+                
+                Button {
+                    generateTestData()
+                } label: {
+                    Label("Generate Sample Data", systemImage: "plus.circle.fill")
+                }
+                
+                Button(role: .destructive) {
+                    clearTestData()
+                } label: {
+                    Label("Clear Sample Data", systemImage: "trash")
+                }
+            } header: {
+                Text("Test Data")
+            } footer: {
+                Text("Generate sample habits for testing migration")
             }
-            .buttonStyle(.borderedProminent)
             
-            Button(action: {
-              Task {
-                await viewModel.compareHabits()
-              }
-            }) {
-              Label("Compare Local vs Firestore", systemImage: "arrow.left.arrow.right")
-                .frame(maxWidth: .infinity)
+            // Migration Section
+            Section {
+                Button {
+                    runDryRun()
+                } label: {
+                    Label("Run Dry Run", systemImage: "flask")
+                }
+                .disabled(testRunner.isRunning)
+                
+                Button {
+                    runActualMigration()
+                } label: {
+                    Label("Run Actual Migration", systemImage: "arrow.right.circle.fill")
+                }
+                .disabled(testRunner.isRunning)
+                
+                Button(role: .destructive) {
+                    rollback()
+                } label: {
+                    Label("Rollback Migration", systemImage: "arrow.uturn.backward.circle")
+                }
+                .disabled(testRunner.isRunning)
+            } header: {
+                Text("Migration")
+            } footer: {
+                Text("Test migration without affecting production data")
             }
-            .buttonStyle(.bordered)
             
-            Button(action: {
-              Task {
-                await viewModel.showFirestoreHabits()
-              }
-            }) {
-              Label("Show Firestore Habits", systemImage: "cloud")
-                .frame(maxWidth: .infinity)
+            // Validation Section
+            Section {
+                Button {
+                    validate()
+                } label: {
+                    Label("Validate Data", systemImage: "checkmark.shield")
+                }
+                .disabled(testRunner.isRunning)
+                
+                if let result = testRunner.validationResult {
+                    HStack {
+                        Text("Status:")
+                        Spacer()
+                        Text(result.isValid ? "✅ PASSED" : "❌ FAILED")
+                            .foregroundColor(result.isValid ? .green : .red)
+                    }
+                    
+                    if !result.isValid {
+                        ForEach(result.errors, id: \.self) { error in
+                            Text("❌ \(error)")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+            } header: {
+                Text("Validation")
             }
-            .buttonStyle(.bordered)
             
-            Button(action: {
-              Task {
-                await viewModel.runMigration()
-              }
-            }) {
-              Label("Run Migration Now", systemImage: "arrow.clockwise")
-                .frame(maxWidth: .infinity)
+            // Full Test Section
+            Section {
+                Button {
+                    runFullTest()
+                } label: {
+                    Label("Run Full Test", systemImage: "play.circle.fill")
+                        .fontWeight(.semibold)
+                }
+                .disabled(testRunner.isRunning)
+            } header: {
+                Text("Automated Testing")
+            } footer: {
+                Text("Runs complete test: generate data → dry run → migrate → validate → cleanup")
             }
-            .buttonStyle(.bordered)
-            .tint(.orange)
-            .disabled(viewModel.isRunning)
-          }
-          .padding(.horizontal)
-          
-          // Console Output
-          if !viewModel.consoleOutput.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-              Text("Console Output")
-                .font(.headline)
-                .padding(.horizontal)
-              
-              ScrollView {
-                Text(viewModel.consoleOutput)
-                  .font(.system(.caption, design: .monospaced))
-                  .padding()
-                  .frame(maxWidth: .infinity, alignment: .leading)
-                  .background(Color.black.opacity(0.05))
-                  .cornerRadius(8)
-              }
-              .frame(height: 300)
-              .padding(.horizontal)
+            
+            // Progress Section
+            if testRunner.isRunning {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            ProgressView(value: testRunner.progress)
+                            Text("\(Int(testRunner.progress * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Text(testRunner.currentStep)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("Progress")
+                }
             }
-          }
+            
+            // Summary Section
+            if let summary = testRunner.migrationSummary {
+                Section {
+                    SummaryRow(title: "Status", value: summary.success ? "✅ Success" : "❌ Failed", valueColor: summary.success ? .green : .red)
+                    SummaryRow(title: "Mode", value: summary.dryRun ? "🧪 Dry Run" : "💾 Live")
+                    SummaryRow(title: "Habits", value: "\(summary.habitsCreated)")
+                    SummaryRow(title: "Progress", value: "\(summary.progressRecordsCreated)")
+                    SummaryRow(title: "XP", value: "\(summary.totalXP)")
+                    SummaryRow(title: "Level", value: "\(UserProgressModel.calculateLevel(fromXP: summary.totalXP))")
+                    SummaryRow(title: "Current Streak", value: "\(summary.currentStreak) days")
+                    SummaryRow(title: "Longest Streak", value: "\(summary.longestStreak) days")
+                    
+                    if let duration = summary.duration {
+                        SummaryRow(title: "Duration", value: String(format: "%.2fs", duration))
+                    }
+                    
+                    // Schedule parsing details
+                    if !summary.scheduleParsing.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Schedule Parsing:")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            ForEach(summary.scheduleParsing.sorted(by: { $0.key < $1.key }), id: \.key) { type, count in
+                                Text("  • \(type): \(count) habits")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Migration Summary")
+                }
+            }
+            
+            // Output Log Section
+            Section {
+                ScrollView {
+                    Text(testRunner.output)
+                        .font(.system(.caption, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
+                .frame(height: 300)
+                
+                Button {
+                    testRunner.output = ""
+                } label: {
+                    Label("Clear Log", systemImage: "trash")
+                }
+            } header: {
+                Text("Output Log")
+            }
         }
-        .padding(.vertical)
-      }
-      .navigationTitle("Migration Debug")
-      .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Migration Debug")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert(alertTitle, isPresented: $showAlert) {
+            Button("OK") { }
+        } message: {
+            Text(alertMessage)
+        }
+        .onAppear {
+            setupTestRunner()
+        }
     }
-  }
+    
+    // MARK: - Actions
+    
+    private func setupTestRunner() {
+        do {
+            try testRunner.setup()
+        } catch {
+            showAlert(title: "Setup Failed", message: error.localizedDescription)
+        }
+    }
+    
+    private func generateTestData() {
+        testRunner.generateTestData()
+        showAlert(title: "Success", message: "Generated \(testRunner.getOldDataStatus().habitCount) test habits")
+    }
+    
+    private func clearTestData() {
+        testRunner.clearTestData()
+        showAlert(title: "Success", message: "Test data cleared")
+    }
+    
+    private func runDryRun() {
+        Task {
+            do {
+                try await testRunner.runDryRun()
+                showAlert(title: "Dry Run Complete", message: testRunner.migrationSummary?.success == true ? "Migration test passed" : "Migration test failed")
+            } catch {
+                showAlert(title: "Dry Run Failed", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    private func runActualMigration() {
+        Task {
+            do {
+                try await testRunner.runActualMigration()
+                showAlert(title: "Migration Complete", message: testRunner.migrationSummary?.success == true ? "Data migrated successfully" : "Migration failed")
+            } catch {
+                showAlert(title: "Migration Failed", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    private func rollback() {
+        Task {
+            do {
+                try await testRunner.rollback()
+                showAlert(title: "Rollback Complete", message: "All new data deleted")
+            } catch {
+                showAlert(title: "Rollback Failed", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    private func validate() {
+        Task {
+            do {
+                try await testRunner.validateMigration()
+                let isValid = testRunner.validationResult?.isValid == true
+                showAlert(
+                    title: isValid ? "Validation Passed" : "Validation Failed",
+                    message: isValid ? "All checks passed" : "Some checks failed - see details"
+                )
+            } catch {
+                showAlert(title: "Validation Failed", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    private func runFullTest() {
+        Task {
+            await testRunner.runFullTest()
+            let success = testRunner.migrationSummary?.success == true && testRunner.validationResult?.isValid == true
+            showAlert(
+                title: success ? "All Tests Passed" : "Tests Failed",
+                message: success ? "Migration system is working correctly" : "Some tests failed - check log for details"
+            )
+        }
+    }
+    
+    private func showAlert(title: String, message: String) {
+        alertTitle = title
+        alertMessage = message
+        showAlert = true
+    }
 }
 
-// MARK: - StatusCard
+// MARK: - Summary Row
 
-private struct StatusCard: View {
-  @ObservedObject var viewModel: MigrationDebugViewModel
-  
-  var body: some View {
-    VStack(spacing: 16) {
-      // Title
-      HStack {
-        Image(systemName: statusIcon)
-          .foregroundColor(statusColor)
-        Text("Migration Status")
-          .font(.headline)
-        Spacer()
-      }
-      
-      // Status Info
-      if let report = viewModel.report {
-        VStack(alignment: .leading, spacing: 12) {
-          InfoRow(label: "User ID", value: report.userId)
-          InfoRow(label: "Authenticated", value: report.isAuthenticated ? "✅ Yes" : "❌ No")
-          
-          if let state = report.migrationState {
-            InfoRow(label: "State", value: state.status.rawValue.capitalized)
-            if let error = state.error {
-              InfoRow(label: "Error", value: error, color: .red)
-            }
-          } else {
-            InfoRow(label: "State", value: "Not Started", color: .orange)
-          }
-          
-          Divider()
-          
-          InfoRow(label: "Local Habits", value: "\(report.localHabitCount)")
-          InfoRow(label: "Firestore Habits", value: "\(report.firestoreHabitCount)")
-          
-          if report.localHabitCount == report.firestoreHabitCount && report.firestoreHabitCount > 0 {
-            HStack {
-              Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-              Text("Counts match!")
-                .font(.caption)
-                .foregroundColor(.green)
-            }
-          }
-        }
-      } else {
-        Text("Tap 'Check Migration Status' to load")
-          .font(.caption)
-          .foregroundColor(.secondary)
-      }
-      
-      // Overall Status
-      if let report = viewModel.report {
+private struct SummaryRow: View {
+    let title: String
+    let value: String
+    var valueColor: Color = .primary
+    
+    var body: some View {
         HStack {
-          Spacer()
-          Text(report.isComplete ? "✅ COMPLETE" : "⚠️ INCOMPLETE")
-            .font(.headline)
-            .foregroundColor(report.isComplete ? .green : .orange)
-          Spacer()
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundColor(valueColor)
         }
-        .padding(.top, 8)
-      }
-      
-      // Progress
-      if viewModel.isRunning {
-        ProgressView()
-          .progressViewStyle(.circular)
-      }
     }
-    .padding()
-    .background(Color.white)
-    .cornerRadius(12)
-    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-    .padding(.horizontal)
-  }
-  
-  private var statusIcon: String {
-    guard let report = viewModel.report else { return "questionmark.circle" }
-    return report.isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-  }
-  
-  private var statusColor: Color {
-    guard let report = viewModel.report else { return .gray }
-    return report.isComplete ? .green : .orange
-  }
-}
-
-// MARK: - InfoRow
-
-private struct InfoRow: View {
-  let label: String
-  let value: String
-  var color: Color = .primary
-  
-  var body: some View {
-    HStack {
-      Text(label)
-        .font(.caption)
-        .foregroundColor(.secondary)
-      Spacer()
-      Text(value)
-        .font(.caption)
-        .fontWeight(.medium)
-        .foregroundColor(color)
-    }
-  }
-}
-
-// MARK: - MigrationDebugViewModel
-
-@MainActor
-class MigrationDebugViewModel: ObservableObject {
-  @Published var report: MigrationReport?
-  @Published var consoleOutput: String = ""
-  @Published var isRunning: Bool = false
-  
-  func checkStatus() async {
-    isRunning = true
-    consoleOutput = "🔍 Checking migration status...\n\n"
-    
-    report = await MigrationVerificationHelper.shared.getMigrationReport()
-    
-    if let report = report {
-      consoleOutput += "✅ Status check complete\n\n"
-      consoleOutput += formatReport(report)
-    } else {
-      consoleOutput += "❌ Failed to get status\n"
-    }
-    
-    isRunning = false
-  }
-  
-  func compareHabits() async {
-    isRunning = true
-    consoleOutput = "🔍 Comparing habits...\n\n"
-    
-    // Capture print output
-    await MigrationVerificationHelper.shared.compareHabits()
-    
-    consoleOutput += "✅ Comparison complete (check Xcode console for details)\n"
-    
-    isRunning = false
-  }
-  
-  func showFirestoreHabits() async {
-    isRunning = true
-    consoleOutput = "📚 Loading Firestore habits...\n\n"
-    
-    // Capture print output
-    await MigrationVerificationHelper.shared.printFirestoreHabits()
-    
-    consoleOutput += "✅ Firestore habits loaded (check Xcode console for details)\n"
-    
-    isRunning = false
-  }
-  
-  func runMigration() async {
-    isRunning = true
-    consoleOutput = "🚀 Starting migration...\n\n"
-    
-    await BackfillJob.shared.run()
-    
-    consoleOutput += "✅ Migration completed\n"
-    
-    // Refresh status
-    await checkStatus()
-    
-    isRunning = false
-  }
-  
-  private func formatReport(_ report: MigrationReport) -> String {
-    var output = ""
-    
-    output += "👤 User: \(report.userId)\n"
-    output += "🔐 Auth: \(report.isAuthenticated ? "✅" : "❌")\n\n"
-    
-    if let state = report.migrationState {
-      output += "📋 State: \(state.status.rawValue)\n"
-      if let error = state.error {
-        output += "❌ Error: \(error)\n"
-      }
-    } else {
-      output += "📋 State: Not Started\n"
-    }
-    
-    output += "\n📊 Habits:\n"
-    output += "   Local: \(report.localHabitCount)\n"
-    output += "   Firestore: \(report.firestoreHabitCount)\n"
-    
-    if report.localHabitCount == report.firestoreHabitCount && report.firestoreHabitCount > 0 {
-      output += "   ✅ Match!\n"
-    } else if report.firestoreHabitCount < report.localHabitCount {
-      output += "   ⚠️ Partial migration\n"
-    }
-    
-    output += "\n🎯 Status: \(report.isComplete ? "✅ COMPLETE" : "⚠️ INCOMPLETE")\n"
-    
-    if !report.errors.isEmpty {
-      output += "\n❌ Issues:\n"
-      for error in report.errors {
-        output += "   • \(error)\n"
-      }
-    }
-    
-    return output
-  }
 }
 
 // MARK: - Preview
 
 #Preview {
-  MigrationDebugView()
+    NavigationStack {
+        MigrationDebugView()
+    }
 }
-

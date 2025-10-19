@@ -154,7 +154,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       throw RepositoryError.habitNotFound
     }
 
-    let dateKey = DateUtils.dateKey(for: date)
+    let dateKey = Habit.dateKey(for: date)
     habit.completionHistory[dateKey] = Int(progress * 100) // Store as percentage
 
     // Note: updateStreakWithReset() was removed in Phase 4. Streak is now computed-only.
@@ -168,7 +168,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       throw RepositoryError.habitNotFound
     }
 
-    let dateKey = DateUtils.dateKey(for: date)
+    let dateKey = Habit.dateKey(for: date)
     let progress = habit.completionHistory[dateKey] ?? 0
     return Double(progress) / 100.0 // Convert from percentage
   }
@@ -181,7 +181,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       throw RepositoryError.habitNotFound
     }
 
-    let dateKey = DateUtils.dateKey(for: date)
+    let dateKey = Habit.dateKey(for: date)
     let progress = habit.completionHistory[dateKey] ?? 0
     return Int(Double(progress) / 100.0) // Convert from percentage to count
   }
@@ -258,7 +258,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
       throw RepositoryError.habitNotFound
     }
 
-    let dateKey = DateUtils.dateKey(for: date)
+    let dateKey = Habit.dateKey(for: date)
     habit.completionHistory[dateKey] = count
     habit.completionStatus[dateKey] = count > 0
     

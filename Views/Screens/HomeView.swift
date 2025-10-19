@@ -21,7 +21,7 @@ class HomeViewState: ObservableObject {
 
   init() {
     print("🚀 HomeViewState: Initializing...")
-    let today = DateUtils.today()
+    let today = LegacyDateUtils.today()
     self.selectedDate = today
     print("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
 
@@ -158,7 +158,7 @@ class HomeViewState: ObservableObject {
     print("🔄 HomeView: Updating all streaks...")
 
     // Check if all habits are completed for today
-    let today = DateUtils.today()
+    let today = LegacyDateUtils.today()
     let todayHabits = habits.filter { habit in
       // Check if habit should be shown on today's date
       let calendar = Calendar.current
@@ -326,7 +326,7 @@ class HomeViewState: ObservableObject {
   /// Force update selectedDate to today
   func forceUpdateSelectedDateToToday() {
     print("🔄 HomeViewState: Force updating selectedDate to today")
-    let today = DateUtils.today()
+    let today = LegacyDateUtils.today()
     print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
     print("🔄 HomeViewState: Target today: \(today)")
     selectedDate = today
@@ -336,7 +336,7 @@ class HomeViewState: ObservableObject {
   /// Force refresh selectedDate with cache clearing
   func forceRefreshSelectedDate() {
     print("🔄 HomeViewState: Force refreshing selectedDate")
-    let today = DateUtils.forceRefreshToday()
+    let today = LegacyDateUtils.forceRefreshToday()
     print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
     print("🔄 HomeViewState: Refreshed today: \(today)")
     selectedDate = today
@@ -583,7 +583,7 @@ struct HomeView: View {
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
-    let today = DateUtils.today()
+    let today = LegacyDateUtils.today()
     
     // Find the earliest habit start date
     guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }

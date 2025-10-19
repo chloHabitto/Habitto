@@ -21,10 +21,10 @@ final class DailyProgressModel {
     // MARK: - Keys (Indexed for fast queries)
     
     /// Date string "yyyy-MM-dd" for fast lookups
-    @Attribute(.index) var dateString: String
+    var dateString: String
     
     /// Normalized date (start of day in local timezone)
-    @Attribute(.index) var date: Date
+    var date: Date
     
     // MARK: - Progress Data
     
@@ -123,8 +123,9 @@ final class DailyProgressModel {
         
         // Normalize date to start of day
         let calendar = Calendar.current
-        self.date = calendar.startOfDay(for: date)
-        self.dateString = DateUtils.dateKey(for: self.date)
+        let normalizedDate = calendar.startOfDay(for: date)
+        self.date = normalizedDate
+        self.dateString = DateUtils.dateKey(for: normalizedDate)
         
         self.progressCount = progressCount
         self.goalCount = goalCount

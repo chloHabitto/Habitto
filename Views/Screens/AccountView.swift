@@ -59,6 +59,19 @@ struct AccountView: View {
                       showingDebugAlert = true
                     }
                   }
+                  
+                  Divider()
+                    .padding(.leading, 56)
+                  
+                  AccountOptionRow(
+                    icon: "arrow.triangle.2.circlepath",
+                    title: "Migration Debug",
+                    subtitle: "Test data migration system",
+                    hasChevron: true,
+                    iconColor: .blue)
+                  {
+                    showingMigrationDebug = true
+                  }
                 }
                 .background(Color.surface)
                 .cornerRadius(16)
@@ -160,6 +173,11 @@ struct AccountView: View {
     } message: {
       Text("Check the Xcode console to see the detailed user statistics report.")
     }
+    .sheet(isPresented: $showingMigrationDebug) {
+      NavigationStack {
+        MigrationDebugView()
+      }
+    }
   }
 
   // MARK: Private
@@ -173,6 +191,7 @@ struct AccountView: View {
   @State private var showingSignOutAlert = false
   @State private var showingDeleteAccountConfirmation = false
   @State private var showingDebugAlert = false
+  @State private var showingMigrationDebug = false
 
   private var isLoggedIn: Bool {
     switch authManager.authState {

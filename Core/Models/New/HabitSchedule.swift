@@ -12,7 +12,7 @@ import Foundation
 /// - `.specificWeekdays([.monday, .friday])` → Only Mon & Fri
 /// - `.frequencyWeekly(3)` → Shows every day, goal is 3 completions per week
 /// - `.frequencyMonthly(10)` → Shows every day, goal is 10 completions per month
-enum Schedule: Codable, Equatable, Hashable {
+enum HabitSchedule: Codable, Equatable, Hashable {
     case daily
     case everyNDays(Int)
     case specificWeekdays([Weekday])
@@ -159,12 +159,12 @@ enum Weekday: String, Codable, CaseIterable, Hashable {
     }
 }
 
-/// Helper to convert old schedule strings to new Schedule enum
-extension Schedule {
+/// Helper to convert old schedule strings to new HabitSchedule enum
+extension HabitSchedule {
     /// Migrate from old string-based schedule format
     /// - Parameter legacySchedule: Old schedule string (e.g., "Everyday", "Monday, Wednesday")
     /// - Returns: New Schedule enum case
-    static func fromLegacyString(_ legacySchedule: String) -> Schedule {
+    static func fromLegacyString(_ legacySchedule: String) -> HabitSchedule {
         let lower = legacySchedule.lowercased().trimmingCharacters(in: .whitespaces)
         
         // 1. Daily patterns
