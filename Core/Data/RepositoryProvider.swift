@@ -8,7 +8,8 @@ import SwiftData
 @MainActor
 protocol RepositoryProviderProtocol {
   var habitRepository: any HabitRepositoryProtocol { get }
-  var xpService: any XPServiceProtocol { get }
+  // TODO: Update to use new XPService when integrated
+  // var xpService: any XPServiceProtocol { get }
   var dailyAwardService: DailyAwardService { get }
   var migrationRunner: MigrationRunner { get }
 
@@ -43,6 +44,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
     return repository
   }
 
+  // TODO: Update to use new XPService when integrated
+  /*
   var xpService: any XPServiceProtocol {
     if let existing = _xpService {
       return existing
@@ -52,6 +55,7 @@ final class RepositoryProvider: RepositoryProviderProtocol {
     _xpService = service
     return service
   }
+  */
 
   var dailyAwardService: DailyAwardService {
     if let existing = _dailyAwardService {
@@ -81,7 +85,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
 
     // Clear existing repositories
     _habitRepository = nil
-    _xpService = nil
+    // TODO: Re-enable when new XPService is integrated
+    // _xpService = nil
     _dailyAwardService = nil
 
     // Run migration if needed
@@ -89,7 +94,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
 
     // Create new repositories for the user
     _ = habitRepository
-    _ = xpService
+    // TODO: Re-enable when new XPService is integrated
+    // _ = xpService
     _ = dailyAwardService
 
     logger.info("RepositoryProvider: Reinitialized for user \(userId)")
@@ -100,7 +106,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
 
     // Clear repositories
     _habitRepository = nil
-    _xpService = nil
+    // TODO: Re-enable when new XPService is integrated
+    // _xpService = nil
     _dailyAwardService = nil
 
     // Clear XP manager cache
@@ -115,7 +122,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
 
   // Repositories
   private var _habitRepository: (any HabitRepositoryProtocol)?
-  private var _xpService: (any XPServiceProtocol)?
+  // TODO: Update to use new XPService when integrated
+  // private var _xpService: (any XPServiceProtocol)?
   private var _dailyAwardService: DailyAwardService?
   private var _migrationRunner: MigrationRunner?
 
@@ -133,6 +141,8 @@ final class RepositoryProvider: RepositoryProviderProtocol {
     }
   }
 
+  // TODO: Update to use new XPService when integrated
+  /*
   private func createXPService() -> any XPServiceProtocol {
     let featureFlags = FeatureFlagManager.shared.provider
 
@@ -144,6 +154,7 @@ final class RepositoryProvider: RepositoryProviderProtocol {
       return LegacyXPService()
     }
   }
+  */
 }
 
 // MARK: - LegacyHabitRepository
@@ -474,7 +485,8 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
 }
 
 // MARK: - LegacyXPService
-
+// TODO: Update to use new XPService when integrated
+/*
 /// Legacy XP service that uses XPManager
 final class LegacyXPService: XPServiceProtocol {
   // MARK: Internal
@@ -511,3 +523,4 @@ final class LegacyXPService: XPServiceProtocol {
 
   private let logger = Logger(subsystem: "com.habitto.app", category: "LegacyXPService")
 }
+*/
