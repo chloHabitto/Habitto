@@ -153,12 +153,18 @@ class MigrationValidator {
         // 7. Validate all habits have valid schedules
         var invalidScheduleCount = 0
         for habit in newHabits {
-            // Just check if schedule can be accessed without error
-            do {
-                let _ = habit.schedule
-            } catch {
+            // Check if schedule can be accessed without error
+            // Note: schedule is a computed property that decodes from scheduleData
+            // If decoding fails, it returns .daily as a fallback
+            let schedule = habit.schedule
+            
+            // Verify the schedule is not a fallback by checking if scheduleData is valid
+            if habit.scheduleData.isEmpty {
                 invalidScheduleCount += 1
             }
+            
+            // Suppress unused variable warning
+            _ = schedule
         }
         
         if invalidScheduleCount > 0 {

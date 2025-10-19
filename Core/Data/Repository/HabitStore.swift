@@ -673,16 +673,15 @@ final actor HabitStore {
       
       logger.info("🔍 HabitStore.activeStorage: enableFirestore = \(enableFirestore) (FORCED TRUE)")
       
-      if enableFirestore {
-        logger.info("🔥 HabitStore: Firestore sync ENABLED - using DualWriteStorage")
-        return DualWriteStorage(
-          primaryStorage: FirestoreService.shared,
-          secondaryStorage: swiftDataStorage
-        )
-      } else {
-        logger.info("💾 HabitStore: Firestore sync DISABLED - using SwiftData only")
-        return swiftDataStorage
-      }
+      // Since enableFirestore is hardcoded to true, always use DualWriteStorage
+      logger.info("🔥 HabitStore: Firestore sync ENABLED - using DualWriteStorage")
+      return DualWriteStorage(
+        primaryStorage: FirestoreService.shared,
+        secondaryStorage: swiftDataStorage
+      )
+      
+      // Note: SwiftData-only fallback removed since enableFirestore is hardcoded to true
+      // If you need to disable Firestore in the future, change the enableFirestore constant above
     }
   }
 
