@@ -89,7 +89,7 @@ class HabitMigrator {
         let (goalCount, goalUnit) = parseGoal(oldHabit.goal)
         
         // Parse schedule
-        let schedule = Schedule.fromLegacyString(oldHabit.schedule)
+        let schedule = HabitSchedule.fromLegacyString(oldHabit.schedule)
         
         // Parse baseline (for breaking habits)
         // Old Habit stores baseline as Int, we need to convert to string unit
@@ -102,7 +102,7 @@ class HabitMigrator {
             id: oldHabit.id,
             userId: userId,
             name: oldHabit.name,
-            description: oldHabit.description,
+            habitDescription: oldHabit.description,
             icon: oldHabit.icon,
             color: oldHabit.color.color, // Extract Color from CodableColor
             habitType: habitType,
@@ -112,9 +112,7 @@ class HabitMigrator {
             baselineCount: baselineCount,
             baselineUnit: baselineUnit,
             startDate: oldHabit.startDate,
-            endDate: oldHabit.endDate,
-            createdAt: oldHabit.createdAt, // Fixed: createdAt not createdDate
-            updatedAt: Date()
+            endDate: oldHabit.endDate
         )
         
         return newHabit
@@ -131,7 +129,7 @@ class HabitMigrator {
         if oldHabit.habitType == .breaking {
             // Breaking habits use actualUsage
             for (dateString, usageCount) in oldHabit.actualUsage {
-                guard let date = DateUtils.parseDate(dateString) else {
+                guard let date = DateUtils.date(from: dateString) else {
                     print("⚠️ Invalid date string: \(dateString)")
                     continue
                 }
@@ -148,7 +146,7 @@ class HabitMigrator {
         } else {
             // Formation habits use completionHistory
             for (dateString, completionCount) in oldHabit.completionHistory {
-                guard let date = DateUtils.parseDate(dateString) else {
+                guard let date = DateUtils.date(from: dateString) else {
                     print("⚠️ Invalid date string: \(dateString)")
                     continue
                 }
@@ -169,33 +167,43 @@ class HabitMigrator {
     
     // MARK: - Parsing Helpers
     
-    /// Parse goal string like "5 times", "30 minutes", "1 time"
+    /// Parse goal string like "5 times", "30 minutes", "6 times per day"
     /// - Returns: (count, unit)
+    ///
+    /// **Examples:**
+    /// - "5 times" → (5, "times")
+    /// - "30 minutes" → (30, "minutes")
+    /// - "10000 steps" → (10000, "steps")
+    /// - "6 times per day" → (6, "times per day")
+    /// - "5" → (5, "time")
     private func parseGoal(_ goalString: String) -> (Int, String) {
-        let trimmed = goalString.trimmingCharacters(in: .whitespaces).lowercased()
+        let trimmed = goalString.trimmingCharacters(in: .whitespaces)
         
-        // Try to extract number and unit
-        let components = trimmed.components(separatedBy: " ")
+        // Extract the first number from the string
+        let scanner = Scanner(string: trimmed)
+        var count: Int = 0
         
-        guard components.count >= 2 else {
-            print("⚠️ Invalid goal format: '\(goalString)' - defaulting to (1, 'time')")
-            return (1, "time")
+        // Try to scan an integer
+        if scanner.scanInt(&count), count > 0 {
+            // Extract the rest as the unit
+            let remainingString = String(trimmed.dropFirst(scanner.currentIndex.utf16Offset(in: trimmed)))
+            let unit = remainingString.trimmingCharacters(in: .whitespaces)
+            
+            // If no unit, default to "time" or "times"
+            if unit.isEmpty {
+                return (count, count == 1 ? "time" : "times")
+            }
+            
+            return (count, unit)
         }
         
-        // First component should be the number
-        guard let count = Int(components[0]) else {
-            print("⚠️ Invalid goal count: '\(goalString)' - defaulting to (1, 'time')")
-            return (1, "time")
-        }
-        
-        // Rest is the unit
-        let unit = components.dropFirst().joined(separator: " ")
-        
-        return (count, unit)
+        // If parsing fails, log warning and return default
+        print("⚠️ Could not parse goal: '\(goalString)' - defaulting to (1, 'time')")
+        return (1, "time")
     }
     
     /// Get human-readable schedule type for reporting
-    private func getScheduleType(_ schedule: Schedule) -> String {
+    private func getScheduleType(_ schedule: HabitSchedule) -> String {
         switch schedule {
         case .daily:
             return "Daily"
@@ -210,17 +218,3 @@ class HabitMigrator {
         }
     }
 }
-
-// MARK: - Date Parsing Extension
-
-private extension DateUtils {
-    /// Parse date string from old format
-    /// Old format uses "yyyy-MM-dd" as keys
-    static func parseDate(_ dateString: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        return formatter.date(from: dateString)
-    }
-}
-

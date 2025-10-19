@@ -87,18 +87,19 @@ class StreakMigrator {
     private func calculateStreakFromHistory(habits: [HabitModel]) throws -> StreakData {
         var streakData = StreakData()
         
-        // Get all progress records
-        var allProgress: [DailyProgressModel] = []
-        for habit in habits {
-            let habitProgress = try modelContext.fetch(FetchDescriptor<DailyProgressModel>(
-                predicate: #Predicate { progress in progress.habit?.id == habit.id }
-            ))
-            allProgress.append(contentsOf: habitProgress)
+        // Get all progress records (fetch all and filter in Swift to avoid optional relationship predicate issues)
+        let allProgressRecords = try modelContext.fetch(FetchDescriptor<DailyProgressModel>())
+        let habitIds = Set(habits.map { $0.id })
+        let allProgress = allProgressRecords.filter { progress in
+            if let habitId = progress.habit?.id {
+                return habitIds.contains(habitId)
+            }
+            return false
         }
         
         // Group by date
         let progressByDate = Dictionary(grouping: allProgress) { progress in
-            DateUtils.startOfDay(progress.date)
+            DateUtils.startOfDay(for: progress.date)
         }
         
         // Get date range (oldest to today)
@@ -106,8 +107,8 @@ class StreakMigrator {
             return streakData // No progress yet
         }
         
-        let startDate = DateUtils.startOfDay(oldestProgress.date)
-        let today = DateUtils.startOfDay(Date())
+        let startDate = DateUtils.startOfDay(for: oldestProgress.date)
+        let today = DateUtils.startOfDay(for: Date())
         
         // Check each day from oldest to today
         var currentStreakCount = 0

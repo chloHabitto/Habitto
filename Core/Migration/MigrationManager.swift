@@ -47,13 +47,13 @@ class MigrationManager {
     /// Run the complete migration process
     /// - Parameter dryRun: If true, validates but doesn't save data
     /// - Returns: Migration summary
-    func migrate(dryRun: Bool = true) async throws -> MigrationSummary {
+    func migrate(dryRun: Bool = true) async throws -> HabitDataMigrationSummary {
         let startTime = Date()
         
         print("🔄 Starting migration (dryRun: \(dryRun))...")
         reportProgress(step: "Starting migration", current: 0, total: 100)
         
-        var summary = MigrationSummary(
+        var summary = HabitDataMigrationSummary(
             startTime: startTime,
             dryRun: dryRun,
             userId: userId
@@ -67,7 +67,7 @@ class MigrationManager {
             // Step 2: Check if already migrated
             if try await isAlreadyMigrated() {
                 print("⚠️ Data already migrated! Use rollback() first if you want to re-migrate.")
-                throw MigrationError.alreadyMigrated
+                throw HabitDataMigrationError.alreadyMigrated
             }
             
             // Step 3: Migrate habits and progress
@@ -98,7 +98,7 @@ class MigrationManager {
                 summary.validation = validationResult
                 
                 if !validationResult.isValid {
-                    throw MigrationError.validationFailed(validationResult.errors)
+                    throw HabitDataMigrationError.validationFailed(validationResult.errors)
                 }
             }
             
@@ -236,12 +236,12 @@ class MigrationManager {
 protocol MigrationProgressDelegate: AnyObject {
     func migrationProgress(step: String, current: Int, total: Int)
     func migrationError(error: Error)
-    func migrationComplete(summary: MigrationSummary)
+    func migrationComplete(summary: HabitDataMigrationSummary)
 }
 
 // MARK: - Migration Summary
 
-struct MigrationSummary: CustomStringConvertible {
+struct HabitDataMigrationSummary: CustomStringConvertible {
     let startTime: Date
     var endTime: Date?
     var duration: TimeInterval?
@@ -265,7 +265,7 @@ struct MigrationSummary: CustomStringConvertible {
     var scheduleParsing: [String: Int] = [:]
     
     // Validation result
-    var validation: ValidationResult?
+    var validation: HabitDataMigrationValidationResult?
     
     var description: String {
         var output = """
@@ -345,7 +345,7 @@ struct MigrationSummary: CustomStringConvertible {
 
 // MARK: - Migration Errors
 
-enum MigrationError: LocalizedError {
+enum HabitDataMigrationError: LocalizedError {
     case alreadyMigrated
     case validationFailed([String])
     case oldDataNotFound

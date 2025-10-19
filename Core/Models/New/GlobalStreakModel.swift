@@ -20,7 +20,7 @@ final class GlobalStreakModel {
     @Attribute(.unique) var id: UUID
     
     /// User ID for multi-user support
-    @Attribute(.index) var userId: String
+    var userId: String
     
     // MARK: - Streak Data
     

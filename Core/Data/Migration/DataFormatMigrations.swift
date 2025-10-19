@@ -97,6 +97,8 @@ struct NormalizeHabitGoalMigration: MigrationStep {
           baseline: habit.baseline,
           target: habit.target,
           completionHistory: habit.completionHistory,
+          completionStatus: habit.completionStatus,
+          completionTimestamps: habit.completionTimestamps,
           difficultyHistory: habit.difficultyHistory,
           actualUsage: habit.actualUsage)
         updatedHabits.append(updatedHabit)

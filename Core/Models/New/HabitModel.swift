@@ -111,9 +111,9 @@ final class HabitModel {
     }
     
     /// Decoded Schedule enum
-    var schedule: Schedule {
+    var schedule: HabitSchedule {
         get { 
-            guard let decoded = try? JSONDecoder().decode(Schedule.self, from: scheduleData) 
+            guard let decoded = try? JSONDecoder().decode(HabitSchedule.self, from: scheduleData) 
             else { 
                 print("⚠️ Failed to decode schedule, defaulting to .daily")
                 return .daily 
@@ -155,7 +155,7 @@ final class HabitModel {
         habitType: HabitType,
         goalCount: Int,
         goalUnit: String,
-        schedule: Schedule,
+        schedule: HabitSchedule,
         baselineCount: Int? = nil,
         baselineUnit: String? = nil,
         startDate: Date,
@@ -222,7 +222,7 @@ final class HabitModel {
     func updateGoal(
         count: Int? = nil,
         unit: String? = nil,
-        schedule: Schedule? = nil
+        schedule: HabitSchedule? = nil
     ) {
         if let count = count { self.goalCount = count }
         if let unit = unit { self.goalUnit = unit }
@@ -323,7 +323,7 @@ extension HabitModel {
         let goalComponents = parseGoalString(oldHabit.goal)
         
         // Parse old schedule string: "Everyday", "Monday, Wednesday", etc.
-        let schedule = Schedule.fromLegacyString(oldHabit.schedule)
+        let schedule = HabitSchedule.fromLegacyString(oldHabit.schedule)
         
         return HabitModel(
             id: oldHabit.id,

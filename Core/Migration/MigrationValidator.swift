@@ -27,8 +27,8 @@ class MigrationValidator {
     
     // MARK: - Validation
     
-    func validate() async throws -> ValidationResult {
-        var result = ValidationResult()
+    func validate() async throws -> HabitDataMigrationValidationResult {
+        var result = HabitDataMigrationValidationResult()
         
         print("🔍 Validating migrated data...")
         
@@ -182,7 +182,7 @@ class MigrationValidator {
 
 // MARK: - Validation Result
 
-struct ValidationResult: CustomStringConvertible {
+struct HabitDataMigrationValidationResult: CustomStringConvertible {
     var isValid: Bool = false
     var errors: [String] = []
     var warnings: [String] = []

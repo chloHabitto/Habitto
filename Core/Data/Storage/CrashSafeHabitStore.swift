@@ -381,6 +381,8 @@ actor CrashSafeHabitStore: ObservableObject {
         baseline: habit.baseline,
         target: habit.target,
         completionHistory: prunedHistory,
+        completionStatus: habit.completionStatus,
+        completionTimestamps: habit.completionTimestamps,
         difficultyHistory: habit.difficultyHistory,
         actualUsage: habit.actualUsage)
     }
