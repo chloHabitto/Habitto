@@ -69,7 +69,8 @@ class StorageFactory {
   /// - Returns: The recommended storage type
   func getRecommendedStorageType() -> StorageType {
     // Check if Firestore sync is enabled via Remote Config
-    if FeatureFlags.enableFirestoreSync {
+    // TODO: Implement proper FeatureFlags.enableFirestoreSync
+    if false {
       return .hybrid
     }
     
