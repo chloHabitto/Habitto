@@ -96,7 +96,8 @@ final class DualWriteStorage: HabitStorageProtocol {
       let habits = await MainActor.run { primaryStorage.habits }
       
       // If Firestore is empty but we haven't disabled legacy fallback, check local storage
-      if habits.isEmpty && FeatureFlags.enableLegacyReadFallback {
+      // TODO: Implement proper FeatureFlags.enableLegacyReadFallback
+      if habits.isEmpty && true {
         dualWriteLogger.info("⚠️ DualWriteStorage: Firestore empty, checking local storage...")
         let localHabits = try await secondaryStorage.loadHabits()
         if !localHabits.isEmpty {
