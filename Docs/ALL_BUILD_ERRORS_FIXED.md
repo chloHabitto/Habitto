@@ -248,7 +248,7 @@ Successfully resolved all build errors in the Habitto project after implementing
 
 ## 📊 Summary Statistics
 
-### Files Fixed: **19 files**
+### Files Fixed: **21 files**
 
 **New Models (Phase 2A):**
 - `Core/Migration/MigrationManager.swift`
@@ -268,12 +268,14 @@ Successfully resolved all build errors in the Habitto project after implementing
 
 **Existing Code:**
 - `Core/Data/Repository/HabitRepositoryImpl.swift`
+- `Core/Data/Repository/HabitStore.swift`
 - `Core/Data/Cache/UICache.swift`
 - `Core/Extensions/ViewExtensions.swift`
 - `Core/UI/Components/XPDebugBadge.swift`
 - `Core/UI/Forms/HabitInstanceLogic.swift`
 - `Views/Screens/HomeView.swift`
 - `Views/Tabs/HomeTabView.swift`
+- `Core/Migration/MigrationValidator.swift`
 
 ### Error Categories:
 1. **Type Mismatches:** 3 errors
@@ -283,8 +285,9 @@ Successfully resolved all build errors in the Habitto project after implementing
 5. **Name Conflicts:** 2 errors
 6. **Actor Isolation:** 1 error
 7. **JSON Decoding:** 1 error
+8. **Dead Code Warnings:** 3 warnings (unreachable code)
 
-**Total Errors Fixed:** 24 distinct error types
+**Total Issues Fixed:** 27 distinct error/warning types
 
 ---
 
@@ -295,12 +298,12 @@ Successfully resolved all build errors in the Habitto project after implementing
 ** BUILD SUCCEEDED **
 ```
 
-### Remaining Warnings:
-- 2 "will never be executed" warnings (non-blocking)
-  - `Core/Migration/MigrationValidator.swift:165:34`
-  - `Core/Data/Repository/HabitStore.swift:683:9`
+### ✅ All Warnings Fixed:
+- ~~`Core/Migration/MigrationValidator.swift:165:34` - "Will never be executed"~~ **FIXED**
+- ~~`Core/Data/Repository/HabitStore.swift:683:9` - "Will never be executed"~~ **FIXED**
+- ~~`Core/Migration/MigrationValidator.swift:159:15` - "Catch block unreachable"~~ **FIXED**
 
-These warnings are minor and do not affect functionality.
+**Final Build Status:** Clean build with zero errors and zero code warnings!
 
 ---
 
@@ -324,6 +327,47 @@ With all build errors resolved, you can now:
    - Test with real user data
    - Verify data integrity
    - Test rollback capability
+
+---
+
+## 🧹 Warning Fixes (Final Polish)
+
+### 15. **HabitStore.swift** - Dead Code Warning
+
+**Warning:**
+- `Will never be executed` on line 683
+
+**Issue:**
+- `enableFirestore` was hardcoded to `true`, making the `else` block unreachable
+
+**Fix:**
+- ✅ Removed unreachable `else` block
+- ✅ Added explanatory comment about design decision
+- ✅ Kept inline documentation for future reference
+
+**Files Modified:**
+- `Core/Data/Repository/HabitStore.swift`
+
+---
+
+### 16. **MigrationValidator.swift** - Unreachable Catch Block
+
+**Warnings:**
+- `'catch' block is unreachable` on line 159
+- `Will never be executed` on line 165
+
+**Issue:**
+- `habit.schedule` is a computed property that doesn't throw
+- `do-catch` block was unnecessary
+
+**Fix:**
+- ✅ Removed `do-catch` block
+- ✅ Directly accessed `habit.schedule` property
+- ✅ Added validation logic checking `scheduleData.isEmpty`
+- ✅ Added explanatory comments
+
+**Files Modified:**
+- `Core/Migration/MigrationValidator.swift`
 
 ---
 

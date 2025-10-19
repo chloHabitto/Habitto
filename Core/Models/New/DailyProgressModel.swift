@@ -40,9 +40,9 @@ final class DailyProgressModel {
     
     // MARK: - Metadata
     
-    /// Timestamps of each progress increment (for time-of-day analytics)
-    /// **Example:** User completed habit at [8:30 AM, 12:00 PM, 6:00 PM]
-    var timestamps: [Date]
+    /// Encoded timestamps data (stored as Data for SwiftData compatibility)
+    /// **Note:** Use `timestamps` computed property to access as [Date]
+    var timestampsData: Data
     
     /// User-reported difficulty (1-5 scale)
     /// 1 = Very Easy, 5 = Very Hard
@@ -74,6 +74,18 @@ final class DailyProgressModel {
     }
     
     // MARK: - Computed Properties
+    
+    /// Decoded timestamps array
+    /// **Returns:** Array of Date timestamps when each progress increment occurred
+    /// **Fallback:** Empty array if decoding fails
+    var timestamps: [Date] {
+        get {
+            Self.decodeTimestamps(timestampsData)
+        }
+        set {
+            timestampsData = Self.encodeTimestamps(newValue)
+        }
+    }
     
     /// Is this habit complete for the day?
     /// **Formation:** Complete when progressCount >= goalCount (e.g., 5/5 workouts)
@@ -129,7 +141,7 @@ final class DailyProgressModel {
         
         self.progressCount = progressCount
         self.goalCount = goalCount
-        self.timestamps = timestamps
+        self.timestampsData = Self.encodeTimestamps(timestamps)
         self.difficulty = difficulty
         
         // Set the relationship
@@ -278,6 +290,40 @@ extension DailyProgressModel {
             timestamps: timestamps,
             difficulty: difficulty
         )
+    }
+    
+    // MARK: - Timestamps Encoding/Decoding
+    
+    /// Encode timestamps array to Data
+    /// **Format:** JSON array of ISO8601 date strings
+    static func encodeTimestamps(_ timestamps: [Date]) -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        do {
+            let data = try encoder.encode(timestamps)
+            return data
+        } catch {
+            print("⚠️ Failed to encode timestamps: \(error)")
+            return Data()
+        }
+    }
+    
+    /// Decode timestamps array from Data
+    /// **Returns:** Array of Date timestamps, or empty array if decoding fails
+    static func decodeTimestamps(_ data: Data) -> [Date] {
+        guard !data.isEmpty else { return [] }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        do {
+            let timestamps = try decoder.decode([Date].self, from: data)
+            return timestamps
+        } catch {
+            print("⚠️ Failed to decode timestamps: \(error)")
+            return []
+        }
     }
 }
 
