@@ -230,6 +230,13 @@ struct ScheduledHabitItem: View {
       // Don't override local updates that are in progress
       guard !isLocalUpdateInProgress else { return }
 
+      // ✅ FIX: If user just made a change, wait longer before accepting external updates
+      if let lastUpdate = lastUserUpdateTimestamp,
+         Date().timeIntervalSince(lastUpdate) < 1.0 {
+        print("🔍 RACE FIX: Ignoring habitProgressUpdated notification within 1s of user action")
+        return
+      }
+
       // Listen for habit progress updates from the repository
       if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
          updatedHabitId == habit.id
