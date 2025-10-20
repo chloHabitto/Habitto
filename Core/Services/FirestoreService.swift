@@ -182,7 +182,7 @@ class FirestoreService: FirebaseService, ObservableObject {
       .whereField("isActive", isEqualTo: true)
       .getDocuments()
     
-    habits = snapshot.documents.compactMap { doc in
+    let fetchedHabits = snapshot.documents.compactMap { doc in
       do {
         let firestoreHabit = try doc.data(as: FirestoreHabit.self)
         return firestoreHabit.toHabit()
@@ -192,7 +192,38 @@ class FirestoreService: FirebaseService, ObservableObject {
       }
     }
     
-    print("✅ FirestoreService: Fetched \(habits.count) habits")
+    // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
+    // Filter out ANY habit with suspicious data that might cause UI crashes
+    habits = fetchedHabits.filter { habit in
+      // Skip test habits by name
+      if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
+        print("⚠️ SKIPPING TEST HABIT: '\(habit.name)'")
+        return false
+      }
+      
+      // Skip breaking habits with invalid target/baseline
+      if habit.habitType == .breaking {
+        let isValid = habit.target < habit.baseline && habit.baseline > 0
+        if !isValid {
+          print("⚠️ SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+          return false
+        }
+      }
+      
+      // Skip ANY habit (formation or breaking) with suspicious baseline/target values
+      if habit.baseline > 0 && habit.target >= habit.baseline {
+        print("⚠️ SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
+        return false
+      }
+      
+      return true
+    }
+    
+    let skippedCount = fetchedHabits.count - habits.count
+    if skippedCount > 0 {
+      print("⚠️ FirestoreService: Skipped \(skippedCount) corrupted habit(s)")
+    }
+    print("✅ FirestoreService: Fetched \(habits.count) valid habits")
   }
   
   /// Start listening to habit changes in real-time
@@ -228,7 +259,7 @@ class FirestoreService: FirebaseService, ObservableObject {
         guard let snapshot = snapshot else { return }
         
         Task { @MainActor in
-          self.habits = snapshot.documents.compactMap { doc in
+          let fetchedHabits = snapshot.documents.compactMap { doc in
             do {
               let firestoreHabit = try doc.data(as: FirestoreHabit.self)
               return firestoreHabit.toHabit()
@@ -236,6 +267,32 @@ class FirestoreService: FirebaseService, ObservableObject {
               print("❌ FirestoreService: Failed to decode habit \(doc.documentID): \(error)")
               return nil
             }
+          }
+          
+          // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
+          self.habits = fetchedHabits.filter { habit in
+            // Skip test habits by name
+            if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
+              print("⚠️ LISTENER: SKIPPING TEST HABIT: '\(habit.name)'")
+              return false
+            }
+            
+            // Skip breaking habits with invalid target/baseline
+            if habit.habitType == .breaking {
+              let isValid = habit.target < habit.baseline && habit.baseline > 0
+              if !isValid {
+                print("⚠️ LISTENER: SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+                return false
+              }
+            }
+            
+            // Skip ANY habit (formation or breaking) with suspicious baseline/target values
+            if habit.baseline > 0 && habit.target >= habit.baseline {
+              print("⚠️ LISTENER: SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
+              return false
+            }
+            
+            return true
           }
           
           // Record telemetry

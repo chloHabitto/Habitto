@@ -120,8 +120,8 @@ final actor HabitStore {
     
     if !validationResult.isValid {
 
-      // If there are critical errors, don't save
-      let criticalErrors = validationResult.errors.filter { $0.severity == .critical }
+      // If there are critical OR error-level errors, don't save
+      let criticalErrors = validationResult.errors.filter { $0.severity == .critical || $0.severity == .error }
       if !criticalErrors.isEmpty {
         logger.error("Critical validation errors found, aborting save")
         logger.error("Critical errors: \(criticalErrors.map { "\($0.field): \($0.message)" })")
@@ -816,7 +816,18 @@ final actor HabitStore {
         logger
           .info("🎯 createCompletionRecordIfNeeded: Found \(existingRecords.count) existing records")
 
-        let isCompleted = progress > 0
+        // ✅ CRITICAL FIX: Check if habit ACTUALLY met its goal, not just progress > 0
+        let isCompleted: Bool
+        if habit.habitType == .breaking {
+          // Breaking habit: complete when actual usage <= target
+          isCompleted = progress <= habit.target
+          logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' | Usage: \(progress) | Target: \(habit.target) | Complete: \(isCompleted)")
+        } else {
+          // Formation habit: complete when progress >= goal
+          let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+          isCompleted = progress >= goalAmount
+          logger.info("🔍 FORMATION HABIT CHECK - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
+        }
 
         if let existingRecord = existingRecords.first {
           // Update existing record
