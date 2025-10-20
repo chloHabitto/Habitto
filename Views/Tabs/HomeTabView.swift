@@ -1254,10 +1254,12 @@ struct HomeTabView: View {
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
       if h.id == habit.id { return false } // Exclude current habit
       
-      // Check actual completion status from habit data (not cache!)
+      // ✅ FIX: Use type-aware completion check (works for both formation and breaking habits)
       let dateKey = Habit.dateKey(for: selectedDate)
-      let progress = h.completionHistory[dateKey] ?? 0
-      return progress == 0 // Return true if NOT complete
+      let isComplete = h.isCompleted(for: selectedDate)
+      
+      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete)")
+      return !isComplete // Return true if NOT complete
     }
 
     if remainingHabits.isEmpty {

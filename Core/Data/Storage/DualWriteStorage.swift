@@ -293,37 +293,23 @@ final class DualWriteStorage: HabitStorageProtocol {
     }
   }
   
-  // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
-  // Filters out test habits and any habits with suspicious baseline/target data
+  // ✅ Simple validation: only skip habits with invalid data that would cause crashes
   private func filterCorruptedHabits(_ habits: [Habit]) -> [Habit] {
     let filtered = habits.filter { habit in
-      // Skip test habits by name
-      if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
-        dualWriteLogger.warning("⚠️ SKIPPING TEST HABIT: '\(habit.name)'")
-        return false
-      }
-      
-      // Skip breaking habits with invalid target/baseline
+      // Skip breaking habits with invalid target/baseline (this is a real validation error)
       if habit.habitType == .breaking {
         let isValid = habit.target < habit.baseline && habit.baseline > 0
         if !isValid {
-          dualWriteLogger.warning("⚠️ SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+          dualWriteLogger.warning("⚠️ SKIPPING INVALID BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
           return false
         }
       }
-      
-      // Skip ANY habit (formation or breaking) with suspicious baseline/target values
-      if habit.baseline > 0 && habit.target >= habit.baseline {
-        dualWriteLogger.warning("⚠️ SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
-        return false
-      }
-      
       return true
     }
     
     let skippedCount = habits.count - filtered.count
     if skippedCount > 0 {
-      dualWriteLogger.warning("⚠️ Filtered out \(skippedCount) corrupted habit(s)")
+      dualWriteLogger.warning("⚠️ Filtered out \(skippedCount) invalid habit(s)")
     }
     
     return filtered
