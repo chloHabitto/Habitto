@@ -1271,10 +1271,20 @@ struct HabitEditView: View {
       // For habit breaking, schedule is derived from target frequency
       let scheduleString = targetFrequency
 
+      // ✅ FIX: Ensure baseline > target for breaking habits
+      var baselineValue = Int(baselineNumber) ?? 0
+      let targetValue = Int(targetNumber) ?? 0
+      
+      if baselineValue <= targetValue {
+        baselineValue = max(targetValue + 5, 10)
+        print("⚠️ EDIT SAVE - Baseline (\(Int(baselineNumber) ?? 0)) <= target (\(targetValue))")
+        print("✅ EDIT SAVE - Auto-adjusted baseline to \(baselineValue) for breaking habit '\(habitName)'")
+      }
+
       print(
         "🔍 EDIT SAVE - Habit Breaking: goalString: \(goalString), scheduleString: \(scheduleString)")
       print(
-        "🔍 EDIT SAVE - Target: \(targetNumber) \(targetUnit) \(targetFrequency), Baseline: \(baselineNumber) \(baselineUnit)")
+        "🔍 EDIT SAVE - Target: \(targetValue), Baseline: \(baselineValue)")
 
       updatedHabit = Habit(
         name: habitName,
@@ -1288,8 +1298,8 @@ struct HabitEditView: View {
         startDate: startDate,
         endDate: endDate,
         reminders: reminders,
-        baseline: Int(baselineNumber) ?? 0,
-        target: Int(targetNumber) ?? 0)
+        baseline: baselineValue,
+        target: targetValue)
     }
 
     // Create a new habit with the original ID, preserving all existing completion data

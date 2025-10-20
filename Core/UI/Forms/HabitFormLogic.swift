@@ -194,6 +194,19 @@ class HabitFormLogic {
       let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
       let goalString = formatGoalString(number: targetNumber, unit: targetPluralizedUnit, frequency: targetFrequency)
 
+      // ✅ FIX: Ensure baseline > target for breaking habits
+      // Parse baseline and target from user input
+      var baselineValue = Int(baselineNumber) ?? 0
+      let targetValue = Int(targetNumber) ?? 0
+      
+      // If baseline is not set or is invalid (≤ target), set a sensible default
+      if baselineValue <= targetValue {
+        // Set baseline to target + 5, with a minimum of 10 for meaningful reduction
+        baselineValue = max(targetValue + 5, 10)
+        print("⚠️ HabitFormLogic: Baseline (\(Int(baselineNumber) ?? 0)) <= target (\(targetValue))")
+        print("✅ HabitFormLogic: Auto-adjusted baseline to \(baselineValue) for breaking habit '\(step1Data.0)'")
+      }
+
       let habit = Habit(
         name: step1Data.0,
         description: step1Data.1,
@@ -206,10 +219,10 @@ class HabitFormLogic {
         startDate: startDate,
         endDate: endDate,
         reminders: reminders,
-        baseline: Int(baselineNumber) ?? 0,
-        target: Int(targetNumber) ?? 0)
+        baseline: baselineValue,
+        target: targetValue)
 
-      print("🔍 HabitFormLogic: Created breaking habit - name: \(habit.name), id: \(habit.id)")
+      print("🔍 HabitFormLogic: Created breaking habit - name: \(habit.name), baseline: \(baselineValue), target: \(targetValue)")
       return habit
     }
   }
