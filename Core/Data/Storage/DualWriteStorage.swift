@@ -86,8 +86,9 @@ final class DualWriteStorage: HabitStorageProtocol {
     if !migrationComplete {
       dualWriteLogger.info("⚠️ DualWriteStorage: Migration not complete, using local storage")
       let habits = try await secondaryStorage.loadHabits()
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from local storage (pre-migration)")
-      return habits
+      let filtered = filterCorruptedHabits(habits)
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(filtered.count) habits from local storage (pre-migration)")
+      return filtered
     }
     
     // Try primary storage first (Firestore) only after migration is complete
@@ -101,8 +102,9 @@ final class DualWriteStorage: HabitStorageProtocol {
         dualWriteLogger.info("⚠️ DualWriteStorage: Firestore empty, checking local storage...")
         let localHabits = try await secondaryStorage.loadHabits()
         if !localHabits.isEmpty {
-          dualWriteLogger.info("✅ DualWriteStorage: Found \(localHabits.count) habits in local storage, using those")
-          return localHabits
+          let filtered = filterCorruptedHabits(localHabits)
+          dualWriteLogger.info("✅ DualWriteStorage: Found \(filtered.count) habits in local storage, using those")
+          return filtered
         }
       }
       
@@ -113,8 +115,9 @@ final class DualWriteStorage: HabitStorageProtocol {
       
       // Fallback to secondary storage
       let habits = try await secondaryStorage.loadHabits()
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from local storage (fallback)")
-      return habits
+      let filtered = filterCorruptedHabits(habits)
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(filtered.count) habits from local storage (fallback)")
+      return filtered
     }
   }
   
@@ -288,6 +291,42 @@ final class DualWriteStorage: HabitStorageProtocol {
     for (key, value) in telemetryCounters.sorted(by: { $0.key < $1.key }) {
       dualWriteLogger.info("  \(key): \(value)")
     }
+  }
+  
+  // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
+  // Filters out test habits and any habits with suspicious baseline/target data
+  private func filterCorruptedHabits(_ habits: [Habit]) -> [Habit] {
+    let filtered = habits.filter { habit in
+      // Skip test habits by name
+      if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
+        dualWriteLogger.warning("⚠️ SKIPPING TEST HABIT: '\(habit.name)'")
+        return false
+      }
+      
+      // Skip breaking habits with invalid target/baseline
+      if habit.habitType == .breaking {
+        let isValid = habit.target < habit.baseline && habit.baseline > 0
+        if !isValid {
+          dualWriteLogger.warning("⚠️ SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+          return false
+        }
+      }
+      
+      // Skip ANY habit (formation or breaking) with suspicious baseline/target values
+      if habit.baseline > 0 && habit.target >= habit.baseline {
+        dualWriteLogger.warning("⚠️ SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
+        return false
+      }
+      
+      return true
+    }
+    
+    let skippedCount = habits.count - filtered.count
+    if skippedCount > 0 {
+      dualWriteLogger.warning("⚠️ Filtered out \(skippedCount) corrupted habit(s)")
+    }
+    
+    return filtered
   }
 }
 

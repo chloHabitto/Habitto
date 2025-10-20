@@ -253,8 +253,8 @@ struct HomeTabView: View {
         return !habit1Completed && habit2Completed
       }
 
-      // If both have the same completion status, maintain original order
-      return false
+      // ✅ FIX: Use stable secondary sort to prevent array jumping during updates
+      return habit1.name < habit2.name
     }
 
     return finalFilteredHabits
@@ -1064,7 +1064,7 @@ struct HomeTabView: View {
   /// This is the single source of truth for XP calculation
   @MainActor
   private func countCompletedDays() -> Int {
-    guard AuthenticationManager.shared.currentUser?.uid != nil else { return 0 }
+    guard let userId = AuthenticationManager.shared.currentUser?.uid else { return 0 }
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
@@ -1077,8 +1077,13 @@ struct HomeTabView: View {
     var completedCount = 0
     var currentDate = startDate
     
+    // ✅ FIX: Get ModelContext for querying CompletionRecords from SwiftData
+    let modelContext = SwiftDataContainer.shared.modelContext
+    
     // Count all days where all habits are completed
     while currentDate <= today {
+      let dateKey = Habit.dateKey(for: currentDate)
+      
       let habitsForDate = habits.filter { habit in
         let selected = DateUtils.startOfDay(for: currentDate)
         let start = DateUtils.startOfDay(for: habit.startDate)
@@ -1088,17 +1093,62 @@ struct HomeTabView: View {
         return shouldShowHabitOnDate(habit, date: currentDate)
       }
       
-      // Check if all habits for this date are completed
-      let allCompleted = !habitsForDate.isEmpty && habitsForDate.allSatisfy { $0.isCompleted(for: currentDate) }
+      // ✅ CRITICAL FIX: Check CompletionRecords from SwiftData instead of old completionHistory!
+      // This was causing XP to stay at 0 even though CompletionRecords were being created
+      var allCompleted = false
+      if !habitsForDate.isEmpty {
+        // Fetch all CompletionRecords for this date and user
+        let descriptor = FetchDescriptor<CompletionRecord>()
+        
+        do {
+          let allRecords = try modelContext.fetch(descriptor)
+          let completedRecords = allRecords.filter { $0.dateKey == dateKey && $0.userId == userId && $0.isCompleted }
+          
+          // ✅ DEBUG: Log detailed info to diagnose XP=0 issue
+          print("🔍 XP_DEBUG: Date=\(dateKey)")
+          print("   Total CompletionRecords in DB: \(allRecords.count)")
+          print("   Matching dateKey '\(dateKey)': \(allRecords.filter { $0.dateKey == dateKey }.count)")
+          print("   Matching userId '\(userId)': \(allRecords.filter { $0.userId == userId }.count)")
+          print("   isCompleted=true: \(allRecords.filter { $0.isCompleted }.count)")
+          print("   Final filtered (complete+matching): \(completedRecords.count)")
+          print("   Habits needed for this date: \(habitsForDate.count)")
+          
+          for record in completedRecords {
+            print("     ✅ Record: habitId=\(record.habitId), dateKey=\(record.dateKey), userId=\(record.userId), isCompleted=\(record.isCompleted)")
+          }
+          
+          for habit in habitsForDate {
+            let hasRecord = completedRecords.contains(where: { $0.habitId == habit.id })
+            print("     \(hasRecord ? "✅" : "❌") Habit '\(habit.name)' (id=\(habit.id)) \(hasRecord ? "HAS" : "MISSING") CompletionRecord")
+          }
+          
+          // Check if all habits for this date have a completed record
+          allCompleted = habitsForDate.allSatisfy { habit in
+            completedRecords.contains(where: { $0.habitId == habit.id })
+          }
+          
+          if !allCompleted {
+            let missingHabits = habitsForDate.filter { habit in
+              !completedRecords.contains(where: { $0.habitId == habit.id })
+            }
+            print("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.map { $0.name }.joined(separator: ", "))")
+          }
+        } catch {
+          print("❌ XP_CALC: Failed to fetch CompletionRecords for \(dateKey): \(error)")
+          allCompleted = false
+        }
+      }
       
       if allCompleted {
         completedCount += 1
+        print("✅ XP_CALC: All habits complete on \(dateKey) - counted!")
       }
       
       guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
       currentDate = nextDate
     }
     
+    print("🎯 XP_CALC: Total completed days: \(completedCount)")
     return completedCount
   }
   
@@ -1200,10 +1250,14 @@ struct HomeTabView: View {
     // This ensures the last habit detection works correctly
     completionStatusMap[habit.id] = true
 
-    // Check if this is the last habit to be completed
-    // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
+    // ✅ BUG FIX: Check actual completion status from habit data instead of stale cache
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
-      h.id != habit.id && !(completionStatusMap[h.id] ?? false)
+      if h.id == habit.id { return false } // Exclude current habit
+      
+      // Check actual completion status from habit data (not cache!)
+      let dateKey = Habit.dateKey(for: selectedDate)
+      let progress = h.completionHistory[dateKey] ?? 0
+      return progress == 0 // Return true if NOT complete
     }
 
     if remainingHabits.isEmpty {
