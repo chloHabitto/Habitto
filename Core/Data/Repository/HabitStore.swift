@@ -312,11 +312,33 @@ final actor HabitStore {
     var currentHabits = try await loadHabits()
 
     if let index = currentHabits.firstIndex(where: { $0.id == habit.id }) {
-      let oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
-      currentHabits[index].completionHistory[dateKey] = progress
-
-      // Update completion status based on progress
-      currentHabits[index].completionStatus[dateKey] = progress > 0
+      // ✅ FIX: Use type-aware progress tracking
+      let habitType = currentHabits[index].habitType
+      let oldProgress: Int
+      let isComplete: Bool
+      
+      if habitType == .breaking {
+        // Breaking habits: track actual usage
+        oldProgress = currentHabits[index].actualUsage[dateKey] ?? 0
+        currentHabits[index].actualUsage[dateKey] = progress
+        
+        // Complete when usage <= target
+        isComplete = progress <= currentHabits[index].target
+        currentHabits[index].completionStatus[dateKey] = isComplete
+        
+        logger.info("🔍 BREAKING HABIT - '\(habit.name)' | Usage: \(progress) | Target: ≤\(currentHabits[index].target) | Complete: \(isComplete)")
+      } else {
+        // Formation habits: track progress toward goal
+        oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
+        currentHabits[index].completionHistory[dateKey] = progress
+        
+        // Complete when progress >= goal
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        isComplete = progress >= goalAmount
+        currentHabits[index].completionStatus[dateKey] = isComplete
+        
+        logger.info("🔍 FORMATION HABIT - '\(habit.name)' | Progress: \(progress) | Goal: ≥\(goalAmount) | Complete: \(isComplete)")
+      }
 
       // Handle timestamp recording for time-based completion analysis
       let currentTimestamp = Date()
@@ -325,20 +347,15 @@ final actor HabitStore {
         if currentHabits[index].completionTimestamps[dateKey] == nil {
           currentHabits[index].completionTimestamps[dateKey] = []
         }
-        let newCompletions = progress - oldProgress
-        for _ in 0 ..< newCompletions {
-          currentHabits[index].completionTimestamps[dateKey]?.append(currentTimestamp)
-        }
-        logger.info("Recorded \(newCompletions) completion timestamp(s) for \(habit.name)")
+        // ✅ FIX: Append only ONE timestamp per increment (not a loop)
+        currentHabits[index].completionTimestamps[dateKey]?.append(currentTimestamp)
+        logger.info("Recorded 1 completion timestamp for \(habit.name)")
       } else if progress < oldProgress {
-        // Progress decreased - remove recent timestamps
-        let removedCompletions = oldProgress - progress
-        for _ in 0 ..< removedCompletions {
-          if currentHabits[index].completionTimestamps[dateKey]?.isEmpty == false {
-            currentHabits[index].completionTimestamps[dateKey]?.removeLast()
-          }
+        // Progress decreased - remove recent timestamp
+        if currentHabits[index].completionTimestamps[dateKey]?.isEmpty == false {
+          currentHabits[index].completionTimestamps[dateKey]?.removeLast()
         }
-        logger.info("Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+        logger.info("Removed 1 completion timestamp for \(habit.name)")
       }
 
       // ✅ PHASE 4: Streaks are now computed-only, no need to update them

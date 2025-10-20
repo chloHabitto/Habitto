@@ -192,36 +192,22 @@ class FirestoreService: FirebaseService, ObservableObject {
       }
     }
     
-    // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
-    // Filter out ANY habit with suspicious data that might cause UI crashes
+    // ✅ Simple validation: only skip habits with invalid data that would cause crashes
     habits = fetchedHabits.filter { habit in
-      // Skip test habits by name
-      if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
-        print("⚠️ SKIPPING TEST HABIT: '\(habit.name)'")
-        return false
-      }
-      
-      // Skip breaking habits with invalid target/baseline
+      // Skip breaking habits with invalid target/baseline (this is a real validation error)
       if habit.habitType == .breaking {
         let isValid = habit.target < habit.baseline && habit.baseline > 0
         if !isValid {
-          print("⚠️ SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+          print("⚠️ SKIPPING INVALID BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
           return false
         }
       }
-      
-      // Skip ANY habit (formation or breaking) with suspicious baseline/target values
-      if habit.baseline > 0 && habit.target >= habit.baseline {
-        print("⚠️ SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
-        return false
-      }
-      
       return true
     }
     
     let skippedCount = fetchedHabits.count - habits.count
     if skippedCount > 0 {
-      print("⚠️ FirestoreService: Skipped \(skippedCount) corrupted habit(s)")
+      print("⚠️ FirestoreService: Skipped \(skippedCount) invalid habit(s)")
     }
     print("✅ FirestoreService: Fetched \(habits.count) valid habits")
   }
@@ -269,29 +255,16 @@ class FirestoreService: FirebaseService, ObservableObject {
             }
           }
           
-          // 🛡️ TEMPORARY: AGGRESSIVE FILTER to allow app to load for data deletion
+          // ✅ Simple validation: only skip habits with invalid data that would cause crashes
           self.habits = fetchedHabits.filter { habit in
-            // Skip test habits by name
-            if habit.name.contains("Bad Habit") || habit.name.contains("Test") {
-              print("⚠️ LISTENER: SKIPPING TEST HABIT: '\(habit.name)'")
-              return false
-            }
-            
-            // Skip breaking habits with invalid target/baseline
+            // Skip breaking habits with invalid target/baseline (this is a real validation error)
             if habit.habitType == .breaking {
               let isValid = habit.target < habit.baseline && habit.baseline > 0
               if !isValid {
-                print("⚠️ LISTENER: SKIPPING CORRUPTED BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+                print("⚠️ LISTENER: SKIPPING INVALID BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
                 return false
               }
             }
-            
-            // Skip ANY habit (formation or breaking) with suspicious baseline/target values
-            if habit.baseline > 0 && habit.target >= habit.baseline {
-              print("⚠️ LISTENER: SKIPPING HABIT WITH INVALID DATA: '\(habit.name)' (target=\(habit.target) >= baseline=\(habit.baseline))")
-              return false
-            }
-            
             return true
           }
           
