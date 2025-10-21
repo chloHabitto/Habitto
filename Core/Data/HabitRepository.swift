@@ -717,30 +717,18 @@ class HabitRepository: ObservableObject {
 
     // Update the local habits array immediately for UI responsiveness
     if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-      // ✅ FIX: Use type-aware field writing (breaking habits use actualUsage)
-      let oldProgress: Int
-      if habits[index].habitType == .breaking {
-        oldProgress = habits[index].actualUsage[dateKey] ?? 0
-        habits[index].actualUsage[dateKey] = progress  // ✅ Write to actualUsage for breaking
-        print("🔍 REPO - Breaking Habit '\(habits[index].name)' | Old usage: \(oldProgress) → New usage: \(progress)")
-      } else {
-        oldProgress = habits[index].completionHistory[dateKey] ?? 0
-        habits[index].completionHistory[dateKey] = progress  // ✅ Write to completionHistory for formation
-        print("🔍 REPO - Formation Habit '\(habits[index].name)' | Old progress: \(oldProgress) → New progress: \(progress)")
-      }
+      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits write to completionHistory
+      // The actualUsage field is DISPLAY ONLY and NOT used for completion logic
+      let oldProgress = habits[index].completionHistory[dateKey] ?? 0
+      habits[index].completionHistory[dateKey] = progress
+      print("🔍 REPO - \(habits[index].habitType == .breaking ? "Breaking" : "Formation") Habit '\(habits[index].name)' | Old progress: \(oldProgress) → New progress: \(progress)")
 
-      // ✅ FIX: Update completion status based on whether GOAL is met, not just progress > 0
-      if habits[index].habitType == .breaking {
-        // For breaking habits, completed when actual usage is at or below target
-        habits[index].completionStatus[dateKey] = progress <= habits[index].target
-        print("🔍 COMPLETION FIX - Breaking Habit '\(habits[index].name)' | Usage: \(progress) | Target: \(habits[index].target) | Completed: \(progress <= habits[index].target)")
-      } else {
-        // For formation habits, completed when progress meets or exceeds goal
-        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habits[index].goal)
-        let isComplete = progress >= goalAmount
-        habits[index].completionStatus[dateKey] = isComplete
-        print("🔍 COMPLETION FIX - Formation Habit '\(habits[index].name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
-      }
+      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+      // Set completionStatus[dateKey] = true when progress >= goal
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habits[index].goal)
+      let isComplete = progress >= goalAmount
+      habits[index].completionStatus[dateKey] = isComplete
+      print("🔍 COMPLETION FIX - \(habits[index].habitType == .breaking ? "Breaking" : "Formation") Habit '\(habits[index].name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
 
       // Handle timestamp recording for time-based completion analysis
       let currentTimestamp = Date()

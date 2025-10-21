@@ -1259,23 +1259,18 @@ struct HomeTabView: View {
       let habitData = habits.first(where: { $0.id == h.id }) ?? h
       let dateKey = Habit.dateKey(for: selectedDate)
       
-      // Type-aware completion check
+      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+      // Both check: progress >= goal (extracted from goal string)
+      let progress = habitData.completionHistory[dateKey] ?? 0
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+      
       let isComplete: Bool
-      if habitData.habitType == .breaking {
-        let usage = habitData.actualUsage[dateKey] ?? 0
-        isComplete = usage > 0 && usage <= habitData.target
-        print("  🔍 Breaking habit '\(h.name)': usage=\(usage), target=\(habitData.target)")
+      if goalAmount > 0 {
+        isComplete = progress >= goalAmount
+        print("  🔍 \(habitData.habitType == .breaking ? "Breaking" : "Formation") habit '\(h.name)': progress=\(progress), goal=\(goalAmount), complete=\(isComplete)")
       } else {
-        let progress = habitData.completionHistory[dateKey] ?? 0
-        // Parse goal to check if ACTUALLY complete (not just progress > 0)
-        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
-        if goalAmount > 0 {
-          isComplete = progress >= goalAmount
-          print("  🔍 Formation habit '\(h.name)': progress=\(progress), goal=\(goalAmount)")
-        } else {
-          isComplete = progress > 0
-          print("  🔍 Formation habit '\(h.name)': progress=\(progress) (fallback: any progress)")
-        }
+        isComplete = progress > 0
+        print("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
       }
       
       print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | usage/progress=\(habitData.habitType == .breaking ? habitData.actualUsage[dateKey] ?? 0 : habitData.completionHistory[dateKey] ?? 0)")
