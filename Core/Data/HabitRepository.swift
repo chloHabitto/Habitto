@@ -682,13 +682,12 @@ class HabitRepository: ObservableObject {
 
     let dateKey = DateKey.key(for: date)
     
-    // ✅ FIX: Use type-aware field reading
-    let currentProgress: Int
+    // ✅ UNIVERSAL RULE: Both types use completionHistory
+    let currentProgress = habit.completionHistory[dateKey] ?? 0
+    
     if habit.habitType == .breaking {
-      currentProgress = habit.actualUsage[dateKey] ?? 0
-      print("🔍 TOGGLE - Breaking Habit '\(habit.name)' | Current usage: \(currentProgress)")
+      print("🔍 TOGGLE - Breaking Habit '\(habit.name)' | Current progress: \(currentProgress)")
     } else {
-      currentProgress = habit.completionHistory[dateKey] ?? 0
       print("🔍 TOGGLE - Formation Habit '\(habit.name)' | Current progress: \(currentProgress)")
     }
     

@@ -452,19 +452,23 @@ struct Habit: Identifiable, Codable, Equatable {
   func getProgress(for date: Date) -> Int {
     let dateKey = Self.dateKey(for: date)
 
-    // For breaking habits, return actual usage instead of completion history
+    // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use completionHistory
+    // actualUsage, baseline, current, and target are DISPLAY-ONLY fields
+    let progress = completionHistory[dateKey] ?? 0
+    
+    print("🔍 GET_PROGRESS: \(name) (type=\(habitType == .breaking ? "breaking" : "formation"))")
+    print("   📅 dateKey=\(dateKey)")
+    print("   📊 completionHistory keys: \(Array(completionHistory.keys.sorted()))")
+    print("   📊 completionHistory[\(dateKey)] = \(completionHistory[dateKey] ?? -999)")
+    
     if habitType == .breaking {
-      let usage = actualUsage[dateKey] ?? 0
-      print(
-        "🔍 PROGRESS DEBUG - Breaking Habit '\(name)' | Date: \(dateKey) | Actual Usage: \(usage) | ActualUsage keys: \(actualUsage.keys.sorted())")
-      return usage
-    } else {
-      // For formation habits, use completion history as before
-      let progress = completionHistory[dateKey] ?? 0
-      print(
-        "🔍 PROGRESS DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | CompletionHistory keys: \(completionHistory.keys.sorted())")
-      return progress
+      print("   ⚠️ actualUsage keys: \(Array(actualUsage.keys.sorted()))")
+      print("   ⚠️ actualUsage[\(dateKey)] = \(actualUsage[dateKey] ?? -999)")
+      print("   ❌ NEVER USE actualUsage for progress! Only completionHistory!")
     }
+    
+    print("   ✅ Returning progress=\(progress)")
+    return progress
   }
 
   // MARK: - Habit Breaking Methods

@@ -311,15 +311,12 @@ struct ScheduledHabitItem: View {
   }
 
   /// Computed property for progress display text
+  /// ✅ UNIVERSAL RULE: Both types display progress/goal (NOT progress/baseline!)
   private var progressDisplayText: String {
-    if habit.habitType == .breaking {
-      // For breaking habits, show actual usage vs baseline
-      let baseline = habit.baseline
-      return "\(currentProgress)/\(baseline)"
-    } else {
-      // For formation habits, show progress vs goal
-      return "\(currentProgress)/\(extractGoalAmount(from: habit.goal))"
-    }
+    // ✅ BOTH habit types show: currentProgress / goalAmount
+    // For Breaking habits: "0/10" where 10 comes from "Goal: 10 times/everyday"
+    // baseline and current fields are DISPLAY-ONLY (for statistics, not progress)
+    return "\(currentProgress)/\(extractGoalAmount(from: habit.goal))"
   }
 
   /// Computed property to check if it's a vacation day and vacation is currently active
@@ -423,6 +420,8 @@ struct ScheduledHabitItem: View {
   }
 
   /// Helper function to extract numeric goal amount for comparison
+  /// ✅ UNIVERSAL RULE: Both Formation and Breaking habits parse the "goal" field
+  /// baseline, current, target, actualUsage are DISPLAY-ONLY fields
   private func extractNumericGoalAmount(from goal: String) -> Int {
     let goalString = extractGoalAmount(from: goal)
 
@@ -430,11 +429,8 @@ struct ScheduledHabitItem: View {
     let numbers = goalString.components(separatedBy: CharacterSet.decimalDigits.inverted)
       .compactMap { Int($0) }
 
-    // For breaking habits, use baseline as the goal amount for progress calculation
-    if habit.habitType == .breaking {
-      return habit.baseline > 0 ? habit.baseline : (numbers.first ?? 1)
-    }
-
+    // ✅ BOTH habit types use the same logic - parse the "goal" field
+    // For Breaking habits: "Goal: 10 times/everyday" → 10 (NOT baseline/current!)
     // Return the first number found, or default to 1 if none found
     return numbers.first ?? 1
   }

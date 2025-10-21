@@ -1273,7 +1273,8 @@ struct HomeTabView: View {
         print("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
       }
       
-      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | usage/progress=\(habitData.habitType == .breaking ? habitData.actualUsage[dateKey] ?? 0 : habitData.completionHistory[dateKey] ?? 0)")
+      // ✅ UNIVERSAL RULE: Both types use completionHistory
+      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | progress=\(habitData.completionHistory[dateKey] ?? 0)")
       return !isComplete // Return true if NOT complete
     }
 
