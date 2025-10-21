@@ -442,22 +442,29 @@ struct ScheduledHabitItem: View {
     return currentProgress >= goalAmount
   }
 
-  /// Helper function to toggle habit completion
-  /// ✅ FIX: Circle button should INCREMENT BY 1, not jump to goal!
-  /// Design: Click to add 1 progress, click again to subtract 1
+  /// Helper function for circle button - INSTANT TOGGLE complete/uncomplete
+  /// ✅ Circle button = Quick action: "Mark done" or "Undo completion"
+  /// Design: Instant jump to goal (complete) or reset to 0 (uncomplete)
+  /// Note: Swipe gestures (+1/-1) are still available for gradual progress tracking
   private func completeHabit() {
     let goalAmount = extractNumericGoalAmount(from: habit.goal)
     
-    // Determine new progress: increment or decrement by 1
+    print("🔘 CIRCLE_BUTTON: Current=\(currentProgress), Goal=\(goalAmount)")
+    
+    // Determine new progress: instant toggle
     let newProgress: Int
-    if currentProgress >= goalAmount {
-      // Already at or above goal - decrement by 1
-      newProgress = max(0, currentProgress - 1)
-      print("🔽 CIRCLE BUTTON: Decrementing \(habit.name) from \(currentProgress) to \(newProgress)")
+    let isCompleting: Bool
+    
+    if currentProgress < goalAmount {
+      // ✅ INSTANT COMPLETE: Jump to goal
+      newProgress = goalAmount
+      isCompleting = true
+      print("🔘 CIRCLE_BUTTON: Instant complete - jumping from \(currentProgress) to \(goalAmount)")
     } else {
-      // Below goal - increment by 1
-      newProgress = currentProgress + 1
-      print("🔼 CIRCLE BUTTON: Incrementing \(habit.name) from \(currentProgress) to \(newProgress)")
+      // ✅ INSTANT UNCOMPLETE: Reset to 0
+      newProgress = 0
+      isCompleting = false
+      print("🔘 CIRCLE_BUTTON: Instant uncomplete - resetting from \(currentProgress) to 0")
     }
     
     // Prevent onChange listeners from overriding this update
@@ -479,11 +486,8 @@ struct ScheduledHabitItem: View {
       isLocalUpdateInProgress = false
     }
     
-    // Check if we just reached the goal
-    let justCompletedGoal = newProgress >= goalAmount && newProgress > (currentProgress - 1)
-    
-    if justCompletedGoal {
-      // Show completion sheet for difficulty rating
+    // Show difficulty sheet when completing (not when uncompleting)
+    if isCompleting {
       let completionManager = CompletionStateManager.shared
       guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
         return
@@ -494,11 +498,11 @@ struct ScheduledHabitItem: View {
       isProcessingCompletion = true
       showingCompletionSheet = true
       
-      print("🎉 CIRCLE BUTTON: Goal reached for \(habit.name) (\(newProgress)/\(goalAmount))")
+      print("🎉 CIRCLE_BUTTON: Goal reached for \(habit.name) (\(newProgress)/\(goalAmount))")
     }
     
     // Haptic feedback
-    let impactFeedback = UIImpactFeedbackGenerator(style: justCompletedGoal ? .medium : .light)
+    let impactFeedback = UIImpactFeedbackGenerator(style: isCompleting ? .medium : .light)
     impactFeedback.impactOccurred()
   }
 
