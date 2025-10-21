@@ -177,7 +177,8 @@ final class MigrationRunner {
     logger.info("MigrationRunner: Migrating completion records for user \(userId)")
     logger.info("🚨 MIGRATION_DEBUG: ⚠️ SKIPPING CompletionRecord migration - records will be created by UI interactions")
 
-    var migratedCount = 0
+    // ✅ FIX: Changed to 'let' since value is never mutated
+    let migratedCount = 0
 
     for habit in habits {
       // ✅ CRITICAL FIX: Do NOT migrate completion history to CompletionRecords

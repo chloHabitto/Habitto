@@ -41,6 +41,9 @@ class XPMigrationService {
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     logger.info("🚀 Starting XP migration to Firestore...")
     
+    // ✅ FIX: Yield immediately to let UI update with spinner
+    await Task.yield()
+    
     // Check if already completed
     if await isMigrationComplete() {
       print("✅ XP_MIGRATION: Migration already completed, skipping")
@@ -51,18 +54,21 @@ class XPMigrationService {
     do {
       // Step 1: Migrate DailyAwards
       print("📊 XP_MIGRATION: Step 1 - Migrating DailyAwards...")
+      await Task.yield() // Let UI breathe
       let migratedAwards = try await migrateDailyAwards(modelContext: modelContext)
       print("✅ XP_MIGRATION: Step 1 Complete - Migrated \(migratedAwards) daily awards")
       logger.info("✅ Migrated \(migratedAwards) daily awards")
       
       // Step 2: Calculate and migrate current progress
       print("📊 XP_MIGRATION: Step 2 - Calculating and migrating current progress...")
+      await Task.yield() // Let UI breathe
       try await migrateCurrentProgress(modelContext: modelContext)
       print("✅ XP_MIGRATION: Step 2 Complete - Migrated current progress")
       logger.info("✅ Migrated current progress")
       
       // Step 3: Mark migration as complete
       print("📊 XP_MIGRATION: Step 3 - Marking migration as complete...")
+      await Task.yield() // Let UI breathe
       try await FirestoreService.shared.markXPMigrationComplete()
       print("✅ XP_MIGRATION: Step 3 Complete - Migration marked as complete")
       logger.info("✅ XP migration completed successfully")
@@ -105,6 +111,9 @@ class XPMigrationService {
     var failedCount = 0
     
     for award in awards {
+      // ✅ FIX: Yield every award to prevent blocking
+      await Task.yield()
+      
       do {
         // Convert to Firestore model
         let firestoreAward = FirestoreDailyAward(from: award)
@@ -140,28 +149,44 @@ class XPMigrationService {
     print("📊 XP_MIGRATION: Calculating current progress from DailyAwards...")
     logger.info("📊 Calculating current progress from DailyAwards...")
     
-    // Fetch all DailyAward entities for current user
-    // Note: Need to get current userId from AuthenticationManager
+    // Get current user ID
     guard let userId = await getCurrentUserId() else {
       print("⚠️ XP_MIGRATION: No authenticated user, skipping progress migration")
       logger.warning("No authenticated user, skipping progress migration")
       return
     }
     
-    print("📊 XP_MIGRATION: Fetching awards for user: \(userId)")
+    print("📊 XP_MIGRATION: Fetching ALL awards (including those without userId)...")
     
-    let predicate = #Predicate<DailyAward> { award in
-      award.userId == userId
-    }
-    
-    let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+    // ✅ FIX: Fetch ALL DailyAwards, not just ones matching current userId
+    // This handles cases where old awards were created before userId was tracked properly
+    // or when migrating from guest mode to authenticated mode
+    let descriptor = FetchDescriptor<DailyAward>(
+      sortBy: [SortDescriptor(\.dateKey, order: .forward)]
+    )
     let awards = try modelContext.fetch(descriptor)
     
-    print("📊 XP_MIGRATION: Found \(awards.count) awards for current user")
+    print("📊 XP_MIGRATION: Found \(awards.count) total awards to process")
+    logger.info("Found \(awards.count) total awards")
     
-    // Calculate total XP
+    // ✅ FIX: Update userId for all awards to current user during migration
+    // This ensures all existing awards are associated with the authenticated user
+    var updatedCount = 0
+    for award in awards where award.userId != userId {
+      award.userId = userId
+      award.userIdDateKey = "\(userId)#\(award.dateKey)"
+      updatedCount += 1
+    }
+    
+    if updatedCount > 0 {
+      try modelContext.save()
+      print("📊 XP_MIGRATION: Updated userId for \(updatedCount) awards")
+      logger.info("Updated userId for \(updatedCount) awards to \(userId)")
+    }
+    
+    // Calculate total XP from ALL awards
     let totalXP = awards.reduce(0) { $0 + $1.xp }
-    print("📊 XP_MIGRATION: Calculated totalXP: \(totalXP)")
+    print("📊 XP_MIGRATION: Calculated totalXP: \(totalXP) from \(awards.count) awards")
     
     // Calculate level (using XPManager's formula)
     let levelBaseXP = 300

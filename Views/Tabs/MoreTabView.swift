@@ -268,7 +268,8 @@ struct MoreTabView: View {
   @State private var migrationStatus: String = "Checking..."
   @State private var firestoreXP: String = "Loading..."
   @State private var userId: String = "Unknown"
-  @State private var isMigrating: Bool = false  // NEW: Track migration state
+  @State private var isMigrating: Bool = false  // Track migration state
+  @State private var showResetAlert: Bool = false  // Show reset confirmation
   
   private var debugXPSyncSection: some View {
     VStack(spacing: 0) {
@@ -337,6 +338,16 @@ struct MoreTabView: View {
             showFirestorePath()
           }
         )
+        
+        debugButton(
+          title: "🔄 Reset Migration Status",
+          subtitle: "After reset, tap 'Migrate XP' button above to run",
+          action: {
+            Task {
+              await resetMigration()
+            }
+          }
+        )
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
@@ -347,6 +358,13 @@ struct MoreTabView: View {
     }
     .onAppear {
       loadDebugInfo()
+    }
+    .alert("Migration Reset Complete", isPresented: $showResetAlert) {
+      Button("OK") {
+        dismissResetAlert()
+      }
+    } message: {
+      Text("Migration status has been reset.\n\nNow tap 'Migrate XP to Cloud' button above to run migration again.")
     }
   }
   
@@ -400,7 +418,12 @@ struct MoreTabView: View {
     isMigrating = true
     migrationStatus = "Running..."
     
+    // ✅ FIX: Yield to let UI update before starting heavy operation
+    await Task.yield()
+    
     do {
+      // Migration will run on main actor but with async Firestore calls
+      // that won't block the thread
       try await XPMigrationService.shared.performMigration(modelContext: modelContext)
       migrationStatus = "✅ Complete"
       print("✅ XP_DEBUG: Migration completed successfully")
@@ -421,7 +444,10 @@ struct MoreTabView: View {
     do {
       // Check migration status
       let isComplete = try await FirestoreService.shared.isXPMigrationComplete()
-      migrationStatus = isComplete ? "✅ Complete" : "⏳ Pending"
+      // ✅ FIX: Only update status if it's not a custom message (like "Running..." or reset message)
+      if !migrationStatus.contains("Running") && !migrationStatus.contains("Ready - Tap") {
+        migrationStatus = isComplete ? "✅ Complete" : "⏳ Pending"
+      }
       print("🔍 XP_DEBUG: Migration complete: \(isComplete)")
       
       // Load Firestore XP
@@ -461,6 +487,44 @@ struct MoreTabView: View {
     UIPasteboard.general.string = url
     print("✅ XP_DEBUG: URL copied to clipboard!")
     #endif
+  }
+  
+  private func resetMigration() async {
+    print("🔄 XP_DEBUG: Resetting migration status...")
+    migrationStatus = "Resetting..."
+    
+    do {
+      // ✅ FIX: Use boolean check instead of storing unused value
+      guard AuthenticationManager.shared.currentUser?.uid != nil else {
+        print("❌ XP_DEBUG: No authenticated user")
+        migrationStatus = "❌ Not authenticated"
+        return
+      }
+      
+      // Delete the migration completion marker from Firestore
+      // ✅ FIX: Use FirestoreService instead of accessing Firestore directly
+      try await FirestoreService.shared.deleteXPMigrationMarker()
+      
+      migrationStatus = "⏳ Ready - Tap 'Migrate XP' above"
+      print("✅ XP_DEBUG: Migration reset successfully!")
+      print("   ⚠️ NEXT STEP: Tap 'Migrate XP to Cloud' button above to run migration!")
+      
+      // ✅ FIX: Don't call checkSyncStatus here - it would overwrite our custom message
+      // Just load the Firestore XP to show current state
+      if let progress = try? await FirestoreService.shared.loadUserProgress() {
+        firestoreXP = "\(progress.totalXP) (Level \(progress.level))"
+      }
+      
+      // Show visual confirmation
+      showResetAlert = true
+    } catch {
+      migrationStatus = "❌ Reset failed"
+      print("❌ XP_DEBUG: Reset failed: \(error)")
+    }
+  }
+  
+  private func dismissResetAlert() {
+    showResetAlert = false
   }
   #endif
   
