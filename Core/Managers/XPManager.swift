@@ -44,6 +44,23 @@ class XPManager {
     logger
       .info(
         "XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
+    
+    // ✅ Trigger XP migration check (runs once)
+    Task {
+      await checkAndTriggerMigration()
+    }
+  }
+  
+  /// Check if XP migration is needed and trigger it
+  private func checkAndTriggerMigration() async {
+    // Check if migration already completed
+    if await XPMigrationService.shared.isMigrationComplete() {
+      print("ℹ️ XPManager: XP migration already completed")
+      return
+    }
+    
+    print("🚀 XPManager: XP migration needed, will run when ModelContext is available")
+    // Migration will be triggered from a view with @Environment(\.modelContext)
   }
 
   // MARK: Internal
@@ -244,12 +261,62 @@ class XPManager {
   // MARK: - Data Persistence
 
   func saveUserProgress() {
+    // Save to UserDefaults (local backup)
     if let encoded = try? JSONEncoder().encode(userProgress) {
       userDefaults.set(encoded, forKey: userProgressKey)
+    }
+    
+    // ✅ Dual-write to Firestore (cloud backup)
+    Task {
+      do {
+        let firestoreProgress = FirestoreUserProgress(
+          totalXP: userProgress.totalXP,
+          level: userProgress.currentLevel,
+          dailyXP: userProgress.dailyXP,
+          lastUpdated: Date(),
+          currentLevelXP: userProgress.xpForCurrentLevel,
+          nextLevelXP: userProgress.xpForNextLevel
+        )
+        
+        try await FirestoreService.shared.saveUserProgress(firestoreProgress)
+        print("✅ XPManager: User progress synced to Firestore")
+      } catch {
+        print("⚠️ XPManager: Failed to sync progress to Firestore: \(error)")
+        // Don't throw - local save succeeded
+      }
     }
   }
 
   func loadUserProgress() {
+    // Try Firestore first (cloud-first strategy)
+    Task {
+      do {
+        if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
+          // Load from Firestore (authoritative source)
+          var newProgress = UserProgress()
+          newProgress.totalXP = firestoreProgress.totalXP
+          newProgress.currentLevel = firestoreProgress.level
+          newProgress.dailyXP = firestoreProgress.dailyXP
+          newProgress.xpForCurrentLevel = firestoreProgress.currentLevelXP ?? 0
+          newProgress.xpForNextLevel = firestoreProgress.nextLevelXP ?? 300
+          
+          userProgress = newProgress
+          totalXP = newProgress.totalXP
+          dailyXP = newProgress.dailyXP
+          updateLevelFromXP()
+          
+          print("✅ XPManager: Loaded progress from Firestore (totalXP: \(newProgress.totalXP), level: \(newProgress.currentLevel))")
+          
+          // Sync to UserDefaults
+          saveUserProgressToLocal()
+          return
+        }
+      } catch {
+        print("⚠️ XPManager: Failed to load from Firestore, falling back to local: \(error)")
+      }
+    }
+    
+    // Fallback to UserDefaults (local storage)
     if let data = userDefaults.data(forKey: userProgressKey),
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
@@ -258,12 +325,21 @@ class XPManager {
       totalXP = progress.totalXP
       dailyXP = progress.dailyXP
       updateLevelFromXP() // Ensure level is calculated from XP (also syncs currentLevel)
+      print("✅ XPManager: Loaded progress from UserDefaults (totalXP: \(progress.totalXP))")
     } else {
       // Initialize with default values
       userProgress = UserProgress()
       totalXP = 0
       dailyXP = 0
       updateLevelFromXP()
+      print("ℹ️ XPManager: No progress found, starting fresh")
+    }
+  }
+  
+  /// Save to UserDefaults only (helper for syncing after Firestore load)
+  private func saveUserProgressToLocal() {
+    if let encoded = try? JSONEncoder().encode(userProgress) {
+      userDefaults.set(encoded, forKey: userProgressKey)
     }
   }
 

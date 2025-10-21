@@ -286,6 +286,290 @@ class FirestoreService: FirebaseService, ObservableObject {
     listener = nil
   }
   
+  // MARK: - XP & Progress Operations
+  
+  /// Save user's current progress (total XP, level, etc.)
+  @MainActor
+  func saveUserProgress(_ progress: FirestoreUserProgress) async throws {
+    print("📊 FirestoreService: Saving user progress (totalXP: \(progress.totalXP), level: \(progress.level))")
+    
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    let progressData = progress.toFirestoreData()
+    
+    // Use transaction to prevent race conditions
+    let docRef = db.collection("users")
+      .document(userId)
+      .collection("progress")
+      .document("current")
+    
+    try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+      let snapshot: DocumentSnapshot
+      do {
+        snapshot = try transaction.getDocument(docRef)
+      } catch let error as NSError {
+        errorPointer?.pointee = error
+        return nil
+      }
+      
+      // Check if we should update (use latest timestamp)
+      if let existingData = snapshot.data(),
+         let existingTimestamp = existingData["lastUpdated"] as? Timestamp {
+        let existingDate = existingTimestamp.dateValue()
+        
+        // Only update if new data is more recent
+        if progress.lastUpdated <= existingDate {
+          print("⚠️ FirestoreService: Skipping update - existing data is newer")
+          return nil
+        }
+      }
+      
+      transaction.setData(progressData, forDocument: docRef)
+      return nil
+    })
+    
+    print("✅ FirestoreService: User progress saved")
+  }
+  
+  /// Load user's current progress
+  @MainActor
+  func loadUserProgress() async throws -> FirestoreUserProgress? {
+    print("📊 FirestoreService: Loading user progress")
+    
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    let snapshot = try await db.collection("users")
+      .document(userId)
+      .collection("progress")
+      .document("current")
+      .getDocument()
+    
+    guard snapshot.exists, let data = snapshot.data() else {
+      print("ℹ️ FirestoreService: No user progress found")
+      return nil
+    }
+    
+    let progress = FirestoreUserProgress.from(data: data)
+    if let progress = progress {
+      print("✅ FirestoreService: Loaded progress (totalXP: \(progress.totalXP), level: \(progress.level))")
+    }
+    
+    return progress
+  }
+  
+  /// Save a daily award
+  @MainActor
+  func saveDailyAward(_ award: FirestoreDailyAward) async throws {
+    print("🏆 FirestoreService: Saving daily award for \(award.date) (XP: \(award.xpGranted))")
+    
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    // Parse date to extract year-month and day
+    // Format: "YYYY-MM-DD" -> month: "YYYY-MM", day: "DD"
+    let components = award.date.split(separator: "-")
+    guard components.count == 3 else {
+      throw FirestoreServiceError.invalidData
+    }
+    
+    let yearMonth = "\(components[0])-\(components[1])" // "YYYY-MM"
+    let day = String(components[2]) // "DD"
+    
+    let awardData = award.toFirestoreData()
+    
+    // Path: /users/{uid}/progress/daily_awards/{YYYY-MM}/{DD}
+    try await db.collection("users")
+      .document(userId)
+      .collection("progress")
+      .document("daily_awards")
+      .collection(yearMonth)
+      .document(day)
+      .setData(awardData)
+    
+    print("✅ FirestoreService: Daily award saved at path: daily_awards/\(yearMonth)/\(day)")
+  }
+  
+  /// Load daily awards for a specific month
+  @MainActor
+  func loadDailyAwards(yearMonth: String) async throws -> [FirestoreDailyAward] {
+    print("📊 FirestoreService: Loading daily awards for \(yearMonth)")
+    
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    let snapshot = try await db.collection("users")
+      .document(userId)
+      .collection("progress")
+      .document("daily_awards")
+      .collection(yearMonth)
+      .getDocuments()
+    
+    let awards = snapshot.documents.compactMap { doc -> FirestoreDailyAward? in
+      FirestoreDailyAward.from(data: doc.data())
+    }
+    
+    print("✅ FirestoreService: Loaded \(awards.count) daily awards for \(yearMonth)")
+    return awards
+  }
+  
+  /// Load daily awards for a date range
+  @MainActor
+  func loadDailyAwards(from startDate: Date, to endDate: Date) async throws -> [FirestoreDailyAward] {
+    print("📊 FirestoreService: Loading daily awards from \(startDate) to \(endDate)")
+    
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM"
+    dateFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    
+    // Get all unique year-months in the range
+    var yearMonths: Set<String> = []
+    var currentDate = startDate
+    while currentDate <= endDate {
+      yearMonths.insert(dateFormatter.string(from: currentDate))
+      // Move to next month
+      if let nextMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentDate) {
+        currentDate = nextMonth
+      } else {
+        break
+      }
+    }
+    
+    // Load awards for each month
+    var allAwards: [FirestoreDailyAward] = []
+    for yearMonth in yearMonths {
+      do {
+        let monthAwards = try await loadDailyAwards(yearMonth: yearMonth)
+        allAwards.append(contentsOf: monthAwards)
+      } catch {
+        print("⚠️ FirestoreService: Failed to load awards for \(yearMonth): \(error)")
+      }
+    }
+    
+    // Filter to only include awards in the date range
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    let startDateString = dateFormatter.string(from: startDate)
+    let endDateString = dateFormatter.string(from: endDate)
+    
+    let filteredAwards = allAwards.filter { award in
+      award.date >= startDateString && award.date <= endDateString
+    }
+    
+    print("✅ FirestoreService: Loaded \(filteredAwards.count) daily awards in range")
+    return filteredAwards
+  }
+  
+  /// Load all daily awards for the current user
+  @MainActor
+  func loadAllDailyAwards() async throws -> [FirestoreDailyAward] {
+    print("📊 FirestoreService: Loading all daily awards")
+    
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    // Get all month subcollections
+    // Note: Firestore doesn't have a built-in way to list subcollections
+    // So we'll need to track which months have data
+    // For now, load the last 12 months
+    var allAwards: [FirestoreDailyAward] = []
+    
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM"
+    dateFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    
+    // Load last 12 months
+    for monthOffset in 0..<12 {
+      if let monthDate = Calendar.current.date(byAdding: .month, value: -monthOffset, to: Date()) {
+        let yearMonth = dateFormatter.string(from: monthDate)
+        do {
+          let monthAwards = try await loadDailyAwards(yearMonth: yearMonth)
+          allAwards.append(contentsOf: monthAwards)
+        } catch {
+          // Month might not exist, continue
+          continue
+        }
+      }
+    }
+    
+    print("✅ FirestoreService: Loaded \(allAwards.count) total daily awards")
+    return allAwards
+  }
+  
+  /// Check if XP migration has been completed
+  @MainActor
+  func isXPMigrationComplete() async throws -> Bool {
+    guard isConfigured else {
+      return false
+    }
+    
+    guard let userId = currentUserId else {
+      return false
+    }
+    
+    let snapshot = try await db.collection("users")
+      .document(userId)
+      .collection("meta")
+      .document("xp_migration")
+      .getDocument()
+    
+    if let data = snapshot.data(),
+       let status = data["status"] as? String {
+      return status == "complete"
+    }
+    
+    return false
+  }
+  
+  /// Mark XP migration as complete
+  @MainActor
+  func markXPMigrationComplete() async throws {
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    try await db.collection("users")
+      .document(userId)
+      .collection("meta")
+      .document("xp_migration")
+      .setData([
+        "status": "complete",
+        "completedAt": Date(),
+        "version": "1.0"
+      ])
+    
+    print("✅ FirestoreService: XP migration marked as complete")
+  }
+  
   // MARK: - Telemetry
   
   nonisolated private func setupTelemetry() {
