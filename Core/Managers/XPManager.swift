@@ -261,24 +261,22 @@ class XPManager {
   // MARK: - Data Persistence
 
   func saveUserProgress() {
-    print("💾 XP_SAVE: Saving user progress...")
-    print("   totalXP: \(userProgress.totalXP)")
-    print("   level: \(userProgress.currentLevel)")
-    print("   dailyXP: \(userProgress.dailyXP)")
+    let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
+    print("💾 XP_SAVE_START: totalXP=\(userProgress.totalXP), level=\(userProgress.currentLevel), dailyXP=\(userProgress.dailyXP), userId=\(userId)")
     
     // Save to UserDefaults (local backup)
     if let encoded = try? JSONEncoder().encode(userProgress) {
       userDefaults.set(encoded, forKey: userProgressKey)
-      print("💾 XP_SAVE: ✅ Saved to UserDefaults (local)")
+      print("💾 XP_SAVE_LOCAL: Saved to UserDefaults")
     } else {
-      print("💾 XP_SAVE: ❌ Failed to encode for UserDefaults")
+      print("💾 XP_SAVE_LOCAL: ❌ Failed to encode for UserDefaults")
+      return
     }
     
     // ✅ Dual-write to Firestore (cloud backup)
     Task {
       do {
-        let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
-        print("💾 XP_SAVE: Syncing to Firestore for user: \(userId)...")
+        print("💾 XP_SAVE_CLOUD: Starting Firestore write...")
         
         let firestoreProgress = FirestoreUserProgress(
           totalXP: userProgress.totalXP,
@@ -290,29 +288,27 @@ class XPManager {
         )
         
         try await FirestoreService.shared.saveUserProgress(firestoreProgress)
-        print("💾 XP_SAVE: ✅ Synced to Firestore successfully")
+        print("✅ XP_SAVE_COMPLETE: Both saves successful (Local + Firestore)")
       } catch {
-        print("💾 XP_SAVE: ⚠️ Failed to sync to Firestore: \(error.localizedDescription)")
+        print("💾 XP_SAVE_CLOUD: ⚠️ Failed to sync to Firestore: \(error.localizedDescription)")
+        print("✅ XP_SAVE_COMPLETE: Local save successful, Firestore failed (data preserved locally)")
         // Don't throw - local save succeeded
       }
     }
   }
 
   func loadUserProgress() {
-    print("📖 XP_LOAD: Loading user progress...")
+    let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
+    print("📖 XP_LOAD_START: userId=\(userId)")
     
     // Try Firestore first (cloud-first strategy)
     Task {
-      let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
-      print("📖 XP_LOAD: Attempting to load from Firestore for user: \(userId)...")
+      print("📖 XP_LOAD_CLOUD: Attempting Firestore read...")
       
       do {
         if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
           // Load from Firestore (authoritative source)
-          print("📖 XP_LOAD: ✅ Found data in Firestore:")
-          print("   totalXP: \(firestoreProgress.totalXP)")
-          print("   level: \(firestoreProgress.level)")
-          print("   dailyXP: \(firestoreProgress.dailyXP)")
+          print("📖 XP_LOAD_CLOUD: Got totalXP=\(firestoreProgress.totalXP), level=\(firestoreProgress.level), dailyXP=\(firestoreProgress.dailyXP)")
           
           var newProgress = UserProgress()
           newProgress.totalXP = firestoreProgress.totalXP
@@ -326,39 +322,39 @@ class XPManager {
           dailyXP = newProgress.dailyXP
           updateLevelFromXP()
           
-          print("✅ XP_LOAD: Loaded from Firestore successfully")
+          print("✅ XP_LOAD_COMPLETE: Using totalXP=\(totalXP) from Firestore (cloud-first)")
           
           // Sync to UserDefaults
           saveUserProgressToLocal()
           return
         } else {
-          print("📖 XP_LOAD: ℹ️ No data found in Firestore")
+          print("📖 XP_LOAD_CLOUD: Got totalXP=-1 (no data in Firestore)")
         }
       } catch {
-        print("📖 XP_LOAD: ⚠️ Failed to load from Firestore: \(error.localizedDescription)")
+        print("📖 XP_LOAD_CLOUD: ⚠️ Firestore read failed: \(error.localizedDescription)")
       }
     }
     
     // Fallback to UserDefaults (local storage)
-    print("📖 XP_LOAD: Loading from UserDefaults (local fallback)...")
+    print("📖 XP_LOAD_LOCAL: Reading from UserDefaults...")
     if let data = userDefaults.data(forKey: userProgressKey),
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
+      print("📖 XP_LOAD_LOCAL: UserDefaults totalXP=\(progress.totalXP)")
       userProgress = progress
       // ✅ Sync @Published properties from loaded data
       totalXP = progress.totalXP
       dailyXP = progress.dailyXP
       updateLevelFromXP() // Ensure level is calculated from XP (also syncs currentLevel)
-      print("✅ XP_LOAD: Loaded from UserDefaults")
-      print("   totalXP: \(progress.totalXP)")
-      print("   level: \(userProgress.currentLevel)")
+      print("✅ XP_LOAD_COMPLETE: Using totalXP=\(totalXP) from UserDefaults (local fallback)")
     } else {
       // Initialize with default values
+      print("📖 XP_LOAD_LOCAL: UserDefaults totalXP=0 (no data found)")
       userProgress = UserProgress()
       totalXP = 0
       dailyXP = 0
       updateLevelFromXP()
-      print("📖 XP_LOAD: ℹ️ No progress found anywhere, starting fresh")
+      print("✅ XP_LOAD_COMPLETE: Using totalXP=0 (starting fresh)")
     }
   }
   

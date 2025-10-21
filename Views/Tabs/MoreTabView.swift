@@ -358,6 +358,11 @@ struct MoreTabView: View {
     }
     .onAppear {
       loadDebugInfo()
+      
+      // ✅ AUTOMATIC MIGRATION: Trigger XP migration on first app launch
+      Task {
+        await checkAndRunAutomaticMigration()
+      }
     }
     .alert("Migration Reset Complete", isPresented: $showResetAlert) {
       Button("OK") {
@@ -525,6 +530,39 @@ struct MoreTabView: View {
   
   private func dismissResetAlert() {
     showResetAlert = false
+  }
+  
+  /// ✅ AUTOMATIC MIGRATION: Check if migration is needed and run automatically
+  private func checkAndRunAutomaticMigration() async {
+    print("🔄 XP_AUTO_MIGRATION: Checking if automatic migration is needed...")
+    
+    do {
+      // Check if migration is already complete
+      let isComplete = try await FirestoreService.shared.isXPMigrationComplete()
+      
+      if isComplete {
+        print("ℹ️ XP_AUTO_MIGRATION: Migration already complete, skipping")
+        return
+      }
+      
+      print("🚀 XP_AUTO_MIGRATION: Migration needed, starting automatic migration...")
+      migrationStatus = "Running (auto)..."
+      isMigrating = true
+      
+      // Run the migration
+      try await XPMigrationService.shared.performMigration(modelContext: modelContext)
+      
+      migrationStatus = "✅ Complete (auto)"
+      print("✅ XP_AUTO_MIGRATION: Automatic migration completed successfully!")
+      
+      // Refresh status
+      await checkSyncStatus()
+    } catch {
+      migrationStatus = "❌ Auto-migration failed"
+      print("❌ XP_AUTO_MIGRATION: Automatic migration failed: \(error)")
+    }
+    
+    isMigrating = false
   }
   #endif
   

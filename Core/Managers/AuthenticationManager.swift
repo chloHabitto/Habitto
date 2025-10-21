@@ -52,7 +52,9 @@ class AuthenticationManager: ObservableObject {
   // MARK: Lifecycle
 
   private init() {
-    setupAuthStateListener()
+    // ✅ FIX: Don't setup auth listener immediately - wait for Firebase to be configured
+    // Auth listener will be set up lazily when first needed
+    print("🔐 AuthenticationManager: Initialized (Auth listener deferred until Firebase configured)")
   }
 
   deinit {
@@ -65,6 +67,9 @@ class AuthenticationManager: ObservableObject {
   // MARK: Internal
 
   static let shared = AuthenticationManager()
+  
+  /// Track if auth listener has been set up
+  private var hasSetupAuthListener = false
 
   @Published var authState: AuthenticationState = .unauthenticated
   @Published var currentUser: UserProtocol?
@@ -591,8 +596,26 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - Authentication State Listener
 
+  /// ✅ Ensure auth listener is set up (called when Firebase is ready)
+  func ensureAuthListenerSetup() {
+    guard !hasSetupAuthListener else {
+      print("ℹ️ AuthenticationManager: Auth listener already set up, skipping")
+      return
+    }
+    
+    print("🔐 AuthenticationManager: Setting up Firebase authentication state listener...")
+    setupAuthStateListener()
+    hasSetupAuthListener = true
+  }
+  
   private func setupAuthStateListener() {
-    print("🔐 AuthenticationManager: Setting up Firebase authentication state listener")
+    // Check if Firebase is configured before accessing Auth
+    guard FirebaseApp.app() != nil else {
+      print("⚠️ AuthenticationManager: Firebase not configured yet, deferring auth listener setup")
+      return
+    }
+    
+    print("🔐 AuthenticationManager: Adding Firebase Auth state change listener")
     authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
       DispatchQueue.main.async {
         if let user {

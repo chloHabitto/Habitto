@@ -242,19 +242,31 @@ struct HomeTabView: View {
     }
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
-    // Sort habits so completed ones appear at the bottom
-    let finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
-      // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
-      let habit1Completed = completionStatusMap[habit1.id] ?? false
-      let habit2Completed = completionStatusMap[habit2.id] ?? false
-
-      // If one is completed and the other isn't, put the incomplete one first
-      if habit1Completed != habit2Completed {
-        return !habit1Completed && habit2Completed
+    // ✅ FIX: Only sort completed habits to bottom if NOT currently completing a habit
+    // This prevents the jarring reorder during swipe gestures
+    let finalFilteredHabits: [Habit]
+    
+    if deferResort {
+      // Don't reorder while completing - keep original order
+      finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
+        // Just use stable secondary sort (by name)
+        return habit1.name < habit2.name
       }
+    } else {
+      // Normal sorting: completed habits at bottom
+      finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
+        // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
+        let habit1Completed = completionStatusMap[habit1.id] ?? false
+        let habit2Completed = completionStatusMap[habit2.id] ?? false
 
-      // ✅ FIX: Use stable secondary sort to prevent array jumping during updates
-      return habit1.name < habit2.name
+        // If one is completed and the other isn't, put the incomplete one first
+        if habit1Completed != habit2Completed {
+          return !habit1Completed && habit2Completed
+        }
+
+        // ✅ FIX: Use stable secondary sort to prevent array jumping during updates
+        return habit1.name < habit2.name
+      }
     }
 
     return finalFilteredHabits
@@ -1188,7 +1200,12 @@ struct HomeTabView: View {
   // MARK: - Sorting Logic
 
   private func resortHabits() {
-    guard !deferResort else { return }
+    print("🔄 resortHabits() called - deferResort: \(deferResort)")
+    guard !deferResort else {
+      print("   ⚠️ resortHabits() BLOCKED by deferResort flag")
+      return
+    }
+    print("   ✅ resortHabits() proceeding...")
 
     let todayHabits = habits.filter { habit in
       let selected = DateUtils.startOfDay(for: selectedDate)
@@ -1233,6 +1250,12 @@ struct HomeTabView: View {
       // Fallback to name order
       return habit1.name < habit2.name
     })
+    
+    print("   ✅ resortHabits() completed - sortedHabits count: \(sortedHabits.count)")
+    for (index, habit) in sortedHabits.enumerated() {
+      let isComplete = completionStatusMap[habit.id] ?? false
+      print("      [\(index)] \(habit.name) - completed: \(isComplete)")
+    }
   }
 
   // MARK: - Habit Completion Logic
@@ -1356,8 +1379,36 @@ struct HomeTabView: View {
     print(
       "🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
 
-    deferResort = false
-    resortHabits()
+    // ✅ FIX: Wait 1 second before resorting to allow smooth sheet dismissal animation
+    Task { @MainActor in
+      print("🔄 COMPLETION_FLOW: Starting 1-second delay before resort...")
+      print("   deferResort (before delay): \(deferResort)")
+      print("   sortedHabits count (before delay): \(sortedHabits.count)")
+      
+      try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+      
+      print("🔄 COMPLETION_FLOW: 1 second passed, now resorting...")
+      
+      // ✅ FIX: Refresh completion status map BEFORE resorting
+      print("   Refreshing completionStatusMap...")
+      await prefetchCompletionStatus()
+      print("   ✅ completionStatusMap refreshed")
+      
+      print("   Setting deferResort = false")
+      deferResort = false
+      
+      print("   Calling resortHabits()...")
+      resortHabits()
+      
+      print("✅ COMPLETION_FLOW: Resort completed!")
+      print("   sortedHabits count (after resort): \(sortedHabits.count)")
+      if !sortedHabits.isEmpty {
+        for (index, habit) in sortedHabits.enumerated() {
+          let isComplete = completionStatusMap[habit.id] ?? false
+          print("   [\(index)] \(habit.name) - completed: \(isComplete)")
+        }
+      }
+    }
 
     // Check if the last habit was just completed
     if lastHabitJustCompleted {
