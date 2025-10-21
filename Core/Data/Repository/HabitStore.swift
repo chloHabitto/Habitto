@@ -315,29 +315,21 @@ final actor HabitStore {
       // ✅ FIX: Use type-aware progress tracking
       let habitType = currentHabits[index].habitType
       let oldProgress: Int
-      let isComplete: Bool
+      // ✅ UNIVERSAL RULE: Both types use completionHistory for progress tracking
+      oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
+      currentHabits[index].completionHistory[dateKey] = progress
       
+      // ✅ Both types: complete when progress >= goal
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: currentHabits[index].goal)
+      let isComplete = progress >= goalAmount
+      currentHabits[index].completionStatus[dateKey] = isComplete
+      
+      // Logging with habit type info
       if habitType == .breaking {
-        // Breaking habits: track actual usage
-        oldProgress = currentHabits[index].actualUsage[dateKey] ?? 0
-        currentHabits[index].actualUsage[dateKey] = progress
-        
-        // Complete when usage <= target
-        isComplete = progress <= currentHabits[index].target
-        currentHabits[index].completionStatus[dateKey] = isComplete
-        
-        logger.info("🔍 BREAKING HABIT - '\(habit.name)' | Usage: \(progress) | Target: ≤\(currentHabits[index].target) | Complete: \(isComplete)")
+        logger.info("🔍 BREAKING HABIT - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isComplete)")
+        logger.info("   📊 Display-only: Target: \(currentHabits[index].target) | Baseline: \(currentHabits[index].baseline)")
       } else {
-        // Formation habits: track progress toward goal
-        oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
-        currentHabits[index].completionHistory[dateKey] = progress
-        
-        // Complete when progress >= goal
-        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-        isComplete = progress >= goalAmount
-        currentHabits[index].completionStatus[dateKey] = isComplete
-        
-        logger.info("🔍 FORMATION HABIT - '\(habit.name)' | Progress: \(progress) | Goal: ≥\(goalAmount) | Complete: \(isComplete)")
+        logger.info("🔍 FORMATION HABIT - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isComplete)")
       }
 
       // Handle timestamp recording for time-based completion analysis
