@@ -648,8 +648,9 @@ struct Habit: Identifiable, Codable, Equatable {
       // ✅ FIX #13: Removed flooding debug log that was showing year 742
       // The date formatter issue will be fixed separately
       
-      // A breaking habit is complete when actual usage is at or below target
-      return usage <= target
+      // ✅ CRITICAL FIX: Breaking habit is complete when usage is tracked (> 0) AND within target
+      // If usage is 0, habit is not complete (user hasn't logged any usage yet)
+      return usage > 0 && usage <= target
     } else {
       // For formation habits, use completion history as before
       let progress = completionHistory[dateKey] ?? 0

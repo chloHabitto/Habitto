@@ -1250,15 +1250,35 @@ struct HomeTabView: View {
     // This ensures the last habit detection works correctly
     completionStatusMap[habit.id] = true
 
-    // ✅ BUG FIX: Check actual completion status from habit data instead of stale cache
+    // ✅ BUG FIX: Calculate completion status on-the-fly from actual habit data (don't use prefetched map)
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
       if h.id == habit.id { return false } // Exclude current habit
       
-      // ✅ FIX: Use type-aware completion check (works for both formation and breaking habits)
+      // ✅ CRITICAL: Check actual completion from the habits array (source of truth)
+      // DON'T use completionStatusMap as it may be stale/prefetched
+      let habitData = habits.first(where: { $0.id == h.id }) ?? h
       let dateKey = Habit.dateKey(for: selectedDate)
-      let isComplete = h.isCompleted(for: selectedDate)
       
-      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete)")
+      // Type-aware completion check
+      let isComplete: Bool
+      if habitData.habitType == .breaking {
+        let usage = habitData.actualUsage[dateKey] ?? 0
+        isComplete = usage > 0 && usage <= habitData.target
+        print("  🔍 Breaking habit '\(h.name)': usage=\(usage), target=\(habitData.target)")
+      } else {
+        let progress = habitData.completionHistory[dateKey] ?? 0
+        // Parse goal to check if ACTUALLY complete (not just progress > 0)
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+        if goalAmount > 0 {
+          isComplete = progress >= goalAmount
+          print("  🔍 Formation habit '\(h.name)': progress=\(progress), goal=\(goalAmount)")
+        } else {
+          isComplete = progress > 0
+          print("  🔍 Formation habit '\(h.name)': progress=\(progress) (fallback: any progress)")
+        }
+      }
+      
+      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | usage/progress=\(habitData.habitType == .breaking ? habitData.actualUsage[dateKey] ?? 0 : habitData.completionHistory[dateKey] ?? 0)")
       return !isComplete // Return true if NOT complete
     }
 

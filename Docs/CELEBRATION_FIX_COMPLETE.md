@@ -178,3 +178,4 @@ if habit.habitType == .breaking {
 
 **The app is now fully functional!** 🚀
 
+

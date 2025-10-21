@@ -119,7 +119,22 @@ final class SwiftDataStorage: HabitStorageProtocol {
             startDate: habit.startDate,
             endDate: habit.endDate)
 
-          // Add completion history
+          // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
+          // Problem: completionHistory stores PROGRESS COUNTS (0, 1, 2, 5, etc.), not completion status
+          // The old code was setting isCompleted=(progress==1), which is completely wrong
+          // 
+          // Example bugs:
+          // - Formation habit with 5/5 progress → isCompleted=(5==1)=false ❌
+          // - Formation habit with 1/5 progress → isCompleted=(1==1)=true ❌
+          // - Breaking habits don't even use completionHistory, they use actualUsage!
+          //
+          // Solution: Let the UI create CompletionRecords when users actually complete habits
+          // The legacy completionHistory/actualUsage dictionaries work fine for display
+          
+          logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord creation for habit '\(habit.name)' - will be created by UI")
+          
+          // Old code that created phantom records:
+          /*
           for (dateString, isCompleted) in habit.completionHistory {
             if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
               let completionRecord = CompletionRecord(
@@ -127,10 +142,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 habitId: habitData.id,
                 date: date,
                 dateKey: Habit.dateKey(for: date),
-                isCompleted: isCompleted == 1)
+                isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
               habitData.completionHistory.append(completionRecord)
             }
           }
+          */
 
           // Add difficulty history
           for (dateString, difficulty) in habit.difficultyHistory {
@@ -320,8 +336,15 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // Update existing habit
         existingHabitData.updateFromHabit(habit)
 
-        // Update completion history
+        // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
+        // Same issue as in saveHabits - completionHistory stores progress counts, not completion status
+        // Let the UI create CompletionRecords when users actually complete habits
+        
         existingHabitData.completionHistory.removeAll()
+        logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord update for habit '\(habit.name)' - will be created by UI")
+        
+        // Old code that created phantom records:
+        /*
         for (dateString, isCompleted) in habit.completionHistory {
           if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
             let completionRecord = CompletionRecord(
@@ -329,10 +352,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
               habitId: existingHabitData.id,
               date: date,
               dateKey: Habit.dateKey(for: date),
-              isCompleted: isCompleted == 1)
+              isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
             existingHabitData.completionHistory.append(completionRecord)
           }
         }
+        */
 
         // Update difficulty history
         existingHabitData.difficultyHistory.removeAll()
@@ -373,7 +397,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
           startDate: habit.startDate,
           endDate: habit.endDate)
 
-        // Add completion history
+        // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
+        // Same issue as in saveHabits - completionHistory stores progress counts, not completion status
+        // Let the UI create CompletionRecords when users actually complete habits
+        
+        logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord creation for new habit '\(habit.name)' - will be created by UI")
+        
+        // Old code that created phantom records:
+        /*
         for (dateString, isCompleted) in habit.completionHistory {
           if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
             let completionRecord = CompletionRecord(
@@ -381,10 +412,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
               habitId: habitData.id,
               date: date,
               dateKey: Habit.dateKey(for: date),
-              isCompleted: isCompleted == 1)
+              isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
             habitData.completionHistory.append(completionRecord)
           }
         }
+        */
 
         // Add difficulty history
         for (dateString, difficulty) in habit.difficultyHistory {

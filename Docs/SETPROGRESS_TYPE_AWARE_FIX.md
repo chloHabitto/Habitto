@@ -220,3 +220,4 @@ Users can:
 
 **All habit types are fully functional!** 🚀
 
+
