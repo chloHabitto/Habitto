@@ -23,11 +23,17 @@ The issue was in the `HomeTabView.swift` file. The `resortHabits()` function rel
 
 ## Solution
 
-In the `onDifficultySheetDismissed()` method, we now refresh the `completionStatusMap` by calling `prefetchCompletionStatus()` BEFORE calling `resortHabits()`.
+The fix involves two parts:
+
+1. **Refresh completion status**: In `onDifficultySheetDismissed()`, we now refresh the `completionStatusMap` by calling `prefetchCompletionStatus()` BEFORE calling `resortHabits()`.
+
+2. **Add smooth animations**: We wrap the resort in `withAnimation(.spring())` and add explicit animation modifiers to the ForEach to ensure smooth, pleasant list reordering with no sudden jumps or fades.
 
 ### Changes Made
 
 **File**: `/Users/chloe/Desktop/Habitto/Views/Tabs/HomeTabView.swift`
+
+#### Change 1: Refresh Completion Status Before Resorting
 
 **Function**: `onDifficultySheetDismissed()`
 
@@ -43,7 +49,7 @@ deferResort = false
 print("   Calling resortHabits()...")
 resortHabits()
 
-// After (lines 1388-1401):
+// After (lines 1388-1403):
 try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
 
 print("🔄 COMPLETION_FLOW: 1 second passed, now resorting...")
@@ -56,9 +62,50 @@ print("   ✅ completionStatusMap refreshed")
 print("   Setting deferResort = false")
 deferResort = false
 
-print("   Calling resortHabits()...")
-resortHabits()
+print("   Calling resortHabits() with animation...")
+withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+  resortHabits()
+}
 ```
+
+#### Change 2: Add Smooth Animations to List Reordering
+
+**Location**: ForEach displaying habits (lines 508-516)
+
+**Change**:
+```swift
+// Before:
+ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
+  habitRow(habit)
+    .animateViewAnimatorStyle(
+      index: index,
+      animation: .slideFromBottom(offset: 20),
+      config: .fast)
+}
+
+// After:
+ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
+  habitRow(habit)
+    .animateViewAnimatorStyle(
+      index: index,
+      animation: .slideFromBottom(offset: 20),
+      config: .fast)
+    .transition(.identity)  // ✅ Prevents fade in/out
+}
+.animation(.spring(response: 0.5, dampingFraction: 0.8), value: sortedHabits.map { $0.id })  // ✅ Smooth spring animation
+```
+
+### How the Animation Works
+
+1. **`withAnimation(.spring(...))`**: Wraps the state change in an animation block, telling SwiftUI to animate all state changes within.
+
+2. **Spring parameters**:
+   - `response: 0.5` - The animation takes 0.5 seconds (feels snappy but not rushed)
+   - `dampingFraction: 0.8` - Controls the bounce (0.8 gives a subtle, pleasant bounce without being too bouncy)
+
+3. **`.transition(.identity)`**: Prevents habits from fading in/out when reordering. They simply move position.
+
+4. **`.animation(..., value: sortedHabits.map { $0.id })`**: Tells SwiftUI to animate whenever the order of habit IDs changes. SwiftUI tracks the IDs and smoothly moves each habit to its new position.
 
 ## Expected Behavior After Fix
 
@@ -68,8 +115,9 @@ resortHabits()
 4. **After 1 second**:
    - `completionStatusMap` is refreshed with current completion status
    - `resortHabits()` is called with accurate data
-   - Habit1 moves to the bottom of the list (completed habits have lower priority)
-   - Habit2 (incomplete) stays at the top
+   - Habit1 **smoothly animates** to the bottom of the list with a spring animation (completed habits have lower priority)
+   - Habit2 (incomplete) **smoothly animates** to the top
+   - The entire reordering happens with a pleasant spring bounce effect
 
 ## Testing
 
