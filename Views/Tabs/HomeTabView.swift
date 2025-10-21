@@ -511,7 +511,9 @@ struct HomeTabView: View {
                 index: index,
                 animation: .slideFromBottom(offset: 20),
                 config: .fast)
+              .transition(.identity)
           }
+          .animation(.spring(response: 0.5, dampingFraction: 0.8), value: sortedHabits.map { $0.id })
         }
       }
       .padding(.horizontal, 20)
@@ -1397,8 +1399,10 @@ struct HomeTabView: View {
       print("   Setting deferResort = false")
       deferResort = false
       
-      print("   Calling resortHabits()...")
-      resortHabits()
+      print("   Calling resortHabits() with animation...")
+      withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        resortHabits()
+      }
       
       print("✅ COMPLETION_FLOW: Resort completed!")
       print("   sortedHabits count (after resort): \(sortedHabits.count)")
