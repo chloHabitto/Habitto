@@ -350,24 +350,17 @@ struct Habit: Identifiable, Codable, Equatable {
     let currentProgress = completionHistory[dateKey] ?? 0
     completionHistory[dateKey] = currentProgress + 1
 
-    // ✅ FIX: Only mark as completed in boolean system when GOAL is actually met
-    if habitType == .breaking {
-      // For breaking habits, completed when actual usage is at or below target
-      let newProgress = completionHistory[dateKey] ?? 0
-      completionStatus[dateKey] = newProgress <= target
-      print("🔍 COMPLETION FIX - Breaking Habit '\(name)' marked | Progress: \(newProgress) | Target: \(target) | Completed: \(newProgress <= target)")
+    // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+    // Set completionStatus[dateKey] = true when progress >= goal
+    let newProgress = completionHistory[dateKey] ?? 0
+    if let goalAmount = parseGoalAmount(from: goal) {
+      let isComplete = newProgress >= goalAmount
+      completionStatus[dateKey] = isComplete
+      print("🔍 COMPLETION FIX - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' marked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
     } else {
-      // For formation habits, completed when progress meets or exceeds goal
-      let newProgress = completionHistory[dateKey] ?? 0
-      if let goalAmount = parseGoalAmount(from: goal) {
-        let isComplete = newProgress >= goalAmount
-        completionStatus[dateKey] = isComplete
-        print("🔍 COMPLETION FIX - Formation Habit '\(name)' marked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
-      } else {
-        // Fallback: if can't parse goal, use progress > 0
-        completionStatus[dateKey] = newProgress > 0
-        print("🔍 COMPLETION FIX - Formation Habit '\(name)' marked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
-      }
+      // Fallback: if can't parse goal, use progress > 0
+      completionStatus[dateKey] = newProgress > 0
+      print("🔍 COMPLETION FIX - Habit '\(name)' marked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
     }
 
     // Store the actual completion timestamp
@@ -407,24 +400,17 @@ struct Habit: Identifiable, Codable, Equatable {
     let currentProgress = completionHistory[dateKey] ?? 0
     completionHistory[dateKey] = max(0, currentProgress - 1)
 
-    // ✅ FIX: Update completion status based on whether GOAL is still met after decrement
-    if habitType == .breaking {
-      // For breaking habits, completed when actual usage is at or below target
-      let newProgress = completionHistory[dateKey] ?? 0
-      completionStatus[dateKey] = newProgress <= target
-      print("🔍 COMPLETION FIX - Breaking Habit '\(name)' unmarked | Progress: \(newProgress) | Target: \(target) | Completed: \(newProgress <= target)")
+    // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+    // Update completionStatus[dateKey] based on whether progress >= goal after decrement
+    let newProgress = completionHistory[dateKey] ?? 0
+    if let goalAmount = parseGoalAmount(from: goal) {
+      let isComplete = newProgress >= goalAmount
+      completionStatus[dateKey] = isComplete
+      print("🔍 COMPLETION FIX - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' unmarked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
     } else {
-      // For formation habits, completed when progress meets or exceeds goal
-      let newProgress = completionHistory[dateKey] ?? 0
-      if let goalAmount = parseGoalAmount(from: goal) {
-        let isComplete = newProgress >= goalAmount
-        completionStatus[dateKey] = isComplete
-        print("🔍 COMPLETION FIX - Formation Habit '\(name)' unmarked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
-      } else {
-        // Fallback: if can't parse goal, use progress > 0
-        completionStatus[dateKey] = newProgress > 0
-        print("🔍 COMPLETION FIX - Formation Habit '\(name)' unmarked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
-      }
+      // Fallback: if can't parse goal, use progress > 0
+      completionStatus[dateKey] = newProgress > 0
+      print("🔍 COMPLETION FIX - Habit '\(name)' unmarked (fallback) | Progress: \(newProgress) | Completed: \(newProgress > 0)")
     }
 
     // Remove the most recent timestamp if there are any
@@ -640,35 +626,27 @@ struct Habit: Identifiable, Codable, Equatable {
     }
 
     // Fallback to old system for migration purposes
-    if habitType == .breaking {
-      // For breaking habits, completion is based on actual usage vs target
-      let usage = actualUsage[dateKey] ?? 0
-      let target = target
-
-      // ✅ FIX #13: Removed flooding debug log that was showing year 742
-      // The date formatter issue will be fixed separately
-      
-      // ✅ CRITICAL FIX: Breaking habit is complete when usage is tracked (> 0) AND within target
-      // If usage is 0, habit is not complete (user hasn't logged any usage yet)
-      return usage > 0 && usage <= target
-    } else {
-      // For formation habits, use completion history as before
-      let progress = completionHistory[dateKey] ?? 0
-
-      // Parse the goal to get the target amount
-      if let targetAmount = parseGoalAmount(from: goal) {
-        // A habit is complete when progress reaches or exceeds the goal amount
-        let isCompleted = progress >= targetAmount
-        // ✅ FIX #13: Removed flooding debug log
-        return isCompleted
-      }
-
-      // Fallback: if we can't parse the goal, consider it complete with any progress
-      let isCompleted = progress > 0
+    // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+    // Both check: progress >= goal (extracted from goal string)
+    // The target/baseline/actualUsage fields are DISPLAY ONLY and NOT used for completion
+    
+    let progress = completionHistory[dateKey] ?? 0
+    
+    // Parse the goal to get the target amount
+    if let targetAmount = parseGoalAmount(from: goal) {
+      // A habit is complete when progress reaches or exceeds the goal amount
+      // This works for BOTH Formation AND Breaking habits
+      let isCompleted = progress >= targetAmount
       print(
-        "🔍 COMPLETION DEBUG - Formation Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Completed: \(isCompleted) (fallback)")
+        "🔍 COMPLETION CHECK - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Goal: \(targetAmount) | Completed: \(isCompleted)")
       return isCompleted
     }
+
+    // Fallback: if we can't parse the goal, consider it complete with any progress
+    let isCompleted = progress > 0
+    print(
+      "🔍 COMPLETION CHECK - Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Completed: \(isCompleted) (fallback - no goal parsed)")
+    return isCompleted
   }
 
   /// Helper method to parse goal amount from goal string
