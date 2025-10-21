@@ -261,14 +261,25 @@ class XPManager {
   // MARK: - Data Persistence
 
   func saveUserProgress() {
+    print("💾 XP_SAVE: Saving user progress...")
+    print("   totalXP: \(userProgress.totalXP)")
+    print("   level: \(userProgress.currentLevel)")
+    print("   dailyXP: \(userProgress.dailyXP)")
+    
     // Save to UserDefaults (local backup)
     if let encoded = try? JSONEncoder().encode(userProgress) {
       userDefaults.set(encoded, forKey: userProgressKey)
+      print("💾 XP_SAVE: ✅ Saved to UserDefaults (local)")
+    } else {
+      print("💾 XP_SAVE: ❌ Failed to encode for UserDefaults")
     }
     
     // ✅ Dual-write to Firestore (cloud backup)
     Task {
       do {
+        let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
+        print("💾 XP_SAVE: Syncing to Firestore for user: \(userId)...")
+        
         let firestoreProgress = FirestoreUserProgress(
           totalXP: userProgress.totalXP,
           level: userProgress.currentLevel,
@@ -279,20 +290,30 @@ class XPManager {
         )
         
         try await FirestoreService.shared.saveUserProgress(firestoreProgress)
-        print("✅ XPManager: User progress synced to Firestore")
+        print("💾 XP_SAVE: ✅ Synced to Firestore successfully")
       } catch {
-        print("⚠️ XPManager: Failed to sync progress to Firestore: \(error)")
+        print("💾 XP_SAVE: ⚠️ Failed to sync to Firestore: \(error.localizedDescription)")
         // Don't throw - local save succeeded
       }
     }
   }
 
   func loadUserProgress() {
+    print("📖 XP_LOAD: Loading user progress...")
+    
     // Try Firestore first (cloud-first strategy)
     Task {
+      let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
+      print("📖 XP_LOAD: Attempting to load from Firestore for user: \(userId)...")
+      
       do {
         if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
           // Load from Firestore (authoritative source)
+          print("📖 XP_LOAD: ✅ Found data in Firestore:")
+          print("   totalXP: \(firestoreProgress.totalXP)")
+          print("   level: \(firestoreProgress.level)")
+          print("   dailyXP: \(firestoreProgress.dailyXP)")
+          
           var newProgress = UserProgress()
           newProgress.totalXP = firestoreProgress.totalXP
           newProgress.currentLevel = firestoreProgress.level
@@ -305,18 +326,21 @@ class XPManager {
           dailyXP = newProgress.dailyXP
           updateLevelFromXP()
           
-          print("✅ XPManager: Loaded progress from Firestore (totalXP: \(newProgress.totalXP), level: \(newProgress.currentLevel))")
+          print("✅ XP_LOAD: Loaded from Firestore successfully")
           
           // Sync to UserDefaults
           saveUserProgressToLocal()
           return
+        } else {
+          print("📖 XP_LOAD: ℹ️ No data found in Firestore")
         }
       } catch {
-        print("⚠️ XPManager: Failed to load from Firestore, falling back to local: \(error)")
+        print("📖 XP_LOAD: ⚠️ Failed to load from Firestore: \(error.localizedDescription)")
       }
     }
     
     // Fallback to UserDefaults (local storage)
+    print("📖 XP_LOAD: Loading from UserDefaults (local fallback)...")
     if let data = userDefaults.data(forKey: userProgressKey),
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
@@ -325,14 +349,16 @@ class XPManager {
       totalXP = progress.totalXP
       dailyXP = progress.dailyXP
       updateLevelFromXP() // Ensure level is calculated from XP (also syncs currentLevel)
-      print("✅ XPManager: Loaded progress from UserDefaults (totalXP: \(progress.totalXP))")
+      print("✅ XP_LOAD: Loaded from UserDefaults")
+      print("   totalXP: \(progress.totalXP)")
+      print("   level: \(userProgress.currentLevel)")
     } else {
       // Initialize with default values
       userProgress = UserProgress()
       totalXP = 0
       dailyXP = 0
       updateLevelFromXP()
-      print("ℹ️ XPManager: No progress found, starting fresh")
+      print("📖 XP_LOAD: ℹ️ No progress found anywhere, starting fresh")
     }
   }
   

@@ -6,7 +6,9 @@ import OSLog
 
 /// Firestore implementation of HabitRepositoryProtocol
 final class FirestoreHabitRepository: HabitRepositoryProtocol {
-    private let firestore = Firestore.firestore()
+    // ✅ FIX: Use computed property to avoid accessing Firestore during class initialization
+    // This ensures Firestore is only accessed AFTER it's configured in AppFirebase.swift
+    private var firestore: Firestore { Firestore.firestore() }
     private let logger = Logger(subsystem: "com.habitto.app", category: "FirestoreHabitRepository")
     
     // TODO: Get actual userId from authentication context

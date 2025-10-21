@@ -244,6 +244,11 @@ struct MoreTabView: View {
           })
         ])
 
+      // ✅ DEBUG: XP Sync Testing Section
+      #if DEBUG
+      debugXPSyncSection
+      #endif
+      
       // Version Information
       VStack(spacing: 0) {
         Spacer()
@@ -256,6 +261,209 @@ struct MoreTabView: View {
     }
   }
 
+  // MARK: - Debug XP Sync Section
+  
+  #if DEBUG
+  @Environment(\.modelContext) private var modelContext
+  @State private var migrationStatus: String = "Checking..."
+  @State private var firestoreXP: String = "Loading..."
+  @State private var userId: String = "Unknown"
+  @State private var isMigrating: Bool = false  // NEW: Track migration state
+  
+  private var debugXPSyncSection: some View {
+    VStack(spacing: 0) {
+      // Header
+      HStack {
+        Text("🧪 XP Sync Debug")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.orange)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 12)
+      
+      // Status Info
+      VStack(spacing: 8) {
+        debugInfoRow(label: "User ID", value: userId)
+        debugInfoRow(label: "Local XP", value: "\(xpManager.totalXP)")
+        debugInfoRow(label: "Local Level", value: "\(xpManager.currentLevel)")
+        debugInfoRow(label: "Firestore XP", value: firestoreXP)
+        debugInfoRow(label: "Migration", value: migrationStatus)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 12)
+      .background(Color.surfaceDim)
+      .cornerRadius(8)
+      .padding(.horizontal, 20)
+      
+      // Action Buttons
+      VStack(spacing: 12) {
+        HStack(spacing: 12) {
+          debugButton(
+            title: isMigrating ? "⏳ Migrating..." : "🔄 Migrate XP to Cloud",
+            subtitle: isMigrating ? "Please wait, this may take a minute..." : "Upload existing DailyAwards",
+            action: {
+              if !isMigrating {
+                Task {
+                  await performMigration()
+                }
+              }
+            }
+          )
+          .opacity(isMigrating ? 0.6 : 1.0)
+          
+          if isMigrating {
+            ProgressView()
+              .progressViewStyle(CircularProgressViewStyle())
+              .scaleEffect(1.2)
+          }
+        }
+        
+        debugButton(
+          title: "📊 Check Sync Status",
+          subtitle: "Verify Firestore data",
+          action: {
+            Task {
+              await checkSyncStatus()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "🔍 Show Firestore Path",
+          subtitle: "Copy path to clipboard",
+          action: {
+            showFirestorePath()
+          }
+        )
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      
+      Rectangle()
+        .fill(Color(hex: "F0F0F6"))
+        .frame(height: 8)
+    }
+    .onAppear {
+      loadDebugInfo()
+    }
+  }
+  
+  private func debugInfoRow(label: String, value: String) -> some View {
+    HStack {
+      Text(label)
+        .font(.system(size: 14, weight: .medium))
+        .foregroundColor(.text02)
+      Spacer()
+      Text(value)
+        .font(.system(size: 14, weight: .regular))
+        .foregroundColor(.text01)
+        .lineLimit(1)
+        .truncationMode(.middle)
+    }
+  }
+  
+  private func debugButton(title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      HStack {
+        VStack(alignment: .leading, spacing: 4) {
+          Text(title)
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text(subtitle)
+            .font(.system(size: 12, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        Spacer()
+        Image(systemName: "chevron.right")
+          .font(.system(size: 12, weight: .medium))
+          .foregroundColor(.text04)
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+      .background(Color.white)
+      .cornerRadius(8)
+    }
+  }
+  
+  private func loadDebugInfo() {
+    userId = AuthenticationManager.shared.currentUser?.uid ?? "Not signed in"
+    
+    Task {
+      await checkSyncStatus()
+    }
+  }
+  
+  private func performMigration() async {
+    print("🚀 XP_DEBUG: Starting migration...")
+    isMigrating = true
+    migrationStatus = "Running..."
+    
+    do {
+      try await XPMigrationService.shared.performMigration(modelContext: modelContext)
+      migrationStatus = "✅ Complete"
+      print("✅ XP_DEBUG: Migration completed successfully")
+      
+      // Refresh status
+      await checkSyncStatus()
+    } catch {
+      migrationStatus = "❌ Failed: \(error.localizedDescription)"
+      print("❌ XP_DEBUG: Migration failed: \(error)")
+    }
+    
+    isMigrating = false
+  }
+  
+  private func checkSyncStatus() async {
+    print("🔍 XP_DEBUG: Checking sync status...")
+    
+    do {
+      // Check migration status
+      let isComplete = try await FirestoreService.shared.isXPMigrationComplete()
+      migrationStatus = isComplete ? "✅ Complete" : "⏳ Pending"
+      print("🔍 XP_DEBUG: Migration complete: \(isComplete)")
+      
+      // Load Firestore XP
+      if let progress = try await FirestoreService.shared.loadUserProgress() {
+        firestoreXP = "\(progress.totalXP) (Level \(progress.level))"
+        print("🔍 XP_DEBUG: Firestore XP: \(progress.totalXP), Level: \(progress.level)")
+      } else {
+        firestoreXP = "No data"
+        print("🔍 XP_DEBUG: No Firestore data found")
+      }
+    } catch {
+      firestoreXP = "Error: \(error.localizedDescription)"
+      print("❌ XP_DEBUG: Failed to load Firestore data: \(error)")
+    }
+  }
+  
+  private func showFirestorePath() {
+    let uid = AuthenticationManager.shared.currentUser?.uid ?? "{uid}"
+    let path = "users/\(uid)/progress/current"
+    let url = "https://console.firebase.google.com/project/habittoios/firestore/data/\(path)"
+    
+    print("📋 XP_DEBUG: Firestore Path:")
+    print("   Collection: users/\(uid)/progress")
+    print("   Document: current")
+    print("   Full URL: \(url)")
+    print("")
+    print("🔍 To verify in Firestore Console:")
+    print("   1. Open: \(url)")
+    print("   2. Check fields: totalXP, level, dailyXP")
+    print("")
+    print("📊 Daily Awards Path:")
+    print("   Collection: users/\(uid)/progress/daily_awards/{YYYY-MM}")
+    print("   Example: users/\(uid)/progress/daily_awards/2025-10/21")
+    
+    // Copy to pasteboard if possible
+    #if os(iOS)
+    UIPasteboard.general.string = url
+    print("✅ XP_DEBUG: URL copied to clipboard!")
+    #endif
+  }
+  #endif
+  
   // MARK: - Settings Group Helper
 
   private func settingsGroup(title: String, items: [SettingItem]) -> some View {

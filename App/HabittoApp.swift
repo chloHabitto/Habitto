@@ -20,10 +20,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
-    // Configure Firebase SYNCHRONOUSLY (required for RemoteConfig and other services)
+    // ✅ FIX: Configure Firebase including Firestore settings SYNCHRONOUSLY
+    // This prevents "Firestore instance has already been started" crash
     print("🔥 Configuring Firebase...")
     FirebaseApp.configure()
     print("✅ Firebase Core configured")
+    
+    // ⚠️ CRITICAL: Configure Firestore settings NOW, before any code can access Firestore
+    FirebaseConfiguration.configureFirestore()
+    print("✅ Firestore configured")
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
     print("🎛️ Initializing Firebase Remote Config defaults...")
@@ -48,7 +53,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     
     // Configure other Firebase services asynchronously
     Task.detached { @MainActor in
-      FirebaseConfiguration.configureFirestore()
+      // ✅ FIX: Firestore already configured synchronously above
+      // Only configure Auth here
       FirebaseConfiguration.configureAuth()
       
       // Ensure user is authenticated (anonymous if not signed in)
