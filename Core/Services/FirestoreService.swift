@@ -309,7 +309,8 @@ class FirestoreService: FirebaseService, ObservableObject {
       .collection("progress")
       .document("current")
     
-    try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+    // ✅ FIX: Explicitly discard transaction result to silence warning
+    _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
       let snapshot: DocumentSnapshot
       do {
         snapshot = try transaction.getDocument(docRef)
@@ -489,7 +490,8 @@ class FirestoreService: FirebaseService, ObservableObject {
       throw FirestoreServiceError.notConfigured
     }
     
-    guard let userId = currentUserId else {
+    // ✅ FIX: Check authentication but don't store userId (not used in this method)
+    guard currentUserId != nil else {
       throw FirestoreServiceError.notAuthenticated
     }
     
@@ -568,6 +570,26 @@ class FirestoreService: FirebaseService, ObservableObject {
       ])
     
     print("✅ FirestoreService: XP migration marked as complete")
+  }
+  
+  /// Delete XP migration marker to allow re-running migration
+  @MainActor
+  func deleteXPMigrationMarker() async throws {
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    try await db.collection("users")
+      .document(userId)
+      .collection("meta")
+      .document("xp_migration")
+      .delete()
+    
+    print("🗑️ FirestoreService: XP migration marker deleted")
   }
   
   // MARK: - Telemetry
