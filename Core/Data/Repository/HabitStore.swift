@@ -833,19 +833,21 @@ final actor HabitStore {
         logger
           .info("🎯 createCompletionRecordIfNeeded: Found \(existingRecords.count) existing records")
 
-        // ✅ CRITICAL FIX: Check if habit ACTUALLY met its goal, not just progress > 0
-        let isCompleted: Bool
+        // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
+        // Check if habit ACTUALLY met its goal: progress >= goalAmount
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let isCompleted = progress >= goalAmount
+        
+        // Debug logging with habit type
+        let habitTypeStr = habit.habitType == .breaking ? "breaking" : "formation"
         if habit.habitType == .breaking {
-          // Breaking habit: complete when actual usage is tracked AND <= target
-          // ✅ FIX: Must have progress > 0 (user logged usage) AND within target
-          isCompleted = (progress > 0 && progress <= habit.target)
-          logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Usage: \(progress) | Target: \(habit.target) | Baseline: \(habit.baseline) | Complete: \(isCompleted)")
+          logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
+          logger.info("   📊 Display-only fields: Target: \(habit.target) | Baseline: \(habit.baseline)")
         } else {
-          // Formation habit: complete when progress >= goal
-          let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-          isCompleted = progress >= goalAmount
           logger.info("🔍 FORMATION HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
         }
+        
+        logger.info("🎯 CREATE_RECORD: habitType=\(habitTypeStr), progress=\(progress), goal=\(goalAmount), isCompleted=\(isCompleted)")
 
         if let existingRecord = existingRecords.first {
           // Update existing record

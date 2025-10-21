@@ -447,74 +447,63 @@ struct ScheduledHabitItem: View {
   }
 
   /// Helper function to toggle habit completion
+  /// ✅ FIX: Circle button should INCREMENT BY 1, not jump to goal!
+  /// Design: Click to add 1 progress, click again to subtract 1
   private func completeHabit() {
-    let isCompleted = isHabitCompleted()
     let goalAmount = extractNumericGoalAmount(from: habit.goal)
-
-    if isCompleted {
-      // If already completed, uncomplete it (set progress to 0)
-
-      // Prevent onChange listeners from overriding this update
-      isLocalUpdateInProgress = true
-
-      // Update local state immediately for instant UI feedback
-      withAnimation(.easeInOut(duration: 0.2)) {
-        currentProgress = 0
-      }
-
-      // Then save to data model
-      onProgressChange?(habit, selectedDate, 0)
-
-      // Record timestamp of this user action
-      lastUserUpdateTimestamp = Date()
-
-      // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-        isLocalUpdateInProgress = false
-      }
-
-      // Haptic feedback for uncompletion
-      let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-      impactFeedback.impactOccurred()
+    
+    // Determine new progress: increment or decrement by 1
+    let newProgress: Int
+    if currentProgress >= goalAmount {
+      // Already at or above goal - decrement by 1
+      newProgress = max(0, currentProgress - 1)
+      print("🔽 CIRCLE BUTTON: Decrementing \(habit.name) from \(currentProgress) to \(newProgress)")
     } else {
-      // If not completed, complete it immediately
-
-      // Use CompletionStateManager to prevent race conditions
+      // Below goal - increment by 1
+      newProgress = currentProgress + 1
+      print("🔼 CIRCLE BUTTON: Incrementing \(habit.name) from \(currentProgress) to \(newProgress)")
+    }
+    
+    // Prevent onChange listeners from overriding this update
+    isLocalUpdateInProgress = true
+    
+    // Update local state immediately for instant UI feedback
+    withAnimation(.easeInOut(duration: 0.2)) {
+      currentProgress = newProgress
+    }
+    
+    // Save to repository
+    onProgressChange?(habit, selectedDate, newProgress)
+    
+    // Record timestamp of this user action
+    lastUserUpdateTimestamp = Date()
+    
+    // Release lock after persistence
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      isLocalUpdateInProgress = false
+    }
+    
+    // Check if we just reached the goal
+    let justCompletedGoal = newProgress >= goalAmount && newProgress > (currentProgress - 1)
+    
+    if justCompletedGoal {
+      // Show completion sheet for difficulty rating
       let completionManager = CompletionStateManager.shared
       guard !completionManager.isShowingCompletionSheet(for: habit.id) else {
         return
       }
-
+      
       completionManager.startCompletionFlow(for: habit.id)
       isCompletingHabit = true
       isProcessingCompletion = true
-
-      // Prevent onChange listeners from overriding this update
-      isLocalUpdateInProgress = true
-
-      // Update local state immediately for instant UI feedback
-      withAnimation(.easeInOut(duration: 0.2)) {
-        currentProgress = goalAmount
-      }
-
-      // Save completion data immediately
-      onProgressChange?(habit, selectedDate, goalAmount)
-
-      // Record timestamp of this user action
-      lastUserUpdateTimestamp = Date()
-
-      // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-        isLocalUpdateInProgress = false
-      }
-
-      // Haptic feedback for completion
-      let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-      impactFeedback.impactOccurred()
-
-      // Show completion sheet immediately (no delay)
       showingCompletionSheet = true
+      
+      print("🎉 CIRCLE BUTTON: Goal reached for \(habit.name) (\(newProgress)/\(goalAmount))")
     }
+    
+    // Haptic feedback
+    let impactFeedback = UIImpactFeedbackGenerator(style: justCompletedGoal ? .medium : .light)
+    impactFeedback.impactOccurred()
   }
 
   // MARK: - Completion Handlers

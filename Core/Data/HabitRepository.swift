@@ -440,23 +440,26 @@ class HabitRepository: ObservableObject {
   // MARK: - Load Habits
 
   func loadHabits(force: Bool = false) async {
-    print("🔄 HabitRepository: loadHabits called (force: \(force))")
+    print("🔄 LOAD_HABITS_START: Loading from storage (force: \(force))")
 
     // Always load if force is true, or if habits is empty
     if !force, !habits.isEmpty {
-      print("ℹ️ HabitRepository: Skipping load - habits not empty and not forced")
+      print("ℹ️ LOAD_HABITS: Skipping load - habits not empty and not forced")
       return
     }
 
     do {
       // Use the HabitStore actor for data operations
       let loadedHabits = try await habitStore.loadHabits()
-      print("🔍 HabitRepository: Loaded \(loadedHabits.count) habits from HabitStore")
+      print("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
 
-      // Debug each loaded habit
+      // Debug each loaded habit with progress for today
+      let todayKey = Habit.dateKey(for: Date())
       for (index, habit) in loadedHabits.enumerated() {
-        print(
-          "🔍 Habit \(index): name=\(habit.name), id=\(habit.id), reminders=\(habit.reminders.count)")
+        let progress = habit.completionHistory[todayKey] ?? 0
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let isComplete = progress >= goalAmount
+        print("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
       }
 
       // Deduplicate habits by ID to prevent duplicates
@@ -779,22 +782,28 @@ class HabitRepository: ObservableObject {
     Task {
       do {
         // Use the HabitStore actor for data operations
-        print("🎯 DEBUG: Calling habitStore.setProgress now...")
+        let startTime = Date()
+        print("🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey) at \(startTime)")
+        
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
-        print(
-          "✅ HabitRepository: Successfully persisted progress for habit '\(habit.name)' on \(dateKey)")
-        print(
-          "🎯 DEBUG: habitStore.setProgress completed - CompletionRecord should have been created")
+        
+        let endTime = Date()
+        let duration = endTime.timeIntervalSince(startTime)
+        print("✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
+        print("   ✅ Data persisted: progress=\(progress) for \(dateKey)")
 
       } catch {
-        print("❌ HabitRepository: Failed to persist progress: \(error.localizedDescription)")
+        print("❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
+        print("   ❌ Error type: \(type(of: error))")
+        print("   ❌ Progress NOT saved: \(progress) for \(dateKey)")
+        
         // Revert UI change if persistence failed
         DispatchQueue.main.async {
           if let index = self.habits.firstIndex(where: { $0.id == habit.id }) {
-            self.habits[index].completionHistory[dateKey] = habit.completionHistory[dateKey] ?? 0
-            // ✅ PHASE 4: Streak is now computed-only, no need to update
+            let oldProgress = habit.completionHistory[dateKey] ?? 0
+            self.habits[index].completionHistory[dateKey] = oldProgress
             self.objectWillChange.send()
-            print("🔄 HabitRepository: Reverted UI change due to persistence failure")
+            print("🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
           }
         }
       }
