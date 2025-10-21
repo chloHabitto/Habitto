@@ -131,7 +131,9 @@ protocol MigrationStateDataStore {
 /// Firestore-based implementation of migration state storage
 final class FirestoreMigrationStateDataStore: MigrationStateDataStore {
     
-    private let firestore = Firestore.firestore()
+    // ✅ FIX: Use computed property to avoid accessing Firestore during class initialization
+    // This ensures Firestore is only accessed AFTER it's configured in AppFirebase.swift
+    private var firestore: Firestore { Firestore.firestore() }
     private let logger = Logger(subsystem: "com.habitto.app", category: "MigrationStateDataStore")
     
     /// Get the Firestore document reference for migration state

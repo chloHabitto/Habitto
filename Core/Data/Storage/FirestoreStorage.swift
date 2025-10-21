@@ -13,7 +13,9 @@ final class FirestoreStorage: HabitStorageProtocol {
 
   init() {
     logger.info("🔥 FirestoreStorage: Initializing Firestore storage")
-    setupFirestore()
+    // ✅ FIX: Don't configure Firestore here - it's already configured in AppFirebase.swift
+    // This prevents "settings can no longer be changed" crash
+    logger.info("✅ FirestoreStorage: Using Firestore instance configured at app startup")
   }
 
   // MARK: Internal
@@ -297,17 +299,20 @@ final class FirestoreStorage: HabitStorageProtocol {
 
   // MARK: Private
 
-  private let db = Firestore.firestore()
+  // ✅ FIX: Use computed property to avoid accessing Firestore during class initialization
+  // This ensures Firestore is only accessed AFTER it's configured in AppFirebase.swift
+  private var db: Firestore { Firestore.firestore() }
   private var cachedHabits: [Habit]?
   private let logger = Logger(subsystem: "com.habitto.app", category: "FirestoreStorage")
 
   /// Setup Firestore configuration
+  /// ⚠️ DEPRECATED: Firestore is now configured centrally in AppFirebase.swift
+  /// This method is kept for reference but should not be called to avoid
+  /// "settings can no longer be changed" crash
   private func setupFirestore() {
-    let settings = FirestoreSettings()
-    settings.cacheSettings = PersistentCacheSettings(sizeBytes: NSNumber(value: FirestoreCacheSizeUnlimited))
-    db.settings = settings
-    
-    logger.info("✅ Firestore configured with offline persistence")
+    // ❌ DO NOT configure Firestore here - it causes crash!
+    // Firestore settings must be configured ONCE at app startup in AppFirebase.swift
+    logger.warning("⚠️ setupFirestore() called but Firestore is already configured")
   }
 
   /// Get current authenticated user ID

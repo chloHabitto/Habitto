@@ -17,7 +17,7 @@ final class MigrationVerificationHelper {
   // MARK: Lifecycle
   
   private init() {
-    self.db = Firestore.firestore()
+    // ✅ FIX: Don't access Firestore in init - use computed property instead
   }
   
   // MARK: Internal
@@ -26,7 +26,9 @@ final class MigrationVerificationHelper {
   
   // MARK: Private
   
-  private let db: Firestore
+  // ✅ FIX: Use computed property to avoid accessing Firestore during class initialization
+  // This ensures Firestore is only accessed AFTER it's configured in AppFirebase.swift
+  private var db: Firestore { Firestore.firestore() }
   private let logger = Logger(subsystem: "com.habitto.app", category: "MigrationVerification")
   
   // MARK: - Verification Methods

@@ -51,11 +51,12 @@ enum FirebaseConfiguration {
   }
   
   /// Configure Firestore settings (offline persistence, emulator, etc.)
-  @MainActor
+  /// ⚠️ IMPORTANT: This must be called BEFORE any other Firestore access in the app
+  /// Can be called from any thread - Firestore configuration is thread-safe
   static func configureFirestore() {
     print("🔥 FirebaseConfiguration: Configuring Firestore...")
     
-    let db = Firestore.firestore()
+    // Create and configure settings first
     let settings = FirestoreSettings()
     
     // Enable offline persistence
@@ -71,6 +72,9 @@ enum FirebaseConfiguration {
       }
     }
     
+    // Get Firestore instance and apply settings
+    // This MUST be the first access to Firestore in the entire app
+    let db = Firestore.firestore()
     db.settings = settings
     print("✅ FirebaseConfiguration: Firestore configured with offline persistence")
   }
