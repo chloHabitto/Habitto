@@ -36,17 +36,20 @@ class XPMigrationService {
   
   /// Perform XP migration from SwiftData to Firestore
   func performMigration(modelContext: ModelContext) async throws {
+    // Get userId early for logging
+    let userId = await getCurrentUserId() ?? "unknown"
+    
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("🚀 XP_MIGRATION: Starting XP migration to Firestore...")
+    print("🔄 XP_MIGRATION_START: userId=\(userId)")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    logger.info("🚀 Starting XP migration to Firestore...")
+    logger.info("🔄 Starting XP migration for userId: \(userId)")
     
     // ✅ FIX: Yield immediately to let UI update with spinner
     await Task.yield()
     
     // Check if already completed
     if await isMigrationComplete() {
-      print("✅ XP_MIGRATION: Migration already completed, skipping")
+      print("✅ XP_MIGRATION_COMPLETE: Migration already completed, skipping")
       logger.info("✅ XP migration already completed, skipping")
       return
     }
@@ -74,7 +77,7 @@ class XPMigrationService {
       logger.info("✅ XP migration completed successfully")
       
       print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      print("🎉 XP_MIGRATION: MIGRATION COMPLETED SUCCESSFULLY!")
+      print("✅ XP_MIGRATION_COMPLETE: All data migrated successfully")
       print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
       
     } catch {
@@ -93,7 +96,7 @@ class XPMigrationService {
   
   /// Migrate all DailyAward entities from SwiftData to Firestore
   private func migrateDailyAwards(modelContext: ModelContext) async throws -> Int {
-    print("📊 XP_MIGRATION: Fetching DailyAward entities from SwiftData...")
+    print("🔄 XP_MIGRATION: Fetching DailyAward entities from SwiftData...")
     logger.info("📊 Migrating DailyAward entities...")
     
     // Fetch all DailyAward entities
@@ -104,29 +107,29 @@ class XPMigrationService {
     )
     
     let awards = try modelContext.fetch(descriptor)
-    print("📊 XP_MIGRATION: Found \(awards.count) DailyAward entities to migrate")
+    print("🔄 XP_MIGRATION: Found \(awards.count) DailyAwards in SwiftData")
     logger.info("Found \(awards.count) DailyAward entities to migrate")
     
     var migratedCount = 0
     var failedCount = 0
+    let totalAwards = awards.count
     
-    for award in awards {
+    for (index, award) in awards.enumerated() {
       // ✅ FIX: Yield every award to prevent blocking
       await Task.yield()
       
       do {
         // Convert to Firestore model
         let firestoreAward = FirestoreDailyAward(from: award)
-        print("   ↗️ Migrating award: date=\(firestoreAward.date), xp=\(firestoreAward.xpGranted)")
         
         // Save to Firestore
         try await FirestoreService.shared.saveDailyAward(firestoreAward)
         migratedCount += 1
         
-        // Log progress every 10 awards
-        if migratedCount % 10 == 0 {
-          print("   📈 Progress: \(migratedCount)/\(awards.count) awards migrated...")
-          logger.info("Migrated \(migratedCount)/\(awards.count) awards...")
+        // Log progress every 10 awards or on first/last award
+        if index == 0 || index == totalAwards - 1 || (migratedCount % 10 == 0) {
+          print("🔄 XP_MIGRATION_PROGRESS: Migrated \(migratedCount)/\(totalAwards) awards")
+          logger.info("Migrated \(migratedCount)/\(totalAwards) awards...")
         }
       } catch {
         failedCount += 1
@@ -146,7 +149,7 @@ class XPMigrationService {
   
   /// Calculate total XP from DailyAwards and migrate current progress
   private func migrateCurrentProgress(modelContext: ModelContext) async throws {
-    print("📊 XP_MIGRATION: Calculating current progress from DailyAwards...")
+    print("🔄 XP_MIGRATION: Calculating current progress from DailyAwards...")
     logger.info("📊 Calculating current progress from DailyAwards...")
     
     // Get current user ID
@@ -156,7 +159,7 @@ class XPMigrationService {
       return
     }
     
-    print("📊 XP_MIGRATION: Fetching ALL awards (including those without userId)...")
+    print("🔄 XP_MIGRATION: Fetching ALL awards (including those without userId)...")
     
     // ✅ FIX: Fetch ALL DailyAwards, not just ones matching current userId
     // This handles cases where old awards were created before userId was tracked properly
@@ -166,7 +169,7 @@ class XPMigrationService {
     )
     let awards = try modelContext.fetch(descriptor)
     
-    print("📊 XP_MIGRATION: Found \(awards.count) total awards to process")
+    print("🔄 XP_MIGRATION: Found \(awards.count) total awards to process")
     logger.info("Found \(awards.count) total awards")
     
     // ✅ FIX: Update userId for all awards to current user during migration
@@ -180,18 +183,18 @@ class XPMigrationService {
     
     if updatedCount > 0 {
       try modelContext.save()
-      print("📊 XP_MIGRATION: Updated userId for \(updatedCount) awards")
+      print("🔄 XP_MIGRATION: Updated userId for \(updatedCount) awards")
       logger.info("Updated userId for \(updatedCount) awards to \(userId)")
     }
     
     // Calculate total XP from ALL awards
     let totalXP = awards.reduce(0) { $0 + $1.xp }
-    print("📊 XP_MIGRATION: Calculated totalXP: \(totalXP) from \(awards.count) awards")
+    print("🔄 XP_MIGRATION: Calculated totalXP=\(totalXP)")
     
     // Calculate level (using XPManager's formula)
     let levelBaseXP = 300
     let level = Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
-    print("📊 XP_MIGRATION: Calculated level: \(level)")
+    print("🔄 XP_MIGRATION: Calculated level=\(level)")
     
     // Get today's XP (awards from today)
     let dateFormatter = DateFormatter()
@@ -201,7 +204,7 @@ class XPMigrationService {
     
     let todayAwards = awards.filter { $0.dateKey == todayKey }
     let dailyXP = todayAwards.reduce(0) { $0 + $1.xp }
-    print("📊 XP_MIGRATION: Calculated dailyXP for today (\(todayKey)): \(dailyXP)")
+    print("🔄 XP_MIGRATION: Calculated dailyXP=\(dailyXP) for today (\(todayKey))")
     
     // Create Firestore progress
     let progress = FirestoreUserProgress(
@@ -211,7 +214,7 @@ class XPMigrationService {
       lastUpdated: Date()
     )
     
-    print("📊 XP_MIGRATION: Saving progress to Firestore...")
+    print("🔄 XP_MIGRATION: Saving progress to Firestore...")
     print("   totalXP: \(progress.totalXP)")
     print("   level: \(progress.level)")
     print("   dailyXP: \(progress.dailyXP)")

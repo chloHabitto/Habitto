@@ -473,6 +473,10 @@ struct HomeView: View {
     .onAppear {
       print("🚀 HomeView: onAppear called!")
       print("🚀 HomeView: This is a test log - if you see this, logging is working!")
+      
+      // ✅ Ensure auth listener is set up (safety check)
+      authManager.ensureAuthListenerSetup()
+      
       loadHabitsOptimized()
 
       // Add additional debugging

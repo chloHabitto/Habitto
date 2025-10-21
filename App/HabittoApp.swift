@@ -20,15 +20,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
-    // ✅ FIX: Configure Firebase including Firestore settings SYNCHRONOUSLY
-    // This prevents "Firestore instance has already been started" crash
-    print("🔥 Configuring Firebase...")
-    FirebaseApp.configure()
-    print("✅ Firebase Core configured")
+    // ✅ FIX: Firebase is already configured in HabittoApp.init()
+    // Just verify it's configured and skip if already done
+    print("🔥 AppDelegate: Checking Firebase configuration...")
     
-    // ⚠️ CRITICAL: Configure Firestore settings NOW, before any code can access Firestore
-    FirebaseConfiguration.configureFirestore()
-    print("✅ Firestore configured")
+    if FirebaseApp.app() == nil {
+      print("⚠️ AppDelegate: Firebase not configured yet, configuring now...")
+      FirebaseApp.configure()
+      print("✅ AppDelegate: Firebase Core configured")
+      
+      // Configure Firestore settings
+      FirebaseConfiguration.configureFirestore()
+      print("✅ AppDelegate: Firestore configured")
+    } else {
+      print("✅ AppDelegate: Firebase already configured by HabittoApp.init()")
+    }
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
     print("🎛️ Initializing Firebase Remote Config defaults...")
@@ -49,6 +55,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     if !firestoreSyncValue {
       print("⚠️ WARNING: enableFirestoreSync is FALSE from RemoteConfig defaults!")
       print("   Check RemoteConfigDefaults.plist to ensure it has <key>enableFirestoreSync</key><true/>")
+    }
+    
+    // ✅ CRITICAL: Set up AuthenticationManager's listener now that Firebase is configured
+    Task { @MainActor in
+      AuthenticationManager.shared.ensureAuthListenerSetup()
     }
     
     // Configure other Firebase services asynchronously
