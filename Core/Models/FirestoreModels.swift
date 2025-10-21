@@ -429,3 +429,165 @@ struct Streak: Codable {
   }
 }
 
+// MARK: - FirestoreDailyAward
+
+/// Daily award document stored in /users/{uid}/progress/daily_awards/{YYYY-MM}/{DD}
+struct FirestoreDailyAward: Codable {
+  var date: String // "YYYY-MM-DD"
+  var xpGranted: Int
+  var allHabitsCompleted: Bool
+  var grantedAt: Date
+  var habitCount: Int? // Number of habits completed
+  var bonusXP: Int? // Bonus XP for perfect day
+  
+  func toFirestoreData() -> [String: Any] {
+    var data: [String: Any] = [
+      "date": date,
+      "xpGranted": xpGranted,
+      "allHabitsCompleted": allHabitsCompleted,
+      "grantedAt": grantedAt
+    ]
+    
+    if let habitCount = habitCount {
+      data["habitCount"] = habitCount
+    }
+    
+    if let bonusXP = bonusXP {
+      data["bonusXP"] = bonusXP
+    }
+    
+    return data
+  }
+  
+  static func from(data: [String: Any]) -> FirestoreDailyAward? {
+    guard let date = data["date"] as? String,
+          let xpGranted = data["xpGranted"] as? Int,
+          let allHabitsCompleted = data["allHabitsCompleted"] as? Bool else {
+      return nil
+    }
+    
+    let grantedAt: Date
+    if let timestamp = data["grantedAt"] as? Date {
+      grantedAt = timestamp
+    } else {
+      grantedAt = Date()
+    }
+    
+    let habitCount = data["habitCount"] as? Int
+    let bonusXP = data["bonusXP"] as? Int
+    
+    return FirestoreDailyAward(
+      date: date,
+      xpGranted: xpGranted,
+      allHabitsCompleted: allHabitsCompleted,
+      grantedAt: grantedAt,
+      habitCount: habitCount,
+      bonusXP: bonusXP
+    )
+  }
+  
+  /// Initialize from SwiftData DailyAward entity
+  init(from dailyAward: DailyAward) {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    dateFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    
+    self.date = dateFormatter.string(from: dailyAward.date)
+    self.xpGranted = dailyAward.xp
+    self.allHabitsCompleted = dailyAward.allHabitsCompleted
+    self.grantedAt = dailyAward.date
+    self.habitCount = nil // Not stored in current DailyAward
+    self.bonusXP = dailyAward.allHabitsCompleted ? 50 : nil // Bonus XP for perfect day
+  }
+  
+  init(
+    date: String,
+    xpGranted: Int,
+    allHabitsCompleted: Bool,
+    grantedAt: Date,
+    habitCount: Int? = nil,
+    bonusXP: Int? = nil
+  ) {
+    self.date = date
+    self.xpGranted = xpGranted
+    self.allHabitsCompleted = allHabitsCompleted
+    self.grantedAt = grantedAt
+    self.habitCount = habitCount
+    self.bonusXP = bonusXP
+  }
+}
+
+// MARK: - FirestoreUserProgress
+
+/// User progress document stored in /users/{uid}/progress/current
+struct FirestoreUserProgress: Codable {
+  var totalXP: Int
+  var level: Int
+  var dailyXP: Int // XP earned today
+  var lastUpdated: Date
+  var currentLevelXP: Int? // XP in current level
+  var nextLevelXP: Int? // XP needed for next level
+  
+  func toFirestoreData() -> [String: Any] {
+    var data: [String: Any] = [
+      "totalXP": totalXP,
+      "level": level,
+      "dailyXP": dailyXP,
+      "lastUpdated": lastUpdated
+    ]
+    
+    if let currentLevelXP = currentLevelXP {
+      data["currentLevelXP"] = currentLevelXP
+    }
+    
+    if let nextLevelXP = nextLevelXP {
+      data["nextLevelXP"] = nextLevelXP
+    }
+    
+    return data
+  }
+  
+  static func from(data: [String: Any]) -> FirestoreUserProgress? {
+    guard let totalXP = data["totalXP"] as? Int,
+          let level = data["level"] as? Int,
+          let dailyXP = data["dailyXP"] as? Int else {
+      return nil
+    }
+    
+    let lastUpdated: Date
+    if let timestamp = data["lastUpdated"] as? Date {
+      lastUpdated = timestamp
+    } else {
+      lastUpdated = Date()
+    }
+    
+    let currentLevelXP = data["currentLevelXP"] as? Int
+    let nextLevelXP = data["nextLevelXP"] as? Int
+    
+    return FirestoreUserProgress(
+      totalXP: totalXP,
+      level: level,
+      dailyXP: dailyXP,
+      lastUpdated: lastUpdated,
+      currentLevelXP: currentLevelXP,
+      nextLevelXP: nextLevelXP
+    )
+  }
+  
+  init(
+    totalXP: Int,
+    level: Int,
+    dailyXP: Int,
+    lastUpdated: Date,
+    currentLevelXP: Int? = nil,
+    nextLevelXP: Int? = nil
+  ) {
+    self.totalXP = totalXP
+    self.level = level
+    self.dailyXP = dailyXP
+    self.lastUpdated = lastUpdated
+    self.currentLevelXP = currentLevelXP
+    self.nextLevelXP = nextLevelXP
+  }
+}
+
