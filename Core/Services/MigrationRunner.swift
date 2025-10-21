@@ -175,11 +175,22 @@ final class MigrationRunner {
     context: ModelContext) async throws -> Int
   {
     logger.info("MigrationRunner: Migrating completion records for user \(userId)")
+    logger.info("🚨 MIGRATION_DEBUG: ⚠️ SKIPPING CompletionRecord migration - records will be created by UI interactions")
 
     var migratedCount = 0
 
     for habit in habits {
-      // Migrate completion history
+      // ✅ CRITICAL FIX: Do NOT migrate completion history to CompletionRecords
+      // Problem: The old code created CompletionRecords with isCompleted=true for ANY progress > 0
+      // This created "phantom" CompletionRecords that made the system think habits were complete when they weren't
+      // 
+      // Solution: Let the UI create CompletionRecords when users actually complete habits
+      // The legacy completionHistory/actualUsage fields are already being used by the UI
+      
+      logger.info("🚨 MIGRATION_DEBUG: Habit '\(habit.name)' - Skipping \(habit.completionHistory.count) completion entries")
+      
+      // Old code that created phantom records:
+      /*
       for (dateString, completionCount) in habit.completionHistory {
         guard let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
           logger.warning("MigrationRunner: Invalid date string: \(dateString)")
@@ -187,7 +198,7 @@ final class MigrationRunner {
         }
 
         let dateKey = DateKey.key(for: date)
-        let isCompleted = completionCount > 0
+        let isCompleted = completionCount > 0  // ❌ WRONG! Doesn't check if goal was met
 
         // Check if completion record already exists
         let existingRequest = FetchDescriptor<CompletionRecord>(
@@ -204,16 +215,17 @@ final class MigrationRunner {
             habitId: habit.id,
             date: date,
             dateKey: dateKey,
-            isCompleted: isCompleted)
+            isCompleted: isCompleted)  // ❌ Created with isCompleted=true even if goal not met!
 
           context.insert(completionRecord)
           migratedCount += 1
         }
       }
+      */
     }
 
     try context.save()
-    logger.info("MigrationRunner: Migrated \(migratedCount) completion records for user \(userId)")
+    logger.info("MigrationRunner: Skipped migration of completion records (will be created by UI interactions)")
 
     return migratedCount
   }

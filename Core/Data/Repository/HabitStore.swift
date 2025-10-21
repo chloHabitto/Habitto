@@ -836,14 +836,15 @@ final actor HabitStore {
         // ✅ CRITICAL FIX: Check if habit ACTUALLY met its goal, not just progress > 0
         let isCompleted: Bool
         if habit.habitType == .breaking {
-          // Breaking habit: complete when actual usage <= target
-          isCompleted = progress <= habit.target
-          logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' | Usage: \(progress) | Target: \(habit.target) | Complete: \(isCompleted)")
+          // Breaking habit: complete when actual usage is tracked AND <= target
+          // ✅ FIX: Must have progress > 0 (user logged usage) AND within target
+          isCompleted = (progress > 0 && progress <= habit.target)
+          logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Usage: \(progress) | Target: \(habit.target) | Baseline: \(habit.baseline) | Complete: \(isCompleted)")
         } else {
           // Formation habit: complete when progress >= goal
           let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
           isCompleted = progress >= goalAmount
-          logger.info("🔍 FORMATION HABIT CHECK - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
+          logger.info("🔍 FORMATION HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
         }
 
         if let existingRecord = existingRecords.first {
@@ -852,7 +853,7 @@ final actor HabitStore {
           existingRecord.isCompleted = isCompleted
           logger
             .info(
-              "✅ Updated CompletionRecord for habit '\(habit.name)' on \(dateKey): completed=\(isCompleted)")
+              "✅ Updated CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted)")
         } else {
           // Create new record
           logger.info("🎯 createCompletionRecordIfNeeded: Creating new record...")
@@ -862,11 +863,11 @@ final actor HabitStore {
             date: date,
             dateKey: dateKey,
             isCompleted: isCompleted)
-          logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context...")
+          logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted)")
           modelContext.insert(completionRecord)
           logger
             .info(
-              "✅ Created CompletionRecord for habit '\(habit.name)' on \(dateKey): completed=\(isCompleted)")
+              "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted)")
         }
 
         // Save the context
