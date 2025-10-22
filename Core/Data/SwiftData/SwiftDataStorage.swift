@@ -117,7 +117,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
             goal: habit.goal,
             reminder: habit.reminder,
             startDate: habit.startDate,
-            endDate: habit.endDate)
+            endDate: habit.endDate,
+            baseline: habit.baseline,
+            target: habit.target)
 
           // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
           // Problem: completionHistory stores PROGRESS COUNTS (0, 1, 2, 5, etc.), not completion status
@@ -395,7 +397,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
           goal: habit.goal,
           reminder: habit.reminder,
           startDate: habit.startDate,
-          endDate: habit.endDate)
+          endDate: habit.endDate,
+          baseline: habit.baseline,
+          target: habit.target)
 
         // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
         // Same issue as in saveHabits - completionHistory stores progress counts, not completion status

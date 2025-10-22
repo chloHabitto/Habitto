@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseFirestore
 import SwiftUI
+import SwiftData
 
 // MARK: - FirestoreHabit
 
@@ -35,6 +36,10 @@ struct FirestoreHabit: Codable, Identifiable {
   var actualUsage: [String: Int]
   var isActive: Bool
   
+  // MARK: - Sync Metadata (Phase 1: Dual-Write)
+  var lastSyncedAt: Date?
+  var syncStatus: String? // Store as string: "pending", "syncing", "synced", "failed" (optional for backward compatibility)
+  
   // MARK: Firestore conversion
   
   func toFirestoreData() -> [String: Any] {
@@ -57,11 +62,16 @@ struct FirestoreHabit: Codable, Identifiable {
       "completionTimestamps": completionTimestamps,
       "difficultyHistory": difficultyHistory,
       "actualUsage": actualUsage,
-      "isActive": isActive
+      "isActive": isActive,
+      "syncStatus": syncStatus ?? "pending"  // Default for backward compatibility
     ]
     
     if let endDate = endDate {
       data["endDate"] = endDate
+    }
+    
+    if let lastSyncedAt = lastSyncedAt {
+      data["lastSyncedAt"] = lastSyncedAt
     }
     
     return data
@@ -89,6 +99,9 @@ struct FirestoreHabit: Codable, Identifiable {
     self.difficultyHistory = habit.difficultyHistory
     self.actualUsage = habit.actualUsage
     self.isActive = true
+    // Sync metadata
+    self.lastSyncedAt = habit.lastSyncedAt
+    self.syncStatus = habit.syncStatus.rawValue
   }
   
   init(
@@ -112,7 +125,9 @@ struct FirestoreHabit: Codable, Identifiable {
     completionTimestamps: [String: [Date]],
     difficultyHistory: [String: Int],
     actualUsage: [String: Int],
-    isActive: Bool
+    isActive: Bool,
+    lastSyncedAt: Date? = nil,
+    syncStatus: String? = "pending"
   ) {
     self.id = id
     self.name = name
@@ -135,8 +150,11 @@ struct FirestoreHabit: Codable, Identifiable {
     self.difficultyHistory = difficultyHistory
     self.actualUsage = actualUsage
     self.isActive = isActive
+    self.lastSyncedAt = lastSyncedAt
+    self.syncStatus = syncStatus
   }
   
+  @MainActor
   func toHabit() -> Habit? {
     guard let id = id,
           let uuid = UUID(uuidString: id),
@@ -149,6 +167,18 @@ struct FirestoreHabit: Codable, Identifiable {
     let reminderItems = reminders.compactMap { reminderId in
       ReminderItem(id: UUID(uuidString: reminderId) ?? UUID(), time: Date(), isActive: true)
     }
+    
+    // Convert syncStatus string back to enum (with default for backward compatibility)
+    let status = FirestoreSyncStatus(rawValue: syncStatus ?? "pending") ?? .pending
+    
+    // ✅ CRITICAL FIX: Query CompletionRecords from SwiftData as source of truth
+    // Even when loading from Firestore, CompletionRecords may have newer/correct data
+    let (finalCompletionHistory, finalCompletionStatus) = queryCompletionRecords(
+      habitId: uuid,
+      userId: FirebaseConfiguration.currentUserId ?? "unknown",
+      firestoreHistory: completionHistory,
+      firestoreStatus: completionStatus
+    )
     
     return Habit(
       id: uuid,
@@ -166,12 +196,52 @@ struct FirestoreHabit: Codable, Identifiable {
       reminders: reminderItems,
       baseline: baseline,
       target: target,
-      completionHistory: completionHistory,
-      completionStatus: completionStatus,
-      completionTimestamps: completionTimestamps,
+      completionHistory: finalCompletionHistory,  // ✅ From CompletionRecords
+      completionStatus: finalCompletionStatus,    // ✅ From CompletionRecords
+      completionTimestamps: completionTimestamps, // Keep Firestore version (not critical)
       difficultyHistory: difficultyHistory,
-      actualUsage: actualUsage
+      actualUsage: actualUsage,
+      lastSyncedAt: lastSyncedAt,
+      syncStatus: status
     )
+  }
+  
+  /// Query CompletionRecords from SwiftData to get source of truth
+  @MainActor
+  private func queryCompletionRecords(
+    habitId: UUID,
+    userId: String,
+    firestoreHistory: [String: Int],
+    firestoreStatus: [String: Bool]
+  ) -> ([String: Int], [String: Bool]) {
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.habitId == habitId && record.userId == userId
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      let records = try context.fetch(descriptor)
+      
+      if records.isEmpty {
+        print("⚠️ FirestoreHabit.toHabit(): No CompletionRecords found for habit \(self.name), using Firestore data")
+        return (firestoreHistory, firestoreStatus)
+      }
+      
+      // Build dictionaries from CompletionRecords (SOURCE OF TRUTH)
+      let historyDict = Dictionary(uniqueKeysWithValues: records.map {
+        (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted ? 1 : 0)
+      })
+      let statusDict = Dictionary(uniqueKeysWithValues: records.map {
+        (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted)
+      })
+      
+      print("✅ FirestoreHabit.toHabit(): Found \(records.count) CompletionRecords for habit '\(self.name)', using those as source of truth")
+      return (historyDict, statusDict)
+      
+    } catch {
+      print("❌ FirestoreHabit.toHabit(): Failed to query CompletionRecords: \(error), using Firestore data")
+      return (firestoreHistory, firestoreStatus)
+    }
   }
   
   static func from(id: String?, data: [String: Any]) -> FirestoreHabit? {
@@ -199,6 +269,10 @@ struct FirestoreHabit: Codable, Identifiable {
     
     let endDate = data["endDate"] as? Date
     
+    // Parse sync metadata with defaults for backward compatibility
+    let lastSyncedAt = data["lastSyncedAt"] as? Date
+    let syncStatus = data["syncStatus"] as? String ?? "pending"
+    
     return FirestoreHabit(
       id: id,
       name: name,
@@ -220,7 +294,9 @@ struct FirestoreHabit: Codable, Identifiable {
       completionTimestamps: completionTimestamps,
       difficultyHistory: difficultyHistory,
       actualUsage: actualUsage,
-      isActive: isActive
+      isActive: isActive,
+      lastSyncedAt: lastSyncedAt,
+      syncStatus: syncStatus
     )
   }
 }

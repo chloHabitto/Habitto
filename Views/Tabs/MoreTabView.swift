@@ -1,5 +1,7 @@
 import StoreKit
 import SwiftUI
+import FirebaseFirestore
+import SwiftData
 
 // MARK: - MoreTabView
 
@@ -348,6 +350,62 @@ struct MoreTabView: View {
             }
           }
         )
+        
+        debugButton(
+          title: "🔥 Force Load from Firestore",
+          subtitle: "Mark migration complete & reload habits",
+          action: {
+            Task {
+              await forceLoadFromFirestore()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "🔧 Fix Missing Baseline/Target",
+          subtitle: "Repair breaking habits in Firestore",
+          action: {
+            Task {
+              await fixFirestoreBaseline()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "📊 Audit SwiftData",
+          subtitle: "Check CompletionRecords in local storage",
+          action: {
+            Task {
+              await auditSwiftData()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "📊 Audit UserDefaults",
+          subtitle: "Check XP and other cached values",
+          action: {
+            auditUserDefaults()
+          }
+        )
+        
+        debugButton(
+          title: "📊 Audit Firestore",
+          subtitle: "Check what's in cloud storage right now",
+          action: {
+            Task {
+              await auditFirestore()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "📊 Audit Memory",
+          subtitle: "Check current in-memory habit state",
+          action: {
+            auditMemory()
+          }
+        )
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
@@ -492,6 +550,338 @@ struct MoreTabView: View {
     UIPasteboard.general.string = url
     print("✅ XP_DEBUG: URL copied to clipboard!")
     #endif
+  }
+  
+  private func fixFirestoreBaseline() async {
+    print("🔧 FIX_BASELINE: Scanning Firestore for habits with missing baseline/target...")
+    
+    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
+      print("❌ FIX_BASELINE: No authenticated user")
+      return
+    }
+    
+    do {
+      let db = Firestore.firestore()
+      
+      // Fetch ALL habits from Firestore (even invalid ones)
+      let snapshot = try await db
+        .collection("users")
+        .document(userId)
+        .collection("habits")
+        .getDocuments()
+      
+      print("🔍 FIX_BASELINE: Found \(snapshot.documents.count) habits in Firestore")
+      print("   📋 Document IDs: \(snapshot.documents.map { $0.documentID })")
+      
+      var fixedCount = 0
+      
+      for doc in snapshot.documents {
+        let data = doc.data()
+        let habitType = data["habitType"] as? String ?? ""
+        let name = data["name"] as? String ?? "Unknown"
+        let baseline = data["baseline"] as? Int ?? -999  // Use -999 to detect missing
+        let target = data["target"] as? Int ?? -999
+        let isActive = data["isActive"] as? Bool ?? false
+        
+        print("   - '\(name)' (ID: \(doc.documentID))")
+        print("      habitType=\(habitType), baseline=\(baseline), target=\(target), isActive=\(isActive)")
+        
+        // Fix habits with missing or invalid baseline/target
+        if baseline == -999 || target == -999 || (habitType == "breaking" && baseline <= 0) {
+          print("   ⚠️ NEEDS FIX: baseline=\(baseline), target=\(target)")
+          
+          // Extract goal number (e.g., "10 times per day" -> 10)
+          if let goalString = data["goal"] as? String {
+            let goalNumber = extractNumber(from: goalString) ?? 10
+            
+            var newBaseline = baseline == -999 ? 0 : baseline
+            var newTarget = target == -999 ? goalNumber : target
+            
+            // For breaking habits: baseline should be current usage, target should be goal
+            if habitType == "breaking" {
+              newBaseline = goalNumber * 2  // Assume current is 2x the goal
+              newTarget = goalNumber
+            } else {
+              // For formation habits: baseline=0, target=goal amount
+              newBaseline = 0
+              newTarget = goalNumber
+            }
+            
+            print("   🔧 UPDATING: baseline \(baseline) → \(newBaseline), target \(target) → \(newTarget)")
+            
+            try await doc.reference.updateData([
+              "baseline": newBaseline,
+              "target": newTarget
+            ])
+            
+            print("   ✅ FIXED: '\(name)' -> baseline=\(newBaseline), target=\(newTarget)")
+            fixedCount += 1
+            
+            // Verify the update
+            let updatedDoc = try await doc.reference.getDocument()
+            let updatedData = updatedDoc.data()
+            let verifyBaseline = updatedData?["baseline"] as? Int ?? -1
+            let verifyTarget = updatedData?["target"] as? Int ?? -1
+            print("   ✅ VERIFIED: Firestore now has baseline=\(verifyBaseline), target=\(verifyTarget)")
+          }
+        } else {
+          print("   ✅ OK: No fix needed")
+        }
+      }
+      
+      print("✅ FIX_BASELINE: Fixed \(fixedCount) habit(s)")
+      
+      // Reload habits
+      print("🔄 FIX_BASELINE: Reloading habits...")
+      await HabitRepository.shared.loadHabits(force: true)
+      
+      print("✅ FIX_BASELINE: Complete! Habits count: \(HabitRepository.shared.habits.count)")
+      for habit in HabitRepository.shared.habits {
+        print("   - \(habit.name): baseline=\(habit.baseline), target=\(habit.target)")
+      }
+      
+    } catch {
+      print("❌ FIX_BASELINE: Failed - \(error)")
+    }
+  }
+  
+  private func extractNumber(from string: String) -> Int? {
+    let components = string.components(separatedBy: CharacterSet.decimalDigits.inverted)
+    for component in components {
+      if let number = Int(component), number > 0 {
+        return number
+      }
+    }
+    return nil
+  }
+  
+  private func auditSwiftData() async {
+    print("📊 ========== SWIFTDATA AUDIT ==========")
+    
+    do {
+      let container = await SwiftDataContainer.shared.modelContainer
+      let context = await SwiftDataContainer.shared.modelContext
+      
+      // Check habits
+      let habitDescriptor = FetchDescriptor<HabitData>()
+      let habits = try context.fetch(habitDescriptor)
+      print("📊 Habits in SwiftData: \(habits.count)")
+      for (i, habit) in habits.enumerated() {
+        print("   [\(i)] '\(habit.name)' (id: \(habit.id.uuidString.prefix(8)))")
+        print("      → completionHistory relationship count: \(habit.completionHistory.count)")
+        print("      → difficultyHistory relationship count: \(habit.difficultyHistory.count)")
+        print("      → userId: \(habit.userId)")
+      }
+      
+      // Check completion records
+      let completionDescriptor = FetchDescriptor<CompletionRecord>()
+      let completions = try context.fetch(completionDescriptor)
+      print("\n📊 CompletionRecords in SwiftData: \(completions.count)")
+      for (i, record) in completions.prefix(20).enumerated() {
+        print("   [\(i)] \(record.dateKey): \(record.isCompleted ? "✅ COMPLETE" : "❌ INCOMPLETE")")
+        print("      → habitId: \(record.habitId.uuidString.prefix(8))")
+        print("      → userId: \(record.userId)")
+      }
+      
+      // Check daily awards
+      let awardDescriptor = FetchDescriptor<DailyAward>()
+      let awards = try context.fetch(awardDescriptor)
+      print("\n📊 DailyAwards in SwiftData: \(awards.count)")
+      for (i, award) in awards.enumerated() {
+        print("   [\(i)] \(award.dateKey): \(award.xpGranted) XP (allComplete: \(award.allHabitsCompleted))")
+        print("      → createdAt: \(award.createdAt)")
+        print("      → userId: \(award.userId)")
+      }
+      
+      print("📊 ===================================")
+      
+    } catch {
+      print("❌ SWIFTDATA AUDIT FAILED: \(error)")
+    }
+  }
+  
+  private func auditUserDefaults() {
+    print("📊 ========== USERDEFAULTS AUDIT ==========")
+    
+    let dict = UserDefaults.standard.dictionaryRepresentation()
+    var foundKeys: [(String, Any)] = []
+    
+    for (key, value) in dict {
+      let keyLower = key.lowercased()
+      if keyLower.contains("xp") || keyLower.contains("level") || keyLower.contains("habit") || keyLower.contains("streak") {
+        foundKeys.append((key, value))
+      }
+    }
+    
+    print("📊 Found \(foundKeys.count) relevant UserDefaults keys:")
+    for (key, value) in foundKeys.sorted(by: { $0.0 < $1.0 }) {
+      print("   \(key): \(value)")
+    }
+    
+    print("📊 =========================================")
+  }
+  
+  private func auditFirestore() async {
+    print("📊 ========== FIRESTORE AUDIT ==========")
+    
+    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
+      print("❌ No authenticated user")
+      return
+    }
+    
+    print("📊 User ID: \(userId)")
+    
+    let db = Firestore.firestore()
+    
+    do {
+      // Check habits collection
+      print("\n📊 Fetching habits from Firestore...")
+      let habitsSnapshot = try await db.collection("users").document(userId).collection("habits").getDocuments()
+      print("📊 Firestore Habits: \(habitsSnapshot.documents.count)")
+      
+      for (i, doc) in habitsSnapshot.documents.enumerated() {
+        let data = doc.data()
+        let name = data["name"] as? String ?? "Unknown"
+        let completionStatus = data["completionStatus"] as? [String: Bool] ?? [:]
+        let completionHistory = data["completionHistory"] as? [String: Int] ?? [:]
+        let baseline = data["baseline"] as? Int ?? 0
+        let target = data["target"] as? Int ?? 0
+        
+        print("   [\(i)] '\(name)' (id: \(doc.documentID.prefix(8)))")
+        print("      → completionStatus count: \(completionStatus.count)")
+        print("      → completionHistory count: \(completionHistory.count)")
+        print("      → baseline: \(baseline), target: \(target)")
+        
+        if !completionStatus.isEmpty {
+          print("      → Recent completionStatus entries:")
+          for (dateKey, isComplete) in completionStatus.sorted(by: { $0.key > $1.key }).prefix(3) {
+            print("         \(dateKey): \(isComplete ? "✅" : "❌")")
+          }
+        }
+        
+        if !completionHistory.isEmpty {
+          print("      → Recent completionHistory entries:")
+          for (dateKey, progress) in completionHistory.sorted(by: { $0.key > $1.key }).prefix(3) {
+            print("         \(dateKey): \(progress)")
+          }
+        }
+      }
+      
+      // Check progress document
+      print("\n📊 Fetching progress from Firestore...")
+      let progressDoc = try await db.collection("users").document(userId).collection("progress").document("current").getDocument()
+      if progressDoc.exists {
+        let data = progressDoc.data() ?? [:]
+        let totalXP = data["totalXP"] as? Int ?? 0
+        let level = data["level"] as? Int ?? 1
+        let dailyXP = data["dailyXP"] as? Int ?? 0
+        print("📊 Progress:")
+        print("   → totalXP: \(totalXP)")
+        print("   → level: \(level)")
+        print("   → dailyXP: \(dailyXP)")
+      } else {
+        print("❌ No progress document found")
+      }
+      
+      // Check migration status
+      print("\n📊 Checking migration status...")
+      let migrationDoc = try await db.collection("users").document(userId).collection("meta").document("migration").getDocument()
+      if migrationDoc.exists {
+        let data = migrationDoc.data() ?? [:]
+        let status = data["status"] as? String ?? "unknown"
+        print("📊 Migration status: \(status)")
+      } else {
+        print("📊 No migration document (not started)")
+      }
+      
+    } catch {
+      print("❌ FIRESTORE AUDIT FAILED: \(error)")
+    }
+    
+    print("📊 ===================================")
+  }
+  
+  private func auditMemory() {
+    print("📊 ========== MEMORY AUDIT ==========")
+    
+    let habits = HabitRepository.shared.habits
+    print("📊 HabitRepository.habits count: \(habits.count)")
+    
+    for (i, habit) in habits.enumerated() {
+      print("\n   [\(i)] '\(habit.name)' (id: \(habit.id.uuidString.prefix(8)))")
+      print("      → habitType: \(habit.habitType.rawValue)")
+      print("      → baseline: \(habit.baseline), target: \(habit.target)")
+      print("      → syncStatus: \(habit.syncStatus.rawValue)")
+      print("      → lastSyncedAt: \(habit.lastSyncedAt?.description ?? "nil")")
+      print("      → completionStatus count: \(habit.completionStatus.count)")
+      print("      → completionHistory count: \(habit.completionHistory.count)")
+      print("      → completionTimestamps count: \(habit.completionTimestamps.count)")
+      
+      if !habit.completionStatus.isEmpty {
+        print("      → Recent completionStatus:")
+        for (dateKey, isComplete) in habit.completionStatus.sorted(by: { $0.key > $1.key }).prefix(3) {
+          print("         \(dateKey): \(isComplete ? "✅" : "❌")")
+        }
+      } else {
+        print("      → ⚠️ completionStatus is EMPTY!")
+      }
+      
+      if !habit.completionHistory.isEmpty {
+        print("      → Recent completionHistory:")
+        for (dateKey, progress) in habit.completionHistory.sorted(by: { $0.key > $1.key }).prefix(3) {
+          print("         \(dateKey): \(progress)")
+        }
+      } else {
+        print("      → ⚠️ completionHistory is EMPTY!")
+      }
+    }
+    
+    print("\n📊 XPManager state:")
+    print("   → totalXP: \(xpManager.totalXP)")
+    print("   → currentLevel: \(xpManager.currentLevel)")
+    print("   → dailyXP: \(xpManager.dailyXP)")
+    
+    print("\n📊 ===================================")
+  }
+  
+  private func forceLoadFromFirestore() async {
+    print("🔥 FORCE_RELOAD: Marking migration complete and reloading from Firestore...")
+    
+    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
+      print("❌ FORCE_RELOAD: No authenticated user")
+      return
+    }
+    
+    do {
+      // Step 1: Mark migration as complete in Firestore
+      let db = Firestore.firestore()
+      try await db
+        .collection("users")
+        .document(userId)
+        .collection("meta")
+        .document("migration")
+        .setData([
+          "status": "complete",
+          "completedAt": Date(),
+          "forcedByUser": true
+        ])
+      
+      print("✅ FORCE_RELOAD: Migration marked as complete")
+      migrationStatus = "✅ Complete"
+      
+      // Step 2: Force reload habits from Firestore
+      print("🔥 FORCE_RELOAD: Reloading habits from Firestore...")
+      await HabitRepository.shared.loadHabits(force: true)
+      
+      print("✅ FORCE_RELOAD: Complete! Check if Habit2 is back")
+      print("   📊 Current habits count: \(HabitRepository.shared.habits.count)")
+      for habit in HabitRepository.shared.habits {
+        print("   - \(habit.name) (type: \(habit.habitType), baseline: \(habit.baseline), target: \(habit.target))")
+      }
+      
+    } catch {
+      print("❌ FORCE_RELOAD: Failed - \(error)")
+    }
   }
   
   private func resetMigration() async {

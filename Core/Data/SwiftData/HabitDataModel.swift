@@ -21,7 +21,9 @@ final class HabitData {
     goal: String,
     reminder: String,
     startDate: Date,
-    endDate: Date? = nil)
+    endDate: Date? = nil,
+    baseline: Int = 0,
+    target: Int = 1)
   {
     self.id = id
     self.userId = userId
@@ -35,6 +37,8 @@ final class HabitData {
     self.reminder = reminder
     self.startDate = startDate
     self.endDate = endDate
+    self.baseline = baseline
+    self.target = target
     self.createdAt = Date()
     self.updatedAt = Date()
 
@@ -61,6 +65,10 @@ final class HabitData {
   var endDate: Date?
   var createdAt: Date
   var updatedAt: Date
+  
+  // Breaking habit fields (CRITICAL: Must be stored!)
+  var baseline: Int = 0  // Current usage level (for breaking habits)
+  var target: Int = 1    // Goal usage level (for breaking habits)
 
   // Relationships
   @Relationship(deleteRule: .cascade) var completionHistory: [CompletionRecord]
@@ -117,6 +125,8 @@ final class HabitData {
     reminder = habit.reminder
     startDate = habit.startDate
     endDate = habit.endDate
+    baseline = habit.baseline
+    target = habit.target
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
   }
@@ -148,10 +158,40 @@ final class HabitData {
 
   @MainActor
   func toHabit() -> Habit {
+    // ✅ FIX: Query CompletionRecords by habitId if relationship is empty (orphaned records)
+    let completionRecords: [CompletionRecord]
+    if completionHistory.isEmpty {
+      // Relationship is empty, query manually by habitId
+      let habitId = self.id  // Capture for use in predicate
+      let userId = self.userId  // Capture for use in predicate
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.habitId == habitId && record.userId == userId
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      do {
+        let context = SwiftDataContainer.shared.modelContext
+        completionRecords = try context.fetch(descriptor)
+        print("🔍 toHabit(): Found \(completionRecords.count) orphaned CompletionRecords for habit '\(self.name)' by querying habitId")
+      } catch {
+        print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
+        completionRecords = []
+      }
+    } else {
+      // Use relationship if it's working
+      completionRecords = completionHistory
+      print("🔍 toHabit(): Using \(completionRecords.count) CompletionRecords from relationship for habit '\(self.name)'")
+    }
+    
     // Convert Date keys to String keys for compatibility with Habit model
-    let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionHistory
+    let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionRecords
       .map {
         (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted ? 1 : 0)
+      })
+    
+    // ✅ FIX: Rebuild completionStatus from CompletionRecords
+    let completionStatusDict: [String: Bool] = Dictionary(uniqueKeysWithValues: completionRecords
+      .map {
+        (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted)
       })
 
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyHistory
@@ -175,7 +215,10 @@ final class HabitData {
       reminder: reminder,
       startDate: startDate,
       endDate: endDate,
+      baseline: baseline,
+      target: target,
       completionHistory: completionHistoryDict,
+      completionStatus: completionStatusDict,  // ✅ NOW REBUILT!
       difficultyHistory: difficultyHistoryDict,
       actualUsage: actualUsageDict)
   }
@@ -242,6 +285,9 @@ final class CompletionRecord {
 
   /// ✅ PHASE 5: Composite unique constraint to prevent duplicate completions
   @Attribute(.unique) var userIdHabitIdDateKey: String
+  
+  /// ✅ FIX: Inverse relationship to HabitData for proper linking
+  @Relationship(inverse: \HabitData.completionHistory) var habit: HabitData?
 
   /// ✅ CRITICAL FIX: Fallback for database corruption
   static func createCompletionRecordIfNeeded(
