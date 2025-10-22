@@ -182,6 +182,8 @@ final class HabitData {
       print("🔍 toHabit(): Using \(completionRecords.count) CompletionRecords from relationship for habit '\(self.name)'")
     }
     
+    // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
+    
     // Convert Date keys to String keys for compatibility with Habit model
     let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionRecords
       .map {
@@ -193,6 +195,14 @@ final class HabitData {
       .map {
         (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted)
       })
+    
+    // ✅ FIX: Rebuild completionTimestamps from CompletionRecords
+    // Note: CompletionRecord doesn't store individual timestamps, so we use createdAt as proxy
+    let completionTimestampsDict: [String: [Date]] = Dictionary(uniqueKeysWithValues: completionRecords
+      .filter { $0.isCompleted }  // Only include completed records
+      .map {
+        (ISO8601DateHelper.shared.string(from: $0.date), [$0.createdAt])
+      })
 
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyHistory
       .map {
@@ -202,6 +212,19 @@ final class HabitData {
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
       ($0.key, $0.value)
     })
+    
+    // ✅ DIAGNOSTIC LOGGING: Verify data was rebuilt correctly
+    #if DEBUG
+    print("🔧 HOTFIX: toHabit() for '\(name)':")
+    print("  → CompletionRecords: \(completionRecords.count)")
+    print("  → completionHistory entries: \(completionHistoryDict.count)")
+    print("  → completionStatus entries: \(completionStatusDict.count)")
+    print("  → completionTimestamps entries: \(completionTimestampsDict.count)")
+    if completionRecords.count > 0 {
+      let completedCount = completionRecords.filter { $0.isCompleted }.count
+      print("  → Completed days: \(completedCount)/\(completionRecords.count)")
+    }
+    #endif
 
     return Habit(
       id: id,
@@ -219,6 +242,7 @@ final class HabitData {
       target: target,
       completionHistory: completionHistoryDict,
       completionStatus: completionStatusDict,  // ✅ NOW REBUILT!
+      completionTimestamps: completionTimestampsDict,  // ✅ NOW REBUILT!
       difficultyHistory: difficultyHistoryDict,
       actualUsage: actualUsageDict)
   }
