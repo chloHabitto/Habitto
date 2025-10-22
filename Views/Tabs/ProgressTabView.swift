@@ -3827,29 +3827,34 @@ struct ProgressTabView: View {
                 (dayOffset: -4, hour: 7, minute: 0) // 4 days ago at 7:00 AM (Morning)
               ]
 
-              for testCompletion in testCompletions {
-                if let testDate = calendar.date(
-                  byAdding: .day,
-                  value: testCompletion.dayOffset,
-                  to: today)
-                {
-                  if let testTime = calendar.date(
-                    bySettingHour: testCompletion.hour,
-                    minute: testCompletion.minute,
-                    second: 0,
-                    of: testDate)
+              // ✅ FIX: Wrap async calls in Task
+              Task {
+                for testCompletion in testCompletions {
+                  if let testDate = calendar.date(
+                    byAdding: .day,
+                    value: testCompletion.dayOffset,
+                    to: today)
                   {
-                    habitRepository.setProgress(for: habit, date: testDate, progress: 1)
-                    let dayName = calendar.weekdaySymbols[calendar.component(
-                      .weekday,
-                      from: testDate) - 1]
-                    print("🕐 Added test completion for \(habit.name) on \(dayName) at \(testTime)")
+                    if let testTime = calendar.date(
+                      bySettingHour: testCompletion.hour,
+                      minute: testCompletion.minute,
+                      second: 0,
+                      of: testDate)
+                    {
+                      try? await habitRepository.setProgress(for: habit, date: testDate, progress: 1)
+                      let dayName = calendar.weekdaySymbols[calendar.component(
+                        .weekday,
+                        from: testDate) - 1]
+                      print("🕐 Added test completion for \(habit.name) on \(dayName) at \(testTime)")
+                    }
                   }
                 }
-              }
 
-              // Update the chart data
-              updateTimeBaseCompletionData()
+                // Update the chart data
+                await MainActor.run {
+                  updateTimeBaseCompletionData()
+                }
+              }
             }
             .font(.appBodySmall)
             .foregroundColor(.primaryFocus)
