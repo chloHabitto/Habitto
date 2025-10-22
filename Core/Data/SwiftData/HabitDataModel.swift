@@ -133,9 +133,9 @@ final class HabitData {
 
   /// Check if habit is completed for a specific date (source of truth)
   func isCompletedForDate(_ date: Date) -> Bool {
-    let dateKey = ISO8601DateHelper.shared.string(from: date)
+    let dateKey = DateUtils.dateKey(for: date)
     let completionRecord = completionHistory.first { record in
-      ISO8601DateHelper.shared.string(from: record.date) == dateKey
+      DateUtils.dateKey(for: record.date) == dateKey
     }
     return completionRecord?.isCompleted ?? false
   }
@@ -183,17 +183,18 @@ final class HabitData {
     }
     
     // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
+    // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries
     
     // Convert Date keys to String keys for compatibility with Habit model
     let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionRecords
       .map {
-        (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted ? 1 : 0)
+        (DateUtils.dateKey(for: $0.date), $0.isCompleted ? 1 : 0)
       })
     
     // ✅ FIX: Rebuild completionStatus from CompletionRecords
     let completionStatusDict: [String: Bool] = Dictionary(uniqueKeysWithValues: completionRecords
       .map {
-        (ISO8601DateHelper.shared.string(from: $0.date), $0.isCompleted)
+        (DateUtils.dateKey(for: $0.date), $0.isCompleted)
       })
     
     // ✅ FIX: Rebuild completionTimestamps from CompletionRecords
@@ -201,12 +202,12 @@ final class HabitData {
     let completionTimestampsDict: [String: [Date]] = Dictionary(uniqueKeysWithValues: completionRecords
       .filter { $0.isCompleted }  // Only include completed records
       .map {
-        (ISO8601DateHelper.shared.string(from: $0.date), [$0.createdAt])
+        (DateUtils.dateKey(for: $0.date), [$0.createdAt])
       })
 
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyHistory
       .map {
-        (ISO8601DateHelper.shared.string(from: $0.date), $0.difficulty)
+        (DateUtils.dateKey(for: $0.date), $0.difficulty)
       })
 
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
@@ -321,7 +322,7 @@ final class CompletionRecord {
     isCompleted: Bool,
     modelContext: ModelContext) -> Bool
   {
-    let dateKey = ISO8601DateHelper.shared.string(from: date)
+    let dateKey = DateUtils.dateKey(for: date)
     let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
 
     do {
