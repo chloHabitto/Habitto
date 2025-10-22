@@ -605,52 +605,54 @@ class HabitRepository: ObservableObject {
 
   // MARK: - Update Habit
 
-  func updateHabit(_ habit: Habit) {
+  /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
+  func updateHabit(_ habit: Habit) async throws {
     print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
     print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
     print("🔄 HabitRepository: Current habits count before update: \(habits.count)")
+    print("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
 
-    Task {
-      do {
-        // Use the HabitStore actor for data operations
-        print("🔄 HabitRepository: Calling habitStore.updateHabit...")
-        try await habitStore.updateHabit(habit)
-        print("✅ HabitRepository: habitStore.updateHabit completed successfully")
+    do {
+      // Use the HabitStore actor for data operations
+      print("🔄 HabitRepository: Calling habitStore.updateHabit...")
+      try await habitStore.updateHabit(habit)
+      print("✅ HabitRepository: habitStore.updateHabit completed successfully")
 
-        // Reload habits to get the updated list
-        print("🔄 HabitRepository: Reloading habits...")
-        await loadHabits(force: true)
-        print("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
+      // Reload habits to get the updated list
+      print("🔄 HabitRepository: Reloading habits...")
+      await loadHabits(force: true)
+      print("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
+      print("✅ GUARANTEED: Habit update persisted to SwiftData")
 
-        print("✅ HabitRepository: Successfully updated habit: \(habit.name)")
-
-      } catch {
-        print("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
-        print("❌ HabitRepository: Error type: \(type(of: error))")
-        if let dataError = error as? DataError {
-          print("❌ HabitRepository: DataError details: \(dataError)")
-        }
+    } catch {
+      print("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
+      print("❌ HabitRepository: Error type: \(type(of: error))")
+      if let dataError = error as? DataError {
+        print("❌ HabitRepository: DataError details: \(dataError)")
       }
+      throw error
     }
   }
 
   // MARK: - Delete Habit
 
-  func deleteHabit(_ habit: Habit) {
+  /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
+  func deleteHabit(_ habit: Habit) async throws {
     // Remove all notifications for this habit first
     NotificationManager.shared.removeAllNotifications(for: habit)
+    print("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
 
-    Task {
-      do {
-        // Use the HabitStore actor for data operations
-        try await habitStore.deleteHabit(habit)
+    do {
+      // Use the HabitStore actor for data operations
+      try await habitStore.deleteHabit(habit)
+      
+      // Reload habits to get the updated list
+      await loadHabits(force: true)
+      print("✅ GUARANTEED: Habit deleted from SwiftData")
 
-        // Reload habits to get the updated list
-        await loadHabits(force: true)
-
-      } catch {
-        print("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
-      }
+    } catch {
+      print("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
+      throw error
     }
   }
 
@@ -676,7 +678,8 @@ class HabitRepository: ObservableObject {
 
   // MARK: - Toggle Habit Completion
 
-  func toggleHabitCompletion(_ habit: Habit, for date: Date) {
+  /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
+  func toggleHabitCompletion(_ habit: Habit, for date: Date) async throws {
     // Skip Core Data and handle completion directly in UserDefaults
     print("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
 
@@ -694,7 +697,8 @@ class HabitRepository: ObservableObject {
     let newProgress = currentProgress > 0 ? 0 : 1
     print("🔍 TOGGLE - Setting new progress to: \(newProgress)")
 
-    setProgress(for: habit, date: date, progress: newProgress)
+    // ✅ CRITICAL FIX: Await save completion
+    try await setProgress(for: habit, date: date, progress: newProgress)
   }
 
   // MARK: - Force Save All Changes
@@ -710,12 +714,13 @@ class HabitRepository: ObservableObject {
 
   // MARK: - Set Progress
 
-  func setProgress(for habit: Habit, date: Date, progress: Int) {
+  /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
+  func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
     let dateKey = DateKey.key(for: date)
     print(
       "🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
     print(
-      "🎯 DEBUG: About to call habitStore.setProgress - this should trigger CompletionRecord creation")
+      "🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
 
     // Update the local habits array immediately for UI responsiveness
     if let index = habits.firstIndex(where: { $0.id == habit.id }) {
@@ -775,36 +780,30 @@ class HabitRepository: ObservableObject {
         object: nil,
         userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey])
       print("🎯 HabitRepository: Notification posted successfully")
-    }
-
-    // Persist data in background
-    Task {
+      
+      // ✅ CRITICAL FIX: Await save completion BEFORE returning
       do {
-        // Use the HabitStore actor for data operations
         let startTime = Date()
-        print("🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey) at \(startTime)")
+        print("🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
         
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
         
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
         print("✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
-        print("   ✅ Data persisted: progress=\(progress) for \(dateKey)")
+        print("   ✅ GUARANTEED: Data persisted to SwiftData")
 
       } catch {
         print("❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
         print("   ❌ Error type: \(type(of: error))")
-        print("   ❌ Progress NOT saved: \(progress) for \(dateKey)")
         
-        // Revert UI change if persistence failed
-        DispatchQueue.main.async {
-          if let index = self.habits.firstIndex(where: { $0.id == habit.id }) {
-            let oldProgress = habit.completionHistory[dateKey] ?? 0
-            self.habits[index].completionHistory[dateKey] = oldProgress
-            self.objectWillChange.send()
-            print("🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
-          }
-        }
+        // Revert UI change on error
+        habits[index].completionHistory[dateKey] = oldProgress
+        objectWillChange.send()
+        print("🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
+        
+        // Re-throw to let caller know save failed
+        throw error
       }
     }
   }
