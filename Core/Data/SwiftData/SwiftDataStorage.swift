@@ -198,7 +198,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
       // ✅ CRITICAL FIX: Try to save, with fallback to UserDefaults on any error
       do {
+        print("        ⏱️ SWIFTDATA_SAVE_START: Calling modelContext.save() at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
+        print("        📊 SWIFTDATA_CONTEXT: hasChanges=\(container.modelContext.hasChanges)")
         try container.modelContext.save()
+        print("        ⏱️ SWIFTDATA_SAVE_END: modelContext.save() succeeded at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
 
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         #if DEBUG
@@ -206,8 +209,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
           .info(
             "  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
         #endif
+        print("        ✅ SWIFTDATA_SUCCESS: Saved \(habits.count) habits to database")
       } catch {
         let errorDesc = error.localizedDescription
+        print("        ❌ SWIFTDATA_SAVE_FAILED: modelContext.save() threw error")
+        print("        ❌ Error: \(errorDesc)")
+        print("        ❌ Error type: \(type(of: error))")
+        print("        ❌ Full error: \(error)")
         #if DEBUG
         logger.error("❌ ModelContext.save() failed: \(errorDesc)")
         logger.error("🔧 Database corruption detected - falling back to UserDefaults")
