@@ -78,12 +78,19 @@ class HomeViewState: ObservableObject {
     lastHabitsUpdate = Date()
   }
 
-  func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) {
+  /// ✅ CRITICAL FIX: Made async to await repository save completion
+  func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) async {
     let targetDate = date ?? Calendar.current.startOfDay(for: Date())
-    habitRepository.toggleHabitCompletion(habit, for: targetDate)
+    do {
+      try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
+      print("✅ GUARANTEED: Completion toggled and persisted")
+    } catch {
+      print("❌ Failed to toggle completion: \(error.localizedDescription)")
+    }
   }
 
-  func deleteHabit(_ habit: Habit) {
+  /// ✅ CRITICAL FIX: Made async to await repository save completion
+  func deleteHabit(_ habit: Habit) async {
     // Immediately remove from local state for instant UI update
     DispatchQueue.main.async {
       var updatedHabits = self.habits
@@ -92,18 +99,34 @@ class HomeViewState: ObservableObject {
     }
 
     // Then delete from storage
-    habitRepository.deleteHabit(habit)
+    do {
+      try await habitRepository.deleteHabit(habit)
+      print("✅ GUARANTEED: Habit deleted and persisted")
+    } catch {
+      print("❌ Failed to delete habit: \(error.localizedDescription)")
+    }
     habitToDelete = nil
   }
 
-  func updateHabit(_ updatedHabit: Habit) {
-    habitRepository.updateHabit(updatedHabit)
+  /// ✅ CRITICAL FIX: Made async to await repository save completion
+  func updateHabit(_ updatedHabit: Habit) async {
+    do {
+      try await habitRepository.updateHabit(updatedHabit)
+      print("✅ GUARANTEED: Habit updated and persisted")
+    } catch {
+      print("❌ Failed to update habit: \(error.localizedDescription)")
+    }
   }
 
-  func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) {
+  /// ✅ CRITICAL FIX: Made async to await repository save completion
+  func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) async {
     print("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
-    habitRepository.setProgress(for: habit, date: date, progress: progress)
-    print("🔄 HomeViewState: setHabitProgress completed for \(habit.name)")
+    do {
+      try await habitRepository.setProgress(for: habit, date: date, progress: progress)
+      print("✅ GUARANTEED: Progress saved and persisted")
+    } catch {
+      print("❌ Failed to set progress: \(error.localizedDescription)")
+    }
   }
 
   func createHabit(_ habit: Habit) async {
@@ -399,31 +422,37 @@ struct HomeView: View {
               habits: state.habits,
               isLoadingHabits: state.isLoadingHabits,
               onToggleHabit: { (habit: Habit, date: Date) in
-                state.toggleHabitCompletion(habit, for: date)
+                Task {
+                  await state.toggleHabitCompletion(habit, for: date)
+                }
               },
               onUpdateHabit: { updatedHabit in
                 print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
-                state.updateHabit(updatedHabit)
+                Task {
+                  await state.updateHabit(updatedHabit)
+                }
                 print("🔄 HomeView: Habit array updated and saved")
               },
               onSetProgress: { habit, date, progress in
                 print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
                 print("🔄 HomeView: Current state.habits count: \(state.habits.count)")
 
-                // Find the habit by ID from the current state to ensure we have the latest Core
-                // Data-synced version
-                if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
-                  print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
-                  print(
-                    "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
-                  state.setHabitProgress(syncedHabit, for: date, progress: progress)
-                  print("🔄 HomeView: Progress saved to Core Data using synced habit")
-                } else {
-                  print(
-                    "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
-                  print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
-                  state.setHabitProgress(habit, for: date, progress: progress)
-                  print("🔄 HomeView: Progress saved to Core Data using original habit")
+                Task {
+                  // Find the habit by ID from the current state to ensure we have the latest Core
+                  // Data-synced version
+                  if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
+                    print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
+                    print(
+                      "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
+                    await state.setHabitProgress(syncedHabit, for: date, progress: progress)
+                    print("🔄 HomeView: Progress saved to Core Data using synced habit")
+                  } else {
+                    print(
+                      "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
+                    print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
+                    await state.setHabitProgress(habit, for: date, progress: progress)
+                    print("🔄 HomeView: Progress saved to Core Data using original habit")
+                  }
                 }
               },
               onDeleteHabit: { habit in
@@ -455,7 +484,9 @@ struct HomeView: View {
               },
               onUpdateHabit: { updatedHabit in
                 print("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
-                state.updateHabit(updatedHabit)
+                Task {
+                  await state.updateHabit(updatedHabit)
+                }
                 print("🔄 HomeView: Habit updated and saved successfully")
               })
 
@@ -525,9 +556,13 @@ struct HomeView: View {
     .fullScreenCover(item: $state.habitToEdit) { habit in
       HabitEditView(habit: habit, onSave: { updatedHabit in
         print("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
-        state.updateHabit(updatedHabit)
+        Task {
+          await state.updateHabit(updatedHabit)
+          await MainActor.run {
+            state.habitToEdit = nil
+          }
+        }
         print("🔄 HomeView: Habit updated and saved successfully")
-        state.habitToEdit = nil
       })
     }
     .confirmationDialog(
@@ -542,7 +577,9 @@ struct HomeView: View {
       Button("Delete", role: .destructive) {
         if let habit = state.habitToDelete {
           print("🗑️ Deleting habit: \(habit.name)")
-          state.deleteHabit(habit)
+          Task {
+            await state.deleteHabit(habit)
+          }
           print("🗑️ Delete completed")
         } else {
           print("❌ No habit to delete")
