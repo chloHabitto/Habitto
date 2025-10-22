@@ -853,9 +853,10 @@ final actor HabitStore {
           // Update existing record
           logger.info("🎯 createCompletionRecordIfNeeded: Updating existing record...")
           existingRecord.isCompleted = isCompleted
+          existingRecord.progress = progress  // ✅ CRITICAL FIX: Store progress count
           logger
             .info(
-              "✅ Updated CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted)")
+              "✅ Updated CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
         } else {
           // Create new record
           logger.info("🎯 createCompletionRecordIfNeeded: Creating new record...")
@@ -864,12 +865,13 @@ final actor HabitStore {
             habitId: habit.id,
             date: date,
             dateKey: dateKey,
-            isCompleted: isCompleted)
-          logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted)")
+            isCompleted: isCompleted,
+            progress: progress)  // ✅ CRITICAL FIX: Store progress count
+          logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
           modelContext.insert(completionRecord)
           logger
             .info(
-              "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted)")
+              "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
         }
 
         // Save the context

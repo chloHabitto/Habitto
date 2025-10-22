@@ -185,10 +185,10 @@ final class HabitData {
     // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
     // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries
     
-    // Convert Date keys to String keys for compatibility with Habit model
+    // ✅ CRITICAL FIX: Use actual progress count from CompletionRecord instead of just 1/0
     let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionRecords
       .map {
-        (DateUtils.dateKey(for: $0.date), $0.isCompleted ? 1 : 0)
+        (DateUtils.dateKey(for: $0.date), $0.progress)  // ✅ Use actual progress count!
       })
     
     // ✅ FIX: Rebuild completionStatus from CompletionRecords
@@ -275,18 +275,19 @@ final class HabitData {
 final class CompletionRecord {
   // MARK: Lifecycle
 
-  init(userId: String, habitId: UUID, date: Date, dateKey: String, isCompleted: Bool) {
+  init(userId: String, habitId: UUID, date: Date, dateKey: String, isCompleted: Bool, progress: Int = 0) {
     self.userId = userId
     self.habitId = habitId
     self.date = date
     self.dateKey = dateKey
     self.isCompleted = isCompleted
+    self.progress = progress  // ✅ NEW: Store actual progress count
     self.createdAt = Date()
     self.userIdHabitIdDateKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
   }
 
   /// Legacy initializer for backward compatibility
-  @available(*, deprecated, message: "Use init(userId:habitId:date:dateKey:isCompleted:) instead")
+  @available(*, deprecated, message: "Use init(userId:habitId:date:dateKey:isCompleted:progress:) instead")
   init(date: Date, isCompleted: Bool) {
     self.userId = "legacy"
     let habitId = UUID()
@@ -294,6 +295,7 @@ final class CompletionRecord {
     self.date = date
     self.dateKey = ""
     self.isCompleted = isCompleted
+    self.progress = isCompleted ? 1 : 0  // ✅ Legacy default
     self.createdAt = Date()
     self.userIdHabitIdDateKey = "legacy#\(habitId.uuidString)#"
   }
@@ -306,6 +308,7 @@ final class CompletionRecord {
   var dateKey: String // ✅ PHASE 5: Added field for date-based queries (indexing not supported in
   // current SwiftData)
   var isCompleted: Bool
+  var progress: Int = 0  // ✅ CRITICAL FIX: Store actual progress count (e.g., 10 for "10 times")
   var createdAt: Date
 
   /// ✅ PHASE 5: Composite unique constraint to prevent duplicate completions
@@ -320,6 +323,7 @@ final class CompletionRecord {
     habitId: UUID,
     date: Date,
     isCompleted: Bool,
+    progress: Int = 0,  // ✅ NEW: Accept progress parameter
     modelContext: ModelContext) -> Bool
   {
     let dateKey = DateUtils.dateKey(for: date)
@@ -340,7 +344,8 @@ final class CompletionRecord {
           habitId: habitId,
           date: date,
           dateKey: dateKey,
-          isCompleted: isCompleted)
+          isCompleted: isCompleted,
+          progress: progress)  // ✅ NEW: Store progress
         modelContext.insert(record)
         try modelContext.save()
         return true
@@ -348,6 +353,7 @@ final class CompletionRecord {
         // Update existing record
         if let existingRecord = existingRecords.first {
           existingRecord.isCompleted = isCompleted
+          existingRecord.progress = progress  // ✅ NEW: Update progress
           try modelContext.save()
           return true
         }

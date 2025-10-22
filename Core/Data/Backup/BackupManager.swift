@@ -547,7 +547,8 @@ class BackupManager: ObservableObject {
           habitId: habit.id,
           date: backupCompletion.date,
           dateKey: Habit.dateKey(for: backupCompletion.date),
-          isCompleted: backupCompletion.isCompleted)
+          isCompleted: backupCompletion.isCompleted,
+          progress: backupCompletion.isCompleted ? 1 : 0)  // ✅ Legacy backup compatibility
         habit.completionHistory.append(completion)
       }
     }

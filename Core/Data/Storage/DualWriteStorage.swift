@@ -82,14 +82,11 @@ final class DualWriteStorage: HabitStorageProtocol {
     }
     
     // STEP 2: Sync to Firestore in BACKGROUND (non-blocking, won't slow down UI)
+    // ✅ CRITICAL FIX: Use regular Task (not detached) with strong capture to prevent self=NIL
     print("🚀 SAVE_BACKGROUND[\(taskId)]: Launching background sync task...")
-    Task.detached { [weak self, primaryStorage] in
-      let selfStatus = self != nil ? "alive" : "NIL!"
-      print("📤 SYNC_START[\(taskId)]: Background task running, self=\(selfStatus)")
-      if self == nil {
-        print("❌ SYNC_FATAL[\(taskId)]: self is NIL! Sync will be skipped!")
-      }
-      await self?.syncHabitsToFirestore(habits: updatedHabits, primaryStorage: primaryStorage)
+    Task { [self, primaryStorage] in
+      print("📤 SYNC_START[\(taskId)]: Background task running, self captured")
+      await self.syncHabitsToFirestore(habits: updatedHabits, primaryStorage: primaryStorage)
       print("✅ SYNC_END[\(taskId)]: Background task complete")
     }
     
@@ -165,47 +162,55 @@ final class DualWriteStorage: HabitStorageProtocol {
   }
   
   func loadHabits() async throws -> [Habit] {
-    dualWriteLogger.info("DualWriteStorage: Loading habits")
+    // ✅ CRITICAL FIX: LOCAL-FIRST ARCHITECTURE
+    // Always load from SwiftData (fast, reliable, local)
+    // Firestore is for background sync only, NOT the source of truth
+    dualWriteLogger.info("DualWriteStorage: Loading habits from local storage (local-first)")
+    print("📂 LOAD: Using local-first strategy - loading from SwiftData")
     
-    // CRITICAL: Check migration status first
-    // If migration hasn't completed, ALWAYS use local storage
-    let migrationComplete = await checkMigrationComplete()
-    
-    if !migrationComplete {
-      dualWriteLogger.info("⚠️ DualWriteStorage: Migration not complete, using local storage")
+    do {
       let habits = try await secondaryStorage.loadHabits()
       let filtered = filterCorruptedHabits(habits)
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(filtered.count) habits from local storage (pre-migration)")
-      return filtered
-    }
-    
-    // Try primary storage first (Firestore) only after migration is complete
-    do {
-      try await primaryStorage.fetchHabits()
-      let habits = await MainActor.run { primaryStorage.habits }
       
-      // If Firestore is empty but we haven't disabled legacy fallback, check local storage
-      // TODO: Implement proper FeatureFlags.enableLegacyReadFallback
-      if habits.isEmpty && true {
-        dualWriteLogger.info("⚠️ DualWriteStorage: Firestore empty, checking local storage...")
-        let localHabits = try await secondaryStorage.loadHabits()
-        if !localHabits.isEmpty {
-          let filtered = filterCorruptedHabits(localHabits)
-          dualWriteLogger.info("✅ DualWriteStorage: Found \(filtered.count) habits in local storage, using those")
-          return filtered
+      // ✅ NEW: If local storage is empty, try to sync down from Firestore
+      if filtered.isEmpty {
+        print("📂 LOAD: Local storage is empty, attempting to sync from Firestore...")
+        dualWriteLogger.info("⚠️ DualWriteStorage: Local storage empty, attempting Firestore sync")
+        
+        do {
+          // Fetch habits from Firestore
+          try await primaryStorage.fetchHabits()
+          let firestoreHabits = await MainActor.run { primaryStorage.habits }
+          
+          if !firestoreHabits.isEmpty {
+            print("📥 SYNC_DOWN: Found \(firestoreHabits.count) habits in Firestore, saving to local...")
+            dualWriteLogger.info("📥 Syncing down \(firestoreHabits.count) habits from Firestore")
+            
+            // Save to local storage
+            try await secondaryStorage.saveHabits(firestoreHabits, immediate: true)
+            
+            let syncedFiltered = filterCorruptedHabits(firestoreHabits)
+            print("✅ SYNC_DOWN: Successfully synced \(syncedFiltered.count) habits from Firestore")
+            dualWriteLogger.info("✅ Successfully synced \(syncedFiltered.count) habits from Firestore to local")
+            return syncedFiltered
+          } else {
+            print("📂 LOAD: No habits found in Firestore either - fresh install")
+            dualWriteLogger.info("📂 No habits in Firestore - fresh install")
+          }
+        } catch {
+          print("⚠️ SYNC_DOWN: Failed to sync from Firestore: \(error)")
+          dualWriteLogger.warning("⚠️ Failed to sync from Firestore: \(error.localizedDescription)")
+          // Don't throw - just return empty array if Firestore sync fails
         }
       }
       
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(habits.count) habits from Firestore")
-      return habits
-    } catch {
-      dualWriteLogger.warning("⚠️ DualWriteStorage: Firestore load failed, falling back to local: \(error)")
-      
-      // Fallback to secondary storage
-      let habits = try await secondaryStorage.loadHabits()
-      let filtered = filterCorruptedHabits(habits)
-      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(filtered.count) habits from local storage (fallback)")
+      dualWriteLogger.info("✅ DualWriteStorage: Loaded \(filtered.count) habits from local storage")
+      print("✅ LOAD: Loaded \(filtered.count) habits from SwiftData successfully")
       return filtered
+    } catch {
+      dualWriteLogger.error("❌ DualWriteStorage: Local load failed: \(error)")
+      print("❌ LOAD_FAILED: SwiftData load error: \(error)")
+      throw error
     }
   }
   

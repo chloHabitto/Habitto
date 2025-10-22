@@ -216,7 +216,8 @@ final class MigrationRunner {
             habitId: habit.id,
             date: date,
             dateKey: dateKey,
-            isCompleted: isCompleted)  // ❌ Created with isCompleted=true even if goal not met!
+            isCompleted: isCompleted,
+            progress: completionCount)  // ✅ CRITICAL FIX: Store actual progress count
 
           context.insert(completionRecord)
           migratedCount += 1
