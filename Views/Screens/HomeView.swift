@@ -120,12 +120,23 @@ class HomeViewState: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) async {
+    let startTime = Date()
+    print("═══════════════════════════════════════════════════════")
     print("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
+    print("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
     do {
       try await habitRepository.setProgress(for: habit, date: date, progress: progress)
-      print("✅ GUARANTEED: Progress saved and persisted")
+      let endTime = Date()
+      let duration = endTime.timeIntervalSince(startTime)
+      print("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+      print("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
+      print("═══════════════════════════════════════════════════════")
     } catch {
-      print("❌ Failed to set progress: \(error.localizedDescription)")
+      let endTime = Date()
+      let duration = endTime.timeIntervalSince(startTime)
+      print("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+      print("❌ Failed to set progress: \(error.localizedDescription) (took \(String(format: "%.3f", duration))s)")
+      print("═══════════════════════════════════════════════════════")
     }
   }
 

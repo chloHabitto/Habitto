@@ -784,23 +784,26 @@ class HabitRepository: ObservableObject {
       // ✅ CRITICAL FIX: Await save completion BEFORE returning
       do {
         let startTime = Date()
-        print("🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
+        print("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
+        print("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
         
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
         
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
-        print("✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
-        print("   ✅ GUARANTEED: Data persisted to SwiftData")
+        print("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+        print("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
+        print("  ✅ GUARANTEED: Data persisted to SwiftData")
 
       } catch {
-        print("❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
-        print("   ❌ Error type: \(type(of: error))")
+        print("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
+        print("  ❌ Error type: \(type(of: error))")
+        print("  ❌ Error details: \(error)")
         
         // Revert UI change on error
         habits[index].completionHistory[dateKey] = oldProgress
         objectWillChange.send()
-        print("🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
+        print("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
         
         // Re-throw to let caller know save failed
         throw error

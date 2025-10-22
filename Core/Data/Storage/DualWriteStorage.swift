@@ -66,14 +66,18 @@ final class DualWriteStorage: HabitStorageProtocol {
     }
     
     do {
+      print("      ⏱️ DUALWRITE_SWIFTDATA_START: Calling secondaryStorage.saveHabits() at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
       try await secondaryStorage.saveHabits(updatedHabits, immediate: immediate)
+      print("      ⏱️ DUALWRITE_SWIFTDATA_END: secondaryStorage.saveHabits() returned at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
       incrementCounter("dualwrite.update.secondary_ok")
       dualWriteLogger.info("✅ DualWriteStorage: Local write successful (immediate)")
       print("✅ SAVE_LOCAL[\(taskId)]: Successfully saved to SwiftData")
     } catch {
       incrementCounter("dualwrite.secondary_err")
       dualWriteLogger.error("❌ CRITICAL: Local write failed: \(error)")
-      print("❌ SAVE_LOCAL[\(taskId)]: FAILED - \(error)")
+      print("❌ SAVE_LOCAL[\(taskId)]: FAILED - \(error.localizedDescription)")
+      print("❌ Error type: \(type(of: error))")
+      print("❌ Full error: \(error)")
       throw error // MUST throw - local storage is primary
     }
     

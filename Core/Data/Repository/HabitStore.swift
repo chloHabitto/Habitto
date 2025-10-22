@@ -294,7 +294,9 @@ final actor HabitStore {
   // MARK: - Set Progress
 
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
+    let startTime = Date()
     let dateKey = CoreDataManager.dateKey(for: date)
+    print("    ⏱️ HABITSTORE_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
     logger.info("Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
     logger.info("🎯 DEBUG: HabitStore.setProgress called - will create CompletionRecord")
 
@@ -359,8 +361,14 @@ final actor HabitStore {
         dateKey: dateKey,
         progress: progress)
 
+      print("    ⏱️ SAVE_START: Calling saveHabits() at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
       try await saveHabits(currentHabits)
+      print("    ⏱️ SAVE_END: saveHabits() returned at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
       logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
+      
+      let endTime = Date()
+      let duration = endTime.timeIntervalSince(startTime)
+      print("    ⏱️ HABITSTORE_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium)) (took \(String(format: "%.3f", duration))s)")
 
       // XP logic is now handled in HabitRepository.setProgress for immediate UI feedback
 
