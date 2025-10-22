@@ -659,8 +659,7 @@ struct MoreTabView: View {
     print("📊 ========== SWIFTDATA AUDIT ==========")
     
     do {
-      let container = await SwiftDataContainer.shared.modelContainer
-      let context = await SwiftDataContainer.shared.modelContext
+      let context = SwiftDataContainer.shared.modelContext
       
       // Check habits
       let habitDescriptor = FetchDescriptor<HabitData>()

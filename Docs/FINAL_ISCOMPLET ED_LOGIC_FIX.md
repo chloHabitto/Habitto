@@ -250,3 +250,4 @@ XP not awarded until habit is actually done
 **This is the final fix! The logic is now correct everywhere!** 🎉
 
 
+

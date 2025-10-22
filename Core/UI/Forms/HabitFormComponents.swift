@@ -372,7 +372,13 @@ struct FormActionButtons: View {
 
       Spacer()
 
-      Button(action: onSave) {
+      Button(action: {
+        #if DEBUG
+        print("🔘 FormActionButtons: Save button action called")
+        print("  → isFormValid: \(isFormValid)")
+        #endif
+        onSave()
+      }) {
         Text("Save")
           .font(.appButtonText1)
           .foregroundColor(isFormValid ? .white : .text06)
@@ -382,6 +388,11 @@ struct FormActionButtons: View {
           .clipShape(Capsule())
       }
       .disabled(!isFormValid)
+      .onAppear {
+        #if DEBUG
+        print("🔘 FormActionButtons appeared - isFormValid: \(isFormValid)")
+        #endif
+      }
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 20)

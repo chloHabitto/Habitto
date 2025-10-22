@@ -114,8 +114,9 @@ struct CreateHabitFlowView: View {
           habitToEdit: habitToEdit,
           goBack: { currentStep = 1 },
           onSave: { habit in
+            // ✅ FIX: Don't dismiss here - let the parent handle dismiss after async save completes
             onSave(habit)
-            dismiss()
+            // dismiss() ← REMOVED: This was dismissing before the async save completed!
           })
       }
     }
