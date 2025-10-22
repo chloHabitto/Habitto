@@ -74,6 +74,34 @@ class HabitStorageManager {
   }
 }
 
+// MARK: - FirestoreSyncStatus
+
+/// Tracks the synchronization status of a habit with Firestore
+enum FirestoreSyncStatus: String, Codable, Equatable {
+  case pending   // Not yet synced to Firestore
+  case syncing   // Currently syncing to Firestore
+  case synced    // Successfully synced to Firestore
+  case failed    // Sync failed, needs retry
+  
+  var displayName: String {
+    switch self {
+    case .pending: return "Pending"
+    case .syncing: return "Syncing..."
+    case .synced: return "Synced"
+    case .failed: return "Failed"
+    }
+  }
+  
+  var icon: String {
+    switch self {
+    case .pending: return "clock"
+    case .syncing: return "arrow.triangle.2.circlepath"
+    case .synced: return "checkmark.circle.fill"
+    case .failed: return "exclamationmark.triangle.fill"
+    }
+  }
+}
+
 // MARK: - Habit
 
 struct Habit: Identifiable, Codable, Equatable {
@@ -116,6 +144,11 @@ struct Habit: Identifiable, Codable, Equatable {
     self.completionTimestamps = try container.decodeIfPresent(
       [String: [Date]].self,
       forKey: .completionTimestamps) ?? [:]
+    
+    // MARK: - Sync Metadata (Phase 1: Dual-Write)
+    // Decode with defaults for backward compatibility
+    self.lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
+    self.syncStatus = try container.decodeIfPresent(FirestoreSyncStatus.self, forKey: .syncStatus) ?? .pending
   }
 
   // MARK: - Designated Initializer
@@ -140,7 +173,9 @@ struct Habit: Identifiable, Codable, Equatable {
     completionStatus: [String: Bool] = [:],
     completionTimestamps: [String: [Date]] = [:],
     difficultyHistory: [String: Int] = [:],
-    actualUsage: [String: Int] = [:])
+    actualUsage: [String: Int] = [:],
+    lastSyncedAt: Date? = nil,
+    syncStatus: FirestoreSyncStatus = .pending)
   {
     self.id = id
     self.name = name
@@ -165,6 +200,9 @@ struct Habit: Identifiable, Codable, Equatable {
     self.completionTimestamps = completionTimestamps
     self.difficultyHistory = difficultyHistory
     self.actualUsage = actualUsage
+    // Sync metadata
+    self.lastSyncedAt = lastSyncedAt
+    self.syncStatus = syncStatus
   }
 
   // MARK: - Convenience Initializers
@@ -260,6 +298,9 @@ struct Habit: Identifiable, Codable, Equatable {
     case difficultyHistory
     case actualUsage
     case completionTimestamps
+    // Sync metadata (Phase 1: Dual-Write)
+    case lastSyncedAt
+    case syncStatus
   }
 
   let id: UUID
@@ -291,6 +332,16 @@ struct Habit: Identifiable, Codable, Equatable {
   var baseline = 0 // Current average usage
   var target = 0 // Target reduced amount
   var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
+  
+  // MARK: - Sync Metadata (Phase 1: Dual-Write)
+  
+  /// Timestamp of last successful sync to Firestore
+  /// nil = never synced, Date = last sync time
+  var lastSyncedAt: Date?
+  
+  /// Current synchronization status with Firestore
+  /// Default: .pending (needs sync)
+  var syncStatus: FirestoreSyncStatus = .pending
 
   /// Access the actual Color value for UI usage
   var colorValue: Color {
@@ -339,6 +390,10 @@ struct Habit: Identifiable, Codable, Equatable {
     try container.encode(difficultyHistory, forKey: .difficultyHistory)
     try container.encode(actualUsage, forKey: .actualUsage)
     try container.encode(completionTimestamps, forKey: .completionTimestamps)
+    
+    // MARK: - Sync Metadata (Phase 1: Dual-Write)
+    try container.encodeIfPresent(lastSyncedAt, forKey: .lastSyncedAt)
+    try container.encode(syncStatus, forKey: .syncStatus)
   }
 
   // MARK: - Completion History Methods

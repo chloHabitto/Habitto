@@ -46,34 +46,118 @@ final class DualWriteStorage: HabitStorageProtocol {
   // MARK: - HabitStorageProtocol Implementation
   
   func saveHabits(_ habits: [Habit], immediate: Bool = false) async throws {
+    let taskId = UUID().uuidString.prefix(8)
+    print("💾 SAVE_START[\(taskId)]: Saving \(habits.count) habits")
+    for (i, habit) in habits.enumerated() {
+      print("  [\(i)] '\(habit.name)' (id: \(habit.id.uuidString.prefix(8)), syncStatus: \(habit.syncStatus))")
+    }
+    
     dualWriteLogger.info("DualWriteStorage: Saving \(habits.count) habits")
     
-    // Primary write (Firestore) - blocking
-    do {
-      // Update Firestore with all habits
-      for habit in habits {
-        _ = try await primaryStorage.createHabit(habit)
+    // ✅ PHASE 1: LOCAL-FIRST APPROACH
+    // STEP 1: Write to local storage FIRST (fast, reliable, never blocks on network)
+    let updatedHabits = habits.map { habit in
+      var h = habit
+      // Mark as pending if not already synced
+      if h.syncStatus != .synced {
+        h.syncStatus = .pending
       }
-      incrementCounter("dualwrite.update.primary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Primary write successful")
-    } catch {
-      dualWriteLogger.error("❌ DualWriteStorage: Primary write failed: \(error)")
-      throw error
+      return h
     }
     
-    // ✅ FIX #22: Secondary write (local storage) - NOW BLOCKING for data safety
-    // Changed from Task.detached (fire-and-forget) to await (blocking)
-    // This ensures local data is saved successfully before continuing
     do {
-      try await secondaryStorage.saveHabits(habits, immediate: immediate)
+      try await secondaryStorage.saveHabits(updatedHabits, immediate: immediate)
       incrementCounter("dualwrite.update.secondary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) write successful")
+      dualWriteLogger.info("✅ DualWriteStorage: Local write successful (immediate)")
+      print("✅ SAVE_LOCAL[\(taskId)]: Successfully saved to SwiftData")
     } catch {
       incrementCounter("dualwrite.secondary_err")
-      dualWriteLogger.error("❌ CRITICAL: Secondary (local) write failed: \(error)")
-      // Don't throw - primary (cloud) write succeeded, so don't fail the entire operation
-      // But log it as critical since local data is our backup
+      dualWriteLogger.error("❌ CRITICAL: Local write failed: \(error)")
+      print("❌ SAVE_LOCAL[\(taskId)]: FAILED - \(error)")
+      throw error // MUST throw - local storage is primary
     }
+    
+    // STEP 2: Sync to Firestore in BACKGROUND (non-blocking, won't slow down UI)
+    print("🚀 SAVE_BACKGROUND[\(taskId)]: Launching background sync task...")
+    Task.detached { [weak self, primaryStorage] in
+      let selfStatus = self != nil ? "alive" : "NIL!"
+      print("📤 SYNC_START[\(taskId)]: Background task running, self=\(selfStatus)")
+      if self == nil {
+        print("❌ SYNC_FATAL[\(taskId)]: self is NIL! Sync will be skipped!")
+      }
+      await self?.syncHabitsToFirestore(habits: updatedHabits, primaryStorage: primaryStorage)
+      print("✅ SYNC_END[\(taskId)]: Background task complete")
+    }
+    
+    print("✅ SAVE_COMPLETE[\(taskId)]: Returning to caller (background task still running)")
+  }
+  
+  /// Background sync to Firestore (non-blocking)
+  private func syncHabitsToFirestore(
+    habits: [Habit],
+    primaryStorage: FirestoreService
+  ) async {
+    print("📤 SYNC_FIRESTORE: Processing \(habits.count) habits")
+    dualWriteLogger.info("📤 DualWriteStorage: Starting background sync for \(habits.count) habits")
+    
+    var syncedCount = 0
+    var skippedCount = 0
+    var failedCount = 0
+    
+    for var habit in habits {
+      print("  → Checking '\(habit.name)' (syncStatus: \(habit.syncStatus), lastSynced: \(habit.lastSyncedAt?.description ?? "never"))")
+      
+      // Skip if already synced (optimization)
+      if habit.syncStatus == .synced, habit.lastSyncedAt != nil {
+        let timeSinceSync = Date().timeIntervalSince(habit.lastSyncedAt!)
+        if timeSinceSync < 60 { // Less than 1 minute since last sync
+          print("  ⏭️ SKIP: '\(habit.name)' was synced \(Int(timeSinceSync))s ago")
+          skippedCount += 1
+          continue
+        }
+      }
+      
+      habit.syncStatus = .syncing
+      print("  📤 SYNCING: '\(habit.name)' to Firestore...")
+      
+      do {
+        _ = try await primaryStorage.createHabit(habit)
+        habit.syncStatus = .synced
+        habit.lastSyncedAt = Date()
+        
+        // Update local storage with new sync status
+        do {
+          try await secondaryStorage.saveHabit(habit, immediate: false)
+          print("  ✅ SUCCESS: '\(habit.name)' synced and status updated")
+        } catch {
+          print("  ⚠️ WARNING: '\(habit.name)' synced but failed to update local status: \(error)")
+        }
+        
+        incrementCounter("dualwrite.update.primary_ok")
+        dualWriteLogger.info("✅ Synced '\(habit.name)' to Firestore")
+        syncedCount += 1
+        
+      } catch {
+        habit.syncStatus = .failed
+        
+        // Update local storage with failed status
+        do {
+          try await secondaryStorage.saveHabit(habit, immediate: false)
+          print("  ❌ FAILED: '\(habit.name)' sync failed, error saved: \(error)")
+        } catch let updateError {
+          print("  ❌ CRITICAL: '\(habit.name)' sync failed AND couldn't save error state!")
+          print("     Sync error: \(error)")
+          print("     Update error: \(updateError)")
+        }
+        
+        dualWriteLogger.error("❌ Firestore sync failed for '\(habit.name)': \(error)")
+        failedCount += 1
+        // TODO: Add to retry queue
+      }
+    }
+    
+    print("📤 SYNC_COMPLETE: synced=\(syncedCount), skipped=\(skippedCount), failed=\(failedCount)")
+    dualWriteLogger.info("📤 DualWriteStorage: Background sync complete (synced=\(syncedCount), failed=\(failedCount))")
   }
   
   func loadHabits() async throws -> [Habit] {
@@ -152,57 +236,118 @@ final class DualWriteStorage: HabitStorageProtocol {
   func saveHabit(_ habit: Habit, immediate: Bool = false) async throws {
     dualWriteLogger.info("DualWriteStorage: Saving habit '\(habit.name)'")
     
-    // Primary write (Firestore) - blocking
-    do {
-      _ = try await primaryStorage.createHabit(habit)
-      incrementCounter("dualwrite.create.primary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Primary write successful")
-    } catch {
-      dualWriteLogger.error("❌ DualWriteStorage: Primary write failed: \(error)")
-      throw error
+    // ✅ PHASE 1: LOCAL-FIRST APPROACH
+    // STEP 1: Write to local storage FIRST
+    var updatedHabit = habit
+    if updatedHabit.syncStatus != .synced {
+      updatedHabit.syncStatus = .pending
     }
     
-    // ✅ FIX #22: Secondary write (local storage) - NOW BLOCKING for data safety
     do {
-      try await secondaryStorage.saveHabit(habit, immediate: immediate)
+      try await secondaryStorage.saveHabit(updatedHabit, immediate: immediate)
       incrementCounter("dualwrite.create.secondary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) write successful")
+      dualWriteLogger.info("✅ DualWriteStorage: Local write successful for '\(habit.name)'")
     } catch {
       incrementCounter("dualwrite.secondary_err")
-      dualWriteLogger.error("❌ CRITICAL: Secondary (local) write failed: \(error)")
-      // Don't throw - primary (cloud) write succeeded
+      dualWriteLogger.error("❌ CRITICAL: Local write failed for '\(habit.name)': \(error)")
+      throw error // MUST throw - local storage is primary
+    }
+    
+    // STEP 2: Sync to Firestore in BACKGROUND
+    Task.detached { [weak self, primaryStorage] in
+      await self?.syncHabitToFirestore(habit: updatedHabit, primaryStorage: primaryStorage)
+    }
+  }
+  
+  /// Background sync single habit to Firestore (non-blocking)
+  private func syncHabitToFirestore(
+    habit: Habit,
+    primaryStorage: FirestoreService
+  ) async {
+    var updatedHabit = habit
+    updatedHabit.syncStatus = .syncing
+    
+    do {
+      _ = try await primaryStorage.createHabit(updatedHabit)
+      updatedHabit.syncStatus = .synced
+      updatedHabit.lastSyncedAt = Date()
+      
+      // Update local storage with new sync status
+      try? await secondaryStorage.saveHabit(updatedHabit, immediate: false)
+      
+      incrementCounter("dualwrite.create.primary_ok")
+      dualWriteLogger.info("✅ Synced habit '\(habit.name)' to Firestore")
+      
+    } catch {
+      updatedHabit.syncStatus = .failed
+      
+      // Update local storage with failed status
+      try? await secondaryStorage.saveHabit(updatedHabit, immediate: false)
+      
+      dualWriteLogger.error("❌ Firestore sync failed for '\(habit.name)': \(error)")
+      // TODO: Add to retry queue
     }
   }
   
   func deleteHabit(id: UUID) async throws {
     dualWriteLogger.info("DualWriteStorage: Deleting habit \(id)")
     
-    // Primary write (Firestore) - blocking
-    do {
-      try await primaryStorage.deleteHabit(id: id.uuidString)
-      incrementCounter("dualwrite.delete.primary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Primary delete successful")
-    } catch {
-      dualWriteLogger.error("❌ DualWriteStorage: Primary delete failed: \(error)")
-      throw error
-    }
-    
-    // ✅ FIX #22: Secondary delete (local storage) - NOW BLOCKING for data safety
+    // ✅ PHASE 1: LOCAL-FIRST APPROACH
+    // STEP 1: Delete from local storage FIRST
     do {
       try await secondaryStorage.deleteHabit(id: id)
       incrementCounter("dualwrite.delete.secondary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) delete successful")
+      dualWriteLogger.info("✅ DualWriteStorage: Local delete successful")
     } catch {
       incrementCounter("dualwrite.secondary_err")
-      dualWriteLogger.error("❌ CRITICAL: Secondary (local) delete failed: \(error)")
-      // Don't throw - primary (cloud) delete succeeded
+      dualWriteLogger.error("❌ CRITICAL: Local delete failed: \(error)")
+      throw error // MUST throw - local storage is primary
+    }
+    
+    // STEP 2: Delete from Firestore in BACKGROUND
+    Task.detached { [weak self, primaryStorage] in
+      await self?.deleteHabitFromFirestore(id: id, primaryStorage: primaryStorage)
+    }
+  }
+  
+  /// Background delete from Firestore (non-blocking)
+  private func deleteHabitFromFirestore(
+    id: UUID,
+    primaryStorage: FirestoreService
+  ) async {
+    do {
+      try await primaryStorage.deleteHabit(id: id.uuidString)
+      incrementCounter("dualwrite.delete.primary_ok")
+      dualWriteLogger.info("✅ Deleted habit \(id) from Firestore")
+    } catch {
+      dualWriteLogger.error("❌ Firestore delete failed for \(id): \(error)")
+      // TODO: Add to retry queue
     }
   }
   
   func clearAllHabits() async throws {
     dualWriteLogger.info("DualWriteStorage: Clearing all habits")
     
-    // Primary write (Firestore) - blocking
+    // ✅ PHASE 1: LOCAL-FIRST APPROACH
+    // STEP 1: Clear local storage FIRST
+    do {
+      try await secondaryStorage.clearAllHabits()
+      incrementCounter("dualwrite.delete.secondary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Local clear successful")
+    } catch {
+      incrementCounter("dualwrite.secondary_err")
+      dualWriteLogger.error("❌ CRITICAL: Local clear failed: \(error)")
+      throw error // MUST throw - local storage is primary
+    }
+    
+    // STEP 2: Clear Firestore in BACKGROUND
+    Task.detached { [weak self, primaryStorage] in
+      await self?.clearFirestoreHabits(primaryStorage: primaryStorage)
+    }
+  }
+  
+  /// Background clear from Firestore (non-blocking)
+  private func clearFirestoreHabits(primaryStorage: FirestoreService) async {
     do {
       // Delete all habits from Firestore
       try await primaryStorage.fetchHabits()
@@ -211,21 +356,10 @@ final class DualWriteStorage: HabitStorageProtocol {
         try await primaryStorage.deleteHabit(id: habit.id.uuidString)
       }
       incrementCounter("dualwrite.delete.primary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Primary clear successful")
+      dualWriteLogger.info("✅ Cleared all habits from Firestore")
     } catch {
-      dualWriteLogger.error("❌ DualWriteStorage: Primary clear failed: \(error)")
-      throw error
-    }
-    
-    // ✅ FIX #22: Secondary clear (local storage) - NOW BLOCKING for data safety
-    do {
-      try await secondaryStorage.clearAllHabits()
-      incrementCounter("dualwrite.delete.secondary_ok")
-      dualWriteLogger.info("✅ DualWriteStorage: Secondary (local) clear successful")
-    } catch {
-      incrementCounter("dualwrite.secondary_err")
-      dualWriteLogger.error("❌ CRITICAL: Secondary (local) clear failed: \(error)")
-      // Don't throw - primary (cloud) clear succeeded
+      dualWriteLogger.error("❌ Firestore clear failed: \(error)")
+      // TODO: Add to retry queue
     }
   }
   
