@@ -420,11 +420,28 @@ struct CreateHabitStep2View: View {
 
   /// Overall form validation
   private var isFormValid: Bool {
-    HabitFormLogic.isFormValid(
+    let result = HabitFormLogic.isFormValid(
       habitType: habitType,
       goalNumber: goalNumber,
       baselineNumber: baselineNumber,
       targetNumber: targetNumber)
+    
+    #if DEBUG
+    print("🔍 VALIDATION CHECK:")
+    print("  → habitType: \(habitType)")
+    print("  → goalNumber: '\(goalNumber)'")
+    print("  → baselineNumber: '\(baselineNumber)'")
+    print("  → targetNumber: '\(targetNumber)'")
+    print("  → isFormValid: \(result)")
+    if habitType == .formation {
+      print("  → isGoalValid: \(HabitFormLogic.isGoalValid(goalNumber))")
+    } else {
+      print("  → isBaselineValid: \(HabitFormLogic.isBaselineValid(baselineNumber))")
+      print("  → isTargetValid: \(HabitFormLogic.isTargetValid(targetNumber))")
+    }
+    #endif
+    
+    return result
   }
 
   // MARK: - Computed Properties for UI
@@ -466,7 +483,13 @@ struct CreateHabitStep2View: View {
         isFormValid: isFormValid,
         primaryColor: color,
         onBack: goBack,
-        onSave: saveHabit)
+        onSave: {
+          #if DEBUG
+          print("🔘 SAVE BUTTON TAPPED!")
+          print("  → isFormValid at tap time: \(isFormValid)")
+          #endif
+          saveHabit()
+        })
     }
     .background(.surface2)
   }
@@ -597,6 +620,7 @@ struct CreateHabitStep2View: View {
     #if DEBUG
     print("  → onSave callback invoked")
     #endif
-    dismiss()
+    // ✅ FIX: Don't dismiss here - let HomeView handle dismiss after async save completes
+    // dismiss() ← REMOVED: This was dismissing before the async save in HomeView completed!
   }
 }
