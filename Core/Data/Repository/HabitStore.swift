@@ -868,7 +868,22 @@ final actor HabitStore {
             isCompleted: isCompleted,
             progress: progress)  // ✅ CRITICAL FIX: Store progress count
           logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
-          modelContext.insert(completionRecord)
+          
+          // ✅ FIX: Explicitly link CompletionRecord to HabitData for cascade delete
+          // Fetch the HabitData and append to its completionHistory
+          let habitDataPredicate = #Predicate<HabitData> { habitData in
+            habitData.id == habit.id && habitData.userId == userId
+          }
+          let habitDataRequest = FetchDescriptor<HabitData>(predicate: habitDataPredicate)
+          if let habitData = try modelContext.fetch(habitDataRequest).first {
+            habitData.completionHistory.append(completionRecord)
+            logger.info("✅ Linked CompletionRecord to HabitData.completionHistory for cascade delete")
+          } else {
+            // If HabitData not found, just insert the record (fallback)
+            modelContext.insert(completionRecord)
+            logger.warning("⚠️ HabitData not found, CompletionRecord inserted without explicit link")
+          }
+          
           logger
             .info(
               "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")

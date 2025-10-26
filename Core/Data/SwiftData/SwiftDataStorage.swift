@@ -568,8 +568,22 @@ final class SwiftDataStorage: HabitStorageProtocol {
   // MARK: - Private Helper Methods
 
   private func loadHabitData(by id: UUID) async throws -> HabitData? {
-    let descriptor = FetchDescriptor<HabitData>(
-      predicate: #Predicate { $0.id == id })
+    let currentUserId = await getCurrentUserId()
+    
+    // Filter by both habit ID and user ID for consistency
+    var descriptor: FetchDescriptor<HabitData>
+    if let userId = currentUserId {
+      descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { habitData in
+          habitData.id == id && habitData.userId == userId
+        })
+    } else {
+      // For guest users, filter by ID and empty userId
+      descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { habitData in
+          habitData.id == id && habitData.userId == ""
+        })
+    }
 
     let results = try container.modelContext.fetch(descriptor)
     return results.first
