@@ -299,30 +299,41 @@ final class DualWriteStorage: HabitStorageProtocol {
   }
   
   func deleteHabit(id: UUID) async throws {
+    print("🗑️ DELETE_START: DualWriteStorage.deleteHabit() called for ID: \(id)")
     dualWriteLogger.info("DualWriteStorage: Deleting habit \(id)")
     
     // ✅ CRITICAL FIX: Delete from Firestore FIRST to prevent re-sync
-    // If we delete locally first, then the next load will sync from Firestore and restore the habit
+    // STEP 1: Delete from Firestore (synchronous, must complete)
+    print("🗑️ DELETE_FIRESTORE_START: Attempting Firestore deletion...")
     do {
       try await primaryStorage.deleteHabit(id: id.uuidString)
       incrementCounter("dualwrite.delete.primary_ok")
+      print("✅ DELETE_FIRESTORE_SUCCESS: Habit deleted from Firestore")
       dualWriteLogger.info("✅ DualWriteStorage: Firestore delete successful")
     } catch {
       incrementCounter("dualwrite.primary_err")
+      print("❌ DELETE_FIRESTORE_FAILED: \(error.localizedDescription)")
       dualWriteLogger.error("❌ Firestore delete failed: \(error)")
-      // Continue anyway - local delete is more important
+      // ⚠️ CRITICAL: If Firestore delete fails, still continue with local delete
+      // Otherwise the habit will be stuck (local has it, Firestore has it, can't delete)
+      print("⚠️ DELETE_WARNING: Continuing with local delete despite Firestore failure")
     }
     
-    // STEP 2: Delete from local storage
+    // STEP 2: Delete from local storage (always execute)
+    print("🗑️ DELETE_LOCAL_START: Attempting SwiftData deletion...")
     do {
       try await secondaryStorage.deleteHabit(id: id)
       incrementCounter("dualwrite.delete.secondary_ok")
+      print("✅ DELETE_LOCAL_SUCCESS: Habit deleted from SwiftData")
       dualWriteLogger.info("✅ DualWriteStorage: Local delete successful")
     } catch {
       incrementCounter("dualwrite.secondary_err")
+      print("❌ DELETE_LOCAL_FAILED: \(error.localizedDescription)")
       dualWriteLogger.error("❌ CRITICAL: Local delete failed: \(error)")
-      throw error // MUST throw - local storage is primary
+      throw error // MUST throw - local storage is critical
     }
+    
+    print("✅ DELETE_COMPLETE: Habit deletion completed successfully")
   }
   
   /// Background delete from Firestore (non-blocking)

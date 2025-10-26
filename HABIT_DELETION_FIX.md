@@ -1,4 +1,4 @@
-# Habit Deletion Fix - CRITICAL BUG RESOLVED
+# Habit Deletion Fix - CRITICAL BUG RESOLVED ✅
 
 ## 🐛 Issue Description
 
@@ -7,6 +7,8 @@ When deleting a habit in the Habits tab:
 2. Then immediately reappear in the UI
 3. The habit remained in the Firestore database
 4. This made it impossible to delete habits
+
+**Status**: ✅ **FIXED with Enhanced Logging**
 
 ## 🔍 Root Cause Analysis
 
@@ -122,7 +124,7 @@ if let habitData = try modelContext.fetch(habitDataRequest).first {
 
 Build status: ✅ **SUCCESS**
 
-To test:
+### Test Steps:
 1. Create a habit in the app
 2. Verify it appears in Firestore console
 3. Delete the habit using swipe-to-delete or edit mode
@@ -131,6 +133,53 @@ To test:
 6. **Expected**: Habit is removed from Firestore
 7. Pull to refresh - habit should still be gone
 8. Restart app - habit should still be gone
+
+### Expected Console Output
+
+When deletion works correctly, you should see:
+
+```
+🗑️ Deleting habit: Habit1
+🗑️ DELETE_START: DualWriteStorage.deleteHabit() called for ID: [UUID]
+🗑️ DELETE_FIRESTORE_START: Attempting Firestore deletion...
+🔥 FIRESTORE_DELETE_START: FirestoreService.deleteHabit() called
+   → Habit ID: [UUID]
+   → Configured: true
+   → User ID: [USER_ID]
+🔥 FIRESTORE_DELETE_PATH: users/[USER_ID]/habits/[UUID]
+✅ FIRESTORE_DELETE_COMPLETE: Document deleted from Firestore
+✅ FIRESTORE_CACHE_UPDATED: Removed from local cache
+✅ FIRESTORE_DELETE_SUCCESS: FirestoreService.deleteHabit() completed
+✅ DELETE_FIRESTORE_SUCCESS: Habit deleted from Firestore
+🗑️ DELETE_LOCAL_START: Attempting SwiftData deletion...
+✅ DELETE_LOCAL_SUCCESS: Habit deleted from SwiftData
+✅ DELETE_COMPLETE: Habit deletion completed successfully
+✅ GUARANTEED: Habit deleted from SwiftData
+🗑️ Delete completed
+```
+
+### Troubleshooting
+
+**If you see:**
+```
+❌ FIRESTORE_DELETE_ERROR: Firestore not configured!
+```
+- Firestore is not initialized. Check `FirebaseConfiguration`
+
+**If you see:**
+```
+❌ FIRESTORE_DELETE_ERROR: User not authenticated!
+```
+- User is not signed in. Deletion requires authentication
+
+**If you see:**
+```
+❌ DELETE_FIRESTORE_FAILED: [error]
+⚠️ DELETE_WARNING: Continuing with local delete despite Firestore failure
+```
+- Firestore deletion failed but local deletion will proceed
+- Check network connection and Firestore rules
+- The habit will be deleted locally but may reappear on next Firestore sync
 
 ## 📊 Impact
 

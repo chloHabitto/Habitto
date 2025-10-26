@@ -138,15 +138,23 @@ class FirestoreService: FirebaseService, ObservableObject {
   /// Delete a habit
   @MainActor
   func deleteHabit(id: String) async throws {
-    print("🗑️ FirestoreService: Deleting habit \(id)")
+    print("🔥 FIRESTORE_DELETE_START: FirestoreService.deleteHabit() called")
+    print("   → Habit ID: \(id)")
+    print("   → Configured: \(isConfigured)")
+    print("   → User ID: \(currentUserId ?? "nil")")
     
     guard isConfigured else {
+      print("❌ FIRESTORE_DELETE_ERROR: Firestore not configured!")
       throw FirestoreServiceError.notConfigured
     }
     
     guard let userId = currentUserId else {
+      print("❌ FIRESTORE_DELETE_ERROR: User not authenticated!")
       throw FirestoreServiceError.notAuthenticated
     }
+    
+    let path = "users/\(userId)/habits/\(id)"
+    print("🔥 FIRESTORE_DELETE_PATH: \(path)")
     
     try await db.collection("users")
       .document(userId)
@@ -154,13 +162,16 @@ class FirestoreService: FirebaseService, ObservableObject {
       .document(id)
       .delete()
     
+    print("✅ FIRESTORE_DELETE_COMPLETE: Document deleted from Firestore")
+    
     // Update local cache
     habits.removeAll { $0.id.uuidString == id }
+    print("✅ FIRESTORE_CACHE_UPDATED: Removed from local cache")
     
     // Record telemetry
     incrementCounter("dualwrite.delete.primary_ok")
     
-    print("✅ FirestoreService: Habit deleted")
+    print("✅ FIRESTORE_DELETE_SUCCESS: FirestoreService.deleteHabit() completed")
   }
   
   /// Fetch all habits
