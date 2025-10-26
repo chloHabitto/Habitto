@@ -301,8 +301,19 @@ final class DualWriteStorage: HabitStorageProtocol {
   func deleteHabit(id: UUID) async throws {
     dualWriteLogger.info("DualWriteStorage: Deleting habit \(id)")
     
-    // ✅ PHASE 1: LOCAL-FIRST APPROACH
-    // STEP 1: Delete from local storage FIRST
+    // ✅ CRITICAL FIX: Delete from Firestore FIRST to prevent re-sync
+    // If we delete locally first, then the next load will sync from Firestore and restore the habit
+    do {
+      try await primaryStorage.deleteHabit(id: id.uuidString)
+      incrementCounter("dualwrite.delete.primary_ok")
+      dualWriteLogger.info("✅ DualWriteStorage: Firestore delete successful")
+    } catch {
+      incrementCounter("dualwrite.primary_err")
+      dualWriteLogger.error("❌ Firestore delete failed: \(error)")
+      // Continue anyway - local delete is more important
+    }
+    
+    // STEP 2: Delete from local storage
     do {
       try await secondaryStorage.deleteHabit(id: id)
       incrementCounter("dualwrite.delete.secondary_ok")
@@ -311,11 +322,6 @@ final class DualWriteStorage: HabitStorageProtocol {
       incrementCounter("dualwrite.secondary_err")
       dualWriteLogger.error("❌ CRITICAL: Local delete failed: \(error)")
       throw error // MUST throw - local storage is primary
-    }
-    
-    // STEP 2: Delete from Firestore in BACKGROUND
-    Task.detached { [weak self, primaryStorage] in
-      await self?.deleteHabitFromFirestore(id: id, primaryStorage: primaryStorage)
     }
   }
   
