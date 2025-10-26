@@ -31,6 +31,9 @@ class HomeViewState: ObservableObject {
     // Initialize with current habits from repository to avoid empty state
     self.habits = habitRepository.habits
     self.isLoadingHabits = habits.isEmpty
+    
+    // ✅ CRASH FIX: Calculate initial streak
+    self.updateStreak()
 
     // Subscribe to HabitRepository changes
     habitRepository.$habits
@@ -38,6 +41,8 @@ class HomeViewState: ObservableObject {
       .sink { [weak self] habits in
         self?.habits = habits
         self?.isLoadingHabits = false
+        // ✅ CRASH FIX: Update streak when habits change
+        self?.updateStreak()
         self?.objectWillChange.send()
       }
       .store(in: &cancellables)
@@ -64,11 +69,18 @@ class HomeViewState: ObservableObject {
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
 
-  /// Computed property for current streak
-  var currentStreak: Int {
-    guard !habits.isEmpty else { return 0 }
+  /// ✅ CRASH FIX: Cache streak as @Published instead of computed property
+  /// Computed properties that access @Published cause infinite loops!
+  @Published var currentStreak: Int = 0
+  
+  /// Calculate and update streak (call this when habits change)
+  func updateStreak() {
+    guard !habits.isEmpty else { 
+      currentStreak = 0
+      return 
+    }
     let streakStats = StreakDataCalculator.calculateStreakStatistics(from: habits)
-    return streakStats.currentStreak
+    currentStreak = streakStats.currentStreak
   }
 
   func updateHabits(_ newHabits: [Habit]) {
