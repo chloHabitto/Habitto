@@ -15,6 +15,7 @@ final class SwiftDataContainer: ObservableObject {
       let schema = Schema([
         HabitData.self,
         CompletionRecord.self,
+        ProgressEvent.self, // ✅ EVENT SOURCING: Added ProgressEvent model for event sourcing
         DailyAward.self, // ✅ PHASE 5: Added DailyAward model
         UserProgressData.self, // ✅ PHASE 5: Added UserProgressData model
         AchievementData.self, // ✅ PHASE 5: Added AchievementData model
@@ -459,6 +460,7 @@ final class SwiftDataContainer: ObservableObject {
     let schema = Schema([
       HabitData.self,
       CompletionRecord.self,
+      ProgressEvent.self,
       DailyAward.self,
       UserProgressData.self,
       AchievementData.self,
