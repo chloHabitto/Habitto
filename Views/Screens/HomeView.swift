@@ -157,19 +157,40 @@ class HomeViewState: ObservableObject {
     CrashlyticsService.shared.logHabitCreationStart(habitName: habit.name)
     CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_before_create")
     
+    #if DEBUG
+    print("═══════════════════════════════════════════════════════")
+    print("🎯 [3/8] HomeViewState.createHabit: creating habit")
+    print("  → Habit: '\(habit.name)', ID: \(habit.id)")
+    
+    // ✅ DIAGNOSTIC: Log habit dates
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateStyle = .medium
+    dateFormatter.timeStyle = .short
+    print("🗓️ DIAGNOSTIC: habit.startDate = \(dateFormatter.string(from: habit.startDate))")
+    if let end = habit.endDate {
+      print("🗓️ DIAGNOSTIC: habit.endDate = \(dateFormatter.string(from: end))")
+    } else {
+      print("🗓️ DIAGNOSTIC: habit.endDate = nil")
+    }
+    let today = Date()
+    print("🗓️ DIAGNOSTIC: today = \(dateFormatter.string(from: today))")
+    print("🗓️ DIAGNOSTIC: startDate is today? \(Calendar.current.isDate(habit.startDate, inSameDayAs: today))")
+    
+    print("  → Current habits count: \(habits.count)")
+    #endif
+    
     // Check if vacation mode is active
     if VacationManager.shared.isActive {
       #if DEBUG
       print("🚫 HomeViewState: Cannot create habit during vacation mode")
+      print("═══════════════════════════════════════════════════════")
       #endif
       CrashlyticsService.shared.log("Habit creation blocked: vacation mode active")
       return
     }
-
+    
     #if DEBUG
-    print("🎯 [3/8] HomeViewState.createHabit: creating habit")
-    print("  → Habit: '\(habit.name)', ID: \(habit.id)")
-    print("  → Current habits count: \(habits.count)")
+    print("✅ Vacation mode check passed")
     print("🎯 [4/8] HomeViewState.createHabit: calling HabitRepository")
     #endif
 
@@ -182,6 +203,7 @@ class HomeViewState: ObservableObject {
     #if DEBUG
     print("  → HabitRepository.createHabit completed")
     print("  → New habits count: \(habits.count)")
+    print("═══════════════════════════════════════════════════════")
     #endif
   }
 
