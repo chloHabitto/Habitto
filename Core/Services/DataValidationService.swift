@@ -305,14 +305,10 @@ struct HabitDateConsistencyRule: ValidationRule {
 
     var errors: [ValidationError] = []
 
-    // Check start date is not in the future
-    if habit.startDate > Date() {
-      errors.append(ValidationError(
-        field: "startDate",
-        message: "Start date cannot be in the future",
-        severity: .error))
-    }
-
+    // ✅ FIX: REMOVED future start date validation
+    // Habits SHOULD be allowed to have future start dates
+    // Date filtering happens in DISPLAY logic, not CREATION logic
+    
     // Check end date is after start date
     if let endDate = habit.endDate, endDate <= habit.startDate {
       errors.append(ValidationError(

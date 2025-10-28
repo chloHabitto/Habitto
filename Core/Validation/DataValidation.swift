@@ -251,14 +251,10 @@ class HabitValidator: DataValidator {
     let now = Date()
     let calendar = Calendar.current
 
-    // Start date validation
-    if startDate > now {
-      errors.append(ValidationError(
-        field: "startDate",
-        message: "Start date cannot be in the future",
-        severity: .error))
-    }
-
+    // ✅ FIX: REMOVED future start date validation
+    // Habits SHOULD be allowed to have future start dates
+    // Date filtering happens in DISPLAY logic, not CREATION logic
+    
     // End date validation
     if let endDate {
       if endDate <= startDate {
