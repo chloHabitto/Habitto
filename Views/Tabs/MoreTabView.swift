@@ -115,6 +115,13 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingAboutUsView) {
         AboutUsView()
       }
+      #if DEBUG
+      .sheet(isPresented: $showingHabitInvestigation) {
+        NavigationView {
+          HabitInvestigationView()
+        }
+      }
+      #endif
       .alert(isPresented: $showingSignOutAlert) {
         Alert(
           title: Text("Sign Out"),
@@ -156,6 +163,11 @@ struct MoreTabView: View {
   @State private var showingTermsConditionsView = false
   @State private var showingAboutUsView = false
   @State private var showingSignOutAlert = false
+  
+  // ✅ DEBUG: Habit Investigation
+  #if DEBUG
+  @State private var showingHabitInvestigation = false
+  #endif
 
   // MARK: - Trial Banner
 
@@ -245,6 +257,17 @@ struct MoreTabView: View {
             showingTermsConditions = true
           })
         ])
+
+      // ✅ DEBUG: Habit Investigation Section
+      #if DEBUG
+      settingsGroup(
+        title: "🔍 Debug Tools",
+        items: [
+          SettingItem(title: "Investigate Habits", value: nil, hasChevron: true, action: {
+            showingHabitInvestigation = true
+          })
+        ])
+      #endif
 
       // ✅ DEBUG: XP Sync Testing Section
       #if DEBUG
