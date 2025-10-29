@@ -77,7 +77,7 @@ struct DateCalendarSettingsView: View {
         Button(action: {
           dismiss()
         }) {
-          Image(systemName: "chevron.left")
+          Image(systemName: "xmark")
             .font(.system(size: 20, weight: .medium))
             .foregroundColor(.primary)
         }

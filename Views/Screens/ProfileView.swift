@@ -181,7 +181,7 @@ struct ProfileView: View {
           Button(action: {
             dismiss()
           }) {
-            Image(systemName: "chevron.left")
+            Image(systemName: "xmark")
               .font(.system(size: 18, weight: .medium))
               .foregroundColor(.white)
           }

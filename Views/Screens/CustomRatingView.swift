@@ -128,11 +128,13 @@ struct CustomRatingView: View {
       .navigationBarBackButtonHidden(true)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
-          Button("Cancel") {
+          Button(action: {
             dismiss()
+          }) {
+            Image(systemName: "xmark")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
           }
-          .font(.appBodyMedium)
-          .foregroundColor(.primary)
         }
       }
     }
