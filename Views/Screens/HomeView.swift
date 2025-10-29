@@ -47,6 +47,17 @@ class HomeViewState: ObservableObject {
         self?.objectWillChange.send()
       }
       .store(in: &cancellables)
+    
+    // ✅ FIX: Listen for streak updates from completion flow
+    NotificationCenter.default.publisher(for: NSNotification.Name("StreakUpdated"))
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] notification in
+        if let newStreak = notification.userInfo?["newStreak"] as? Int {
+          print("📢 STREAK_UI_UPDATE: Received StreakUpdated notification with newStreak: \(newStreak)")
+          self?.currentStreak = newStreak
+        }
+      }
+      .store(in: &cancellables)
   }
 
   // MARK: Internal
@@ -79,21 +90,40 @@ class HomeViewState: ObservableObject {
     // ✅ FIX: Read streak from GlobalStreakModel in SwiftData instead of old calculation
     Task { @MainActor in
       do {
+        // ✅ FIX: Add small delay to ensure SwiftData context sees the newly saved streak
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 second
+        
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
         
-        let descriptor = FetchDescriptor<GlobalStreakModel>(
+        print("🔍 STREAK_UI_UPDATE: Fetching streak for userId: \(userId)")
+        
+        var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
             streak.userId == userId
           }
         )
+        // ✅ FIX: Include newly inserted objects in the fetch
+        descriptor.includePendingChanges = true
         
-        if let streak = try modelContext.fetch(descriptor).first {
-          currentStreak = streak.currentStreak
-          print("✅ STREAK_UI_UPDATE: Loaded streak from GlobalStreakModel - currentStreak: \(currentStreak), longestStreak: \(streak.longestStreak)")
+        let allStreaks = try modelContext.fetch(descriptor)
+        print("🔍 STREAK_UI_UPDATE: Found \(allStreaks.count) streak records")
+        
+        if let streak = allStreaks.first {
+          let loadedStreak = streak.currentStreak
+          currentStreak = loadedStreak
+          print("✅ STREAK_UI_UPDATE: Loaded streak from GlobalStreakModel - currentStreak: \(loadedStreak), longestStreak: \(streak.longestStreak)")
+          
+          // ✅ FIX: Also broadcast via notification for consistency
+          NotificationCenter.default.post(
+            name: NSNotification.Name("StreakUpdated"),
+            object: nil,
+            userInfo: ["newStreak": loadedStreak]
+          )
+          print("📢 STREAK_UI_UPDATE: Broadcasted loaded streak via notification: \(loadedStreak)")
         } else {
           currentStreak = 0
-          print("ℹ️ STREAK_UI_UPDATE: No GlobalStreakModel found, using streak = 0")
+          print("ℹ️ STREAK_UI_UPDATE: No GlobalStreakModel found for userId: \(userId), using streak = 0")
         }
       } catch {
         print("❌ STREAK_UI_UPDATE: Failed to load GlobalStreakModel: \(error)")
@@ -581,6 +611,9 @@ struct HomeView: View {
 
       // Debug Core Data state
       HabitRepository.shared.debugHabitsState()
+      
+      // ✅ FIX: Refresh streak from database when view appears
+      state.updateStreak()
 
       // Debug current state
       state.debugCurrentState()
@@ -741,6 +774,9 @@ struct HomeView: View {
     print("🏠 HomeView: Validating streaks...")
     state.validateAllStreaks()
     print("🏠 HomeView: Streak validation completed")
+    
+    // ✅ FIX: Refresh global streak from database after habits load
+    state.updateStreak()
   }
 
   private func loadHabitsOptimized() {
@@ -769,6 +805,9 @@ struct HomeView: View {
         await MainActor.run {
           state.updateHabits(habits)
           print("🏠 HomeView: Streak validation completed")
+          
+          // ✅ FIX: Refresh global streak from database after validation
+          state.updateStreak()
         }
       }
     }
