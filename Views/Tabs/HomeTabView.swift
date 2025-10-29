@@ -1368,8 +1368,11 @@ struct HomeTabView: View {
           }
           try modelContext.save()
           print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
+          
+          // ✅ FIX: Decrement streak when day becomes incomplete
+          try await decrementGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
         } catch {
-          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
+          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward or decrement streak: \(error)")
         }
       }
     }
@@ -1566,6 +1569,77 @@ struct HomeTabView: View {
     } else {
       // For past dates, just log a warning
       print("⚠️ STREAK_UPDATE: Completing past date \(dateKey) - streak may need recalculation")
+      return streak.currentStreak
+    }
+  }
+  
+  /// Decrement the global streak when a previously complete day becomes incomplete
+  /// Returns the new streak value so it can be displayed in the UI immediately
+  private func decrementGlobalStreak(for userId: String, on date: Date, modelContext: ModelContext) async throws -> Int {
+    let calendar = Calendar.current
+    let normalizedDate = calendar.startOfDay(for: date)
+    let dateKey = Habit.dateKey(for: normalizedDate)
+    
+    print("🔥 STREAK_REVERSAL: Decrementing global streak for \(dateKey)")
+    
+    // Get existing GlobalStreakModel
+    let descriptor = FetchDescriptor<GlobalStreakModel>(
+      predicate: #Predicate { streak in
+        streak.userId == userId
+      }
+    )
+    
+    guard let streak = try modelContext.fetch(descriptor).first else {
+      print("⚠️ STREAK_REVERSAL: No streak found for user \(userId), nothing to decrement")
+      return 0
+    }
+    
+    print("🔥 STREAK_REVERSAL: Found existing streak - current: \(streak.currentStreak)")
+    
+    // Check if this is today
+    let today = calendar.startOfDay(for: Date())
+    let isToday = normalizedDate == today
+    
+    if isToday {
+      // Only decrement if the last complete date was today (meaning we completed today but now reversed it)
+      if let lastCompleteDate = streak.lastCompleteDate,
+         calendar.isDate(lastCompleteDate, inSameDayAs: today) {
+        
+        let oldStreak = streak.currentStreak
+        
+        // Decrement streak (minimum 0)
+        streak.currentStreak = max(0, streak.currentStreak - 1)
+        
+        // Clear lastCompleteDate since today is no longer complete
+        streak.lastCompleteDate = nil
+        
+        // Decrement totalCompleteDays
+        streak.totalCompleteDays = max(0, streak.totalCompleteDays - 1)
+        
+        let newStreak = streak.currentStreak
+        
+        try modelContext.save()
+        print("✅ STREAK_REVERSAL: Streak decremented \(oldStreak) → \(newStreak) for \(dateKey)")
+        print("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
+        
+        // Broadcast the new streak value
+        await MainActor.run {
+          NotificationCenter.default.post(
+            name: NSNotification.Name("StreakUpdated"),
+            object: nil,
+            userInfo: ["newStreak": newStreak]
+          )
+          print("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(newStreak)")
+        }
+        
+        return newStreak
+      } else {
+        print("ℹ️ STREAK_REVERSAL: Today wasn't marked as complete, no decrement needed")
+        return streak.currentStreak
+      }
+    } else {
+      // For past dates, just log a warning
+      print("⚠️ STREAK_REVERSAL: Uncompleting past date \(dateKey) - streak may need recalculation")
       return streak.currentStreak
     }
   }
