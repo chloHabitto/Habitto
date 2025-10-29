@@ -1463,6 +1463,9 @@ struct HomeTabView: View {
           try modelContext.save()
           print("✅ COMPLETION_FLOW: DailyAward record created for history")
           
+          // ✅ FIX: Update streak when all habits are completed
+          try updateGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
+          
           // Trigger celebration
           showCelebration = true
           print("🎉 COMPLETION_FLOW: Celebration triggered!")
@@ -1499,5 +1502,49 @@ struct HomeTabView: View {
     let userId = "debug_user_id"
     print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (debug mode)")
     return userId
+  }
+  
+  /// Update the global streak when all habits are completed for a day
+  private func updateGlobalStreak(for userId: String, on date: Date, modelContext: ModelContext) throws {
+    let calendar = Calendar.current
+    let normalizedDate = calendar.startOfDay(for: date)
+    let dateKey = Habit.dateKey(for: normalizedDate)
+    
+    print("🔥 STREAK_UPDATE: Updating global streak for \(dateKey)")
+    
+    // Get or create GlobalStreakModel
+    let descriptor = FetchDescriptor<GlobalStreakModel>(
+      predicate: #Predicate { streak in
+        streak.userId == userId
+      }
+    )
+    
+    var streak: GlobalStreakModel
+    if let existing = try modelContext.fetch(descriptor).first {
+      streak = existing
+      print("🔥 STREAK_UPDATE: Found existing streak - current: \(streak.currentStreak), longest: \(streak.longestStreak)")
+    } else {
+      streak = GlobalStreakModel(userId: userId)
+      modelContext.insert(streak)
+      print("🔥 STREAK_UPDATE: Created new streak for user")
+    }
+    
+    // Check if this is today
+    let today = calendar.startOfDay(for: Date())
+    let isToday = normalizedDate == today
+    
+    if isToday {
+      // Increment streak for today
+      let oldStreak = streak.currentStreak
+      streak.incrementStreak(on: normalizedDate)
+      let newStreak = streak.currentStreak
+      
+      try modelContext.save()
+      print("✅ STREAK_UPDATE: Streak incremented \(oldStreak) → \(newStreak) for \(dateKey)")
+      print("🔥 STREAK_UPDATE: Longest streak: \(streak.longestStreak), Total complete days: \(streak.totalCompleteDays)")
+    } else {
+      // For past dates, just log a warning
+      print("⚠️ STREAK_UPDATE: Completing past date \(dateKey) - streak may need recalculation")
+    }
   }
 }
