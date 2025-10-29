@@ -503,7 +503,6 @@ struct ProgressTabView: View {
         isPresented: $showingDatePicker,
         selectedDate: $selectedProgressDate)
       { newDate in
-        print("🔍 DEBUG: Date selected: \(newDate)")
         selectedProgressDate = newDate
       }
       .presentationDetents([.height(520)])
@@ -878,10 +877,7 @@ struct ProgressTabView: View {
         HStack {
           Button(action: {
             if selectedTimePeriod == 0 { // Daily
-              print("🔍 DEBUG: Date button tapped! selectedTimePeriod: \(selectedTimePeriod)")
-              print("🔍 DEBUG: Attempting to show DatePickerModal...")
               showingDatePicker = true
-              print("🔍 DEBUG: DatePickerModal showing set to true")
             } else if selectedTimePeriod == 1 { // Weekly
               showingWeekPicker = true
             } else if selectedTimePeriod == 2 { // Monthly
@@ -2533,7 +2529,6 @@ struct ProgressTabView: View {
         Button(action: {
           // Navigate to detailed stats view
           // This could be implemented as a sheet or navigation
-          print("📊 See more stats tapped")
         }) {
           HStack(spacing: 4) {
             Text("See more")
@@ -2615,7 +2610,6 @@ struct ProgressTabView: View {
               // "What these stats mean?" link (centered)
               Button(action: {
                 // Show explanation sheet or alert
-                print("❓ Stats explanation tapped")
               }) {
                 Text("What these stats mean?")
                   .font(.appBodySmall)
@@ -3835,17 +3829,13 @@ struct ProgressTabView: View {
                     value: testCompletion.dayOffset,
                     to: today)
                   {
-                    if let testTime = calendar.date(
+                    if calendar.date(
                       bySettingHour: testCompletion.hour,
                       minute: testCompletion.minute,
                       second: 0,
-                      of: testDate)
+                      of: testDate) != nil
                     {
                       try? await habitRepository.setProgress(for: habit, date: testDate, progress: 1)
-                      let dayName = calendar.weekdaySymbols[calendar.component(
-                        .weekday,
-                        from: testDate) - 1]
-                      print("🕐 Added test completion for \(habit.name) on \(dayName) at \(testTime)")
                     }
                   }
                 }
@@ -3884,21 +3874,6 @@ struct ProgressTabView: View {
     let weekStart = selectedWeekStartDate
     let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
 
-    print("🕐 TimeBaseCompletionChart: Getting data for habit '\(habit.name)'")
-    print("🕐 TimeBaseCompletionChart: Week range: \(weekStart) to \(weekEnd)")
-    print(
-      "🕐 TimeBaseCompletionChart: Total completion history entries: \(habit.completionHistory.count)")
-
-    // Debug: Print all completion timestamps with date keys
-    print(
-      "🕐 TimeBaseCompletionChart: completionTimestamps keys: \(habit.completionTimestamps.keys.sorted())")
-
-    for (dateKey, timestamps) in habit.completionTimestamps {
-      print("🕐 TimeBaseCompletionChart: Date \(dateKey): \(timestamps.count) timestamps")
-      for timestamp in timestamps {
-        print("🕐 TimeBaseCompletionChart:   - \(timestamp)")
-      }
-    }
 
     // Define time periods
     let timePeriods = [
@@ -3989,7 +3964,6 @@ struct ProgressTabView: View {
         averageTime: averageTimeString))
     }
 
-    print("🕐 TimeBaseCompletionChart: Generated \(timeData.count) time periods for chart")
     return timeData
   }
 
@@ -4005,8 +3979,6 @@ struct ProgressTabView: View {
     weeklyDifficultyData = getWeeklyDifficultyData(for: habit)
     monthlyDifficultyData = getMonthlyDifficultyData(for: habit)
 
-    print(
-      "🔍 Updated difficulty data - Weekly: \(weeklyDifficultyData.count) points, Monthly: \(monthlyDifficultyData.count) points")
   }
 
   // MARK: - Time Base Completion Data Update
@@ -4014,21 +3986,10 @@ struct ProgressTabView: View {
   private func updateTimeBaseCompletionData() {
     guard let habit = selectedHabit else {
       timeBaseCompletionData = []
-      print("🕐 No habit selected for time base completion data")
       return
     }
 
-    print("🕐 Updating time base completion data for habit: \(habit.name)")
-    print("🕐 Habit completion timestamps count: \(habit.completionTimestamps.count)")
-    print("🕐 Habit completion timestamps keys: \(habit.completionTimestamps.keys.sorted())")
-
     timeBaseCompletionData = getTimeBaseCompletionData(for: habit)
-
-    print("🕐 Updated time base completion data - \(timeBaseCompletionData.count) time periods")
-    for data in timeBaseCompletionData {
-      print(
-        "🕐 Period: \(data.timePeriod), rate: \(data.completionRate), count: \(data.completionCount), avg time: \(data.averageTime)")
-    }
   }
 
   // MARK: - Weekly Difficulty Data Helper
@@ -4060,12 +4021,6 @@ struct ProgressTabView: View {
     // Sort by date
     difficultyLogs.sort { $0.date < $1.date }
 
-    // Debug: Print week range and found logs
-    print("🔍 Week range: \(weekStart) to \(adjustedWeekEnd)")
-    print("🔍 Found \(difficultyLogs.count) difficulty logs in this week")
-    for log in difficultyLogs {
-      print("🔍 Log: \(log.date) - Difficulty: \(log.difficulty)")
-    }
 
     // Group by day and get average difficulty for each day
     let groupedByDay = Dictionary(grouping: difficultyLogs) { log in
@@ -4099,7 +4054,6 @@ struct ProgressTabView: View {
       }
     }
 
-    print("🔍 Total data points created: \(dataPoints.count)")
     return dataPoints
   }
 
@@ -4140,10 +4094,6 @@ struct ProgressTabView: View {
     let actualMonthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?
       .end ?? selectedProgressDate
 
-    // Debug: Print month range and found logs
-    print("🔍 Month range: \(monthStart) to \(adjustedMonthEnd)")
-    print("🔍 Actual month end: \(actualMonthEnd)")
-    print("🔍 Found \(difficultyLogs.count) difficulty logs in this month")
 
     // Get all weeks in the month - iterate through each week
     var currentWeek = monthStart
@@ -4153,8 +4103,6 @@ struct ProgressTabView: View {
       let weekStart = calendar.startOfDay(for: currentWeek)
       let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
 
-      print(
-        "🔍 Processing week \(weekIndex + 1): currentWeek=\(currentWeek), weekStart=\(weekStart), weekEnd=\(weekEnd), actualMonthEnd=\(actualMonthEnd)")
 
       // Filter logs for this specific week
       let weekLogs = difficultyLogs.filter { log in
@@ -4168,15 +4116,12 @@ struct ProgressTabView: View {
         }
         let averageDifficulty = Double(totalDifficulty) / Double(weekLogs.count)
 
-        print(
-          "🔍 Week \(weekIndex + 1): \(weekStart) to \(weekEnd) - Has data: \(averageDifficulty) (from \(weekLogs.count) logs)")
 
         dataPoints.append(MonthlyDifficultyDataPoint(
           weekStartDate: weekStart,
           difficulty: averageDifficulty,
           hasData: true))
       } else {
-        print("🔍 Week \(weekIndex + 1): \(weekStart) to \(weekEnd) - No data")
         dataPoints.append(MonthlyDifficultyDataPoint(
           weekStartDate: weekStart,
           difficulty: 0,
@@ -4188,11 +4133,6 @@ struct ProgressTabView: View {
       weekIndex += 1
     }
 
-    print("🔍 Total monthly data points created: \(dataPoints.count)")
-    for (index, point) in dataPoints.enumerated() {
-      print(
-        "🔍 Monthly data point \(index): Week \(index + 1) - Difficulty: \(point.difficulty), HasData: \(point.hasData)")
-    }
     return dataPoints
   }
 }
