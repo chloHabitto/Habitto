@@ -158,50 +158,22 @@ struct HabitsTabView: View {
     // Then apply the tab-based filtering (only in normal mode)
     switch selectedStatsTab {
     case 0: // Active
-      let activeHabits = uniqueHabits.filter { habit in
+      return uniqueHabits.filter { habit in
         // ✅ FIX: Habit is active if it hasn't ended yet (includes future-starting habits)
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
         
-        // ✅ DIAGNOSTIC: Log future habits
-        let isActive = today <= endDate
-        if habit.name.contains("Future") || habit.name.contains("future") {
-          let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
-          let startComponents = calendar.dateComponents([.year, .month, .day], from: habit.startDate)
-          print("🏷️ HABITS TAB - Active filter for '\(habit.name)':")
-          print("   → Today: \(todayComponents.year!)-\(String(format: "%02d", todayComponents.month!))-\(String(format: "%02d", todayComponents.day!))")
-          print("   → Start: \(startComponents.year!)-\(String(format: "%02d", startComponents.month!))-\(String(format: "%02d", startComponents.day!))")
-          print("   → End: \(endDate == Date.distantFuture ? "no end date" : String(describing: endDate))")
-          print("   → today <= endDate: \(today <= endDate)")
-          print("   → ✅ Is Active: \(isActive)")
-        }
-        
         // Active = hasn't ended yet (includes habits starting in the future)
-        return isActive
+        return today <= endDate
       }
-      return activeHabits
 
     case 1: // Inactive
-      let inactiveHabits = uniqueHabits.filter { habit in
+      return uniqueHabits.filter { habit in
         // ✅ FIX: Habit is inactive ONLY if its end date has passed
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
         
-        // ✅ DIAGNOSTIC: Log future habits
-        let isInactive = today > endDate
-        if habit.name.contains("Future") || habit.name.contains("future") {
-          let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
-          let startComponents = calendar.dateComponents([.year, .month, .day], from: habit.startDate)
-          print("🏷️ HABITS TAB - Inactive filter for '\(habit.name)':")
-          print("   → Today: \(todayComponents.year!)-\(String(format: "%02d", todayComponents.month!))-\(String(format: "%02d", todayComponents.day!))")
-          print("   → Start: \(startComponents.year!)-\(String(format: "%02d", startComponents.month!))-\(String(format: "%02d", startComponents.day!))")
-          print("   → End: \(endDate == Date.distantFuture ? "no end date" : String(describing: endDate))")
-          print("   → today > endDate: \(today > endDate)")
-          print("   → ✅ Is Inactive: \(isInactive)")
-        }
-        
         // Inactive = end date has passed
-        return isInactive
+        return today > endDate
       }
-      return inactiveHabits
 
     case 2,
          3: // Dummy tabs - show all habits
