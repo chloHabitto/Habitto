@@ -210,37 +210,13 @@ struct HomeTabView: View {
 
   private var habitsForSelectedDate: [Habit] {
     // Calculate filtered habits for the selected date
-
-    // ✅ DIAGNOSTIC: Log the selected date being filtered
     let selected = DateUtils.startOfDay(for: selectedDate)
-    let calendar = Calendar.current
-    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selected)
-    print("🗓️ ========================================")
-    print("🗓️ FILTERING HABITS FOR DATE: \(selectedComponents.year!)-\(String(format: "%02d", selectedComponents.month!))-\(String(format: "%02d", selectedComponents.day!))")
-    print("🗓️ Selected date (normalized): \(selected)")
-    print("🗓️ Total habits to filter: \(habits.count)")
-    print("🗓️ ========================================")
 
     let filteredHabits = habits.filter { habit in
       let start = DateUtils.startOfDay(for: habit.startDate)
       let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
-      // ✅ DIAGNOSTIC: Extra logging for "Future habit"
-      if habit.name.contains("Future") || habit.name.contains("future") {
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: start)
-        print("🔍 DIAGNOSTIC - Habit '\(habit.name)':")
-        print("   → Start date: \(startComponents.year!)-\(String(format: "%02d", startComponents.month!))-\(String(format: "%02d", startComponents.day!))")
-        print("   → Normalized start (UTC): \(start)")
-        print("   → Selected date (UTC): \(selected)")
-        print("   → Date comparison: selected >= start = \(selected >= start)")
-        print("   → Date comparison: selected <= end = \(selected <= end)")
-        print("   → ✅ WILL BE INCLUDED: \(selected >= start && selected <= end)")
-      }
-
       guard selected >= start, selected <= end else {
-        if habit.name.contains("Future") || habit.name.contains("future") {
-          print("   → ❌ EXCLUDED: Failed guard condition")
-        }
         return false
       }
 
@@ -256,35 +232,8 @@ struct HomeTabView: View {
       let progress = latestHabit.completionHistory[dateKey] ?? 0
       let wasCompletedOnThisDate = progress > 0
       
-      let shouldInclude = shouldShow || wasCompletedOnThisDate
-      
-      // ✅ DIAGNOSTIC: Log for ALL habits now, including future ones
-      if habit.name.contains("Future") || habit.name.contains("future") {
-        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
-        print("   📊 shouldShow = \(shouldShow)")
-        print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
-        print("   📍 dateKey = \(dateKey)")
-        print("   🎯 ✅ FINAL DECISION: included = \(shouldInclude)")
-      } else {
-        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
-        print("   📊 shouldShow = \(shouldShow)")
-        print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
-        print("   📍 dateKey = \(dateKey)")
-        print("   🎯 included = \(shouldInclude)")
-      }
-      
-      return shouldInclude
+      return shouldShow || wasCompletedOnThisDate
     }
-
-    // ✅ DIAGNOSTIC: Log filtering results
-    print("🗓️ ========================================")
-    print("🗓️ FILTERING COMPLETE:")
-    print("🗓️ Total habits after filtering: \(filteredHabits.count)")
-    print("🗓️ Habits included:")
-    for (index, habit) in filteredHabits.enumerated() {
-      print("🗓️   [\(index)] \(habit.name)")
-    }
-    print("🗓️ ========================================")
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
     // ✅ FIX: Only sort completed habits to bottom if NOT currently completing a habit
@@ -1248,12 +1197,6 @@ struct HomeTabView: View {
 
   private func resortHabits() {
     print("🔄 resortHabits() called - deferResort: \(deferResort)")
-    
-    // ✅ DIAGNOSTIC: Log selected date for debugging
-    let calendar = Calendar.current
-    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
-    print("   📅 resortHabits for date: \(selectedComponents.year!)-\(String(format: "%02d", selectedComponents.month!))-\(String(format: "%02d", selectedComponents.day!))")
-    
     guard !deferResort else {
       print("   ⚠️ resortHabits() BLOCKED by deferResort flag")
       return
@@ -1265,19 +1208,7 @@ struct HomeTabView: View {
       let start = DateUtils.startOfDay(for: habit.startDate)
       let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
-      // ✅ DIAGNOSTIC: Log future habits in resortHabits
-      let passesDateCheck = selected >= start && selected <= end
-      if habit.name.contains("Future") || habit.name.contains("future") {
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: start)
-        print("   🔍 resortHabits checking '\(habit.name)':")
-        print("      → Start: \(startComponents.year!)-\(String(format: "%02d", startComponents.month!))-\(String(format: "%02d", startComponents.day!))")
-        print("      → Passes date check (selected >= start && selected <= end): \(passesDateCheck)")
-      }
-
-      guard passesDateCheck else {
-        if habit.name.contains("Future") || habit.name.contains("future") {
-          print("      → ❌ EXCLUDED by date check")
-        }
+      guard selected >= start, selected <= end else {
         return false
       }
 
@@ -1289,13 +1220,7 @@ struct HomeTabView: View {
       let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
       let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
       
-      let finalDecision = shouldShow || wasCompletedOnThisDate
-      if habit.name.contains("Future") || habit.name.contains("future") {
-        print("      → shouldShow: \(shouldShow), wasCompleted: \(wasCompletedOnThisDate)")
-        print("      → ✅ FINAL: \(finalDecision ? "INCLUDED" : "EXCLUDED")")
-      }
-      
-      return finalDecision
+      return shouldShow || wasCompletedOnThisDate
     }
 
     // Sort: Incomplete first by originalOrder, then completed by completedAt then originalOrder
