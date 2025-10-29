@@ -178,7 +178,7 @@ struct VacationModeView: View {
           Button(action: {
             dismiss()
           }) {
-            Image(systemName: "chevron.left")
+            Image(systemName: "xmark")
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
           }

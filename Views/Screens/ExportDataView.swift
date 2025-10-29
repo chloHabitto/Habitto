@@ -369,7 +369,7 @@ struct ExportDataView: View {
           Button(action: {
             dismiss()
           }) {
-            Image(systemName: "chevron.left")
+            Image(systemName: "xmark")
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
           }
@@ -1106,7 +1106,7 @@ struct ExportPreviewView: View {
           Button(action: {
             dismiss()
           }) {
-            Image(systemName: "chevron.left")
+            Image(systemName: "xmark")
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
           }
