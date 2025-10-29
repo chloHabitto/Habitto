@@ -40,12 +40,7 @@ struct OverviewView: View {
   @State private var selectedDate = Date()
 
   var body: some View {
-    VStack(spacing: 0) {
-      // Fixed Header Section
-      StreakHeaderView(onDismiss: { dismiss() })
-        .zIndex(10)
-
-      // Scrollable Content
+    NavigationView {
       ScrollView {
         VStack(spacing: 16) {
           // Main Streak Display
@@ -69,9 +64,23 @@ struct OverviewView: View {
         .padding(.top, 20)
         .padding(.bottom, 20)
       }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(Color.primary)
+      .navigationTitle("Overview")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "xmark")
+              .font(.system(size: 12, weight: .bold))
+              .foregroundColor(.white)
+          }
+        }
+      }
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.primary)
     .onAppear {
       setupNotificationObserver()
       loadData()
