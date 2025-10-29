@@ -258,18 +258,7 @@ struct MoreTabView: View {
           })
         ])
 
-      // ✅ DEBUG: Habit Investigation Section
-      #if DEBUG
-      settingsGroup(
-        title: "🔍 Debug Tools",
-        items: [
-          SettingItem(title: "Investigate Habits", value: nil, hasChevron: true, action: {
-            showingHabitInvestigation = true
-          })
-        ])
-      #endif
-
-      // ✅ DEBUG: XP Sync Testing Section
+      // ✅ DEBUG: Debug Tools Section
       #if DEBUG
       debugXPSyncSection
       #endif
@@ -286,21 +275,14 @@ struct MoreTabView: View {
     }
   }
 
-  // MARK: - Debug XP Sync Section
+  // MARK: - Debug Section
   
   #if DEBUG
-  @Environment(\.modelContext) private var modelContext
-  @State private var migrationStatus: String = "Checking..."
-  @State private var firestoreXP: String = "Loading..."
-  @State private var userId: String = "Unknown"
-  @State private var isMigrating: Bool = false  // Track migration state
-  @State private var showResetAlert: Bool = false  // Show reset confirmation
-  
   private var debugXPSyncSection: some View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Text("🧪 XP Sync Debug")
+        Text("🔍 Debug Tools")
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.orange)
         Spacer()
@@ -309,94 +291,19 @@ struct MoreTabView: View {
       .padding(.top, 20)
       .padding(.bottom, 12)
       
-      // Status Info
-      VStack(spacing: 8) {
-        debugInfoRow(label: "User ID", value: userId)
-        debugInfoRow(label: "Local XP", value: "\(xpManager.totalXP)")
-        debugInfoRow(label: "Local Level", value: "\(xpManager.currentLevel)")
-        debugInfoRow(label: "Firestore XP", value: firestoreXP)
-        debugInfoRow(label: "Migration", value: migrationStatus)
-      }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 12)
-      .background(Color.surfaceDim)
-      .cornerRadius(8)
-      .padding(.horizontal, 20)
-      
-      // Action Buttons
+      // Essential Debug Buttons
       VStack(spacing: 12) {
-        HStack(spacing: 12) {
-          debugButton(
-            title: isMigrating ? "⏳ Migrating..." : "🔄 Migrate XP to Cloud",
-            subtitle: isMigrating ? "Please wait, this may take a minute..." : "Upload existing DailyAwards",
-            action: {
-              if !isMigrating {
-                Task {
-                  await performMigration()
-                }
-              }
-            }
-          )
-          .opacity(isMigrating ? 0.6 : 1.0)
-          
-          if isMigrating {
-            ProgressView()
-              .progressViewStyle(CircularProgressViewStyle())
-              .scaleEffect(1.2)
-          }
-        }
-        
         debugButton(
-          title: "📊 Check Sync Status",
-          subtitle: "Verify Firestore data",
+          title: "🔍 Investigate Habits",
+          subtitle: "Diagnose habit visibility issues",
           action: {
-            Task {
-              await checkSyncStatus()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔍 Show Firestore Path",
-          subtitle: "Copy path to clipboard",
-          action: {
-            showFirestorePath()
-          }
-        )
-        
-        debugButton(
-          title: "🔄 Reset Migration Status",
-          subtitle: "After reset, tap 'Migrate XP' button above to run",
-          action: {
-            Task {
-              await resetMigration()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔥 Force Load from Firestore",
-          subtitle: "Mark migration complete & reload habits",
-          action: {
-            Task {
-              await forceLoadFromFirestore()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔧 Fix Missing Baseline/Target",
-          subtitle: "Repair breaking habits in Firestore",
-          action: {
-            Task {
-              await fixFirestoreBaseline()
-            }
+            showingHabitInvestigation = true
           }
         )
         
         debugButton(
           title: "📊 Audit SwiftData",
-          subtitle: "Check CompletionRecords in local storage",
+          subtitle: "Check local database state",
           action: {
             Task {
               await auditSwiftData()
@@ -405,16 +312,8 @@ struct MoreTabView: View {
         )
         
         debugButton(
-          title: "📊 Audit UserDefaults",
-          subtitle: "Check XP and other cached values",
-          action: {
-            auditUserDefaults()
-          }
-        )
-        
-        debugButton(
           title: "📊 Audit Firestore",
-          subtitle: "Check what's in cloud storage right now",
+          subtitle: "Check cloud sync state",
           action: {
             Task {
               await auditFirestore()
@@ -424,7 +323,7 @@ struct MoreTabView: View {
         
         debugButton(
           title: "📊 Audit Memory",
-          subtitle: "Check current in-memory habit state",
+          subtitle: "Check current in-memory state",
           action: {
             auditMemory()
           }
@@ -436,35 +335,6 @@ struct MoreTabView: View {
       Rectangle()
         .fill(Color(hex: "F0F0F6"))
         .frame(height: 8)
-    }
-    .onAppear {
-      loadDebugInfo()
-      
-      // ✅ AUTOMATIC MIGRATION: Trigger XP migration on first app launch
-      Task {
-        await checkAndRunAutomaticMigration()
-      }
-    }
-    .alert("Migration Reset Complete", isPresented: $showResetAlert) {
-      Button("OK") {
-        dismissResetAlert()
-      }
-    } message: {
-      Text("Migration status has been reset.\n\nNow tap 'Migrate XP to Cloud' button above to run migration again.")
-    }
-  }
-  
-  private func debugInfoRow(label: String, value: String) -> some View {
-    HStack {
-      Text(label)
-        .font(.system(size: 14, weight: .medium))
-        .foregroundColor(.text02)
-      Spacer()
-      Text(value)
-        .font(.system(size: 14, weight: .regular))
-        .foregroundColor(.text01)
-        .lineLimit(1)
-        .truncationMode(.middle)
     }
   }
   
@@ -489,193 +359,6 @@ struct MoreTabView: View {
       .background(Color.white)
       .cornerRadius(8)
     }
-  }
-  
-  private func loadDebugInfo() {
-    userId = AuthenticationManager.shared.currentUser?.uid ?? "Not signed in"
-    
-    Task {
-      await checkSyncStatus()
-    }
-  }
-  
-  private func performMigration() async {
-    print("🚀 XP_DEBUG: Starting migration...")
-    isMigrating = true
-    migrationStatus = "Running..."
-    
-    // ✅ FIX: Yield to let UI update before starting heavy operation
-    await Task.yield()
-    
-    do {
-      // Migration will run on main actor but with async Firestore calls
-      // that won't block the thread
-      try await XPMigrationService.shared.performMigration(modelContext: modelContext)
-      migrationStatus = "✅ Complete"
-      print("✅ XP_DEBUG: Migration completed successfully")
-      
-      // Refresh status
-      await checkSyncStatus()
-    } catch {
-      migrationStatus = "❌ Failed: \(error.localizedDescription)"
-      print("❌ XP_DEBUG: Migration failed: \(error)")
-    }
-    
-    isMigrating = false
-  }
-  
-  private func checkSyncStatus() async {
-    print("🔍 XP_DEBUG: Checking sync status...")
-    
-    do {
-      // Check migration status
-      let isComplete = try await FirestoreService.shared.isXPMigrationComplete()
-      // ✅ FIX: Only update status if it's not a custom message (like "Running..." or reset message)
-      if !migrationStatus.contains("Running") && !migrationStatus.contains("Ready - Tap") {
-        migrationStatus = isComplete ? "✅ Complete" : "⏳ Pending"
-      }
-      print("🔍 XP_DEBUG: Migration complete: \(isComplete)")
-      
-      // Load Firestore XP
-      if let progress = try await FirestoreService.shared.loadUserProgress() {
-        firestoreXP = "\(progress.totalXP) (Level \(progress.level))"
-        print("🔍 XP_DEBUG: Firestore XP: \(progress.totalXP), Level: \(progress.level)")
-      } else {
-        firestoreXP = "No data"
-        print("🔍 XP_DEBUG: No Firestore data found")
-      }
-    } catch {
-      firestoreXP = "Error: \(error.localizedDescription)"
-      print("❌ XP_DEBUG: Failed to load Firestore data: \(error)")
-    }
-  }
-  
-  private func showFirestorePath() {
-    let uid = AuthenticationManager.shared.currentUser?.uid ?? "{uid}"
-    let path = "users/\(uid)/progress/current"
-    let url = "https://console.firebase.google.com/project/habittoios/firestore/data/\(path)"
-    
-    print("📋 XP_DEBUG: Firestore Path:")
-    print("   Collection: users/\(uid)/progress")
-    print("   Document: current")
-    print("   Full URL: \(url)")
-    print("")
-    print("🔍 To verify in Firestore Console:")
-    print("   1. Open: \(url)")
-    print("   2. Check fields: totalXP, level, dailyXP")
-    print("")
-    print("📊 Daily Awards Path:")
-    print("   Collection: users/\(uid)/progress/daily_awards/{YYYY-MM}")
-    print("   Example: users/\(uid)/progress/daily_awards/2025-10/21")
-    
-    // Copy to pasteboard if possible
-    #if os(iOS)
-    UIPasteboard.general.string = url
-    print("✅ XP_DEBUG: URL copied to clipboard!")
-    #endif
-  }
-  
-  private func fixFirestoreBaseline() async {
-    print("🔧 FIX_BASELINE: Scanning Firestore for habits with missing baseline/target...")
-    
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      print("❌ FIX_BASELINE: No authenticated user")
-      return
-    }
-    
-    do {
-      let db = Firestore.firestore()
-      
-      // Fetch ALL habits from Firestore (even invalid ones)
-      let snapshot = try await db
-        .collection("users")
-        .document(userId)
-        .collection("habits")
-        .getDocuments()
-      
-      print("🔍 FIX_BASELINE: Found \(snapshot.documents.count) habits in Firestore")
-      print("   📋 Document IDs: \(snapshot.documents.map { $0.documentID })")
-      
-      var fixedCount = 0
-      
-      for doc in snapshot.documents {
-        let data = doc.data()
-        let habitType = data["habitType"] as? String ?? ""
-        let name = data["name"] as? String ?? "Unknown"
-        let baseline = data["baseline"] as? Int ?? -999  // Use -999 to detect missing
-        let target = data["target"] as? Int ?? -999
-        let isActive = data["isActive"] as? Bool ?? false
-        
-        print("   - '\(name)' (ID: \(doc.documentID))")
-        print("      habitType=\(habitType), baseline=\(baseline), target=\(target), isActive=\(isActive)")
-        
-        // Fix habits with missing or invalid baseline/target
-        if baseline == -999 || target == -999 || (habitType == "breaking" && baseline <= 0) {
-          print("   ⚠️ NEEDS FIX: baseline=\(baseline), target=\(target)")
-          
-          // Extract goal number (e.g., "10 times per day" -> 10)
-          if let goalString = data["goal"] as? String {
-            let goalNumber = extractNumber(from: goalString) ?? 10
-            
-            var newBaseline = baseline == -999 ? 0 : baseline
-            var newTarget = target == -999 ? goalNumber : target
-            
-            // For breaking habits: baseline should be current usage, target should be goal
-            if habitType == "breaking" {
-              newBaseline = goalNumber * 2  // Assume current is 2x the goal
-              newTarget = goalNumber
-            } else {
-              // For formation habits: baseline=0, target=goal amount
-              newBaseline = 0
-              newTarget = goalNumber
-            }
-            
-            print("   🔧 UPDATING: baseline \(baseline) → \(newBaseline), target \(target) → \(newTarget)")
-            
-            try await doc.reference.updateData([
-              "baseline": newBaseline,
-              "target": newTarget
-            ])
-            
-            print("   ✅ FIXED: '\(name)' -> baseline=\(newBaseline), target=\(newTarget)")
-            fixedCount += 1
-            
-            // Verify the update
-            let updatedDoc = try await doc.reference.getDocument()
-            let updatedData = updatedDoc.data()
-            let verifyBaseline = updatedData?["baseline"] as? Int ?? -1
-            let verifyTarget = updatedData?["target"] as? Int ?? -1
-            print("   ✅ VERIFIED: Firestore now has baseline=\(verifyBaseline), target=\(verifyTarget)")
-          }
-        } else {
-          print("   ✅ OK: No fix needed")
-        }
-      }
-      
-      print("✅ FIX_BASELINE: Fixed \(fixedCount) habit(s)")
-      
-      // Reload habits
-      print("🔄 FIX_BASELINE: Reloading habits...")
-      await HabitRepository.shared.loadHabits(force: true)
-      
-      print("✅ FIX_BASELINE: Complete! Habits count: \(HabitRepository.shared.habits.count)")
-      for habit in HabitRepository.shared.habits {
-        print("   - \(habit.name): baseline=\(habit.baseline), target=\(habit.target)")
-      }
-      
-    } catch {
-      print("❌ FIX_BASELINE: Failed - \(error)")
-    }
-  }
-  
-  private func extractNumber(from string: String) -> Int? {
-    let components = string.components(separatedBy: CharacterSet.decimalDigits.inverted)
-    for component in components {
-      if let number = Int(component), number > 0 {
-        return number
-      }
-    }
-    return nil
   }
   
   private func auditSwiftData() async {
@@ -720,27 +403,6 @@ struct MoreTabView: View {
     } catch {
       print("❌ SWIFTDATA AUDIT FAILED: \(error)")
     }
-  }
-  
-  private func auditUserDefaults() {
-    print("📊 ========== USERDEFAULTS AUDIT ==========")
-    
-    let dict = UserDefaults.standard.dictionaryRepresentation()
-    var foundKeys: [(String, Any)] = []
-    
-    for (key, value) in dict {
-      let keyLower = key.lowercased()
-      if keyLower.contains("xp") || keyLower.contains("level") || keyLower.contains("habit") || keyLower.contains("streak") {
-        foundKeys.append((key, value))
-      }
-    }
-    
-    print("📊 Found \(foundKeys.count) relevant UserDefaults keys:")
-    for (key, value) in foundKeys.sorted(by: { $0.0 < $1.0 }) {
-      print("   \(key): \(value)")
-    }
-    
-    print("📊 =========================================")
   }
   
   private func auditFirestore() async {
@@ -864,117 +526,6 @@ struct MoreTabView: View {
     print("   → dailyXP: \(xpManager.dailyXP)")
     
     print("\n📊 ===================================")
-  }
-  
-  private func forceLoadFromFirestore() async {
-    print("🔥 FORCE_RELOAD: Marking migration complete and reloading from Firestore...")
-    
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      print("❌ FORCE_RELOAD: No authenticated user")
-      return
-    }
-    
-    do {
-      // Step 1: Mark migration as complete in Firestore
-      let db = Firestore.firestore()
-      try await db
-        .collection("users")
-        .document(userId)
-        .collection("meta")
-        .document("migration")
-        .setData([
-          "status": "complete",
-          "completedAt": Date(),
-          "forcedByUser": true
-        ])
-      
-      print("✅ FORCE_RELOAD: Migration marked as complete")
-      migrationStatus = "✅ Complete"
-      
-      // Step 2: Force reload habits from Firestore
-      print("🔥 FORCE_RELOAD: Reloading habits from Firestore...")
-      await HabitRepository.shared.loadHabits(force: true)
-      
-      print("✅ FORCE_RELOAD: Complete! Check if Habit2 is back")
-      print("   📊 Current habits count: \(HabitRepository.shared.habits.count)")
-      for habit in HabitRepository.shared.habits {
-        print("   - \(habit.name) (type: \(habit.habitType), baseline: \(habit.baseline), target: \(habit.target))")
-      }
-      
-    } catch {
-      print("❌ FORCE_RELOAD: Failed - \(error)")
-    }
-  }
-  
-  private func resetMigration() async {
-    print("🔄 XP_DEBUG: Resetting migration status...")
-    migrationStatus = "Resetting..."
-    
-    do {
-      // ✅ FIX: Use boolean check instead of storing unused value
-      guard AuthenticationManager.shared.currentUser?.uid != nil else {
-        print("❌ XP_DEBUG: No authenticated user")
-        migrationStatus = "❌ Not authenticated"
-        return
-      }
-      
-      // Delete the migration completion marker from Firestore
-      // ✅ FIX: Use FirestoreService instead of accessing Firestore directly
-      try await FirestoreService.shared.deleteXPMigrationMarker()
-      
-      migrationStatus = "⏳ Ready - Tap 'Migrate XP' above"
-      print("✅ XP_DEBUG: Migration reset successfully!")
-      print("   ⚠️ NEXT STEP: Tap 'Migrate XP to Cloud' button above to run migration!")
-      
-      // ✅ FIX: Don't call checkSyncStatus here - it would overwrite our custom message
-      // Just load the Firestore XP to show current state
-      if let progress = try? await FirestoreService.shared.loadUserProgress() {
-        firestoreXP = "\(progress.totalXP) (Level \(progress.level))"
-      }
-      
-      // Show visual confirmation
-      showResetAlert = true
-    } catch {
-      migrationStatus = "❌ Reset failed"
-      print("❌ XP_DEBUG: Reset failed: \(error)")
-    }
-  }
-  
-  private func dismissResetAlert() {
-    showResetAlert = false
-  }
-  
-  /// ✅ AUTOMATIC MIGRATION: Check if migration is needed and run automatically
-  private func checkAndRunAutomaticMigration() async {
-    print("🔄 XP_AUTO_MIGRATION: Checking if automatic migration is needed...")
-    
-    do {
-      // Check if migration is already complete
-      let isComplete = try await FirestoreService.shared.isXPMigrationComplete()
-      
-      if isComplete {
-        print("ℹ️ XP_AUTO_MIGRATION: Migration already complete, skipping")
-        return
-      }
-      
-      print("🚀 XP_AUTO_MIGRATION: Migration needed, starting automatic migration...")
-      migrationStatus = "Running (auto)..."
-      isMigrating = true
-      
-      // Run the migration
-      try await XPMigrationService.shared.performMigration(modelContext: modelContext)
-      
-      migrationStatus = "✅ Complete (auto)"
-      print("✅ XP_AUTO_MIGRATION: Automatic migration completed successfully!")
-      
-      // Refresh status
-      await checkSyncStatus()
-    } catch {
-      migrationStatus = "❌ Auto-migration failed"
-      print("❌ XP_AUTO_MIGRATION: Automatic migration failed: \(error)")
-    }
-    
-    isMigrating = false
   }
   #endif
   
