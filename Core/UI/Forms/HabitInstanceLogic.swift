@@ -185,18 +185,24 @@ class HabitInstanceLogic {
       return false
     }
 
-    let today = Date()
-    let targetDate = DateUtils.startOfDay(for: date)
-    let todayStart = DateUtils.startOfDay(for: today)
+    let calendar = Calendar.current
+    let targetDate = calendar.startOfDay(for: date)
+    let startDate = calendar.startOfDay(for: habit.startDate)
 
-    // If the target date is in the past, don't show the habit
-    if targetDate < todayStart {
-      return false
+    // ✅ FIX: For frequency-based habits (e.g., "3 days a week"), the habit should appear EVERY day
+    // after the start date. The user decides which days to complete it.
+    // Completion tracking will hide it once completed the required number of times that week.
+    let isAfterStart = targetDate >= startDate
+    
+    // Check if habit has ended
+    if let endDate = habit.endDate {
+      let endDateStart = calendar.startOfDay(for: endDate)
+      if targetDate > endDateStart {
+        return false
+      }
     }
-
-    // For frequency-based habits, show the habit on the first N days starting from today
-    let daysFromToday = DateUtils.daysBetween(todayStart, targetDate)
-    return daysFromToday >= 0 && daysFromToday < daysPerWeek
+    
+    return isAfterStart
   }
 
   static func shouldShowHabitWithMonthlyFrequency(habit: Habit, date: Date) -> Bool {
