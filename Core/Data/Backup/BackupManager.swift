@@ -1044,9 +1044,16 @@ class BackupManager: ObservableObject {
 
           backups.append(snapshot)
         } catch {
+          // ✅ FIX: Delete corrupted/incompatible backup files
           logger
-            .error(
-              "Failed to load backup file \(fileURL.lastPathComponent): \(error.localizedDescription)")
+            .warning(
+              "Failed to load backup file \(fileURL.lastPathComponent): \(error.localizedDescription) - Deleting corrupted file")
+          do {
+            try fileManager.removeItem(at: fileURL)
+            logger.info("✅ Deleted corrupted backup file: \(fileURL.lastPathComponent)")
+          } catch {
+            logger.error("❌ Failed to delete corrupted backup file: \(error.localizedDescription)")
+          }
         }
       }
 

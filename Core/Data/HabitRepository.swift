@@ -174,6 +174,13 @@ class HabitRepository: ObservableObject {
   static let shared = HabitRepository()
 
   @Published var habits: [Habit] = []
+  
+  /// Published loading state to prevent concurrent loads
+  @Published var isLoading = false
+  
+  /// Cache timestamp to prevent excessive reloads
+  private var lastLoadTime: Date?
+  private let loadCacheInterval: TimeInterval = 1.0 // 1 second cache
 
   /// Published properties for UI
   @Published var shouldShowMigrationView = false
@@ -440,12 +447,30 @@ class HabitRepository: ObservableObject {
   // MARK: - Load Habits
 
   func loadHabits(force: Bool = false) async {
+    // ✅ FIX: Prevent concurrent loads to reduce excessive data loading
+    if isLoading {
+      print("⚠️ LOAD_HABITS: Skipping load - already loading")
+      return
+    }
+    
+    // ✅ FIX: Use cache to prevent excessive reloads within short time window
+    if !force, let lastLoad = lastLoadTime, Date().timeIntervalSince(lastLoad) < loadCacheInterval {
+      print("ℹ️ LOAD_HABITS: Skipping load - recently loaded \(String(format: "%.1f", Date().timeIntervalSince(lastLoad)))s ago")
+      return
+    }
+    
     print("🔄 LOAD_HABITS_START: Loading from storage (force: \(force))")
 
     // Always load if force is true, or if habits is empty
-    if !force, !habits.isEmpty {
+    if !force, !habits.isEmpty, lastLoadTime != nil {
       print("ℹ️ LOAD_HABITS: Skipping load - habits not empty and not forced")
       return
+    }
+
+    isLoading = true
+    defer { 
+      isLoading = false
+      lastLoadTime = Date() // ✅ Update cache timestamp
     }
 
     do {

@@ -100,8 +100,40 @@ final actor HabitStore {
     let cappedHabits = capper.capAllHabits(habits, using: retentionMgr.currentPolicy)
     logger.debug("History capping applied to \(habits.count) habits")
 
+    // ✅ FIX: Auto-clear end dates that are in the past to prevent validation warnings
+    let sanitizedHabits = cappedHabits.map { habit -> Habit in
+      if let endDate = habit.endDate, endDate < Date() {
+        logger.info("🔧 Auto-clearing past end date for habit '\(habit.name)' (was: \(endDate))")
+        // Create new Habit with endDate cleared
+        return Habit(
+          id: habit.id,
+          name: habit.name,
+          description: habit.description,
+          icon: habit.icon,
+          color: habit.color,
+          habitType: habit.habitType,
+          schedule: habit.schedule,
+          goal: habit.goal,
+          reminder: habit.reminder,
+          startDate: habit.startDate,
+          endDate: nil,  // ✅ Clear past end date
+          createdAt: habit.createdAt,
+          reminders: habit.reminders,
+          baseline: habit.baseline,
+          target: habit.target,
+          completionHistory: habit.completionHistory,
+          completionStatus: habit.completionStatus,
+          completionTimestamps: habit.completionTimestamps,
+          difficultyHistory: habit.difficultyHistory,
+          actualUsage: habit.actualUsage,
+          lastSyncedAt: habit.lastSyncedAt,
+          syncStatus: habit.syncStatus)
+      }
+      return habit
+    }
+
     // Validate habits before saving
-    let validationResult = validationService.validateHabits(cappedHabits)
+    let validationResult = validationService.validateHabits(sanitizedHabits)
     
     // ✅ FIX #2: Add explicit debug logging for validation results
     print("🔍 VALIDATION: isValid=\(validationResult.isValid)")
@@ -115,7 +147,7 @@ final actor HabitStore {
         logger.warning("  - \(error.field): \(error.message)")
       }
     } else {
-      print("✅ VALIDATION: All \(cappedHabits.count) habits passed validation")
+      print("✅ VALIDATION: All \(sanitizedHabits.count) habits passed validation")
     }
     
     if !validationResult.isValid {
@@ -137,7 +169,7 @@ final actor HabitStore {
     }
 
     // Use active storage (SwiftData or DualWrite based on feature flags)
-    try await activeStorage.saveHabits(cappedHabits, immediate: true)
+    try await activeStorage.saveHabits(sanitizedHabits, immediate: true)
     logger.info("Successfully saved to SwiftData")
 
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime

@@ -97,8 +97,10 @@ final class HabitData {
   }
 
   static func decodeColor(_ data: Data) -> Color {
+    // ✅ FIX: NSKeyedUnarchiver warnings - must explicitly allow NSNumber for secure coding
+    // When using requiringSecureCoding: true, all classes (including NSNumber) must be declared
     guard let components = try? NSKeyedUnarchiver.unarchivedObject(
-      ofClass: NSArray.self,
+      ofClasses: [NSArray.self, NSNumber.self],  // ✅ Include NSNumber
       from: data) as? [CGFloat],
       components.count == 4 else
     {
