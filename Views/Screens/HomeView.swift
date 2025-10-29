@@ -524,8 +524,9 @@ struct HomeView: View {
                 state.showingDeleteConfirmation = true
               },
               onCompletionDismiss: {
-                // Handle completion dismiss if needed
+                // ✅ FIX: Update streak UI after completion flow finishes
                 print("🔄 HomeView: Habit completion bottom sheet dismissed")
+                state.updateStreak()
               })
 
           case .progress:
