@@ -1,5 +1,6 @@
 import Combine
 import SwiftUI
+import SwiftData
 
 // Import for streak calculations
 import Foundation
@@ -75,12 +76,30 @@ class HomeViewState: ObservableObject {
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
-    guard !habits.isEmpty else { 
-      currentStreak = 0
-      return 
+    // ✅ FIX: Read streak from GlobalStreakModel in SwiftData instead of old calculation
+    Task { @MainActor in
+      do {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+        
+        let descriptor = FetchDescriptor<GlobalStreakModel>(
+          predicate: #Predicate { streak in
+            streak.userId == userId
+          }
+        )
+        
+        if let streak = try modelContext.fetch(descriptor).first {
+          currentStreak = streak.currentStreak
+          print("✅ STREAK_UI_UPDATE: Loaded streak from GlobalStreakModel - currentStreak: \(currentStreak), longestStreak: \(streak.longestStreak)")
+        } else {
+          currentStreak = 0
+          print("ℹ️ STREAK_UI_UPDATE: No GlobalStreakModel found, using streak = 0")
+        }
+      } catch {
+        print("❌ STREAK_UI_UPDATE: Failed to load GlobalStreakModel: \(error)")
+        currentStreak = 0
+      }
     }
-    let streakStats = StreakDataCalculator.calculateStreakStatistics(from: habits)
-    currentStreak = streakStats.currentStreak
   }
 
   func updateHabits(_ newHabits: [Habit]) {
