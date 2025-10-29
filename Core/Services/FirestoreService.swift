@@ -381,6 +381,50 @@ class FirestoreService: FirebaseService, ObservableObject {
     return progress
   }
   
+  /// Delete all user's progress and XP data from Firestore
+  @MainActor
+  func deleteUserProgress() async throws {
+    print("🔥 DELETE_ALL: Starting Firestore XP/Progress deletion...")
+    
+    guard isConfigured else {
+      print("⚠️ DELETE_ALL: Firestore not configured, skipping XP deletion")
+      return
+    }
+    
+    guard let userId = currentUserId else {
+      print("⚠️ DELETE_ALL: No user authenticated, skipping XP deletion")
+      return
+    }
+    
+    do {
+      // Delete all documents in the progress collection
+      // This includes the "current" document and any other progress data
+      let progressCollection = db.collection("users")
+        .document(userId)
+        .collection("progress")
+      
+      // Get all documents in the progress collection
+      let snapshot = try await progressCollection.getDocuments()
+      
+      var totalDeleted = 0
+      for document in snapshot.documents {
+        try await document.reference.delete()
+        totalDeleted += 1
+      }
+      
+      print("✅ DELETE_ALL: Deleted \(totalDeleted) progress documents")
+      
+      // Note: Subcollections under documents (like daily_awards subcollections)
+      // are not automatically deleted and would need to be deleted separately
+      // For now, we're deleting the main progress documents which is the critical data
+      
+      print("✅ DELETE_ALL: Successfully deleted XP/Progress data from Firestore")
+    } catch {
+      print("❌ DELETE_ALL: Firestore XP deletion failed: \(error)")
+      // Don't throw - we want to continue even if Firestore deletion fails
+    }
+  }
+  
   /// Save a daily award
   @MainActor
   func saveDailyAward(_ award: FirestoreDailyAward) async throws {

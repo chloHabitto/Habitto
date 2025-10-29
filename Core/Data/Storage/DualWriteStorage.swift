@@ -354,8 +354,7 @@ final class DualWriteStorage: HabitStorageProtocol {
   func clearAllHabits() async throws {
     dualWriteLogger.info("DualWriteStorage: Clearing all habits")
     
-    // ✅ PHASE 1: LOCAL-FIRST APPROACH
-    // STEP 1: Clear local storage FIRST
+    // ✅ STEP 1: Clear local storage FIRST
     do {
       try await secondaryStorage.clearAllHabits()
       incrementCounter("dualwrite.delete.secondary_ok")
@@ -366,26 +365,35 @@ final class DualWriteStorage: HabitStorageProtocol {
       throw error // MUST throw - local storage is primary
     }
     
-    // STEP 2: Clear Firestore in BACKGROUND
-    Task.detached { [weak self, primaryStorage] in
-      await self?.clearFirestoreHabits(primaryStorage: primaryStorage)
-    }
+    // ✅ STEP 2: Clear Firestore SYNCHRONOUSLY (await to ensure deletion completes)
+    // This prevents sync-down from restoring deleted data
+    await clearFirestoreHabits(primaryStorage: primaryStorage)
   }
   
-  /// Background clear from Firestore (non-blocking)
+  /// Clear all habits from Firestore (synchronous)
   private func clearFirestoreHabits(primaryStorage: FirestoreService) async {
     do {
+      print("🔥 DELETE_ALL: Starting Firestore habits deletion...")
       // Delete all habits from Firestore
       try await primaryStorage.fetchHabits()
       let habits = await MainActor.run { primaryStorage.habits }
+      
+      if habits.isEmpty {
+        print("✅ DELETE_ALL: No habits in Firestore to delete")
+        return
+      }
+      
+      print("🔥 DELETE_ALL: Deleting \(habits.count) habits from Firestore...")
       for habit in habits {
         try await primaryStorage.deleteHabit(id: habit.id.uuidString)
       }
       incrementCounter("dualwrite.delete.primary_ok")
       dualWriteLogger.info("✅ Cleared all habits from Firestore")
+      print("✅ DELETE_ALL: Successfully deleted all \(habits.count) habits from Firestore")
     } catch {
       dualWriteLogger.error("❌ Firestore clear failed: \(error)")
-      // TODO: Add to retry queue
+      print("❌ DELETE_ALL: Firestore habits deletion failed: \(error)")
+      // Don't throw - local deletion already succeeded
     }
   }
   

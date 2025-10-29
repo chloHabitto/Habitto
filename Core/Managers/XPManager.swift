@@ -373,8 +373,8 @@ class XPManager {
 
   // MARK: - Public API (Simplified)
 
-  /// Clear all XP data (used during sign-out)
-  func clearXPData() {
+  /// Clear all XP data (used during sign-out and delete all data)
+  func clearXPData() async {
     logger.info("Clearing XP data for sign-out")
 
     // Reset objects to defaults
@@ -390,10 +390,20 @@ class XPManager {
     // Update level from XP (will be level 1 with 0 XP)
     updateLevelFromXP()
 
-    // Save the reset state
-    saveUserProgress()
+    // Save the reset state (to local only, not Firestore)
+    if let encoded = try? JSONEncoder().encode(userProgress) {
+      userDefaults.set(encoded, forKey: userProgressKey)
+    }
     saveRecentTransactions()
     saveDailyAwards()
+
+    // Delete from Firestore
+    do {
+      try await FirestoreService.shared.deleteUserProgress()
+      logger.info("✅ XP data cleared from Firestore")
+    } catch {
+      logger.error("⚠️ Failed to clear XP from Firestore: \(error.localizedDescription)")
+    }
 
     logger.info("XP data cleared for sign-out - user will start fresh")
   }

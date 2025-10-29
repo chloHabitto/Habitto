@@ -96,9 +96,11 @@ actor GDPRDataDeletionManager {
     // This is a placeholder implementation
 
     // Clear XP and level data
-    await MainActor.run {
-      XPManager.shared.clearXPData()
-      print("✅ GDPRDataDeletionManager: XP and level data cleared")
+    _ = await MainActor.run {
+      Task {
+        await XPManager.shared.clearXPData()
+        print("✅ GDPRDataDeletionManager: XP and level data cleared")
+      }
     }
 
     // Delete any local snapshots
