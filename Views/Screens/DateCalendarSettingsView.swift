@@ -78,7 +78,7 @@ struct DateCalendarSettingsView: View {
           dismiss()
         }) {
           Image(systemName: "xmark")
-            .font(.system(size: 20, weight: .medium))
+            .font(.system(size: 12, weight: .bold))
             .foregroundColor(.primary)
         }
         .frame(width: 40, height: 40)

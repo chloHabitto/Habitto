@@ -36,7 +36,7 @@ struct FAQView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 16, weight: .medium))
+              .font(.system(size: 12, weight: .bold))
               .foregroundColor(.text01)
           }
         }
