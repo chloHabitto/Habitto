@@ -538,6 +538,14 @@ struct ScheduledHabitItem: View {
     // Record timestamp of this user action
     lastUserUpdateTimestamp = Date()
 
+    // ✅ FIX: Clear CompletionStateManager when uncompleting to allow re-completion
+    let completionManager = CompletionStateManager.shared
+    completionManager.endCompletionFlow(for: habit.id)
+    
+    // Reset completion flags
+    isCompletingHabit = false
+    isProcessingCompletion = false
+
     // ✅ FIX: Increase delay from 0.1s to 0.5s to ensure persistence completes
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
       isLocalUpdateInProgress = false
