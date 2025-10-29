@@ -36,17 +36,17 @@ struct AboutUsView: View {
   // MARK: Internal
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "About Us",
-          description: "Better, together — one step at a time.")
-        {
-          dismiss()
-        }
+    NavigationView {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 24) {
+          // Description text
+          Text("Better, together — one step at a time.")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
 
-        // Hanging image - full width outside VStack padding
+          // Hanging image - full width outside VStack padding
         Image("Hanging")
           .resizable()
           .aspectRatio(contentMode: .fit)
@@ -180,14 +180,26 @@ struct AboutUsView: View {
         }
         .padding(.bottom, 24)
         .padding(.horizontal, 24)
+        }
+        .padding(.horizontal, 20)
       }
-      .padding(.horizontal, 20)
+      .navigationTitle("About Us")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(.visible, for: .navigationBar)
+      .background(Color.surface2)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .navigationTitle("About Us")
-    .navigationBarTitleDisplayMode(.inline)
-    .toolbarBackground(.visible, for: .navigationBar)
-    .background(Color.surface2)
-    .navigationBarBackButtonHidden(true)
   }
 
   // MARK: Private

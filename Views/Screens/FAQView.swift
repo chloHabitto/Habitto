@@ -6,27 +6,42 @@ struct FAQView: View {
   // MARK: Internal
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "FAQ",
-          description: "Frequently asked questions about Habitto")
-        {
-          dismiss()
-        }
+    NavigationView {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 24) {
+          // Description text
+          Text("Frequently asked questions about Habitto")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
 
-        // Search Bar
+          // Search Bar
         searchBar
 
         // FAQ Questions List
         faqQuestionsList
 
-        Spacer(minLength: 24)
+          Spacer(minLength: 24)
+        }
+      }
+      .background(Color.surface2)
+      .navigationTitle("FAQ")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
       }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
   }
 
   // MARK: Private

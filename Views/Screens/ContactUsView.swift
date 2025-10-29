@@ -21,15 +21,14 @@ struct ContactUsView: View {
           ScrollViewReader { proxy in
             ScrollView {
               VStack(spacing: 0) {
-                // Header
-                ScreenHeader(
-                  title: "Contact Us",
-                  description: "We'd love to hear from you")
-                {
-                  dismiss()
-                }
-                .padding(.top, 16)
-                .padding(.bottom, 24)
+                // Description text
+                Text("We'd love to hear from you")
+                  .font(.appBodyMedium)
+                  .foregroundColor(.text05)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(.horizontal, 20)
+                  .padding(.top, 24)
+                  .padding(.bottom, 16)
 
                 // Form Content
                 VStack(spacing: 24) {
@@ -73,8 +72,21 @@ struct ContactUsView: View {
           .background(Color.surface2)
         }
       }
+      .navigationTitle("Contact Us")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .navigationBarHidden(true)
     .onAppear {
       setupKeyboardNotifications()
     }

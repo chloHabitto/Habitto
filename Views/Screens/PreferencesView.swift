@@ -24,13 +24,13 @@ struct PreferencesView: View {
     NavigationView {
       ScrollView {
         VStack(spacing: 24) {
-          // Header with close button and left-aligned title
-          ScreenHeader(
-            title: "Preferences",
-            description: "Customize your app experience")
-          {
-            dismiss()
-          }
+          // Description text
+          Text("Customize your app experience")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
 
           // App Preferences
           VStack(spacing: 0) {
@@ -76,9 +76,21 @@ struct PreferencesView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Preferences")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
     .sheet(isPresented: $showingLanguage) {
       LanguageView()
     }

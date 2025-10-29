@@ -23,19 +23,17 @@ struct SecurityView: View {
   var body: some View {
     NavigationView {
       VStack(spacing: 0) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "Account",
-          description: "Manage your account settings and security")
-        {
-          dismiss()
-        }
-
-        Spacer().frame(height: 16)
-
         // Scrollable content
         ScrollView {
           VStack(spacing: 24) {
+            // Description text
+            Text("Manage your account settings and security")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
+
             // Account Options
             VStack(spacing: 0) {
               // Personal Information
@@ -133,6 +131,20 @@ struct SecurityView: View {
         .padding(.bottom, 20)
       }
       .background(Color.surface2)
+      .navigationTitle("Account")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
     .sheet(isPresented: $showingPersonalInformation) {
       PersonalInformationView()
@@ -141,8 +153,6 @@ struct SecurityView: View {
       print("🗑️ SecurityView: Presenting AccountDeletionConfirmationView")
       return AccountDeletionConfirmationView()
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) { }
       Button("Sign Out", role: .destructive) {

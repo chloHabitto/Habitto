@@ -121,13 +121,13 @@ struct ExportDataView: View {
         // Scrollable content
         ScrollView {
           VStack(spacing: 24) {
-            // Header with close button and left-aligned title
-            ScreenHeader(
-              title: "Export Data",
-              description: "Download your personal data in your preferred format")
-            {
-              dismiss()
-            }
+            // Description text
+            Text("Download your personal data in your preferred format")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
 
             // Selection Options
             VStack(spacing: 16) {
@@ -361,6 +361,20 @@ struct ExportDataView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Export Data")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
     .sheet(isPresented: $showingExportComplete) {
       if let fileURL = exportFileURL {
@@ -921,17 +935,17 @@ struct ExportPreviewView: View {
   var body: some View {
     NavigationView {
       VStack(spacing: 0) {
-        // Header
-        ScreenHeader(
-          title: "Export Preview",
-          description: "Review what will be included in your export")
-        {
-          dismiss()
-        }
-
         // Preview Content
         ScrollView {
           VStack(spacing: 20) {
+            // Description text
+            Text("Review what will be included in your export")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
+
             // Export Overview
             VStack(spacing: 16) {
               HStack {
@@ -1084,6 +1098,20 @@ struct ExportPreviewView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Export Preview")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
   }
 

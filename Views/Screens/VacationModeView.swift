@@ -12,17 +12,18 @@ struct VacationModeView: View {
   }
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 16) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "Vacation Mode",
-          description: "Manage your vacation periods and settings")
-        {
-          dismiss()
-        }
+    NavigationView {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          // Description text
+          Text("Manage your vacation periods and settings")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
 
-        // Vacation Mode Status Section
+          // Vacation Mode Status Section
         VStack(alignment: .leading, spacing: 16) {
           // Main vacation button at the top
           if !vacationManager.isActive {
@@ -165,11 +166,25 @@ struct VacationModeView: View {
         .cornerRadius(12)
         .padding(.horizontal, 20)
 
-        Spacer(minLength: 24)
+          Spacer(minLength: 24)
+        }
+      }
+      .background(Color.surface2)
+      .navigationTitle("Vacation Mode")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
       }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
   }
 
   // MARK: - Helper Components

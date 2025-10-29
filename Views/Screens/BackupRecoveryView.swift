@@ -25,13 +25,12 @@ struct BackupRecoveryView: View {
         ZStack(alignment: .bottom) {
           ScrollView {
             VStack(spacing: 24) {
-              // Header with close button and left-aligned title
-              ScreenHeader(
-                title: "Backup & Recovery",
-                description: "Configure your backup settings and manage your data")
-              {
-                dismiss()
-              }
+              // Description text
+              Text("Configure your backup settings and manage your data")
+                .font(.appBodyMedium)
+                .foregroundColor(.text05)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
 
               // Backup Settings
               VStack(spacing: 16) {
@@ -228,7 +227,20 @@ struct BackupRecoveryView: View {
           }
         }
       }
-      .navigationBarHidden(true)
+      .navigationTitle("Backup & Recovery")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
       .onAppear {
         loadBackupSettings()
       }

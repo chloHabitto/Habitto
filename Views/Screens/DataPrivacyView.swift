@@ -9,13 +9,13 @@ struct DataPrivacyView: View {
         // Scrollable content
         ScrollView {
           VStack(spacing: 24) {
-            // Header with close button and left-aligned title
-            ScreenHeader(
-              title: "Data & Privacy",
-              description: "Manage your data and privacy settings")
-            {
-              dismiss()
-            }
+            // Description text
+            Text("Manage your data and privacy settings")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
 
             // Privacy Options
             VStack(spacing: 0) {
@@ -91,6 +91,20 @@ struct DataPrivacyView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Data & Privacy")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
     .sheet(isPresented: $showingBackupRecovery) {
       BackupRecoveryView()

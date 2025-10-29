@@ -13,17 +13,17 @@ struct DeleteDataView: View {
   var body: some View {
     NavigationView {
       VStack(spacing: 0) {
-        // Header
-        ScreenHeader(
-          title: "Delete Data",
-          description: "Remove your data from this device")
-        {
-          dismiss()
-        }
-
         // Content
         ScrollView {
           VStack(spacing: 24) {
+            // Description text
+            Text("Remove your data from this device")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
+
             // Warning Notice
             VStack(spacing: 12) {
               HStack {
@@ -78,6 +78,20 @@ struct DeleteDataView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Delete Data")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
     .sheet(isPresented: $showingDeleteComplete) {
       DeleteCompleteView {

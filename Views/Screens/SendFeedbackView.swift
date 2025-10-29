@@ -4,17 +4,18 @@ struct SendFeedbackView: View {
   // MARK: Internal
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "Send Feedback",
-          description: "Help us improve Habitto with your suggestions")
-        {
-          dismiss()
-        }
+    NavigationView {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 24) {
+          // Description text
+          Text("Help us improve Habitto with your suggestions")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
 
-        // Feedback Content
+          // Feedback Content
         VStack(alignment: .leading, spacing: 24) {
           // Icon and description
           VStack(spacing: 16) {
@@ -52,11 +53,25 @@ struct SendFeedbackView: View {
         }
         .padding(.horizontal, 20)
 
-        Spacer(minLength: 24)
+          Spacer(minLength: 24)
+        }
+      }
+      .background(Color.surface2)
+      .navigationTitle("Send Feedback")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
       }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
   }
 
   // MARK: Private
