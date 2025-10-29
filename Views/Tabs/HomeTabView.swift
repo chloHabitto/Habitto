@@ -116,6 +116,8 @@ struct HomeTabView: View {
       }
       .onChange(of: selectedDate) { oldDate, newDate in
         handleSelectedDateChange(oldDate, newDate)
+        // ✅ FIX: Resort habits when date changes to show correct habits for new date
+        resortHabits()
         // ✅ PHASE 5: Refetch completion status when date changes
         Task {
           await prefetchCompletionStatus()
@@ -209,24 +211,36 @@ struct HomeTabView: View {
   private var habitsForSelectedDate: [Habit] {
     // Calculate filtered habits for the selected date
 
+    // ✅ DIAGNOSTIC: Log the selected date being filtered
+    let selected = DateUtils.startOfDay(for: selectedDate)
+    let calendar = Calendar.current
+    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selected)
+    print("🗓️ ========================================")
+    print("🗓️ FILTERING HABITS FOR DATE: \(selectedComponents.year!)-\(String(format: "%02d", selectedComponents.month!))-\(String(format: "%02d", selectedComponents.day!))")
+    print("🗓️ Selected date (normalized): \(selected)")
+    print("🗓️ Total habits to filter: \(habits.count)")
+    print("🗓️ ========================================")
+
     let filteredHabits = habits.filter { habit in
-      let selected = DateUtils.startOfDay(for: selectedDate)
       let start = DateUtils.startOfDay(for: habit.startDate)
       let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
       // ✅ DIAGNOSTIC: Extra logging for "Future habit"
       if habit.name.contains("Future") || habit.name.contains("future") {
+        let startComponents = calendar.dateComponents([.year, .month, .day], from: start)
         print("🔍 DIAGNOSTIC - Habit '\(habit.name)':")
-        print("   → Raw startDate: \(habit.startDate)")
-        print("   → Normalized start: \(start)")
-        print("   → Raw selectedDate: \(selectedDate)")
-        print("   → Normalized selected: \(selected)")
-        print("   → Comparison: selected (\(selected)) >= start (\(start)) = \(selected >= start)")
-        print("   → Will be included: \(selected >= start && selected <= end)")
+        print("   → Start date: \(startComponents.year!)-\(String(format: "%02d", startComponents.month!))-\(String(format: "%02d", startComponents.day!))")
+        print("   → Normalized start (UTC): \(start)")
+        print("   → Selected date (UTC): \(selected)")
+        print("   → Date comparison: selected >= start = \(selected >= start)")
+        print("   → Date comparison: selected <= end = \(selected <= end)")
+        print("   → ✅ WILL BE INCLUDED: \(selected >= start && selected <= end)")
       }
 
       guard selected >= start, selected <= end else {
-        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' EXCLUDED: outside date range (start: \(start), end: \(end), selected: \(selected))")
+        if habit.name.contains("Future") || habit.name.contains("future") {
+          print("   → ❌ EXCLUDED: Failed guard condition")
+        }
         return false
       }
 
@@ -243,14 +257,34 @@ struct HomeTabView: View {
       let wasCompletedOnThisDate = progress > 0
       
       let shouldInclude = shouldShow || wasCompletedOnThisDate
-      print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
-      print("   📊 shouldShow = \(shouldShow)")
-      print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
-      print("   📍 dateKey = \(dateKey)")
-      print("   🎯 included = \(shouldInclude)")
-      print("   📝 completionHistory keys: \(latestHabit.completionHistory.keys.sorted())")
+      
+      // ✅ DIAGNOSTIC: Log for ALL habits now, including future ones
+      if habit.name.contains("Future") || habit.name.contains("future") {
+        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
+        print("   📊 shouldShow = \(shouldShow)")
+        print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
+        print("   📍 dateKey = \(dateKey)")
+        print("   🎯 ✅ FINAL DECISION: included = \(shouldInclude)")
+      } else {
+        print("🔍 HOME TAB FILTER - Habit '\(habit.name)' (schedule: '\(habit.schedule)')")
+        print("   📊 shouldShow = \(shouldShow)")
+        print("   ✅ wasCompleted = \(wasCompletedOnThisDate) (progress: \(progress))")
+        print("   📍 dateKey = \(dateKey)")
+        print("   🎯 included = \(shouldInclude)")
+      }
+      
       return shouldInclude
     }
+
+    // ✅ DIAGNOSTIC: Log filtering results
+    print("🗓️ ========================================")
+    print("🗓️ FILTERING COMPLETE:")
+    print("🗓️ Total habits after filtering: \(filteredHabits.count)")
+    print("🗓️ Habits included:")
+    for (index, habit) in filteredHabits.enumerated() {
+      print("🗓️   [\(index)] \(habit.name)")
+    }
+    print("🗓️ ========================================")
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
     // ✅ FIX: Only sort completed habits to bottom if NOT currently completing a habit
