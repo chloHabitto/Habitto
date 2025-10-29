@@ -1119,7 +1119,8 @@ struct HomeTabView: View {
           print("   Matching userId '\(userId)': \(allRecords.filter { $0.userId == userId }.count)")
           print("   isCompleted=true: \(allRecords.filter { $0.isCompleted }.count)")
           print("   Final filtered (complete+matching): \(completedRecords.count)")
-          print("   Habits needed for this date: \(habitsForDate.count)")
+          print("   Habits scheduled for this date: \(habitsForDate.count)")
+          print("   📊 COMPLETION RATIO: \(completedRecords.count)/\(habitsForDate.count) habits completed")
           
           for record in completedRecords {
             print("     ✅ Record: habitId=\(record.habitId), dateKey=\(record.dateKey), userId=\(record.userId), isCompleted=\(record.isCompleted)")
@@ -1149,7 +1150,9 @@ struct HomeTabView: View {
       
       if allCompleted {
         completedCount += 1
-        print("✅ XP_CALC: All habits complete on \(dateKey) - counted!")
+        print("✅ XP_CALC: [\(dateKey)] ALL \(habitsForDate.count)/\(habitsForDate.count) habits complete - COUNTED! (+50 XP)")
+      } else if !habitsForDate.isEmpty {
+        print("❌ XP_CALC: [\(dateKey)] NOT all habits complete - SKIPPED (0 XP)")
       }
       
       guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }

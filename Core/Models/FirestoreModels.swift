@@ -78,7 +78,10 @@ struct FirestoreHabit: Codable, Identifiable {
   }
   
   init(from habit: Habit) {
-    self.id = habit.id.uuidString
+    // ✅ FIX: Don't set @DocumentID when creating documents
+    // The document ID is set explicitly via .document(id) in FirestoreService
+    // @DocumentID is only populated when READING from Firestore
+    self.id = nil
     self.name = habit.name
     self.description = habit.description
     self.icon = habit.icon
