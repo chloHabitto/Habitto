@@ -1370,7 +1370,8 @@ struct HomeTabView: View {
           print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
           
           // ✅ FIX: Decrement streak when day becomes incomplete
-          try await decrementGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
+          let newStreak = try await decrementGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
+          print("✅ UNCOMPLETE_FLOW: Streak decremented to \(newStreak)")
         } catch {
           print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward or decrement streak: \(error)")
         }
