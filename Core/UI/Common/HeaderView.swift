@@ -129,7 +129,7 @@ struct HeaderView: View {
           Image("Icon-AddCircle_Filled")
             .renderingMode(.template)
             .resizable()
-            .frame(width: 28, height: 28)
+            .frame(width: 32, height: 32)
             .foregroundColor(.onPrimary)
         }
         .frame(width: 44, height: 44)
