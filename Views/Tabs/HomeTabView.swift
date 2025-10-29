@@ -601,8 +601,8 @@ struct HomeTabView: View {
         onDeleteHabit?(habit)
       },
       onCompletionDismiss: {
+        // ✅ FIX: onDifficultySheetDismissed will call onCompletionDismiss after streak update
         onDifficultySheetDismissed()
-        onCompletionDismiss?()
       })
   }
 
@@ -1477,10 +1477,20 @@ struct HomeTabView: View {
         let currentXP = xpManager.totalXP  // ✅ Use environment object
         print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
         print("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")  // ✅ Use environment object
+        
+        // ✅ FIX: Call completion callback AFTER streak update completes
+        await MainActor.run {
+          onCompletionDismiss?()
+          print("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
+        }
       }
 
       // Reset the flag
       lastHabitJustCompleted = false
+    } else {
+      // ✅ FIX: Call completion callback even if not last habit
+      onCompletionDismiss?()
+      print("✅ COMPLETION_FLOW: Called onCompletionDismiss callback (not last habit)")
     }
   }
 
@@ -1498,9 +1508,9 @@ struct HomeTabView: View {
   }
 
   private func getCurrentUserId() -> String {
-    // Note: Authentication system access needs to be implemented
-    let userId = "debug_user_id"
-    print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId) (debug mode)")
+    // ✅ FIX: Use actual userId from AuthenticationManager (same as HomeViewState)
+    let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+    print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId)")
     return userId
   }
   
