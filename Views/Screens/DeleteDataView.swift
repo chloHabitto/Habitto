@@ -158,38 +158,50 @@ struct DeleteDataView: View {
 
   private func deleteAllData() async throws {
     do {
-      // Use HabitStore to clear all habits (this is the proper way)
+      print("🔥 DELETE_ALL: Starting deletion process...")
+      
+      // ✅ STEP 1: Clear all habits (waits for both local AND Firestore deletion)
       let habitStore = HabitStore.shared
       try await habitStore.clearAllHabits()
+      print("✅ DELETE_ALL: Habits cleared from local and Firestore")
 
-      // Clear XP and level data
-      await MainActor.run {
-        XPManager.shared.clearXPData()
-        print("✅ Delete All Data: XP and level data cleared")
+      // ✅ STEP 2: Clear XP and level data (waits for both local AND Firestore deletion)
+      _ = await MainActor.run {
+        Task {
+          await XPManager.shared.clearXPData()
+          print("✅ DELETE_ALL: XP and level data cleared from local and Firestore")
+        }
       }
 
-      // Clear UserDefaults (app settings, preferences, etc.)
-      await MainActor.run {
+      // ✅ STEP 3: Clear UserDefaults (app settings, preferences, etc.)
+      _ = await MainActor.run {
         let defaults = UserDefaults.standard
         let domain = Bundle.main.bundleIdentifier!
         defaults.removePersistentDomain(forName: domain)
         defaults.synchronize()
+        print("✅ DELETE_ALL: UserDefaults cleared")
 
         // Also clear HabitStorageManager cache
         HabitStorageManager.shared.clearCache()
-
-        // Notify HabitRepository to reload data so UI updates
-        let habitRepository = HabitRepository.shared
+        print("✅ DELETE_ALL: Cache cleared")
+      }
+      
+      // ✅ STEP 4: Wait a moment to ensure all Firestore operations complete
+      try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+      
+      // ✅ STEP 5: Now reload habits (should be empty since Firestore was cleared)
+      _ = await MainActor.run {
         Task {
+          let habitRepository = HabitRepository.shared
           await habitRepository.loadHabits(force: true)
-          print("✅ Delete All Data: HabitRepository notified to reload data")
+          print("✅ DELETE_ALL: HabitRepository reloaded (should be empty)")
         }
       }
 
-      print("✅ Delete All Data: Completed successfully")
+      print("✅ DELETE_ALL: Completed successfully")
 
     } catch {
-      print("❌ Delete All Data failed: \(error)")
+      print("❌ DELETE_ALL failed: \(error)")
       throw DeleteError.allDataDeletionFailed
     }
   }
