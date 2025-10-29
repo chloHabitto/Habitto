@@ -20,8 +20,8 @@ struct StreakHeaderView: View {
   var body: some View {
     HStack {
       Button(action: onDismiss) {
-        Image(systemName: "arrow.backward")
-          .font(.system(size: 24))
+        Image(systemName: "xmark")
+          .font(.system(size: 12, weight: .bold))
           .foregroundColor(.white)
           .frame(width: 48, height: 48)
       }
