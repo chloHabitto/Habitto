@@ -214,6 +214,17 @@ struct HomeTabView: View {
       let start = DateUtils.startOfDay(for: habit.startDate)
       let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
+      // ✅ DIAGNOSTIC: Extra logging for "Future habit"
+      if habit.name.contains("Future") || habit.name.contains("future") {
+        print("🔍 DIAGNOSTIC - Habit '\(habit.name)':")
+        print("   → Raw startDate: \(habit.startDate)")
+        print("   → Normalized start: \(start)")
+        print("   → Raw selectedDate: \(selectedDate)")
+        print("   → Normalized selected: \(selected)")
+        print("   → Comparison: selected (\(selected)) >= start (\(start)) = \(selected >= start)")
+        print("   → Will be included: \(selected >= start && selected <= end)")
+      }
+
       guard selected >= start, selected <= end else {
         print("🔍 HOME TAB FILTER - Habit '\(habit.name)' EXCLUDED: outside date range (start: \(start), end: \(end), selected: \(selected))")
         return false
