@@ -82,7 +82,7 @@ struct HeaderView: View {
           }
         }
       } else {
-        // Streak pill with native iOS glass effect
+        // Streak pill
         Button(action: onStreakTap) {
           HStack(spacing: 6) {
             // Show frozen fire icon when vacation mode is active
@@ -97,19 +97,16 @@ struct HeaderView: View {
             }
             Text(pluralizeStreak(currentStreak))
               .font(.appButtonText1)
-              .foregroundColor(.white)
+              .foregroundColor(.black)
           }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-          .background(
-            .ultraThinMaterial,
-            in: Capsule()
-          )
-          .overlay(
-            Capsule()
-              .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
-          )
+          .padding(.top, 8)
+          .padding(.bottom, 8)
+          .padding(.leading, 12)
+          .padding(.trailing, 16)
+          .background(Color.white)
+          .clipShape(Capsule())
         }
+        .buttonStyle(PlainButtonStyle())
       }
 
       Spacer()
