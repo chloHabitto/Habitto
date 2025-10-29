@@ -24,7 +24,8 @@ final class SwiftDataContainer: ObservableObject {
         HabitNote.self,
         StorageHeader.self,
         MigrationRecord.self,
-        MigrationState.self // ✅ PHASE 5: Added MigrationState model
+        MigrationState.self, // ✅ PHASE 5: Added MigrationState model
+        GlobalStreakModel.self // ✅ FIX: Added GlobalStreakModel for global streak tracking
       ])
 
       logger.info("🔧 SwiftData: Creating model configuration...")
