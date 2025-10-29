@@ -20,9 +20,21 @@ struct PersonalInformationView: View {
   var body: some View {
     NavigationView {
       contentView
+        .navigationTitle("Personal Information")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+          ToolbarItem(placement: .navigationBarLeading) {
+            Button(action: {
+              dismiss()
+            }) {
+              Image(systemName: "chevron.left")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.text01)
+            }
+          }
+        }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
     .alert("Success", isPresented: $showingSuccessAlert) {
       Button("OK") {
         dismiss()
@@ -40,7 +52,14 @@ struct PersonalInformationView: View {
   private var contentView: some View {
     ScrollView {
       VStack(spacing: 24) {
-        headerSection
+        // Description text
+        Text("Manage your personal details")
+          .font(.appBodyMedium)
+          .foregroundColor(.text05)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 8)
+
         profilePictureSection
         formSection
         Spacer()
@@ -53,15 +72,6 @@ struct PersonalInformationView: View {
     .background(Color.surface2)
     .onAppear {
       loadUserData()
-    }
-  }
-
-  private var headerSection: some View {
-    ScreenHeader(
-      title: "Personal Information",
-      description: "Manage your personal details")
-    {
-      dismiss()
     }
   }
 

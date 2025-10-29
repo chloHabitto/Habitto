@@ -6,21 +6,19 @@ struct TermsConditionsView: View {
   // MARK: Internal
 
   var body: some View {
-    VStack(spacing: 0) {
-      // Header with close button and left-aligned title
-      ScreenHeader(
-        title: "Terms & Conditions",
-        description: "Terms of Service and Privacy Policy")
-      {
-        dismiss()
-      }
+    NavigationView {
+      VStack(spacing: 0) {
+        // Description text
+        Text("Terms of Service and Privacy Policy")
+          .font(.appBodyMedium)
+          .foregroundColor(.text05)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 20)
+          .padding(.top, 8)
+          .padding(.bottom, 8)
 
-      // Add padding below the description
-      Spacer()
-        .frame(height: 16)
-
-      // Custom Tab Bar for Terms & Conditions (no background)
-      customTabBar
+        // Custom Tab Bar for Terms & Conditions (no background)
+        customTabBar
 
       // Tab Content
       TabView(selection: $selectedTab) {
@@ -31,11 +29,25 @@ struct TermsConditionsView: View {
         // Privacy Policy Tab
         privacyTab
           .tag(1)
+        }
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
       }
-      .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+      .background(Color.surface2)
+      .navigationTitle("Terms & Conditions")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
   }
 
   // MARK: Private

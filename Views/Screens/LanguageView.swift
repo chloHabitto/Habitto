@@ -9,13 +9,13 @@ struct LanguageView: View {
     NavigationView {
       ScrollView {
         VStack(spacing: 24) {
-          // Header with close button and left-aligned title
-          ScreenHeader(
-            title: "Language",
-            description: "Choose your preferred language")
-          {
-            dismiss()
-          }
+          // Description text
+          Text("Choose your preferred language")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
 
           // Language Selection Section
           languageSelectionSection
@@ -28,9 +28,21 @@ struct LanguageView: View {
         .background(Color.surface2)
       }
       .background(Color.surface2)
+      .navigationTitle("Language")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .background(Color.surface2)
-    .navigationBarHidden(true)
   }
 
   // MARK: Private

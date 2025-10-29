@@ -10,19 +10,17 @@ struct AccountDeletionConfirmationView: View {
     print("🗑️ AccountDeletionConfirmationView: Body rendered")
     return NavigationView {
       VStack(spacing: 0) {
-        // Header
-        ScreenHeader(
-          title: "Delete Account",
-          description: "This action cannot be undone")
-        {
-          dismiss()
-        }
-
-        Spacer().frame(height: 20)
-
         // Content
         ScrollView {
           VStack(spacing: 24) {
+            // Description text
+            Text("This action cannot be undone")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 20)
+              .padding(.top, 8)
+
             // Warning Section
             VStack(spacing: 16) {
               Image(systemName: "exclamationmark.triangle.fill")
@@ -139,8 +137,21 @@ struct AccountDeletionConfirmationView: View {
         .padding(.bottom, 20)
       }
       .background(Color.surface2)
+      .navigationTitle("Delete Account")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
-    .navigationBarHidden(true)
     .alert("Final Confirmation", isPresented: $showingFinalConfirmation) {
       Button("Cancel", role: .cancel) { }
       Button("Delete Account", role: .destructive) {

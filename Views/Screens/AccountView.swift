@@ -10,24 +10,20 @@ struct AccountView: View {
   var body: some View {
     NavigationView {
       VStack(spacing: 0) {
-        // Header with close button and left-aligned title
-        ScreenHeader(
-          title: "Account",
-          description: isLoggedIn
-            ? "Manage your account preferences"
-            : "Sign in to access your account")
-        {
-          dismiss()
-        }
-
-        Spacer().frame(height: 16)
-
         // Main content area
         if isLoggedIn {
           // Account Options for authenticated users
           VStack(spacing: 0) {
             ScrollView {
               VStack(spacing: 24) {
+                // Description text
+                Text("Manage your account preferences")
+                  .font(.appBodyMedium)
+                  .foregroundColor(.text05)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                  .padding(.horizontal, 20)
+                  .padding(.top, 8)
+                
                 // Personal Information Section
                 VStack(spacing: 0) {
                   AccountOptionRow(
@@ -124,6 +120,14 @@ struct AccountView: View {
           // Sign in prompt for unauthenticated users
           ScrollView {
             VStack(spacing: 24) {
+              // Description text
+              Text("Sign in to access your account")
+                .font(.appBodyMedium)
+                .foregroundColor(.text05)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+              
               // Sign in illustration
               VStack(spacing: 16) {
                 Image(systemName: "person.circle.fill")
@@ -159,6 +163,20 @@ struct AccountView: View {
         }
       }
       .background(Color.surface2)
+      .navigationTitle("Account")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
     }
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
