@@ -38,9 +38,6 @@ class XPManager {
     loadRecentTransactions()
     loadDailyAwards()
     
-    // 🔍 DIAGNOSTIC: Prove single instance
-    print("🏪 STORE_INSTANCE XPManager created: \(ObjectIdentifier(self))")
-    
     logger
       .info(
         "XPManager initialized with level \(self.userProgress.currentLevel) and \(self.userProgress.totalXP) XP")
@@ -55,11 +52,9 @@ class XPManager {
   private func checkAndTriggerMigration() async {
     // Check if migration already completed
     if await XPMigrationService.shared.isMigrationComplete() {
-      print("ℹ️ XPManager: XP migration already completed")
       return
     }
     
-    print("🚀 XPManager: XP migration needed, will run when ModelContext is available")
     // Migration will be triggered from a view with @Environment(\.modelContext)
   }
 
@@ -107,9 +102,6 @@ class XPManager {
     
     // Only update if changed
     guard newXP != totalXP else { return }
-    
-    // 🔍 DIAGNOSTIC: Log all XP changes
-    print("🔍 XP_SET totalXP:\(newXP) completedDays:\(completedDaysCount) delta:\(newXP - totalXP)")
     
     // ✅ Update properties directly (@Observable triggers automatic UI update)
     totalXP = newXP
@@ -183,7 +175,6 @@ class XPManager {
 
   /// ✅ DEBUG: Get current userId (XPManager doesn't store userId, this is for debugging)
   func debugGetCurrentUserId() -> String {
-    print("🎯 USER SCOPING: XPManager.debugGetCurrentUserId() = 'XPManager does not store userId'")
     return "XPManager does not store userId"
   }
 
@@ -191,8 +182,6 @@ class XPManager {
 
   /// Handle user sign-out: Clear XP data and switch to guest mode
   func handleUserSignOut() {
-    print("🎯 AUTH: XPManager.handleUserSignOut() called")
-
     // Reset to default state
     userProgress = UserProgress()
     recentTransactions.removeAll()
@@ -200,22 +189,16 @@ class XPManager {
     // Save cleared data
     saveUserProgress()
     saveRecentTransactions()
-
-    print("🎯 AUTH: XP data cleared for sign-out")
   }
 
   /// Handle user sign-in: Load user-specific XP from SwiftData
   func handleUserSignIn(userId: String) {
-    print("🎯 AUTH: XPManager.handleUserSignIn() called for userId: \(userId)")
-
     // Load user-specific XP from SwiftData
     loadUserXPFromSwiftData(userId: userId)
   }
 
   /// Load user-specific XP from SwiftData (call this from a view with ModelContext)
   func loadUserXPFromSwiftData(userId: String, modelContext: ModelContext) {
-    print("🎯 AUTH: Loading XP from SwiftData for userId: \(userId)")
-
     do {
       // Query all DailyAward records for this user
       let predicate = #Predicate<DailyAward> { award in
@@ -224,15 +207,10 @@ class XPManager {
       let request = FetchDescriptor<DailyAward>(predicate: predicate)
       let awards = try modelContext.fetch(request)
 
-      print("🎯 AUTH: Found \(awards.count) DailyAward records for userId: \(userId)")
-
       // Calculate total XP from all awards
       let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
-      print("🎯 AUTH: Total XP from SwiftData: \(totalXP)")
 
       // Update XPManager with the calculated XP
-      let oldXP = self.totalXP
-      
       // ✅ Update @Published properties directly (triggers instant UI update)
       self.totalXP = totalXP
       self.dailyXP = 0
@@ -249,35 +227,25 @@ class XPManager {
       // Save to UserDefaults
       saveUserProgress()
 
-      print("🎯 AUTH: ✅ User XP loaded successfully")
-      print("🎯 AUTH: Old XP: \(oldXP) → New XP: \(userProgress.totalXP)")
-      print("🎯 AUTH: Level: \(userProgress.currentLevel)")
-
     } catch {
-      print("❌ AUTH: Error loading user XP from SwiftData: \(error)")
+      print("❌ Error loading user XP from SwiftData: \(error)")
     }
   }
 
   // MARK: - Data Persistence
 
   func saveUserProgress() {
-    let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
-    print("💾 XP_SAVE_START: totalXP=\(userProgress.totalXP), level=\(userProgress.currentLevel), dailyXP=\(userProgress.dailyXP), userId=\(userId)")
-    
     // Save to UserDefaults (local backup)
     if let encoded = try? JSONEncoder().encode(userProgress) {
       userDefaults.set(encoded, forKey: userProgressKey)
-      print("💾 XP_SAVE_LOCAL: Saved to UserDefaults")
     } else {
-      print("💾 XP_SAVE_LOCAL: ❌ Failed to encode for UserDefaults")
+      print("❌ Failed to encode user progress")
       return
     }
     
     // ✅ Dual-write to Firestore (cloud backup)
     Task {
       do {
-        print("💾 XP_SAVE_CLOUD: Starting Firestore write...")
-        
         let firestoreProgress = FirestoreUserProgress(
           totalXP: userProgress.totalXP,
           level: userProgress.currentLevel,
@@ -288,28 +256,19 @@ class XPManager {
         )
         
         try await FirestoreService.shared.saveUserProgress(firestoreProgress)
-        print("✅ XP_SAVE_COMPLETE: Both saves successful (Local + Firestore)")
       } catch {
-        print("💾 XP_SAVE_CLOUD: ⚠️ Failed to sync to Firestore: \(error.localizedDescription)")
-        print("✅ XP_SAVE_COMPLETE: Local save successful, Firestore failed (data preserved locally)")
+        print("⚠️ Failed to sync XP to Firestore: \(error.localizedDescription)")
         // Don't throw - local save succeeded
       }
     }
   }
 
   func loadUserProgress() {
-    let userId = AuthenticationManager.shared.currentUser?.uid ?? "unknown"
-    print("📖 XP_LOAD_START: userId=\(userId)")
-    
     // Try Firestore first (cloud-first strategy)
     Task {
-      print("📖 XP_LOAD_CLOUD: Attempting Firestore read...")
-      
       do {
         if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
           // Load from Firestore (authoritative source)
-          print("📖 XP_LOAD_CLOUD: Got totalXP=\(firestoreProgress.totalXP), level=\(firestoreProgress.level), dailyXP=\(firestoreProgress.dailyXP)")
-          
           var newProgress = UserProgress()
           newProgress.totalXP = firestoreProgress.totalXP
           newProgress.currentLevel = firestoreProgress.level
@@ -322,39 +281,30 @@ class XPManager {
           dailyXP = newProgress.dailyXP
           updateLevelFromXP()
           
-          print("✅ XP_LOAD_COMPLETE: Using totalXP=\(totalXP) from Firestore (cloud-first)")
-          
           // Sync to UserDefaults
           saveUserProgressToLocal()
           return
-        } else {
-          print("📖 XP_LOAD_CLOUD: Got totalXP=-1 (no data in Firestore)")
         }
       } catch {
-        print("📖 XP_LOAD_CLOUD: ⚠️ Firestore read failed: \(error.localizedDescription)")
+        // Silently fall back to local storage
       }
     }
     
     // Fallback to UserDefaults (local storage)
-    print("📖 XP_LOAD_LOCAL: Reading from UserDefaults...")
     if let data = userDefaults.data(forKey: userProgressKey),
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
-      print("📖 XP_LOAD_LOCAL: UserDefaults totalXP=\(progress.totalXP)")
       userProgress = progress
       // ✅ Sync @Published properties from loaded data
       totalXP = progress.totalXP
       dailyXP = progress.dailyXP
       updateLevelFromXP() // Ensure level is calculated from XP (also syncs currentLevel)
-      print("✅ XP_LOAD_COMPLETE: Using totalXP=\(totalXP) from UserDefaults (local fallback)")
     } else {
       // Initialize with default values
-      print("📖 XP_LOAD_LOCAL: UserDefaults totalXP=0 (no data found)")
       userProgress = UserProgress()
       totalXP = 0
       dailyXP = 0
       updateLevelFromXP()
-      print("✅ XP_LOAD_COMPLETE: Using totalXP=0 (starting fresh)")
     }
   }
   
@@ -478,10 +428,6 @@ class XPManager {
     precondition(
       userProgress.dailyXP <= 500,
       "Daily XP \(userProgress.dailyXP) exceeds reasonable limit - possible duplication")
-
-    // Log current state for debugging
-    print(
-      "🔍 XPManager Debug: Daily XP = \(userProgress.dailyXP), Total XP = \(userProgress.totalXP)")
   }
   #endif
 
@@ -580,18 +526,9 @@ class XPManager {
 
   /// Load user-specific XP from SwiftData DailyAward records
   private func loadUserXPFromSwiftData(userId: String) {
-    print("🎯 AUTH: Loading XP from SwiftData for userId: \(userId)")
-
     // Note: This method needs access to ModelContext to query SwiftData
     // For now, we'll implement a placeholder that can be called from a view
     // The actual implementation should be called from a view that has @Environment(\\.modelContext)
-    print("⚠️ TODO: This method needs ModelContext access to query SwiftData")
-    print("  - Should be called from a view with @Environment(\\.modelContext)")
-    print("  - Query all DailyAward records for userId: \(userId)")
-    print("  - Sum up total XP from all records")
-    print("  - Update userProgress.totalXP with the sum")
-    print("  - Update userProgress.currentLevel based on total XP")
-    print("  - Save to UserDefaults")
   }
 
   /// ❌ DEPRECATED: Use DailyAwardService.revokeIfAnyIncomplete() instead
@@ -607,9 +544,6 @@ class XPManager {
 
     // Calculate XP that should be removed (based on what was previously awarded)
     let xpToRemove = calculateXPToRemoveForHabits(habits, for: targetDate, oldProgress: oldProgress)
-
-    print(
-      "🎯 XPManager: removeXPForHabitUncompleted - oldProgress: \(oldProgress ?? -1), xpToRemove: \(xpToRemove)")
 
     if xpToRemove > 0 {
       // Remove the XP
@@ -658,17 +592,12 @@ class XPManager {
       let dateKey = DateKey.key(for: date)
       let previousProgress = oldProgress ?? (habit.completionHistory[dateKey] ?? 0)
 
-      print(
-        "🎯 XPManager: calculateXPToRemoveForHabits - habit: \(habit.name), previousProgress: \(previousProgress)")
-
       if previousProgress > 0 {
         // This habit was previously completed, so we need to remove the XP that was awarded
         let baseXP = XPRewards.completeHabit
         let streakBonus = calculateStreakBonus(for: habit)
         let habitXP = baseXP + streakBonus
         totalXP += habitXP
-        print(
-          "🎯 XPManager: Removing \(habitXP) XP for habit \(habit.name) (base: \(baseXP), streak: \(streakBonus))")
       }
     }
 

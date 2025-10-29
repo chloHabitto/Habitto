@@ -48,7 +48,6 @@ class FirestoreService: FirebaseService, ObservableObject {
   // MARK: Lifecycle
   
   nonisolated private init() {
-    print("📊 FirestoreService: Initialized")
     setupTelemetry()
   }
   
@@ -73,8 +72,6 @@ class FirestoreService: FirebaseService, ObservableObject {
   /// Create a new habit
   @MainActor
   func createHabit(_ habit: Habit) async throws -> Habit {
-    print("📝 FirestoreService: Creating habit '\(habit.name)'")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -98,15 +95,12 @@ class FirestoreService: FirebaseService, ObservableObject {
     // Record telemetry
     incrementCounter("dualwrite.create.primary_ok")
     
-    print("✅ FirestoreService: Habit created with ID: \(habit.id.uuidString)")
     return habit
   }
   
   /// Update an existing habit
   @MainActor
   func updateHabit(_ habit: Habit) async throws {
-    print("📝 FirestoreService: Updating habit \(habit.id.uuidString)")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -131,30 +125,18 @@ class FirestoreService: FirebaseService, ObservableObject {
     
     // Record telemetry
     incrementCounter("dualwrite.update.primary_ok")
-    
-    print("✅ FirestoreService: Habit updated")
   }
   
   /// Delete a habit
   @MainActor
   func deleteHabit(id: String) async throws {
-    print("🔥 FIRESTORE_DELETE_START: FirestoreService.deleteHabit() called")
-    print("   → Habit ID: \(id)")
-    print("   → Configured: \(isConfigured)")
-    print("   → User ID: \(currentUserId ?? "nil")")
-    
     guard isConfigured else {
-      print("❌ FIRESTORE_DELETE_ERROR: Firestore not configured!")
       throw FirestoreServiceError.notConfigured
     }
     
     guard let userId = currentUserId else {
-      print("❌ FIRESTORE_DELETE_ERROR: User not authenticated!")
       throw FirestoreServiceError.notAuthenticated
     }
-    
-    let path = "users/\(userId)/habits/\(id)"
-    print("🔥 FIRESTORE_DELETE_PATH: \(path)")
     
     try await db.collection("users")
       .document(userId)
@@ -162,23 +144,16 @@ class FirestoreService: FirebaseService, ObservableObject {
       .document(id)
       .delete()
     
-    print("✅ FIRESTORE_DELETE_COMPLETE: Document deleted from Firestore")
-    
     // Update local cache
     habits.removeAll { $0.id.uuidString == id }
-    print("✅ FIRESTORE_CACHE_UPDATED: Removed from local cache")
     
     // Record telemetry
     incrementCounter("dualwrite.delete.primary_ok")
-    
-    print("✅ FIRESTORE_DELETE_SUCCESS: FirestoreService.deleteHabit() completed")
   }
   
   /// Fetch all habits
   @MainActor
   func fetchHabits() async throws {
-    print("📊 FirestoreService: Fetching habits")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -198,7 +173,7 @@ class FirestoreService: FirebaseService, ObservableObject {
         let firestoreHabit = try doc.data(as: FirestoreHabit.self)
         return firestoreHabit.toHabit()
       } catch {
-        print("❌ FirestoreService: Failed to decode habit \(doc.documentID): \(error)")
+        print("❌ Failed to decode habit \(doc.documentID): \(error)")
         return nil
       }
     }
@@ -209,32 +184,22 @@ class FirestoreService: FirebaseService, ObservableObject {
       if habit.habitType == .breaking {
         let isValid = habit.target < habit.baseline && habit.baseline > 0
         if !isValid {
-          print("⚠️ SKIPPING INVALID BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
+          print("⚠️ Skipping invalid breaking habit: '\(habit.name)'")
           return false
         }
       }
       return true
     }
-    
-    let skippedCount = fetchedHabits.count - habits.count
-    if skippedCount > 0 {
-      print("⚠️ FirestoreService: Skipped \(skippedCount) invalid habit(s)")
-    }
-    print("✅ FirestoreService: Fetched \(habits.count) valid habits")
   }
   
   /// Start listening to habit changes in real-time
   @MainActor
   func startListening() {
-    print("👂 FirestoreService: Starting real-time listener")
-    
     guard isConfigured else {
-      print("⚠️ FirestoreService: Not configured")
       return
     }
     
     guard let userId = currentUserId else {
-      print("⚠️ FirestoreService: Not authenticated")
       return
     }
     
@@ -261,7 +226,7 @@ class FirestoreService: FirebaseService, ObservableObject {
               let firestoreHabit = try doc.data(as: FirestoreHabit.self)
               return firestoreHabit.toHabit()
             } catch {
-              print("❌ FirestoreService: Failed to decode habit \(doc.documentID): \(error)")
+              print("❌ Failed to decode habit \(doc.documentID): \(error)")
               return nil
             }
           }
@@ -272,7 +237,6 @@ class FirestoreService: FirebaseService, ObservableObject {
             if habit.habitType == .breaking {
               let isValid = habit.target < habit.baseline && habit.baseline > 0
               if !isValid {
-                print("⚠️ LISTENER: SKIPPING INVALID BREAKING HABIT: '\(habit.name)' (target=\(habit.target), baseline=\(habit.baseline))")
                 return false
               }
             }
@@ -281,18 +245,13 @@ class FirestoreService: FirebaseService, ObservableObject {
           
           // Record telemetry
           self.incrementCounter("firestore.listener.events")
-          
-          print("✅ FirestoreService: Updated \(self.habits.count) habits from listener")
         }
       }
-    
-    print("✅ FirestoreService: Real-time listener started")
   }
   
   /// Stop listening to habit changes
   @MainActor
   func stopListening() {
-    print("🛑 FirestoreService: Stopping real-time listener")
     listener?.remove()
     listener = nil
   }
@@ -302,8 +261,6 @@ class FirestoreService: FirebaseService, ObservableObject {
   /// Save user's current progress (total XP, level, etc.)
   @MainActor
   func saveUserProgress(_ progress: FirestoreUserProgress) async throws {
-    print("📊 FirestoreService: Saving user progress (totalXP: \(progress.totalXP), level: \(progress.level))")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -337,7 +294,6 @@ class FirestoreService: FirebaseService, ObservableObject {
         
         // Only update if new data is more recent
         if progress.lastUpdated <= existingDate {
-          print("⚠️ FirestoreService: Skipping update - existing data is newer")
           return nil
         }
       }
@@ -345,15 +301,11 @@ class FirestoreService: FirebaseService, ObservableObject {
       transaction.setData(progressData, forDocument: docRef)
       return nil
     })
-    
-    print("✅ FirestoreService: User progress saved")
   }
   
   /// Load user's current progress
   @MainActor
   func loadUserProgress() async throws -> FirestoreUserProgress? {
-    print("📊 FirestoreService: Loading user progress")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -369,30 +321,21 @@ class FirestoreService: FirebaseService, ObservableObject {
       .getDocument()
     
     guard snapshot.exists, let data = snapshot.data() else {
-      print("ℹ️ FirestoreService: No user progress found")
       return nil
     }
     
     let progress = FirestoreUserProgress.from(data: data)
-    if let progress = progress {
-      print("✅ FirestoreService: Loaded progress (totalXP: \(progress.totalXP), level: \(progress.level))")
-    }
-    
     return progress
   }
   
   /// Delete all user's progress and XP data from Firestore
   @MainActor
   func deleteUserProgress() async throws {
-    print("🔥 DELETE_ALL: Starting Firestore XP/Progress deletion...")
-    
     guard isConfigured else {
-      print("⚠️ DELETE_ALL: Firestore not configured, skipping XP deletion")
       return
     }
     
     guard let userId = currentUserId else {
-      print("⚠️ DELETE_ALL: No user authenticated, skipping XP deletion")
       return
     }
     
@@ -406,21 +349,15 @@ class FirestoreService: FirebaseService, ObservableObject {
       // Get all documents in the progress collection
       let snapshot = try await progressCollection.getDocuments()
       
-      var totalDeleted = 0
       for document in snapshot.documents {
         try await document.reference.delete()
-        totalDeleted += 1
       }
-      
-      print("✅ DELETE_ALL: Deleted \(totalDeleted) progress documents")
       
       // Note: Subcollections under documents (like daily_awards subcollections)
       // are not automatically deleted and would need to be deleted separately
       // For now, we're deleting the main progress documents which is the critical data
-      
-      print("✅ DELETE_ALL: Successfully deleted XP/Progress data from Firestore")
     } catch {
-      print("❌ DELETE_ALL: Firestore XP deletion failed: \(error)")
+      print("❌ Firestore XP deletion failed: \(error)")
       // Don't throw - we want to continue even if Firestore deletion fails
     }
   }
@@ -428,8 +365,6 @@ class FirestoreService: FirebaseService, ObservableObject {
   /// Save a daily award
   @MainActor
   func saveDailyAward(_ award: FirestoreDailyAward) async throws {
-    print("🏆 FirestoreService: Saving daily award for \(award.date) (XP: \(award.xpGranted))")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -458,15 +393,11 @@ class FirestoreService: FirebaseService, ObservableObject {
       .collection(yearMonth)
       .document(day)
       .setData(awardData)
-    
-    print("✅ FirestoreService: Daily award saved at path: daily_awards/\(yearMonth)/\(day)")
   }
   
   /// Load daily awards for a specific month
   @MainActor
   func loadDailyAwards(yearMonth: String) async throws -> [FirestoreDailyAward] {
-    print("📊 FirestoreService: Loading daily awards for \(yearMonth)")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -486,14 +417,12 @@ class FirestoreService: FirebaseService, ObservableObject {
       FirestoreDailyAward.from(data: doc.data())
     }
     
-    print("✅ FirestoreService: Loaded \(awards.count) daily awards for \(yearMonth)")
     return awards
   }
   
   /// Load daily awards for a date range
   @MainActor
   func loadDailyAwards(from startDate: Date, to endDate: Date) async throws -> [FirestoreDailyAward] {
-    print("📊 FirestoreService: Loading daily awards from \(startDate) to \(endDate)")
     
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM"
@@ -519,7 +448,7 @@ class FirestoreService: FirebaseService, ObservableObject {
         let monthAwards = try await loadDailyAwards(yearMonth: yearMonth)
         allAwards.append(contentsOf: monthAwards)
       } catch {
-        print("⚠️ FirestoreService: Failed to load awards for \(yearMonth): \(error)")
+        // Month might not exist, continue silently
       }
     }
     
@@ -532,15 +461,12 @@ class FirestoreService: FirebaseService, ObservableObject {
       award.date >= startDateString && award.date <= endDateString
     }
     
-    print("✅ FirestoreService: Loaded \(filteredAwards.count) daily awards in range")
     return filteredAwards
   }
   
   /// Load all daily awards for the current user
   @MainActor
   func loadAllDailyAwards() async throws -> [FirestoreDailyAward] {
-    print("📊 FirestoreService: Loading all daily awards")
-    
     guard isConfigured else {
       throw FirestoreServiceError.notConfigured
     }
@@ -574,7 +500,6 @@ class FirestoreService: FirebaseService, ObservableObject {
       }
     }
     
-    print("✅ FirestoreService: Loaded \(allAwards.count) total daily awards")
     return allAwards
   }
   
