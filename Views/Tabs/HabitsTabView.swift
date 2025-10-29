@@ -159,22 +159,20 @@ struct HabitsTabView: View {
     switch selectedStatsTab {
     case 0: // Active
       return uniqueHabits.filter { habit in
-        // Check if habit is currently active (within its period)
-        let startDate = calendar.startOfDay(for: habit.startDate)
+        // ✅ FIX: Habit is active if it hasn't ended yet (includes future-starting habits)
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-
-        // Habit is active if today is within its period
-        return today >= startDate && today <= endDate
+        
+        // Active = hasn't ended yet (includes habits starting in the future)
+        return today <= endDate
       }
 
     case 1: // Inactive
       return uniqueHabits.filter { habit in
-        // Check if habit is currently inactive (outside its period)
-        let startDate = calendar.startOfDay(for: habit.startDate)
+        // ✅ FIX: Habit is inactive ONLY if its end date has passed
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-
-        // Habit is inactive if today is outside its period
-        return today < startDate || today > endDate
+        
+        // Inactive = end date has passed
+        return today > endDate
       }
 
     case 2,
@@ -218,16 +216,16 @@ struct HabitsTabView: View {
     let today = calendar.startOfDay(for: Date())
 
     // Use habits parameter for immediate updates, not habitsOrder
+    // ✅ FIX: Active = hasn't ended yet (includes future-starting habits)
     let activeHabits = habits.filter { habit in
-      let startDate = calendar.startOfDay(for: habit.startDate)
       let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-      return today >= startDate && today <= endDate
+      return today <= endDate
     }
 
+    // ✅ FIX: Inactive = end date has passed
     let inactiveHabits = habits.filter { habit in
-      let startDate = calendar.startOfDay(for: habit.startDate)
       let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-      return today < startDate || today > endDate
+      return today > endDate
     }
 
     let tabs = TabItem.createStatsTabs(
