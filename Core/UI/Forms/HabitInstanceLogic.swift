@@ -181,7 +181,8 @@ class HabitInstanceLogic {
   // MARK: - Frequency-based Habit Logic
 
   static func shouldShowHabitWithFrequency(habit: Habit, date: Date) -> Bool {
-    guard let daysPerWeek = extractDaysPerWeek(from: habit.schedule) else {
+    // Verify this is actually a frequency-based schedule (e.g., "3 days a week")
+    guard extractDaysPerWeek(from: habit.schedule) != nil else {
       return false
     }
 
