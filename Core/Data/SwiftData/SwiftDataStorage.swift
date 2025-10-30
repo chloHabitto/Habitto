@@ -121,34 +121,31 @@ final class SwiftDataStorage: HabitStorageProtocol {
             baseline: habit.baseline,
             target: habit.target)
 
-          // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
-          // Problem: completionHistory stores PROGRESS COUNTS (0, 1, 2, 5, etc.), not completion status
-          // The old code was setting isCompleted=(progress==1), which is completely wrong
-          // 
-          // Example bugs:
-          // - Formation habit with 5/5 progress → isCompleted=(5==1)=false ❌
-          // - Formation habit with 1/5 progress → isCompleted=(1==1)=true ❌
-          // - Breaking habits don't even use completionHistory, they use actualUsage!
-          //
-          // Solution: Let the UI create CompletionRecords when users actually complete habits
-          // The legacy completionHistory/actualUsage dictionaries work fine for display
+          // ✅ MIGRATION FIX: Create CompletionRecords from Firestore completionHistory
+          // Problem was: old code checked `progress == 1` which was wrong
+          // Solution: Check if `progress >= goal` to determine actual completion
           
-          logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord creation for habit '\(habit.name)' - will be created by UI")
+          logger.info("✅ MIGRATION: Creating CompletionRecords from Firestore data for habit '\(habit.name)'")
           
-          // Old code that created phantom records:
-          /*
-          for (dateString, isCompleted) in habit.completionHistory {
+          for (dateString, progress) in habit.completionHistory {
             if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+              // ✅ CORRECT: Check if progress >= goal for completion
+              let goalInt = Int(habit.goal) ?? 1
+              let isCompleted = progress >= goalInt
+              
               let completionRecord = CompletionRecord(
-                userId: "legacy",
+                userId: await getCurrentUserId() ?? "",
                 habitId: habitData.id,
                 date: date,
                 dateKey: Habit.dateKey(for: date),
-                isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
+                isCompleted: isCompleted,
+                progress: progress)  // Store actual progress too
+              
               habitData.completionHistory.append(completionRecord)
+              
+              logger.info("  📝 Created CompletionRecord for \(dateString): progress=\(progress), goal=\(goalInt), completed=\(isCompleted)")
             }
           }
-          */
 
           // Add difficulty history
           for (dateString, difficulty) in habit.difficultyHistory {
@@ -409,26 +406,31 @@ final class SwiftDataStorage: HabitStorageProtocol {
           baseline: habit.baseline,
           target: habit.target)
 
-        // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
-        // Same issue as in saveHabits - completionHistory stores progress counts, not completion status
-        // Let the UI create CompletionRecords when users actually complete habits
+        // ✅ MIGRATION FIX: Create CompletionRecords from Firestore completionHistory
+        // Problem was: old code checked `progress == 1` which was wrong
+        // Solution: Check if `progress >= goal` to determine actual completion
         
-        logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord creation for new habit '\(habit.name)' - will be created by UI")
+        logger.info("✅ MIGRATION: Creating CompletionRecords from Firestore data for habit '\(habit.name)'")
         
-        // Old code that created phantom records:
-        /*
-        for (dateString, isCompleted) in habit.completionHistory {
+        for (dateString, progress) in habit.completionHistory {
           if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+            // ✅ CORRECT: Check if progress >= goal for completion
+            let goalInt = Int(habit.goal) ?? 1
+            let isCompleted = progress >= goalInt
+            
             let completionRecord = CompletionRecord(
-              userId: "legacy",
+              userId: await getCurrentUserId() ?? "",
               habitId: habitData.id,
               date: date,
               dateKey: Habit.dateKey(for: date),
-              isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
+              isCompleted: isCompleted,
+              progress: progress)  // Store actual progress too
+            
             habitData.completionHistory.append(completionRecord)
+            
+            logger.info("  📝 Created CompletionRecord for \(dateString): progress=\(progress), goal=\(goalInt), completed=\(isCompleted)")
           }
         }
-        */
 
         // Add difficulty history
         for (dateString, difficulty) in habit.difficultyHistory {
