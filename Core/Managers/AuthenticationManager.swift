@@ -152,9 +152,67 @@ class AuthenticationManager: ObservableObject {
   {
     print("🔐 AuthenticationManager: Starting email/password account creation")
     authState = .authenticating
+
+    // If the user is currently anonymous, upgrade the session by linking credentials
+    if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
+      let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+      currentUser.link(with: credential) { [weak self] result, error in
+        DispatchQueue.main.async {
+          if let error {
+            // If the email is already in use, sign in with the provided credentials instead
+            let nsError = error as NSError
+            if nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue
+              || nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue
+            {
+              Auth.auth().signIn(withEmail: email, password: password) { signInResult, signInError in
+                DispatchQueue.main.async {
+                  if let signInError {
+                    self?.authState = .error(signInError.localizedDescription)
+                    completion(.failure(signInError))
+                  } else if let user = signInResult?.user {
+                    self?.authState = .authenticated(user)
+                    self?.currentUser = user
+                    completion(.success(user))
+                  }
+                }
+              }
+              return
+            }
+
+            self?.authState = .error(error.localizedDescription)
+            completion(.failure(error))
+          } else if let user = result?.user {
+            self?.authState = .authenticated(user)
+            self?.currentUser = user
+            completion(.success(user))
+          }
+        }
+      }
+      return
+    }
+
+    // Otherwise, create a new account normally
     Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
       DispatchQueue.main.async {
         if let error {
+          // If the email already exists, attempt to sign in directly
+          let nsError = error as NSError
+          if nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+            Auth.auth().signIn(withEmail: email, password: password) { signInResult, signInError in
+              DispatchQueue.main.async {
+                if let signInError {
+                  self?.authState = .error(signInError.localizedDescription)
+                  completion(.failure(signInError))
+                } else if let user = signInResult?.user {
+                  self?.authState = .authenticated(user)
+                  self?.currentUser = user
+                  completion(.success(user))
+                }
+              }
+            }
+            return
+          }
+
           self?.authState = .error(error.localizedDescription)
           completion(.failure(error))
         } else if let user = result?.user {
