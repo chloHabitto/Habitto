@@ -673,6 +673,13 @@ struct HomeView: View {
                 // ✅ FIX: Update streak UI after completion flow finishes
                 print("🔄 HomeView: Habit completion bottom sheet dismissed")
                 state.updateStreak()
+              },
+              onStreakRecalculationNeeded: {
+                // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
+                // This ensures streak updates reactively, just like XP does
+                print("🔄 HomeView: Streak recalculation requested from HomeTabView")
+                state.updateAllStreaks()
+                print("✅ HomeView: Streak recalculation completed")
               })
 
           case .progress:

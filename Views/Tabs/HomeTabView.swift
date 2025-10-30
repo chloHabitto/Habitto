@@ -17,7 +17,8 @@ struct HomeTabView: View {
     onUpdateHabit: ((Habit) -> Void)?,
     onSetProgress: ((Habit, Date, Int) -> Void)?,
     onDeleteHabit: ((Habit) -> Void)?,
-    onCompletionDismiss: (() -> Void)?)
+    onCompletionDismiss: (() -> Void)?,
+    onStreakRecalculationNeeded: (() -> Void)? = nil)
   {
     self._selectedDate = selectedDate
     self._selectedStatsTab = selectedStatsTab
@@ -28,6 +29,7 @@ struct HomeTabView: View {
     self.onSetProgress = onSetProgress
     self.onDeleteHabit = onDeleteHabit
     self.onCompletionDismiss = onCompletionDismiss
+    self.onStreakRecalculationNeeded = onStreakRecalculationNeeded
     
     // Initialize DailyAwardService
     // Use new Firebase-based DailyAwardService (no ModelContext needed)
@@ -52,6 +54,7 @@ struct HomeTabView: View {
   let onSetProgress: ((Habit, Date, Int) -> Void)?
   let onDeleteHabit: ((Habit) -> Void)?
   let onCompletionDismiss: (() -> Void)?
+  let onStreakRecalculationNeeded: (() -> Void)?
 
   var body: some View {
     // 🔎 PROBE: Check instance and XP value
@@ -1235,6 +1238,14 @@ struct HomeTabView: View {
       }
       print("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
       
+      // ✅ CRITICAL FIX: Also recalculate streak when habit is uncompleted
+      // This ensures streak updates immediately, just like XP does
+      print("🔄 DERIVED_STREAK: Recalculating streak after uncomplete")
+      await MainActor.run {
+        onStreakRecalculationNeeded?()
+      }
+      print("✅ DERIVED_STREAK: Streak recalculation triggered")
+      
       // Clean up DailyAward record if day is no longer complete
       if !allCompleted {
         guard let userId = AuthenticationManager.shared.currentUser?.uid else { return }
@@ -1337,6 +1348,14 @@ struct HomeTabView: View {
           xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
         }
         print("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+        
+        // ✅ CRITICAL FIX: Also recalculate streak when last habit is completed
+        // This ensures streak updates immediately, just like XP does
+        print("🔄 DERIVED_STREAK: Recalculating streak after completion")
+        await MainActor.run {
+          onStreakRecalculationNeeded?()
+        }
+        print("✅ DERIVED_STREAK: Streak recalculation triggered")
         
         do {
           // Still save DailyAward for history tracking
