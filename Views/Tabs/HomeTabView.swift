@@ -1602,46 +1602,62 @@ struct HomeTabView: View {
     let isToday = normalizedDate == today
     
     if isToday {
-      // Only decrement if the last complete date was today (meaning we completed today but now reversed it)
-      if let lastCompleteDate = streak.lastCompleteDate,
-         calendar.isDate(lastCompleteDate, inSameDayAs: today) {
+      // ✅ CRITICAL FIX: Today's completion status should NOT affect the current streak
+      // The streak only counts consecutive PAST completed days (yesterday and before)
+      // Today is still in progress, so uncompleting today's habits should not decrement the streak
+      print("ℹ️ STREAK_REVERSAL: Uncompleting today's habits - streak unchanged (today doesn't count until midnight)")
+      return streak.currentStreak
+    } else {
+      // ✅ PAST DATE: Recalculate streak from scratch since we changed history
+      print("⚠️ STREAK_REVERSAL: Uncompleting past date \(dateKey) - recalculating streak")
+      
+      // Decrement totalCompleteDays since a past completed day is now incomplete
+      streak.totalCompleteDays = max(0, streak.totalCompleteDays - 1)
+      
+      // Recalculate streak by counting backwards from yesterday
+      let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+      var calculatedStreak = 0
+      var checkDate = yesterday
+      
+      // Count consecutive complete days backwards from yesterday
+      while checkDate >= normalizedDate {
+        // Check if all habits were complete on this date
+        // Calculate dateKey outside the predicate (predicates can't call functions)
+        let checkDateKey = Habit.dateKey(for: checkDate)
+        let descriptor = FetchDescriptor<DailyAward>(
+          predicate: #Predicate { award in
+            award.userId == userId && award.dateKey == checkDateKey
+          }
+        )
         
-        let oldStreak = streak.currentStreak
-        
-        // Decrement streak (minimum 0)
-        streak.currentStreak = max(0, streak.currentStreak - 1)
-        
-        // Clear lastCompleteDate since today is no longer complete
-        streak.lastCompleteDate = nil
-        
-        // Decrement totalCompleteDays
-        streak.totalCompleteDays = max(0, streak.totalCompleteDays - 1)
-        
-        let newStreak = streak.currentStreak
-        
-        try modelContext.save()
-        print("✅ STREAK_REVERSAL: Streak decremented \(oldStreak) → \(newStreak) for \(dateKey)")
-        print("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
-        
-        // Broadcast the new streak value
-        await MainActor.run {
-          NotificationCenter.default.post(
-            name: NSNotification.Name("StreakUpdated"),
-            object: nil,
-            userInfo: ["newStreak": newStreak]
-          )
-          print("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(newStreak)")
+        if let _ = try? modelContext.fetch(descriptor).first {
+          calculatedStreak += 1
+        } else {
+          // First incomplete day found - stop counting
+          break
         }
         
-        return newStreak
-      } else {
-        print("ℹ️ STREAK_REVERSAL: Today wasn't marked as complete, no decrement needed")
-        return streak.currentStreak
+        checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
       }
-    } else {
-      // For past dates, just log a warning
-      print("⚠️ STREAK_REVERSAL: Uncompleting past date \(dateKey) - streak may need recalculation")
-      return streak.currentStreak
+      
+      let oldStreak = streak.currentStreak
+      streak.currentStreak = calculatedStreak
+      
+      try modelContext.save()
+      print("✅ STREAK_REVERSAL: Streak recalculated \(oldStreak) → \(calculatedStreak) after uncompleting past date")
+      print("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
+      
+      // Broadcast the new streak value
+      await MainActor.run {
+        NotificationCenter.default.post(
+          name: NSNotification.Name("StreakUpdated"),
+          object: nil,
+          userInfo: ["newStreak": calculatedStreak]
+        )
+        print("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(calculatedStreak)")
+      }
+      
+      return calculatedStreak
     }
   }
 }

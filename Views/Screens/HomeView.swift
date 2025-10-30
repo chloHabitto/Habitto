@@ -273,58 +273,113 @@ class HomeViewState: ObservableObject {
 
   func updateAllStreaks() {
     print("🔄 HomeView: Updating all streaks...")
-
-    // Check if all habits are completed for today
-    let today = LegacyDateUtils.today()
-    let todayHabits = habits.filter { habit in
-      // Check if habit should be shown on today's date
-      let calendar = Calendar.current
-      let weekday = calendar.component(.weekday, from: today)
-
-      // Parse schedule to check if habit is scheduled for today
-      if habit.schedule.lowercased().contains("everyday") {
-        return true
-      } else if habit.schedule.lowercased().contains("weekdays") {
-        return weekday >= 2 && weekday <= 6 // Monday to Friday
-      } else if habit.schedule.lowercased().contains("weekends") {
-        return weekday == 1 || weekday == 7 // Sunday or Saturday
-      } else {
-        // For specific day schedules, check if today matches
-        let dayNames = [
-          "sunday",
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday"
-        ]
-        let todayName = dayNames[weekday - 1]
-        return habit.schedule.lowercased().contains(todayName)
+    
+    // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
+    Task { @MainActor in
+      do {
+        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+        let modelContext = SwiftDataContainer.shared.modelContext
+        
+        print("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user \(userId)")
+        
+        // Get or create GlobalStreakModel
+        let streakDescriptor = FetchDescriptor<GlobalStreakModel>(
+          predicate: #Predicate { streak in
+            streak.userId == userId
+          }
+        )
+        
+        let existingStreaks = try modelContext.fetch(streakDescriptor)
+        let streak = existingStreaks.first ?? {
+          let newStreak = GlobalStreakModel(userId: userId)
+          modelContext.insert(newStreak)
+          return newStreak
+        }()
+        
+        // Fetch all habits for this user
+        let habitsDescriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate { habit in
+            habit.userId == userId
+          }
+        )
+        let habitDataList = try modelContext.fetch(habitsDescriptor)
+        let habits = habitDataList.map { $0.toHabit() }
+        
+        guard !habits.isEmpty else {
+          print("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")
+          streak.currentStreak = 0
+          streak.lastCompleteDate = nil
+          try modelContext.save()
+          updateStreak()
+          return
+        }
+        
+        // Calculate streak from CompletionRecords
+        let today = DateUtils.startOfDay(for: Date())
+        let calendar = Calendar.current
+        
+        // Start from yesterday and count backwards
+        var checkDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        var currentStreakCount = 0
+        var lastCompleteDate: Date? = nil
+        
+        // Look back up to 365 days
+        let startDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+        
+        while checkDate >= startDate {
+          let dateKey = Habit.dateKey(for: checkDate)
+          
+          // Get scheduled habits for this date
+          let scheduledHabits = habits.filter { habit in
+            StreakDataCalculator.shouldShowHabitOnDate(habit, date: checkDate)
+          }
+          
+          guard !scheduledHabits.isEmpty else {
+            // No habits scheduled for this date, skip
+            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+            continue
+          }
+          
+          // Check if all scheduled habits are completed
+          let allComplete = scheduledHabits.allSatisfy { habit in
+            habit.isCompleted(for: checkDate)
+          }
+          
+          if allComplete {
+            // Day is complete - increment streak
+            currentStreakCount += 1
+            if lastCompleteDate == nil {
+              lastCompleteDate = checkDate
+            }
+            print("✅ STREAK_RECALC: Day \(dateKey) complete - streak now \(currentStreakCount)")
+          } else {
+            // Day is incomplete - stop counting (streak is broken)
+            print("⏸️ STREAK_RECALC: Day \(dateKey) incomplete - stopping at streak \(currentStreakCount)")
+            break
+          }
+          
+          // Move to previous day
+          checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+        }
+        
+        // Update streak model
+        let oldStreak = streak.currentStreak
+        streak.currentStreak = currentStreakCount
+        streak.longestStreak = max(streak.longestStreak, currentStreakCount)
+        streak.lastCompleteDate = lastCompleteDate
+        streak.lastUpdated = Date()
+        
+        try modelContext.save()
+        
+        print("✅ STREAK_RECALC: Recalculation complete - streak \(oldStreak) → \(currentStreakCount)")
+        
+        // Reload the UI streak
+        updateStreak()
+        
+      } catch {
+        print("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
       }
     }
-
-    // Check if all scheduled habits for today are completed
-    let allCompleted = todayHabits.allSatisfy { habit in
-      habit.isCompleted(for: today)
-    }
-
-    print("🔄 HomeView: Today's habits: \(todayHabits.count), All completed: \(allCompleted)")
-
-    if allCompleted {
-      // Only update streaks when ALL habits are completed for today
-      print("🎉 HomeView: All habits completed! Streaks will be computed from completion history.")
-      // ✅ PHASE 4: Streaks are now computed-only, no need to update them
-    } else {
-      // Reset streaks if not all habits are completed
-      print(
-        "🔄 HomeView: Not all habits completed. Streaks will be computed from completion history.")
-      // ✅ PHASE 4: Streaks are now computed-only, no need to reset them
-    }
-
-    // Save the updated habits
-    updateHabits(habits)
-    print("🔄 HomeView: All streaks updated")
   }
 
   func validateAllStreaks() {
@@ -612,7 +667,10 @@ struct HomeView: View {
       // Debug Core Data state
       HabitRepository.shared.debugHabitsState()
       
-      // ✅ FIX: Refresh streak from database when view appears
+      // ✅ FIX: Recalculate streak from CompletionRecords when app launches
+      state.updateAllStreaks()
+      
+      // ✅ FIX: Also refresh streak UI
       state.updateStreak()
 
       // Debug current state

@@ -169,8 +169,22 @@ class StreakService {
         // Find date range to check
         let today = DateUtils.startOfDay(for: Date())
         
+        // ✅ FIX: If habits array is empty, fetch from SwiftData
+        var habitsToCheck = habits
+        if habitsToCheck.isEmpty {
+            print("🔍 StreakService: No habits provided, fetching from SwiftData...")
+            let descriptor = FetchDescriptor<HabitData>(
+                predicate: #Predicate { habit in
+                    habit.userId == userId
+                }
+            )
+            let habitDataList = try modelContext.fetch(descriptor)
+            habitsToCheck = habitDataList.map { HabitModel.fromLegacy($0.toHabit(), userId: userId) }
+            print("✅ StreakService: Fetched \(habitsToCheck.count) habits from SwiftData")
+        }
+        
         // Get earliest habit start date
-        guard let earliestStart = habits.map({ $0.startDate }).min() else {
+        guard let earliestStart = habitsToCheck.map({ $0.startDate }).min() else {
             print("ℹ️ StreakService: No habits found - resetting streak to 0")
             streak.currentStreak = 0
             streak.lastCompleteDate = nil
@@ -194,7 +208,7 @@ class StreakService {
                 // Vacation day: don't break streak, don't increment
                 print("🏖️ StreakService: Vacation day on \(DateUtils.dateKey(for: checkDate))")
             } else {
-                let isComplete = try areAllHabitsComplete(on: checkDate, habits: habits)
+                let isComplete = try areAllHabitsComplete(on: checkDate, habits: habitsToCheck)
                 
                 if isComplete {
                     // Day complete: increment streak
