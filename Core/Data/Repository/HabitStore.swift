@@ -57,6 +57,20 @@ final actor HabitStore {
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
     if habits.isEmpty {
       logger.info("No habits found in SwiftData, checking UserDefaults for migration...")
+      // ✅ Gate: If an authenticated user exists and guest data is present, do NOT auto-migrate here.
+      //    The UI migration flow will handle it, preventing silent migrations and data duplication.
+      let shouldDeferToUIMigration: Bool = await MainActor.run {
+        if let currentUser = AuthenticationManager.shared.currentUser { // authenticated
+          return GuestDataMigration().hasGuestData()
+        }
+        return false
+      }
+
+      if shouldDeferToUIMigration {
+        logger.info("🛑 Skipping auto-migration from UserDefaults because guest data exists and user is authenticated. UI will handle migration.")
+        return habits
+      }
+
       let legacyHabits = try await checkForLegacyHabits()
       if !legacyHabits.isEmpty {
         logger.info("Found \(legacyHabits.count) habits in UserDefaults, migrating to active storage...")

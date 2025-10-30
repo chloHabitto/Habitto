@@ -228,8 +228,9 @@ struct HabittoApp: App {
           .onAppear {
             setupCoreData()
 
-            // Immediately clear any migration state to prevent screen from showing
-            habitRepository.shouldShowMigrationView = false
+            // ✅ FIX #25: Don't force-hide migration UI - let HabitRepository decide
+            // (Removed: habitRepository.shouldShowMigrationView = false)
+            // The migration view will appear if guest data exists when user signs in
 
             // Run XP data migration
             // ✅ FIX #17: Use Task (MainActor) instead of Task.detached to avoid Sendable warning
