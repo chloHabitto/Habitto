@@ -38,7 +38,8 @@ final class GlobalStreakModel {
     /// **Use case:** Calculate average streak length
     /// **Note:** Only includes completed streaks, not the current ongoing streak
     /// **Example:** [5, 3, 7, 1] means you had 4 streaks that ended with lengths 5, 3, 7, and 1 days
-    var streakHistory: [Int]
+    /// ✅ MIGRATION FIX: Default value prevents CoreData migration errors when adding this field
+    var streakHistory: [Int] = []
     
     /// Last date where all habits were complete
     /// **Use case:** Detect streak breaks (if today > lastCompleteDate + 1 day)

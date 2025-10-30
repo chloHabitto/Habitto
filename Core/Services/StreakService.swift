@@ -206,8 +206,9 @@ class StreakService {
                         longestStreakCount = currentStreakCount
                     }
                 } else {
-                    // Day incomplete: break streak (unless it's future)
-                    if checkDate <= today {
+                    // ✅ CRITICAL FIX: Day incomplete - break streak only if it's BEFORE today
+                    // Today's incomplete state should NOT break the streak until the day is over
+                    if checkDate < today {
                         currentStreakCount = 0
                     }
                 }
