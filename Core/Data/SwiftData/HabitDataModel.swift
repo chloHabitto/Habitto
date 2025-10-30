@@ -183,29 +183,36 @@ final class HabitData {
       completionRecords = completionHistory
       print("🔍 toHabit(): Using \(completionRecords.count) CompletionRecords from relationship for habit '\(self.name)'")
     }
+
+    // ✅ FILTER: Only include records for the current userId to avoid cross-user duplicates
+    let filteredRecords = completionRecords.filter { $0.userId == self.userId }
     
     // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
     // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries
     
     // ✅ CRITICAL FIX: Use actual progress count from CompletionRecord instead of just 1/0
-    let completionHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: completionRecords
-      .map {
-        (DateUtils.dateKey(for: $0.date), $0.progress)  // ✅ Use actual progress count!
-      })
+    // ✅ DEDUP: If multiple records exist for same dateKey, keep the latest by createdAt
+    let reducedProgressByDate: [String: CompletionRecord] = filteredRecords
+      .reduce(into: [String: CompletionRecord]()) { acc, record in
+        let key = DateUtils.dateKey(for: record.date)
+        if let existing = acc[key] {
+          if record.createdAt > existing.createdAt { acc[key] = record }
+        } else {
+          acc[key] = record
+        }
+      }
+    let completionHistoryDict: [String: Int] = reducedProgressByDate
+      .mapValues { $0.progress }
     
     // ✅ FIX: Rebuild completionStatus from CompletionRecords
-    let completionStatusDict: [String: Bool] = Dictionary(uniqueKeysWithValues: completionRecords
-      .map {
-        (DateUtils.dateKey(for: $0.date), $0.isCompleted)
-      })
+    let completionStatusDict: [String: Bool] = reducedProgressByDate
+      .mapValues { $0.isCompleted }
     
     // ✅ FIX: Rebuild completionTimestamps from CompletionRecords
     // Note: CompletionRecord doesn't store individual timestamps, so we use createdAt as proxy
-    let completionTimestampsDict: [String: [Date]] = Dictionary(uniqueKeysWithValues: completionRecords
-      .filter { $0.isCompleted }  // Only include completed records
-      .map {
-        (DateUtils.dateKey(for: $0.date), [$0.createdAt])
-      })
+    let completionTimestampsDict: [String: [Date]] = reducedProgressByDate
+      .filter { $0.value.isCompleted }
+      .mapValues { [$0.createdAt] }
 
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyHistory
       .map {
@@ -219,13 +226,13 @@ final class HabitData {
     // ✅ DIAGNOSTIC LOGGING: Verify data was rebuilt correctly
     #if DEBUG
     print("🔧 HOTFIX: toHabit() for '\(name)':")
-    print("  → CompletionRecords: \(completionRecords.count)")
+    print("  → CompletionRecords: \(filteredRecords.count)")
     print("  → completionHistory entries: \(completionHistoryDict.count)")
     print("  → completionStatus entries: \(completionStatusDict.count)")
     print("  → completionTimestamps entries: \(completionTimestampsDict.count)")
-    if completionRecords.count > 0 {
-      let completedCount = completionRecords.filter { $0.isCompleted }.count
-      print("  → Completed days: \(completedCount)/\(completionRecords.count)")
+    if filteredRecords.count > 0 {
+      let completedCount = filteredRecords.filter { $0.isCompleted }.count
+      print("  → Completed days: \(completedCount)/\(filteredRecords.count)")
     }
     #endif
 

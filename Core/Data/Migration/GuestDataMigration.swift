@@ -20,12 +20,21 @@ final class GuestDataMigration: ObservableObject {
   func hasGuestData() -> Bool {
     print("🔍 GuestDataMigration.hasGuestData() - Starting check...")
 
-    // Check if there are guest habits
+    // Check if there are guest habits (new guest key)
     if let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
        let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData),
        !guestHabits.isEmpty
     {
       print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits")
+      return true
+    }
+
+    // Check for legacy cached habits stored under "SavedHabits"
+    if let legacyData = userDefaults.data(forKey: "SavedHabits"),
+       let legacyHabits = try? JSONDecoder().decode([Habit].self, from: legacyData),
+       !legacyHabits.isEmpty
+    {
+      print("🔍 GuestDataMigration: Found \(legacyHabits.count) legacy habits in UserDefaults key 'SavedHabits'")
       return true
     }
 
