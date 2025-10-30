@@ -34,6 +34,12 @@ final class GlobalStreakModel {
     /// **Use case:** "You've completed all habits 47 times!"
     var totalCompleteDays: Int
     
+    /// History of completed streaks (streaks that ended)
+    /// **Use case:** Calculate average streak length
+    /// **Note:** Only includes completed streaks, not the current ongoing streak
+    /// **Example:** [5, 3, 7, 1] means you had 4 streaks that ended with lengths 5, 3, 7, and 1 days
+    var streakHistory: [Int]
+    
     /// Last date where all habits were complete
     /// **Use case:** Detect streak breaks (if today > lastCompleteDate + 1 day)
     var lastCompleteDate: Date?
@@ -51,6 +57,7 @@ final class GlobalStreakModel {
         currentStreak: Int = 0,
         longestStreak: Int = 0,
         totalCompleteDays: Int = 0,
+        streakHistory: [Int] = [],
         lastCompleteDate: Date? = nil
     ) {
         self.id = id
@@ -58,6 +65,7 @@ final class GlobalStreakModel {
         self.currentStreak = currentStreak
         self.longestStreak = longestStreak
         self.totalCompleteDays = totalCompleteDays
+        self.streakHistory = streakHistory
         self.lastCompleteDate = lastCompleteDate
         self.lastUpdated = Date()
     }
@@ -85,7 +93,11 @@ final class GlobalStreakModel {
                 // Consecutive day - increment streak
                 currentStreak += 1
             } else if daysDiff > 1 {
-                // Gap in streak - reset to 1
+                // Gap in streak - save old streak to history and reset to 1
+                if currentStreak > 0 {
+                    streakHistory.append(currentStreak)
+                    print("📊 STREAK_HISTORY: Saved completed streak of \(currentStreak) days to history")
+                }
                 currentStreak = 1
             } else if daysDiff == 0 {
                 // Same day - don't increment (shouldn't happen, but handle gracefully)
@@ -114,6 +126,11 @@ final class GlobalStreakModel {
     
     /// Break/reset streak (user failed to complete all habits)
     func breakStreak() {
+        // Save current streak to history before breaking
+        if currentStreak > 0 {
+            streakHistory.append(currentStreak)
+            print("📊 STREAK_HISTORY: Saved broken streak of \(currentStreak) days to history")
+        }
         currentStreak = 0
         lastUpdated = Date()
     }
@@ -277,6 +294,25 @@ extension GlobalStreakModel {
     
     var isValid: Bool {
         validate().isEmpty
+    }
+}
+
+// MARK: - Computed Statistics
+
+extension GlobalStreakModel {
+    /// Calculate average streak length from completed streaks
+    /// **Logic:**
+    /// - Only includes completed streaks from streakHistory
+    /// - Does NOT include current ongoing streak (only completed ones)
+    /// - Returns 0 if no streak history exists
+    /// **Example:** streakHistory = [5, 3, 7, 1] → average = 4.0 → displayed as "4 days"
+    var averageStreak: Int {
+        guard !streakHistory.isEmpty else { return 0 }
+        
+        let total = streakHistory.reduce(0, +)
+        let average = Double(total) / Double(streakHistory.count)
+        
+        return Int(average.rounded())
     }
 }
 
