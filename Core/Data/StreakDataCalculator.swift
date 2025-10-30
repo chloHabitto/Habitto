@@ -822,6 +822,7 @@ class StreakDataCalculator {
 
   /// Calculates the overall streak only when ALL habits are completed for each day
   /// This is the correct behavior: streaks should only increment when all daily habits are done
+  /// ✅ FIX: Starts from YESTERDAY to avoid counting incomplete TODAY in streak
   private static func calculateOverallStreakWhenAllCompleted(
     from habits: [Habit],
     calendar: Calendar,
@@ -830,9 +831,12 @@ class StreakDataCalculator {
     guard !habits.isEmpty else { return 0 }
 
     var streak = 0
-    var currentDate = today
+    
+    // ✅ CRITICAL FIX: Start from YESTERDAY, not TODAY
+    // Today's incomplete state should NOT break the streak until the day is over
+    var currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
 
-    // Count consecutive days backwards from today where ALL habits were completed
+    // Count consecutive days backwards from YESTERDAY where ALL habits were completed
     while true {
       // Check if all habits were completed on this date
       let allCompletedOnThisDate = habits.allSatisfy { habit in

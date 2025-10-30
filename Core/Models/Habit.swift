@@ -560,18 +560,22 @@ struct Habit: Identifiable, Codable, Equatable {
 
   /// Calculates the true consecutive day streak by checking actual completion history
   /// Skips vacation days to preserve streaks during vacation periods
+  /// ✅ FIX: Starts from YESTERDAY to avoid counting incomplete TODAY in streak
   func calculateTrueStreak() -> Int {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let vacationManager = VacationManager.shared
     var calculatedStreak = 0
-    var currentDate = today
+    
+    // ✅ CRITICAL FIX: Start from YESTERDAY, not TODAY
+    // Today's incomplete state should NOT break the streak until the day is over
+    var currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
     var debugInfo: [String] = []
 
     // ✅ FIX #20: Prevent infinite loop for new habits by checking against start date
     let habitStartDate = calendar.startOfDay(for: startDate)
 
-    // Count consecutive completed days backwards from today
+    // Count consecutive completed days backwards from YESTERDAY
     // Skip vacation days only during active vacation periods
     while (isCompleted(for: currentDate) ||
       (vacationManager.isActive && vacationManager.isVacationDay(currentDate))) &&
