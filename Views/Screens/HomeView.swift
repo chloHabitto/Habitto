@@ -272,9 +272,11 @@ class HomeViewState: ObservableObject {
   }
 
   func updateAllStreaks() {
+    let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
     print("")
     print(String(repeating: "=", count: 60))
-    print("🔄 STREAK_TRIGGER: updateAllStreaks() called")
+    print("🔄 STREAK_TRIGGER: updateAllStreaks() called at \(timestamp)")
+    print("   Triggered by: Reactive callback from habit completion/uncompletion")
     print(String(repeating: "=", count: 60))
     
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
