@@ -272,7 +272,10 @@ class HomeViewState: ObservableObject {
   }
 
   func updateAllStreaks() {
-    print("🔄 HomeView: Updating all streaks...")
+    print("")
+    print(String(repeating: "=", count: 60))
+    print("🔄 STREAK_TRIGGER: updateAllStreaks() called")
+    print(String(repeating: "=", count: 60))
     
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
     Task { @MainActor in
@@ -314,35 +317,70 @@ class HomeViewState: ObservableObject {
           return
         }
         
-        // Calculate streak from CompletionRecords
-        let today = DateUtils.startOfDay(for: Date())
-        let calendar = Calendar.current
-        
-        // Start from yesterday and count backwards
-        var checkDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
-        var currentStreakCount = 0
-        var lastCompleteDate: Date? = nil
-        
-        // Look back up to 365 days
-        let startDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+            // Calculate streak from CompletionRecords
+            let today = DateUtils.startOfDay(for: Date())
+            let calendar = Calendar.current
+            
+            // ✅ Start from yesterday, but check if today is complete first
+            // Streak counts consecutive complete days up to AND INCLUDING today if today is complete
+            var checkDate = today
+            var currentStreakCount = 0
+            var lastCompleteDate: Date? = nil
+            
+            // Look back up to 365 days
+            let startDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+            
+            print("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
         
         while checkDate >= startDate {
           let dateKey = Habit.dateKey(for: checkDate)
           
           // Get scheduled habits for this date
+          // ✅ CRITICAL FIX: Use EXACT same scheduling logic as XP calculation
           let scheduledHabits = habits.filter { habit in
-            StreakDataCalculator.shouldShowHabitOnDate(habit, date: checkDate)
+            HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: checkDate, habits: habits)
           }
           
+          // ✅ Enhanced logging: Show what date we're checking
+          let isToday = calendar.isDateInToday(checkDate)
+          let isYesterday = calendar.isDateInYesterday(checkDate)
+          let dayLabel = isToday ? "(TODAY)" : isYesterday ? "(YESTERDAY)" : ""
+          
+          print("🔍 STREAK_RECALC: Checking \(dateKey) \(dayLabel)")
+          
           guard !scheduledHabits.isEmpty else {
-            // No habits scheduled for this date, skip
+            // No habits scheduled for this date - this might mean app wasn't used yet
+            print("⏭️ STREAK_RECALC: Day \(dateKey) \(dayLabel) - no habits scheduled, skipping")
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
             continue
           }
           
-          // Check if all scheduled habits are completed
+          print("   📅 \(scheduledHabits.count) habit(s) scheduled: \(scheduledHabits.map { $0.name }.joined(separator: ", "))")
+          
+          // ✅ CRITICAL: Use EXACT same logic as XP calculation (check CompletionRecords, not completionHistory)
+          // Fetch CompletionRecords from SwiftData for this date
+          let descriptor = FetchDescriptor<CompletionRecord>()
+          let allRecords = try modelContext.fetch(descriptor)
+          let completedRecords = allRecords.filter { 
+            $0.dateKey == dateKey && 
+            $0.userId == userId && 
+            $0.isCompleted 
+          }
+          
+          // ✅ Show detailed completion status
+          print("   🔍 CompletionRecords found: \(completedRecords.count)/\(scheduledHabits.count)")
+          for habit in scheduledHabits {
+            let record = completedRecords.first(where: { $0.habitId == habit.id })
+            if let record = record {
+              print("     ✅ \(habit.name) - CompletionRecord exists (isCompleted=\(record.isCompleted), progress=\(record.progress))")
+            } else {
+              print("     ❌ \(habit.name) - NO CompletionRecord found")
+            }
+          }
+          
+          // Check if ALL habits have a completed CompletionRecord (same as XP logic)
           let allComplete = scheduledHabits.allSatisfy { habit in
-            habit.isCompleted(for: checkDate)
+            completedRecords.contains(where: { $0.habitId == habit.id })
           }
           
           if allComplete {
@@ -351,30 +389,53 @@ class HomeViewState: ObservableObject {
             if lastCompleteDate == nil {
               lastCompleteDate = checkDate
             }
-            print("✅ STREAK_RECALC: Day \(dateKey) complete - streak now \(currentStreakCount)")
+            print("   ✅ RESULT: Day \(dateKey) \(dayLabel) COMPLETE - streak now \(currentStreakCount)")
           } else {
-            // Day is incomplete - stop counting (streak is broken)
-            print("⏸️ STREAK_RECALC: Day \(dateKey) incomplete - stopping at streak \(currentStreakCount)")
-            break
+            // Day is incomplete
+            let missingHabits = scheduledHabits.filter { habit in
+              !completedRecords.contains(where: { $0.habitId == habit.id })
+            }
+            print("   ❌ RESULT: Day \(dateKey) \(dayLabel) INCOMPLETE - missing: \(missingHabits.map { $0.name }.joined(separator: ", "))")
+            
+            // ✅ CRITICAL FIX: Only break if we've already found complete days
+            // This allows us to skip today if incomplete and continue checking yesterday
+            if currentStreakCount > 0 {
+              // We've found complete days already, so this incomplete day breaks the streak
+              print("   ⏸️ STOPPING: Streak broken at \(currentStreakCount) day(s)")
+              print("   📊 Last complete date was: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
+              break
+            } else {
+              // We haven't found any complete days yet, so keep looking backwards
+              // This handles the case where today is incomplete but yesterday might be complete
+              print("   ⏭️ SKIPPING: Day incomplete, continuing backwards to find streak start...")
+            }
           }
           
           // Move to previous day
           checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
         }
         
-        // Update streak model
-        let oldStreak = streak.currentStreak
-        streak.currentStreak = currentStreakCount
-        streak.longestStreak = max(streak.longestStreak, currentStreakCount)
-        streak.lastCompleteDate = lastCompleteDate
-        streak.lastUpdated = Date()
-        
-        try modelContext.save()
-        
-        print("✅ STREAK_RECALC: Recalculation complete - streak \(oldStreak) → \(currentStreakCount)")
-        
-        // Reload the UI streak
-        updateStreak()
+            // Update streak model
+            let oldStreak = streak.currentStreak
+            streak.currentStreak = currentStreakCount
+            streak.longestStreak = max(streak.longestStreak, currentStreakCount)
+            streak.lastCompleteDate = lastCompleteDate
+            streak.lastUpdated = Date()
+            
+            try modelContext.save()
+            
+            print("")
+            print(String(repeating: "=", count: 60))
+            print("✅ STREAK_RECALC: Recalculation COMPLETE")
+            print("   Old streak: \(oldStreak) day(s)")
+            print("   New streak: \(currentStreakCount) day(s)")
+            print("   Last complete date: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
+            print("   Longest streak: \(streak.longestStreak) day(s)")
+            print(String(repeating: "=", count: 60))
+            print("")
+            
+            // Reload the UI streak
+            updateStreak()
         
       } catch {
         print("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
@@ -756,8 +817,8 @@ struct HomeView: View {
       TutorialBottomSheet(tutorialManager: tutorialManager)
     }
     .onChange(of: state.habits) { oldHabits, newHabits in
-      // ✅ FIX: Reactively recalculate XP whenever habits change
-      // This ensures XP updates immediately regardless of which tab is active
+      // ✅ FIX: Reactively recalculate XP AND STREAK whenever habits change
+      // This ensures both XP and streak update immediately when habits are toggled
       Task { @MainActor in
         print("✅ REACTIVE_XP: Habits changed, recalculating XP...")
         
@@ -766,6 +827,16 @@ struct HomeView: View {
         xpManager.publishXP(completedDaysCount: completedDaysCount)
         
         print("✅ REACTIVE_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+        
+        // ✅ CRITICAL FIX: Also recalculate streak when habits change!
+        // But add a small delay to ensure SwiftData has finished saving CompletionRecords
+        print("🔄 REACTIVE_STREAK: Habits changed, scheduling streak recalculation...")
+        
+        // Wait 100ms to allow SwiftData saves to complete
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+        
+        print("🔄 REACTIVE_STREAK: Now recalculating streak after SwiftData sync...")
+        state.updateAllStreaks()
       }
     }
   }

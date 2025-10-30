@@ -642,126 +642,10 @@ struct HomeTabView: View {
     }
   }
 
+  /// ✅ REFACTORED: Delegates to shared HabitSchedulingLogic utility
+  /// This ensures XP and streak calculations use IDENTICAL scheduling logic
   private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
-    print("🔍 shouldShowHabitOnDate called for '\(habit.name)' with schedule: '\(habit.schedule)'")
-    let weekday = Calendar.current.component(.weekday, from: date)
-
-    // Check if the date is before the habit start date
-    if date < DateUtils.startOfDay(for: habit.startDate) {
-      print("🔍 shouldShowHabitOnDate - '\(habit.name)' EXCLUDED: before start date")
-      return false
-    }
-
-    // Check if the date is after the habit end date (if set)
-    // Use >= to be inclusive of the end date
-    if let endDate = habit.endDate, date > DateUtils.endOfDay(for: endDate) {
-      return false
-    }
-
-    switch habit.schedule.lowercased() {
-    case "every day",
-         "everyday":
-      return true
-
-    case "weekdays":
-      let shouldShow = weekday >= 2 && weekday <= 6 // Monday = 2, Friday = 6
-      return shouldShow
-
-    case "weekends":
-      let shouldShow = weekday == 1 || weekday == 7 // Sunday = 1, Saturday = 7
-      return shouldShow
-
-    case "mon",
-         "monday":
-      let shouldShow = weekday == 2
-      return shouldShow
-
-    case "tue",
-         "tuesday":
-      let shouldShow = weekday == 3
-      return shouldShow
-
-    case "wed",
-         "wednesday":
-      let shouldShow = weekday == 4
-      return shouldShow
-
-    case "thu",
-         "thursday":
-      let shouldShow = weekday == 5
-      return shouldShow
-
-    case "fri",
-         "friday":
-      let shouldShow = weekday == 6
-      return shouldShow
-
-    case "sat",
-         "saturday":
-      let shouldShow = weekday == 7
-      return shouldShow
-
-    case "sun",
-         "sunday":
-      let shouldShow = weekday == 1
-      return shouldShow
-
-    default:
-      // Handle custom schedules like "Every Monday, Wednesday, Friday"
-      if habit.schedule.lowercased().contains("every"),
-         habit.schedule.lowercased().contains("day")
-      {
-        // First check if it's an "Every X days" schedule
-        if let dayCount = extractDayCount(from: habit.schedule) {
-          // Handle "Every X days" schedules
-          let startDate = DateUtils.startOfDay(for: habit.startDate)
-          let targetDate = DateUtils.startOfDay(for: date)
-          let daysSinceStart = DateUtils.daysBetween(startDate, targetDate)
-
-          // Check if the target date falls on the schedule
-          let shouldShow = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
-          return shouldShow
-        } else {
-          // Extract weekdays from schedule (like "Every Monday, Wednesday, Friday")
-          let weekdays = extractWeekdays(from: habit.schedule)
-          let shouldShow = weekdays.contains(weekday)
-          return shouldShow
-        }
-      } else if habit.schedule.contains("once a week") || habit.schedule.contains("twice a week") || habit.schedule.contains("day a week") || habit.schedule.contains("days a week") {
-        // Handle frequency schedules like "once a week", "twice a week", or "3 days a week"
-        let shouldShow = shouldShowHabitWithFrequency(habit: habit, date: date)
-        return shouldShow
-      } else if habit.schedule.contains("once a month") || habit.schedule.contains("twice a month") || habit.schedule.contains("day a month") || habit.schedule.contains("days a month") {
-        // Handle monthly frequency schedules like "once a month", "twice a month", or "3 days a month"
-        let shouldShow = shouldShowHabitWithMonthlyFrequency(habit: habit, date: date)
-        return shouldShow
-      } else if habit.schedule.contains("times per week") {
-        // Handle "X times per week" schedules
-        let schedule = habit.schedule.lowercased()
-        let timesPerWeek = extractTimesPerWeek(from: schedule)
-
-        if timesPerWeek != nil {
-          // For now, show the habit if it's within the week
-          // This is a simplified implementation
-          let weekStart = DateUtils.startOfWeek(for: date)
-          let weekEnd = DateUtils.endOfWeek(for: date)
-          let isInWeek = date >= weekStart && date <= weekEnd
-          return isInWeek
-        }
-        return false
-      }
-      // Check if schedule contains multiple weekdays separated by commas
-      if habit.schedule.contains(",") {
-        let weekdays = extractWeekdays(from: habit.schedule)
-        let shouldShow = weekdays.contains(weekday)
-        return shouldShow
-      }
-      
-      // ✅ CRITICAL FIX: For any unrecognized schedule format, SHOW the habit (don't hide saved habits)
-      // Previously returned false, which caused successfully saved habits to disappear from UI
-      print("⚠️ shouldShowHabitOnDate - '\(habit.name)' has unrecognized schedule '\(habit.schedule)' - showing by default")
-      return true  // ✅ Changed from false to true - better to show than hide
-    }
+    return HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: date, habits: habits)
   }
 
   private func extractDayCount(from schedule: String) -> Int? {
@@ -1099,13 +983,14 @@ struct HomeTabView: View {
     while currentDate <= today {
       let dateKey = Habit.dateKey(for: currentDate)
       
+      // ✅ CRITICAL FIX: Use shared scheduling logic (same as streak calculation)
       let habitsForDate = habits.filter { habit in
         let selected = DateUtils.startOfDay(for: currentDate)
         let start = DateUtils.startOfDay(for: habit.startDate)
         let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
         
         guard selected >= start, selected <= end else { return false }
-        return shouldShowHabitOnDate(habit, date: currentDate)
+        return HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: currentDate, habits: habits)
       }
       
       // ✅ CRITICAL FIX: Check CompletionRecords from SwiftData instead of old completionHistory!
