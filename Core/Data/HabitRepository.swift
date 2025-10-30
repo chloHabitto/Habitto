@@ -752,47 +752,53 @@ class HabitRepository: ObservableObject {
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits write to completionHistory
       // The actualUsage field is DISPLAY ONLY and NOT used for completion logic
       let oldProgress = habits[index].completionHistory[dateKey] ?? 0
-      habits[index].completionHistory[dateKey] = progress
-      print("🔍 REPO - \(habits[index].habitType == .breaking ? "Breaking" : "Formation") Habit '\(habits[index].name)' | Old progress: \(oldProgress) → New progress: \(progress)")
+      
+      // ✅ CRITICAL FIX: Create a mutable copy to modify
+      var updatedHabit = habits[index]
+      updatedHabit.completionHistory[dateKey] = progress
+      print("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
 
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
       // Set completionStatus[dateKey] = true when progress >= goal
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habits[index].goal)
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: updatedHabit.goal)
       let isComplete = progress >= goalAmount
-      habits[index].completionStatus[dateKey] = isComplete
-      print("🔍 COMPLETION FIX - \(habits[index].habitType == .breaking ? "Breaking" : "Formation") Habit '\(habits[index].name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      updatedHabit.completionStatus[dateKey] = isComplete
+      print("🔍 COMPLETION FIX - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
 
       // Handle timestamp recording for time-based completion analysis
       let currentTimestamp = Date()
       if progress > oldProgress {
         // Progress increased - record new completion timestamp
-        if habits[index].completionTimestamps[dateKey] == nil {
-          habits[index].completionTimestamps[dateKey] = []
+        if updatedHabit.completionTimestamps[dateKey] == nil {
+          updatedHabit.completionTimestamps[dateKey] = []
         }
         let newCompletions = progress - oldProgress
         for _ in 0 ..< newCompletions {
-          habits[index].completionTimestamps[dateKey]?.append(currentTimestamp)
+          updatedHabit.completionTimestamps[dateKey]?.append(currentTimestamp)
         }
         print(
           "🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
         print(
-          "🕐 HabitRepository: Total timestamps for \(dateKey): \(habits[index].completionTimestamps[dateKey]?.count ?? 0)")
+          "🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
       } else if progress < oldProgress {
         // Progress decreased - remove recent timestamps
         let removedCompletions = oldProgress - progress
         for _ in 0 ..< removedCompletions {
-          if habits[index].completionTimestamps[dateKey]?.isEmpty == false {
-            habits[index].completionTimestamps[dateKey]?.removeLast()
+          if updatedHabit.completionTimestamps[dateKey]?.isEmpty == false {
+            updatedHabit.completionTimestamps[dateKey]?.removeLast()
           }
         }
         print(
           "🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
       }
 
+      // ✅ CRITICAL FIX: Reassign to habits array to trigger @Published emission
+      habits[index] = updatedHabit
+      
       // ✅ PHASE 4: Streak is now computed-only, no need to update
       // Streak is derived from completion history in real-time
-      objectWillChange.send()
       print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
+      print("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
 
       // ✅ XP SYSTEM: XP awarding is now handled by the UI layer (HomeTabView)
       // Removed automatic XP check here to prevent double celebrations
@@ -826,9 +832,11 @@ class HabitRepository: ObservableObject {
         print("  ❌ Error details: \(error)")
         
         // Revert UI change on error
-        habits[index].completionHistory[dateKey] = oldProgress
-        objectWillChange.send()
+        var revertedHabit = habits[index]
+        revertedHabit.completionHistory[dateKey] = oldProgress
+        habits[index] = revertedHabit
         print("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
+        print("  📢 HabitRepository: @Published habits array reverted, triggering subscriber notifications")
         
         // Re-throw to let caller know save failed
         throw error
