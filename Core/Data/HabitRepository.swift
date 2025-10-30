@@ -223,9 +223,10 @@ class HabitRepository: ObservableObject {
           try await guestDataMigration.migrateGuestData()
           print("✅ HabitRepository: Guest data migrated successfully during emergency fix")
         } catch {
-          print("❌ HabitRepository: Guest migration failed, clearing stale data as fallback: \(error)")
-          // Only clear if migration actually fails
-          guestDataMigration.clearStaleGuestData()
+          print("❌ HabitRepository: Guest migration failed: \(error)")
+          print("⚠️ Guest data PRESERVED - user can retry migration later")
+          // ❌ CRITICAL FIX: NEVER auto-delete user data - let them choose
+          // guestDataMigration.clearStaleGuestData()  // Removed to prevent data loss
         }
         
         // Hide migration view and reload
@@ -708,7 +709,7 @@ class HabitRepository: ObservableObject {
     // Skip Core Data and handle completion directly in UserDefaults
     print("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
 
-    let dateKey = DateKey.key(for: date)
+    let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
     
     // ✅ UNIVERSAL RULE: Both types use completionHistory
     let currentProgress = habit.completionHistory[dateKey] ?? 0
@@ -741,7 +742,7 @@ class HabitRepository: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
-    let dateKey = DateKey.key(for: date)
+    let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
     print(
       "🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
     print(
@@ -949,21 +950,14 @@ class HabitRepository: ObservableObject {
       print(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
-      // ✅ FIX #23: Properly migrate guest data instead of clearing it
+      // ✅ FIX #24: Show migration UI instead of auto-migrating (prevent data loss)
       if guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData() {
-        print("🔄 HabitRepository: Guest data detected - starting automatic migration...")
-        shouldShowMigrationView = false // Don't show UI, migrate automatically
-        
-        do {
-          try await guestDataMigration.migrateGuestData()
-          print("✅ HabitRepository: Guest data successfully migrated for user \(user.uid)")
-        } catch {
-          print("❌ HabitRepository: Guest data migration failed: \(error.localizedDescription)")
-          print("   Guest data has been preserved. User can retry migration later.")
-          // Don't clear data on failure - let user retry or manually migrate
-        }
+        print("🔄 HabitRepository: Guest data detected - showing migration UI...")
+        shouldShowMigrationView = true  // ✅ Show migration UI, let user choose
+        print("✅ Guest data found, user can choose to migrate or start fresh")
       } else {
         print("ℹ️ HabitRepository: No guest data to migrate or already migrated")
+        shouldShowMigrationView = false
         // Mark migration as complete if no guest data exists
         if !guestDataMigration.hasGuestData() {
           guestDataMigration.forceMarkMigrationCompleted()
@@ -1019,7 +1013,7 @@ class HabitRepository: ObservableObject {
 
   /// Check if all habits are completed for a date and award XP if so
   private func checkAndAwardXPForDate(_ date: Date) async {
-    let dateKey = DateKey.key(for: date)
+    let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
 
     print("🎯 XP CHECK: Checking if all habits completed for \(dateKey)")
 
