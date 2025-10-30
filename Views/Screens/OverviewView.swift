@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct OverviewView: View {
   @Environment(\.dismiss) private var dismiss
@@ -7,6 +8,7 @@ struct OverviewView: View {
     currentStreak: 0,
     longestStreak: 0,
     totalCompletionDays: 0)
+  @State private var averageStreak: Int = 0
 
   /// Performance optimization: Cache expensive data
   @State private var yearlyHeatmapData: [[(
@@ -49,7 +51,7 @@ struct OverviewView: View {
           // Streak Summary Cards
           StreakSummaryCardsView(
             bestStreak: streakStatistics.longestStreak,
-            averageStreak: 0 // Not available in current StreakStatistics
+            averageStreak: averageStreak
           )
 
           // Monthly Calendar
@@ -158,11 +160,55 @@ struct OverviewView: View {
         "🔍 OVERVIEW VIEW DEBUG - Habit: '\(habit.name)' | Schedule: '\(habit.schedule)' | StartDate: \(DateUtils.dateKey(for: habit.startDate)) | Today(\(todayKey)) Progress: \(todayProgress) | CompletionHistory keys: \(habit.completionHistory.keys.sorted())")
     }
 
-    // Calculate streak statistics from actual user data
-    streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: userHabits)
+    // ✅ FIX: Load streak statistics from GlobalStreakModel instead of old calculator
+    loadStreakStatistics()
 
     // Load data on background thread to avoid blocking UI
     loadYearlyData()
+  }
+  
+  private func loadStreakStatistics() {
+    Task { @MainActor in
+      do {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+        
+        print("🔍 OVERVIEW_STREAK: Fetching streak for userId: \(userId)")
+        
+        let descriptor = FetchDescriptor<GlobalStreakModel>(
+          predicate: #Predicate { streak in
+            streak.userId == userId
+          }
+        )
+        
+        if let streak = try modelContext.fetch(descriptor).first {
+          streakStatistics = StreakStatistics(
+            currentStreak: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            totalCompletionDays: streak.totalCompleteDays
+          )
+          averageStreak = streak.averageStreak
+          print("✅ OVERVIEW_STREAK: Loaded from GlobalStreakModel - current: \(streak.currentStreak), longest: \(streak.longestStreak), average: \(streak.averageStreak), total: \(streak.totalCompleteDays)")
+          print("📊 OVERVIEW_STREAK: Streak history: \(streak.streakHistory)")
+        } else {
+          streakStatistics = StreakStatistics(
+            currentStreak: 0,
+            longestStreak: 0,
+            totalCompletionDays: 0
+          )
+          averageStreak = 0
+          print("ℹ️ OVERVIEW_STREAK: No GlobalStreakModel found for userId: \(userId)")
+        }
+      } catch {
+        print("❌ OVERVIEW_STREAK: Failed to load: \(error)")
+        streakStatistics = StreakStatistics(
+          currentStreak: 0,
+          longestStreak: 0,
+          totalCompletionDays: 0
+        )
+        averageStreak = 0
+      }
+    }
   }
 
   // MARK: - Notification Handling
@@ -178,6 +224,17 @@ struct OverviewView: View {
       // Force refresh the data when habit progress changes
       isDataLoaded = false
       loadData()
+    }
+    
+    // ✅ FIX: Listen for streak updates
+    NotificationCenter.default.addObserver(
+      forName: NSNotification.Name("StreakUpdated"),
+      object: nil,
+      queue: .main)
+    { _ in
+      print("📢 OVERVIEW_STREAK: Received StreakUpdated notification, refreshing streak statistics...")
+      // Reload streak statistics immediately
+      loadStreakStatistics()
     }
   }
 
