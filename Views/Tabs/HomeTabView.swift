@@ -1238,8 +1238,9 @@ struct HomeTabView: View {
       }
       print("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
       
-      // ✅ CRITICAL FIX: Also recalculate streak when habit is uncompleted
-      // This ensures streak updates immediately, just like XP does
+      // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
+      // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
+      // This ensures streak always reflects current state, regardless of which day is uncompleted
       print("🔄 DERIVED_STREAK: Recalculating streak after uncomplete")
       await MainActor.run {
         onStreakRecalculationNeeded?()
@@ -1265,11 +1266,12 @@ struct HomeTabView: View {
           try modelContext.save()
           print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
           
-          // ✅ FIX: Decrement streak when day becomes incomplete
-          let newStreak = try await decrementGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
-          print("✅ UNCOMPLETE_FLOW: Streak decremented to \(newStreak)")
+          // ✅ REMOVED: No longer calling decrementGlobalStreak() here!
+          // The onStreakRecalculationNeeded() callback above handles ALL streak updates
+          // This prevents the old early-return logic from interfering with today's uncompletes
+          print("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
         } catch {
-          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward or decrement streak: \(error)")
+          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
         }
       }
     }
@@ -1349,8 +1351,9 @@ struct HomeTabView: View {
         }
         print("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         
-        // ✅ CRITICAL FIX: Also recalculate streak when last habit is completed
-        // This ensures streak updates immediately, just like XP does
+        // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
+        // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
+        // This ensures streak always reflects current state
         print("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
           onStreakRecalculationNeeded?()
@@ -1371,20 +1374,19 @@ struct HomeTabView: View {
           try modelContext.save()
           print("✅ COMPLETION_FLOW: DailyAward record created for history")
           
-          // ✅ FIX: Update streak when all habits are completed
-          let newStreak = try updateGlobalStreak(for: userId, on: selectedDate, modelContext: modelContext)
+          // ✅ REMOVED: No longer calling updateGlobalStreak() here!
+          // The onStreakRecalculationNeeded() callback above handles ALL streak updates
+          // This prevents duplicate/conflicting streak calculations
+          print("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
           
           // Trigger celebration
           showCelebration = true
           print("🎉 COMPLETION_FLOW: Celebration triggered!")
           
-          // ✅ FIX: Broadcast the new streak value so UI can update immediately
-          NotificationCenter.default.post(
-            name: NSNotification.Name("StreakUpdated"),
-            object: nil,
-            userInfo: ["newStreak": newStreak]
-          )
-          print("📢 COMPLETION_FLOW: Posted StreakUpdated notification with newStreak: \(newStreak)")
+          // ✅ REMOVED: No longer posting StreakUpdated notification manually
+          // The callback will trigger updateAllStreaks() which updates GlobalStreakModel
+          // SwiftUI @Query will automatically pick up the changes
+          print("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
         } catch {
           print("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
         }
