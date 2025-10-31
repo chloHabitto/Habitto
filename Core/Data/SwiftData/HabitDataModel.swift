@@ -185,7 +185,24 @@ final class HabitData {
     }
 
     // ✅ FILTER: Only include records for the current userId to avoid cross-user duplicates
-    let filteredRecords = completionRecords.filter { $0.userId == self.userId }
+    // ✅ CRITICAL FIX: Handle guest userId inconsistencies ("", "guest" both mean guest)
+    let filteredRecords = completionRecords.filter { record in
+      if self.userId.isEmpty || self.userId == "guest" {
+        // For guest habits, accept both "" and "guest" userIds (legacy compatibility)
+        return record.userId.isEmpty || record.userId == "guest" || record.userId == self.userId
+      } else {
+        // For authenticated users, exact match required
+        return record.userId == self.userId
+      }
+    }
+    
+    // ✅ DEBUG: Log filtering results
+    if completionRecords.count != filteredRecords.count {
+      let uniqueUserIds = Array(Set(completionRecords.map { $0.userId }))
+      print("⚠️ toHabit(): Filtered out \(completionRecords.count - filteredRecords.count) CompletionRecords due to userId mismatch")
+      print("   HabitData.userId: '\(self.userId)'")
+      print("   CompletionRecord userIds: \(uniqueUserIds)")
+    }
     
     // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
     // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries

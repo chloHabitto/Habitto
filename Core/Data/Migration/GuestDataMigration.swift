@@ -1,4 +1,5 @@
 import Combine
+import FirebaseAuth
 import Foundation
 import SwiftData
 
@@ -30,11 +31,33 @@ final class GuestDataMigration: ObservableObject {
       let allHabitsDescriptor = FetchDescriptor<HabitData>()
       let allHabits = try context.fetch(allHabitsDescriptor)
       
-      // Check for guest/anonymous habits (userId == "" or userId != current authenticated user)
-      let currentUserId = AuthenticationManager.shared.currentUser?.uid ?? ""
+      // ✅ CRITICAL FIX: Detect guest/anonymous data that needs migration
+      // This includes: userId == "", "guest", or anonymous userId (different from current authenticated user)
+      let currentUserId = AuthenticationManager.shared.currentUser?.uid
+      
+      // Check if current user is anonymous (Firebase anonymous users have isAnonymous = true)
+      let isCurrentUserAnonymous: Bool = {
+        if let firebaseUser = AuthenticationManager.shared.currentUser as? User {
+          return firebaseUser.isAnonymous
+        }
+        return false
+      }()
+      
       let guestHabits = allHabits.filter { habitData in
-        habitData.userId.isEmpty || habitData.userId == "guest" || 
-        (habitData.userId != currentUserId && !currentUserId.isEmpty)
+        // Guest userIds: "" or "guest"
+        let isGuestId = habitData.userId.isEmpty || habitData.userId == "guest"
+        
+        // If user is authenticated (not anonymous), detect habits that don't belong to current user
+        // This includes guest habits and anonymous habits that need migration
+        if let currentUserId = currentUserId, !currentUserId.isEmpty, !isCurrentUserAnonymous {
+          // User is authenticated with real account - detect guest/anonymous habits for migration
+          // This includes habits with guest userIds OR habits from anonymous sessions (different userId)
+          return isGuestId || (habitData.userId != currentUserId && !habitData.userId.isEmpty && habitData.userId != "guest")
+        } else {
+          // User is NOT authenticated or is anonymous - can't migrate (no target user)
+          // Only detect true guest data
+          return isGuestId
+        }
       }
       
       if !guestHabits.isEmpty {

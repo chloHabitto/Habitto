@@ -612,7 +612,8 @@ final class SwiftDataContainer: ObservableObject {
     if let currentUser = AuthenticationManager.shared.currentUser {
       return currentUser.uid
     }
-    // Fallback to guest user
-    return "guest"
+    // ✅ FIX: Use empty string for guest (consistent with CurrentUser.guestId)
+    // This ensures CompletionRecords match HabitData userId filtering
+    return ""
   }
 }
