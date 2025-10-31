@@ -1,3 +1,4 @@
+import FirebaseAuth
 import SwiftUI
 
 // MARK: - ProfileView
@@ -72,62 +73,102 @@ struct ProfileView: View {
             .padding(.top, 20)
 
             // Name Fields
-            VStack(spacing: 16) {
-              // First Name Field
-              VStack(alignment: .leading, spacing: 8) {
-                Text("First Name")
-                  .font(.appBodyMedium)
-                  .foregroundColor(.text01)
+            if isLoggedIn {
+              VStack(spacing: 16) {
+                // First Name Field
+                VStack(alignment: .leading, spacing: 8) {
+                  Text("First Name")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
 
-                TextField("Enter first name", text: $firstName)
-                  .font(.appBodyLarge)
-                  .foregroundColor(.text01)
-                  .padding(.horizontal, 16)
-                  .padding(.vertical, 16)
-                  .background(Color.surface)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                      .stroke(Color.outline3, lineWidth: 1.5))
-                  .cornerRadius(12)
-                  .submitLabel(.done)
-                  .onSubmit {
-                    UIApplication.shared.sendAction(
-                      #selector(UIResponder.resignFirstResponder),
-                      to: nil,
-                      from: nil,
-                      for: nil)
-                  }
-                  .disabled(!isLoggedIn)
+                  TextField("Enter first name", text: $firstName)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text01)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(Color.surface)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3, lineWidth: 1.5))
+                    .cornerRadius(12)
+                    .submitLabel(.done)
+                    .onSubmit {
+                      UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil)
+                    }
+                }
+
+                // Last Name Field
+                VStack(alignment: .leading, spacing: 8) {
+                  Text("Last Name")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+
+                  TextField("Enter last name", text: $lastName)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text01)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(Color.surface)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3, lineWidth: 1.5))
+                    .cornerRadius(12)
+                    .submitLabel(.done)
+                    .onSubmit {
+                      UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil,
+                        from: nil,
+                        for: nil)
+                    }
+                }
               }
+              .padding(.horizontal, 20)
+            } else {
+              // Guest mode: Show sign-in message and button
+              VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                  Text("First Name")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
 
-              // Last Name Field
-              VStack(alignment: .leading, spacing: 8) {
-                Text("Last Name")
-                  .font(.appBodyMedium)
-                  .foregroundColor(.text01)
+                  TextField("Enter first name", text: .constant(""))
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text03)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(Color.surface.opacity(0.5))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3.opacity(0.5), lineWidth: 1.5))
+                    .cornerRadius(12)
+                    .disabled(true)
+                }
 
-                TextField("Enter last name", text: $lastName)
-                  .font(.appBodyLarge)
-                  .foregroundColor(.text01)
-                  .padding(.horizontal, 16)
-                  .padding(.vertical, 16)
-                  .background(Color.surface)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                      .stroke(Color.outline3, lineWidth: 1.5))
-                  .cornerRadius(12)
-                  .submitLabel(.done)
-                  .onSubmit {
-                    UIApplication.shared.sendAction(
-                      #selector(UIResponder.resignFirstResponder),
-                      to: nil,
-                      from: nil,
-                      for: nil)
-                  }
-                  .disabled(!isLoggedIn)
+                VStack(alignment: .leading, spacing: 8) {
+                  Text("Last Name")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+
+                  TextField("Enter last name", text: .constant(""))
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text03)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(Color.surface.opacity(0.5))
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.outline3.opacity(0.5), lineWidth: 1.5))
+                    .cornerRadius(12)
+                    .disabled(true)
+                }
               }
+              .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
 
             Spacer()
 
@@ -147,36 +188,49 @@ struct ProfileView: View {
             .padding(.bottom, 20)
           }
 
-          // Sign-in Overlay for Guest Users (on top of everything)
+          // Guest mode overlay with gradient blur and sign-in prompt
           if !isLoggedIn {
-            // White background rectangle with gradient opacity - full screen
-            Rectangle()
-              .fill(
-                LinearGradient(
-                  gradient: Gradient(colors: [
-                    Color.white.opacity(0.5),
-                    Color.white.opacity(0.7),
-                    Color.white.opacity(0.9),
-                    Color.white.opacity(1.0)
-                  ]),
-                  startPoint: .top,
-                  endPoint: .bottom))
-              .ignoresSafeArea()
-              .overlay(
-                // Sign-in button centered
-                VStack {
-                  Spacer()
+            ZStack {
+              // Gradient overlay that blurs the background
+              LinearGradient(
+                gradient: Gradient(colors: [
+                  Color.surface2.opacity(0.3),
+                  Color.surface2.opacity(0.6),
+                  Color.surface2.opacity(0.85),
+                  Color.surface2.opacity(0.95),
+                  Color.surface2.opacity(1.0)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom)
+                .ignoresSafeArea()
+                .blur(radius: 0.5)
+              
+              // Sign-in message and button on top
+              VStack(spacing: 20) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                  Text("Sign in or Sign up to edit your profile")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
 
-                  HabittoButton.largeFillPrimary(
-                    text: "Please sign-in to edit your profile")
+                  HabittoButton(
+                    size: .large,
+                    style: .fillPrimary,
+                    content: .text("Sign In"),
+                    hugging: false)
                   {
                     showingSignIn = true
                   }
-                  .padding(.horizontal, 16)
-
-                  Spacer()
-                })
+                  .padding(.horizontal, 20)
+                }
+                .padding(.bottom, 40)
+              }
+            }
           }
+
         }
       }
       .navigationTitle("Profile")
@@ -305,12 +359,16 @@ struct ProfileView: View {
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
-    case .authenticated:
-      true
+    case .authenticated(let user):
+      // Check if user is anonymous - anonymous users should be treated as guests
+      if let firebaseUser = user as? User {
+        return !firebaseUser.isAnonymous
+      }
+      return true
     case .authenticating,
          .error,
          .unauthenticated:
-      false
+      return false
     }
   }
 
@@ -348,18 +406,35 @@ struct ProfileView: View {
   private func handleAuthStateChange(_ authState: AuthenticationState) {
     print("🔄 ProfileView: Auth state changed to: \(authState)")
     switch authState {
-    case .authenticated:
-      // User logged in - check for guest data and show migration alert
-      print("👤 ProfileView: User authenticated, checking for guest data")
-      checkForGuestDataAndShowMigration()
-      loadUserData()
+    case .authenticated(let user):
+      // Check if user is anonymous - if so, treat as guest
+      if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+        // Anonymous user = guest mode - clear fields
+        print("👤 ProfileView: Anonymous user detected, clearing fields")
+        firstName = ""
+        lastName = ""
+        email = ""
+        originalFirstName = ""
+        originalLastName = ""
+        originalEmail = ""
+      } else {
+        // User logged in - check for guest data and show migration alert
+        print("👤 ProfileView: User authenticated, checking for guest data")
+        checkForGuestDataAndShowMigration()
+        loadUserData()
+      }
 
     case .authenticating,
          .error,
          .unauthenticated:
-      // User logged out - load guest data
-      print("👤 ProfileView: User not authenticated, loading guest data")
-      loadUserData()
+      // User logged out - clear all fields for guest mode
+      print("👤 ProfileView: User not authenticated, clearing fields")
+      firstName = ""
+      lastName = ""
+      email = ""
+      originalFirstName = ""
+      originalLastName = ""
+      originalEmail = ""
     }
   }
 
@@ -376,7 +451,8 @@ struct ProfileView: View {
   }
 
   private func loadUserData() {
-    if let user = authManager.currentUser {
+    // Check if user is actually logged in (not anonymous/guest)
+    if isLoggedIn, let user = authManager.currentUser {
       // Load display name
       if let displayName = user.displayName,
          !displayName.isEmpty
@@ -398,7 +474,7 @@ struct ProfileView: View {
       // Load email
       email = user.email ?? ""
     } else {
-      // User not logged in
+      // User not logged in or is anonymous/guest - clear all fields
       firstName = ""
       lastName = ""
       email = ""
