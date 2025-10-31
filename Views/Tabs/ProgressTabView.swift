@@ -1524,7 +1524,7 @@ struct ProgressTabView: View {
 
           // Right side: Progress ring (vertically centered)
           AnimatedCircularProgressRing(
-            progress: getProgressPercentage(),
+            progress: getCompletionPercentage(),
             size: 52)
         }
         .padding(.horizontal, 0)
@@ -1989,7 +1989,9 @@ struct ProgressTabView: View {
 
       let totalProgress = scheduledHabits.reduce(0.0) { total, habit in
         let progress = habitRepository.getProgress(for: habit, date: selectedProgressDate)
-        return total + Double(progress)
+        let goalAmount = parseGoalAmount(from: habit.goal)
+        // Cap progress at goal amount to prevent over-completion from inflating percentage
+        return total + min(Double(progress), Double(goalAmount))
       }
 
       let totalGoal = scheduledHabits.reduce(0.0) { total, habit in
