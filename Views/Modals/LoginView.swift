@@ -50,11 +50,14 @@ struct LoginView: View {
       }
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Close") {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
             dismiss()
+          }) {
+            Image(systemName: "xmark")
+              .font(.system(size: 12, weight: .bold))
+              .foregroundColor(.text01)
           }
-          .foregroundColor(.text04)
         }
       }
       .alert("Authentication Error", isPresented: $showError) {
