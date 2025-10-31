@@ -526,22 +526,24 @@ struct HabitDetailView: View {
   private var habitDetailsSection: some View {
     VStack(spacing: 16) {
       // Goal
-      HStack {
-        Image(systemName: "flag")
-          .font(.system(size: 16))
-          .foregroundColor(.text05)
+      VStack(alignment: .leading, spacing: 8) {
+        HStack {
+          Image(systemName: "flag")
+            .font(.system(size: 16))
+            .foregroundColor(.text05)
 
-        Text("Goal")
-          .font(.appBodyMedium)
-          .foregroundColor(.text05)
-
-        Spacer()
+          Text("Goal")
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+        }
 
         Text(sortGoalChronologically(habit.goal))
           .font(.appTitleSmallEmphasised)
           .foregroundColor(.primary)
+          .fixedSize(horizontal: false, vertical: true)
           .onAppear { }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 16)
@@ -1033,6 +1035,9 @@ struct HabitDetailView: View {
   private func formatFrequencyText(_ frequency: String) -> String {
     let lowerFreq = frequency.lowercased()
     
+    // Format multiple "every [day]" entries into "every Monday, Wednesday & Friday" format
+    let formattedDays = formatMultipleDays(frequency)
+    
     // Check for "X day(s) a week" patterns
     if lowerFreq.contains("day a week") || lowerFreq.contains("days a week") {
       if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*week"#, options: .caseInsensitive),
@@ -1066,7 +1071,59 @@ struct HabitDetailView: View {
       }
     }
     
+    // Return formatted days if it was multiple days, otherwise return original
+    if formattedDays != frequency.lowercased() {
+      return formattedDays
+    }
+    
     return frequency
+  }
+  
+  /// Formats multiple "Every [Day]" entries into "every Monday, Wednesday & Friday" format
+  private func formatMultipleDays(_ frequencyText: String) -> String {
+    let lowerFrequency = frequencyText.lowercased()
+    
+    // Check if it contains multiple "every [day]" patterns
+    if lowerFrequency.contains(", ") && lowerFrequency.contains("every ") {
+      // Split by comma and extract day names
+      let parts = frequencyText.components(separatedBy: ", ")
+      var days: [String] = []
+      
+      for part in parts {
+        let trimmed = part.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLower = trimmed.lowercased()
+        
+        // Remove "Every " or "every " prefix and get the day name
+        if trimmed.hasPrefix("Every ") {
+          let dayName = String(trimmed.dropFirst(6)) // Remove "Every "
+          days.append(dayName)
+        } else if trimmedLower.hasPrefix("every ") {
+          let dayName = String(trimmed.dropFirst(6)) // Remove "every "
+          // Capitalize first letter only (e.g., "monday" -> "Monday")
+          days.append(dayName.prefix(1).uppercased() + dayName.dropFirst())
+        } else {
+          // If it doesn't match the pattern, return original (lowercased)
+          return frequencyText.lowercased()
+        }
+      }
+      
+      // Format as "every Monday, Wednesday & Friday"
+      if days.isEmpty {
+        return frequencyText.lowercased()
+      } else if days.count == 1 {
+        return "every \(days[0])"
+      } else if days.count == 2 {
+        return "every \(days[0]) & \(days[1])"
+      } else {
+        // Join all but last with commas, then add " & " before last
+        let allButLast = days.dropLast().joined(separator: ", ")
+        let last = days.last!
+        return "every \(allButLast) & \(last)"
+      }
+    }
+    
+    // Not multiple days, return as-is (lowercased)
+    return frequencyText.lowercased()
   }
   
   /// Determines if a frequency text needs the "on" preposition
