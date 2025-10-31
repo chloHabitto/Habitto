@@ -356,54 +356,51 @@ final actor HabitStore {
       let habitType = currentHabits[index].habitType
       let oldProgress: Int
       // ✅ UNIVERSAL RULE: Both types use completionHistory for progress tracking
+      // ⚠️ DEPRECATED: This is now a materialized view, not source of truth
+      // Progress should be calculated from ProgressEvents, but we keep this for backward compatibility
       oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
       
-      // ✅ NEW: Create ProgressEvent BEFORE updating progress (event sourcing)
-      // This ensures events are created for audit trail before state changes
+      // ✅ PRIORITY 1: Always create ProgressEvent (event sourcing is now default)
+      // This is the source of truth for all progress changes
       let goalAmount = StreakDataCalculator.parseGoalAmount(from: currentHabits[index].goal)
       
-      // Check if event sourcing is enabled
-      let isEventSourcingEnabled = await MainActor.run {
-        NewArchitectureFlags.shared.useEventSourcing
-      }
+      // Get current user ID (used for both event creation and XP checks)
+      let userId = await CurrentUser().idOrGuest
       
-      if isEventSourcingEnabled {
-        // Get current user ID
-        let userId = await CurrentUser().idOrGuest
-        
-        // Determine event type from progress change
-        // Note: eventTypeForProgressChange is a standalone function, not a method
-        let eventType = eventTypeForProgressChange(
-          oldProgress: oldProgress,
-          newProgress: progress,
-          goalAmount: goalAmount
-        )
-        
-        let progressDelta = progress - oldProgress
-        
-        // Only create event if there's an actual change
-        if progressDelta != 0 {
-          do {
-            // Create event on MainActor (ProgressEventService is @MainActor)
-            // Swift will handle the actor hop automatically
-            let event = try await ProgressEventService.shared.createEvent(
-              habitId: habit.id,
-              date: date,
-              dateKey: dateKey,
-              eventType: eventType,
-              progressDelta: progressDelta,
-              userId: userId
-            )
-            logger.info("✅ Created ProgressEvent: id=\(event.id.prefix(20))..., type=\(eventType.rawValue), delta=\(progressDelta)")
-          } catch {
-            // Log error but don't throw - continue with existing flow for backward compatibility
-            logger.error("❌ Failed to create ProgressEvent: \(error.localizedDescription)")
-            logger.info("⚠️ Continuing with existing progress update flow (no event created)")
-          }
+      // Determine event type from progress change
+      // Note: eventTypeForProgressChange is a standalone function, not a method
+      let eventType = eventTypeForProgressChange(
+        oldProgress: oldProgress,
+        newProgress: progress,
+        goalAmount: goalAmount
+      )
+      
+      let progressDelta = progress - oldProgress
+      
+      // Always create event if there's an actual change (event sourcing is default)
+      if progressDelta != 0 {
+        do {
+          // Create event on MainActor (ProgressEventService is @MainActor)
+          // Swift will handle the actor hop automatically
+          let event = try await ProgressEventService.shared.createEvent(
+            habitId: habit.id,
+            date: date,
+            dateKey: dateKey,
+            eventType: eventType,
+            progressDelta: progressDelta,
+            userId: userId
+          )
+          logger.info("✅ Created ProgressEvent: id=\(event.id.prefix(20))..., type=\(eventType.rawValue), delta=\(progressDelta)")
+        } catch {
+          // Log error but don't throw - continue with existing flow for backward compatibility
+          logger.error("❌ Failed to create ProgressEvent: \(error.localizedDescription)")
+          logger.info("⚠️ Continuing with existing progress update flow (no event created)")
         }
       }
       
-      // ✅ EXISTING: Update habit progress (keep existing logic)
+      // ⚠️ DEPRECATED: Direct state update - kept for backward compatibility
+      // TODO: Remove this once all code paths use event replay
+      // Progress should be calculated from ProgressEvents using calculateProgressFromEvents()
       currentHabits[index].completionHistory[dateKey] = progress
       let isComplete = progress >= goalAmount
       currentHabits[index].completionStatus[dateKey] = isComplete
@@ -446,12 +443,9 @@ final actor HabitStore {
       try await saveHabits(currentHabits)
       logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
 
-      // XP logic is now handled in HabitRepository.setProgress for immediate UI feedback
-
-      // ⚠️  CRITICAL: NO XP WRITES HERE
-      // Achievement checking is handled by DailyAwardService
-      // Do NOT call XPManager methods or perform any XP manipulation
-      // All XP changes must go through DailyAwardService to prevent duplicates
+      // ✅ PRIORITY 2: Check daily completion and award/revoke XP atomically
+      // Reuse userId variable declared above
+      try await checkDailyCompletionAndAwardXP(dateKey: dateKey, userId: userId)
 
       // Celebration logic is handled in UI layer (HomeTabView)
     } else {
@@ -465,8 +459,33 @@ final actor HabitStore {
 
   // MARK: - Get Progress
 
-  func getProgress(for habit: Habit, date: Date) -> Int {
-    habit.getProgress(for: date)
+  /// Get progress for a habit on a specific date using event replay
+  /// 
+  /// ✅ PRIORITY 1: This method now uses ProgressEvents as the source of truth
+  /// Falls back to completionHistory for backward compatibility (habits without events yet)
+  func getProgress(for habit: Habit, date: Date) async -> Int {
+    let dateKey = CoreDataManager.dateKey(for: date)
+    let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+    
+    // Get legacy progress from completionHistory (fallback)
+    let legacyProgress = habit.completionHistory[dateKey] ?? 0
+    
+    // Calculate progress from events (event sourcing)
+    let modelContext = await MainActor.run {
+      SwiftDataContainer.shared.modelContext
+    }
+    
+    let result = await ProgressEventService.shared.calculateProgressFromEvents(
+      habitId: habit.id,
+      dateKey: dateKey,
+      goalAmount: goalAmount,
+      legacyProgress: legacyProgress,
+      modelContext: modelContext
+    )
+    
+    logger.info("getProgress: habit=\(habit.name), dateKey=\(dateKey), progress=\(result.progress) (from events: \(result.progress != legacyProgress))")
+    
+    return result.progress
   }
 
   // MARK: - Save Difficulty Rating
@@ -1066,6 +1085,121 @@ final actor HabitStore {
           SwiftDataContainer.shared.resetCorruptedDatabase()
         }
       }
+    }
+  }
+  
+  // MARK: - XP Award Logic (Priority 2)
+  
+  /// ✅ PRIORITY 2: Check if all habits are completed for a date and award/revoke XP atomically
+  ///
+  /// This method:
+  /// 1. Fetches all habits scheduled for dateKey
+  /// 2. Calculates progress from events (event-sourced)
+  /// 3. Checks if ALL habits are complete
+  /// 4. Creates or deletes DailyAward with deterministic ID
+  ///
+  /// - Parameters:
+  ///   - dateKey: The date key in format "yyyy-MM-dd"
+  ///   - userId: The user identifier
+  /// - Throws: Error if award check or creation fails
+  func checkDailyCompletionAndAwardXP(dateKey: String, userId: String) async throws {
+    logger.info("🎯 XP_CHECK: Checking daily completion for \(dateKey)")
+    
+    // Get model context for SwiftData operations
+    let modelContext = await MainActor.run {
+      SwiftDataContainer.shared.modelContext
+    }
+    
+    // Parse date from dateKey
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    dateFormatter.timeZone = TimeZone.current
+    guard let date = dateFormatter.date(from: dateKey) else {
+      logger.error("❌ XP_CHECK: Invalid dateKey format: \(dateKey)")
+      return
+    }
+    
+    // Load all habits
+    let habits = try await loadHabits()
+    
+    // Filter to habits scheduled for this date
+    let scheduledHabits = habits.filter { habit in
+      StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+    }
+    
+    logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits for \(dateKey)")
+    
+    guard !scheduledHabits.isEmpty else {
+      logger.info("🎯 XP_CHECK: No scheduled habits, skipping XP check")
+      return
+    }
+    
+    // Calculate progress from events for each habit
+    var allCompleted = true
+    for habit in scheduledHabits {
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+      
+      // Calculate progress from events (event-sourced)
+      let result = await ProgressEventService.shared.calculateProgressFromEvents(
+        habitId: habit.id,
+        dateKey: dateKey,
+        goalAmount: goalAmount,
+        legacyProgress: habit.completionHistory[dateKey],
+        modelContext: modelContext
+      )
+      
+      if result.progress < goalAmount {
+        allCompleted = false
+        logger.info("🎯 XP_CHECK: Habit '\(habit.name)' not completed (progress: \(result.progress) < goal: \(goalAmount))")
+        break
+      }
+    }
+    
+    // Generate deterministic award ID
+    let awardId = EventSourcedUtils.dailyAwardId(userId: userId, dateKey: dateKey)
+    
+    // Check if award already exists
+    let awardPredicate = #Predicate<DailyAward> { award in
+      award.userId == userId && award.dateKey == dateKey
+    }
+    let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+    let existingAwards = (try? modelContext.fetch(awardDescriptor)) ?? []
+    let awardExists = !existingAwards.isEmpty
+    
+    logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
+    
+    if allCompleted && !awardExists {
+      // All habits complete AND award doesn't exist → create award
+      logger.info("🎯 XP_CHECK: ✅ Creating DailyAward for \(dateKey)")
+      
+      // Create DailyAward with deterministic userIdDateKey (unique constraint)
+      // Note: id is UUID but userIdDateKey provides deterministic uniqueness
+      let award = DailyAward(
+        userId: userId,
+        dateKey: dateKey,
+        xpGranted: 50, // Standard daily completion bonus
+        allHabitsCompleted: true
+      )
+      
+      // userIdDateKey is already set in init() and provides deterministic uniqueness
+      // Format: "{userId}#{dateKey}" which matches EventSourcedUtils.dailyAwardId() concept
+      modelContext.insert(award)
+      try modelContext.save()
+      
+      logger.info("🎯 XP_CHECK: ✅ DailyAward created successfully")
+      
+    } else if !allCompleted && awardExists {
+      // NOT all complete AND award exists → delete award (XP reversal)
+      logger.info("🎯 XP_CHECK: ❌ Removing DailyAward for \(dateKey) (habits uncompleted)")
+      
+      for award in existingAwards {
+        modelContext.delete(award)
+      }
+      try modelContext.save()
+      
+      logger.info("🎯 XP_CHECK: ✅ DailyAward removed successfully")
+    } else {
+      logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
     }
   }
 }
