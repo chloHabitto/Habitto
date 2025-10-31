@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 import SwiftData
+import FirebaseAuth
 
 // MARK: - SwiftData Storage Implementation
 
@@ -517,40 +518,69 @@ final class SwiftDataStorage: HabitStorageProtocol {
   /// Clear all habits for the current user
   func clearAllHabits() async throws {
     let currentUserId = await getCurrentUserId()
-    logger.info("Clearing all habits from SwiftData for user: \(currentUserId ?? "guest")")
+    try await clearAllHabits(for: currentUserId)
+  }
+  
+  /// Clear all SwiftData records for a specific userId
+  /// ✅ CRITICAL FIX: Used during account deletion to ensure all data is cleared
+  func clearAllHabits(for userId: String?) async throws {
+    let targetUserId = userId ?? ""
+    logger.info("Clearing all SwiftData records for user: \(targetUserId.isEmpty ? "guest" : targetUserId)")
 
     do {
-      // Create user-specific fetch descriptor
-      var descriptor = FetchDescriptor<HabitData>()
-
-      // Filter by current user ID if authenticated, otherwise clear guest data
-      if let userId = currentUserId {
-        descriptor.predicate = #Predicate<HabitData> { habitData in
-          habitData.userId == userId
-        }
-      } else {
-        // For guest users, clear data with empty userId
-        descriptor.predicate = #Predicate<HabitData> { habitData in
-          habitData.userId == ""
-        }
+      // ✅ STEP 1: Clear HabitData (cascade delete will handle CompletionRecords)
+      var habitDescriptor = FetchDescriptor<HabitData>()
+      habitDescriptor.predicate = #Predicate<HabitData> { habitData in
+        habitData.userId == targetUserId
       }
-
-      let habitDataArray = try container.modelContext.fetch(descriptor)
-
+      let habitDataArray = try container.modelContext.fetch(habitDescriptor)
       for habitData in habitDataArray {
         container.modelContext.delete(habitData)
       }
+      logger.info("  ✅ Deleted \(habitDataArray.count) HabitData records")
 
+      // ✅ STEP 2: Clear orphaned CompletionRecords (in case cascade delete didn't work)
+      var completionDescriptor = FetchDescriptor<CompletionRecord>()
+      completionDescriptor.predicate = #Predicate<CompletionRecord> { record in
+        record.userId == targetUserId
+      }
+      let completionRecords = try container.modelContext.fetch(completionDescriptor)
+      for record in completionRecords {
+        container.modelContext.delete(record)
+      }
+      logger.info("  ✅ Deleted \(completionRecords.count) CompletionRecord records")
+
+      // ✅ STEP 3: Clear DailyAward records
+      var awardDescriptor = FetchDescriptor<DailyAward>()
+      awardDescriptor.predicate = #Predicate<DailyAward> { award in
+        award.userId == targetUserId
+      }
+      let awards = try container.modelContext.fetch(awardDescriptor)
+      for award in awards {
+        container.modelContext.delete(award)
+      }
+      logger.info("  ✅ Deleted \(awards.count) DailyAward records")
+
+      // ✅ STEP 4: Clear UserProgressData records
+      var progressDescriptor = FetchDescriptor<UserProgressData>()
+      progressDescriptor.predicate = #Predicate<UserProgressData> { progress in
+        progress.userId == targetUserId
+      }
+      let progressData = try container.modelContext.fetch(progressDescriptor)
+      for progress in progressData {
+        container.modelContext.delete(progress)
+      }
+      logger.info("  ✅ Deleted \(progressData.count) UserProgressData records")
+
+      // Save all deletions
       try container.modelContext.save()
-      logger
-        .info(
-          "Successfully cleared \(habitDataArray.count) habits for user: \(currentUserId ?? "guest")")
+      logger.info("✅ Successfully cleared all SwiftData records for user: \(targetUserId.isEmpty ? "guest" : targetUserId)")
 
     } catch {
-      logger.error("Failed to clear all habits: \(error.localizedDescription)")
+      logger.error("Failed to clear all SwiftData records: \(error.localizedDescription)")
       throw DataError.storage(StorageError(
         type: .unknown,
-        message: "Failed to clear all habits: \(error.localizedDescription)",
+        message: "Failed to clear all SwiftData records: \(error.localizedDescription)",
         underlyingError: error))
     }
   }
@@ -561,9 +591,20 @@ final class SwiftDataStorage: HabitStorageProtocol {
   private let logger = Logger(subsystem: "com.habitto.app", category: "SwiftDataStorage")
 
   /// Helper method to get current user ID for data isolation
+  /// Returns nil for guest users (empty string when used with ?? "")
   private func getCurrentUserId() async -> String? {
     await MainActor.run {
-      AuthenticationManager.shared.currentUser?.uid
+      guard let user = AuthenticationManager.shared.currentUser else {
+        return nil // Guest user - will use "" when used with ?? ""
+      }
+      
+      // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
+      // Anonymous users should use "" as userId for consistency with guest mode
+      if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+        return nil // Anonymous = guest, use "" as userId
+      }
+      
+      return user.uid // Authenticated non-anonymous user
     }
   }
 

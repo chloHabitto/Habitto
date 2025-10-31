@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 
 // MARK: - CurrentUser
 
@@ -15,10 +16,17 @@ struct CurrentUser {
   var id: String {
     get async {
       await MainActor.run {
-        if let user = AuthenticationManager.shared.currentUser {
-          return user.uid
+        guard let user = AuthenticationManager.shared.currentUser else {
+          return Self.guestId
         }
-        return Self.guestId
+        
+        // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
+        // Anonymous users should use "" as userId for consistency with guest mode
+        if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+          return Self.guestId // Anonymous = guest
+        }
+        
+        return user.uid // Authenticated non-anonymous user
       }
     }
   }

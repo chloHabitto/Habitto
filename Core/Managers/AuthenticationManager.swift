@@ -696,13 +696,40 @@ class AuthenticationManager: ObservableObject {
     authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
       DispatchQueue.main.async {
         if let user {
-          self?.authState = .authenticated(user)
-          self?.currentUser = user
-          print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
+          // ✅ CRITICAL FIX: Validate that the Firebase account still exists
+          // If account was deleted from Firebase Console, this will detect it
+          Task { @MainActor in
+            do {
+              // Refresh the token to verify account still exists
+              // If account was deleted, this will fail
+              _ = try await user.getIDTokenResult(forcingRefresh: true)
+              
+              // Account is valid, proceed with authentication
+              self?.authState = .authenticated(user)
+              self?.currentUser = user
+              print("✅ AuthenticationManager: User authenticated: \(user.email ?? "No email")")
 
-          // Load user-specific XP data
-          // Note: This will be called from a view with ModelContext access
-          print("🎯 AUTH: User signed in, XP loading will be handled by view")
+              // Load user-specific XP data
+              // Note: This will be called from a view with ModelContext access
+              print("🎯 AUTH: User signed in, XP loading will be handled by view")
+            } catch {
+              // Account was deleted or invalid - sign out automatically
+              print("⚠️ AuthenticationManager: Account validation failed (account may have been deleted): \(error.localizedDescription)")
+              print("🔐 AuthenticationManager: Signing out invalid/deleted account...")
+              
+              do {
+                try Auth.auth().signOut()
+                self?.authState = .unauthenticated
+                self?.currentUser = nil
+                print("✅ AuthenticationManager: Signed out invalid/deleted account")
+              } catch {
+                print("❌ AuthenticationManager: Failed to sign out: \(error.localizedDescription)")
+                // Force clear local state even if sign out fails
+                self?.authState = .unauthenticated
+                self?.currentUser = nil
+              }
+            }
+          }
         } else {
           self?.authState = .unauthenticated
           self?.currentUser = nil

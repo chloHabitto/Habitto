@@ -190,9 +190,20 @@ final class AccountDeletionService: ObservableObject {
 
   private func clearAppData() async throws {
     print("🗑️ AccountDeletionService: Clearing app data")
+    
+    guard let currentUser = authManager.currentUser else {
+      print("⚠️ AccountDeletionService: No current user, skipping app data clear")
+      return
+    }
+    
+    let userId = currentUser.uid
+    print("🗑️ AccountDeletionService: Clearing SwiftData records for userId: \(userId)")
 
-    // Clear all habits from repository
-    try await habitRepository.clearAllHabits()
+    // ✅ CRITICAL FIX: Clear all SwiftData records for this userId BEFORE signing out
+    // This ensures we clear data for the correct user, not guest data
+    // Use HabitStore's new method that accepts userId
+    try await HabitStore.shared.clearAllHabits(for: userId)
+    print("✅ AccountDeletionService: SwiftData records cleared for userId: \(userId)")
 
     // Clear XP and level data
     await XPManager.shared.clearXPData()
