@@ -146,8 +146,13 @@ struct LoginView: View {
   private var formSection: some View {
     VStack(spacing: 20) {
       emailField
-      passwordField
-      passwordRequirements
+      
+      // Password field and requirements grouped with 8pt spacing
+      VStack(spacing: 8) {
+        passwordField
+        passwordRequirements
+      }
+      
       forgotPasswordButton
       signInButton
       toggleSignUpButton
@@ -244,7 +249,11 @@ struct LoginView: View {
               isMet: password.range(of: "\\d", options: .regularExpression) != nil)
           }
         }
-        .padding(.top, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(Color("navy50").opacity(0.5))
+        .cornerRadius(12)
       }
     }
   }
