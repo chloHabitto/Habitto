@@ -71,8 +71,8 @@ struct ForgotPasswordView: View {
           }
           .disabled(!isFormValid || isLoading)
 
-          // Back to Login
-          Button("Back to Login") {
+          // Back to Sign In
+          Button("Back to Sign In") {
             dismiss()
           }
           .font(.system(size: 16, weight: .medium))
