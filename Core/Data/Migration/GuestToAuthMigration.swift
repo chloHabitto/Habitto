@@ -85,6 +85,9 @@ final class GuestToAuthMigration {
     // ✅ CRITICAL FIX: Migrate GlobalStreakModel (needed for streak display)
     try await migrateGlobalStreakModel(from: guestUserId, to: authUserId, context: context)
     
+    // ✅ CRITICAL FIX: Recalculate and save XP to FirestoreUserProgress
+    try await recalculateAndSaveXP(to: authUserId, context: context)
+    
     logger.info("✅ Guest to auth migration complete! Migrated \(guestHabits.count) habits")
     
     // Mark migration as complete
@@ -117,6 +120,7 @@ final class GuestToAuthMigration {
     
     for award in guestAwards {
       award.userId = authUserId
+      award.userIdDateKey = "\(authUserId)#\(award.dateKey)"
     }
     
     try context.save()
@@ -236,6 +240,66 @@ final class GuestToAuthMigration {
     
     try context.save()
     logger.info("✅ Migrated streak data")
+  }
+  
+  /// Recalculate XP from migrated DailyAwards and save to FirestoreUserProgress
+  private func recalculateAndSaveXP(to authUserId: String, context: ModelContext) async throws {
+    logger.info("🔄 Recalculating XP from migrated DailyAwards...")
+    
+    // Fetch all DailyAwards for the authenticated user
+    let descriptor = FetchDescriptor<DailyAward>(
+      predicate: #Predicate<DailyAward> { award in
+        award.userId == authUserId
+      },
+      sortBy: [SortDescriptor(\.dateKey, order: .forward)]
+    )
+    
+    let awards = try context.fetch(descriptor)
+    
+    guard !awards.isEmpty else {
+      logger.info("ℹ️ No DailyAwards found for XP calculation")
+      return
+    }
+    
+    // Calculate total XP from all awards
+    let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+    logger.info("📊 Calculated totalXP=\(totalXP) from \(awards.count) awards")
+    
+    // Calculate level (using XPManager's formula: level = sqrt(totalXP / 300) + 1)
+    let levelBaseXP = 300
+    let level = Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
+    logger.info("📊 Calculated level=\(level)")
+    
+    // Calculate today's XP
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    dateFormatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    let todayKey = dateFormatter.string(from: Date())
+    
+    let todayAwards = awards.filter { $0.dateKey == todayKey }
+    let dailyXP = todayAwards.reduce(0) { $0 + $1.xpGranted }
+    logger.info("📊 Calculated dailyXP=\(dailyXP) for today (\(todayKey))")
+    
+    // Save to FirestoreUserProgress
+    let progress = FirestoreUserProgress(
+      totalXP: totalXP,
+      level: level,
+      dailyXP: dailyXP,
+      lastUpdated: Date()
+    )
+    
+    do {
+      try await FirestoreService.shared.saveUserProgress(progress)
+      logger.info("✅ Saved XP progress to Firestore: totalXP=\(totalXP), level=\(level), dailyXP=\(dailyXP)")
+      
+      // Reload XPManager to sync the new progress
+      await MainActor.run {
+        XPManager.shared.loadUserProgress()
+      }
+    } catch {
+      logger.error("❌ Failed to save XP progress to Firestore: \(error.localizedDescription)")
+      // Don't throw - migration can continue even if Firestore save fails
+    }
   }
 }
 
