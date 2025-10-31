@@ -183,7 +183,7 @@ struct ProfileView: View {
           }) {
             Image(systemName: "xmark")
               .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.white)
+              .foregroundColor(.text01)
           }
         }
       }
