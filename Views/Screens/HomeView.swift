@@ -1,4 +1,5 @@
 import Combine
+import FirebaseAuth
 import SwiftUI
 import SwiftData
 
@@ -94,9 +95,19 @@ class HomeViewState: ObservableObject {
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 second
         
         let modelContext = SwiftDataContainer.shared.modelContext
-        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
         
-        print("🔍 STREAK_UI_UPDATE: Fetching streak for userId: \(userId)")
+        // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
+        let currentUser = AuthenticationManager.shared.currentUser
+        let userId: String
+        if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+          userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
+        } else if let uid = currentUser?.uid {
+          userId = uid // Authenticated non-anonymous user
+        } else {
+          userId = "" // No user = guest
+        }
+        
+        print("🔍 STREAK_UI_UPDATE: Fetching streak for userId: '\(userId.isEmpty ? "guest" : userId)'")
         
         var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
@@ -282,10 +293,20 @@ class HomeViewState: ObservableObject {
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
     Task { @MainActor in
       do {
-        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+        // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
+        let currentUser = AuthenticationManager.shared.currentUser
+        let userId: String
+        if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+          userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
+        } else if let uid = currentUser?.uid {
+          userId = uid // Authenticated non-anonymous user
+        } else {
+          userId = "" // No user = guest
+        }
+        
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        print("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user \(userId)")
+        print("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
         
         // Get or create GlobalStreakModel
         let streakDescriptor = FetchDescriptor<GlobalStreakModel>(

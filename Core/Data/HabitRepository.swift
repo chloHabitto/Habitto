@@ -827,6 +827,22 @@ class HabitRepository: ObservableObject {
         print("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
         print("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
         print("  ✅ GUARANTEED: Data persisted to SwiftData")
+        
+        // ✅ CRITICAL FIX: Reload habits from SwiftData to refresh completionStatus from CompletionRecords
+        // This ensures streak calculation uses the latest data
+        print("  🔄 STREAK_FIX: Reloading habits to refresh completionStatus for streak calculation...")
+        await loadHabits(force: true)
+        
+        // ✅ DEBUG: Verify streak calculation after reload
+        if let reloadedIndex = habits.firstIndex(where: { $0.id == habit.id }) {
+          let reloadedHabit = habits[reloadedIndex]
+          let todayKey = Habit.dateKey(for: Date())
+          let todayCompleted = reloadedHabit.isCompleted(for: Date())
+          let calculatedStreak = reloadedHabit.calculateTrueStreak()
+          print("  🔍 STREAK_VERIFY: After reload - todayKey: \(todayKey), todayCompleted: \(todayCompleted), calculatedStreak: \(calculatedStreak)")
+          print("  🔍 STREAK_VERIFY: completionStatus[\(todayKey)] = \(reloadedHabit.completionStatus[todayKey] ?? false)")
+          print("  🔍 STREAK_VERIFY: completionHistory[\(todayKey)] = \(reloadedHabit.completionHistory[todayKey] ?? 0)")
+        }
 
       } catch {
         print("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
