@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftData
 
 // MARK: - GuestDataMigration
 
@@ -20,12 +21,36 @@ final class GuestDataMigration: ObservableObject {
   func hasGuestData() -> Bool {
     print("🔍 GuestDataMigration.hasGuestData() - Starting check...")
 
-    // Check if there are guest habits (new guest key)
+    // ✅ CRITICAL FIX: Check SwiftData for guest habits (current storage)
+    let container = SwiftDataContainer.shared.modelContainer
+    let context = container.mainContext
+    
+    // Check for habits with empty userId or "guest" userId (from anonymous sessions)
+    do {
+      let allHabitsDescriptor = FetchDescriptor<HabitData>()
+      let allHabits = try context.fetch(allHabitsDescriptor)
+      
+      // Check for guest/anonymous habits (userId == "" or userId != current authenticated user)
+      let currentUserId = AuthenticationManager.shared.currentUser?.uid ?? ""
+      let guestHabits = allHabits.filter { habitData in
+        habitData.userId.isEmpty || habitData.userId == "guest" || 
+        (habitData.userId != currentUserId && !currentUserId.isEmpty)
+      }
+      
+      if !guestHabits.isEmpty {
+        print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in SwiftData")
+        return true
+      }
+    } catch {
+      print("❌ GuestDataMigration: Error checking SwiftData: \(error.localizedDescription)")
+    }
+
+    // Check if there are guest habits (new guest key) in UserDefaults
     if let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
        let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData),
        !guestHabits.isEmpty
     {
-      print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits")
+      print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in UserDefaults")
       return true
     }
 

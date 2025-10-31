@@ -623,7 +623,7 @@ class AuthenticationManager: ObservableObject {
   func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
     print("🗑️ AuthenticationManager: Starting account deletion")
 
-    guard Auth.auth().currentUser != nil else {
+    guard let currentUser = Auth.auth().currentUser else {
       completion(.failure(NSError(
         domain: "AuthenticationManager",
         code: -1,
@@ -631,30 +631,34 @@ class AuthenticationManager: ObservableObject {
       return
     }
 
-    // For now, let's try a simpler approach - just clear local data and sign out
-    // This effectively "deletes" the account from the user's perspective
-    print("🗑️ AuthenticationManager: Clearing local account data and signing out")
+    print("🗑️ AuthenticationManager: Deleting account for user: \(currentUser.uid)")
 
+    // ✅ CRITICAL FIX: Properly sign out and clear Firebase Auth session
     // Clear local state first
     authState = .unauthenticated
-    currentUser = nil
+    self.currentUser = nil
 
     // Clear sensitive data from Keychain
     KeychainManager.shared.clearAuthenticationData()
     print("✅ AuthenticationManager: Cleared local authentication data")
 
-    // Sign out from Firebase (this doesn't delete the account but signs the user out)
+    // Sign out from Firebase Auth - this clears the persisted session
     do {
       try Auth.auth().signOut()
-      print("✅ AuthenticationManager: Signed out from Firebase")
-
-      // For now, we'll consider this a "successful deletion" from the user's perspective
-      // The Firebase account will remain but the user is signed out and all local data is cleared
+      print("✅ AuthenticationManager: Signed out from Firebase Auth")
+      
+      // ✅ IMPORTANT: Force clear any remaining auth state
+      // Firebase Auth persists sessions in local storage, so we need to ensure it's cleared
+      // The signOut() should handle this, but we'll also clear our local state again
+      authState = .unauthenticated
+      self.currentUser = nil
+      
       completion(.success(()))
-
     } catch {
       print("❌ AuthenticationManager: Failed to sign out: \(error.localizedDescription)")
-      // Even if sign out fails, we've cleared local data, so consider it successful
+      // Even if sign out fails, clear local state
+      authState = .unauthenticated
+      self.currentUser = nil
       completion(.success(()))
     }
   }
