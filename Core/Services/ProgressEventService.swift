@@ -171,6 +171,64 @@ final class ProgressEventService {
         return (progress, isCompleted)
     }
     
+    /// Calculate progress from events with fallback to legacy completionHistory
+    ///
+    /// This is the main method for getting habit progress. It prioritizes events
+    /// but falls back to completionHistory for backward compatibility.
+    ///
+    /// - Parameters:
+    ///   - habitId: The habit identifier
+    ///   - dateKey: The date key in format "yyyy-MM-dd"
+    ///   - goalAmount: The goal amount for this habit
+    ///   - legacyProgress: Fallback progress from completionHistory (if no events exist)
+    ///   - modelContext: The SwiftData model context
+    ///
+    /// - Returns: A tuple containing (progress: Int, isCompleted: Bool)
+    func calculateProgressFromEvents(
+        habitId: UUID,
+        dateKey: String,
+        goalAmount: Int,
+        legacyProgress: Int? = nil,
+        modelContext: ModelContext
+    ) async -> (progress: Int, isCompleted: Bool) {
+        do {
+            // Try to calculate from events first
+            let result = try await applyEvents(
+                habitId: habitId,
+                dateKey: dateKey,
+                goalAmount: goalAmount,
+                modelContext: modelContext
+            )
+            
+            // If we got a result from events, use it
+            if result.progress > 0 || legacyProgress == nil {
+                logger.info("✅ Using event-sourced progress: \(result.progress) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
+                return result
+            }
+            
+            // If events exist but progress is 0, check if we have any events at all
+            let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
+            let events = (try? modelContext.fetch(descriptor)) ?? []
+            
+            if !events.isEmpty {
+                // Events exist and calculated to 0, use that
+                logger.info("✅ Using event-sourced progress (0) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
+                return result
+            }
+            
+            // No events exist, fall back to legacy
+            logger.info("⚠️ No events found, falling back to legacy progress: \(legacyProgress ?? 0)")
+            let progress = legacyProgress ?? 0
+            return (progress, progress >= goalAmount)
+            
+        } catch {
+            logger.error("❌ Failed to calculate progress from events: \(error.localizedDescription)")
+            // Fall back to legacy on error
+            let progress = legacyProgress ?? 0
+            return (progress, progress >= goalAmount)
+        }
+    }
+    
 }
 
 // MARK: - Event Type Detection Helper

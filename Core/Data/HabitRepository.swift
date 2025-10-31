@@ -864,8 +864,14 @@ class HabitRepository: ObservableObject {
 
   // MARK: - Get Progress
 
+  /// Get progress for a habit on a specific date
+  /// 
+  /// ⚠️ TODO: Update to use event replay (Priority 1)
+  /// Currently reads from completionHistory (legacy), but should use ProgressEventService.calculateProgressFromEvents()
+  /// This method should eventually become async and call HabitStore.getProgress() which uses event replay
   func getProgress(for habit: Habit, date: Date) -> Int {
-    // Use the Habit model's getProgress method directly since we're not using Core Data
+    // ⚠️ TEMPORARY: Still using legacy completionHistory for backward compatibility
+    // TODO: Convert to async and use HabitStore.getProgress() which uses event replay
     habit.getProgress(for: date)
   }
 

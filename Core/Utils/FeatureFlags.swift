@@ -78,7 +78,8 @@ class NewArchitectureFlags: ObservableObject {
     }
     
     /// Use event sourcing for progress tracking
-    @Published var useEventSourcing = false {
+    /// ✅ DEFAULT: Enabled by default (events are always created)
+    @Published var useEventSourcing = true {
         didSet {
             if useEventSourcing {
                 print("✅ NewArchitectureFlags: Event sourcing ENABLED")
@@ -117,7 +118,13 @@ class NewArchitectureFlags: ObservableObject {
         useNewProgressTracking = UserDefaults.standard.bool(forKey: Keys.newProgress)
         useNewStreakCalculation = UserDefaults.standard.bool(forKey: Keys.newStreak)
         useNewXPSystem = UserDefaults.standard.bool(forKey: Keys.newXP)
-        useEventSourcing = UserDefaults.standard.bool(forKey: Keys.eventSourcing)
+        // ✅ DEFAULT: Event sourcing defaults to true if not set (backward compatibility)
+        // If key exists, use stored value; otherwise default to true
+        if UserDefaults.standard.object(forKey: Keys.eventSourcing) != nil {
+            useEventSourcing = UserDefaults.standard.bool(forKey: Keys.eventSourcing)
+        } else {
+            useEventSourcing = true  // Default to enabled
+        }
     }
     
     /// Save flags to UserDefaults
