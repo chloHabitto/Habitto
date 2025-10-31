@@ -119,24 +119,24 @@ struct AccountView: View {
           }
         } else {
           // Guest mode - simple text prompt with sign in button
-          VStack(spacing: 24) {
+            VStack(spacing: 24) {
             Spacer()
             
             Text("Sign in or sign up to access your account")
               .font(.appBodyLarge)
-              .foregroundColor(.text01)
-              .multilineTextAlignment(.center)
+                  .foregroundColor(.text01)
+                  .multilineTextAlignment(.center)
               .padding(.horizontal, 40)
-            
-            HabittoButton(
-              size: .large,
-              style: .fillPrimary,
-              content: .text("Sign In"),
-              action: {
-                showingLoginView = true
-              })
-              .padding(.horizontal, 20)
-            
+
+              HabittoButton(
+                size: .large,
+                style: .fillPrimary,
+                content: .text("Sign In"),
+                action: {
+                  showingLoginView = true
+                })
+                .padding(.horizontal, 20)
+
             Spacer()
           }
         }

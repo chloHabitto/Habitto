@@ -357,10 +357,54 @@ final actor HabitStore {
       let oldProgress: Int
       // ✅ UNIVERSAL RULE: Both types use completionHistory for progress tracking
       oldProgress = currentHabits[index].completionHistory[dateKey] ?? 0
-      currentHabits[index].completionHistory[dateKey] = progress
       
-      // ✅ Both types: complete when progress >= goal
+      // ✅ NEW: Create ProgressEvent BEFORE updating progress (event sourcing)
+      // This ensures events are created for audit trail before state changes
       let goalAmount = StreakDataCalculator.parseGoalAmount(from: currentHabits[index].goal)
+      
+      // Check if event sourcing is enabled
+      let isEventSourcingEnabled = await MainActor.run {
+        NewArchitectureFlags.shared.useEventSourcing
+      }
+      
+      if isEventSourcingEnabled {
+        // Get current user ID
+        let userId = await CurrentUser().idOrGuest
+        
+        // Determine event type from progress change
+        // Note: eventTypeForProgressChange is a standalone function, not a method
+        let eventType = eventTypeForProgressChange(
+          oldProgress: oldProgress,
+          newProgress: progress,
+          goalAmount: goalAmount
+        )
+        
+        let progressDelta = progress - oldProgress
+        
+        // Only create event if there's an actual change
+        if progressDelta != 0 {
+          do {
+            // Create event on MainActor (ProgressEventService is @MainActor)
+            // Swift will handle the actor hop automatically
+            let event = try await ProgressEventService.shared.createEvent(
+              habitId: habit.id,
+              date: date,
+              dateKey: dateKey,
+              eventType: eventType,
+              progressDelta: progressDelta,
+              userId: userId
+            )
+            logger.info("✅ Created ProgressEvent: id=\(event.id.prefix(20))..., type=\(eventType.rawValue), delta=\(progressDelta)")
+          } catch {
+            // Log error but don't throw - continue with existing flow for backward compatibility
+            logger.error("❌ Failed to create ProgressEvent: \(error.localizedDescription)")
+            logger.info("⚠️ Continuing with existing progress update flow (no event created)")
+          }
+        }
+      }
+      
+      // ✅ EXISTING: Update habit progress (keep existing logic)
+      currentHabits[index].completionHistory[dateKey] = progress
       let isComplete = progress >= goalAmount
       currentHabits[index].completionStatus[dateKey] = isComplete
       
