@@ -3,6 +3,13 @@ import CryptoKit
 import FirebaseAuth
 import SwiftUI
 
+// MARK: - LoginField
+
+enum LoginField {
+  case email
+  case password
+}
+
 // MARK: - LoginView
 
 struct LoginView: View {
@@ -10,15 +17,37 @@ struct LoginView: View {
 
   var body: some View {
     NavigationView {
-      ScrollView {
-        VStack(spacing: 0) {
-          headerSection
-          Spacer(minLength: 40)
-          formSection
-          Spacer(minLength: 40)
+      ScrollViewReader { proxy in
+        ScrollView {
+          VStack(spacing: 0) {
+            headerSection
+            Spacer(minLength: 40)
+            formSection
+            Spacer(minLength: 40)
+          }
+        }
+        .background(Color.surface)
+        .onChange(of: focusedField) { oldValue, newValue in
+          // Scroll to focused field when keyboard appears
+          if let field = newValue {
+            withAnimation(.easeInOut(duration: 0.3)) {
+              switch field {
+              case .email:
+                proxy.scrollTo("email", anchor: .center)
+              case .password:
+                proxy.scrollTo("password", anchor: .center)
+              }
+            }
+            
+            // Also ensure Sign In button is visible after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+              withAnimation(.easeInOut(duration: 0.3)) {
+                proxy.scrollTo("signInButton", anchor: .bottom)
+              }
+            }
+          }
         }
       }
-      .background(Color.surface)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
@@ -74,6 +103,9 @@ struct LoginView: View {
   @State private var isLoading = false
   @State private var errorMessage = ""
   @State private var showError = false
+  
+  // Focus state for keyboard-aware scrolling
+  @FocusState private var focusedField: LoginField?
 
   // Store delegates to prevent deallocation
   @State private var appleSignInDelegate: AppleSignInDelegate?
@@ -139,6 +171,8 @@ struct LoginView: View {
         .keyboardType(.emailAddress)
         .autocapitalization(.none)
         .disableAutocorrection(true)
+        .focused($focusedField, equals: .email)
+        .id("email")
         .background(Color.white)
         .cornerRadius(12)
         .overlay(
@@ -160,10 +194,12 @@ struct LoginView: View {
           TextField("Enter your password", text: $password)
             .textFieldStyle(CustomTextFieldStyle())
             .textContentType(isSignUp ? .newPassword : .password)
+            .focused($focusedField, equals: .password)
         } else {
           SwiftUI.SecureField("Enter your password", text: $password)
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
+            .focused($focusedField, equals: .password)
         }
 
         Button(action: {
@@ -174,6 +210,7 @@ struct LoginView: View {
             .frame(width: 44, height: 44)
         }
       }
+      .id("password")
       .background(Color.white)
       .cornerRadius(12)
       .overlay(
@@ -241,6 +278,7 @@ struct LoginView: View {
       handleEmailAuth()
     }
     .disabled(!isFormValid || isLoading)
+    .id("signInButton")
   }
 
   // MARK: - Toggle Sign Up Button
