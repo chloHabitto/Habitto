@@ -369,18 +369,23 @@ struct LoginView: View {
   private var googleLoginButton: some View {
     Button(action: handleGoogleLogin) {
       HStack(spacing: 12) {
-        Image(systemName: "globe")
-          .font(.system(size: 20, weight: .medium))
-          .foregroundColor(.white)
+        Image("GoogleLogo")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 20, height: 20)
 
         Text("Continue with Google")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.white)
+          .font(.system(size: 14, weight: .medium))
+          .foregroundColor(Color(hex: "#1F1F1F"))
       }
       .frame(maxWidth: .infinity)
       .frame(height: 56)
-      .background(Color.blue)
+      .background(Color.white)
       .cornerRadius(28)
+      .overlay(
+        RoundedRectangle(cornerRadius: 28)
+          .stroke(Color(hex: "#747775"), lineWidth: 1)
+      )
     }
     .disabled(isLoading)
   }
