@@ -174,60 +174,110 @@ final class MigrationRunner {
     userId: String,
     context: ModelContext) async throws -> Int
   {
-    logger.info("MigrationRunner: Migrating completion records for user \(userId)")
-    logger.info("🚨 MIGRATION_DEBUG: ⚠️ SKIPPING CompletionRecord migration - records will be created by UI interactions")
-
-    // ✅ FIX: Changed to 'let' since value is never mutated
-    let migratedCount = 0
-
+    logger.info("MigrationRunner: Migrating completionHistory to ProgressEvent records for user \(userId)")
+    
+    var migratedCount = 0
+    let deviceId = DeviceIdProvider.shared.currentDeviceId
+    
+    // Parse dateKey format (yyyy-MM-dd)
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    dateFormatter.timeZone = TimeZone.current
+    
     for habit in habits {
-      // ✅ CRITICAL FIX: Do NOT migrate completion history to CompletionRecords
-      // Problem: The old code created CompletionRecords with isCompleted=true for ANY progress > 0
-      // This created "phantom" CompletionRecords that made the system think habits were complete when they weren't
-      // 
-      // Solution: Let the UI create CompletionRecords when users actually complete habits
-      // The legacy completionHistory/actualUsage fields are already being used by the UI
+      guard !habit.completionHistory.isEmpty else {
+        logger.info("MigrationRunner: Habit '\(habit.name)' has no completion history, skipping")
+        continue
+      }
       
-      logger.info("🚨 MIGRATION_DEBUG: Habit '\(habit.name)' - Skipping \(habit.completionHistory.count) completion entries")
+      logger.info("MigrationRunner: Migrating \(habit.completionHistory.count) completion entries for habit '\(habit.name)'")
       
-      // Old code that created phantom records:
-      /*
-      for (dateString, completionCount) in habit.completionHistory {
-        guard let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
-          logger.warning("MigrationRunner: Invalid date string: \(dateString)")
+      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+      
+      for (dateKeyString, progress) in habit.completionHistory {
+        // Skip zero progress (no event needed)
+        guard progress > 0 else {
           continue
         }
-
-        let dateKey = DateKey.key(for: date)
-        let isCompleted = completionCount > 0  // ❌ WRONG! Doesn't check if goal was met
-
-        // Check if completion record already exists
-        let existingRequest = FetchDescriptor<CompletionRecord>(
-          predicate: #Predicate {
-            $0.userId == userId &&
-              $0.habitId == habit.id &&
-              $0.dateKey == dateKey
-          })
-        let existing = try context.fetch(existingRequest)
-
-        if existing.isEmpty {
-          let completionRecord = CompletionRecord(
-            userId: userId,
-            habitId: habit.id,
-            date: date,
-            dateKey: dateKey,
-            isCompleted: isCompleted,
-            progress: completionCount)  // ✅ CRITICAL FIX: Store actual progress count
-
-          context.insert(completionRecord)
-          migratedCount += 1
+        
+        // Parse date from dateKey
+        guard let date = dateFormatter.date(from: dateKeyString) else {
+          logger.warning("MigrationRunner: Invalid dateKey format: \(dateKeyString), skipping")
+          continue
         }
+        
+        // Check if event already exists for this habit+date (idempotency)
+        let existingEventDescriptor = ProgressEvent.eventsForHabitDate(
+          habitId: habit.id,
+          dateKey: dateKeyString
+        )
+        let existingEvents = (try? context.fetch(existingEventDescriptor)) ?? []
+        
+        // Skip if events already exist (already migrated or user has been creating events)
+        if !existingEvents.isEmpty {
+          logger.info("MigrationRunner: Events already exist for habit '\(habit.name)' on \(dateKeyString), skipping")
+          continue
+        }
+        
+        // Generate deterministic operationId for migration events
+        let operationId = "migration_\(habit.id.uuidString)_\(dateKeyString)"
+        
+        // Check if event with this operationId already exists
+        let operationIdDescriptor = ProgressEvent.eventByOperationId(operationId)
+        let existingByOperationId = (try? context.fetch(operationIdDescriptor)) ?? []
+        
+        if !existingByOperationId.isEmpty {
+          logger.info("MigrationRunner: Migration event already exists with operationId \(operationId), skipping")
+          continue
+        }
+        
+        // Calculate UTC day boundaries for timezone safety
+        let calendar = Calendar.current
+        let timezone = TimeZone.current
+        let dayStart = calendar.startOfDay(for: date)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+          logger.warning("MigrationRunner: Failed to calculate day end for \(dateKeyString), skipping")
+          continue
+        }
+        
+        let utcDayStart = dayStart.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayStart)))
+        let utcDayEnd = dayEnd.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayEnd)))
+        
+        // Create synthetic ProgressEvent for migration
+        // Use .bulkAdjust event type to indicate this is a migration event
+        var event = ProgressEvent(
+          habitId: habit.id,
+          dateKey: dateKeyString,
+          eventType: .bulkAdjust,
+          progressDelta: progress, // Set to absolute progress value
+          userId: userId,
+          deviceId: deviceId,
+          timezoneIdentifier: timezone.identifier,
+          utcDayStart: utcDayStart,
+          utcDayEnd: utcDayEnd,
+          note: "Migrated from completionHistory",
+          metadata: "{\"migration\": true, \"source\": \"completionHistory\"}"
+        )
+        
+        // Override operationId with deterministic migration ID for idempotency
+        event.operationId = operationId
+        
+        // Mark as unsynced so SyncEngine will upload it
+        event.synced = false
+        event.isRemote = false
+        
+        // Insert event
+        context.insert(event)
+        migratedCount += 1
+        
+        logger.info("MigrationRunner: Created ProgressEvent for habit '\(habit.name)' on \(dateKeyString) with progress \(progress)")
       }
-      */
     }
-
+    
+    // Save all events
     try context.save()
-    logger.info("MigrationRunner: Skipped migration of completion records (will be created by UI interactions)")
+    logger.info("MigrationRunner: ✅ Migrated \(migratedCount) completionHistory entries to ProgressEvent records")
+    logger.info("MigrationRunner: ⚠️ completionHistory fields preserved for rollback safety")
 
     return migratedCount
   }
