@@ -193,12 +193,37 @@ final class HabitData {
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
       do {
         let context = SwiftDataContainer.shared.modelContext
-        completionRecords = try context.fetch(descriptor)
-        print("🔍 toHabit(): Found \(completionRecords.count) orphaned CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId)')")
-        if completionRecords.count > 0 {
-          let userIds = Array(Set(completionRecords.map { $0.userId }))
-          print("   CompletionRecord userIds found: \(userIds)")
+        
+        // ✅ DEBUG: Check ALL CompletionRecords for this habitId to see what userIds exist
+        let allRecordsPredicate = #Predicate<CompletionRecord> { record in
+          record.habitId == habitId
         }
+        let allRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: allRecordsPredicate)
+        let allRecords = try context.fetch(allRecordsDescriptor)
+        if !allRecords.isEmpty {
+          let allUserIds = Array(Set(allRecords.map { $0.userId }))
+          print("🔍 toHabit() DEBUG: Found \(allRecords.count) total CompletionRecords for habit '\(self.name)' with userIds: \(allUserIds)")
+        }
+        
+        var fetchedRecords = try context.fetch(descriptor)
+        print("🔍 toHabit(): Found \(fetchedRecords.count) orphaned CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
+        
+        // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them anyway for guest/anonymous users
+        // This handles cases where CompletionRecord was saved with "" but HabitData has anonymous Firebase UID (or vice versa)
+        if fetchedRecords.isEmpty && !allRecords.isEmpty && (userId.isEmpty || userId == "guest") {
+          // For guest users, accept ALL CompletionRecords regardless of userId (they're all guest data)
+          print("⚠️ toHabit() FALLBACK: No CompletionRecords found with userId '\(userId)', but \(allRecords.count) exist. Using all records for guest user.")
+          fetchedRecords = allRecords
+        }
+        
+        if fetchedRecords.count > 0 {
+          let userIds = Array(Set(fetchedRecords.map { $0.userId }))
+          print("   CompletionRecord userIds found: \(userIds)")
+        } else if !allRecords.isEmpty {
+          print("⚠️ toHabit() WARNING: No CompletionRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist with different userIds!")
+        }
+        
+        completionRecords = fetchedRecords
       } catch {
         print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
         completionRecords = []

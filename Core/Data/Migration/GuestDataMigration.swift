@@ -145,19 +145,24 @@ final class GuestDataMigration: ObservableObject {
       migrationProgress = 0.1
       try await createPreMigrationBackup(for: currentUser.uid)
 
-      // Step 1: Migrate habits data
-      migrationStatus = "Migrating habits..."
+      // Step 1: Migrate SwiftData (habits, CompletionRecords, streaks, etc.)
+      migrationStatus = "Migrating habits and progress..."
       migrationProgress = 0.3
+      try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(from: "", to: currentUser.uid)
+      
+      // Step 2: Migrate legacy UserDefaults habits (for backward compatibility)
+      migrationStatus = "Migrating legacy data..."
+      migrationProgress = 0.4
       let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
 
-      // Step 2: Migrate backup files
+      // Step 3: Migrate backup files
       migrationStatus = "Migrating backups..."
-      migrationProgress = 0.5
+      migrationProgress = 0.6
       try await migrateGuestBackups(to: currentUser.uid)
 
-      // Step 3: Save to cloud storage for cross-device sync
+      // Step 4: Save to cloud storage for cross-device sync
       migrationStatus = "Syncing to cloud..."
-      migrationProgress = 0.7
+      migrationProgress = 0.8
       try await syncMigratedDataToCloud(migratedHabits)
 
       // Step 4: Mark migration as complete
@@ -194,14 +199,24 @@ final class GuestDataMigration: ObservableObject {
   func getGuestDataPreview() -> GuestDataPreview? {
     guard hasGuestData() else { return nil }
 
-    // Get guest habits
+    // ✅ CRITICAL FIX: Count habits from SwiftData (current storage) instead of UserDefaults
+    let container = SwiftDataContainer.shared.modelContainer
+    let context = container.mainContext
+    
     let guestHabits: [Habit] = {
-      guard let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
-            let habits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData) else
-      {
+      do {
+        // Fetch guest habits from SwiftData (userId == "" or "guest")
+        let descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate<HabitData> { habit in
+            habit.userId == "" || habit.userId == "guest"
+          }
+        )
+        let habitDataList = try context.fetch(descriptor)
+        return habitDataList.map { $0.toHabit() }
+      } catch {
+        print("❌ GuestDataMigration: Error fetching guest habits from SwiftData: \(error)")
         return []
       }
-      return habits
     }()
 
     // Get guest backup count
@@ -219,6 +234,7 @@ final class GuestDataMigration: ObservableObject {
       }
     }
 
+    print("🔍 GuestDataMigration: Preview - \(guestHabits.count) habits, \(backupCount) backups")
     return GuestDataPreview(
       habitCount: guestHabits.count,
       backupCount: backupCount,
