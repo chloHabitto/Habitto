@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 // MARK: - AccountView
 
@@ -117,48 +118,26 @@ struct AccountView: View {
             .background(Color.surface2)
           }
         } else {
-          // Sign in prompt for unauthenticated users
-          ScrollView {
-            VStack(spacing: 24) {
-              // Description text
-              Text("Sign in to access your account")
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-              
-              // Sign in illustration
-              VStack(spacing: 16) {
-                Image(systemName: "person.circle.fill")
-                  .font(.system(size: 80))
-                  .foregroundColor(.primary)
-
-                Text("Sign in to Your Account")
-                  .font(.title2)
-                  .fontWeight(.semibold)
-                  .foregroundColor(.text01)
-
-                Text("Access your personalized settings, data management, and account preferences.")
-                  .font(.body)
-                  .foregroundColor(.text04)
-                  .multilineTextAlignment(.center)
-                  .padding(.horizontal, 20)
-              }
-              .padding(.top, 40)
-
-              // Sign in button
-              HabittoButton(
-                size: .large,
-                style: .fillPrimary,
-                content: .text("Sign In"),
-                action: {
-                  showingLoginView = true
-                })
-                .padding(.horizontal, 20)
-
-              Spacer(minLength: 40)
-            }
+          // Guest mode - simple text prompt with sign in button
+          VStack(spacing: 24) {
+            Spacer()
+            
+            Text("Sign in or sign up to access your account")
+              .font(.appBodyLarge)
+              .foregroundColor(.text01)
+              .multilineTextAlignment(.center)
+              .padding(.horizontal, 40)
+            
+            HabittoButton(
+              size: .large,
+              style: .fillPrimary,
+              content: .text("Sign In"),
+              action: {
+                showingLoginView = true
+              })
+              .padding(.horizontal, 20)
+            
+            Spacer()
           }
         }
       }
@@ -232,12 +211,17 @@ struct AccountView: View {
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
-    case .authenticated:
-      true
+    case .authenticated(let user):
+      // ✅ FIX: Show guest view if user is anonymous (not truly logged in)
+      // Check if Firebase user is anonymous
+      if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+        return false  // Anonymous users should see guest view
+      }
+      return true  // Real authenticated users (email, Google, Apple)
     case .authenticating,
          .error,
          .unauthenticated:
-      false
+      return false
     }
   }
 }
