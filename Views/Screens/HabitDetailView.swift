@@ -10,15 +10,6 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
   }
 }
 
-// MARK: - ContentSizePreferenceKey
-
-struct ContentSizePreferenceKey: PreferenceKey {
-  static var defaultValue: CGSize = .zero
-
-  static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-    value = nextValue()
-  }
-}
 
 // MARK: - HabitDetailView
 
@@ -33,86 +24,45 @@ struct HabitDetailView: View {
 
   var body: some View {
     NavigationView {
-      GeometryReader { geometry in
-        ZStack(alignment: .top) {
-          // Background
-          Color.surface2
-            .ignoresSafeArea()
-
-          // Content - measure and display
-          ZStack {
-            // Hidden measurement view (positioned off-screen)
-            contentView
-              .opacity(0)
-              .position(x: -1000, y: -1000) // Move off-screen
-              .background(
-                GeometryReader { contentGeometry in
-                  Color.clear
-                    .preference(key: ContentSizePreferenceKey.self, value: contentGeometry.size)
-                })
-              .onPreferenceChange(ContentSizePreferenceKey.self) { size in
-                let newHeight = size.height
-                if abs(newHeight - contentHeight) > 1 {
-                  contentHeight = newHeight
-                }
-              }
-
-            // Actual content display
-            if shouldScroll {
-              ScrollViewReader { _ in
-                ScrollView {
-                  contentView
-                    .background(
-                      GeometryReader { contentGeometry in
-                        Color.clear
-                          .preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: contentGeometry.frame(in: .global).minY)
-                      })
-                }
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                  let newOffset = -value
-                  if abs(newOffset - scrollOffset) > 1 {
-                    scrollOffset = newOffset
-                  }
-                }
-              }
-              .onAppear {
-                // Always recalculate active state based on current habit's dates
-                let calendar = Calendar.current
-                let today = calendar.startOfDay(for: Date())
-                let startDate = calendar.startOfDay(for: habit.startDate)
-                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-                let calculatedActiveState = today >= startDate && today <= endDate
-
-                // Only update if we haven't initialized yet, or if it's different from current state
-                // This prevents unnecessary onChange triggers
-                if !hasInitializedActiveState || isActive != calculatedActiveState {
-                  // Guard against triggering onChange during initialization
-                  isProcessingToggle = true
-                  isActive = calculatedActiveState
-                  isProcessingToggle = false
-                  hasInitializedActiveState = true
-                }
-              }
-            } else {
-              VStack {
-                contentView
-                Spacer(minLength: 0)
-              }
-              .onAppear { }
-            }
+      ScrollViewReader { _ in
+        ScrollView {
+          contentView
+            .background(
+              GeometryReader { contentGeometry in
+                Color.clear
+                  .preference(
+                    key: ScrollOffsetPreferenceKey.self,
+                    value: contentGeometry.frame(in: .global).minY)
+              })
+        }
+        .background(Color.surface2)
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+          let newOffset = -value
+          if abs(newOffset - scrollOffset) > 1 {
+            scrollOffset = newOffset
           }
         }
-        .onAppear {
-          availableHeight = geometry.size.height
-          todayProgress = habit.getProgress(for: selectedDate)
-        }
-        .onChange(of: geometry.size.height) { _, newHeight in
-          availableHeight = newHeight
+      }
+      .onAppear {
+        todayProgress = habit.getProgress(for: selectedDate)
+        
+        // Always recalculate active state based on current habit's dates
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let startDate = calendar.startOfDay(for: habit.startDate)
+        let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+        let calculatedActiveState = today >= startDate && today <= endDate
+
+        // Only update if we haven't initialized yet, or if it's different from current state
+        // This prevents unnecessary onChange triggers
+        if !hasInitializedActiveState || isActive != calculatedActiveState {
+          // Guard against triggering onChange during initialization
+          isProcessingToggle = true
+          isActive = calculatedActiveState
+          isProcessingToggle = false
+          hasInitializedActiveState = true
         }
       }
-      .background(Color.surface2)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
@@ -120,13 +70,13 @@ struct HabitDetailView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 16, weight: .medium))
+              .font(.system(size: 12, weight: .bold))
               .foregroundColor(.text01)
           }
         }
         
         ToolbarItem(placement: .principal) {
-          if shouldScroll && scrollOffset > 50 {
+          if scrollOffset > 50 {
             Text("Habit details")
               .font(.appHeadlineSmallEmphasised)
               .foregroundColor(.text01)
@@ -150,7 +100,7 @@ struct HabitDetailView: View {
             }
           } label: {
             Image(systemName: "ellipsis")
-              .font(.system(size: 16, weight: .medium))
+              .font(.system(size: 12, weight: .bold))
               .foregroundColor(.text01)
           }
         }
@@ -307,8 +257,6 @@ struct HabitDetailView: View {
   @State private var showingReminderDeleteConfirmation = false
   @State private var reminderToDelete: ReminderItem?
   @State private var scrollOffset: CGFloat = 0
-  @State private var availableHeight: CGFloat = 0
-  @State private var contentHeight: CGFloat = 0
   @State private var isActive = true
   @State private var showingInactiveConfirmation = false
   @State private var isProcessingToggle = false
@@ -319,21 +267,6 @@ struct HabitDetailView: View {
 
   /// Check if habit reminders are globally enabled - using @AppStorage for automatic updates
   @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = false
-
-  /// Computed property to determine if content should scroll
-  private var shouldScroll: Bool {
-    // Add some buffer to account for safe areas and ensure we detect when scrolling is needed
-    let bufferHeight: CGFloat = 100 // Reduced buffer for easier detection
-
-    // If content height is 0 (not measured yet), check if habit has many reminders as a fallback
-    if contentHeight == 0 {
-      let hasManyReminders = habit.reminders.count > 3
-      return hasManyReminders
-    }
-
-    let needsScrolling = contentHeight > (availableHeight - bufferHeight)
-    return needsScrolling
-  }
 
   private var formattedDate: String {
     AppDateFormatter.shared.formatDisplayDate(Date())
@@ -349,8 +282,8 @@ struct HabitDetailView: View {
     VStack(spacing: 0) {
       // Full header (fades out when scrolled)
       fullHeader
-        .opacity(shouldScroll && scrollOffset > 50 ? 0 : 1)
-        .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
+        .opacity(scrollOffset > 50 ? 0 : 1)
+        .animation(.easeInOut(duration: 0.2), value: scrollOffset > 50)
         .padding(.top, 8)
         .padding(.bottom, 24)
         .id("header")
