@@ -1,5 +1,26 @@
 # Testing Migration - Step by Step Guide
 
+## ⚠️ Important: Authentication State
+
+**Quick Answer**: Test while **signed in** (your current state: `chloe9609@gmail.com`) using `force: true` - this matches production behavior.
+
+**You can test migration in either mode, but behavior differs:**
+
+### Option 1: Signed In Mode ✅ (Recommended - Your Current State)
+- **Current situation**: You're signed in as `chloe9609@gmail.com`
+- **Why**: Tests the real-world scenario where users have existing data
+- **Behavior**: Migration guard prevents auto-migration (expects UI to handle it)
+- **Solution**: Use `force: true` to bypass the guard (shown in Step 2)
+- **User ID**: Your habits will be saved with ID `mMl83AlWhhfT7NpyHCTY1SZuTq93`
+
+### Option 2: Guest Mode
+- **Use case**: Testing migration for new/guest users
+- **Behavior**: Migration may run automatically if no guard is triggered
+- **Note**: Still works with `force: true` if auto-migration is blocked
+- **User ID**: Habits will be saved with ID `"guest"`
+
+**Recommendation**: Test while **signed in** (your current state) to match production behavior.
+
 ## Issue Summary
 The app is finding 2 habits in UserDefaults (`SavedHabits`) but not loading them because:
 - User is authenticated (`chloe9609@gmail.com`)
@@ -24,19 +45,27 @@ This will show:
 - Habits with history
 
 ### Step 2: Trigger Migration (Force Mode)
-Force the migration to bypass guards:
+**When signed in**: Use `force: true` to bypass the migration guard.  
+**When in guest mode**: Can use `force: false` first, but `force: true` always works.
 
 ```swift
 Task { @MainActor in
+    // Check your auth state first (optional)
+    let userId = await CurrentUser().idOrGuest
+    print("Current User ID: \(userId)")
+    
+    // Trigger migration (force: true works in both signed in and guest mode)
     try? await MigrationTestHelper.shared.triggerMigration(force: true)
 }
 ```
 
 This will:
 1. Load habits from UserDefaults (`SavedHabits`)
-2. Save them to SwiftData as `HabitData`
+2. Save them to SwiftData as `HabitData` with the current user's ID
 3. Convert `completionHistory` entries to `ProgressEvent` records
 4. Mark events as `synced: false` for SyncEngine to upload
+
+**Note**: When signed in, the habits will be associated with your authenticated user ID (`mMl83AlWhhfT7NpyHCTY1SZuTq93`). In guest mode, they'll be associated with "guest".
 
 ### Step 3: Verify Migration Results
 Check if migration was successful:
