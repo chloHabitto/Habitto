@@ -130,7 +130,14 @@ struct PersonalInformationView: View {
           RoundedRectangle(cornerRadius: 12)
             .stroke(Color.outline3, lineWidth: 1.5))
         .cornerRadius(12)
-        .keyboardDoneButton()
+        .submitLabel(.done)
+        .onSubmit {
+          UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil)
+        }
     }
   }
 
@@ -150,7 +157,14 @@ struct PersonalInformationView: View {
           RoundedRectangle(cornerRadius: 12)
             .stroke(Color.outline3, lineWidth: 1.5))
         .cornerRadius(12)
-        .keyboardDoneButton()
+        .submitLabel(.done)
+        .onSubmit {
+          UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil)
+        }
     }
   }
 
