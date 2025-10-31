@@ -62,39 +62,48 @@ actor SyncEngine {
         
         logger.info("🔄 Starting event sync for user: \(userId)")
         
-        // Get model context
-        let modelContext = await MainActor.run { SwiftDataContainer.shared.modelContext }
-        
-        // Fetch unsynced events
-        let descriptor = ProgressEvent.unsyncedEvents()
-        let unsyncedEvents: [ProgressEvent]
-        do {
-            unsyncedEvents = try modelContext.fetch(descriptor)
-        } catch {
-            logger.error("❌ Failed to fetch unsynced events: \(error.localizedDescription)")
-            throw SyncError.fetchFailed(error)
+        // Fetch unsynced event IDs and data (ModelContext access must be on MainActor)
+        // Extract Sendable data to avoid passing ProgressEvent across concurrency boundaries
+        struct EventData: Sendable {
+            let id: String
+            let dateKey: String
+            let operationId: String
         }
         
-        guard !unsyncedEvents.isEmpty else {
+        let eventDataArray: [EventData] = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let descriptor = ProgressEvent.unsyncedEvents()
+            let events = (try? modelContext.fetch(descriptor)) ?? []
+            return events.map { event in
+                EventData(
+                    id: event.id,
+                    dateKey: event.dateKey,
+                    operationId: event.operationId
+                )
+            }
+        }
+        
+        guard !eventDataArray.isEmpty else {
             logger.info("✅ No unsynced events to sync")
             return
         }
         
-        logger.info("📤 Found \(unsyncedEvents.count) unsynced events to sync")
+        logger.info("📤 Found \(eventDataArray.count) unsynced events to sync")
         
         var syncedCount = 0
         var failedCount = 0
         
         // Sync events in batches to avoid overwhelming Firestore
         let batchSize = 50
-        for batchStart in stride(from: 0, to: unsyncedEvents.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, unsyncedEvents.count)
-            let batch = Array(unsyncedEvents[batchStart..<batchEnd])
+        for batchStart in stride(from: 0, to: eventDataArray.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, eventDataArray.count)
+            let batch = Array(eventDataArray[batchStart..<batchEnd])
             
             do {
-                try await syncBatch(batch, userId: userId, modelContext: modelContext)
-                syncedCount += batch.count
-                logger.info("✅ Synced batch: \(batch.count) events (\(syncedCount)/\(unsyncedEvents.count))")
+                // syncBatch handles ModelContext access internally using event IDs
+                let successfullySynced = try await syncBatch(eventIds: batch.map { $0.id }, userId: userId)
+                syncedCount += successfullySynced
+                logger.info("✅ Synced batch: \(successfullySynced) events (\(syncedCount)/\(eventDataArray.count))")
             } catch {
                 failedCount += batch.count
                 logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
@@ -105,19 +114,44 @@ actor SyncEngine {
         logger.info("✅ Event sync completed: \(syncedCount) synced, \(failedCount) failed")
     }
     
-    /// Sync a batch of events to Firestore
+    /// Sync a batch of events to Firestore using event IDs
     private func syncBatch(
-        _ events: [ProgressEvent],
-        userId: String,
-        modelContext: ModelContext
-    ) async throws {
+        eventIds: [String],
+        userId: String
+    ) async throws -> Int {
+        // Fetch events and sync them one by one (avoiding Sendable issues with [String: Any])
+        var eventIdsToMarkSynced: [String] = []
+        var alreadySyncedCount = 0
+        
         // Use Firestore batch write for atomicity
         let batch = firestore.batch()
-        var eventsToSync: [ProgressEvent] = []
         
-        for event in events {
+        for eventId in eventIds {
+            // Fetch event data on MainActor
+            let eventData: (id: String, dateKey: String, operationId: String, firestoreData: [String: Any])? = await MainActor.run {
+                let modelContext = SwiftDataContainer.shared.modelContext
+                let descriptor = FetchDescriptor<ProgressEvent>(
+                    predicate: #Predicate { $0.id == eventId }
+                )
+                guard let event = try? modelContext.fetch(descriptor).first else {
+                    return nil
+                }
+                
+                var firestoreData = event.toFirestore()
+                firestoreData["operationId"] = event.operationId
+                
+                return (
+                    id: event.id,
+                    dateKey: event.dateKey,
+                    operationId: event.operationId,
+                    firestoreData: firestoreData
+                )
+            }
+            
+            guard let eventData = eventData else { continue }
+            
             // Generate yearMonth from dateKey (format: "yyyy-MM-dd" -> "yyyy-MM")
-            let yearMonth = String(event.dateKey.prefix(7)) // "2025-10-31" -> "2025-10"
+            let yearMonth = String(eventData.dateKey.prefix(7)) // "2025-10-31" -> "2025-10"
             
             // Firestore path: /users/{userId}/events/{yearMonth}/{eventId}
             let eventRef = firestore.collection("users")
@@ -125,47 +159,59 @@ actor SyncEngine {
                 .collection("events")
                 .document(yearMonth)
                 .collection("events")
-                .document(event.id)
+                .document(eventData.id)
             
             // Check if event already exists (idempotency check using operationId)
             let existingDoc = try? await eventRef.getDocument()
             if let existingData = existingDoc?.data(),
                let existingOperationId = existingData["operationId"] as? String,
-               existingOperationId == event.operationId {
+               existingOperationId == eventData.operationId {
                 // Event already synced, mark as synced locally
-                logger.info("⏭️ Event \(event.id.prefix(20))... already synced (operationId match), marking as synced")
-                event.markAsSynced()
+                logger.info("⏭️ Event \(eventData.id.prefix(20))... already synced (operationId match), marking as synced")
+                eventIdsToMarkSynced.append(eventData.id)
+                alreadySyncedCount += 1
                 continue
             }
             
-            // Convert event to Firestore dictionary
-            var eventData = event.toFirestore()
-            
-            // Add operationId for idempotency
-            eventData["operationId"] = event.operationId
-            
             // Write to Firestore (setData with merge for idempotency)
-            batch.setData(eventData, forDocument: eventRef, merge: true)
-            eventsToSync.append(event)
+            batch.setData(eventData.firestoreData, forDocument: eventRef, merge: true)
+            eventIdsToMarkSynced.append(eventData.id)
         }
         
         // Only commit if there are events to sync
-        guard !eventsToSync.isEmpty else {
-            // All events were already synced, just save the context
-            try modelContext.save()
-            return
+        guard alreadySyncedCount < eventIdsToMarkSynced.count else {
+            // All events were already synced, just mark them
+            await markEventsAsSynced(eventIds: eventIdsToMarkSynced)
+            return alreadySyncedCount
         }
         
         // Commit batch
         try await batch.commit()
         
-        // Mark only synced events as synced locally
-        for event in eventsToSync {
-            event.markAsSynced()
-        }
+        // Mark events as synced (must be on MainActor for ModelContext)
+        await markEventsAsSynced(eventIds: eventIdsToMarkSynced)
         
-        // Save model context
-        try modelContext.save()
+        return eventIdsToMarkSynced.count
+    }
+    
+    /// Mark events as synced using their IDs (runs on MainActor)
+    private func markEventsAsSynced(eventIds: [String]) async {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            for eventId in eventIds {
+                let descriptor = FetchDescriptor<ProgressEvent>(
+                    predicate: #Predicate { $0.id == eventId }
+                )
+                if let event = try? modelContext.fetch(descriptor).first {
+                    event.markAsSynced()
+                }
+            }
+            do {
+                try modelContext.save()
+            } catch {
+                logger.error("❌ Failed to save synced status: \(error.localizedDescription)")
+            }
+        }
     }
     
     // MARK: - Background Sync Scheduler
