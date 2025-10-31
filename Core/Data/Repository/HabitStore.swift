@@ -918,6 +918,11 @@ final actor HabitStore {
             progress: progress)  // ✅ CRITICAL FIX: Store progress count
           logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
           
+          // ✅ CRITICAL FIX: Always insert CompletionRecord first, then link to HabitData
+          // This ensures the record exists even if HabitData lookup fails
+          modelContext.insert(completionRecord)
+          logger.info("✅ Inserted CompletionRecord into context")
+          
           // ✅ FIX: Explicitly link CompletionRecord to HabitData for cascade delete
           // Fetch the HabitData and append to its completionHistory
           let habitDataPredicate = #Predicate<HabitData> { habitData in
@@ -925,12 +930,28 @@ final actor HabitStore {
           }
           let habitDataRequest = FetchDescriptor<HabitData>(predicate: habitDataPredicate)
           if let habitData = try modelContext.fetch(habitDataRequest).first {
-            habitData.completionHistory.append(completionRecord)
-            logger.info("✅ Linked CompletionRecord to HabitData.completionHistory for cascade delete")
+            // Only append if not already in the relationship (prevent duplicates)
+            if !habitData.completionHistory.contains(where: { $0.habitId == completionRecord.habitId && $0.dateKey == completionRecord.dateKey }) {
+              habitData.completionHistory.append(completionRecord)
+              logger.info("✅ Linked CompletionRecord to HabitData.completionHistory (userId: '\(userId)', habitId: \(habit.id))")
+            } else {
+              logger.info("ℹ️ CompletionRecord already linked to HabitData, skipping duplicate link")
+            }
           } else {
-            // If HabitData not found, just insert the record (fallback)
-            modelContext.insert(completionRecord)
-            logger.warning("⚠️ HabitData not found, CompletionRecord inserted without explicit link")
+            // HabitData not found - CompletionRecord is still inserted and will be found via manual query
+            logger.warning("⚠️ HabitData not found for habitId: \(habit.id), userId: '\(userId)' - CompletionRecord inserted standalone (will be found via manual query)")
+            
+            // ✅ DEBUG: Try to find HabitData without userId filter to see if it exists with different userId
+            let debugPredicate = #Predicate<HabitData> { habitData in
+              habitData.id == habit.id
+            }
+            let debugRequest = FetchDescriptor<HabitData>(predicate: debugPredicate)
+            let debugHabits = try modelContext.fetch(debugRequest)
+            if let debugHabit = debugHabits.first {
+              logger.warning("⚠️ Found HabitData with different userId: '\(debugHabit.userId)' (expected: '\(userId)')")
+            } else {
+              logger.warning("⚠️ No HabitData found at all for habitId: \(habit.id)")
+            }
           }
           
           logger
