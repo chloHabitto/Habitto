@@ -40,30 +40,20 @@ struct AddedHabitItem: View {
       HabitIconView(habit: habit)
         .padding(.top, 8)
 
-      // VStack with title, description, and bottom row
-      VStack(spacing: 8) {
-        // Top row: Text container and more button
-        HStack(spacing: 4) {
-          // Text container - tappable area
-          VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-              Text(habit.name)
-                .font(.appTitleMediumEmphasised)
-                .foregroundColor(.text02)
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-              reminderIcon
-            }
-
-            Text(habit.description.isEmpty ? "No description" : habit.description)
-              .font(.appBodyExtraSmall)
-              .foregroundColor(.text05)
+      // HStack with content VStack and more button
+      HStack(alignment: .top, spacing: 4) {
+        // VStack with title, description, and goal row
+        VStack(alignment: .leading, spacing: 8) {
+          // Top row: Name and reminder icon
+          HStack(spacing: 6) {
+            Text(habit.name)
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(.text02)
               .lineLimit(1)
               .truncationMode(.tail)
+
+            reminderIcon
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.top, 8)
           .contentShape(Rectangle())
           .simultaneousGesture(
             TapGesture(count: 1)
@@ -77,34 +67,14 @@ struct AddedHabitItem: View {
                 onLongPress?()
               })
 
-          // More button (hidden in edit mode to show native List drag handle)
-          if !isEditMode {
-            Menu {
-              Button(action: {
-                onEdit?()
-              }) {
-                Label("Edit", systemImage: "pencil")
-              }
+          // Middle row: Description
+          Text(habit.description.isEmpty ? "No description" : habit.description)
+            .font(.appBodyExtraSmall)
+            .foregroundColor(.text05)
+            .lineLimit(1)
+            .truncationMode(.tail)
 
-              Button(role: .destructive, action: {
-                onDelete?()
-              }) {
-                Label("Delete", systemImage: "trash")
-              }
-            } label: {
-              Image(.iconMoreVert)
-                .resizable()
-                .frame(width: 24, height: 24)
-                .foregroundColor(.text05)
-                .contentShape(Rectangle())
-            }
-            .frame(width: 40, height: 40)
-          }
-        }
-
-        // Bottom row: Goal only
-        HStack(spacing: 4) {
-          // Goal
+          // Bottom row: Goal
           HStack(spacing: 4) {
             Image(.iconFlagFilled)
               .resizable()
@@ -117,10 +87,35 @@ struct AddedHabitItem: View {
               .foregroundColor(.text05)
           }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+
+        // More button (hidden in edit mode to show native List drag handle)
+        if !isEditMode {
+          Menu {
+            Button(action: {
+              onEdit?()
+            }) {
+              Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive, action: {
+              onDelete?()
+            }) {
+              Label("Delete", systemImage: "trash")
+            }
+          } label: {
+            Image(.iconMoreVert)
+              .resizable()
+              .frame(width: 24, height: 24)
+              .foregroundColor(.text05)
+              .contentShape(Rectangle())
+          }
+          .frame(width: 40)
+          .frame(maxHeight: .infinity)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.top, 8)
       .padding(.bottom, 14)
     }
     .background(.surface)
