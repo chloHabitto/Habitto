@@ -822,6 +822,12 @@ struct HomeView: View {
     .sheet(isPresented: $state.showingNotificationView) {
       NotificationView()
     }
+    .sheet(isPresented: Binding(
+      get: { HabitRepository.shared.shouldShowMigrationView },
+      set: { HabitRepository.shared.shouldShowMigrationView = $0 }
+    )) {
+      GuestDataMigrationView()
+    }
     .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
       TutorialBottomSheet(tutorialManager: tutorialManager)
     }

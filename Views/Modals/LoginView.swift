@@ -1,10 +1,9 @@
 import AuthenticationServices
 import CryptoKit
+import FirebaseAuth
 import SwiftUI
 
 // MARK: - LoginView
-
-// import FirebaseAuth
 
 struct LoginView: View {
   // MARK: Internal
@@ -39,10 +38,16 @@ struct LoginView: View {
       }
       .onReceive(authManager.$authState) { state in
         switch state {
-        case .authenticated:
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            dismiss()
+        case .authenticated(let user):
+          // ✅ FIX: Only dismiss if user is NOT anonymous (real email/Google/Apple account)
+          // Anonymous users should stay on login screen to sign up
+          if let firebaseUser = user as? User, !firebaseUser.isAnonymous {
+            // Real authenticated user - dismiss login screen
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+              dismiss()
+            }
           }
+          // If anonymous, don't dismiss - let them sign up
 
         case .error(let message):
           errorMessage = message

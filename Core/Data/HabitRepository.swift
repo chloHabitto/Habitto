@@ -950,84 +950,88 @@ class HabitRepository: ObservableObject {
       print(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
-      // ✅ CRITICAL FIX: Migrate data from anonymous user to email user
-      // When user signs up, migrate all habits/data from anonymous/guest userIds to the new account
-      let container = SwiftDataContainer.shared.modelContainer
-      let context = container.mainContext
+      // ✅ CRITICAL FIX: Check for guest data BEFORE migrating (so migration UI can show)
+      let hasGuestDataToMigrate = guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData()
       
-      var migratedCount = 0
-      
-      // Migrate HabitData
-      let allHabitsDescriptor = FetchDescriptor<HabitData>()
-      let allHabits = (try? context.fetch(allHabitsDescriptor)) ?? []
-      let guestHabits = allHabits.filter { habitData in
-        habitData.userId != user.uid
-      }
-      
-      for habitData in guestHabits {
-        let oldUserId = habitData.userId
-        habitData.userId = user.uid
-        migratedCount += 1
-        print("  ✓ Migrating habit '\(habitData.name)' from userId '\(oldUserId)' to '\(user.uid)'")
-      }
-      
-      // Migrate CompletionRecords
-      let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
-      let allRecords = (try? context.fetch(allRecordsDescriptor)) ?? []
-      let guestRecords = allRecords.filter { record in
-        record.userId != user.uid
-      }
-      
-      for record in guestRecords {
-        let oldUserId = record.userId
-        record.userId = user.uid
-        print("  ✓ Migrating CompletionRecord from userId '\(oldUserId)' to '\(user.uid)'")
-      }
-      
-      // Migrate DailyAwards
-      let allAwardsDescriptor = FetchDescriptor<DailyAward>()
-      let allAwards = (try? context.fetch(allAwardsDescriptor)) ?? []
-      let guestAwards = allAwards.filter { award in
-        award.userId != user.uid
-      }
-      
-      for award in guestAwards {
-        let oldUserId = award.userId
-        award.userId = user.uid
-        print("  ✓ Migrating DailyAward from userId '\(oldUserId)' to '\(user.uid)'")
-      }
-      
-      // Migrate UserProgressData
-      let allProgressDescriptor = FetchDescriptor<UserProgressData>()
-      let allProgress = (try? context.fetch(allProgressDescriptor)) ?? []
-      let guestProgress = allProgress.filter { progress in
-        progress.userId != user.uid
-      }
-      
-      for progress in guestProgress {
-        let oldUserId = progress.userId
-        progress.userId = user.uid
-        print("  ✓ Migrating UserProgressData from userId '\(oldUserId)' to '\(user.uid)'")
-      }
-      
-      // Save all changes
-      if migratedCount > 0 || !guestRecords.isEmpty || !guestAwards.isEmpty || !guestProgress.isEmpty {
-        do {
-          try context.save()
-          print("✅ HabitRepository: Successfully migrated \(guestHabits.count) habits, \(guestRecords.count) completion records, \(guestAwards.count) awards, \(guestProgress.count) progress records")
-        } catch {
-          print("❌ HabitRepository: Failed to save migrated data: \(error.localizedDescription)")
-        }
-      }
-
-      // ✅ FIX #24: Show migration UI instead of auto-migrating (prevent data loss)
-      if guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData() {
+      if hasGuestDataToMigrate {
         print("🔄 HabitRepository: Guest data detected - showing migration UI...")
         shouldShowMigrationView = true  // ✅ Show migration UI, let user choose
         print("✅ Guest data found, user can choose to migrate or start fresh")
+        // Don't auto-migrate - wait for user's choice in migration UI
       } else {
         print("ℹ️ HabitRepository: No guest data to migrate or already migrated")
         shouldShowMigrationView = false
+        
+        // ✅ CRITICAL FIX: Auto-migrate data from anonymous user to email user (silent migration)
+        // This handles the case where user was anonymous and signs up (data already in SwiftData)
+        let container = SwiftDataContainer.shared.modelContainer
+        let context = container.mainContext
+        
+        var migratedCount = 0
+        
+        // Migrate HabitData
+        let allHabitsDescriptor = FetchDescriptor<HabitData>()
+        let allHabits = (try? context.fetch(allHabitsDescriptor)) ?? []
+        let guestHabits = allHabits.filter { habitData in
+          habitData.userId != user.uid
+        }
+        
+        for habitData in guestHabits {
+          let oldUserId = habitData.userId
+          habitData.userId = user.uid
+          migratedCount += 1
+          print("  ✓ Auto-migrating habit '\(habitData.name)' from userId '\(oldUserId)' to '\(user.uid)'")
+        }
+        
+        // Migrate CompletionRecords
+        let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
+        let allRecords = (try? context.fetch(allRecordsDescriptor)) ?? []
+        let guestRecords = allRecords.filter { record in
+          record.userId != user.uid
+        }
+        
+        for record in guestRecords {
+          let oldUserId = record.userId
+          record.userId = user.uid
+          print("  ✓ Auto-migrating CompletionRecord from userId '\(oldUserId)' to '\(user.uid)'")
+        }
+        
+        // Migrate DailyAwards
+        let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+        let allAwards = (try? context.fetch(allAwardsDescriptor)) ?? []
+        let guestAwards = allAwards.filter { award in
+          award.userId != user.uid
+        }
+        
+        for award in guestAwards {
+          let oldUserId = award.userId
+          award.userId = user.uid
+          print("  ✓ Auto-migrating DailyAward from userId '\(oldUserId)' to '\(user.uid)'")
+        }
+        
+        // Migrate UserProgressData
+        let allProgressDescriptor = FetchDescriptor<UserProgressData>()
+        let allProgress = (try? context.fetch(allProgressDescriptor)) ?? []
+        let guestProgress = allProgress.filter { progress in
+          progress.userId != user.uid
+        }
+        
+        for progress in guestProgress {
+          let oldUserId = progress.userId
+          progress.userId = user.uid
+          print("  ✓ Auto-migrating UserProgressData from userId '\(oldUserId)' to '\(user.uid)'")
+        }
+        
+        // Save all changes
+        if migratedCount > 0 || !guestRecords.isEmpty || !guestAwards.isEmpty || !guestProgress.isEmpty {
+          do {
+            try context.save()
+            print("✅ HabitRepository: Successfully auto-migrated \(guestHabits.count) habits, \(guestRecords.count) completion records, \(guestAwards.count) awards, \(guestProgress.count) progress records")
+          } catch {
+            print("❌ HabitRepository: Failed to save migrated data: \(error.localizedDescription)")
+          }
+        }
+        
         // Mark migration as complete if no guest data exists
         if !guestDataMigration.hasGuestData() {
           guestDataMigration.forceMarkMigrationCompleted()
