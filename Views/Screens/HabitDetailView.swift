@@ -138,7 +138,7 @@ struct HabitDetailView: View {
         todayProgress = habit.getProgress(for: selectedDate)
       }
     }
-    .fullScreenCover(isPresented: $showingEditView) {
+    .sheet(isPresented: $showingEditView) {
       HabitEditView(habit: habit, onSave: { updatedHabit in
         habit = updatedHabit
         onUpdateHabit?(updatedHabit)
