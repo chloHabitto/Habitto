@@ -328,6 +328,37 @@ struct MoreTabView: View {
             auditMemory()
           }
         )
+        
+        // Migration Testing Buttons
+        debugButton(
+          title: "🔍 Check Migration Status",
+          subtitle: "View migration and ProgressEvent status",
+          action: {
+            Task { @MainActor in
+              try? await MigrationTestHelper.shared.printMigrationStatus()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "🚀 Trigger Migration (Force)",
+          subtitle: "Run migration with force mode",
+          action: {
+            Task { @MainActor in
+              try? await MigrationTestHelper.shared.triggerMigration(force: true)
+            }
+          }
+        )
+        
+        debugButton(
+          title: "✅ Verify Migration",
+          subtitle: "Check migration results",
+          action: {
+            Task { @MainActor in
+              try? await MigrationTestHelper.shared.printVerification()
+            }
+          }
+        )
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 16)

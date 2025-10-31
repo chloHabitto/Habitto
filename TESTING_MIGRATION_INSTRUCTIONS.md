@@ -30,15 +30,38 @@ The app is finding 2 habits in UserDefaults (`SavedHabits`) but not loading them
 ## Solution: Use MigrationTestHelper
 
 ### Step 1: Check Current Status
-In Xcode's **Debug Console** (LLDB), run:
 
-```swift
-Task { @MainActor in
-    try? await MigrationTestHelper.shared.printMigrationStatus()
-}
-```
+**⚠️ Important**: Xcode's LLDB debugger doesn't handle async Swift code well. Use one of these methods:
 
-This will show:
+#### **Method 1: Use Debug Buttons in the App (Easiest)** ✅ **RECOMMENDED**
+
+1. **Run your app** (press `Cmd+R`)
+2. **Navigate to**: More Tab → Scroll to Debug section
+3. **You'll see three new buttons**:
+   - **🔍 Check Migration Status** - View current migration state
+   - **🚀 Trigger Migration (Force)** - Run the migration
+   - **✅ Verify Migration** - Check if migration worked correctly
+4. **Tap each button** and check the **Xcode Console** (bottom panel) for output
+
+**This is the easiest way** - no need to type code in the console!
+
+#### **Method 2: Use Xcode Console** (If buttons aren't available)
+
+If you prefer using the console directly, you can add temporary buttons to any view, or use Method 3 below.
+
+#### **Method 3: Use Xcode Console with Expression** (Advanced)
+
+1. **Set a breakpoint** in your app (click in the gutter next to a line of code)
+2. **Run the app** (press `Cmd+R`)
+3. When the breakpoint hits, **open the Console** (bottom panel)
+4. Type this in the console:
+   ```
+   expression -- async { await MainActor.run { try? await MigrationTestHelper.shared.printMigrationStatus() } }
+   ```
+   (Note: This may not work reliably - Method 1 or 2 is better)
+
+**Expected output:**
+You should see a migration status report in the console showing:
 - Migration state (completed/pending)
 - Number of ProgressEvents
 - Number of completionHistory entries
