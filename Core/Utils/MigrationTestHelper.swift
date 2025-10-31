@@ -392,8 +392,7 @@ final class MigrationTestHelper {
         dateFormatter.timeZone = TimeZone.current
         let todayKey = dateFormatter.string(from: today)
         
-        // Check for DailyAward
-        let awardId = EventSourcedUtils.dailyAwardId(userId: userId, dateKey: todayKey)
+        // Check for DailyAward (query by userId+dateKey directly)
         let awardPredicate = #Predicate<DailyAward> { award in
             award.userId == userId && award.dateKey == todayKey
         }

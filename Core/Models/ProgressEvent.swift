@@ -119,7 +119,8 @@ public final class ProgressEvent {
     utcDayStart: Date,
     utcDayEnd: Date,
     note: String? = nil,
-    metadata: String? = nil
+    metadata: String? = nil,
+    operationId: String? = nil
   ) {
     let timestamp = Date()
     let uuid = UUID().uuidString
@@ -127,8 +128,12 @@ public final class ProgressEvent {
     // Generate deterministic-ish ID (unique per device+time, but predictable for deduplication)
     self.id = "evt_\(habitId.uuidString)_\(Int(timestamp.timeIntervalSince1970 * 1000))_\(uuid)"
     
-    // Generate unique operation ID for idempotency
-    self.operationId = "\(deviceId)_\(Int(timestamp.timeIntervalSince1970 * 1000))_\(uuid)"
+    // Use provided operationId or generate unique operation ID for idempotency
+    if let operationId = operationId {
+      self.operationId = operationId
+    } else {
+      self.operationId = "\(deviceId)_\(Int(timestamp.timeIntervalSince1970 * 1000))_\(uuid)"
+    }
     
     self.habitId = habitId
     self.dateKey = dateKey
