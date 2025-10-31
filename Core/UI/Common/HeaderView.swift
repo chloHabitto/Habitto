@@ -113,12 +113,12 @@ struct HeaderView: View {
       Spacer()
 
       if showProfile {
-        // Only show Login button when user is not signed in
+        // Only show Sign In button when user is not signed in
         if !isLoggedIn {
           HabittoButton(
             size: .small,
             style: .fillNeutral,
-            content: .text("Login"),
+            content: .text("Sign In"),
             hugging: true)
           {
             showingLoginView = true
