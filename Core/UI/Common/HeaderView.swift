@@ -1,3 +1,4 @@
+import FirebaseAuth
 import SwiftUI
 import UIKit
 
@@ -151,13 +152,18 @@ struct HeaderView: View {
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
-    case .authenticated:
-      true
+    case .authenticated(let user):
+      // ✅ FIX: Show login button if user is anonymous (not truly logged in)
+      // Check if Firebase user is anonymous
+      if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+        return false  // Anonymous users should see login button
+      }
+      return true  // Real authenticated users (email, Google, Apple)
     case .error,
          .unauthenticated:
-      false
+      return false
     case .authenticating:
-      false
+      return false
     }
   }
 
