@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 import OSLog
 import SwiftData
 import SwiftUI
@@ -854,9 +855,23 @@ final actor HabitStore {
     progress: Int) async
   {
     let userId = await CurrentUser().idOrGuest
+    
+    // ✅ DEBUG: Log current authentication state to diagnose userId issues
+    await MainActor.run {
+      if let currentUser = AuthenticationManager.shared.currentUser {
+        if let firebaseUser = currentUser as? User {
+          logger.info("🔍 DEBUG: Current Firebase user - UID: \(firebaseUser.uid), isAnonymous: \(firebaseUser.isAnonymous), userId used: '\(userId.isEmpty ? "guest" : userId)'")
+        } else {
+          logger.info("🔍 DEBUG: Current user (non-Firebase) - userId used: '\(userId.isEmpty ? "guest" : userId)'")
+        }
+      } else {
+        logger.info("🔍 DEBUG: No current user - userId used: '\(userId.isEmpty ? "guest" : userId)'")
+      }
+    }
+    
     logger
       .info(
-        "🎯 createCompletionRecordIfNeeded: Starting for habit '\(habit.name)' on \(dateKey), userId: \(userId)")
+        "🎯 createCompletionRecordIfNeeded: Starting for habit '\(habit.name)' on \(dateKey), userId: '\(userId.isEmpty ? "guest" : userId)'")
 
     do {
       // Perform all SwiftData operations on the main actor to avoid concurrency issues

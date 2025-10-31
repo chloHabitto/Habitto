@@ -79,6 +79,12 @@ final class GuestToAuthMigration {
     try await migrateDailyAwards(from: guestUserId, to: authUserId, context: context)
     try await migrateUserProgress(from: guestUserId, to: authUserId, context: context)
     
+    // ✅ CRITICAL FIX: Migrate CompletionRecords (needed for XP and streak calculation)
+    try await migrateCompletionRecords(from: guestUserId, to: authUserId, context: context)
+    
+    // ✅ CRITICAL FIX: Migrate GlobalStreakModel (needed for streak display)
+    try await migrateGlobalStreakModel(from: guestUserId, to: authUserId, context: context)
+    
     logger.info("✅ Guest to auth migration complete! Migrated \(guestHabits.count) habits")
     
     // Mark migration as complete
@@ -145,6 +151,91 @@ final class GuestToAuthMigration {
     
     try context.save()
     logger.info("✅ Migrated \(guestProgress.count) progress records")
+  }
+  
+  private func migrateCompletionRecords(from guestUserId: String, to authUserId: String, context: ModelContext) async throws {
+    var descriptor = FetchDescriptor<CompletionRecord>()
+    
+    if guestUserId.isEmpty {
+      descriptor.predicate = #Predicate<CompletionRecord> { record in
+        record.userId == ""
+      }
+    } else {
+      descriptor.predicate = #Predicate<CompletionRecord> { record in
+        record.userId == guestUserId
+      }
+    }
+    
+    let guestRecords = try context.fetch(descriptor)
+    
+    guard !guestRecords.isEmpty else {
+      logger.info("ℹ️ No guest completion records to migrate")
+      return
+    }
+    
+    logger.info("📦 Migrating \(guestRecords.count) completion records...")
+    
+    for record in guestRecords {
+      record.userId = authUserId
+      logger.debug("  ✓ Migrated CompletionRecord for habitId '\(record.habitId)' from userId '\(guestUserId.isEmpty ? "guest" : guestUserId)' to '\(authUserId)'")
+    }
+    
+    try context.save()
+    logger.info("✅ Migrated \(guestRecords.count) completion records")
+  }
+  
+  private func migrateGlobalStreakModel(from guestUserId: String, to authUserId: String, context: ModelContext) async throws {
+    var descriptor = FetchDescriptor<GlobalStreakModel>()
+    
+    if guestUserId.isEmpty {
+      descriptor.predicate = #Predicate<GlobalStreakModel> { streak in
+        streak.userId == ""
+      }
+    } else {
+      descriptor.predicate = #Predicate<GlobalStreakModel> { streak in
+        streak.userId == guestUserId
+      }
+    }
+    
+    let guestStreaks = try context.fetch(descriptor)
+    
+    guard !guestStreaks.isEmpty else {
+      logger.info("ℹ️ No guest streak data to migrate")
+      return
+    }
+    
+    logger.info("📦 Migrating \(guestStreaks.count) streak record(s)...")
+    
+    // If there's already a streak model for the authenticated user, merge the data
+    let authStreakDescriptor = FetchDescriptor<GlobalStreakModel>(
+      predicate: #Predicate<GlobalStreakModel> { streak in
+        streak.userId == authUserId
+      }
+    )
+    let existingAuthStreak = try context.fetch(authStreakDescriptor).first
+    
+    if let guestStreak = guestStreaks.first {
+      if let existingStreak = existingAuthStreak {
+        // Merge: use the higher streak value
+        existingStreak.currentStreak = max(existingStreak.currentStreak, guestStreak.currentStreak)
+        existingStreak.longestStreak = max(existingStreak.longestStreak, guestStreak.longestStreak)
+        // Use the most recent lastCompleteDate
+        if let guestDate = guestStreak.lastCompleteDate,
+           let existingDate = existingStreak.lastCompleteDate {
+          existingStreak.lastCompleteDate = guestDate > existingDate ? guestDate : existingDate
+        } else if guestStreak.lastCompleteDate != nil {
+          existingStreak.lastCompleteDate = guestStreak.lastCompleteDate
+        }
+        logger.info("  ✓ Merged guest streak (current: \(guestStreak.currentStreak)) with existing streak (current: \(existingStreak.currentStreak))")
+      } else {
+        // Update guest streak's userId
+        guestStreak.userId = authUserId
+        logger.info("  ✓ Migrated streak: current=\(guestStreak.currentStreak), longest=\(guestStreak.longestStreak)")
+      }
+    }
+    
+    try context.save()
+    logger.info("✅ Migrated streak data")
   }
 }
 
