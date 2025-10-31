@@ -161,15 +161,22 @@ class AuthenticationManager: ObservableObject {
           if let error {
             // If the email is already in use, sign in with the provided credentials instead
             let nsError = error as NSError
+            print("🔍 DEBUG: Linking error code: \(nsError.code), message: \(error.localizedDescription)")
+            print("🔍 DEBUG: credentialAlreadyInUse code: \(AuthErrorCode.credentialAlreadyInUse.rawValue)")
+            print("🔍 DEBUG: emailAlreadyInUse code: \(AuthErrorCode.emailAlreadyInUse.rawValue)")
+            
             if nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue
               || nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue
             {
+              print("✅ DEBUG: Email already in use, attempting sign-in instead...")
               Auth.auth().signIn(withEmail: email, password: password) { signInResult, signInError in
                 DispatchQueue.main.async {
                   if let signInError {
+                    print("❌ DEBUG: Sign-in also failed: \(signInError.localizedDescription)")
                     self?.authState = .error(signInError.localizedDescription)
                     completion(.failure(signInError))
                   } else if let user = signInResult?.user {
+                    print("✅ DEBUG: Sign-in successful after linking failed")
                     self?.authState = .authenticated(user)
                     self?.currentUser = user
                     completion(.success(user))
@@ -179,6 +186,7 @@ class AuthenticationManager: ObservableObject {
               return
             }
 
+            print("❌ DEBUG: Linking failed with unexpected error, not attempting sign-in")
             self?.authState = .error(error.localizedDescription)
             completion(.failure(error))
           } else if let user = result?.user {
@@ -197,13 +205,19 @@ class AuthenticationManager: ObservableObject {
         if let error {
           // If the email already exists, attempt to sign in directly
           let nsError = error as NSError
+          print("🔍 DEBUG: Create account error code: \(nsError.code), message: \(error.localizedDescription)")
+          print("🔍 DEBUG: emailAlreadyInUse code: \(AuthErrorCode.emailAlreadyInUse.rawValue)")
+          
           if nsError.code == AuthErrorCode.emailAlreadyInUse.rawValue {
+            print("✅ DEBUG: Email already in use, attempting sign-in instead...")
             Auth.auth().signIn(withEmail: email, password: password) { signInResult, signInError in
               DispatchQueue.main.async {
                 if let signInError {
+                  print("❌ DEBUG: Sign-in also failed: \(signInError.localizedDescription)")
                   self?.authState = .error(signInError.localizedDescription)
                   completion(.failure(signInError))
                 } else if let user = signInResult?.user {
+                  print("✅ DEBUG: Sign-in successful after create failed")
                   self?.authState = .authenticated(user)
                   self?.currentUser = user
                   completion(.success(user))
@@ -213,6 +227,7 @@ class AuthenticationManager: ObservableObject {
             return
           }
 
+          print("❌ DEBUG: Create account failed with unexpected error")
           self?.authState = .error(error.localizedDescription)
           completion(.failure(error))
         } else if let user = result?.user {
