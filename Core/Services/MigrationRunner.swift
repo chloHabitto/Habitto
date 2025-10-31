@@ -267,8 +267,6 @@ final class MigrationRunner {
       
       logger.info("MigrationRunner: Migrating \(habit.completionHistory.count) completion entries for habit '\(habit.name)'")
       
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-      
       for (dateKeyString, progress) in habit.completionHistory {
         // Skip zero progress (no event needed)
         guard progress > 0 else {
@@ -320,7 +318,7 @@ final class MigrationRunner {
         
         // Create synthetic ProgressEvent for migration
         // Use .bulkAdjust event type to indicate this is a migration event
-        var event = ProgressEvent(
+        let event = ProgressEvent(
           habitId: habit.id,
           dateKey: dateKeyString,
           eventType: .bulkAdjust,
@@ -331,11 +329,9 @@ final class MigrationRunner {
           utcDayStart: utcDayStart,
           utcDayEnd: utcDayEnd,
           note: "Migrated from completionHistory",
-          metadata: "{\"migration\": true, \"source\": \"completionHistory\"}"
+          metadata: "{\"migration\": true, \"source\": \"completionHistory\"}",
+          operationId: operationId // Use deterministic migration ID for idempotency
         )
-        
-        // Override operationId with deterministic migration ID for idempotency
-        event.operationId = operationId
         
         // Mark as unsynced so SyncEngine will upload it
         event.synced = false
