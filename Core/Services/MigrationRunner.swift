@@ -138,40 +138,59 @@ final class MigrationRunner {
     }
 
     var migratedCount = 0
+    var reassignedCount = 0
 
     for habit in habits {
-      // Check if habit already exists in SwiftData
+      // Check if habit already exists in SwiftData with the correct userId
       let existingRequest = FetchDescriptor<HabitData>(
         predicate: #Predicate { $0.id == habit.id && $0.userId == userId })
       let existing = try context.fetch(existingRequest)
 
       if existing.isEmpty {
-        // Create new HabitData from legacy Habit
-        let habitData = HabitData(
-          id: habit.id,
-          userId: userId,
-          name: habit.name,
-          habitDescription: habit.description,
-          icon: habit.icon,
-          color: habit.color.color,
-          habitType: habit.habitType,
-          schedule: habit.schedule,
-          goal: habit.goal,
-          reminder: habit.reminder,
-          startDate: habit.startDate,
-          endDate: habit.endDate
-          // isCompleted: habit.isCompleted,  // ❌ DEPRECATED: Use isCompleted(for:) instead
-          // streak: habit.streak  // ❌ DEPRECATED: Use computedStreak() instead
-        )
+        // Check if habit exists with a different userId (guest habits that need reassignment)
+        let anyExistingRequest = FetchDescriptor<HabitData>(
+          predicate: #Predicate { $0.id == habit.id })
+        let anyExisting = try context.fetch(anyExistingRequest)
+        
+        if let existingHabitData = anyExisting.first {
+          // Habit exists but with wrong userId - reassign it
+          let oldUserId = existingHabitData.userId
+          existingHabitData.userId = userId
+          reassignedCount += 1
+          logger.info("MigrationRunner: Reassigned habit '\(habit.name)' from userId '\(oldUserId)' to '\(userId)'")
+        } else {
+          // Create new HabitData from legacy Habit
+          let habitData = HabitData(
+            id: habit.id,
+            userId: userId,
+            name: habit.name,
+            habitDescription: habit.description,
+            icon: habit.icon,
+            color: habit.color.color,
+            habitType: habit.habitType,
+            schedule: habit.schedule,
+            goal: habit.goal,
+            reminder: habit.reminder,
+            startDate: habit.startDate,
+            endDate: habit.endDate
+            // isCompleted: habit.isCompleted,  // ❌ DEPRECATED: Use isCompleted(for:) instead
+            // streak: habit.streak  // ❌ DEPRECATED: Use computedStreak() instead
+          )
 
-        context.insert(habitData)
-        migratedCount += 1
+          context.insert(habitData)
+          migratedCount += 1
+        }
       }
     }
 
-    if migratedCount > 0 {
+    if migratedCount > 0 || reassignedCount > 0 {
       try context.save()
-      logger.info("MigrationRunner: Migrated \(migratedCount) habits for user \(userId)")
+      if migratedCount > 0 {
+        logger.info("MigrationRunner: Migrated \(migratedCount) new habits for user \(userId)")
+      }
+      if reassignedCount > 0 {
+        logger.info("MigrationRunner: Reassigned \(reassignedCount) existing habits to user \(userId)")
+      }
     } else {
       logger.info("MigrationRunner: All habits already exist in SwiftData for user \(userId)")
     }
@@ -180,17 +199,48 @@ final class MigrationRunner {
   }
   
   /// Load habits from SwiftData (for migration scenarios where habits are already in SwiftData)
+  /// Also checks for habits stored under guest/empty userId to handle data migration scenarios
   private func loadHabitsFromSwiftData(userId: String, context: ModelContext) async throws -> [Habit] {
     logger.info("MigrationRunner: Loading habits from SwiftData for user \(userId)")
     
-    let descriptor = FetchDescriptor<HabitData>(
+    // First try to load habits for the current userId
+    var descriptor = FetchDescriptor<HabitData>(
       predicate: #Predicate { $0.userId == userId }
     )
     
-    let habitDataArray = try context.fetch(descriptor)
+    var habitDataArray = try context.fetch(descriptor)
+    logger.info("MigrationRunner: Found \(habitDataArray.count) habits for userId '\(userId)'")
+    
+    // If no habits found for current user, also check for guest/empty userId habits
+    // This handles scenarios where habits were created before authentication
+    if habitDataArray.isEmpty {
+      logger.info("MigrationRunner: No habits found for current userId, checking for guest/empty userId habits")
+      
+      // Check for empty userId (guest habits)
+      descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { $0.userId == "" }
+      )
+      let guestHabits = try context.fetch(descriptor)
+      logger.info("MigrationRunner: Found \(guestHabits.count) habits with empty userId (guest)")
+      
+      // Also check for "guest" userId
+      descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { $0.userId == "guest" }
+      )
+      let guestIdHabits = try context.fetch(descriptor)
+      logger.info("MigrationRunner: Found \(guestIdHabits.count) habits with userId 'guest'")
+      
+      // Combine all guest habits
+      habitDataArray = guestHabits + guestIdHabits
+      
+      if !habitDataArray.isEmpty {
+        logger.info("MigrationRunner: ⚠️ Found \(habitDataArray.count) guest habits - these will be migrated to userId '\(userId)'")
+      }
+    }
+    
     let habits = habitDataArray.map { $0.toHabit() }
     
-    logger.info("MigrationRunner: Loaded \(habits.count) habits from SwiftData")
+    logger.info("MigrationRunner: Loaded \(habits.count) total habits from SwiftData")
     return habits
   }
 
