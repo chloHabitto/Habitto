@@ -32,96 +32,133 @@ struct HabitDetailView: View {
   let onDeleteHabit: ((Habit) -> Void)?
 
   var body: some View {
-    GeometryReader { geometry in
-      ZStack(alignment: .top) {
-        // Background
-        Color.surface2
-          .ignoresSafeArea()
+    NavigationView {
+      GeometryReader { geometry in
+        ZStack(alignment: .top) {
+          // Background
+          Color.surface2
+            .ignoresSafeArea()
 
-        // Always show the content, but measure it first
-        VStack {
-          // Sticky compact header (appears when scrolled)
-          compactHeader
-            .background(Color.surface2)
-            .opacity(shouldScroll && scrollOffset > 50 ? 1 : 0)
-            .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
-        }
-        .zIndex(1)
-
-        // Content - measure and display
-        ZStack {
-          // Hidden measurement view (positioned off-screen)
-          contentView
-            .opacity(0)
-            .position(x: -1000, y: -1000) // Move off-screen
-            .background(
-              GeometryReader { contentGeometry in
-                Color.clear
-                  .preference(key: ContentSizePreferenceKey.self, value: contentGeometry.size)
-              })
-            .onPreferenceChange(ContentSizePreferenceKey.self) { size in
-              let newHeight = size.height
-              if abs(newHeight - contentHeight) > 1 {
-                contentHeight = newHeight
-              }
-            }
-
-          // Actual content display
-          if shouldScroll {
-            ScrollViewReader { _ in
-              ScrollView {
-                contentView
-                  .background(
-                    GeometryReader { contentGeometry in
-                      Color.clear
-                        .preference(
-                          key: ScrollOffsetPreferenceKey.self,
-                          value: contentGeometry.frame(in: .global).minY)
-                    })
-              }
-              .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                let newOffset = -value
-                if abs(newOffset - scrollOffset) > 1 {
-                  scrollOffset = newOffset
+          // Content - measure and display
+          ZStack {
+            // Hidden measurement view (positioned off-screen)
+            contentView
+              .opacity(0)
+              .position(x: -1000, y: -1000) // Move off-screen
+              .background(
+                GeometryReader { contentGeometry in
+                  Color.clear
+                    .preference(key: ContentSizePreferenceKey.self, value: contentGeometry.size)
+                })
+              .onPreferenceChange(ContentSizePreferenceKey.self) { size in
+                let newHeight = size.height
+                if abs(newHeight - contentHeight) > 1 {
+                  contentHeight = newHeight
                 }
               }
-            }
-            .onAppear {
-              // Always recalculate active state based on current habit's dates
-              let calendar = Calendar.current
-              let today = calendar.startOfDay(for: Date())
-              let startDate = calendar.startOfDay(for: habit.startDate)
-              let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-              let calculatedActiveState = today >= startDate && today <= endDate
 
-              // Only update if we haven't initialized yet, or if it's different from current state
-              // This prevents unnecessary onChange triggers
-              if !hasInitializedActiveState || isActive != calculatedActiveState {
-                // Guard against triggering onChange during initialization
-                isProcessingToggle = true
-                isActive = calculatedActiveState
-                isProcessingToggle = false
-                hasInitializedActiveState = true
+            // Actual content display
+            if shouldScroll {
+              ScrollViewReader { _ in
+                ScrollView {
+                  contentView
+                    .background(
+                      GeometryReader { contentGeometry in
+                        Color.clear
+                          .preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: contentGeometry.frame(in: .global).minY)
+                      })
+                }
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                  let newOffset = -value
+                  if abs(newOffset - scrollOffset) > 1 {
+                    scrollOffset = newOffset
+                  }
+                }
               }
+              .onAppear {
+                // Always recalculate active state based on current habit's dates
+                let calendar = Calendar.current
+                let today = calendar.startOfDay(for: Date())
+                let startDate = calendar.startOfDay(for: habit.startDate)
+                let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+                let calculatedActiveState = today >= startDate && today <= endDate
+
+                // Only update if we haven't initialized yet, or if it's different from current state
+                // This prevents unnecessary onChange triggers
+                if !hasInitializedActiveState || isActive != calculatedActiveState {
+                  // Guard against triggering onChange during initialization
+                  isProcessingToggle = true
+                  isActive = calculatedActiveState
+                  isProcessingToggle = false
+                  hasInitializedActiveState = true
+                }
+              }
+            } else {
+              VStack {
+                contentView
+                Spacer(minLength: 0)
+              }
+              .onAppear { }
             }
+          }
+        }
+        .onAppear {
+          availableHeight = geometry.size.height
+          todayProgress = habit.getProgress(for: selectedDate)
+        }
+        .onChange(of: geometry.size.height) { _, newHeight in
+          availableHeight = newHeight
+        }
+      }
+      .background(Color.surface2)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: {
+            dismiss()
+          }) {
+            Image(systemName: "xmark")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+        
+        ToolbarItem(placement: .principal) {
+          if shouldScroll && scrollOffset > 50 {
+            Text("Habit details")
+              .font(.appHeadlineSmallEmphasised)
+              .foregroundColor(.text01)
           } else {
-            VStack {
-              contentView
-              Spacer(minLength: 0)
+            EmptyView()
+          }
+        }
+        
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Menu {
+            Button(action: {
+              showingEditView = true
+            }) {
+              Label("Edit", systemImage: "pencil")
             }
-            .onAppear { }
+
+            Button(role: .destructive, action: {
+              showingDeleteConfirmation = true
+            }) {
+              Label("Delete", systemImage: "trash")
+            }
+          } label: {
+            Image(systemName: "ellipsis")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
           }
         }
       }
-      .onAppear {
-        availableHeight = geometry.size.height
-        todayProgress = habit.getProgress(for: selectedDate)
-      }
-      .onChange(of: geometry.size.height) { _, newHeight in
-        availableHeight = newHeight
-      }
+      .toolbarBackground(.visible, for: .navigationBar)
+      .toolbarBackground(Color.surface2, for: .navigationBar)
+      .navigationViewStyle(.stack)
     }
-    .navigationBarHidden(true)
     .onChange(of: habit.id) { _, _ in
       // Reset initialization flag when habit changes
       hasInitializedActiveState = false
@@ -314,7 +351,7 @@ struct HabitDetailView: View {
       fullHeader
         .opacity(shouldScroll && scrollOffset > 50 ? 0 : 1)
         .animation(.easeInOut(duration: 0.2), value: shouldScroll && scrollOffset > 50)
-        .padding(.top, 0)
+        .padding(.top, 8)
         .padding(.bottom, 24)
         .id("header")
 
@@ -334,42 +371,6 @@ struct HabitDetailView: View {
 
   private var fullHeader: some View {
     VStack(spacing: 0) {
-      // Top row with close button and menu
-      HStack {
-        Button(action: {
-          dismiss()
-        }) {
-          Image(systemName: "xmark")
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.text01)
-        }
-
-        Spacer()
-
-        // More options button with menu
-        Menu {
-          Button(action: {
-            showingEditView = true
-          }) {
-            Label("Edit", systemImage: "pencil")
-          }
-
-          Button(role: .destructive, action: {
-            showingDeleteConfirmation = true
-          }) {
-            Label("Delete", systemImage: "trash")
-          }
-        } label: {
-          Image(systemName: "ellipsis")
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.text01)
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-        }
-      }
-      .padding(.horizontal, 20)
-      .padding(.bottom, 16)
-
       // Title section - left aligned
       VStack(alignment: .leading, spacing: 8) {
         Text("Habit details")
@@ -387,57 +388,6 @@ struct HabitDetailView: View {
       .padding(.top, 16)
     }
     .padding(.top, 0)
-  }
-
-  // MARK: - Compact Header (shown when scrolled)
-
-  private var compactHeader: some View {
-    HStack {
-      // Close button
-      Button(action: {
-        dismiss()
-      }) {
-        Image(systemName: "xmark")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.text01)
-      }
-      .frame(width: 44, height: 44)
-      .contentShape(Rectangle())
-
-      // Title
-      Text("Habit details")
-        .font(.appHeadlineSmallEmphasised)
-        .foregroundColor(.text01)
-        .accessibilityAddTraits(.isHeader)
-
-      Spacer()
-
-      // More options button with menu
-      Menu {
-        Button(action: {
-          showingEditView = true
-        }) {
-          Label("Edit", systemImage: "pencil")
-        }
-
-        Button(role: .destructive, action: {
-          showingDeleteConfirmation = true
-        }) {
-          Label("Delete", systemImage: "trash")
-        }
-      } label: {
-        Image(systemName: "ellipsis")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.text01)
-          .frame(width: 44, height: 44)
-          .contentShape(Rectangle())
-      }
-    }
-    .padding(.horizontal, 20)
-    .padding(.vertical, 8)
-    .padding(.top, 8) // Safe area padding
-    .background(Color.surface2)
-    .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
   }
 
   // MARK: - Main Content Card
