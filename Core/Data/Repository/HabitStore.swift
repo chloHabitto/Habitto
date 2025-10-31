@@ -924,6 +924,22 @@ final actor HabitStore {
         logger.info("🎯 createCompletionRecordIfNeeded: Saving context...")
         try modelContext.save()
         logger.info("✅ createCompletionRecordIfNeeded: Context saved successfully")
+        
+        // ✅ CRITICAL FIX: Verify CompletionRecord was actually saved
+        let verifyPredicate = #Predicate<CompletionRecord> { record in
+          record.userId == userId &&
+            record.habitId == habit.id &&
+            record.dateKey == dateKey
+        }
+        let verifyRequest = FetchDescriptor<CompletionRecord>(predicate: verifyPredicate)
+        let savedRecords = try modelContext.fetch(verifyRequest)
+        
+        if let savedRecord = savedRecords.first {
+          logger.info("✅ VERIFIED: CompletionRecord exists after save - userId: '\(savedRecord.userId)', habitId: \(savedRecord.habitId), dateKey: \(savedRecord.dateKey), progress: \(savedRecord.progress), isCompleted: \(savedRecord.isCompleted)")
+        } else {
+          logger.error("❌ VERIFICATION FAILED: CompletionRecord NOT found after save! userId: '\(userId)', habitId: \(habit.id), dateKey: \(dateKey)")
+          // This shouldn't happen, but log it for debugging
+        }
       }
 
     } catch {
