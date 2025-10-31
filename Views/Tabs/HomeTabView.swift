@@ -1,4 +1,5 @@
 import Combine
+import FirebaseAuth
 import SwiftData
 import SwiftUI
 
@@ -966,7 +967,17 @@ struct HomeTabView: View {
   /// This is the single source of truth for XP calculation
   @MainActor
   private func countCompletedDays() -> Int {
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else { return 0 }
+    // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
+    let currentUser = AuthenticationManager.shared.currentUser
+    let userId: String
+    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+      userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
+    } else if let uid = currentUser?.uid {
+      userId = uid // Authenticated non-anonymous user
+    } else {
+      userId = "" // No user = guest
+    }
+    
     guard !habits.isEmpty else { return 0 }
     
     let calendar = Calendar.current
