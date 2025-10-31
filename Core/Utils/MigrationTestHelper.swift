@@ -55,12 +55,59 @@ final class MigrationTestHelper {
     func printMigrationStatus(userId: String) async throws {
         logger.info("🔍 MigrationTestHelper: Checking migration status for user \(userId)")
         
+        let context = SwiftDataContainer.shared.modelContext
+        
+        // Check all habits in SwiftData (regardless of userId)
+        let allHabitsDescriptor = FetchDescriptor<HabitData>()
+        let allHabits = (try? context.fetch(allHabitsDescriptor)) ?? []
+        
+        // Group habits by userId
+        let habitsByUserId = Dictionary(grouping: allHabits) { $0.userId }
+        
+        // Check CompletionRecords
+        let completionDescriptor = FetchDescriptor<CompletionRecord>()
+        let allCompletions = (try? context.fetch(completionDescriptor)) ?? []
+        let completionsByUserId = Dictionary(grouping: allCompletions) { $0.userId }
+        
         let report = try await checkMigrationStatus(userId: userId)
         
         print("\n==========================================")
         print("📊 MIGRATION STATUS REPORT")
         print("==========================================")
-        print("User ID: \(userId)")
+        print("Current User ID: \(userId)")
+        print("")
+        
+        print("📋 SwiftData Analysis:")
+        print("  Total Habits in SwiftData: \(allHabits.count)")
+        print("  Total CompletionRecords: \(allCompletions.count)")
+        print("")
+        print("  Habits by UserId:")
+        if habitsByUserId.isEmpty {
+            print("    ⚠️ No habits found in SwiftData")
+        } else {
+            for (uid, habits) in habitsByUserId.sorted(by: { $0.key < $1.key }) {
+                let userIdLabel = uid.isEmpty ? "(empty/guest)" : uid.prefix(8) + "..."
+                let matchMarker = uid == userId ? " ✅ (matches current user)" : ""
+                print("    '\(userIdLabel)': \(habits.count) habits\(matchMarker)")
+                for habit in habits.prefix(3) {
+                    print("      - '\(habit.name)' (id: \(habit.id.uuidString.prefix(8))...)")
+                }
+                if habits.count > 3 {
+                    print("      ... and \(habits.count - 3) more")
+                }
+            }
+        }
+        print("")
+        print("  CompletionRecords by UserId:")
+        if completionsByUserId.isEmpty {
+            print("    ⚠️ No CompletionRecords found")
+        } else {
+            for (uid, records) in completionsByUserId.sorted(by: { $0.key < $1.key }) {
+                let userIdLabel = uid.isEmpty ? "(empty/guest)" : uid.prefix(8) + "..."
+                let matchMarker = uid == userId ? " ✅ (matches current user)" : ""
+                print("    '\(userIdLabel)': \(records.count) records\(matchMarker)")
+            }
+        }
         print("")
         
         if let state = report.migrationState {
@@ -83,11 +130,15 @@ final class MigrationTestHelper {
         print("  User-Generated Events: \(report.totalEvents - report.migrationEvents)")
         
         print("")
-        print("Completion History:")
+        print("Completion History (from loaded habits):")
         print("  Habits with History: \(report.habitsWithHistory.count)")
         print("  Total Entries: \(report.totalCompletionEntries)")
         if !report.habitsWithHistory.isEmpty {
             print("  Habits: \(report.habitsWithHistory.joined(separator: ", "))")
+        } else if allHabits.isEmpty {
+            print("  ⚠️ No habits found - cannot check completionHistory")
+        } else {
+            print("  ⚠️ No habits loaded for current user - habits may be stored under different userId")
         }
         
         print("")
@@ -191,13 +242,26 @@ final class MigrationTestHelper {
         let userId = await CurrentUser().idOrGuest
         logger.info("🚀 MigrationTestHelper: Triggering migration for user \(userId) (force: \(force))")
         
-        if force {
-            try await MigrationRunner.shared.forceMigration(userId: userId)
-        } else {
-            try await MigrationRunner.shared.runIfNeeded(userId: userId)
-        }
+        print("\n🚀 Starting migration for user: \(userId)")
+        print("   Force mode: \(force ? "YES" : "NO")")
         
-        logger.info("✅ MigrationTestHelper: Migration completed")
+        do {
+            if force {
+                try await MigrationRunner.shared.forceMigration(userId: userId)
+            } else {
+                try await MigrationRunner.shared.runIfNeeded(userId: userId)
+            }
+            
+            print("✅ Migration completed successfully")
+            logger.info("✅ MigrationTestHelper: Migration completed")
+            
+            // Auto-print status after migration
+            try await printMigrationStatus(userId: userId)
+        } catch {
+            print("❌ Migration failed: \(error.localizedDescription)")
+            logger.error("❌ MigrationTestHelper: Migration failed: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     /// Trigger migration with explicit userId

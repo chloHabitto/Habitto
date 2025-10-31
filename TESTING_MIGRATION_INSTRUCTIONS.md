@@ -1,25 +1,37 @@
 # Testing Migration - Step by Step Guide
 
-## ⚠️ Important: Authentication State
+## ⚠️ CRITICAL: Authentication State - Read This First!
 
-**Quick Answer**: Test while **signed in** (your current state: `chloe9609@gmail.com`) using `force: true` - this matches production behavior.
+### **Which Mode Should I Use?**
 
-**You can test migration in either mode, but behavior differs:**
+**✅ ANSWER: Test while SIGNED IN** (this matches production behavior)
 
-### Option 1: Signed In Mode ✅ (Recommended - Your Current State)
-- **Current situation**: You're signed in as `chloe9609@gmail.com`
-- **Why**: Tests the real-world scenario where users have existing data
-- **Behavior**: Migration guard prevents auto-migration (expects UI to handle it)
-- **Solution**: Use `force: true` to bypass the guard (shown in Step 2)
-- **User ID**: Your habits will be saved with ID `mMl83AlWhhfT7NpyHCTY1SZuTq93`
+### **Why?**
 
-### Option 2: Guest Mode
-- **Use case**: Testing migration for new/guest users
-- **Behavior**: Migration may run automatically if no guard is triggered
-- **Note**: Still works with `force: true` if auto-migration is blocked
-- **User ID**: Habits will be saved with ID `"guest"`
+The app has a **migration guard** that prevents auto-migration when:
+- ✅ User is **signed in** (authenticated)
+- ✅ Guest data exists in UserDefaults
 
-**Recommendation**: Test while **signed in** (your current state) to match production behavior.
+**This guard is by design** - it prevents silent migrations and expects the UI to handle migration explicitly.
+
+### **What This Means:**
+
+| Mode | Auto-Migration? | Manual Migration? | Recommendation |
+|------|----------------|-------------------|----------------|
+| **Signed In** (e.g., `chloe9609@gmail.com`) | ❌ **Blocked** by guard | ✅ **Works** with `force: true` | ✅ **Use this** - matches production |
+| **Guest Mode** | ✅ May work | ✅ Always works | ⚠️ Less realistic |
+
+### **Your Current Situation:**
+
+Based on your console output:
+- ✅ You're **signed in** as `chloe9609@gmail.com` (UID: `mMl83AlWhhfT7NpyHCTY1SZuTq93`)
+- ✅ You have **2 legacy habits** in UserDefaults (`SavedHabits`)
+- ✅ Auto-migration is **blocked** (as expected)
+- ✅ **Solution**: Use the debug buttons with `force: true` (they do this automatically)
+
+### **Bottom Line:**
+
+**Just use the debug buttons** - they handle everything automatically, regardless of auth state!
 
 ## Issue Summary
 The app is finding 2 habits in UserDefaults (`SavedHabits`) but not loading them because:
@@ -67,28 +79,42 @@ You should see a migration status report in the console showing:
 - Number of completionHistory entries
 - Habits with history
 
-### Step 2: Trigger Migration (Force Mode)
-**When signed in**: Use `force: true` to bypass the migration guard.  
-**When in guest mode**: Can use `force: false` first, but `force: true` always works.
+**If you already clicked "Check Migration Status":**
+- ✅ You've completed Step 1!
+- ➡️ **Next**: Go to Step 2 below
+
+### Step 2: Trigger Migration
+
+**🎯 Goal**: Convert your existing `completionHistory` entries into `ProgressEvent` records.
+
+**Quick Action**:
+1. In the app, tap the **"🚀 Trigger Migration (Force)"** button
+2. Watch the **Xcode Console** for progress logs
+3. Look for messages like:
+   - `✅ MigrationRunner: Migrated X completionHistory entries to ProgressEvent records`
+   - `✅ MigrationRunner: Migration completed successfully`
+
+**If using debug buttons** (recommended): Just tap **"🚀 Trigger Migration (Force)"** - it automatically uses `force: true`.
+
+**If using console** (advanced): Use `force: true` - it works in both signed-in and guest mode.
 
 ```swift
 Task { @MainActor in
-    // Check your auth state first (optional)
-    let userId = await CurrentUser().idOrGuest
-    print("Current User ID: \(userId)")
-    
-    // Trigger migration (force: true works in both signed in and guest mode)
+    // Trigger migration (force: true bypasses all guards)
     try? await MigrationTestHelper.shared.triggerMigration(force: true)
 }
 ```
 
-This will:
-1. Load habits from UserDefaults (`SavedHabits`)
-2. Save them to SwiftData as `HabitData` with the current user's ID
-3. Convert `completionHistory` entries to `ProgressEvent` records
-4. Mark events as `synced: false` for SyncEngine to upload
+**What happens:**
+1. ✅ Loads habits from UserDefaults (`SavedHabits`)
+2. ✅ Saves them to SwiftData as `HabitData` with your current user ID
+3. ✅ Converts `completionHistory` entries to `ProgressEvent` records
+4. ✅ Marks events as `synced: false` (SyncEngine will upload them later)
 
-**Note**: When signed in, the habits will be associated with your authenticated user ID (`mMl83AlWhhfT7NpyHCTY1SZuTq93`). In guest mode, they'll be associated with "guest".
+**Important Notes:**
+- **Signed in**: Habits saved with your authenticated user ID (e.g., `mMl83AlWhhfT7NpyHCTY1SZuTq93`)
+- **Guest mode**: Habits saved with user ID `"guest"`
+- **`force: true`**: Bypasses the migration guard and `isCompleted` check - safe to use anytime
 
 ### Step 3: Verify Migration Results
 Check if migration was successful:
