@@ -413,27 +413,80 @@ struct FormActionButtons: View {
 
 // MARK: - Helper Functions
 
+/// Formats multiple "Every [Day]" entries into "every Monday, Wednesday & Friday" format
+private func formatMultipleDays(_ frequencyText: String) -> String {
+  let lowerFrequency = frequencyText.lowercased()
+  
+  // Check if it contains multiple "every [day]" patterns
+  if lowerFrequency.contains(", ") && lowerFrequency.contains("every ") {
+    // Split by comma and extract day names
+    let parts = frequencyText.components(separatedBy: ", ")
+    var days: [String] = []
+    
+    for part in parts {
+      let trimmed = part.trimmingCharacters(in: .whitespacesAndNewlines)
+      let trimmedLower = trimmed.lowercased()
+      
+      // Remove "Every " or "every " prefix and get the day name
+      if trimmed.hasPrefix("Every ") {
+        let dayName = String(trimmed.dropFirst(6)) // Remove "Every "
+        days.append(dayName)
+      } else if trimmedLower.hasPrefix("every ") {
+        let dayName = String(trimmed.dropFirst(6)) // Remove "every "
+        // Capitalize first letter only (e.g., "monday" -> "Monday")
+        days.append(dayName.prefix(1).uppercased() + dayName.dropFirst())
+      } else {
+        // If it doesn't match the pattern, return original (lowercased)
+        return frequencyText.lowercased()
+      }
+    }
+    
+    // Format as "every Monday, Wednesday & Friday"
+    if days.isEmpty {
+      return frequencyText.lowercased()
+    } else if days.count == 1 {
+      return "every \(days[0])"
+    } else if days.count == 2 {
+      return "every \(days[0]) & \(days[1])"
+    } else {
+      // Join all but last with commas, then add " & " before last
+      let allButLast = days.dropLast().joined(separator: ", ")
+      let last = days.last!
+      return "every \(allButLast) & \(last)"
+    }
+  }
+  
+  // Not multiple days, return as-is (lowercased)
+  return frequencyText.lowercased()
+}
+
 /// Formats the goal sentence with proper grammar and capitalization
 private func formatGoalSentence(numberText: String, unitText: String, frequencyText: String) -> String {
+  // Format multiple days if needed
+  let formattedFrequency = formatMultipleDays(frequencyText)
+  
   // Check if frequency needs "on" preposition or not
-  let needsOn = needsOnPreposition(frequencyText)
+  let needsOn = needsOnPreposition(formattedFrequency)
   
   if needsOn {
-    return "I want to do this habit \(numberText) \(unitText) on \(frequencyText.lowercased())"
+    return "I want to do this habit \(numberText) \(unitText) on \(formattedFrequency)"
   } else {
-    return "I want to do this habit \(numberText) \(unitText) \(frequencyText.lowercased())"
+    return "I want to do this habit \(numberText) \(unitText) \(formattedFrequency)"
   }
 }
 
 /// Formats the current sentence with proper grammar and capitalization
 private func formatCurrentSentence(numberText: String, unitText: String, frequencyText: String) -> String {
+  // Format multiple days if needed
+  let formattedFrequency = formatMultipleDays(frequencyText)
+  
   // Check if frequency needs "on" preposition or not
-  let needsOn = needsOnPreposition(frequencyText)
+  let needsOn = needsOnPreposition(formattedFrequency)
   
   if needsOn {
-    return "I do this habit \(numberText) \(unitText) on \(frequencyText.lowercased())"
+    return "I do this habit \(numberText) \(unitText) on \(formattedFrequency)"
   } else {
-    return "I do this habit \(numberText) \(unitText) \(frequencyText.lowercased())"
+    return "I do this habit \(numberText) \(unitText) \(formattedFrequency)"
   }
 }
 
