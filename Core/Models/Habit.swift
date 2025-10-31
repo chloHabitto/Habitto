@@ -560,22 +560,34 @@ struct Habit: Identifiable, Codable, Equatable {
 
   /// Calculates the true consecutive day streak by checking actual completion history
   /// Skips vacation days to preserve streaks during vacation periods
-  /// ✅ FIX: Starts from YESTERDAY to avoid counting incomplete TODAY in streak
+  /// ✅ FIX: Includes TODAY if completed, then counts backwards
   func calculateTrueStreak() -> Int {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let vacationManager = VacationManager.shared
     var calculatedStreak = 0
     
-    // ✅ CRITICAL FIX: Start from YESTERDAY, not TODAY
-    // Today's incomplete state should NOT break the streak until the day is over
-    var currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+    // ✅ CRITICAL FIX: Start from TODAY if completed, otherwise start from YESTERDAY
+    // If today is completed, include it in the streak
+    var currentDate = today
     var debugInfo: [String] = []
 
     // ✅ FIX #20: Prevent infinite loop for new habits by checking against start date
     let habitStartDate = calendar.startOfDay(for: startDate)
+    
+    // ✅ CRITICAL FIX: Check if today is completed first
+    let todayCompleted = isCompleted(for: today)
+    if todayCompleted {
+      calculatedStreak += 1
+      debugInfo.append("\(Self.dateKey(for: today)): completed=true (TODAY)")
+      // Start counting backwards from yesterday
+      currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+    } else {
+      // Today not completed, start from yesterday
+      currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+    }
 
-    // Count consecutive completed days backwards from YESTERDAY
+    // Count consecutive completed days backwards from currentDate
     // Skip vacation days only during active vacation periods
     while (isCompleted(for: currentDate) ||
       (vacationManager.isActive && vacationManager.isVacationDay(currentDate))) &&

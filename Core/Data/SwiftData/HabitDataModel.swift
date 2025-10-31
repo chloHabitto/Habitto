@@ -143,16 +143,24 @@ final class HabitData {
   }
 
   /// Calculate true streak from completionHistory (source of truth)
+  /// ✅ CRITICAL FIX: Includes today if completed, then counts backwards
   func calculateTrueStreak() -> Int {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     var streak = 0
     var currentDate = today
 
-    // Count consecutive completed days backwards from today
+    // ✅ CRITICAL FIX: Count consecutive completed days backwards from today
+    // This includes today if it's completed
     while isCompletedForDate(currentDate) {
       streak += 1
       currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+      
+      // Prevent infinite loop if we go too far back
+      let habitStartDate = calendar.startOfDay(for: startDate)
+      if currentDate < habitStartDate {
+        break
+      }
     }
 
     return streak
@@ -166,14 +174,31 @@ final class HabitData {
       // Relationship is empty, query manually by habitId
       let habitId = self.id  // Capture for use in predicate
       let userId = self.userId  // Capture for use in predicate
-      let predicate = #Predicate<CompletionRecord> { record in
-        record.habitId == habitId && record.userId == userId
+      
+      // ✅ CRITICAL FIX: Handle empty string userId properly in predicate
+      // SwiftData predicates need explicit handling for empty strings
+      let predicate: Predicate<CompletionRecord>
+      if userId.isEmpty {
+        // For guest users (empty userId), match records with empty userId
+        predicate = #Predicate<CompletionRecord> { record in
+          record.habitId == habitId && (record.userId == "" || record.userId == "guest")
+        }
+      } else {
+        // For authenticated users, exact match
+        predicate = #Predicate<CompletionRecord> { record in
+          record.habitId == habitId && record.userId == userId
+        }
       }
+      
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
       do {
         let context = SwiftDataContainer.shared.modelContext
         completionRecords = try context.fetch(descriptor)
-        print("🔍 toHabit(): Found \(completionRecords.count) orphaned CompletionRecords for habit '\(self.name)' by querying habitId")
+        print("🔍 toHabit(): Found \(completionRecords.count) orphaned CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId)')")
+        if completionRecords.count > 0 {
+          let userIds = Array(Set(completionRecords.map { $0.userId }))
+          print("   CompletionRecord userIds found: \(userIds)")
+        }
       } catch {
         print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
         completionRecords = []

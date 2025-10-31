@@ -1,5 +1,6 @@
 import Combine
 import CoreData
+import FirebaseAuth
 import SwiftData
 import SwiftUI
 
@@ -950,7 +951,19 @@ class HabitRepository: ObservableObject {
       print(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
+      // ✅ CRITICAL FIX: Only show migration UI if user is NOT anonymous
+      // Anonymous users shouldn't see migration UI - they're still in guest mode
+      let isAnonymous = (user as? User)?.isAnonymous ?? false
+      
+      if isAnonymous {
+        print("ℹ️ HabitRepository: User is anonymous - skipping migration UI (still in guest mode)")
+        shouldShowMigrationView = false
+        await loadHabits(force: true)
+        return
+      }
+      
       // ✅ CRITICAL FIX: Check for guest data BEFORE migrating (so migration UI can show)
+      // Only check if user is authenticated with real account (not anonymous)
       let hasGuestDataToMigrate = guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData()
       
       if hasGuestDataToMigrate {
