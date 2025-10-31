@@ -591,26 +591,36 @@ struct HabitEditView: View {
 
   @ViewBuilder
   private var mainViewWithSheets: some View {
-    ZStack {
-      mainViewContent
-        .background(.surface2)
-        .toolbar {
-          ToolbarItemGroup(placement: .keyboard) {
-            Spacer()
-            Button("Done") {
-              // Dismiss all focused fields
-              isGoalNumberFocused = false
-              isBaselineFieldFocused = false
-              isTargetFieldFocused = false
+    NavigationView {
+      ZStack {
+        mainViewContent
+          .background(.surface2)
+          .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+              Spacer()
+              Button("Done") {
+                // Dismiss all focused fields
+                isGoalNumberFocused = false
+                isBaselineFieldFocused = false
+                isTargetFieldFocused = false
+              }
+              .font(.appBodyMedium)
+              .foregroundColor(.white)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .background(Color.accentColor)
+              .clipShape(Capsule())
             }
-            .font(.appBodyMedium)
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.accentColor)
-            .clipShape(Capsule())
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+              Button("Done") {
+                dismiss()
+              }
+              .foregroundColor(.primary)
+            }
           }
-        }
+          .navigationTitle("Edit habit")
+          .navigationBarTitleDisplayMode(.inline)
         .onChange(of: isGoalNumberFocused) { _, newValue in
           print("🔍 HabitEditView: Goal field focus changed to \(newValue)")
           print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
@@ -776,6 +786,8 @@ struct HabitEditView: View {
           print("🔍 HabitEditView: Done button appeared")
         }
       }
+      }
+      .navigationViewStyle(.stack)
     }
   }
 
@@ -937,24 +949,10 @@ struct HabitEditView: View {
 
   private var topNavigationBar: some View {
     VStack(spacing: 0) {
-      HStack {
-        Text("Edit habit")
-          .font(.appTitleMediumEmphasised)
-          .foregroundColor(.text01)
-
-        Spacer()
-
-        Button("Cancel") {
-          dismiss()
-        }
-        .font(.appBodyLarge)
-        .foregroundColor(.primary)
-      }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 12)
+      // Empty spacer for consistent padding (title now in navigation bar)
+      Spacer()
+        .frame(height: 0)
     }
-    .background(Color.clear)
-    .padding(.top, 0)
   }
 
   // MARK: - Habit Type Section
