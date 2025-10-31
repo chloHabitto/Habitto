@@ -470,6 +470,12 @@ final actor HabitStore {
     // Get legacy progress from completionHistory (fallback)
     let legacyProgress = habit.completionHistory[dateKey] ?? 0
     
+    // 🔍 DEBUG: Log completionHistory state
+    logger.info("🔍 getProgress DEBUG: habit=\(habit.name), dateKey=\(dateKey)")
+    logger.info("   → completionHistory has \(habit.completionHistory.count) entries")
+    logger.info("   → completionHistory[\(dateKey)] = \(legacyProgress)")
+    logger.info("   → completionHistory keys: \(Array(habit.completionHistory.keys.sorted()).prefix(5))")
+    
     // Calculate progress from events (event sourcing)
     // Note: ProgressEventService is @MainActor and accesses ModelContext internally
     let result = await ProgressEventService.shared.calculateProgressFromEvents(
@@ -479,7 +485,7 @@ final actor HabitStore {
       legacyProgress: legacyProgress
     )
     
-    logger.info("getProgress: habit=\(habit.name), dateKey=\(dateKey), progress=\(result.progress) (from events: \(result.progress != legacyProgress))")
+    logger.info("🔍 getProgress RESULT: habit=\(habit.name), dateKey=\(dateKey), finalProgress=\(result.progress), legacyProgress=\(legacyProgress), source=\(result.progress == legacyProgress ? "legacy" : "events")")
     
     return result.progress
   }

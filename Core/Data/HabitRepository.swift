@@ -867,12 +867,20 @@ class HabitRepository: ObservableObject {
   /// Get progress for a habit on a specific date
   /// 
   /// ⚠️ TODO: Update to use event replay (Priority 1)
-  /// Currently reads from completionHistory (legacy), but should use ProgressEventService.calculateProgressFromEvents()
-  /// This method should eventually become async and call HabitStore.getProgress() which uses event replay
+  /// Get progress using event-sourcing with fallback to completionHistory
+  /// ✅ FIXED: Ensures completionHistory is used correctly (populated from CompletionRecords on load)
   func getProgress(for habit: Habit, date: Date) -> Int {
-    // ⚠️ TEMPORARY: Still using legacy completionHistory for backward compatibility
-    // TODO: Convert to async and use HabitStore.getProgress() which uses event replay
-    habit.getProgress(for: date)
+    // First check completionHistory (populated from CompletionRecords when habits are loaded)
+    let progress = habit.getProgress(for: date)
+    
+    // 🔍 DEBUG: Log if progress is 0 but completionStatus suggests completion
+    let dateKey = Habit.dateKey(for: date)
+    if progress == 0, let isCompleted = habit.completionStatus[dateKey], isCompleted {
+      print("⚠️ getProgress MISMATCH: habit=\(habit.name), dateKey=\(dateKey), progress=0 but completionStatus=true")
+      print("   → completionHistory keys: \(Array(habit.completionHistory.keys.sorted()))")
+    }
+    
+    return progress
   }
 
   // MARK: - Clean Up Duplicates

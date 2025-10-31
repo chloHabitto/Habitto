@@ -206,25 +206,21 @@ final class ProgressEventService {
                 modelContext: modelContext
             )
             
-            // If we got a result from events, use it
-            if result.progress > 0 || legacyProgress == nil {
-                logger.info("✅ Using event-sourced progress: \(result.progress) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
-                return result
-            }
-            
-            // If events exist but progress is 0, check if we have any events at all
+            // Check if events exist for this habit+date
             let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
             let events = (try? modelContext.fetch(descriptor)) ?? []
             
             if !events.isEmpty {
-                // Events exist and calculated to 0, use that
-                logger.info("✅ Using event-sourced progress (0) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
+                // Events exist - use event-sourced result (events are source of truth)
+                // Even if progress is 0, we trust events over legacy data
+                logger.info("✅ Using event-sourced progress: \(result.progress) (from \(events.count) events) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
                 return result
             }
             
-            // No events exist, fall back to legacy
-            logger.info("⚠️ No events found, falling back to legacy progress: \(legacyProgress ?? 0)")
+            // No events exist, fall back to legacy completionHistory
+            // This handles habits that haven't been migrated yet or don't have events
             let progress = legacyProgress ?? 0
+            logger.info("⚠️ No events found, falling back to legacy progress: \(progress) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
             return (progress, progress >= goalAmount)
             
         } catch {
