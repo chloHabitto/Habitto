@@ -677,6 +677,24 @@ final actor HabitStore {
 
     logger.info("All habits cleared successfully")
   }
+  
+  /// Clears all habits and associated data for a specific userId (for account deletion)
+  /// ✅ CRITICAL FIX: Used during account deletion to ensure we clear data for the correct user
+  func clearAllHabits(for userId: String?) async throws {
+    logger.info("Clearing all habits for userId: \(userId ?? "guest")")
+
+    // Check if activeStorage supports userId-specific clearing
+    if let swiftDataStorage = activeStorage as? SwiftDataStorage {
+      try await swiftDataStorage.clearAllHabits(for: userId)
+      logger.info("SwiftData records cleared for userId: \(userId ?? "guest")")
+    } else {
+      // Fallback: Clear using current user (should be the same if called before sign out)
+      try await activeStorage.clearAllHabits()
+      logger.info("Habits cleared via activeStorage (fallback)")
+    }
+
+    logger.info("All habits cleared successfully for userId: \(userId ?? "guest")")
+  }
 
   // MARK: Private
 

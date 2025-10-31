@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import SwiftData
 import SwiftUI
+import FirebaseAuth
 
 // MARK: - SwiftData Container Manager
 
@@ -609,11 +610,18 @@ final class SwiftDataContainer: ObservableObject {
 
   private func getCurrentUserId() -> String {
     // Get user ID from authentication system
-    if let currentUser = AuthenticationManager.shared.currentUser {
-      return currentUser.uid
+    guard let currentUser = AuthenticationManager.shared.currentUser else {
+      // ✅ FIX: Use empty string for guest (consistent with CurrentUser.guestId)
+      // This ensures CompletionRecords match HabitData userId filtering
+      return ""
     }
-    // ✅ FIX: Use empty string for guest (consistent with CurrentUser.guestId)
-    // This ensures CompletionRecords match HabitData userId filtering
-    return ""
+    
+    // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
+    // Anonymous users should use "" as userId for consistency with guest mode
+    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+      return "" // Anonymous = guest, use "" as userId
+    }
+    
+    return currentUser.uid // Authenticated non-anonymous user
   }
 }
