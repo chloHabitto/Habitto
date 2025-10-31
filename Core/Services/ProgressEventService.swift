@@ -171,45 +171,49 @@ final class ProgressEventService {
         return (progress, isCompleted)
     }
     
-    // MARK: - Event Type Detection
+}
+
+// MARK: - Event Type Detection Helper
+
+/// Determine event type from progress change
+///
+/// This is a standalone function (not part of ProgressEventService) to avoid
+/// @MainActor isolation issues when called from other actors.
+///
+/// - Parameters:
+///   - oldProgress: Previous progress value
+///   - newProgress: New progress value
+///   - goalAmount: Goal amount for completion determination
+///
+/// - Returns: The appropriate ProgressEventType
+func eventTypeForProgressChange(
+    oldProgress: Int,
+    newProgress: Int,
+    goalAmount: Int
+) -> ProgressEventType {
+    let delta = newProgress - oldProgress
     
-    /// Determine event type from progress change
-    ///
-    /// - Parameters:
-    ///   - oldProgress: Previous progress value
-    ///   - newProgress: New progress value
-    ///   - goalAmount: Goal amount for completion determination
-    ///
-    /// - Returns: The appropriate ProgressEventType
-    static func eventTypeForProgressChange(
-        oldProgress: Int,
-        newProgress: Int,
-        goalAmount: Int
-    ) -> ProgressEventType {
-        let delta = newProgress - oldProgress
-        
-        if delta == 0 {
-            // No change - shouldn't happen, but handle gracefully
-            return .increment
-        }
-        
-        // Check if this is a toggle (crossing completion threshold)
-        let wasCompleted = oldProgress >= goalAmount
-        let isCompleted = newProgress >= goalAmount
-        
-        if !wasCompleted && isCompleted {
-            // Just completed (crossed threshold from incomplete to complete)
-            return .toggleComplete
-        } else if wasCompleted && !isCompleted {
-            // Just uncompleted (crossed threshold from complete to incomplete)
-            return .toggleComplete
-        } else if delta > 0 {
-            // Increment (within same completion state)
-            return .increment
-        } else {
-            // Decrement (within same completion state)
-            return .decrement
-        }
+    if delta == 0 {
+        // No change - shouldn't happen, but handle gracefully
+        return .increment
+    }
+    
+    // Check if this is a toggle (crossing completion threshold)
+    let wasCompleted = oldProgress >= goalAmount
+    let isCompleted = newProgress >= goalAmount
+    
+    if !wasCompleted && isCompleted {
+        // Just completed (crossed threshold from incomplete to complete)
+        return .toggleComplete
+    } else if wasCompleted && !isCompleted {
+        // Just uncompleted (crossed threshold from complete to incomplete)
+        return .toggleComplete
+    } else if delta > 0 {
+        // Increment (within same completion state)
+        return .increment
+    } else {
+        // Decrement (within same completion state)
+        return .decrement
     }
 }
 
