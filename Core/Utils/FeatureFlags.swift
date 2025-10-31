@@ -77,6 +77,20 @@ class NewArchitectureFlags: ObservableObject {
         }
     }
     
+    /// Use event sourcing for progress tracking
+    @Published var useEventSourcing = false {
+        didSet {
+            if useEventSourcing {
+                print("✅ NewArchitectureFlags: Event sourcing ENABLED")
+            } else {
+                print("📦 NewArchitectureFlags: Using direct progress updates")
+            }
+            if !useNewArchitecture {
+                saveFlags()
+            }
+        }
+    }
+    
     // MARK: - UserDefaults Keys
     
     private enum Keys {
@@ -84,6 +98,7 @@ class NewArchitectureFlags: ObservableObject {
         static let newProgress = "feature_newProgress"
         static let newStreak = "feature_newStreak"
         static let newXP = "feature_newXP"
+        static let eventSourcing = "feature_eventSourcing"
     }
     
     // MARK: - Initialization
@@ -102,6 +117,7 @@ class NewArchitectureFlags: ObservableObject {
         useNewProgressTracking = UserDefaults.standard.bool(forKey: Keys.newProgress)
         useNewStreakCalculation = UserDefaults.standard.bool(forKey: Keys.newStreak)
         useNewXPSystem = UserDefaults.standard.bool(forKey: Keys.newXP)
+        useEventSourcing = UserDefaults.standard.bool(forKey: Keys.eventSourcing)
     }
     
     /// Save flags to UserDefaults
@@ -110,6 +126,7 @@ class NewArchitectureFlags: ObservableObject {
         UserDefaults.standard.set(useNewProgressTracking, forKey: Keys.newProgress)
         UserDefaults.standard.set(useNewStreakCalculation, forKey: Keys.newStreak)
         UserDefaults.standard.set(useNewXPSystem, forKey: Keys.newXP)
+        UserDefaults.standard.set(useEventSourcing, forKey: Keys.eventSourcing)
         print("💾 NewArchitectureFlags: Saved to UserDefaults")
     }
     
@@ -121,6 +138,7 @@ class NewArchitectureFlags: ObservableObject {
         useNewProgressTracking = false
         useNewStreakCalculation = false
         useNewXPSystem = false
+        useEventSourcing = false
         saveFlags()
         print("🔄 NewArchitectureFlags: Reset to defaults (all OFF)")
     }
@@ -128,6 +146,7 @@ class NewArchitectureFlags: ObservableObject {
     /// Enable all new features
     func enableAll() {
         useNewArchitecture = true
+        useEventSourcing = true
         print("🚀 NewArchitectureFlags: All features ENABLED")
     }
     
@@ -136,7 +155,8 @@ class NewArchitectureFlags: ObservableObject {
         return useNewArchitecture ||
                useNewProgressTracking ||
                useNewStreakCalculation ||
-               useNewXPSystem
+               useNewXPSystem ||
+               useEventSourcing
     }
     
     /// Get summary of enabled features
@@ -146,6 +166,7 @@ class NewArchitectureFlags: ObservableObject {
         if useNewProgressTracking { features.append("Progress Tracking") }
         if useNewStreakCalculation { features.append("Streak Calculation") }
         if useNewXPSystem { features.append("XP System") }
+        if useEventSourcing { features.append("Event Sourcing") }
         return features
     }
     
@@ -162,6 +183,7 @@ class NewArchitectureFlags: ObservableObject {
         📊 Progress Tracking:     \(useNewProgressTracking ? "✅ ON" : "❌ OFF")
         🔥 Streak Calculation:    \(useNewStreakCalculation ? "✅ ON" : "❌ OFF")
         ⭐ XP System:             \(useNewXPSystem ? "✅ ON" : "❌ OFF")
+        📝 Event Sourcing:        \(useEventSourcing ? "✅ ON" : "❌ OFF")
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         
         """)
