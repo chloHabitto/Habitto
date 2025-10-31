@@ -54,18 +54,6 @@ struct AddedHabitItem: View {
 
             reminderIcon
           }
-          .contentShape(Rectangle())
-          .simultaneousGesture(
-            TapGesture(count: 1)
-              .onEnded {
-                onTap?()
-              })
-          .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.25)
-              .onEnded { _ in
-                print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
-                onLongPress?()
-              })
 
           // Middle row: Description
           Text(habit.description.isEmpty ? "No description" : habit.description)
@@ -89,6 +77,18 @@ struct AddedHabitItem: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 8)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+          TapGesture(count: 1)
+            .onEnded {
+              onTap?()
+            })
+        .simultaneousGesture(
+          LongPressGesture(minimumDuration: 0.25)
+            .onEnded { _ in
+              print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
+              onLongPress?()
+            })
 
         // More button (hidden in edit mode to show native List drag handle)
         if !isEditMode {
