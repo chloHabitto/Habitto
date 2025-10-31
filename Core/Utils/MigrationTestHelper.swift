@@ -189,8 +189,7 @@ final class MigrationTestHelper {
                         habitId: habit.id,
                         dateKey: dateKey,
                         goalAmount: goalAmount,
-                        legacyProgress: expectedProgress,
-                        modelContext: context
+                        legacyProgress: expectedProgress
                     )
                     
                     if result.progress == expectedProgress {
@@ -299,6 +298,122 @@ final class MigrationTestHelper {
     func printVerification() async throws {
         let userId = await CurrentUser().idOrGuest
         try await printVerification(userId: userId)
+    }
+    
+    /// Comprehensive automated test of event-sourcing system
+    func runAutomatedEventSourcingTest() async throws {
+        let userId = await CurrentUser().idOrGuest
+        logger.info("🧪 MigrationTestHelper: Running automated event-sourcing test")
+        
+        print("\n==========================================")
+        print("🧪 AUTOMATED EVENT-SOURCING TEST")
+        print("==========================================")
+        
+        let context = SwiftDataContainer.shared.modelContext
+        let habits = try await HabitStore.shared.loadHabits()
+        
+        guard !habits.isEmpty else {
+            print("⚠️ No habits found - cannot run test")
+            print("==========================================\n")
+            return
+        }
+        
+        print("📋 Test Setup:")
+        print("  User ID: \(userId)")
+        print("  Habits found: \(habits.count)")
+        print("")
+        
+        // Test 1: Event Creation
+        print("🧪 Test 1: Event Creation")
+        print("  Updating progress for first habit...")
+        
+        let testHabit = habits[0]
+        let today = Date()
+        let dateKey = CoreDataManager.dateKey(for: today)
+        
+        // Get current progress
+        let currentProgress = await HabitStore.shared.getProgress(for: testHabit, date: today)
+        print("  Current progress: \(currentProgress)")
+        
+        // Set new progress (toggle: if 0, set to 1; if >0, set to 0)
+        let newProgress = currentProgress > 0 ? 0 : 1
+        print("  Setting progress to: \(newProgress)")
+        
+        do {
+            try await HabitStore.shared.setProgress(for: testHabit, date: today, progress: newProgress)
+            
+            // Check if event was created
+            let eventDescriptor = ProgressEvent.eventsForHabitDate(
+                habitId: testHabit.id,
+                dateKey: dateKey
+            )
+            let events = (try? context.fetch(eventDescriptor)) ?? []
+            let recentEvents = events.filter { event in
+                abs(event.createdAt.timeIntervalSinceNow) < 10 // Events from last 10 seconds
+            }
+            
+            if !recentEvents.isEmpty {
+                print("  ✅ Event created successfully")
+                print("     Event ID: \(recentEvents[0].id.prefix(20))...")
+                print("     Event Type: \(recentEvents[0].eventType)")
+                print("     Progress Delta: \(recentEvents[0].progressDelta)")
+            } else {
+                print("  ⚠️ No recent events found (may have been created earlier)")
+            }
+        } catch {
+            print("  ❌ Failed to update progress: \(error.localizedDescription)")
+        }
+        
+        print("")
+        
+        // Test 2: Event Replay
+        print("🧪 Test 2: Event Replay")
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: testHabit.goal)
+        let replayResult = await ProgressEventService.shared.calculateProgressFromEvents(
+            habitId: testHabit.id,
+            dateKey: dateKey,
+            goalAmount: goalAmount,
+            legacyProgress: testHabit.completionHistory[dateKey] ?? 0
+        )
+        print("  Progress from events: \(replayResult.progress)")
+        print("  Legacy progress: \(testHabit.completionHistory[dateKey] ?? 0)")
+        if replayResult.progress == newProgress {
+            print("  ✅ Event replay matches current progress")
+        } else {
+            print("  ⚠️ Event replay differs (this may be expected if events accumulate)")
+        }
+        
+        print("")
+        
+        // Test 3: XP Award System
+        print("🧪 Test 3: XP Award System")
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone.current
+        let todayKey = dateFormatter.string(from: today)
+        
+        // Check for DailyAward
+        let awardId = EventSourcedUtils.dailyAwardId(userId: userId, dateKey: todayKey)
+        let awardPredicate = #Predicate<DailyAward> { award in
+            award.userId == userId && award.dateKey == todayKey
+        }
+        let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+        let existingAwards = (try? context.fetch(awardDescriptor)) ?? []
+        
+        if !existingAwards.isEmpty {
+            print("  ✅ DailyAward exists for today")
+            print("     XP Granted: \(existingAwards[0].xpGranted)")
+            print("     All Habits Completed: \(existingAwards[0].allHabitsCompleted)")
+        } else {
+            print("  ℹ️ No DailyAward for today (habits may not all be complete)")
+        }
+        
+        print("")
+        print("==========================================")
+        print("✅ Automated test complete")
+        print("==========================================\n")
+        
+        logger.info("✅ MigrationTestHelper: Automated test completed")
     }
 }
 

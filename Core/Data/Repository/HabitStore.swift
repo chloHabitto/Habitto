@@ -61,7 +61,7 @@ final actor HabitStore {
       // ✅ Gate: If an authenticated user exists and guest data is present, do NOT auto-migrate here.
       //    The UI migration flow will handle it, preventing silent migrations and data duplication.
       let shouldDeferToUIMigration: Bool = await MainActor.run {
-        if let currentUser = AuthenticationManager.shared.currentUser { // authenticated
+        if AuthenticationManager.shared.currentUser != nil { // authenticated
           return GuestDataMigration().hasGuestData()
         }
         return false
@@ -471,16 +471,12 @@ final actor HabitStore {
     let legacyProgress = habit.completionHistory[dateKey] ?? 0
     
     // Calculate progress from events (event sourcing)
-    let modelContext = await MainActor.run {
-      SwiftDataContainer.shared.modelContext
-    }
-    
+    // Note: ProgressEventService is @MainActor and accesses ModelContext internally
     let result = await ProgressEventService.shared.calculateProgressFromEvents(
       habitId: habit.id,
       dateKey: dateKey,
       goalAmount: goalAmount,
-      legacyProgress: legacyProgress,
-      modelContext: modelContext
+      legacyProgress: legacyProgress
     )
     
     logger.info("getProgress: habit=\(habit.name), dateKey=\(dateKey), progress=\(result.progress) (from events: \(result.progress != legacyProgress))")
@@ -1105,11 +1101,6 @@ final actor HabitStore {
   func checkDailyCompletionAndAwardXP(dateKey: String, userId: String) async throws {
     logger.info("🎯 XP_CHECK: Checking daily completion for \(dateKey)")
     
-    // Get model context for SwiftData operations
-    let modelContext = await MainActor.run {
-      SwiftDataContainer.shared.modelContext
-    }
-    
     // Parse date from dateKey
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -1134,72 +1125,87 @@ final actor HabitStore {
       return
     }
     
-    // Calculate progress from events for each habit
-    var allCompleted = true
-    for habit in scheduledHabits {
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-      
-      // Calculate progress from events (event-sourced)
-      let result = await ProgressEventService.shared.calculateProgressFromEvents(
-        habitId: habit.id,
-        dateKey: dateKey,
-        goalAmount: goalAmount,
-        legacyProgress: habit.completionHistory[dateKey],
-        modelContext: modelContext
-      )
-      
-      if result.progress < goalAmount {
-        allCompleted = false
-        logger.info("🎯 XP_CHECK: Habit '\(habit.name)' not completed (progress: \(result.progress) < goal: \(goalAmount))")
-        break
+    // Calculate progress from events for each habit (functional approach - no mutation)
+    let completionResults = await withTaskGroup(of: (habitId: UUID, habitName: String, isComplete: Bool).self) { group in
+      for habit in scheduledHabits {
+        group.addTask {
+          let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+          
+          // Calculate progress from events (event-sourced)
+          // Note: ProgressEventService is @MainActor and accesses ModelContext internally
+          let result = await ProgressEventService.shared.calculateProgressFromEvents(
+            habitId: habit.id,
+            dateKey: dateKey,
+            goalAmount: goalAmount,
+            legacyProgress: habit.completionHistory[dateKey]
+          )
+          
+          return (habitId: habit.id, habitName: habit.name, isComplete: result.progress >= goalAmount)
+        }
       }
+      
+      // Collect results
+      var results: [(habitId: UUID, habitName: String, isComplete: Bool)] = []
+      for await result in group {
+        results.append(result)
+      }
+      return results
     }
     
-    // Generate deterministic award ID
-    let awardId = EventSourcedUtils.dailyAwardId(userId: userId, dateKey: dateKey)
+    // Check if all habits are completed (immutable value)
+    let allCompleted = completionResults.allSatisfy { $0.isComplete }
     
-    // Check if award already exists
-    let awardPredicate = #Predicate<DailyAward> { award in
-      award.userId == userId && award.dateKey == dateKey
+    // Log incomplete habits
+    for result in completionResults where !result.isComplete {
+      logger.info("🎯 XP_CHECK: Habit '\(result.habitName)' not completed")
     }
-    let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
-    let existingAwards = (try? modelContext.fetch(awardDescriptor)) ?? []
-    let awardExists = !existingAwards.isEmpty
     
-    logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
-    
-    if allCompleted && !awardExists {
-      // All habits complete AND award doesn't exist → create award
-      logger.info("🎯 XP_CHECK: ✅ Creating DailyAward for \(dateKey)")
+    // Check if award already exists and manage awards (all on MainActor)
+    await MainActor.run {
+      let modelContext = SwiftDataContainer.shared.modelContext
       
-      // Create DailyAward with deterministic userIdDateKey (unique constraint)
-      // Note: id is UUID but userIdDateKey provides deterministic uniqueness
-      let award = DailyAward(
-        userId: userId,
-        dateKey: dateKey,
-        xpGranted: 50, // Standard daily completion bonus
-        allHabitsCompleted: true
-      )
-      
-      // userIdDateKey is already set in init() and provides deterministic uniqueness
-      // Format: "{userId}#{dateKey}" which matches EventSourcedUtils.dailyAwardId() concept
-      modelContext.insert(award)
-      try modelContext.save()
-      
-      logger.info("🎯 XP_CHECK: ✅ DailyAward created successfully")
-      
-    } else if !allCompleted && awardExists {
-      // NOT all complete AND award exists → delete award (XP reversal)
-      logger.info("🎯 XP_CHECK: ❌ Removing DailyAward for \(dateKey) (habits uncompleted)")
-      
-      for award in existingAwards {
-        modelContext.delete(award)
+      let awardPredicate = #Predicate<DailyAward> { award in
+        award.userId == userId && award.dateKey == dateKey
       }
-      try modelContext.save()
+      let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+      let existingAwards = (try? modelContext.fetch(awardDescriptor)) ?? []
+      let awardExists = !existingAwards.isEmpty
       
-      logger.info("🎯 XP_CHECK: ✅ DailyAward removed successfully")
-    } else {
-      logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
+      logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
+      
+      if allCompleted && !awardExists {
+        // All habits complete AND award doesn't exist → create award
+        logger.info("🎯 XP_CHECK: ✅ Creating DailyAward for \(dateKey)")
+        
+        // Create DailyAward with deterministic userIdDateKey (unique constraint)
+        // Note: id is UUID but userIdDateKey provides deterministic uniqueness
+        let award = DailyAward(
+          userId: userId,
+          dateKey: dateKey,
+          xpGranted: 50, // Standard daily completion bonus
+          allHabitsCompleted: true
+        )
+        
+        // userIdDateKey is already set in init() and provides deterministic uniqueness
+        // Format: "{userId}#{dateKey}" which matches EventSourcedUtils.dailyAwardId() concept
+        modelContext.insert(award)
+        try? modelContext.save()
+        
+        logger.info("🎯 XP_CHECK: ✅ DailyAward created successfully")
+        
+      } else if !allCompleted && awardExists {
+        // NOT all complete AND award exists → delete award (XP reversal)
+        logger.info("🎯 XP_CHECK: ❌ Removing DailyAward for \(dateKey) (habits uncompleted)")
+        
+        for award in existingAwards {
+          modelContext.delete(award)
+        }
+        try? modelContext.save()
+        
+        logger.info("🎯 XP_CHECK: ✅ DailyAward removed successfully")
+      } else {
+        logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
+      }
     }
   }
 }

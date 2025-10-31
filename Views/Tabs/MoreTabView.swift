@@ -359,6 +359,16 @@ struct MoreTabView: View {
             }
           }
         )
+        
+        debugButton(
+          title: "🧪 Test Event Sourcing",
+          subtitle: "Automated test of event creation & XP",
+          action: {
+            Task { @MainActor in
+              try? await MigrationTestHelper.shared.runAutomatedEventSourcingTest()
+            }
+          }
+        )
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 16)

@@ -186,16 +186,17 @@ final class ProgressEventService {
     ///   - dateKey: The date key in format "yyyy-MM-dd"
     ///   - goalAmount: The goal amount for this habit
     ///   - legacyProgress: Fallback progress from completionHistory (if no events exist)
-    ///   - modelContext: The SwiftData model context
     ///
     /// - Returns: A tuple containing (progress: Int, isCompleted: Bool)
+    /// - Note: Accesses ModelContext internally since this method is @MainActor
     func calculateProgressFromEvents(
         habitId: UUID,
         dateKey: String,
         goalAmount: Int,
-        legacyProgress: Int? = nil,
-        modelContext: ModelContext
+        legacyProgress: Int? = nil
     ) async -> (progress: Int, isCompleted: Bool) {
+        // Access ModelContext directly since we're @MainActor
+        let modelContext = SwiftDataContainer.shared.modelContext
         do {
             // Try to calculate from events first
             let result = try await applyEvents(
