@@ -125,6 +125,11 @@ final class ProgressEventService {
         
         logger.info("✅ Created ProgressEvent: id=\(event.id.prefix(20))..., operationId=\(event.operationId.prefix(20))...")
         
+        // ✅ PRIORITY 3: Schedule sync after creating event
+        Task {
+            await SyncEngine.shared.scheduleSyncIfNeeded()
+        }
+        
         return event
     }
     
