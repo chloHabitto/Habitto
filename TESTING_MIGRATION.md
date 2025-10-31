@@ -40,7 +40,25 @@ completionHistory: ["2025-01-15": 1, "2025-01-14": 1]
 
 ## **Step 1: Trigger Migration**
 
-### **Option A: Automatic Migration (Recommended)**
+### **Option A: Using MigrationTestHelper (Recommended)**
+
+Use the `MigrationTestHelper` utility for easy testing:
+
+```swift
+// In Xcode console or debug view
+Task { @MainActor in
+    // Check current status
+    try await MigrationTestHelper.shared.printMigrationStatus()
+    
+    // Trigger migration (auto-detects userId)
+    try await MigrationTestHelper.shared.triggerMigration(force: true)
+    
+    // Verify results
+    try await MigrationTestHelper.shared.printVerification()
+}
+```
+
+### **Option B: Automatic Migration**
 
 Migration runs automatically when:
 - User signs in for the first time
@@ -49,19 +67,24 @@ Migration runs automatically when:
 **To trigger manually**:
 ```swift
 // In Xcode console or debug view
-Task {
+Task { @MainActor in
     let userId = await CurrentUser().idOrGuest
     try await MigrationRunner.shared.runIfNeeded(userId: userId)
 }
 ```
 
-### **Option B: Force Migration**
+### **Option C: Force Migration (Direct)**
 
 If migration was already completed, force re-run:
 ```swift
-// Temporarily enable force migration flag
-// (Check FeatureFlagProvider implementation)
+// In Xcode console or debug view
+Task { @MainActor in
+    let userId = await CurrentUser().idOrGuest
+    try await MigrationRunner.shared.forceMigration(userId: userId)
+}
 ```
+
+**Note**: This will reset the migration state and run it again, even if it was already completed.
 
 ---
 

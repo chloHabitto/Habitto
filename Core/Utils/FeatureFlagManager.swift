@@ -17,8 +17,10 @@ class FeatureFlagManager: ObservableObject {
 struct FeatureFlagProvider {
     var useNormalizedDataPath: Bool { return false }
     var useCentralizedXP: Bool { return false }
-    var isMigrationEnabled: Bool { return false }
-    var forceMigration: Bool { return false }
+    // ✅ TESTING: Enable migration for testing (can be disabled later)
+    var isMigrationEnabled: Bool { return true }
+    // ✅ TESTING: Enable force migration for testing (set to false after testing)
+    var forceMigration: Bool { return true }
 }
 
 /// Static feature flag properties (temporary placeholders)

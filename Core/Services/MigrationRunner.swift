@@ -128,8 +128,14 @@ final class MigrationRunner {
   private func migrateHabits(userId: String, context: ModelContext) async throws -> [Habit] {
     logger.info("MigrationRunner: Migrating habits for user \(userId)")
 
-    // Load habits from UserDefaults (legacy storage)
-    let habits = try await loadLegacyHabits()
+    // Try loading habits from UserDefaults first (legacy storage)
+    var habits = try await loadLegacyHabits()
+    
+    // If no habits found in UserDefaults, load from SwiftData (habits already migrated)
+    if habits.isEmpty {
+      logger.info("MigrationRunner: No habits in UserDefaults, loading from SwiftData for completionHistory migration")
+      habits = try await loadHabitsFromSwiftData(userId: userId, context: context)
+    }
 
     var migratedCount = 0
 
@@ -163,9 +169,28 @@ final class MigrationRunner {
       }
     }
 
-    try context.save()
-    logger.info("MigrationRunner: Migrated \(migratedCount) habits for user \(userId)")
+    if migratedCount > 0 {
+      try context.save()
+      logger.info("MigrationRunner: Migrated \(migratedCount) habits for user \(userId)")
+    } else {
+      logger.info("MigrationRunner: All habits already exist in SwiftData for user \(userId)")
+    }
 
+    return habits
+  }
+  
+  /// Load habits from SwiftData (for migration scenarios where habits are already in SwiftData)
+  private func loadHabitsFromSwiftData(userId: String, context: ModelContext) async throws -> [Habit] {
+    logger.info("MigrationRunner: Loading habits from SwiftData for user \(userId)")
+    
+    let descriptor = FetchDescriptor<HabitData>(
+      predicate: #Predicate { $0.userId == userId }
+    )
+    
+    let habitDataArray = try context.fetch(descriptor)
+    let habits = habitDataArray.map { $0.toHabit() }
+    
+    logger.info("MigrationRunner: Loaded \(habits.count) habits from SwiftData")
     return habits
   }
 

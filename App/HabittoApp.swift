@@ -319,6 +319,12 @@ private func setupCoreData() {
       // Schedule daily reminders when app becomes active
       try? await Task.sleep(nanoseconds: 500_000_000)
       NotificationManager.shared.rescheduleDailyReminders()
+      
+      // ✅ PRIORITY 3: Start periodic event sync (only for authenticated users)
+      let userId = await CurrentUser().idOrGuest
+      if !CurrentUser.isGuestId(userId) {
+        await SyncEngine.shared.startPeriodicSync()
+      }
     }
   }
 
