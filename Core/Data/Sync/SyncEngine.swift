@@ -55,6 +55,7 @@ actor SyncEngine {
         self.firestore = Firestore.firestore()
         self.habitStore = HabitStore.shared
         logger.info("SyncEngine initialized")
+        print("🔄 SyncEngine: Initialized")
     }
     
     // MARK: - Event Sync
@@ -253,7 +254,12 @@ actor SyncEngine {
             
             do {
                 // Perform full sync cycle (includes all sync operations)
-                try await self.performFullSyncCycle()
+                let userId = await CurrentUser().idOrGuest
+                guard !CurrentUser.isGuestId(userId) else {
+                    logger.info("⏭️ Skipping background sync for guest user")
+                    return
+                }
+                try await self.performFullSyncCycle(userId: userId)
             } catch {
                 self.logger.error("❌ Background sync failed: \(error.localizedDescription)")
             }
@@ -265,15 +271,31 @@ actor SyncEngine {
     /// Performs an immediate sync on start, then continues periodically
     func startPeriodicSync() {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
+        print("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
         
         syncTask?.cancel()
         
         syncTask = Task {
+            // Get userId once at the start to avoid race conditions
+            let userId = await CurrentUser().idOrGuest
+            
+            // Skip sync for guest users
+            guard !CurrentUser.isGuestId(userId) else {
+                logger.info("⏭️ Skipping periodic sync for guest user")
+                print("⏭️ SyncEngine: Skipping periodic sync for guest user")
+                return
+            }
+            
+            print("🔄 SyncEngine: Starting periodic sync for authenticated user: \(userId)")
+            
             // Perform immediate sync on start (don't wait for first interval)
             do {
-                try await self.performFullSyncCycle()
+                print("🔄 SyncEngine: Performing initial sync cycle...")
+                try await self.performFullSyncCycle(userId: userId)
+                print("✅ SyncEngine: Initial sync cycle completed")
             } catch {
                 self.logger.error("❌ Initial sync failed: \(error.localizedDescription)")
+                print("❌ SyncEngine: Initial sync failed: \(error.localizedDescription)")
             }
             
             // Then continue with periodic syncs
@@ -284,11 +306,20 @@ actor SyncEngine {
                 // Check if cancelled before performing sync
                 guard !Task.isCancelled else { break }
                 
+                // Re-check userId in case user signed out
+                let currentUserId = await CurrentUser().idOrGuest
+                guard !CurrentUser.isGuestId(currentUserId) else {
+                    logger.info("⏭️ User is now guest, stopping periodic sync")
+                    print("⏭️ SyncEngine: User is now guest, stopping periodic sync")
+                    break
+                }
+                
                 do {
                     // Perform full sync cycle
-                    try await self.performFullSyncCycle()
+                    try await self.performFullSyncCycle(userId: currentUserId)
                 } catch {
                     self.logger.error("❌ Periodic sync failed: \(error.localizedDescription)")
+                    print("❌ SyncEngine: Periodic sync failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -296,15 +327,17 @@ actor SyncEngine {
     
     /// Perform a full sync cycle: pull remote changes, then sync local changes
     /// This orchestrates all sync operations in the correct order
-    func performFullSyncCycle() async throws {
-        let userId = await CurrentUser().idOrGuest
-        
+    /// - Parameter userId: The authenticated user ID (must not be guest)
+    func performFullSyncCycle(userId: String) async throws {
+        // Double-check userId is not guest (safety check)
         guard !CurrentUser.isGuestId(userId) else {
             logger.info("⏭️ Skipping full sync cycle for guest user")
+            print("⏭️ SyncEngine: Skipping full sync cycle for guest user (userId: '\(userId)')")
             return
         }
         
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
+        print("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
         
         // Step 1: Pull remote changes first (to get latest data from server)
         do {
@@ -486,6 +519,12 @@ actor SyncEngine {
                 .collection("progress")
                 .document("current")
             
+            // Also update xp/state document (for XP state stream compatibility)
+            let xpStateRef = self.firestore.collection("users")
+                .document(userId)
+                .collection("xp")
+                .document("state")
+            
             // Calculate level from total XP (simple formula: every 100 XP = 1 level)
             let level = (totalXP / 100) + 1
             let currentLevelXP = totalXP % 100
@@ -497,7 +536,9 @@ actor SyncEngine {
                 "lastUpdated": Timestamp(date: Date())
             ]
             
+            // Update both paths for consistency
             transaction.setData(progressData, forDocument: progressRef, merge: true)
+            transaction.setData(progressData, forDocument: xpStateRef, merge: true)
             
             // Return counts as tuple (wrapped in array for easier casting)
             return [batchSynced, batchAlreadySynced]
@@ -931,37 +972,106 @@ actor SyncEngine {
     }
     
     /// Merge award from Firestore into SwiftData (idempotent)
+    /// CRITICAL: When importing a remote award, we must also sync XP to prevent desync across devices
     private func mergeAwardFromFirestore(data: [String: Any], userId: String) async throws {
-        await MainActor.run {
+        let dateKey = data["dateKey"] as? String
+        guard let dateKey = dateKey else {
+            return
+        }
+        
+        let userIdDateKey = data["userIdDateKey"] as? String ?? "\(userId)#\(dateKey)"
+        let xpGranted = data["xpGranted"] as? Int ?? 50
+        
+        // Check if award already exists locally (idempotent check)
+        let awardExists = await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
-            
-            guard let dateKey = data["dateKey"] as? String else {
-                return
-            }
-            
-            let userIdDateKey = data["userIdDateKey"] as? String ?? "\(userId)#\(dateKey)"
-            
-            // Check if award exists (idempotent check)
             let predicate = #Predicate<DailyAward> { award in
                 award.userIdDateKey == userIdDateKey
             }
             let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).first) != nil
+        }
+        
+        // If award already exists locally, skip (idempotent)
+        guard !awardExists else {
+            logger.info("⏭️ Award already exists locally for \(dateKey), skipping import")
+            return
+        }
+        
+        // Import the award record
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
             
-            if (try? modelContext.fetch(descriptor).first) == nil {
-                // Create new award
-                let award = DailyAward(
-                    userId: userId,
-                    dateKey: dateKey,
-                    xpGranted: data["xpGranted"] as? Int ?? 50,
-                    allHabitsCompleted: data["allHabitsCompleted"] as? Bool ?? true
-                )
-                
-                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
-                    award.createdAt = createdAt
-                }
-                
-                modelContext.insert(award)
-                try? modelContext.save()
+            let award = DailyAward(
+                userId: userId,
+                dateKey: dateKey,
+                xpGranted: xpGranted,
+                allHabitsCompleted: data["allHabitsCompleted"] as? Bool ?? true
+            )
+            
+            if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                award.createdAt = createdAt
+            }
+            
+            modelContext.insert(award)
+            try? modelContext.save()
+            logger.info("✅ Imported DailyAward for \(dateKey) (\(xpGranted) XP)")
+        }
+        
+        // CRITICAL: Sync XP from Firestore to ensure consistency across devices
+        // The XP state stream should handle this, but we explicitly sync here to ensure
+        // immediate consistency when importing remote awards
+        await syncXPStateFromFirestore(userId: userId)
+    }
+    
+    /// Sync XP state from Firestore's progress/current document
+    /// This ensures XP stays in sync when importing remote awards
+    /// 
+    /// Note: syncAwards() writes to /users/{userId}/progress/current, but the XP state stream
+    /// listens to /users/{userId}/xp/state. We check progress/current here since that's where
+    /// awards sync their XP state. The XP state stream will eventually sync from xp/state,
+    /// but we ensure immediate consistency by refreshing here.
+    private func syncXPStateFromFirestore(userId: String) async {
+        // Check both XP state paths for consistency
+        let progressRef = firestore.collection("users")
+            .document(userId)
+            .collection("progress")
+            .document("current")
+        
+        let xpStateRef = firestore.collection("users")
+            .document(userId)
+            .collection("xp")
+            .document("state")
+        
+        // Try to get XP from xp/state first (preferred path)
+        // Using try? means errors are handled gracefully (returns nil)
+        let xpStateSnapshot = try? await xpStateRef.getDocument()
+        let xpStateData = xpStateSnapshot?.data()
+        let xpStateTotalXP = xpStateData?["totalXP"] as? Int
+        
+        // Fallback to progress/current if xp/state doesn't exist
+        let progressSnapshot = try? await progressRef.getDocument()
+        let progressData = progressSnapshot?.data()
+        let progressTotalXP = progressData?["totalXP"] as? Int
+        
+        // Use xp/state if available, otherwise fallback to progress/current
+        guard let remoteTotalXP = xpStateTotalXP ?? progressTotalXP else {
+            logger.info("ℹ️ No remote XP state found in either path, skipping sync")
+            return
+        }
+        
+        // Refresh XP state from repository (which reads from xp/state stream)
+        await DailyAwardService.shared.refreshXPState()
+        
+        // Log sync status
+        await MainActor.run {
+            let localTotalXP = DailyAwardService.shared.getTotalXP()
+            
+            if remoteTotalXP != localTotalXP {
+                logger.info("🔄 XP sync: Local=\(localTotalXP), Remote=\(remoteTotalXP) (from \(xpStateTotalXP != nil ? "xp/state" : "progress/current"))")
+                logger.info("ℹ️ XP state stream should update DailyAwardService automatically")
+            } else {
+                logger.info("✅ XP already in sync: \(localTotalXP)")
             }
         }
     }

@@ -15,11 +15,22 @@ import UserNotifications
 // MARK: - AppDelegate
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+  
+  override init() {
+    super.init()
+    // Use both print and NSLog to ensure visibility
+    print("🚀 AppDelegate: INIT CALLED")
+    NSLog("🚀 AppDelegate: INIT CALLED (NSLog)")
+  }
+  
   func application(
     _: UIApplication,
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
+    // Use both print and NSLog to ensure visibility
+    print("🚀 AppDelegate: didFinishLaunchingWithOptions called")
+    NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")
     // ✅ FIX: Firebase is already configured in HabittoApp.init()
     // Just verify it's configured and skip if already done
     if FirebaseApp.app() == nil {
@@ -44,14 +55,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
     
     // Configure other Firebase services asynchronously
+    print("🚀 AppDelegate: Creating Task.detached for SyncEngine initialization...")
     Task.detached { @MainActor in
+      print("🚀 AppDelegate: Task.detached block started executing...")
       // ✅ FIX: Firestore already configured synchronously above
       // Only configure Auth here
+      print("🚀 AppDelegate: Calling FirebaseConfiguration.configureAuth()...")
       FirebaseConfiguration.configureAuth()
+      print("🚀 AppDelegate: FirebaseConfiguration.configureAuth() completed")
       
       // Ensure user is authenticated (anonymous if not signed in)
       do {
+        print("🔍 SyncEngine: Starting authentication check...")
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
+        print("✅ SyncEngine: User authenticated - uid: \(uid)")
         
         // CRITICAL: Migrate guest data to authenticated user first
         do {
@@ -64,8 +81,23 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         if FeatureFlags.enableFirestoreSync {
           await BackfillJob.shared.runIfEnabled()
         }
+        
+        // ✅ CRITICAL: Start periodic sync for authenticated users (not guests)
+        // This ensures data syncs on app launch, not just when app becomes active
+        print("🔍 SyncEngine: Checking if user is guest - uid: \(uid), isGuest: \(CurrentUser.isGuestId(uid))")
+        if !CurrentUser.isGuestId(uid) {
+          print("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
+          // Access SyncEngine.shared explicitly to ensure initialization
+          let syncEngine = SyncEngine.shared
+          print("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync()...")
+          await syncEngine.startPeriodicSync()
+          print("✅ SyncEngine: startPeriodicSync() call completed")
+        } else {
+          print("⏭️ SyncEngine: Skipping sync for guest user")
+        }
       } catch {
-        print("❌ Failed to authenticate user: \(error.localizedDescription)")
+        print("❌ SyncEngine: Failed to authenticate user: \(error.localizedDescription)")
+        print("❌ SyncEngine: Error details: \(error)")
       }
     }
     
