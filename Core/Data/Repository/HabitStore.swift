@@ -1185,52 +1185,100 @@ final actor HabitStore {
       logger.info("🎯 XP_CHECK: Habit '\(result.habitName)' not completed")
     }
     
-    // Check if award already exists and manage awards (all on MainActor)
-    await MainActor.run {
+    // Check if award already exists (synchronous MainActor work)
+    let (awardExists, existingAwards, xpToReverse): (Bool, [DailyAward], Int) = await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       
       let awardPredicate = #Predicate<DailyAward> { award in
         award.userId == userId && award.dateKey == dateKey
       }
       let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
-      let existingAwards = (try? modelContext.fetch(awardDescriptor)) ?? []
-      let awardExists = !existingAwards.isEmpty
+      let awards = (try? modelContext.fetch(awardDescriptor)) ?? []
+      let exists = !awards.isEmpty
+      let xpAmount = awards.first?.xpGranted ?? 50
       
-      logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
+      return (exists, awards, xpAmount)
+    }
+    
+    logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
+    
+    if allCompleted && !awardExists {
+      // All habits complete AND award doesn't exist → create award
+      logger.info("🎯 XP_CHECK: ✅ Creating DailyAward for \(dateKey)")
       
-      if allCompleted && !awardExists {
-        // All habits complete AND award doesn't exist → create award
-        logger.info("🎯 XP_CHECK: ✅ Creating DailyAward for \(dateKey)")
-        
-        // Create DailyAward with deterministic userIdDateKey (unique constraint)
-        // Note: id is UUID but userIdDateKey provides deterministic uniqueness
-        let award = DailyAward(
-          userId: userId,
-          dateKey: dateKey,
-          xpGranted: 50, // Standard daily completion bonus
-          allHabitsCompleted: true
+      // ✅ CRITICAL FIX: Award XP via DailyAwardService BEFORE creating award record
+      // This ensures XP ledger is updated atomically
+      let xpAmount = 50 // Standard daily completion bonus
+      do {
+        let awardReason = "All habits completed on \(dateKey)"
+        try await DailyAwardService.shared.awardXP(
+          delta: xpAmount,
+          reason: awardReason
         )
+        logger.info("🎯 XP_CHECK: ✅ Awarded \(xpAmount) XP in ledger")
         
-        // userIdDateKey is already set in init() and provides deterministic uniqueness
-        // Format: "{userId}#{dateKey}" which matches EventSourcedUtils.dailyAwardId() concept
-        modelContext.insert(award)
-        try? modelContext.save()
+        // Create DailyAward record after successful XP award (MainActor)
+        await MainActor.run {
+          let modelContext = SwiftDataContainer.shared.modelContext
+          
+          // Create DailyAward with deterministic userIdDateKey (unique constraint)
+          let award = DailyAward(
+            userId: userId,
+            dateKey: dateKey,
+            xpGranted: xpAmount,
+            allHabitsCompleted: true
+          )
+          
+          modelContext.insert(award)
+          try? modelContext.save()
+          
+          logger.info("🎯 XP_CHECK: ✅ DailyAward created successfully")
+        }
+      } catch {
+        logger.error("❌ XP_CHECK: Failed to award XP: \(error.localizedDescription)")
+        // Don't create award record if XP award failed (maintain consistency)
+        // User can retry by completing habits again
+        return
+      }
+      
+    } else if !allCompleted && awardExists {
+      // NOT all complete AND award exists → delete award (XP reversal)
+      logger.info("🎯 XP_CHECK: ❌ Removing DailyAward for \(dateKey) (habits uncompleted)")
+      
+      // ✅ CRITICAL FIX: Reverse XP in ledger before deleting award record
+      do {
+        let reversalReason = "Habit uncompleted on \(dateKey) - reversing daily completion bonus"
+        try await DailyAwardService.shared.awardXP(
+          delta: -xpToReverse,
+          reason: reversalReason
+        )
+        logger.info("🎯 XP_CHECK: ✅ Reversed \(xpToReverse) XP in ledger")
+      } catch {
+        logger.error("❌ XP_CHECK: Failed to reverse XP: \(error.localizedDescription)")
+        // Continue with deletion even if XP reversal fails (better than losing both)
+        // User can repair integrity later via DailyAwardService.checkAndRepairIntegrity()
+      }
+      
+      // Delete award records after XP reversal (MainActor)
+      await MainActor.run {
+        let modelContext = SwiftDataContainer.shared.modelContext
         
-        logger.info("🎯 XP_CHECK: ✅ DailyAward created successfully")
+        // Re-fetch awards to ensure we have the latest state
+        let awardPredicate = #Predicate<DailyAward> { award in
+          award.userId == userId && award.dateKey == dateKey
+        }
+        let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+        let awardsToDelete = (try? modelContext.fetch(awardDescriptor)) ?? []
         
-      } else if !allCompleted && awardExists {
-        // NOT all complete AND award exists → delete award (XP reversal)
-        logger.info("🎯 XP_CHECK: ❌ Removing DailyAward for \(dateKey) (habits uncompleted)")
-        
-        for award in existingAwards {
+        for award in awardsToDelete {
           modelContext.delete(award)
         }
         try? modelContext.save()
         
         logger.info("🎯 XP_CHECK: ✅ DailyAward removed successfully")
-      } else {
-        logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
       }
+    } else {
+      logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
     }
   }
 }
