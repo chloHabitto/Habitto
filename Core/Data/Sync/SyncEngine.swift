@@ -262,22 +262,34 @@ actor SyncEngine {
     
     /// Start periodic background sync (every 5 minutes)
     /// Orchestrates all sync operations: pull remote changes, then sync local changes
+    /// Performs an immediate sync on start, then continues periodically
     func startPeriodicSync() {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         
         syncTask?.cancel()
         
         syncTask = Task {
+            // Perform immediate sync on start (don't wait for first interval)
+            do {
+                try await self.performFullSyncCycle()
+            } catch {
+                self.logger.error("❌ Initial sync failed: \(error.localizedDescription)")
+            }
+            
+            // Then continue with periodic syncs
             while !Task.isCancelled {
+                // Wait for sync interval before next sync
+                try? await Task.sleep(nanoseconds: UInt64(self.syncInterval * 1_000_000_000))
+                
+                // Check if cancelled before performing sync
+                guard !Task.isCancelled else { break }
+                
                 do {
                     // Perform full sync cycle
                     try await self.performFullSyncCycle()
                 } catch {
                     self.logger.error("❌ Periodic sync failed: \(error.localizedDescription)")
                 }
-                
-                // Wait for sync interval
-                try? await Task.sleep(nanoseconds: UInt64(self.syncInterval * 1_000_000_000))
             }
         }
     }
