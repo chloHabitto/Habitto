@@ -281,18 +281,22 @@ final class SwiftDataStorage: HabitStorageProtocol {
     var currentUserId = await getCurrentUserId()
     
     // ✅ IMPROVED: More aggressive retry logic with exponential backoff
-    // Retry up to 3 times with increasing delays
+    // Retry up to 5 times with increasing delays (up to 2.5 seconds total)
     if currentUserId == nil {
       logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
-      for attempt in 1...3 {
-        let delay = UInt64(500_000_000 * UInt64(attempt)) // 0.5s, 1s, 1.5s
+      let initialAuthUserId = await MainActor.run { Auth.auth().currentUser?.uid }
+      logger.info("🔍 DEBUG: Auth.auth().currentUser = \(initialAuthUserId ?? "nil")")
+      for attempt in 1...5 {
+        let delay = UInt64(500_000_000 * UInt64(attempt)) // 0.5s, 1s, 1.5s, 2s, 2.5s
         try? await Task.sleep(nanoseconds: delay)
         currentUserId = await getCurrentUserId()
+        let retryAuthUserId = await MainActor.run { Auth.auth().currentUser?.uid }
+        logger.info("🔍 DEBUG: Retry \(attempt)/5: Auth.auth().currentUser = \(retryAuthUserId ?? "nil"), currentUserId = \(currentUserId ?? "nil")")
         if currentUserId != nil {
           logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
           break
         }
-        logger.info("⚠️ Retry \(attempt)/3: getCurrentUserId still nil")
+        logger.info("⚠️ Retry \(attempt)/5: getCurrentUserId still nil")
       }
     }
     
@@ -359,6 +363,49 @@ final class SwiftDataStorage: HabitStorageProtocol {
           try container.modelContext.save()
           logger.info("✅ Migrated \(guestHabits.count) habits and their CompletionRecords to userId '\(userId)'")
           habitDataArray = guestHabits
+        }
+      }
+      
+      // ✅ ADDITIONAL FALLBACK: If querying as guest returns 0 habits, check if there are habits with ANY userId
+      // This handles the case where Firebase Auth hasn't initialized yet but habits exist with authenticated userId
+      if currentUserId == nil, habitDataArray.isEmpty {
+        logger.info("⚠️ Querying as guest found 0 habits, checking if habits exist with other userIds...")
+        let allHabitsDescriptor = FetchDescriptor<HabitData>()
+        let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
+        logger.info("🔍 DEBUG: Total habits in database: \(allHabits.count)")
+        
+        // Check if any habits have non-empty userId (likely authenticated user)
+        let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
+        if !authenticatedHabits.isEmpty {
+          let userIds = Set(authenticatedHabits.map { $0.userId })
+          logger.info("🔍 Found \(authenticatedHabits.count) habits with userIds: \(userIds)")
+          logger.info("⚠️ Habits exist but query returned 0 - likely Firebase Auth timing issue")
+          
+          // Try one more time to get the authenticated user ID directly from Firebase Auth
+          // This handles the case where Auth.auth().currentUser is available but getCurrentUserId() returned nil
+          let firebaseUserId = await MainActor.run {
+            guard let firebaseUser = Auth.auth().currentUser, !firebaseUser.isAnonymous else {
+              return nil
+            }
+            logger.info("🔍 Firebase Auth shows authenticated user: \(firebaseUser.uid)")
+            return firebaseUser.uid
+          }
+          
+          if let firebaseUserId = firebaseUserId {
+            // Re-query with the authenticated user ID
+            let authDescriptor = FetchDescriptor<HabitData>(
+              predicate: #Predicate<HabitData> { habitData in
+                habitData.userId == firebaseUserId
+              },
+              sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+            let authHabits = try container.modelContext.fetch(authDescriptor)
+            if !authHabits.isEmpty {
+              logger.info("✅ Found \(authHabits.count) habits for authenticated user '\(firebaseUserId)' - using them")
+              habitDataArray = authHabits
+              // Update currentUserId for logging purposes
+              currentUserId = firebaseUserId
+            }
+          }
         }
       }
       
