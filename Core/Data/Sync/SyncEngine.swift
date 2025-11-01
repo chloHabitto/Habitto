@@ -269,29 +269,37 @@ actor SyncEngine {
     /// Start periodic background sync (every 5 minutes)
     /// Orchestrates all sync operations: pull remote changes, then sync local changes
     /// Performs an immediate sync on start, then continues periodically
-    func startPeriodicSync() {
+    /// - Parameter userId: The authenticated user ID (must not be guest). If nil, will fetch from CurrentUser.
+    func startPeriodicSync(userId: String? = nil) {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         print("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
         
         syncTask?.cancel()
         
         syncTask = Task {
-            // Get userId once at the start to avoid race conditions
-            let userId = await CurrentUser().idOrGuest
+            // Use provided userId or fetch it (for backward compatibility)
+            let initialUserId: String
+            if let providedUserId = userId {
+                initialUserId = providedUserId
+                print("🔄 SyncEngine: Using provided userId: \(providedUserId)")
+            } else {
+                initialUserId = await CurrentUser().idOrGuest
+                print("🔄 SyncEngine: Fetched userId: '\(initialUserId)' (empty=\(initialUserId.isEmpty))")
+            }
             
             // Skip sync for guest users
-            guard !CurrentUser.isGuestId(userId) else {
+            guard !CurrentUser.isGuestId(initialUserId) else {
                 logger.info("⏭️ Skipping periodic sync for guest user")
-                print("⏭️ SyncEngine: Skipping periodic sync for guest user")
+                print("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
                 return
             }
             
-            print("🔄 SyncEngine: Starting periodic sync for authenticated user: \(userId)")
+            print("🔄 SyncEngine: Starting periodic sync for authenticated user: \(initialUserId)")
             
             // Perform immediate sync on start (don't wait for first interval)
             do {
                 print("🔄 SyncEngine: Performing initial sync cycle...")
-                try await self.performFullSyncCycle(userId: userId)
+                try await self.performFullSyncCycle(userId: initialUserId)
                 print("✅ SyncEngine: Initial sync cycle completed")
             } catch {
                 self.logger.error("❌ Initial sync failed: \(error.localizedDescription)")
