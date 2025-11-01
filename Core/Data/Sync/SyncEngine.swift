@@ -393,6 +393,11 @@ actor SyncEngine {
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
         print("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
         
+        // Notify HabitRepository that sync started
+        Task { @MainActor in
+            HabitRepository.shared.syncStarted()
+        }
+        
         let startTime = Date()
         var pullError: Error?
         var eventsError: Error?
@@ -403,6 +408,8 @@ actor SyncEngine {
             // Record full sync cycle metrics
             let duration = Date().timeIntervalSince(startTime)
             let success = pullError == nil && eventsError == nil && completionsError == nil && awardsError == nil
+            let finalError = pullError ?? eventsError ?? completionsError ?? awardsError
+            
             Task { @MainActor in
                 SyncHealthMonitor.shared.recordSync(
                     operation: .full,
@@ -411,8 +418,15 @@ actor SyncEngine {
                     itemsSynced: 0, // Individual operations track their own counts
                     itemsFailed: 0,
                     conflictsResolved: 0,
-                    error: pullError ?? eventsError ?? completionsError ?? awardsError
+                    error: finalError
                 )
+                
+                // Notify HabitRepository of sync completion/failure
+                if success {
+                    HabitRepository.shared.syncCompleted()
+                } else if let error = finalError {
+                    HabitRepository.shared.syncFailed(error: error)
+                }
             }
         }
         

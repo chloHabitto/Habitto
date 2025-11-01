@@ -124,6 +124,38 @@ class NoteEntity: NSManagedObject {
   @NSManaged var updatedAt: Date?
 }
 
+// MARK: - HabitSyncStatus
+
+/// Represents the current sync status of the habit repository
+enum HabitSyncStatus: Equatable {
+  /// All changes are synced
+  case synced
+  
+  /// Sync is currently in progress
+  case syncing
+  
+  /// There are pending changes waiting to sync (with count)
+  case pending(count: Int)
+  
+  /// Sync failed with an error
+  case error(Error)
+  
+  /// Make Error equatable for HabitSyncStatus comparison
+  static func == (lhs: HabitSyncStatus, rhs: HabitSyncStatus) -> Bool {
+    switch (lhs, rhs) {
+    case (.synced, .synced),
+         (.syncing, .syncing):
+      return true
+    case (.pending(let lhsCount), .pending(let rhsCount)):
+      return lhsCount == rhsCount
+    case (.error(let lhsError), .error(let rhsError)):
+      return lhsError.localizedDescription == rhsError.localizedDescription
+    default:
+      return false
+    }
+  }
+}
+
 // MARK: - HabitRepository
 
 ///
@@ -166,6 +198,9 @@ class HabitRepository: ObservableObject {
 
     // Monitor authentication state changes
     setupUserChangeMonitoring()
+    
+    // Initialize sync status monitoring
+    initializeSyncStatusMonitoring()
 
     print("✅ HabitRepository: Initialization completed")
   }
@@ -185,6 +220,17 @@ class HabitRepository: ObservableObject {
 
   /// Published properties for UI
   @Published var shouldShowMigrationView = false
+  
+  // MARK: - Sync Status Properties
+  
+  /// Current sync status
+  @Published var syncStatus: HabitSyncStatus = .synced
+  
+  /// Number of unsynced changes (events, completions, awards)
+  @Published var unsyncedCount: Int = 0
+  
+  /// Timestamp of last successful sync
+  @Published var lastSyncDate: Date?
 
   /// Debug method to check if repository is working
   func debugRepositoryState() {
@@ -973,6 +1019,146 @@ class HabitRepository: ObservableObject {
         }
       }
       .store(in: &cancellables)
+  }
+  
+  // MARK: - Sync Status Monitoring
+  
+  /// Initialize sync status monitoring and load initial state
+  private func initializeSyncStatusMonitoring() {
+    // Load last sync date from UserDefaults
+    Task {
+      await loadLastSyncDate()
+    }
+    
+    // Update unsynced count periodically
+    Task {
+      await updateUnsyncedCount()
+    }
+    
+    // Set up periodic updates (every 5 seconds)
+    Timer.publish(every: 5.0, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] _ in
+        Task { @MainActor in
+          await self?.updateUnsyncedCount()
+        }
+      }
+      .store(in: &cancellables)
+  }
+  
+  /// Query SwiftData for unsynced events, completions, and awards count
+  func updateUnsyncedCount() async {
+    let userId = await CurrentUser().idOrGuest
+    
+    // Skip for guest users
+    guard !CurrentUser.isGuestId(userId) else {
+      unsyncedCount = 0
+      syncStatus = .synced
+      return
+    }
+    
+    let modelContext = SwiftDataContainer.shared.modelContext
+    
+    // Count unsynced events
+    let eventsDescriptor = ProgressEvent.unsyncedEvents()
+    let unsyncedEvents = (try? modelContext.fetch(eventsDescriptor)) ?? []
+    let eventsCount = unsyncedEvents.count
+    
+    // Count unsynced completions (completion records without synced flag are considered synced via events)
+    // For now, we'll focus on events. If needed, we can add completion sync tracking later
+    
+    // Count unsynced awards
+    // TODO: Add synced property to DailyAward SwiftData model if needed
+    // For now, awards are synced via SyncEngine.syncAwards() but don't have a synced flag
+    // We'll only count events for unsynced items until DailyAward has sync tracking
+    let awardsCount = 0 // Placeholder until DailyAward sync tracking is added
+    
+    let totalUnsynced = eventsCount + awardsCount
+    
+    // Update published properties
+    unsyncedCount = totalUnsynced
+    
+    // Update sync status based on count
+    if totalUnsynced > 0 {
+      if syncStatus != .syncing {
+        syncStatus = .pending(count: totalUnsynced)
+      }
+    } else if syncStatus != .syncing {
+      syncStatus = .synced
+    }
+  }
+  
+  /// Update sync status when sync starts
+  func syncStarted() {
+    syncStatus = .syncing
+  }
+  
+  /// Update sync status when sync completes successfully
+  func syncCompleted() {
+    syncStatus = .synced
+    lastSyncDate = Date()
+    saveLastSyncDate()
+    
+    // Update unsynced count after sync
+    Task {
+      await updateUnsyncedCount()
+    }
+  }
+  
+  /// Update sync status when sync fails
+  func syncFailed(error: Error) {
+    syncStatus = .error(error)
+    
+    // Update unsynced count to show what still needs syncing
+    Task {
+      await updateUnsyncedCount()
+    }
+  }
+  
+  /// Store last sync date in UserDefaults (per user)
+  private func saveLastSyncDate() {
+    guard let lastSyncDate = lastSyncDate else { return }
+    Task {
+      let userId = await CurrentUser().idOrGuest
+      guard !CurrentUser.isGuestId(userId) else { return }
+      
+      let key = "lastSyncDate_\(userId)"
+      userDefaults.set(lastSyncDate, forKey: key)
+    }
+  }
+  
+  /// Load last sync date from UserDefaults (per user)
+  private func loadLastSyncDate() async {
+    let userId = await CurrentUser().idOrGuest
+    guard !CurrentUser.isGuestId(userId) else {
+      lastSyncDate = nil
+      return
+    }
+    
+    let key = "lastSyncDate_\(userId)"
+    if let date = userDefaults.object(forKey: key) as? Date {
+      lastSyncDate = date
+    }
+  }
+  
+  /// Trigger manual sync
+  func triggerManualSync() async throws {
+    syncStarted()
+    
+    do {
+      let userId = await CurrentUser().idOrGuest
+      guard !CurrentUser.isGuestId(userId) else {
+        syncCompleted()
+        return
+      }
+      
+      // Trigger SyncEngine full sync cycle
+      try await SyncEngine.shared.performFullSyncCycle(userId: userId)
+      syncCompleted()
+    } catch {
+      syncFailed(error: error)
+      throw error
+    }
   }
 
   private func handleUserChange(_ authState: AuthenticationState) async {
