@@ -405,7 +405,17 @@ class HomeViewState: ObservableObject {
             if let record = record {
               print("     ✅ \(habit.name) - CompletionRecord exists (isCompleted=\(record.isCompleted), progress=\(record.progress))")
             } else {
-              print("     ❌ \(habit.name) - NO CompletionRecord found")
+              // ✅ IMPROVED: Check if ANY record exists (even if not completed) for better diagnostics
+              let anyRecord = allRecords.first(where: { 
+                $0.habitId == habit.id && 
+                $0.dateKey == dateKey &&
+                (userId.isEmpty || userId == "guest" ? ($0.userId.isEmpty || $0.userId == "guest" || $0.userId == userId) : $0.userId == userId)
+              })
+              if let anyRecord = anyRecord {
+                print("     ⚠️ \(habit.name) - CompletionRecord exists but NOT completed (isCompleted=\(anyRecord.isCompleted), progress=\(anyRecord.progress))")
+              } else {
+                print("     ❌ \(habit.name) - NO CompletionRecord found for dateKey=\(dateKey)")
+              }
             }
           }
           
