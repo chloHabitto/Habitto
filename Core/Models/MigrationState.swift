@@ -2,44 +2,6 @@ import Foundation
 import SwiftData
 import SwiftUI
 
-// MARK: - MigrationState
-
-/// Tracks migration status for each user to ensure idempotent migrations
-@Model
-final class MigrationState {
-  // MARK: Lifecycle
-
-  init(
-    userId: String,
-    migrationVersion: Int,
-    status: MigrationStatus = .pending)
-  {
-    self.id = UUID()
-    self.userId = userId
-    self.migrationVersion = migrationVersion
-    self.status = status
-    self.startedAt = Date()
-    self.completedAt = nil
-    self.errorMessage = nil
-    self.migratedRecordsCount = 0
-    self.createdAt = Date()
-    self.updatedAt = Date()
-  }
-
-  // MARK: Internal
-
-  @Attribute(.unique) var id: UUID
-  var userId: String
-  var migrationVersion: Int
-  var status: MigrationStatus
-  var startedAt: Date
-  var completedAt: Date?
-  var errorMessage: String?
-  var migratedRecordsCount: Int
-  var createdAt: Date
-  var updatedAt: Date
-}
-
 // MARK: - MigrationStatus
 
 enum MigrationStatus: String, Codable, CaseIterable {
@@ -80,6 +42,44 @@ enum MigrationStatus: String, Codable, CaseIterable {
       "Rolled Back"
     }
   }
+}
+
+// MARK: - MigrationState
+
+/// Tracks migration status for each user to ensure idempotent migrations
+@Model
+final class MigrationState {
+  // MARK: Lifecycle
+
+  init(
+    userId: String,
+    migrationVersion: Int,
+    status: MigrationStatus = .pending)
+  {
+    self.id = UUID()
+    self.userId = userId
+    self.migrationVersion = migrationVersion
+    self.status = status
+    self.startedAt = Date()
+    self.completedAt = nil
+    self.errorMessage = nil
+    self.migratedRecordsCount = 0
+    self.createdAt = Date()
+    self.updatedAt = Date()
+  }
+
+  // MARK: Internal
+
+  @Attribute(.unique) var id: UUID
+  var userId: String
+  var migrationVersion: Int
+  var status: MigrationStatus
+  var startedAt: Date
+  var completedAt: Date?
+  var errorMessage: String?
+  var migratedRecordsCount: Int
+  var createdAt: Date
+  var updatedAt: Date
 }
 
 // MARK: - MigrationVersions
