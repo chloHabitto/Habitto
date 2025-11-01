@@ -366,10 +366,16 @@ actor SyncEngine {
         
         // Step 1: Pull remote changes first (to get latest data from server)
         do {
-            let summary = try await pullRemoteChanges()
+            let summary = try await pullRemoteChanges(userId: userId)
             logger.info("✅ Pull remote changes completed: \(summary)")
+            print("✅ SyncEngine: Pull remote changes completed: \(summary)")
+            NSLog("✅ SyncEngine: Pull remote changes completed: %@", summary.description)
+            fflush(stdout)
         } catch {
             logger.error("❌ Failed to pull remote changes: \(error.localizedDescription)")
+            print("❌ SyncEngine: Failed to pull remote changes: \(error.localizedDescription)")
+            NSLog("❌ SyncEngine: Failed to pull remote changes: %@", error.localizedDescription)
+            fflush(stdout)
             // Continue with local sync even if pull fails
         }
         
@@ -728,24 +734,37 @@ actor SyncEngine {
     /// - DailyAwards updated since last sync
     /// - ProgressEvents from recent months (last 3 months)
     ///
+    /// - Parameter userId: The authenticated user ID (must not be guest). If nil, will fetch from CurrentUser.
     /// Returns: Summary of what was synced
-    func pullRemoteChanges() async throws -> PullSyncSummary {
-        let userId = await CurrentUser().idOrGuest
+    func pullRemoteChanges(userId: String? = nil) async throws -> PullSyncSummary {
+        // Use provided userId or fetch it (for backward compatibility)
+        let actualUserId: String
+        if let providedUserId = userId {
+            actualUserId = providedUserId
+        } else {
+            actualUserId = await CurrentUser().idOrGuest
+        }
         
         // Skip sync for guest users (no cloud sync)
-        guard !CurrentUser.isGuestId(userId) else {
+        guard !CurrentUser.isGuestId(actualUserId) else {
             logger.info("⏭️ Skipping pull for guest user")
+            print("⏭️ SyncEngine: Skipping pull for guest user (userId: '\(actualUserId)')")
+            NSLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '%@')", actualUserId)
+            fflush(stdout)
             return PullSyncSummary()
         }
         
-        logger.info("🔄 Starting pull remote changes for user: \(userId)")
+        logger.info("🔄 Starting pull remote changes for user: \(actualUserId)")
+        print("🔄 SyncEngine: Starting pull remote changes for user: \(actualUserId)")
+        NSLog("🔄 SyncEngine: Starting pull remote changes for user: %@", actualUserId)
+        fflush(stdout)
         
-        let lastSync = getLastSyncTimestamp(userId: userId) ?? Date.distantPast
+        let lastSync = getLastSyncTimestamp(userId: actualUserId) ?? Date.distantPast
         var summary = PullSyncSummary()
         
         // 1. Pull habits updated since last sync
         do {
-            let habitsPulled = try await pullHabits(userId: userId, since: lastSync)
+            let habitsPulled = try await pullHabits(userId: actualUserId, since: lastSync)
             summary.habitsPulled = habitsPulled
             logger.info("✅ Pulled \(habitsPulled) habits")
         } catch {
@@ -755,7 +774,7 @@ actor SyncEngine {
         
         // 2. Pull completions from recent months (last 3 months)
         do {
-            let completionsPulled = try await pullCompletions(userId: userId, recentMonths: 3)
+            let completionsPulled = try await pullCompletions(userId: actualUserId, recentMonths: 3)
             summary.completionsPulled = completionsPulled
             logger.info("✅ Pulled \(completionsPulled) completions")
         } catch {
@@ -765,7 +784,7 @@ actor SyncEngine {
         
         // 3. Pull awards updated since last sync
         do {
-            let awardsPulled = try await pullAwards(userId: userId, since: lastSync)
+            let awardsPulled = try await pullAwards(userId: actualUserId, since: lastSync)
             summary.awardsPulled = awardsPulled
             logger.info("✅ Pulled \(awardsPulled) awards")
         } catch {
@@ -775,7 +794,7 @@ actor SyncEngine {
         
         // 4. Pull events from recent months (last 3 months)
         do {
-            let eventsPulled = try await pullEvents(userId: userId, recentMonths: 3)
+            let eventsPulled = try await pullEvents(userId: actualUserId, recentMonths: 3)
             summary.eventsPulled = eventsPulled
             logger.info("✅ Pulled \(eventsPulled) events")
         } catch {
@@ -784,7 +803,7 @@ actor SyncEngine {
         }
         
         // 5. Update last sync timestamp after successful pull
-        setLastSyncTimestamp(userId: userId, timestamp: Date())
+        setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
         logger.info("✅ Pull remote changes completed: habits=\(summary.habitsPulled), completions=\(summary.completionsPulled), awards=\(summary.awardsPulled), events=\(summary.eventsPulled)")
         return summary
