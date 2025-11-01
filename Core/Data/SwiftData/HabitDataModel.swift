@@ -131,6 +131,76 @@ final class HabitData {
     target = habit.target
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
+    
+    // ✅ CRITICAL FIX: Sync CompletionRecords from habit.completionHistory
+    // This ensures CompletionRecords exist for all dates in completionHistory
+    // to prevent data loss when habits are reloaded
+    Task { @MainActor in
+      await syncCompletionRecordsFromHabit(habit)
+    }
+  }
+  
+  /// Sync CompletionRecords from habit's completionHistory to ensure all dates have records
+  @MainActor
+  private func syncCompletionRecordsFromHabit(_ habit: Habit) async {
+    let context = SwiftDataContainer.shared.modelContext
+    let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+    
+    // ✅ CRITICAL FIX: Parse dateString as "yyyy-MM-dd" format (dateKey format)
+    // completionHistory uses DateUtils.dateKey format, not ISO8601
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd"
+    dateFormatter.timeZone = TimeZone.current
+    
+    for (dateString, progress) in habit.completionHistory {
+      // Try parsing as dateKey format first (yyyy-MM-dd)
+      guard let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
+        print("⚠️ syncCompletionRecordsFromHabit: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
+        continue
+      }
+      
+      let dateKey = DateUtils.dateKey(for: date)
+      let isCompleted = progress >= goalAmount
+      
+      // Check if CompletionRecord already exists
+      let uniqueKey = "\(self.userId)#\(self.id.uuidString)#\(dateKey)"
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.userIdHabitIdDateKey == uniqueKey
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      
+      if let existingRecord = try? context.fetch(descriptor).first {
+        // Update existing record
+        existingRecord.isCompleted = isCompleted
+        existingRecord.progress = progress
+        existingRecord.date = date
+        existingRecord.dateKey = dateKey
+      } else {
+        // Create new record
+        let record = CompletionRecord(
+          userId: self.userId,
+          habitId: self.id,
+          date: date,
+          dateKey: dateKey,
+          isCompleted: isCompleted,
+          progress: progress
+        )
+        context.insert(record)
+        
+        // Link to HabitData if not already linked
+        if !self.completionHistory.contains(where: { $0.id == record.id }) {
+          self.completionHistory.append(record)
+        }
+      }
+    }
+    
+    // Save changes
+    do {
+      try context.save()
+      print("✅ syncCompletionRecordsFromHabit: Synced \(habit.completionHistory.count) CompletionRecords for habit '\(habit.name)'")
+    } catch {
+      print("❌ syncCompletionRecordsFromHabit: Failed to save CompletionRecords: \(error)")
+    }
   }
 
   /// Check if habit is completed for a specific date (source of truth)
@@ -168,12 +238,32 @@ final class HabitData {
 
   @MainActor
   func toHabit() -> Habit {
-    // ✅ FIX: Query CompletionRecords by habitId if relationship is empty (orphaned records)
+    // ✅ CRITICAL FIX: Always query CompletionRecords manually by habitId to ensure we get ALL records
+    // The relationship might be incomplete if records were created with different userIds or not properly linked
+    let habitId = self.id  // Capture for use in predicate
+    let userId = self.userId  // Capture for use in predicate
+    
+    // ✅ CRITICAL FIX: Always query ALL CompletionRecords for this habitId first
+    // Then filter by userId to handle mismatches
+    let allRecordsPredicate = #Predicate<CompletionRecord> { record in
+      record.habitId == habitId
+    }
+    let allRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: allRecordsPredicate)
+    
     let completionRecords: [CompletionRecord]
-    if completionHistory.isEmpty {
-      // Relationship is empty, query manually by habitId
-      let habitId = self.id  // Capture for use in predicate
-      let userId = self.userId  // Capture for use in predicate
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      
+      // Query ALL CompletionRecords for this habitId
+      let allRecords = try context.fetch(allRecordsDescriptor)
+      
+      if !allRecords.isEmpty {
+        let allUserIds = Array(Set(allRecords.map { $0.userId }))
+        print("🔍 toHabit() DEBUG: Found \(allRecords.count) total CompletionRecords for habit '\(self.name)' with userIds: \(allUserIds)")
+      }
+      
+      // Now filter by userId with fallback logic
+      var fetchedRecords: [CompletionRecord]
       
       // ✅ CRITICAL FIX: Handle empty string userId properly in predicate
       // SwiftData predicates need explicit handling for empty strings
@@ -191,47 +281,37 @@ final class HabitData {
       }
       
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
-      do {
-        let context = SwiftDataContainer.shared.modelContext
+      fetchedRecords = try context.fetch(descriptor)
+      
+      print("🔍 toHabit(): Found \(fetchedRecords.count) CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
+      
+      // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them with fallback logic
+      // This handles cases where CompletionRecord was saved with different userId due to timing issues
+      if fetchedRecords.isEmpty && !allRecords.isEmpty {
+        // Check if there's a userId mismatch - use records anyway but log warning
+        print("⚠️ toHabit() FALLBACK: No CompletionRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist with different userIds!")
+        print("   Using all records for habit '\(self.name)' (userId mismatch may need fixing)")
         
-        // ✅ DEBUG: Check ALL CompletionRecords for this habitId to see what userIds exist
-        let allRecordsPredicate = #Predicate<CompletionRecord> { record in
-          record.habitId == habitId
-        }
-        let allRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: allRecordsPredicate)
-        let allRecords = try context.fetch(allRecordsDescriptor)
-        if !allRecords.isEmpty {
-          let allUserIds = Array(Set(allRecords.map { $0.userId }))
-          print("🔍 toHabit() DEBUG: Found \(allRecords.count) total CompletionRecords for habit '\(self.name)' with userIds: \(allUserIds)")
-        }
-        
-        var fetchedRecords = try context.fetch(descriptor)
-        print("🔍 toHabit(): Found \(fetchedRecords.count) orphaned CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
-        
-        // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them anyway for guest/anonymous users
-        // This handles cases where CompletionRecord was saved with "" but HabitData has anonymous Firebase UID (or vice versa)
-        if fetchedRecords.isEmpty && !allRecords.isEmpty && (userId.isEmpty || userId == "guest") {
-          // For guest users, accept ALL CompletionRecords regardless of userId (they're all guest data)
-          print("⚠️ toHabit() FALLBACK: No CompletionRecords found with userId '\(userId)', but \(allRecords.count) exist. Using all records for guest user.")
-          fetchedRecords = allRecords
-        }
-        
-        if fetchedRecords.count > 0 {
-          let userIds = Array(Set(fetchedRecords.map { $0.userId }))
-          print("   CompletionRecord userIds found: \(userIds)")
-        } else if !allRecords.isEmpty {
-          print("⚠️ toHabit() WARNING: No CompletionRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist with different userIds!")
-        }
-        
-        completionRecords = fetchedRecords
-      } catch {
-        print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
-        completionRecords = []
+        // ✅ FIX: For authenticated users, still use records if they exist (likely userId mismatch)
+        // This prevents data loss when userId doesn't match exactly
+        fetchedRecords = allRecords
       }
-    } else {
-      // Use relationship if it's working
+      
+      if fetchedRecords.count > 0 {
+        let userIds = Array(Set(fetchedRecords.map { $0.userId }))
+        if userIds.count > 1 || (userIds.first != userId && !userId.isEmpty) {
+          print("⚠️ toHabit() WARNING: CompletionRecords have userId mismatch for habit '\(self.name)'")
+          print("   HabitData.userId: '\(userId.isEmpty ? "guest" : userId)'")
+          print("   CompletionRecord userIds: \(userIds)")
+        }
+      }
+      
+      completionRecords = fetchedRecords
+    } catch {
+      print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
+      // Fallback to relationship if query fails
       completionRecords = completionHistory
-      print("🔍 toHabit(): Using \(completionRecords.count) CompletionRecords from relationship for habit '\(self.name)'")
+      print("🔍 toHabit(): Falling back to relationship with \(completionRecords.count) CompletionRecords for habit '\(self.name)'")
     }
 
     // ✅ FILTER: Only include records for the current userId to avoid cross-user duplicates

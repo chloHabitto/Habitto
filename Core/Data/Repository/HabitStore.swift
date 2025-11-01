@@ -377,8 +377,14 @@ final actor HabitStore {
       
       let progressDelta = progress - oldProgress
       
+      // ✅ STEP 3: Enhanced logging for manual testing workflow
+      logger.info("📝 setProgress: habit='\(habit.name)', dateKey=\(dateKey)")
+      logger.info("   → oldProgress=\(oldProgress), newProgress=\(progress), delta=\(progressDelta)")
+      logger.info("   → goalAmount=\(goalAmount), eventType=\(eventType.rawValue)")
+      
       // Always create event if there's an actual change (event sourcing is default)
       if progressDelta != 0 {
+        logger.info("📝 setProgress: Creating ProgressEvent (delta != 0)")
         do {
           // Create event on MainActor (ProgressEventService is @MainActor)
           // Swift will handle the actor hop automatically
@@ -390,12 +396,18 @@ final actor HabitStore {
             progressDelta: progressDelta,
             userId: userId
           )
-          logger.info("✅ Created ProgressEvent: id=\(event.id.prefix(20))..., type=\(eventType.rawValue), delta=\(progressDelta)")
+          logger.info("✅ setProgress: Created ProgressEvent successfully")
+          logger.info("   → Event ID: \(event.id.prefix(20))...")
+          logger.info("   → Event Type: \(eventType.rawValue)")
+          logger.info("   → Progress Delta: \(progressDelta)")
+          logger.info("   → Operation ID: \(event.operationId.prefix(20))...")
         } catch {
           // Log error but don't throw - continue with existing flow for backward compatibility
-          logger.error("❌ Failed to create ProgressEvent: \(error.localizedDescription)")
-          logger.info("⚠️ Continuing with existing progress update flow (no event created)")
+          logger.error("❌ setProgress: Failed to create ProgressEvent: \(error.localizedDescription)")
+          logger.info("⚠️ setProgress: Continuing with existing progress update flow (no event created)")
         }
+      } else {
+        logger.info("📝 setProgress: Skipping event creation (delta == 0, no change)")
       }
       
       // ⚠️ DEPRECATED: Direct state update - kept for backward compatibility
@@ -444,8 +456,15 @@ final actor HabitStore {
       logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
 
       // ✅ PRIORITY 2: Check daily completion and award/revoke XP atomically
+      // ✅ STEP 3: Enhanced logging for manual testing workflow
+      logger.info("📝 setProgress: Calling checkDailyCompletionAndAwardXP for dateKey=\(dateKey)")
       // Reuse userId variable declared above
-      try await checkDailyCompletionAndAwardXP(dateKey: dateKey, userId: userId)
+      do {
+        try await checkDailyCompletionAndAwardXP(dateKey: dateKey, userId: userId)
+        logger.info("✅ setProgress: checkDailyCompletionAndAwardXP completed successfully")
+      } catch {
+        logger.error("❌ setProgress: Failed to check daily completion and award XP: \(error.localizedDescription)")
+      }
 
       // Celebration logic is handled in UI layer (HomeTabView)
     } else {
