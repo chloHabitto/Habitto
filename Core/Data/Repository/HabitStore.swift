@@ -1186,7 +1186,8 @@ final actor HabitStore {
     }
     
     // Check if award already exists (synchronous MainActor work)
-    let (awardExists, existingAwards, xpToReverse): (Bool, [DailyAward], Int) = await MainActor.run {
+    // ✅ FIX: Only return Sendable types (Bool, Int) to avoid concurrency warnings
+    let (awardExists, xpToReverse): (Bool, Int) = await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       
       let awardPredicate = #Predicate<DailyAward> { award in
@@ -1195,9 +1196,9 @@ final actor HabitStore {
       let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
       let awards = (try? modelContext.fetch(awardDescriptor)) ?? []
       let exists = !awards.isEmpty
-      let xpAmount = awards.first?.xpGranted ?? 50
+      let xpAmount = awards.first?.xpGranted ?? 50  // Extract value on MainActor
       
-      return (exists, awards, xpAmount)
+      return (exists, xpAmount)  // Return Sendable types only
     }
     
     logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
