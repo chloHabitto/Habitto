@@ -116,7 +116,8 @@ final class HabitData {
 
   // MARK: - Update Methods
 
-  func updateFromHabit(_ habit: Habit) {
+  @MainActor
+  func updateFromHabit(_ habit: Habit) async {
     name = habit.name
     habitDescription = habit.description
     icon = habit.icon
@@ -135,9 +136,8 @@ final class HabitData {
     // ✅ CRITICAL FIX: Sync CompletionRecords from habit.completionHistory
     // This ensures CompletionRecords exist for all dates in completionHistory
     // to prevent data loss when habits are reloaded
-    Task { @MainActor in
-      await syncCompletionRecordsFromHabit(habit)
-    }
+    // ✅ CRITICAL FIX: Await sync to prevent race conditions where habit is saved before CompletionRecords are synced
+    await syncCompletionRecordsFromHabit(habit)
   }
   
   /// Sync CompletionRecords from habit's completionHistory to ensure all dates have records

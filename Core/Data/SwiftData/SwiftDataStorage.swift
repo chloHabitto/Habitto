@@ -103,7 +103,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
         if let existingHabitData {
           // Update existing habit
-          existingHabitData.updateFromHabit(habit)
+          await existingHabitData.updateFromHabit(habit)
         } else {
           // Create new habit with user ID
           let habitData = await HabitData(
@@ -452,7 +452,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
     do {
       if let existingHabitData = try await loadHabitData(by: habit.id) {
         // Update existing habit
-        existingHabitData.updateFromHabit(habit)
+        await existingHabitData.updateFromHabit(habit)
 
         // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
         // Same issue as in saveHabits - completionHistory stores progress counts, not completion status

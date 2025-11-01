@@ -381,13 +381,21 @@ class HomeViewState: ObservableObject {
           print("   📅 \(scheduledHabits.count) habit(s) scheduled: \(scheduledHabits.map { $0.name }.joined(separator: ", "))")
           
           // ✅ CRITICAL: Use EXACT same logic as XP calculation (check CompletionRecords, not completionHistory)
+          // ✅ CRITICAL FIX: Use same userId fallback logic as toHabit() to handle userId mismatches
           // Fetch CompletionRecords from SwiftData for this date
           let descriptor = FetchDescriptor<CompletionRecord>()
           let allRecords = try modelContext.fetch(descriptor)
-          let completedRecords = allRecords.filter { 
-            $0.dateKey == dateKey && 
-            $0.userId == userId && 
-            $0.isCompleted 
+          let completedRecords = allRecords.filter { record in
+            guard record.dateKey == dateKey && record.isCompleted else { return false }
+            
+            // ✅ CRITICAL FIX: Handle userId mismatches (same logic as toHabit())
+            // For guest users, accept both "" and "guest" userIds (legacy compatibility)
+            if userId.isEmpty || userId == "guest" {
+              return record.userId.isEmpty || record.userId == "guest" || record.userId == userId
+            } else {
+              // For authenticated users, exact match required
+              return record.userId == userId
+            }
           }
           
           // ✅ Show detailed completion status
