@@ -112,13 +112,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
           print("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
           NSLog("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
           // Access SyncEngine.shared explicitly to ensure initialization
+          print("🔍 SyncEngine: About to access SyncEngine.shared...")
+          NSLog("🔍 SyncEngine: About to access SyncEngine.shared...")
+          fflush(stdout)
           let syncEngine = SyncEngine.shared
-          print("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync(userId: \(uid))...")
-          NSLog("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync(userId: %@)...", uid)
+          print("✅ SyncEngine: SyncEngine.shared accessed (initialization should have logged above)")
+          NSLog("✅ SyncEngine: SyncEngine.shared accessed (initialization should have logged above)")
+          fflush(stdout)
+          print("✅ SyncEngine: Calling startPeriodicSync(userId: \(uid))...")
+          NSLog("✅ SyncEngine: Calling startPeriodicSync(userId: %@)...", uid)
+          fflush(stdout)
           // Pass userId directly to avoid race condition with CurrentUser().idOrGuest
           await syncEngine.startPeriodicSync(userId: uid)
           print("✅ SyncEngine: startPeriodicSync() call completed")
           NSLog("✅ SyncEngine: startPeriodicSync() call completed")
+          fflush(stdout)
         } else {
           print("⏭️ SyncEngine: Skipping sync for guest user")
           NSLog("⏭️ SyncEngine: Skipping sync for guest user")
