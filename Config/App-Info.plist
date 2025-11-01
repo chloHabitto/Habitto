@@ -72,6 +72,13 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.habitto.app.backup</string>
+		<string>com.habitto.app.backup.refresh</string>
+		<string>com.habitto.app.event-compaction</string>
 	</array>
 </dict>
 </plist>
