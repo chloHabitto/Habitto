@@ -16,6 +16,9 @@ struct MoreTabView: View {
   
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
+  
+  // Sync status observation
+  @ObservedObject var habitRepository = HabitRepository.shared
 
   var body: some View {
     // 🔍 DEBUG: Log XP value on every body render
@@ -231,7 +234,8 @@ struct MoreTabView: View {
         items: [
           SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
             showingDataPrivacy = true
-          })
+          }),
+          syncStatusItem
         ])
 
       // Support/Legal Group
@@ -599,10 +603,28 @@ struct MoreTabView: View {
               .foregroundColor(iconColorForSetting(item.title))
           } else {
             // System icon
-            Image(systemName: iconForSetting(item.title))
-              .font(.system(size: 16, weight: .medium))
-              .foregroundColor(iconColorForSetting(item.title))
-              .frame(width: 24, height: 24)
+            Group {
+              if item.title == "Sync Status" {
+                let isSyncing = habitRepository.syncStatus == .syncing
+                // Animated sync icon when syncing
+                Image(systemName: iconForSetting(item.title))
+                  .font(.system(size: 16, weight: .medium))
+                  .foregroundColor(iconColorForSetting(item.title))
+                  .frame(width: 24, height: 24)
+                  .rotationEffect(.degrees(isSyncing ? 360 : 0))
+                  .animation(
+                    isSyncing
+                      ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
+                      : .default,
+                    value: isSyncing
+                  )
+              } else {
+                Image(systemName: iconForSetting(item.title))
+                  .font(.system(size: 16, weight: .medium))
+                  .foregroundColor(iconColorForSetting(item.title))
+                  .frame(width: 24, height: 24)
+              }
+            }
           }
 
           VStack(alignment: .leading, spacing: 2) {
@@ -618,6 +640,16 @@ struct MoreTabView: View {
               Text(value)
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(.text04)
+            }
+            
+            if let badgeCount = item.badgeCount, badgeCount > 0 {
+              Text("\(badgeCount)")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.red600)
+                .clipShape(Capsule())
             }
 
             if item.hasChevron {
@@ -667,6 +699,67 @@ struct MoreTabView: View {
     }
   }
 
+  // MARK: - Sync Status Item
+  
+  private var syncStatusItem: SettingItem {
+    let (title, value, badgeCount) = syncStatusDisplay
+    
+    return SettingItem(
+      title: title,
+      value: value,
+      hasChevron: false,
+      badgeCount: badgeCount,
+      action: {
+        // Show sync status details or trigger sync
+        if case .error = habitRepository.syncStatus {
+          // If there's an error, allow retry
+          Task {
+            do {
+              try await habitRepository.triggerManualSync()
+            } catch {
+              // Error will be shown via toast
+            }
+          }
+        }
+      }
+    )
+  }
+  
+  private var syncStatusDisplay: (title: String, value: String?, badgeCount: Int?) {
+    switch habitRepository.syncStatus {
+    case .synced:
+      let lastSyncText = formatLastSyncDate(habitRepository.lastSyncDate)
+      return ("Sync Status", lastSyncText, nil)
+    case .syncing:
+      return ("Sync Status", "Syncing...", nil)
+    case .pending(let count):
+      return ("Sync Status", "\(count) unsynced", count > 0 ? count : nil)
+    case .error(let error):
+      let errorMessage = error.localizedDescription
+      return ("Sync Status", "Error: \(errorMessage)", nil)
+    }
+  }
+  
+  private func formatLastSyncDate(_ date: Date?) -> String? {
+    guard let date = date else { return "Never" }
+    
+    let now = Date()
+    let timeInterval = now.timeIntervalSince(date)
+    
+    if timeInterval < 60 {
+      return "Just now"
+    } else if timeInterval < 3600 {
+      let minutes = Int(timeInterval / 60)
+      return "\(minutes) minute\(minutes == 1 ? "" : "s") ago"
+    } else if timeInterval < 86400 {
+      let hours = Int(timeInterval / 3600)
+      return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+    } else {
+      let days = Int(timeInterval / 86400)
+      return "\(days) day\(days == 1 ? "" : "s") ago"
+    }
+  }
+
   // MARK: - Helper Functions
 
   private func formatDate(_ date: Date) -> String {
@@ -689,6 +782,8 @@ struct MoreTabView: View {
       "Icon-Calendar_Filled"
     case "Notifications":
       "Icon-Bell_Filled"
+    case "Sync Status":
+      "arrow.clockwise"
     case "Preferences":
       "Icon-Setting_Filled"
     case "FAQ":
@@ -737,10 +832,11 @@ struct MoreTabView: View {
 struct SettingItem {
   // MARK: Lifecycle
 
-  init(title: String, value: String? = nil, hasChevron: Bool = false, action: (() -> Void)? = nil) {
+  init(title: String, value: String? = nil, hasChevron: Bool = false, badgeCount: Int? = nil, action: (() -> Void)? = nil) {
     self.title = title
     self.value = value
     self.hasChevron = hasChevron
+    self.badgeCount = badgeCount
     self.action = action
   }
 
@@ -749,6 +845,7 @@ struct SettingItem {
   let title: String
   let value: String?
   let hasChevron: Bool
+  let badgeCount: Int?
   let action: (() -> Void)?
 }
 
