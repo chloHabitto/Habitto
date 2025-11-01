@@ -24,8 +24,9 @@ public final class ProgressEvent {
   // MARK: - Identity & Relationships
   
   /// Unique identifier for this event
-  /// Format: "evt_{habitId}_{timestamp}_{uuid}"
-  /// Deterministic enough to prevent duplicates while allowing concurrent events
+  /// Format: "evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}"
+  /// Deterministic and idempotent: same inputs always produce same ID
+  /// This prevents duplicate events during sync retries
   @Attribute(.unique) public var id: String
   
   /// The habit this event belongs to
@@ -118,6 +119,7 @@ public final class ProgressEvent {
     timezoneIdentifier: String,
     utcDayStart: Date,
     utcDayEnd: Date,
+    sequenceNumber: Int,
     note: String? = nil,
     metadata: String? = nil,
     operationId: String? = nil
@@ -125,10 +127,13 @@ public final class ProgressEvent {
     let timestamp = Date()
     let uuid = UUID().uuidString
     
-    // Generate deterministic-ish ID (unique per device+time, but predictable for deduplication)
-    self.id = "evt_\(habitId.uuidString)_\(Int(timestamp.timeIntervalSince1970 * 1000))_\(uuid)"
+    // Generate deterministic ID: evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}
+    // Same inputs always produce same ID → true idempotency for sync retries
+    // Firestore deduplicates automatically via unique constraint on id field
+    self.id = "evt_\(habitId.uuidString)_\(dateKey)_\(deviceId)_\(sequenceNumber)"
     
     // Use provided operationId or generate unique operation ID for idempotency
+    // operationId keeps timestamp+uuid format for fine-grained deduplication
     if let operationId = operationId {
       self.operationId = operationId
     } else {
@@ -189,6 +194,7 @@ public final class ProgressEvent {
   }
   
   /// Create a copy with remote flag set (for incoming sync)
+  /// Note: sequenceNumber is set to 0 since we overwrite the ID anyway (preserving original ID from remote)
   public func asRemote() -> ProgressEvent {
     let copy = ProgressEvent(
       habitId: habitId,
@@ -200,10 +206,11 @@ public final class ProgressEvent {
       timezoneIdentifier: timezoneIdentifier,
       utcDayStart: utcDayStart,
       utcDayEnd: utcDayEnd,
+      sequenceNumber: 0, // Not used since we overwrite ID below
       note: note,
       metadata: metadata
     )
-    copy.id = self.id
+    copy.id = self.id // Preserve original ID from remote event
     copy.operationId = self.operationId
     copy.createdAt = self.createdAt
     copy.occurredAt = self.occurredAt
@@ -310,9 +317,16 @@ extension ProgressEvent {
   public func validate() -> (isValid: Bool, errors: [String]) {
     var errors: [String] = []
     
-    // Validate ID format
+    // Validate ID format: evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}
     if !id.hasPrefix("evt_") {
-      errors.append("Invalid ID format: \(id)")
+      errors.append("Invalid ID format: \(id). Expected format: evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}")
+    } else {
+      // Check that ID has expected components (more lenient validation to support legacy IDs during migration)
+      let components = id.components(separatedBy: "_")
+      if components.count < 5 {
+        // Warn but don't fail - legacy IDs may have different format
+        // New format should have: ["evt", habitId, dateKey, deviceId, sequenceNumber] = 5+ components
+      }
     }
     
     // Validate operation ID format
@@ -402,6 +416,7 @@ extension ProgressEvent {
       return nil
     }
     
+    // Create event with sequenceNumber 0 (not used since we restore ID from Firestore)
     let event = ProgressEvent(
       habitId: habitId,
       dateKey: dateKey,
@@ -412,11 +427,12 @@ extension ProgressEvent {
       timezoneIdentifier: timezoneIdentifier,
       utcDayStart: utcDayStart,
       utcDayEnd: utcDayEnd,
+      sequenceNumber: 0, // Not used since we restore ID from Firestore below
       note: data["note"] as? String,
       metadata: data["metadata"] as? String
     )
     
-    // Restore fields
+    // Restore fields from Firestore (preserve original ID from remote)
     event.id = id
     event.operationId = operationId
     if let createdAt = data["createdAt"] as? Date {

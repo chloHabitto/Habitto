@@ -81,6 +81,11 @@ class MigrateCompletionsToEvents {
         // Calculate UTC day boundaries for the date
         let utcDayBoundaries = calculateUTCDayBoundaries(for: record.date)
         
+        // Get deterministic sequence number for migration events
+        // Use sequence counter to ensure deterministic IDs even for migration events
+        // Note: Called from MainActor.run, so no await needed (EventSequenceCounter is @MainActor)
+        let sequenceNumber = EventSequenceCounter.shared.nextSequence(deviceId: deviceId, dateKey: record.dateKey)
+        
         // Create synthetic ProgressEvent
         // Use .bulkAdjust for migration events (as specified in ProgressEventType enum)
         let event = ProgressEvent(
@@ -93,6 +98,7 @@ class MigrateCompletionsToEvents {
           timezoneIdentifier: timezoneIdentifier,
           utcDayStart: utcDayBoundaries.start,
           utcDayEnd: utcDayBoundaries.end,
+          sequenceNumber: sequenceNumber,
           note: "Migrated from CompletionRecord",
           metadata: "{\"migration\":true,\"originalCreatedAt\":\"\(record.createdAt.iso8601)\"}",
           operationId: operationId
