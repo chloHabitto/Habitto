@@ -195,6 +195,10 @@ final class ProgressEventService {
         goalAmount: Int,
         legacyProgress: Int? = nil
     ) async -> (progress: Int, isCompleted: Bool) {
+        // ✅ STEP 3: Enhanced logging for manual testing workflow
+        logger.info("🔍 calculateProgressFromEvents: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
+        logger.info("   → goalAmount=\(goalAmount), legacyProgress=\(legacyProgress ?? 0)")
+        
         // Access ModelContext directly since we're @MainActor
         let modelContext = SwiftDataContainer.shared.modelContext
         do {
@@ -210,23 +214,36 @@ final class ProgressEventService {
             let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
             let events = (try? modelContext.fetch(descriptor)) ?? []
             
+            logger.info("🔍 calculateProgressFromEvents: Found \(events.count) events")
+            if !events.isEmpty {
+                logger.info("   → Event details:")
+                for (index, event) in events.enumerated().prefix(5) {
+                    logger.info("      [\(index)] type=\(event.eventType), delta=\(event.progressDelta), createdAt=\(event.createdAt)")
+                }
+                if events.count > 5 {
+                    logger.info("      ... and \(events.count - 5) more events")
+                }
+            }
+            
             if !events.isEmpty {
                 // Events exist - use event-sourced result (events are source of truth)
                 // Even if progress is 0, we trust events over legacy data
-                logger.info("✅ Using event-sourced progress: \(result.progress) (from \(events.count) events) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
+                logger.info("✅ calculateProgressFromEvents: Using event-sourced progress: \(result.progress) (from \(events.count) events)")
+                logger.info("   → Calculated progress=\(result.progress), isCompleted=\(result.isCompleted)")
                 return result
             }
             
             // No events exist, fall back to legacy completionHistory
             // This handles habits that haven't been migrated yet or don't have events
             let progress = legacyProgress ?? 0
-            logger.info("⚠️ No events found, falling back to legacy progress: \(progress) for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
+            logger.info("⚠️ calculateProgressFromEvents: No events found, falling back to legacy progress: \(progress)")
             return (progress, progress >= goalAmount)
             
         } catch {
-            logger.error("❌ Failed to calculate progress from events: \(error.localizedDescription)")
+            logger.error("❌ calculateProgressFromEvents: Failed to calculate progress from events: \(error.localizedDescription)")
             // Fall back to legacy on error
             let progress = legacyProgress ?? 0
+            logger.info("⚠️ calculateProgressFromEvents: Using fallback progress: \(progress)")
             return (progress, progress >= goalAmount)
         }
     }
