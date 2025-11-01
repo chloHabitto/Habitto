@@ -280,11 +280,20 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // This ensures we use the correct user ID even if called during app initialization
     var currentUserId = await getCurrentUserId()
     
-    // If no user ID found, wait a bit for Firebase Auth to initialize
+    // ✅ IMPROVED: More aggressive retry logic with exponential backoff
+    // Retry up to 3 times with increasing delays
     if currentUserId == nil {
       logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
-      try? await Task.sleep(nanoseconds: 500_000_000) // Wait 0.5 seconds
-      currentUserId = await getCurrentUserId()
+      for attempt in 1...3 {
+        let delay = UInt64(500_000_000 * UInt64(attempt)) // 0.5s, 1s, 1.5s
+        try? await Task.sleep(nanoseconds: delay)
+        currentUserId = await getCurrentUserId()
+        if currentUserId != nil {
+          logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
+          break
+        }
+        logger.info("⚠️ Retry \(attempt)/3: getCurrentUserId still nil")
+      }
     }
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
@@ -322,8 +331,37 @@ final class SwiftDataStorage: HabitStorageProtocol {
         }
       }
 
-      let habitDataArray = try container.modelContext.fetch(descriptor)
-      logger.info("🔍 DEBUG: Found \(habitDataArray.count) habits matching query")
+      var habitDataArray = try container.modelContext.fetch(descriptor)
+      logger.info("🔍 DEBUG: Found \(habitDataArray.count) habits matching query for userId: '\(currentUserId ?? "guest")'")
+      
+      // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
+      // This handles migration scenarios where habits were saved with empty userId
+      if let userId = currentUserId, habitDataArray.isEmpty {
+        logger.info("⚠️ No habits found for authenticated user '\(userId)', checking for guest habits (migration fallback)...")
+        let guestDescriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate<HabitData> { habitData in
+            habitData.userId == ""
+          },
+          sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        let guestHabits = try container.modelContext.fetch(guestDescriptor)
+        if !guestHabits.isEmpty {
+          logger.info("🔍 Found \(guestHabits.count) guest habits - migrating to userId '\(userId)'")
+          // Update these habits to have the correct userId
+          for habitData in guestHabits {
+            habitData.userId = userId
+            // Also update CompletionRecords (including unique constraint)
+            for record in habitData.completionHistory {
+              record.userId = userId
+              // Update the unique constraint key to match new userId
+              record.userIdHabitIdDateKey = "\(userId)#\(record.habitId.uuidString)#\(record.dateKey)"
+            }
+          }
+          try container.modelContext.save()
+          logger.info("✅ Migrated \(guestHabits.count) habits and their CompletionRecords to userId '\(userId)'")
+          habitDataArray = guestHabits
+        }
+      }
+      
       let habits = habitDataArray.map { $0.toHabit() }
 
       let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
