@@ -84,7 +84,13 @@ final class ProgressEventService {
         let utcDayStart = dayStart.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayStart)))
         let utcDayEnd = dayEnd.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayEnd)))
         
-        // Create event
+        // Get deterministic sequence number for this device+dateKey combination
+        // This ensures same inputs always produce same ID (true idempotency)
+        // Note: EventSequenceCounter is @MainActor and nextSequence is synchronous, so no await needed
+        let sequenceNumber = EventSequenceCounter.shared.nextSequence(deviceId: self.deviceId, dateKey: dateKey)
+        logger.debug("Generated sequence number: \(sequenceNumber) for deviceId=\(self.deviceId.prefix(20))..., dateKey=\(dateKey)")
+        
+        // Create event with deterministic ID: evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}
         let event = ProgressEvent(
             habitId: habitId,
             dateKey: dateKey,
@@ -95,6 +101,7 @@ final class ProgressEventService {
             timezoneIdentifier: timezoneIdentifier,
             utcDayStart: utcDayStart,
             utcDayEnd: utcDayEnd,
+            sequenceNumber: sequenceNumber,
             note: note,
             metadata: metadata
         )

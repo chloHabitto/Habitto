@@ -316,6 +316,10 @@ final class MigrationRunner {
         let utcDayStart = dayStart.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayStart)))
         let utcDayEnd = dayEnd.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayEnd)))
         
+        // Get deterministic sequence number for migration events
+        // MigrationRunner is @MainActor, so can call EventSequenceCounter directly
+        let sequenceNumber = EventSequenceCounter.shared.nextSequence(deviceId: deviceId, dateKey: dateKeyString)
+        
         // Create synthetic ProgressEvent for migration
         // Use .bulkAdjust event type to indicate this is a migration event
         let event = ProgressEvent(
@@ -328,6 +332,7 @@ final class MigrationRunner {
           timezoneIdentifier: timezone.identifier,
           utcDayStart: utcDayStart,
           utcDayEnd: utcDayEnd,
+          sequenceNumber: sequenceNumber,
           note: "Migrated from completionHistory",
           metadata: "{\"migration\": true, \"source\": \"completionHistory\"}",
           operationId: operationId // Use deterministic migration ID for idempotency
