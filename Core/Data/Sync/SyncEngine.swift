@@ -23,6 +23,16 @@ actor SyncEngine {
         let allHabitsCompleted: Bool
         let createdAt: Date
     }
+    
+    /// Sendable completion data for syncing across actor boundaries
+    struct CompletionData: Sendable {
+        let completionId: String // Deterministic: "comp_{habitId}_{dateKey}"
+        let habitId: String
+        let dateKey: String
+        let isCompleted: Bool
+        let progress: Int
+        let createdAt: Date
+    }
     // MARK: - Singleton
     
     static let shared = SyncEngine()
@@ -439,6 +449,146 @@ actor SyncEngine {
         }
         
         return (syncedCount, alreadySyncedCount)
+    }
+    
+    // MARK: - Completion Sync
+    
+    /// Sync all CompletionRecord records to Firestore
+    ///
+    /// Completions are written to: `/users/{userId}/completions/{yearMonth}/{completionId}`
+    /// Uses deterministic ID format: "comp_{habitId}_{dateKey}" for idempotency
+    /// Checks for existing completions before creating (idempotency)
+    func syncCompletions() async throws {
+        // Prevent concurrent syncs
+        guard !isSyncing else {
+            logger.info("⏭️ Sync already in progress, skipping")
+            return
+        }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        let userId = await CurrentUser().idOrGuest
+        
+        // Skip sync for guest users (no cloud sync)
+        guard !CurrentUser.isGuestId(userId) else {
+            logger.info("⏭️ Skipping sync for guest user")
+            return
+        }
+        
+        logger.info("🔄 Starting completion sync for user: \(userId)")
+        
+        // Fetch all completion records for this user (ModelContext access must be on MainActor)
+        // Extract Sendable data to avoid passing CompletionRecord across concurrency boundaries
+        let completionDataArray: [CompletionData] = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId
+            }
+            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            let completions = (try? modelContext.fetch(descriptor)) ?? []
+            return completions.map { completion in
+                // Generate deterministic ID: "comp_{habitId}_{dateKey}"
+                let habitIdString = completion.habitId.uuidString
+                let completionId = "comp_\(habitIdString)_\(completion.dateKey)"
+                return CompletionData(
+                    completionId: completionId,
+                    habitId: habitIdString,
+                    dateKey: completion.dateKey,
+                    isCompleted: completion.isCompleted,
+                    progress: completion.progress,
+                    createdAt: completion.createdAt
+                )
+            }
+        }
+        
+        guard !completionDataArray.isEmpty else {
+            logger.info("✅ No completions to sync")
+            return
+        }
+        
+        logger.info("📤 Found \(completionDataArray.count) completions to sync")
+        
+        var syncedCount = 0
+        var failedCount = 0
+        var alreadySyncedCount = 0
+        
+        // Sync completions in batches
+        let batchSize = 50
+        for batchStart in stride(from: 0, to: completionDataArray.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, completionDataArray.count)
+            let batch = Array(completionDataArray[batchStart..<batchEnd])
+            
+            do {
+                let result = try await syncCompletionsBatch(completions: batch, userId: userId)
+                syncedCount += result.synced
+                alreadySyncedCount += result.alreadySynced
+                logger.info("✅ Synced batch: \(result.synced) completions (\(syncedCount + alreadySyncedCount)/\(completionDataArray.count))")
+            } catch {
+                failedCount += batch.count
+                logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
+                // Continue with next batch even if this one failed
+            }
+        }
+        
+        logger.info("✅ Completion sync completed: \(syncedCount) synced, \(alreadySyncedCount) already synced, \(failedCount) failed")
+    }
+    
+    /// Sync a batch of completions to Firestore
+    private func syncCompletionsBatch(
+        completions: [CompletionData],
+        userId: String
+    ) async throws -> (synced: Int, alreadySynced: Int) {
+        var syncedCount = 0
+        var alreadySyncedCount = 0
+        
+        // Use Firestore batch write for efficiency
+        let batch = firestore.batch()
+        
+        for completion in completions {
+            // Generate yearMonth from dateKey (format: "yyyy-MM-dd" -> "yyyy-MM")
+            let yearMonth = String(completion.dateKey.prefix(7)) // "2025-10-31" -> "2025-10"
+            
+            // Firestore path: /users/{userId}/completions/{yearMonth}/{completionId}
+            let completionRef = firestore.collection("users")
+                .document(userId)
+                .collection("completions")
+                .document(yearMonth)
+                .collection("completions")
+                .document(completion.completionId)
+            
+            // Check if completion already exists (idempotency)
+            let existingDoc = try? await completionRef.getDocument()
+            if existingDoc?.exists == true {
+                // Completion already synced, skip
+                alreadySyncedCount += 1
+                continue
+            }
+            
+            // Create completion document
+            let completionData: [String: Any] = [
+                "userId": userId,
+                "habitId": completion.habitId,
+                "dateKey": completion.dateKey,
+                "isCompleted": completion.isCompleted,
+                "progress": completion.progress,
+                "createdAt": Timestamp(date: completion.createdAt),
+                "completionId": completion.completionId
+            ]
+            
+            batch.setData(completionData, forDocument: completionRef, merge: true)
+            syncedCount += 1
+        }
+        
+        // Only commit if there are completions to sync
+        guard syncedCount > 0 else {
+            return (synced: 0, alreadySynced: alreadySyncedCount)
+        }
+        
+        // Commit batch
+        try await batch.commit()
+        
+        return (synced: syncedCount, alreadySynced: alreadySyncedCount)
     }
 }
 
