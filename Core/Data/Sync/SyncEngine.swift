@@ -56,6 +56,8 @@ actor SyncEngine {
         self.habitStore = HabitStore.shared
         logger.info("SyncEngine initialized")
         print("🔄 SyncEngine: Initialized")
+        NSLog("🔄 SyncEngine: Initialized (NSLog)")
+        fflush(stdout)
     }
     
     // MARK: - Event Sync
@@ -273,6 +275,8 @@ actor SyncEngine {
     func startPeriodicSync(userId: String? = nil) {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         print("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
+        NSLog("🔄 SyncEngine: Starting periodic sync (every %.0fs)", self.syncInterval)
+        fflush(stdout)
         
         syncTask?.cancel()
         
@@ -282,28 +286,41 @@ actor SyncEngine {
             if let providedUserId = userId {
                 initialUserId = providedUserId
                 print("🔄 SyncEngine: Using provided userId: \(providedUserId)")
+                NSLog("🔄 SyncEngine: Using provided userId: %@", providedUserId)
             } else {
                 initialUserId = await CurrentUser().idOrGuest
                 print("🔄 SyncEngine: Fetched userId: '\(initialUserId)' (empty=\(initialUserId.isEmpty))")
+                NSLog("🔄 SyncEngine: Fetched userId: '%@' (empty=%@)", initialUserId, initialUserId.isEmpty ? "YES" : "NO")
             }
+            fflush(stdout)
             
             // Skip sync for guest users
             guard !CurrentUser.isGuestId(initialUserId) else {
                 logger.info("⏭️ Skipping periodic sync for guest user")
                 print("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
+                NSLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '%@')", initialUserId)
+                fflush(stdout)
                 return
             }
             
             print("🔄 SyncEngine: Starting periodic sync for authenticated user: \(initialUserId)")
+            NSLog("🔄 SyncEngine: Starting periodic sync for authenticated user: %@", initialUserId)
+            fflush(stdout)
             
             // Perform immediate sync on start (don't wait for first interval)
             do {
                 print("🔄 SyncEngine: Performing initial sync cycle...")
+                NSLog("🔄 SyncEngine: Performing initial sync cycle...")
+                fflush(stdout)
                 try await self.performFullSyncCycle(userId: initialUserId)
                 print("✅ SyncEngine: Initial sync cycle completed")
+                NSLog("✅ SyncEngine: Initial sync cycle completed")
+                fflush(stdout)
             } catch {
                 self.logger.error("❌ Initial sync failed: \(error.localizedDescription)")
                 print("❌ SyncEngine: Initial sync failed: \(error.localizedDescription)")
+                NSLog("❌ SyncEngine: Initial sync failed: %@", error.localizedDescription)
+                fflush(stdout)
             }
             
             // Then continue with periodic syncs

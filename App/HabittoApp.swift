@@ -28,16 +28,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
-    // Use both print and NSLog to ensure visibility
+    // Use both print and NSLog to ensure visibility - SYNCHRONOUSLY at the very start
     print("🚀 AppDelegate: didFinishLaunchingWithOptions called")
     NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")
+    fflush(stdout) // Force flush to ensure log appears immediately
+    
     // ✅ FIX: Firebase is already configured in HabittoApp.init()
     // Just verify it's configured and skip if already done
     if FirebaseApp.app() == nil {
+      print("🔥 AppDelegate: Configuring Firebase...")
       FirebaseApp.configure()
       
       // Configure Firestore settings
       FirebaseConfiguration.configureFirestore()
+      print("✅ AppDelegate: Firebase configured")
+    } else {
+      print("✅ AppDelegate: Firebase already configured")
     }
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
@@ -56,49 +62,79 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     
     // Configure other Firebase services asynchronously
     print("🚀 AppDelegate: Creating Task.detached for SyncEngine initialization...")
-    Task.detached { @MainActor in
-      print("🚀 AppDelegate: Task.detached block started executing...")
+    NSLog("🚀 AppDelegate: Creating Task.detached for SyncEngine initialization...")
+    fflush(stdout) // Force flush before async task
+    
+    // Use Task instead of Task.detached to ensure it runs on MainActor immediately
+    Task { @MainActor in
+      print("🚀 AppDelegate: Task block started executing...")
+      NSLog("🚀 AppDelegate: Task block started executing...")
+      fflush(stdout)
+      
       // ✅ FIX: Firestore already configured synchronously above
       // Only configure Auth here
       print("🚀 AppDelegate: Calling FirebaseConfiguration.configureAuth()...")
+      NSLog("🚀 AppDelegate: Calling FirebaseConfiguration.configureAuth()...")
       FirebaseConfiguration.configureAuth()
-      print("🚀 AppDelegate: FirebaseConfiguration.configureAuth() completed")
+      print("✅ AppDelegate: FirebaseConfiguration.configureAuth() completed")
+      NSLog("✅ AppDelegate: FirebaseConfiguration.configureAuth() completed")
       
       // Ensure user is authenticated (anonymous if not signed in)
       do {
         print("🔍 SyncEngine: Starting authentication check...")
+        NSLog("🔍 SyncEngine: Starting authentication check...")
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         print("✅ SyncEngine: User authenticated - uid: \(uid)")
+        NSLog("✅ SyncEngine: User authenticated - uid: %@", uid)
         
         // CRITICAL: Migrate guest data to authenticated user first
         do {
           try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(to: uid)
         } catch {
           print("⚠️ Guest data migration failed: \(error.localizedDescription)")
+          NSLog("⚠️ Guest data migration failed: %@", error.localizedDescription)
         }
         
         // Initialize backfill job if Firestore sync is enabled
         if FeatureFlags.enableFirestoreSync {
+          print("🔄 SyncEngine: Running backfill job...")
+          NSLog("🔄 SyncEngine: Running backfill job...")
           await BackfillJob.shared.runIfEnabled()
+          print("✅ SyncEngine: Backfill job completed")
+          NSLog("✅ SyncEngine: Backfill job completed")
         }
         
         // ✅ CRITICAL: Start periodic sync for authenticated users (not guests)
         // This ensures data syncs on app launch, not just when app becomes active
         print("🔍 SyncEngine: Checking if user is guest - uid: \(uid), isGuest: \(CurrentUser.isGuestId(uid))")
+        NSLog("🔍 SyncEngine: Checking if user is guest - uid: %@, isGuest: %@", uid, CurrentUser.isGuestId(uid) ? "YES" : "NO")
         if !CurrentUser.isGuestId(uid) {
           print("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
+          NSLog("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
           // Access SyncEngine.shared explicitly to ensure initialization
           let syncEngine = SyncEngine.shared
           print("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync(userId: \(uid))...")
+          NSLog("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync(userId: %@)...", uid)
           // Pass userId directly to avoid race condition with CurrentUser().idOrGuest
           await syncEngine.startPeriodicSync(userId: uid)
           print("✅ SyncEngine: startPeriodicSync() call completed")
+          NSLog("✅ SyncEngine: startPeriodicSync() call completed")
         } else {
           print("⏭️ SyncEngine: Skipping sync for guest user")
+          NSLog("⏭️ SyncEngine: Skipping sync for guest user")
         }
       } catch {
         print("❌ SyncEngine: Failed to authenticate user: \(error.localizedDescription)")
+        NSLog("❌ SyncEngine: Failed to authenticate user: %@", error.localizedDescription)
         print("❌ SyncEngine: Error details: \(error)")
+        NSLog("❌ SyncEngine: Error details: %@", String(describing: error))
+        // Log full error stack trace for debugging
+        if let nsError = error as NSError? {
+          print("❌ SyncEngine: Error domain: \(nsError.domain), code: \(nsError.code)")
+          NSLog("❌ SyncEngine: Error domain: %@, code: %d", nsError.domain, nsError.code)
+          print("❌ SyncEngine: Error userInfo: \(nsError.userInfo)")
+          NSLog("❌ SyncEngine: Error userInfo: %@", String(describing: nsError.userInfo))
+        }
       }
     }
     
