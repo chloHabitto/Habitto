@@ -383,7 +383,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           
           // Try one more time to get the authenticated user ID directly from Firebase Auth
           // This handles the case where Auth.auth().currentUser is available but getCurrentUserId() returned nil
-          let firebaseUserId = await MainActor.run {
+          let firebaseUserId: String? = await MainActor.run {
             guard let firebaseUser = Auth.auth().currentUser, !firebaseUser.isAnonymous else {
               return nil
             }
@@ -398,7 +398,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 habitData.userId == firebaseUserId
               },
               sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-            let authHabits = try container.modelContext.fetch(authDescriptor)
+            let authHabits: [HabitData] = try container.modelContext.fetch(authDescriptor)
             if !authHabits.isEmpty {
               logger.info("✅ Found \(authHabits.count) habits for authenticated user '\(firebaseUserId)' - using them")
               habitDataArray = authHabits
