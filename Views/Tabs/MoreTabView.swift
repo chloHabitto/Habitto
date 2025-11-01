@@ -127,6 +127,9 @@ struct MoreTabView: View {
           HabitInvestigationView()
         }
       }
+      .sheet(isPresented: $showingMigrationStatus) {
+        MigrationStatusDebugView()
+      }
       #endif
       .alert(isPresented: $showingSignOutAlert) {
         Alert(
@@ -169,6 +172,7 @@ struct MoreTabView: View {
   @State private var showingTermsConditionsView = false
   @State private var showingAboutUsView = false
   @State private var showingSignOutAlert = false
+  @State private var showingMigrationStatus = false
   
   // ✅ DEBUG: Habit Investigation
   #if DEBUG
@@ -353,6 +357,14 @@ struct MoreTabView: View {
             Task { @MainActor in
               try? await MigrationTestHelper.shared.printMigrationStatus()
             }
+          }
+        )
+        
+        debugButton(
+          title: "📋 Migration Status UI",
+          subtitle: "Visual migration status dashboard",
+          action: {
+            showingMigrationStatus = true
           }
         )
         
