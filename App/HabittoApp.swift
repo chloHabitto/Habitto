@@ -127,6 +127,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
           print("✅ SyncEngine: startPeriodicSync() call completed")
           NSLog("✅ SyncEngine: startPeriodicSync() call completed")
           fflush(stdout)
+          
+          // ✅ PRIORITY 1: Schedule event compaction after authentication
+          print("📅 EventCompactor: Initializing for authenticated user: \(uid)")
+          NSLog("📅 EventCompactor: Initializing for authenticated user: %@", uid)
+          let compactor = EventCompactor(userId: uid)
+          await compactor.scheduleNextCompaction()
+          print("✅ EventCompactor: Scheduling completed")
+          NSLog("✅ EventCompactor: Scheduling completed")
         } else {
           print("⏭️ SyncEngine: Skipping sync for guest user")
           NSLog("⏭️ SyncEngine: Skipping sync for guest user")
