@@ -276,8 +276,30 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func loadHabits() async throws -> [Habit] {
-    let currentUserId = await getCurrentUserId()
+    // ✅ CRITICAL FIX: Wait for Firebase Auth to be ready before getting user ID
+    // This ensures we use the correct user ID even if called during app initialization
+    var currentUserId = await getCurrentUserId()
+    
+    // If no user ID found, wait a bit for Firebase Auth to initialize
+    if currentUserId == nil {
+      logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
+      try? await Task.sleep(nanoseconds: 500_000_000) // Wait 0.5 seconds
+      currentUserId = await getCurrentUserId()
+    }
+    
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
+    
+    // 🔍 DEBUG: Log what's actually in the database
+    do {
+      let allHabitsDescriptor = FetchDescriptor<HabitData>()
+      let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
+      logger.info("🔍 DEBUG: Total habits in database: \(allHabits.count)")
+      for habit in allHabits.prefix(5) {
+        logger.info("🔍 DEBUG: Habit '\(habit.name)' has userId: '\(habit.userId)' (empty=\(habit.userId.isEmpty))")
+      }
+    } catch {
+      logger.warning("⚠️ Failed to fetch all habits for debugging: \(error.localizedDescription)")
+    }
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -288,10 +310,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
       // Filter by current user ID if authenticated, otherwise show guest data
       if let userId = currentUserId {
+        logger.info("🔍 DEBUG: Querying for habits with userId: '\(userId)'")
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == userId
         }
       } else {
+        logger.info("🔍 DEBUG: Querying for guest habits (userId == '')")
         // For guest users, show data with empty userId
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == ""
@@ -299,6 +323,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
 
       let habitDataArray = try container.modelContext.fetch(descriptor)
+      logger.info("🔍 DEBUG: Found \(habitDataArray.count) habits matching query")
       let habits = habitDataArray.map { $0.toHabit() }
 
       let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
@@ -592,19 +617,24 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
   /// Helper method to get current user ID for data isolation
   /// Returns nil for guest users (empty string when used with ?? "")
+  /// ✅ FIX: Use Auth.auth().currentUser directly to avoid timing issues with AuthenticationManager
   private func getCurrentUserId() async -> String? {
     await MainActor.run {
-      guard let user = AuthenticationManager.shared.currentUser else {
+      // Use Firebase Auth directly - it's synchronous and doesn't depend on AuthenticationManager initialization
+      guard let firebaseUser = Auth.auth().currentUser else {
+        logger.info("🔍 getCurrentUserId: No Firebase user found, returning nil (guest)")
         return nil // Guest user - will use "" when used with ?? ""
       }
       
       // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
       // Anonymous users should use "" as userId for consistency with guest mode
-      if let firebaseUser = user as? User, firebaseUser.isAnonymous {
+      if firebaseUser.isAnonymous {
+        logger.info("🔍 getCurrentUserId: Anonymous user detected, returning nil (guest)")
         return nil // Anonymous = guest, use "" as userId
       }
       
-      return user.uid // Authenticated non-anonymous user
+      logger.info("🔍 getCurrentUserId: Authenticated user found: \(firebaseUser.uid)")
+      return firebaseUser.uid // Authenticated non-anonymous user
     }
   }
 
