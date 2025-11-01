@@ -1,6 +1,7 @@
 import Foundation
 import FirebaseFirestore
 import SwiftData
+import SwiftUI
 import OSLog
 
 // MARK: - SyncEngine
@@ -237,6 +238,7 @@ actor SyncEngine {
     // MARK: - Background Sync Scheduler
     
     /// Schedule a sync if one is not already scheduled
+    /// Uses full sync cycle to ensure all data types are synced
     func scheduleSyncIfNeeded() {
         // Cancel existing task if any
         syncTask?.cancel()
@@ -250,7 +252,8 @@ actor SyncEngine {
             guard !Task.isCancelled else { return }
             
             do {
-                try await self.syncEvents()
+                // Perform full sync cycle (includes all sync operations)
+                try await self.performFullSyncCycle()
             } catch {
                 self.logger.error("❌ Background sync failed: \(error.localizedDescription)")
             }
@@ -258,6 +261,7 @@ actor SyncEngine {
     }
     
     /// Start periodic background sync (every 5 minutes)
+    /// Orchestrates all sync operations: pull remote changes, then sync local changes
     func startPeriodicSync() {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         
@@ -266,7 +270,8 @@ actor SyncEngine {
         syncTask = Task {
             while !Task.isCancelled {
                 do {
-                    try await self.syncEvents()
+                    // Perform full sync cycle
+                    try await self.performFullSyncCycle()
                 } catch {
                     self.logger.error("❌ Periodic sync failed: \(error.localizedDescription)")
                 }
@@ -275,6 +280,50 @@ actor SyncEngine {
                 try? await Task.sleep(nanoseconds: UInt64(self.syncInterval * 1_000_000_000))
             }
         }
+    }
+    
+    /// Perform a full sync cycle: pull remote changes, then sync local changes
+    /// This orchestrates all sync operations in the correct order
+    func performFullSyncCycle() async throws {
+        let userId = await CurrentUser().idOrGuest
+        
+        guard !CurrentUser.isGuestId(userId) else {
+            logger.info("⏭️ Skipping full sync cycle for guest user")
+            return
+        }
+        
+        logger.info("🔄 Starting full sync cycle for user: \(userId)")
+        
+        // Step 1: Pull remote changes first (to get latest data from server)
+        do {
+            let summary = try await pullRemoteChanges()
+            logger.info("✅ Pull remote changes completed: \(summary)")
+        } catch {
+            logger.error("❌ Failed to pull remote changes: \(error.localizedDescription)")
+            // Continue with local sync even if pull fails
+        }
+        
+        // Step 2: Sync local changes to server (in order of dependency)
+        // Events first (they affect completions), then completions, then awards
+        do {
+            try await syncEvents()
+        } catch {
+            logger.error("❌ Failed to sync events: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await syncCompletions()
+        } catch {
+            logger.error("❌ Failed to sync completions: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await syncAwards()
+        } catch {
+            logger.error("❌ Failed to sync awards: \(error.localizedDescription)")
+        }
+        
+        logger.info("✅ Full sync cycle completed")
     }
     
     /// Stop periodic sync
@@ -589,6 +638,475 @@ actor SyncEngine {
         try await batch.commit()
         
         return (synced: syncedCount, alreadySynced: alreadySyncedCount)
+    }
+    
+    // MARK: - Pull Remote Changes
+    
+    /// Pull remote changes from Firestore and merge into local SwiftData
+    ///
+    /// Fetches:
+    /// - Habits updated since last sync
+    /// - CompletionRecords from recent months (last 3 months)
+    /// - DailyAwards updated since last sync
+    /// - ProgressEvents from recent months (last 3 months)
+    ///
+    /// Returns: Summary of what was synced
+    func pullRemoteChanges() async throws -> PullSyncSummary {
+        let userId = await CurrentUser().idOrGuest
+        
+        // Skip sync for guest users (no cloud sync)
+        guard !CurrentUser.isGuestId(userId) else {
+            logger.info("⏭️ Skipping pull for guest user")
+            return PullSyncSummary()
+        }
+        
+        logger.info("🔄 Starting pull remote changes for user: \(userId)")
+        
+        let lastSync = getLastSyncTimestamp(userId: userId) ?? Date.distantPast
+        var summary = PullSyncSummary()
+        
+        // 1. Pull habits updated since last sync
+        do {
+            let habitsPulled = try await pullHabits(userId: userId, since: lastSync)
+            summary.habitsPulled = habitsPulled
+            logger.info("✅ Pulled \(habitsPulled) habits")
+        } catch {
+            logger.error("❌ Failed to pull habits: \(error.localizedDescription)")
+            summary.errors.append("Failed to pull habits: \(error.localizedDescription)")
+        }
+        
+        // 2. Pull completions from recent months (last 3 months)
+        do {
+            let completionsPulled = try await pullCompletions(userId: userId, recentMonths: 3)
+            summary.completionsPulled = completionsPulled
+            logger.info("✅ Pulled \(completionsPulled) completions")
+        } catch {
+            logger.error("❌ Failed to pull completions: \(error.localizedDescription)")
+            summary.errors.append("Failed to pull completions: \(error.localizedDescription)")
+        }
+        
+        // 3. Pull awards updated since last sync
+        do {
+            let awardsPulled = try await pullAwards(userId: userId, since: lastSync)
+            summary.awardsPulled = awardsPulled
+            logger.info("✅ Pulled \(awardsPulled) awards")
+        } catch {
+            logger.error("❌ Failed to pull awards: \(error.localizedDescription)")
+            summary.errors.append("Failed to pull awards: \(error.localizedDescription)")
+        }
+        
+        // 4. Pull events from recent months (last 3 months)
+        do {
+            let eventsPulled = try await pullEvents(userId: userId, recentMonths: 3)
+            summary.eventsPulled = eventsPulled
+            logger.info("✅ Pulled \(eventsPulled) events")
+        } catch {
+            logger.error("❌ Failed to pull events: \(error.localizedDescription)")
+            summary.errors.append("Failed to pull events: \(error.localizedDescription)")
+        }
+        
+        // 5. Update last sync timestamp after successful pull
+        setLastSyncTimestamp(userId: userId, timestamp: Date())
+        
+        logger.info("✅ Pull remote changes completed: habits=\(summary.habitsPulled), completions=\(summary.completionsPulled), awards=\(summary.awardsPulled), events=\(summary.eventsPulled)")
+        return summary
+    }
+    
+    /// Pull habits updated since the given timestamp
+    private func pullHabits(userId: String, since: Date) async throws -> Int {
+        let habitsRef = firestore.collection("users")
+            .document(userId)
+            .collection("habits")
+        
+        // Query habits where updatedAt > lastSyncTimestamp
+        // Note: Firestore doesn't support updatedAt directly, so we'll query all and filter
+        // In production, you'd want to add an updatedAt field to habits
+        let snapshot = try await habitsRef.getDocuments()
+        var pulledCount = 0
+        
+        for document in snapshot.documents {
+            let data = document.data()
+            
+            // Check if habit was updated since last sync
+            // Use lastSyncedAt or createdAt as fallback
+            let lastSyncedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue()
+            let updatedAt = lastSyncedAt ?? (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            
+            guard updatedAt > since else {
+                continue
+            }
+            
+            // Convert Firestore data to HabitData
+            let habitIdString = document.documentID
+            guard let uuid = UUID(uuidString: habitIdString) else {
+                continue
+            }
+            
+            // Merge habit into SwiftData
+            try await mergeHabitFromFirestore(data: data, habitId: uuid, userId: userId)
+            pulledCount += 1
+        }
+        
+        return pulledCount
+    }
+    
+    /// Pull completions from recent months
+    private func pullCompletions(userId: String, recentMonths: Int) async throws -> Int {
+        let yearMonths = getRecentYearMonths(count: recentMonths)
+        var pulledCount = 0
+        
+        for yearMonth in yearMonths {
+            let completionsRef = firestore.collection("users")
+                .document(userId)
+                .collection("completions")
+                .document(yearMonth)
+                .collection("completions")
+            
+            let snapshot = try? await completionsRef.getDocuments()
+            guard let snapshot = snapshot else { continue }
+            
+            for document in snapshot.documents {
+                let data = document.data()
+                
+                // Merge completion into SwiftData
+                try await mergeCompletionFromFirestore(data: data, userId: userId)
+                pulledCount += 1
+            }
+        }
+        
+        return pulledCount
+    }
+    
+    /// Pull awards updated since the given timestamp
+    private func pullAwards(userId: String, since: Date) async throws -> Int {
+        let awardsRef = firestore.collection("users")
+            .document(userId)
+            .collection("daily_awards")
+        
+        let snapshot = try await awardsRef.getDocuments()
+        var pulledCount = 0
+        
+        for document in snapshot.documents {
+            let data = document.data()
+            
+            // Check if award was created since last sync
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            
+            guard createdAt > since else {
+                continue
+            }
+            
+            // Merge award into SwiftData (idempotent - won't create duplicates)
+            try await mergeAwardFromFirestore(data: data, userId: userId)
+            pulledCount += 1
+        }
+        
+        return pulledCount
+    }
+    
+    /// Pull events from recent months
+    private func pullEvents(userId: String, recentMonths: Int) async throws -> Int {
+        let yearMonths = getRecentYearMonths(count: recentMonths)
+        var pulledCount = 0
+        
+        for yearMonth in yearMonths {
+            let eventsRef = firestore.collection("users")
+                .document(userId)
+                .collection("events")
+                .document(yearMonth)
+                .collection("events")
+            
+            let snapshot = try? await eventsRef.getDocuments()
+            guard let snapshot = snapshot else { continue }
+            
+            for document in snapshot.documents {
+                let data = document.data()
+                
+                // Merge event into SwiftData (idempotent via operationId)
+                try await mergeEventFromFirestore(data: data)
+                pulledCount += 1
+            }
+        }
+        
+        return pulledCount
+    }
+    
+    // MARK: - Merge Helpers
+    
+    /// Merge habit from Firestore into SwiftData
+    private func mergeHabitFromFirestore(data: [String: Any], habitId: UUID, userId: String) async throws {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            // Check if habit exists
+            let predicate = #Predicate<HabitData> { habit in
+                habit.id == habitId && habit.userId == userId
+            }
+            let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+            
+            if let existingHabit = try? modelContext.fetch(descriptor).first {
+                // Update existing habit (last-write-wins based on updatedAt)
+                let remoteUpdatedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue() ?? Date()
+                let localUpdatedAt = existingHabit.updatedAt
+                
+                if remoteUpdatedAt > localUpdatedAt {
+                    // Remote is newer, update local
+                    Self.updateHabitData(from: data, to: existingHabit)
+                    existingHabit.updatedAt = remoteUpdatedAt
+                    try? modelContext.save()
+                }
+            } else {
+                // Create new habit
+                guard let habitData = Self.createHabitData(from: data, habitId: habitId, userId: userId) else {
+                    return
+                }
+                modelContext.insert(habitData)
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    /// Merge completion from Firestore into SwiftData
+    private func mergeCompletionFromFirestore(data: [String: Any], userId: String) async throws {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            guard let habitIdString = data["habitId"] as? String,
+                  let habitId = UUID(uuidString: habitIdString),
+                  let dateKey = data["dateKey"] as? String else {
+                return
+            }
+            
+            // Check if completion exists (using deterministic ID)
+            let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
+            
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userIdHabitIdDateKey == uniqueKey
+            }
+            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            
+            if let existingRecord = try? modelContext.fetch(descriptor).first {
+                // Update existing record
+                existingRecord.isCompleted = data["isCompleted"] as? Bool ?? false
+                existingRecord.progress = data["progress"] as? Int ?? 0
+                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                    existingRecord.createdAt = createdAt
+                }
+                try? modelContext.save()
+            } else {
+                // Create new record
+                guard let date = DateUtils.date(from: dateKey) else {
+                    return
+                }
+                
+                let record = CompletionRecord(
+                    userId: userId,
+                    habitId: habitId,
+                    date: date,
+                    dateKey: dateKey,
+                    isCompleted: data["isCompleted"] as? Bool ?? false,
+                    progress: data["progress"] as? Int ?? 0
+                )
+                
+                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                    record.createdAt = createdAt
+                }
+                
+                modelContext.insert(record)
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    /// Merge award from Firestore into SwiftData (idempotent)
+    private func mergeAwardFromFirestore(data: [String: Any], userId: String) async throws {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            guard let dateKey = data["dateKey"] as? String else {
+                return
+            }
+            
+            let userIdDateKey = data["userIdDateKey"] as? String ?? "\(userId)#\(dateKey)"
+            
+            // Check if award exists (idempotent check)
+            let predicate = #Predicate<DailyAward> { award in
+                award.userIdDateKey == userIdDateKey
+            }
+            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            
+            if (try? modelContext.fetch(descriptor).first) == nil {
+                // Create new award
+                let award = DailyAward(
+                    userId: userId,
+                    dateKey: dateKey,
+                    xpGranted: data["xpGranted"] as? Int ?? 50,
+                    allHabitsCompleted: data["allHabitsCompleted"] as? Bool ?? true
+                )
+                
+                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                    award.createdAt = createdAt
+                }
+                
+                modelContext.insert(award)
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    /// Merge event from Firestore into SwiftData (idempotent via operationId)
+    private func mergeEventFromFirestore(data: [String: Any]) async throws {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            guard let operationId = data["operationId"] as? String else {
+                return
+            }
+            
+            // Check if event exists (idempotent check via operationId)
+            let predicate = #Predicate<ProgressEvent> { event in
+                event.operationId == operationId
+            }
+            let descriptor = FetchDescriptor<ProgressEvent>(predicate: predicate)
+            
+            if (try? modelContext.fetch(descriptor).first) == nil {
+                // Create new event from Firestore data
+                guard let event = ProgressEvent.fromFirestore(data) else {
+                    return
+                }
+                
+                modelContext.insert(event)
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Get recent year-month keys (e.g., ["2025-11", "2025-10", "2025-09"])
+    private func getRecentYearMonths(count: Int) -> [String] {
+        var yearMonths: [String] = []
+        let calendar = Calendar.current
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM"
+        dateFormatter.timeZone = TimeZone.current
+        
+        for i in 0..<count {
+            guard let date = calendar.date(byAdding: .month, value: -i, to: Date()) else {
+                continue
+            }
+            yearMonths.append(dateFormatter.string(from: date))
+        }
+        
+        return yearMonths
+    }
+    
+    /// Get last sync timestamp for user (stored in UserDefaults)
+    private func getLastSyncTimestamp(userId: String) -> Date? {
+        let key = "lastSyncTimestamp_\(userId)"
+        return UserDefaults.standard.object(forKey: key) as? Date
+    }
+    
+    /// Set last sync timestamp for user (stored in UserDefaults)
+    private func setLastSyncTimestamp(userId: String, timestamp: Date) {
+        let key = "lastSyncTimestamp_\(userId)"
+        UserDefaults.standard.set(timestamp, forKey: key)
+    }
+    
+    /// Update HabitData from Firestore data
+    @MainActor
+    private static func updateHabitData(from data: [String: Any], to habitData: HabitData) {
+        if let name = data["name"] as? String {
+            habitData.name = name
+        }
+        if let description = data["description"] as? String {
+            habitData.habitDescription = description
+        }
+        if let icon = data["icon"] as? String {
+            habitData.icon = icon
+        }
+        if let colorHex = data["color"] as? String {
+            habitData.color = Color(hex: colorHex)
+        }
+        if let habitType = data["habitType"] as? String {
+            habitData.habitType = habitType
+        }
+        if let schedule = data["schedule"] as? String {
+            habitData.schedule = schedule
+        }
+        if let goal = data["goal"] as? String {
+            habitData.goal = goal
+        }
+        if let baseline = data["baseline"] as? Int {
+            habitData.baseline = baseline
+        }
+        if let target = data["target"] as? Int {
+            habitData.target = target
+        }
+    }
+    
+    /// Create HabitData from Firestore data
+    @MainActor
+    private static func createHabitData(from data: [String: Any], habitId: UUID, userId: String) -> HabitData? {
+        guard let name = data["name"] as? String,
+              let description = data["description"] as? String,
+              let icon = data["icon"] as? String,
+              let colorHex = data["color"] as? String,
+              let habitType = data["habitType"] as? String,
+              let schedule = data["schedule"] as? String,
+              let goal = data["goal"] as? String,
+              let startDate = (data["startDate"] as? Timestamp)?.dateValue() else {
+            return nil
+        }
+        
+        let endDate = (data["endDate"] as? Timestamp)?.dateValue()
+        let baseline = data["baseline"] as? Int ?? 0
+        let target = data["target"] as? Int ?? 1
+        
+        let habitData = HabitData(
+            id: habitId,
+            userId: userId,
+            name: name,
+            habitDescription: description,
+            icon: icon,
+            color: Color(hex: colorHex),
+            habitType: HabitType(rawValue: habitType) ?? .formation,
+            schedule: schedule,
+            goal: goal,
+            reminder: data["reminder"] as? String ?? "",
+            startDate: startDate,
+            endDate: endDate,
+            baseline: baseline,
+            target: target
+        )
+        
+        if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+            habitData.createdAt = createdAt
+        }
+        if let updatedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue() {
+            habitData.updatedAt = updatedAt
+        }
+        
+        return habitData
+    }
+}
+
+// MARK: - Pull Sync Summary
+
+/// Summary of what was pulled from remote
+struct PullSyncSummary: Sendable, CustomStringConvertible {
+    var habitsPulled: Int = 0
+    var completionsPulled: Int = 0
+    var awardsPulled: Int = 0
+    var eventsPulled: Int = 0
+    var errors: [String] = []
+    
+    var totalPulled: Int {
+        habitsPulled + completionsPulled + awardsPulled + eventsPulled
+    }
+    
+    var description: String {
+        "habits=\(habitsPulled), completions=\(completionsPulled), awards=\(awardsPulled), events=\(eventsPulled), errors=\(errors.count)"
     }
 }
 
