@@ -91,6 +91,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     Task.detached {
       await CompletionStatusMigration.shared.performMigrationIfNeeded()
     }
+    
+    // Perform completion to event migration (event-sourcing)
+    Task.detached {
+      await MigrateCompletionsToEvents.shared.performMigrationIfNeeded()
+    }
 
     // Configure Google Sign-In
     let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
