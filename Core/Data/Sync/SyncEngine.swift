@@ -13,6 +13,16 @@ import OSLog
 /// - Mark events as synced after successful upload
 /// - Schedule background syncs
 actor SyncEngine {
+    // MARK: - Sendable Data Structures
+    
+    /// Sendable award data for syncing across actor boundaries
+    struct AwardData: Sendable {
+        let userIdDateKey: String
+        let dateKey: String
+        let xpGranted: Int
+        let allHabitsCompleted: Bool
+        let createdAt: Date
+    }
     // MARK: - Singleton
     
     static let shared = SyncEngine()
@@ -262,6 +272,173 @@ actor SyncEngine {
         logger.info("⏹️ Stopping periodic sync")
         syncTask?.cancel()
         syncTask = nil
+    }
+    
+    // MARK: - Award Sync
+    
+    /// Sync all DailyAward records to Firestore atomically
+    ///
+    /// Awards are written to: `/users/{userId}/daily_awards/{userIdDateKey}`
+    /// Uses `userIdDateKey` (deterministic: "{userId}#{dateKey}") for idempotency
+    /// Also updates `/users/{userId}/progress/current` with total XP in the same transaction
+    func syncAwards() async throws {
+        // Prevent concurrent syncs
+        guard !isSyncing else {
+            logger.info("⏭️ Sync already in progress, skipping")
+            return
+        }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        let userId = await CurrentUser().idOrGuest
+        
+        // Skip sync for guest users (no cloud sync)
+        guard !CurrentUser.isGuestId(userId) else {
+            logger.info("⏭️ Skipping sync for guest user")
+            return
+        }
+        
+        logger.info("🔄 Starting award sync for user: \(userId)")
+        
+        // Fetch all awards for this user (ModelContext access must be on MainActor)
+        // Extract Sendable data to avoid passing DailyAward across concurrency boundaries
+        let awardDataArray: [AwardData] = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            let awards = (try? modelContext.fetch(descriptor)) ?? []
+            return awards.map { award in
+                AwardData(
+                    userIdDateKey: award.userIdDateKey,
+                    dateKey: award.dateKey,
+                    xpGranted: award.xpGranted,
+                    allHabitsCompleted: award.allHabitsCompleted,
+                    createdAt: award.createdAt
+                )
+            }
+        }
+        
+        guard !awardDataArray.isEmpty else {
+            logger.info("✅ No awards to sync")
+            return
+        }
+        
+        logger.info("📤 Found \(awardDataArray.count) awards to sync")
+        
+        // Get current total XP from DailyAwardService (source of truth)
+        let totalXP = await MainActor.run {
+            DailyAwardService.shared.getTotalXP()
+        }
+        
+        var syncedCount = 0
+        var failedCount = 0
+        var alreadySyncedCount = 0
+        
+        // Sync awards in batches using transactions
+        let batchSize = 10 // Smaller batches for transactions
+        for batchStart in stride(from: 0, to: awardDataArray.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, awardDataArray.count)
+            let batch = Array(awardDataArray[batchStart..<batchEnd])
+            
+            do {
+                let result = try await syncAwardsBatch(awards: batch, userId: userId, totalXP: totalXP)
+                syncedCount += result.synced
+                alreadySyncedCount += result.alreadySynced
+                logger.info("✅ Synced batch: \(result.synced) awards (\(syncedCount + alreadySyncedCount)/\(awardDataArray.count))")
+            } catch {
+                failedCount += batch.count
+                logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
+                // Continue with next batch even if this one failed
+            }
+        }
+        
+        logger.info("✅ Award sync completed: \(syncedCount) synced, \(alreadySyncedCount) already synced, \(failedCount) failed")
+    }
+    
+    /// Sync a batch of awards to Firestore using transactions
+    private func syncAwardsBatch(
+        awards: [AwardData],
+        userId: String,
+        totalXP: Int
+    ) async throws -> (synced: Int, alreadySynced: Int) {
+        // Track counts locally to avoid double-counting on transaction retries
+        var syncedCount = 0
+        var alreadySyncedCount = 0
+        
+        // Use Firestore transaction for atomicity
+        // Note: runTransaction expects (Transaction, NSErrorPointer) -> Any? signature
+        let result = try await firestore.runTransaction { (transaction, errorPointer) -> Any? in
+            var batchSynced = 0
+            var batchAlreadySynced = 0
+            
+            for award in awards {
+                // Firestore path: /users/{userId}/daily_awards/{userIdDateKey}
+                let awardRef = self.firestore.collection("users")
+                    .document(userId)
+                    .collection("daily_awards")
+                    .document(award.userIdDateKey)
+                
+                // Check if award already exists (idempotency)
+                // Note: getDocument in transaction throws if document doesn't exist
+                do {
+                    let existingDoc = try transaction.getDocument(awardRef)
+                    if existingDoc.exists {
+                        // Award already synced, skip
+                        batchAlreadySynced += 1
+                        continue
+                    }
+                } catch {
+                    // Document doesn't exist - proceed to create
+                    // This is expected for new awards
+                }
+                
+                // Create award document
+                let awardData: [String: Any] = [
+                    "userId": userId,
+                    "dateKey": award.dateKey,
+                    "xpGranted": award.xpGranted,
+                    "allHabitsCompleted": award.allHabitsCompleted,
+                    "createdAt": Timestamp(date: award.createdAt),
+                    "userIdDateKey": award.userIdDateKey
+                ]
+                
+                transaction.setData(awardData, forDocument: awardRef)
+                batchSynced += 1
+            }
+            
+            // Update progress/current document atomically with total XP
+            let progressRef = self.firestore.collection("users")
+                .document(userId)
+                .collection("progress")
+                .document("current")
+            
+            // Calculate level from total XP (simple formula: every 100 XP = 1 level)
+            let level = (totalXP / 100) + 1
+            let currentLevelXP = totalXP % 100
+            
+            let progressData: [String: Any] = [
+                "totalXP": totalXP,
+                "level": level,
+                "currentLevelXP": currentLevelXP,
+                "lastUpdated": Timestamp(date: Date())
+            ]
+            
+            transaction.setData(progressData, forDocument: progressRef, merge: true)
+            
+            // Return counts as tuple (wrapped in array for easier casting)
+            return [batchSynced, batchAlreadySynced]
+        }
+        
+        // Extract counts from transaction result
+        if let resultArray = result as? [Int], resultArray.count == 2 {
+            syncedCount = resultArray[0]
+            alreadySyncedCount = resultArray[1]
+        }
+        
+        return (syncedCount, alreadySyncedCount)
     }
 }
 
