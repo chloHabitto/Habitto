@@ -452,29 +452,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
     do {
       if let existingHabitData = try await loadHabitData(by: habit.id) {
         // Update existing habit
+        // ✅ CRITICAL FIX: updateFromHabit now calls syncCompletionRecordsFromHabit to sync CompletionRecords
+        // This ensures CompletionRecords are properly created/updated from habit.completionHistory
+        // DO NOT clear completionHistory relationship - syncCompletionRecordsFromHabit handles syncing
         await existingHabitData.updateFromHabit(habit)
-
-        // ✅ CRITICAL FIX: Do NOT create CompletionRecords from legacy completionHistory
-        // Same issue as in saveHabits - completionHistory stores progress counts, not completion status
-        // Let the UI create CompletionRecords when users actually complete habits
         
-        existingHabitData.completionHistory.removeAll()
-        logger.info("🚨 SWIFTDATA_DEBUG: Skipping CompletionRecord update for habit '\(habit.name)' - will be created by UI")
-        
-        // Old code that created phantom records:
-        /*
-        for (dateString, isCompleted) in habit.completionHistory {
-          if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-            let completionRecord = CompletionRecord(
-              userId: "legacy",
-              habitId: existingHabitData.id,
-              date: date,
-              dateKey: Habit.dateKey(for: date),
-              isCompleted: isCompleted == 1)  // ❌ WRONG! progress count != completion status
-            existingHabitData.completionHistory.append(completionRecord)
-          }
-        }
-        */
+        logger.info("✅ SWIFTDATA_DEBUG: Updated habit '\(habit.name)' - CompletionRecords synced via updateFromHabit")
 
         // Update difficulty history
         existingHabitData.difficultyHistory.removeAll()

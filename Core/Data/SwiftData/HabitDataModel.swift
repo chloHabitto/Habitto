@@ -141,6 +141,9 @@ final class HabitData {
   }
   
   /// Sync CompletionRecords from habit's completionHistory to ensure all dates have records
+  /// ✅ CRITICAL FIX: This method ADDITIVELY syncs records from completionHistory.
+  /// It does NOT delete existing CompletionRecords that aren't in completionHistory.
+  /// This preserves data integrity when habits are loaded from Firestore with empty completionHistory.
   @MainActor
   private func syncCompletionRecordsFromHabit(_ habit: Habit) async {
     let context = SwiftDataContainer.shared.modelContext
@@ -152,6 +155,13 @@ final class HabitData {
     dateFormatter.dateFormat = "yyyy-MM-dd"
     dateFormatter.timeZone = TimeZone.current
     
+    var syncedCount = 0
+    var createdCount = 0
+    var updatedCount = 0
+    
+    // ✅ CRITICAL FIX: Only sync records FROM completionHistory (additive approach)
+    // This ensures we don't lose CompletionRecords that exist in SwiftData but not in habit.completionHistory
+    // (e.g., when habit is loaded from Firestore with empty completionHistory)
     for (dateString, progress) in habit.completionHistory {
       // Try parsing as dateKey format first (yyyy-MM-dd)
       guard let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
@@ -169,35 +179,65 @@ final class HabitData {
       }
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
       
-      if let existingRecord = try? context.fetch(descriptor).first {
-        // Update existing record
-        existingRecord.isCompleted = isCompleted
-        existingRecord.progress = progress
-        existingRecord.date = date
-        existingRecord.dateKey = dateKey
-      } else {
-        // Create new record
-        let record = CompletionRecord(
-          userId: self.userId,
-          habitId: self.id,
-          date: date,
-          dateKey: dateKey,
-          isCompleted: isCompleted,
-          progress: progress
-        )
-        context.insert(record)
-        
-        // Link to HabitData if not already linked
-        if !self.completionHistory.contains(where: { $0.id == record.id }) {
-          self.completionHistory.append(record)
+      do {
+        if let existingRecord = try context.fetch(descriptor).first {
+          // Update existing record (only if different to avoid unnecessary saves)
+          if existingRecord.isCompleted != isCompleted || existingRecord.progress != progress {
+            existingRecord.isCompleted = isCompleted
+            existingRecord.progress = progress
+            existingRecord.date = date
+            existingRecord.dateKey = dateKey
+            updatedCount += 1
+          }
+          syncedCount += 1
+        } else {
+          // Create new record
+          let record = CompletionRecord(
+            userId: self.userId,
+            habitId: self.id,
+            date: date,
+            dateKey: dateKey,
+            isCompleted: isCompleted,
+            progress: progress
+          )
+          context.insert(record)
+          
+          // Link to HabitData if not already linked
+          if !self.completionHistory.contains(where: { $0.id == record.id }) {
+            self.completionHistory.append(record)
+          }
+          createdCount += 1
+          syncedCount += 1
         }
+      } catch {
+        print("❌ syncCompletionRecordsFromHabit: Failed to fetch/update CompletionRecord for \(dateKey): \(error)")
+      }
+    }
+    
+    // ✅ CRITICAL FIX: Log warning if completionHistory is empty but CompletionRecords exist
+    // This helps diagnose data loss issues
+    if habit.completionHistory.isEmpty {
+      // Check if CompletionRecords exist for this habit
+      // ✅ FIX: Capture values before using in predicate (SwiftData predicates can't reference self)
+      let habitId = self.id
+      let userId = self.userId
+      let habitRecordsPredicate = #Predicate<CompletionRecord> { record in
+        record.habitId == habitId && record.userId == userId
+      }
+      let habitRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: habitRecordsPredicate)
+      if let existingRecords = try? context.fetch(habitRecordsDescriptor), !existingRecords.isEmpty {
+        print("⚠️ syncCompletionRecordsFromHabit: Habit '\(habit.name)' has empty completionHistory but \(existingRecords.count) CompletionRecords exist - preserving existing records")
       }
     }
     
     // Save changes
     do {
       try context.save()
-      print("✅ syncCompletionRecordsFromHabit: Synced \(habit.completionHistory.count) CompletionRecords for habit '\(habit.name)'")
+      if syncedCount > 0 {
+        print("✅ syncCompletionRecordsFromHabit: Synced \(syncedCount) CompletionRecords for habit '\(habit.name)' (created: \(createdCount), updated: \(updatedCount))")
+      } else if !habit.completionHistory.isEmpty {
+        print("⚠️ syncCompletionRecordsFromHabit: No CompletionRecords synced for habit '\(habit.name)' despite \(habit.completionHistory.count) entries in completionHistory")
+      }
     } catch {
       print("❌ syncCompletionRecordsFromHabit: Failed to save CompletionRecords: \(error)")
     }
