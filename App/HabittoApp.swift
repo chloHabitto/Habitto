@@ -89,8 +89,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
           print("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
           // Access SyncEngine.shared explicitly to ensure initialization
           let syncEngine = SyncEngine.shared
-          print("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync()...")
-          await syncEngine.startPeriodicSync()
+          print("✅ SyncEngine: SyncEngine.shared accessed, calling startPeriodicSync(userId: \(uid))...")
+          // Pass userId directly to avoid race condition with CurrentUser().idOrGuest
+          await syncEngine.startPeriodicSync(userId: uid)
           print("✅ SyncEngine: startPeriodicSync() call completed")
         } else {
           print("⏭️ SyncEngine: Skipping sync for guest user")
@@ -360,7 +361,7 @@ private func setupCoreData() {
       // ✅ PRIORITY 3: Start periodic event sync (only for authenticated users)
       let userId = await CurrentUser().idOrGuest
       if !CurrentUser.isGuestId(userId) {
-        await SyncEngine.shared.startPeriodicSync()
+        await SyncEngine.shared.startPeriodicSync(userId: userId)
       }
     }
   }
