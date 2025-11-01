@@ -189,8 +189,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     
     // Register event compaction background task
     print("📅 EventCompactor: Registering background task handler...")
+    NSLog("📅 EventCompactor: Registering background task handler...")
     EventCompactor.registerBackgroundTaskHandler()
     print("✅ EventCompactor: Background task handler registered")
+    NSLog("✅ EventCompactor: Background task handler registered")
 
     return true
   }
@@ -416,11 +418,14 @@ private func setupCoreData() {
       // ✅ PRIORITY 1: Schedule event compaction (only for authenticated users)
       if !CurrentUser.isGuestId(userId) {
         print("📅 EventCompactor: Initializing for user: \(userId)")
+        NSLog("📅 EventCompactor: Initializing for user: %@", userId)
         let compactor = EventCompactor(userId: userId)
         await compactor.scheduleNextCompaction()
         print("✅ EventCompactor: Initialization and scheduling completed")
+        NSLog("✅ EventCompactor: Initialization and scheduling completed")
       } else {
         print("⏭️ EventCompactor: Skipping for guest user")
+        NSLog("⏭️ EventCompactor: Skipping for guest user")
       }
     }
   }

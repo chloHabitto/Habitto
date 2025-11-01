@@ -317,8 +317,12 @@ actor EventCompactor {
   
   /// Schedule next compaction at preferred time (3 AM local time)
   func scheduleNextCompaction() {
+    logger.info("📅 EventCompactor: scheduleNextCompaction() called")
+    print("📅 EventCompactor: scheduleNextCompaction() called")
+    
     guard config.isEnabled else {
       logger.info("Event compaction is disabled, not scheduling")
+      print("⏭️ EventCompactor: Compaction disabled, skipping schedule")
       return
     }
     
@@ -350,11 +354,39 @@ actor EventCompactor {
       formatter.dateStyle = .medium
       formatter.timeStyle = .short
       logger.info("✅ Event compaction scheduled for: \(formatter.string(from: nextDate)) (age threshold: \(self.config.compactionAgeDays) days)")
-      print("📅 EventCompactor: Scheduled compaction for \(formatter.string(from: nextDate))")
+      print("📅 EventCompactor: ✅ Scheduled compaction for \(formatter.string(from: nextDate)) (age threshold: \(self.config.compactionAgeDays) days)")
     } catch {
       logger.error("Failed to schedule event compaction: \(error.localizedDescription)")
       print("❌ EventCompactor: Failed to schedule - \(error.localizedDescription)")
     }
+  }
+  
+  /// Manual compaction trigger for testing (compacts events older than specified days)
+  func compactNow(ageThresholdDays: Int? = nil) async throws -> CompactionResult {
+    logger.info("🔧 EventCompactor: Manual compaction triggered")
+    print("🔧 EventCompactor: Manual compaction triggered")
+    
+    // Temporarily override compaction age if specified
+    let originalAge = config.compactionAgeDays
+    let shouldRestore = ageThresholdDays != nil
+    
+    if let ageThresholdDays = ageThresholdDays {
+      var tempConfig = config
+      tempConfig.compactionAgeDays = ageThresholdDays
+      updateConfig(tempConfig)
+    }
+    
+    // Perform compaction
+    let result = try await compactOldEvents()
+    
+    // Restore original config if we temporarily changed it
+    if shouldRestore {
+      var restoredConfig = getConfig()
+      restoredConfig.compactionAgeDays = originalAge
+      updateConfig(restoredConfig)
+    }
+    
+    return result
   }
   
   /// Cancel scheduled compaction
