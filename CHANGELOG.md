@@ -7,49 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-XX
+
 ### Added
-- **Phase 4: New normalized data path on by default; legacy writes removed**
-  - Feature flags now default to normalized data path (useNormalizedDataPath = true)
-  - Emergency override available for internal builds (compile-time flag)
-  - Comprehensive observability logging for migration, XP awards, and auth switches
-  - Strengthened invariant tests that fail build on forbidden symbols
-  - End-to-end day completion flow tests with exact XP and level math validation
-  - Guest/account isolation tests with snapshot assertions
-  - Mixed legacy + new data migration QA tests
+- **Data Architecture & Migration Plan - Event Sourcing Implementation**
+  - `ProgressEvent` model as immutable source of truth for habit progress
+  - `ProgressEventService` for event creation and management
+  - Event-sourced records for all habit progress changes
+  - `SyncEngine` actor with Firestore sync capabilities
+  - Periodic sync scheduling for authenticated users
+  - Dual-write strategy (SwiftData + Firestore)
+  - `EventCompactor` service for storage optimization
+  - `EventSequenceCounter` for deterministic event IDs
+  - Sync health monitoring with error logging and toast notifications
+  - Debug UI for migration status verification
 
 ### Changed
 - **Data Layer Architecture**
-  - Default feature flags now enable normalized data path
+  - Default feature flags now enable normalized data path (useNormalizedDataPath = true)
   - All XP/level/streak mutations now go through XPService only
-  - Removed deprecated XP mutation methods (debugForceAwardXP, addXP, awardXPForAllHabitsCompleted)
-  - Removed denormalized field mutation methods (updateStreakWithReset, correctStreak, recalculateCompletionStatus)
-  - Habit completion methods no longer update denormalized fields
-  - Repository provider now defaults to normalized repositories
-
-### Removed
-- **Legacy Write Paths**
-  - XPManager.debugForceAwardXP() - Use XPService.awardDailyCompletionIfEligible instead
-  - XPManager.addXP() - Use XPService instead
-  - XPManager.awardXPForAllHabitsCompleted() - Use XPService instead
-  - Habit.updateStreakWithReset() - Use calculateTrueStreak() for read-only access
-  - Habit.correctStreak() - Use calculateTrueStreak() for read-only access
-  - Habit.recalculateCompletionStatus() - Use isCompleted(for:) for read-only access
-  - Habit.updateCurrentCompletionStatus() - Use isCompleted(for:) for read-only access
-  - Direct denormalized field updates in markCompleted/markIncomplete methods
+  - Event creation integrated into `HabitStore.setProgress()`
+  - Materialized views (`CompletionRecord`) maintained for performance
+  - Idempotent sync operations with deterministic IDs
+  - Conflict-free merging capability
 
 ### Fixed
-- **Guest/Sign-in Bug Prevention**
-  - Proper repository switching on authentication state changes
-  - User isolation through feature-flagged repository providers
-  - No more data leakage between guest and authenticated users
-  - Idempotent migrations with proper state tracking
-
-### Security
-- **Data Isolation**
-  - All persisted models now have indexed userId fields
-  - User-scoped SwiftData containers (when feature flag enabled)
-  - Proper authentication routing with cache clearing
-  - Anonymized logging (no PII in logs)
+- **Data Migrations**
+  - Guest to Auth migration completed successfully
+  - Completion Status migration completed successfully
+  - Completions to Events migration completed (28 events created)
+  - XP Data migration completed successfully
+  - All migrations verified and operational
 
 ## [Previous Phases]
 
