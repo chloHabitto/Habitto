@@ -116,6 +116,9 @@ struct MoreTabView: View {
         AboutUsView()
       }
       #if DEBUG
+      .sheet(isPresented: $showingSyncHealth) {
+        SyncHealthView()
+      }
       .sheet(isPresented: $showingHabitInvestigation) {
         NavigationView {
           HabitInvestigationView()
@@ -167,6 +170,7 @@ struct MoreTabView: View {
   // ✅ DEBUG: Habit Investigation
   #if DEBUG
   @State private var showingHabitInvestigation = false
+  @State private var showingSyncHealth = false
   #endif
 
   // MARK: - Trial Banner
@@ -326,6 +330,14 @@ struct MoreTabView: View {
           subtitle: "Check current in-memory state",
           action: {
             auditMemory()
+          }
+        )
+        
+        debugButton(
+          title: "📈 Sync Health Monitor",
+          subtitle: "View sync metrics and health status",
+          action: {
+            showingSyncHealth = true
           }
         )
         
