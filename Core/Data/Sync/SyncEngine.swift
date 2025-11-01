@@ -86,6 +86,35 @@ actor SyncEngine {
         
         logger.info("🔄 Starting event sync for user: \(userId)")
         
+        let startTime = Date()
+        var syncedCount = 0
+        var failedCount = 0
+        var syncError: Error?
+        
+        // Record queue size before sync
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let descriptor = ProgressEvent.unsyncedEvents()
+            let queueSize = (try? modelContext.fetch(descriptor))?.count ?? 0
+            SyncHealthMonitor.shared.recordQueueSize(queueSize, operation: .events)
+        }
+        
+        defer {
+            // Record sync metrics
+            let duration = Date().timeIntervalSince(startTime)
+            Task { @MainActor in
+                SyncHealthMonitor.shared.recordSync(
+                    operation: .events,
+                    duration: duration,
+                    success: syncError == nil && failedCount == 0,
+                    itemsSynced: syncedCount,
+                    itemsFailed: failedCount,
+                    conflictsResolved: 0,
+                    error: syncError
+                )
+            }
+        }
+        
         // Fetch unsynced event IDs and data (ModelContext access must be on MainActor)
         // Extract Sendable data to avoid passing ProgressEvent across concurrency boundaries
         struct EventData: Sendable {
@@ -114,9 +143,6 @@ actor SyncEngine {
         
         logger.info("📤 Found \(eventDataArray.count) unsynced events to sync")
         
-        var syncedCount = 0
-        var failedCount = 0
-        
         // Sync events in batches to avoid overwhelming Firestore
         let batchSize = 50
         for batchStart in stride(from: 0, to: eventDataArray.count, by: batchSize) {
@@ -130,6 +156,9 @@ actor SyncEngine {
                 logger.info("✅ Synced batch: \(successfullySynced) events (\(syncedCount)/\(eventDataArray.count))")
             } catch {
                 failedCount += batch.count
+                if syncError == nil {
+                    syncError = error
+                }
                 logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
                 // Continue with next batch even if this one failed
             }
@@ -364,14 +393,53 @@ actor SyncEngine {
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
         print("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
         
+        let startTime = Date()
+        var pullError: Error?
+        var eventsError: Error?
+        var completionsError: Error?
+        var awardsError: Error?
+        
+        defer {
+            // Record full sync cycle metrics
+            let duration = Date().timeIntervalSince(startTime)
+            let success = pullError == nil && eventsError == nil && completionsError == nil && awardsError == nil
+            Task { @MainActor in
+                SyncHealthMonitor.shared.recordSync(
+                    operation: .full,
+                    duration: duration,
+                    success: success,
+                    itemsSynced: 0, // Individual operations track their own counts
+                    itemsFailed: 0,
+                    conflictsResolved: 0,
+                    error: pullError ?? eventsError ?? completionsError ?? awardsError
+                )
+            }
+        }
+        
         // Step 1: Pull remote changes first (to get latest data from server)
         do {
+            let pullStartTime = Date()
             let summary = try await pullRemoteChanges(userId: userId)
+            let pullDuration = Date().timeIntervalSince(pullStartTime)
             logger.info("✅ Pull remote changes completed: \(summary)")
             print("✅ SyncEngine: Pull remote changes completed: \(summary)")
             NSLog("✅ SyncEngine: Pull remote changes completed: %@", summary.description)
             fflush(stdout)
+            
+            // Record pull metrics
+            Task { @MainActor in
+                SyncHealthMonitor.shared.recordSync(
+                    operation: .full,
+                    duration: pullDuration,
+                    success: true,
+                    itemsSynced: summary.eventsPulled + summary.completionsPulled + summary.awardsPulled,
+                    itemsFailed: 0,
+                    conflictsResolved: 0,
+                    error: nil
+                )
+            }
         } catch {
+            pullError = error
             logger.error("❌ Failed to pull remote changes: \(error.localizedDescription)")
             print("❌ SyncEngine: Failed to pull remote changes: \(error.localizedDescription)")
             NSLog("❌ SyncEngine: Failed to pull remote changes: %@", error.localizedDescription)
@@ -384,18 +452,21 @@ actor SyncEngine {
         do {
             try await syncEvents()
         } catch {
+            eventsError = error
             logger.error("❌ Failed to sync events: \(error.localizedDescription)")
         }
         
         do {
             try await syncCompletions()
         } catch {
+            completionsError = error
             logger.error("❌ Failed to sync completions: \(error.localizedDescription)")
         }
         
         do {
             try await syncAwards()
         } catch {
+            awardsError = error
             logger.error("❌ Failed to sync awards: \(error.localizedDescription)")
         }
         
@@ -436,6 +507,39 @@ actor SyncEngine {
         
         logger.info("🔄 Starting award sync for user: \(userId)")
         
+        let startTime = Date()
+        var syncedCount = 0
+        var failedCount = 0
+        var alreadySyncedCount = 0
+        var syncError: Error?
+        
+        // Record queue size before sync
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            let queueSize = (try? modelContext.fetch(descriptor))?.count ?? 0
+            SyncHealthMonitor.shared.recordQueueSize(queueSize, operation: .awards)
+        }
+        
+        defer {
+            // Record sync metrics
+            let duration = Date().timeIntervalSince(startTime)
+            Task { @MainActor in
+                SyncHealthMonitor.shared.recordSync(
+                    operation: .awards,
+                    duration: duration,
+                    success: syncError == nil && failedCount == 0,
+                    itemsSynced: syncedCount + alreadySyncedCount,
+                    itemsFailed: failedCount,
+                    conflictsResolved: 0,
+                    error: syncError
+                )
+            }
+        }
+        
         // Fetch all awards for this user (ModelContext access must be on MainActor)
         // Extract Sendable data to avoid passing DailyAward across concurrency boundaries
         let awardDataArray: [AwardData] = await MainActor.run {
@@ -468,10 +572,6 @@ actor SyncEngine {
             DailyAwardService.shared.getTotalXP()
         }
         
-        var syncedCount = 0
-        var failedCount = 0
-        var alreadySyncedCount = 0
-        
         // Sync awards in batches using transactions
         let batchSize = 10 // Smaller batches for transactions
         for batchStart in stride(from: 0, to: awardDataArray.count, by: batchSize) {
@@ -485,6 +585,9 @@ actor SyncEngine {
                 logger.info("✅ Synced batch: \(result.synced) awards (\(syncedCount + alreadySyncedCount)/\(awardDataArray.count))")
             } catch {
                 failedCount += batch.count
+                if syncError == nil {
+                    syncError = error
+                }
                 logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
                 // Continue with next batch even if this one failed
             }
@@ -611,6 +714,39 @@ actor SyncEngine {
         
         logger.info("🔄 Starting completion sync for user: \(userId)")
         
+        let startTime = Date()
+        var syncedCount = 0
+        var failedCount = 0
+        var alreadySyncedCount = 0
+        var syncError: Error?
+        
+        // Record queue size before sync
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId
+            }
+            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            let queueSize = (try? modelContext.fetch(descriptor))?.count ?? 0
+            SyncHealthMonitor.shared.recordQueueSize(queueSize, operation: .completions)
+        }
+        
+        defer {
+            // Record sync metrics
+            let duration = Date().timeIntervalSince(startTime)
+            Task { @MainActor in
+                SyncHealthMonitor.shared.recordSync(
+                    operation: .completions,
+                    duration: duration,
+                    success: syncError == nil && failedCount == 0,
+                    itemsSynced: syncedCount + alreadySyncedCount,
+                    itemsFailed: failedCount,
+                    conflictsResolved: 0,
+                    error: syncError
+                )
+            }
+        }
+        
         // Fetch all completion records for this user (ModelContext access must be on MainActor)
         // Extract Sendable data to avoid passing CompletionRecord across concurrency boundaries
         let completionDataArray: [CompletionData] = await MainActor.run {
@@ -642,10 +778,6 @@ actor SyncEngine {
         
         logger.info("📤 Found \(completionDataArray.count) completions to sync")
         
-        var syncedCount = 0
-        var failedCount = 0
-        var alreadySyncedCount = 0
-        
         // Sync completions in batches
         let batchSize = 50
         for batchStart in stride(from: 0, to: completionDataArray.count, by: batchSize) {
@@ -659,6 +791,9 @@ actor SyncEngine {
                 logger.info("✅ Synced batch: \(result.synced) completions (\(syncedCount + alreadySyncedCount)/\(completionDataArray.count))")
             } catch {
                 failedCount += batch.count
+                if syncError == nil {
+                    syncError = error
+                }
                 logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
                 // Continue with next batch even if this one failed
             }
