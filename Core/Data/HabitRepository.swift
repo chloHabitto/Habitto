@@ -3,6 +3,7 @@ import CoreData
 import FirebaseAuth
 import SwiftData
 import SwiftUI
+import MijickPopups
 
 // MARK: - Notification Extensions
 
@@ -1103,6 +1104,14 @@ class HabitRepository: ObservableObject {
     Task {
       await updateUnsyncedCount()
     }
+    
+    // Show success toast if there were pending items that are now synced
+    if unsyncedCount == 0 {
+      Task { @MainActor in
+        await SyncSuccessToast(message: "All changes synced")
+          .present()
+      }
+    }
   }
   
   /// Update sync status when sync fails
@@ -1113,6 +1122,48 @@ class HabitRepository: ObservableObject {
     Task {
       await updateUnsyncedCount()
     }
+    
+    // Show error toast notification
+    Task { @MainActor in
+      await showSyncErrorToast(error: error)
+    }
+  }
+  
+  /// Show sync error toast notification
+  @MainActor
+  private func showSyncErrorToast(error: Error) async {
+    let errorMessage: String
+    if let nsError = error as NSError? {
+      // Provide friendly error messages
+      if nsError.domain == NSURLErrorDomain {
+        switch nsError.code {
+        case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost:
+          errorMessage = "Check your internet connection"
+        case NSURLErrorTimedOut:
+          errorMessage = "Connection timed out. Please try again."
+        default:
+          errorMessage = "Network error: \(error.localizedDescription)"
+        }
+      } else {
+        errorMessage = error.localizedDescription
+      }
+    } else {
+      errorMessage = error.localizedDescription
+    }
+    
+    await SyncErrorToast(
+      message: errorMessage,
+      onRetry: {
+        Task {
+          do {
+            try await self.triggerManualSync()
+          } catch {
+            // Error will be shown via toast again
+          }
+        }
+      }
+    )
+    .present()
   }
   
   /// Store last sync date in UserDefaults (per user)

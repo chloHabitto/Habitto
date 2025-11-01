@@ -517,12 +517,22 @@ struct HomeTabView: View {
       .padding(.horizontal, 20)
       .padding(.top, 18)
       .padding(.bottom, 100)
+      .refreshable {
+        // Refresh habits data and trigger manual sync when user pulls down
+        await refreshHabits()
+        
+        // Trigger manual sync if user is authenticated
+        if AuthenticationManager.shared.currentUser != nil {
+          do {
+            try await HabitRepository.shared.triggerManualSync()
+          } catch {
+            // Error will be handled by HabitRepository and shown via sync status
+            print("❌ HomeTabView: Manual sync failed: \(error.localizedDescription)")
+          }
+        }
+      }
+      .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
     }
-    .refreshable {
-      // Refresh habits data when user pulls down
-      await refreshHabits()
-    }
-    .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
   }
 
   @ViewBuilder
