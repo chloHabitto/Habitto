@@ -8,7 +8,7 @@ import Foundation
 
 // MARK: - Tab
 
-enum Tab {
+enum Tab: Hashable {
   case home
   case progress
   case habits
@@ -638,127 +638,261 @@ struct HomeView: View {
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
 
+  // MARK: - Tab Content Views
+  
+  private var homeTabContent: some View {
+    ZStack {
+      // Primary color background behind white sheet
+      Color.primary
+        .ignoresSafeArea(.all)
+      
+      VStack(spacing: 0) {
+        // Header - show streak for home tab
+        HeaderView(
+          onCreateHabit: {
+            state.showingCreateHabit = true
+          },
+          onStreakTap: {
+            state.showingOverviewView = true
+          },
+          onNotificationTap: {
+            state.showingNotificationView = true
+          },
+          showProfile: false,
+          currentStreak: state.currentStreak)
+        
+        HomeTabView(
+        selectedDate: $state.selectedDate,
+        selectedStatsTab: $state.selectedStatsTab,
+        habits: state.habits,
+        isLoadingHabits: state.isLoadingHabits,
+        onToggleHabit: { (habit: Habit, date: Date) in
+          Task {
+            await state.toggleHabitCompletion(habit, for: date)
+          }
+        },
+        onUpdateHabit: { updatedHabit in
+          print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
+          Task {
+            await state.updateHabit(updatedHabit)
+          }
+          print("🔄 HomeView: Habit array updated and saved")
+        },
+        onSetProgress: { habit, date, progress in
+          print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
+          print("🔄 HomeView: Current state.habits count: \(state.habits.count)")
+
+          Task {
+            // Find the habit by ID from the current state to ensure we have the latest Core
+            // Data-synced version
+            if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
+              print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
+              print(
+                "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
+              await state.setHabitProgress(syncedHabit, for: date, progress: progress)
+              print("🔄 HomeView: Progress saved to Core Data using synced habit")
+            } else {
+              print(
+                "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
+              print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
+              await state.setHabitProgress(habit, for: date, progress: progress)
+              print("🔄 HomeView: Progress saved to Core Data using original habit")
+            }
+          }
+        },
+        onDeleteHabit: { habit in
+          state.habitToDelete = habit
+          state.showingDeleteConfirmation = true
+        },
+        onCompletionDismiss: {
+          // ✅ FIX: Update streak UI after completion flow finishes
+          print("🔄 HomeView: Habit completion bottom sheet dismissed")
+          state.updateStreak()
+        },
+        onStreakRecalculationNeeded: {
+          // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
+          // This ensures streak updates reactively, just like XP does
+          print("🔄 HomeView: Streak recalculation requested from HomeTabView")
+          state.updateAllStreaks()
+          print("✅ HomeView: Streak recalculation completed")
+        })
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .ignoresSafeArea(edges: .bottom)
+    }
+  }
+  
+  private var progressTabContent: some View {
+    ZStack {
+      // Primary color background behind white sheet
+      Color.primary
+        .ignoresSafeArea(.all)
+      
+      VStack(spacing: 0) {
+        // Header - show streak for progress tab
+        HeaderView(
+          onCreateHabit: {
+            state.showingCreateHabit = true
+          },
+          onStreakTap: {
+            state.showingOverviewView = true
+          },
+          onNotificationTap: {
+            state.showingNotificationView = true
+          },
+          showProfile: false,
+          currentStreak: state.currentStreak)
+        
+        ProgressTabView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .ignoresSafeArea(edges: .bottom)
+    }
+  }
+  
+  private var habitsTabContent: some View {
+    ZStack {
+      // Primary color background behind white sheet
+      Color.primary
+        .ignoresSafeArea(.all)
+      
+      VStack(spacing: 0) {
+        // Header - show streak for habits tab
+        HeaderView(
+          onCreateHabit: {
+            state.showingCreateHabit = true
+          },
+          onStreakTap: {
+            state.showingOverviewView = true
+          },
+          onNotificationTap: {
+            state.showingNotificationView = true
+          },
+          showProfile: false,
+          currentStreak: state.currentStreak)
+        
+        HabitsTabView(
+        state: state,
+        onDeleteHabit: { habit in
+          state.habitToDelete = habit
+          state.showingDeleteConfirmation = true
+        },
+        onEditHabit: { habit in
+          print("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
+          print("🔄 HomeView: Setting habitToEdit to open HabitEditView")
+          state.habitToEdit = habit
+        },
+        onCreateHabit: {
+          state.showingCreateHabit = true
+        },
+        onUpdateHabit: { updatedHabit in
+          print("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
+          Task {
+            await state.updateHabit(updatedHabit)
+          }
+          print("🔄 HomeView: Habit updated and saved successfully")
+        })
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .ignoresSafeArea(edges: .bottom)
+    }
+  }
+  
+  private var moreTabContent: some View {
+    ZStack {
+      // Primary color background behind white sheet
+      Color.primary
+        .ignoresSafeArea(.all)
+      
+      VStack(spacing: 0) {
+        // Header - show profile for more tab
+        HeaderView(
+          onCreateHabit: {
+            state.showingCreateHabit = true
+          },
+          onStreakTap: {
+            state.showingOverviewView = true
+          },
+          onNotificationTap: {
+            state.showingNotificationView = true
+          },
+          showProfile: true,
+          currentStreak: state.currentStreak)
+        
+        MoreTabView(state: state)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .ignoresSafeArea(edges: .bottom)
+    }
+  }
+
   var body: some View {
     // 🔎 PROBE: HomeView re-render when XP changes
     let _ = print("🔵 HomeView re-render | xp:", xpManager.totalXP, "| selectedTab:", state.selectedTab)
     
-    return VStack(spacing: 0) {
-      // Main content area
-      ZStack(alignment: .top) {
-        // Dynamic theme background fills entire screen
-        Color.primary
-          .ignoresSafeArea(.all)
-
-        VStack(spacing: 0) {
-          // Header - show profile for More tab, streak for others
-          HeaderView(
-            onCreateHabit: {
-              state.showingCreateHabit = true
-            },
-            onStreakTap: {
-              state.showingOverviewView = true
-            },
-            onNotificationTap: {
-              state.showingNotificationView = true
-            },
-            showProfile: state.selectedTab == .more,
-            currentStreak: state.currentStreak)
-
-          // Content based on selected tab
-          switch state.selectedTab {
-          case .home:
-            HomeTabView(
-              selectedDate: $state.selectedDate,
-              selectedStatsTab: $state.selectedStatsTab,
-              habits: state.habits,
-              isLoadingHabits: state.isLoadingHabits,
-              onToggleHabit: { (habit: Habit, date: Date) in
-                Task {
-                  await state.toggleHabitCompletion(habit, for: date)
-                }
-              },
-              onUpdateHabit: { updatedHabit in
-                print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
-                Task {
-                  await state.updateHabit(updatedHabit)
-                }
-                print("🔄 HomeView: Habit array updated and saved")
-              },
-              onSetProgress: { habit, date, progress in
-                print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
-                print("🔄 HomeView: Current state.habits count: \(state.habits.count)")
-
-                Task {
-                  // Find the habit by ID from the current state to ensure we have the latest Core
-                  // Data-synced version
-                  if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
-                    print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
-                    print(
-                      "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
-                    await state.setHabitProgress(syncedHabit, for: date, progress: progress)
-                    print("🔄 HomeView: Progress saved to Core Data using synced habit")
-                  } else {
-                    print(
-                      "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
-                    print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
-                    await state.setHabitProgress(habit, for: date, progress: progress)
-                    print("🔄 HomeView: Progress saved to Core Data using original habit")
-                  }
-                }
-              },
-              onDeleteHabit: { habit in
-                state.habitToDelete = habit
-                state.showingDeleteConfirmation = true
-              },
-              onCompletionDismiss: {
-                // ✅ FIX: Update streak UI after completion flow finishes
-                print("🔄 HomeView: Habit completion bottom sheet dismissed")
-                state.updateStreak()
-              },
-              onStreakRecalculationNeeded: {
-                // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
-                // This ensures streak updates reactively, just like XP does
-                print("🔄 HomeView: Streak recalculation requested from HomeTabView")
-                state.updateAllStreaks()
-                print("✅ HomeView: Streak recalculation completed")
-              })
-
-          case .progress:
-            ProgressTabView()
-
-          case .habits:
-            HabitsTabView(
-              state: state,
-              onDeleteHabit: { habit in
-                state.habitToDelete = habit
-                state.showingDeleteConfirmation = true
-              },
-              onEditHabit: { habit in
-                print("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
-                print("🔄 HomeView: Setting habitToEdit to open HabitEditView")
-                state.habitToEdit = habit
-              },
-              onCreateHabit: {
-                state.showingCreateHabit = true
-              },
-              onUpdateHabit: { updatedHabit in
-                print("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
-                Task {
-                  await state.updateHabit(updatedHabit)
-                }
-                print("🔄 HomeView: Habit updated and saved successfully")
-              })
-
-          case .more:
-            MoreTabView(state: state)
+    return ZStack(alignment: .top) {
+      // Dynamic theme background fills entire screen
+      Color.primary
+        .ignoresSafeArea(.all)
+      
+      // Vacation mode banner overlay
+      if VacationManager.shared.isActive {
+        VStack {
+          HStack(spacing: 6) {
+            Image("Icon-Vacation_Filled")
+              .resizable()
+              .frame(width: 16, height: 16)
+              .foregroundColor(.blue)
+            Text("Vacation Mode")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.blue)
           }
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(Color.blue.opacity(0.1))
+          .frame(maxWidth: .infinity)
+          Spacer()
         }
+        .ignoresSafeArea(.all)
+        .zIndex(1)
       }
-
-      // Bottom navigation
-      TabBarView(selectedTab: $state.selectedTab, onCreateHabit: {
-        state.showingCreateHabit = true
-      })
+      
+      // Native iOS TabView
+      // Tab bar automatically overlays on top of content
+      TabView(selection: $state.selectedTab) {
+        // Home Tab
+        homeTabContent
+          .tabItem {
+            Label("Home", image: "Icon-home-filled")
+          }
+          .tag(Tab.home)
+        
+        // Progress Tab
+        progressTabContent
+          .tabItem {
+            Label("Progress", image: "Icon-chart-filled")
+          }
+          .tag(Tab.progress)
+        
+        // Habits Tab
+        habitsTabContent
+          .tabItem {
+            Label("Habits", image: "Icon-book-filled")
+          }
+          .tag(Tab.habits)
+        
+        // More Tab
+        moreTabContent
+          .tabItem {
+            Label("More", image: "Icon-more-filled")
+          }
+          .tag(Tab.more)
+      }
+      .accentColor(.primary)
     }
     .onAppear {
       print("🚀 HomeView: onAppear called!")
