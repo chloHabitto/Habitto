@@ -402,39 +402,12 @@ final class HabitData {
       .mapValues { [$0.createdAt] }
 
     // ✅ CRITICAL FIX: Load difficulty history from SwiftData relationship
-    // The relationship might not be loaded, so we need to query DifficultyRecord directly
-    let habitId = self.id
-    let userId = self.userId
+    // DifficultyRecord doesn't have habitId/userId properties (SwiftData limitation),
+    // so we must use the relationship which is automatically filtered by SwiftData
+    // The relationship should be loaded when HabitData is fetched
+    let difficultyRecords = difficultyHistory
     
-    var difficultyRecords: [DifficultyRecord] = []
-    do {
-      let context = SwiftDataContainer.shared.modelContext
-      // Query all DifficultyRecords for this habit
-      let allRecordsPredicate = #Predicate<DifficultyRecord> { record in
-        record.habitId == habitId
-      }
-      let allRecords = try context.fetch(FetchDescriptor<DifficultyRecord>(predicate: allRecordsPredicate))
-      
-      // Filter by userId (handle empty string for guest)
-      if userId.isEmpty {
-        difficultyRecords = allRecords.filter { $0.userId.isEmpty || $0.userId == "" }
-      } else {
-        difficultyRecords = allRecords.filter { $0.userId == userId }
-      }
-      
-      // Fallback: if no records found with userId match, use all records (userId mismatch handling)
-      if difficultyRecords.isEmpty && !allRecords.isEmpty {
-        print("⚠️ toHabit() DIFFICULTY: No DifficultyRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist. Using all records.")
-        difficultyRecords = allRecords
-      }
-      
-      print("🔍 toHabit() DIFFICULTY: Found \(difficultyRecords.count) DifficultyRecords for habit '\(name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
-    } catch {
-      print("❌ toHabit() DIFFICULTY: Failed to query DifficultyRecords: \(error)")
-      // Fallback to relationship if query fails
-      difficultyRecords = difficultyHistory
-      print("🔍 toHabit() DIFFICULTY: Falling back to relationship with \(difficultyRecords.count) records")
-    }
+    print("🔍 toHabit() DIFFICULTY: Found \(difficultyRecords.count) DifficultyRecords from relationship for habit '\(name)'")
     
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyRecords
       .map {
@@ -641,6 +614,9 @@ final class DifficultyRecord {
   var date: Date
   var difficulty: Int
   var createdAt: Date
+  
+  /// ✅ FIX: Inverse relationship to HabitData for proper linking
+  @Relationship(inverse: \HabitData.difficultyHistory) var habit: HabitData?
 }
 
 // MARK: - UsageRecord
