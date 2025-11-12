@@ -68,7 +68,7 @@ struct HomeTabView: View {
         if Calendar.current.isDate(selectedDate, inSameDayAs: today) {
           // No update needed
         } else {
-          selectedDate = today
+        selectedDate = today
         }
 
         // Initialize sorted habits
@@ -78,12 +78,12 @@ struct HomeTabView: View {
         Task {
           await prefetchCompletionStatus()
           
-          // ✅ FIX: Compute initial XP from persisted habit data
+      // ✅ FIX: Compute initial XP from persisted habit data
           print("✅ INITIAL_XP: Computing XP from loaded habits")
-          let completedDaysCount = countCompletedDays()
-          await MainActor.run {
-            xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
-          }
+      let completedDaysCount = countCompletedDays()
+      await MainActor.run {
+        xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
+      }
           print("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         }
 
@@ -213,59 +213,59 @@ struct HomeTabView: View {
   }()
 
   private var habitsForSelectedDate: [Habit] {
-    // Calculate filtered habits for the selected date
+        // Calculate filtered habits for the selected date
     let selected = DateUtils.startOfDay(for: selectedDate)
 
     let filteredHabits = habits.filter { habit in
-      let start = DateUtils.startOfDay(for: habit.startDate)
-      let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+          let start = DateUtils.startOfDay(for: habit.startDate)
+          let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
-      guard selected >= start, selected <= end else {
-        return false
-      }
+          guard selected >= start, selected <= end else {
+            return false
+          }
 
       let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
-      
-      // ✅ FIX: Use latest habit data to check completion status (prevent stale data)
+          
+          // ✅ FIX: Use latest habit data to check completion status (prevent stale data)
       // The habit parameter might be from a closure capture, so fetch fresh data
       let latestHabit = habits.first(where: { $0.id == habit.id }) ?? habit
-      
-      // ✅ FIX: Also show if habit was already completed on this date
+          
+          // ✅ FIX: Also show if habit was already completed on this date
       // This ensures completed habits stay visible (just marked as done)
       let dateKey = Habit.dateKey(for: selectedDate)
-      let progress = latestHabit.completionHistory[dateKey] ?? 0
-      let wasCompletedOnThisDate = progress > 0
-      
-      return shouldShow || wasCompletedOnThisDate
-    }
+          let progress = latestHabit.completionHistory[dateKey] ?? 0
+          let wasCompletedOnThisDate = progress > 0
+
+          return shouldShow || wasCompletedOnThisDate
+        }
 
     // Since tabs are hidden, show all habits (like the Total tab was doing)
     // ✅ FIX: Only sort completed habits to bottom if NOT currently completing a habit
     // This prevents the jarring reorder during swipe gestures
     let finalFilteredHabits: [Habit]
-    
+        
     if deferResort {
-      // Don't reorder while completing - keep original order
+          // Don't reorder while completing - keep original order
       finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
         // Just use stable secondary sort (by name)
-        return habit1.name < habit2.name
-      }
-    } else {
-      // Normal sorting: completed habits at bottom
+            return habit1.name < habit2.name
+          }
+        } else {
+          // Normal sorting: completed habits at bottom
       finalFilteredHabits = filteredHabits.sorted { habit1, habit2 in
         // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
         let habit1Completed = completionStatusMap[habit1.id] ?? false
         let habit2Completed = completionStatusMap[habit2.id] ?? false
 
         // If one is completed and the other isn't, put the incomplete one first
-        if habit1Completed != habit2Completed {
-          return !habit1Completed && habit2Completed
-        }
+            if habit1Completed != habit2Completed {
+              return !habit1Completed && habit2Completed
+            }
 
         // ✅ FIX: Use stable secondary sort to prevent array jumping during updates
-        return habit1.name < habit2.name
-      }
-    }
+            return habit1.name < habit2.name
+          }
+        }
 
     return finalFilteredHabits
   }
@@ -276,12 +276,12 @@ struct HomeTabView: View {
     // Calculate filtered habits for the selected date (only by date/schedule, no tab filtering)
     let filteredHabits = habits.filter { habit in
       let selected = DateUtils.startOfDay(for: selectedDate)
-      let start = DateUtils.startOfDay(for: habit.startDate)
-      let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+          let start = DateUtils.startOfDay(for: habit.startDate)
+          let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
 
-      guard selected >= start, selected <= end else {
-        return false
-      }
+          guard selected >= start, selected <= end else {
+            return false
+          }
 
       let shouldShow = shouldShowHabitOnDate(habit, date: selectedDate)
       
@@ -293,7 +293,7 @@ struct HomeTabView: View {
       let dateKey = Habit.dateKey(for: selectedDate)
       let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
       
-      return shouldShow || wasCompletedOnThisDate
+          return shouldShow || wasCompletedOnThisDate
     }
 
     return filteredHabits
@@ -414,12 +414,12 @@ struct HomeTabView: View {
   @ViewBuilder
   private var celebrationOverlay: some View {
     Group {
-      if showCelebration {
-        CelebrationView(
-          isPresented: $showCelebration,
-          onDismiss: {
-            // Celebration dismissed, ready for next time
-          })
+    if showCelebration {
+      CelebrationView(
+        isPresented: $showCelebration,
+        onDismiss: {
+          // Celebration dismissed, ready for next time
+        })
       }
     }
   }
@@ -540,21 +540,21 @@ struct HomeTabView: View {
       .padding(.horizontal, 20)
       .padding(.top, 18)
       .padding(.bottom, 100)
-      .refreshable {
-        // Refresh habits data and trigger manual sync when user pulls down
-        await refreshHabits()
-        
-        // Trigger manual sync if user is authenticated
-        if AuthenticationManager.shared.currentUser != nil {
-          do {
-            try await HabitRepository.shared.triggerManualSync()
-          } catch {
-            // Error will be handled by HabitRepository and shown via sync status
+    .refreshable {
+      // Refresh habits data and trigger manual sync when user pulls down
+      await refreshHabits()
+      
+      // Trigger manual sync if user is authenticated
+      if AuthenticationManager.shared.currentUser != nil {
+        do {
+          try await HabitRepository.shared.triggerManualSync()
+        } catch {
+          // Error will be handled by HabitRepository and shown via sync status
             print("❌ HomeTabView: Manual sync failed: \(error.localizedDescription)")
-          }
         }
       }
-      .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
+    }
+    .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
     }
   }
 
@@ -711,7 +711,7 @@ struct HomeTabView: View {
       if lowercasedSchedule.contains(dayNameLower) {
         // Calendar weekday is 1-based, where 1 = Sunday
         let weekdayNumber = index + 1
-        weekdays.insert(weekdayNumber)
+          weekdays.insert(weekdayNumber)
       }
     }
 
@@ -1001,13 +1001,13 @@ struct HomeTabView: View {
   @MainActor
   private func countCompletedDays() -> Int {
     // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
-    let currentUser = AuthenticationManager.shared.currentUser
+      let currentUser = AuthenticationManager.shared.currentUser
     let userId: String
-    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+      if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
       userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
-    } else if let uid = currentUser?.uid {
+      } else if let uid = currentUser?.uid {
       userId = uid // Authenticated non-anonymous user
-    } else {
+      } else {
       userId = "" // No user = guest
     }
     
@@ -1081,7 +1081,7 @@ struct HomeTabView: View {
             }
             print("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.map { $0.name }.joined(separator: ", "))")
           }
-        } catch {
+      } catch {
           print("❌ XP_CALC: Failed to fetch CompletionRecords for \(dateKey): \(error)")
           allCompleted = false
         }
@@ -1195,7 +1195,7 @@ struct HomeTabView: View {
       print("      [\(index)] \(habit.name) - completed: \(isComplete)")
     }
   }
-
+      
   // MARK: - Habit Completion Logic
 
   private func onHabitCompleted(_ habit: Habit) {
@@ -1229,24 +1229,24 @@ struct HomeTabView: View {
       if goalAmount > 0 {
         isComplete = progress >= goalAmount
         print("  🔍 \(habitData.habitType == .breaking ? "Breaking" : "Formation") habit '\(h.name)': progress=\(progress), goal=\(goalAmount), complete=\(isComplete)")
-      } else {
+    } else {
         isComplete = progress > 0
         print("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
-      }
-      
+  }
+
       // ✅ UNIVERSAL RULE: Both types use completionHistory
       print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | progress=\(habitData.completionHistory[dateKey] ?? 0)")
       return !isComplete // Return true if NOT complete
     }
 
-    if remainingHabits.isEmpty {
-      // This is the last habit - set flag and let difficulty sheet be shown
+        if remainingHabits.isEmpty {
+          // This is the last habit - set flag and let difficulty sheet be shown
       // The celebration will be triggered after the difficulty sheet is dismissed
       print(
         "🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
-      onLastHabitCompleted()
+          onLastHabitCompleted()
       // Don't set selectedHabit = nil here - let the difficulty sheet show
-    } else {
+        } else {
       // Present difficulty sheet (existing logic)
       // Don't set selectedHabit here as it triggers habit detail screen
       // The difficulty sheet will be shown by the ScheduledHabitItem
@@ -1300,25 +1300,25 @@ struct HomeTabView: View {
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         
-        do {
+          do {
           // ✅ FIX #12: Use SwiftDataContainer's context
-          let modelContext = SwiftDataContainer.shared.modelContext
-          let existingAwards = try modelContext.fetch(request)
-          for award in existingAwards {
-            modelContext.delete(award)
-          }
-          try modelContext.save()
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let existingAwards = try modelContext.fetch(request)
+            for award in existingAwards {
+              modelContext.delete(award)
+            }
+            try modelContext.save()
           print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
           
           // ✅ REMOVED: No longer calling decrementGlobalStreak() here!
           // The onStreakRecalculationNeeded() callback above handles ALL streak updates
           // This prevents the old early-return logic from interfering with today's uncompletes
           print("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
-        } catch {
+          } catch {
           print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
+          }
         }
       }
-    }
 
     // Resort immediately
     deferResort = false
@@ -1327,7 +1327,7 @@ struct HomeTabView: View {
 
   private func onDifficultySheetDismissed() {
     let dateKey = Habit.dateKey(for: selectedDate)
-
+    
     print(
       "🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
 
@@ -1375,7 +1375,7 @@ struct HomeTabView: View {
       print("🎯 COMPLETION_FLOW: userId = \(userId)")
 
       Task {
-        #if DEBUG
+      #if DEBUG
         debugGrantCalls += 1
         print(
           "🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
@@ -1384,8 +1384,8 @@ struct HomeTabView: View {
           print("⚠️ Stack trace:")
           Thread.callStackSymbols.forEach { print("  \($0)") }
         }
-        #endif
-
+      #endif
+      
         print("✅ DERIVED_XP: Recalculating XP from completed days")
         
         // ✅ NEW APPROACH: Derive XP from state (idempotent!)
@@ -1407,15 +1407,15 @@ struct HomeTabView: View {
         do {
           // Still save DailyAward for history tracking
           // ✅ FIX #12: Use SwiftDataContainer's context
-          let modelContext = SwiftDataContainer.shared.modelContext
-          let dailyAward = DailyAward(
-            userId: userId,
-            dateKey: dateKey,
-            xpGranted: 50,
-            allHabitsCompleted: true
-          )
-          modelContext.insert(dailyAward)
-          try modelContext.save()
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let dailyAward = DailyAward(
+              userId: userId,
+              dateKey: dateKey,
+              xpGranted: 50,
+              allHabitsCompleted: true
+            )
+            modelContext.insert(dailyAward)
+            try modelContext.save()
           print("✅ COMPLETION_FLOW: DailyAward record created for history")
           
           // ✅ REMOVED: No longer calling updateGlobalStreak() here!
@@ -1431,10 +1431,10 @@ struct HomeTabView: View {
           // The callback will trigger updateAllStreaks() which updates GlobalStreakModel
           // SwiftUI @Query will automatically pick up the changes
           print("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
-        } catch {
+          } catch {
           print("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
         }
-
+        
         // Check XP after award
         let currentXP = xpManager.totalXP  // ✅ Use environment object
         print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")

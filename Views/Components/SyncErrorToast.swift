@@ -54,6 +54,8 @@ struct SyncErrorToast: TopPopup, View {
   
   func configurePopup(popup: TopPopupConfig) -> TopPopupConfig {
     popup
+    // Note: dismissAfter is not available on TopPopupConfig in this version
+    // Auto-dismiss will need to be handled manually if needed
   }
 }
 
@@ -88,6 +90,8 @@ struct SyncSuccessToast: TopPopup, View {
   
   func configurePopup(popup: TopPopupConfig) -> TopPopupConfig {
     popup
+    // Note: dismissAfter is not available on TopPopupConfig in this version
+    // Auto-dismiss will need to be handled manually if needed
   }
 }
 
