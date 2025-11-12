@@ -257,15 +257,11 @@ struct DeleteCompleteView: View {
 
         Spacer()
 
-        Button("Done") {
+        HabittoButton.largeFillPrimary(
+          text: "Done")
+        {
           onDismiss()
         }
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.primary)
-        .cornerRadius(12)
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
       }
