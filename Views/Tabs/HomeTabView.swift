@@ -366,7 +366,7 @@ struct HomeTabView: View {
         .frame(width: 28, height: 28)
         .foregroundColor(Color.white)
     }
-    .frame(width: 44, height: 44)
+    .frame(width: 40, height: 40)
     .background {
       // iOS glass effect using Material
       Circle()

@@ -519,8 +519,16 @@ final actor HabitStore {
 
     if let index = currentHabits.firstIndex(where: { $0.id == habitId }) {
       currentHabits[index].recordDifficulty(Int(difficulty), for: date)
+      
+      // ✅ CRITICAL FIX: Save the specific habit immediately to ensure difficulty is persisted
+      // Using saveHabit instead of saveHabits ensures difficulty history is properly synced
+      try await activeStorage.saveHabit(currentHabits[index], immediate: true)
+      
+      // Also update all habits to keep them in sync
       try await saveHabits(currentHabits)
-      logger.info("Successfully saved difficulty \(difficulty) for habit \(habitId)")
+      
+      logger.info("✅ Successfully saved difficulty \(difficulty) for habit \(habitId) on \(date)")
+      logger.info("   Difficulty history now has \(currentHabits[index].difficultyHistory.count) entries")
     } else {
       logger.error("Habit not found for ID: \(habitId)")
       throw DataError.storage(StorageError(
