@@ -116,11 +116,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
             dateFormatter.timeZone = TimeZone.current
             
             if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-              let difficultyRecord = await DifficultyRecord(
-                userId: getCurrentUserId() ?? "",
-                habitId: existingHabitData.id,
+              // ✅ CRITICAL FIX: Create DifficultyRecord and insert into modelContext before appending to relationship
+              // This ensures SwiftData properly tracks the relationship
+              let difficultyRecord = DifficultyRecord(
+                userId: "",
+                habitId: UUID(),
                 date: date,
                 difficulty: difficulty)
+              container.modelContext.insert(difficultyRecord)
               existingHabitData.difficultyHistory.append(difficultyRecord)
               print("✅ SAVE DIFFICULTY: Saved difficulty \(difficulty) for \(dateString) (parsed as \(date))")
             } else {
@@ -191,11 +194,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
           
           for (dateString, difficulty) in habit.difficultyHistory {
             if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-              let difficultyRecord = await DifficultyRecord(
-                userId: getCurrentUserId() ?? "",
-                habitId: habitData.id,
+              // ✅ CRITICAL FIX: Create DifficultyRecord and insert into modelContext before appending to relationship
+              let difficultyRecord = DifficultyRecord(
+                userId: "",
+                habitId: UUID(),
                 date: date,
                 difficulty: difficulty)
+              container.modelContext.insert(difficultyRecord)
               habitData.difficultyHistory.append(difficultyRecord)
               print("✅ CREATE DIFFICULTY: Created difficulty \(difficulty) for \(dateString) (parsed as \(date))")
             } else {
@@ -512,11 +517,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
         existingHabitData.difficultyHistory.removeAll()
         for (dateString, difficulty) in habit.difficultyHistory {
           if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-            let difficultyRecord = await DifficultyRecord(
-              userId: getCurrentUserId() ?? "",
-              habitId: existingHabitData.id,
+            // ✅ CRITICAL FIX: Create DifficultyRecord and insert into modelContext before appending to relationship
+            let difficultyRecord = DifficultyRecord(
+              userId: "",
+              habitId: UUID(),
               date: date,
               difficulty: difficulty)
+            container.modelContext.insert(difficultyRecord)
             existingHabitData.difficultyHistory.append(difficultyRecord)
             print("✅ SAVE_HABIT DIFFICULTY: Saved difficulty \(difficulty) for \(dateString) (parsed as \(date))")
           } else {
@@ -580,16 +587,27 @@ final class SwiftDataStorage: HabitStorageProtocol {
         }
 
         // Add difficulty history
+        // ✅ CRITICAL FIX: Use DateUtils.date() to parse "yyyy-MM-dd" format (dateKey format)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone.current
+        
         for (dateString, difficulty) in habit.difficultyHistory {
-          if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-            let difficultyRecord = await DifficultyRecord(
-              userId: getCurrentUserId() ?? "",
-              habitId: habitData.id,
+          if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+            // ✅ CRITICAL FIX: Create DifficultyRecord and insert into modelContext before appending to relationship
+            let difficultyRecord = DifficultyRecord(
+              userId: "",
+              habitId: UUID(),
               date: date,
               difficulty: difficulty)
+            container.modelContext.insert(difficultyRecord)
             habitData.difficultyHistory.append(difficultyRecord)
+            print("✅ SAVE_HABIT CREATE DIFFICULTY: Created difficulty \(difficulty) for \(dateString) (parsed as \(date))")
+          } else {
+            print("❌ SAVE_HABIT CREATE DIFFICULTY: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
           }
         }
+        print("✅ SAVE_HABIT CREATE DIFFICULTY: Created \(habitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
         // Add usage history
         for (key, value) in habit.actualUsage {
