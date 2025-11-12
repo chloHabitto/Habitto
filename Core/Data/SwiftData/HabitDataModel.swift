@@ -401,10 +401,51 @@ final class HabitData {
       .filter { $0.value.isCompleted }
       .mapValues { [$0.createdAt] }
 
-    let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyHistory
+    // ✅ CRITICAL FIX: Load difficulty history from SwiftData relationship
+    // The relationship might not be loaded, so we need to query DifficultyRecord directly
+    let habitId = self.id
+    let userId = self.userId
+    
+    var difficultyRecords: [DifficultyRecord] = []
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      // Query all DifficultyRecords for this habit
+      let allRecordsPredicate = #Predicate<DifficultyRecord> { record in
+        record.habitId == habitId
+      }
+      let allRecords = try context.fetch(FetchDescriptor<DifficultyRecord>(predicate: allRecordsPredicate))
+      
+      // Filter by userId (handle empty string for guest)
+      if userId.isEmpty {
+        difficultyRecords = allRecords.filter { $0.userId.isEmpty || $0.userId == "" }
+      } else {
+        difficultyRecords = allRecords.filter { $0.userId == userId }
+      }
+      
+      // Fallback: if no records found with userId match, use all records (userId mismatch handling)
+      if difficultyRecords.isEmpty && !allRecords.isEmpty {
+        print("⚠️ toHabit() DIFFICULTY: No DifficultyRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist. Using all records.")
+        difficultyRecords = allRecords
+      }
+      
+      print("🔍 toHabit() DIFFICULTY: Found \(difficultyRecords.count) DifficultyRecords for habit '\(name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
+    } catch {
+      print("❌ toHabit() DIFFICULTY: Failed to query DifficultyRecords: \(error)")
+      // Fallback to relationship if query fails
+      difficultyRecords = difficultyHistory
+      print("🔍 toHabit() DIFFICULTY: Falling back to relationship with \(difficultyRecords.count) records")
+    }
+    
+    let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyRecords
       .map {
         (DateUtils.dateKey(for: $0.date), $0.difficulty)
       })
+    
+    print("🔍 toHabit() DIFFICULTY: Converted to dictionary with \(difficultyHistoryDict.count) entries")
+    if !difficultyHistoryDict.isEmpty {
+      let sampleKeys = Array(difficultyHistoryDict.keys.prefix(3))
+      print("🔍 toHabit() DIFFICULTY: Sample keys: \(sampleKeys)")
+    }
 
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
       ($0.key, $0.value)
@@ -417,9 +458,14 @@ final class HabitData {
     print("  → completionHistory entries: \(completionHistoryDict.count)")
     print("  → completionStatus entries: \(completionStatusDict.count)")
     print("  → completionTimestamps entries: \(completionTimestampsDict.count)")
+    print("  → difficultyHistory entries: \(difficultyHistoryDict.count)")
     if filteredRecords.count > 0 {
       let completedCount = filteredRecords.filter { $0.isCompleted }.count
       print("  → Completed days: \(completedCount)/\(filteredRecords.count)")
+    }
+    if !difficultyHistoryDict.isEmpty {
+      let sampleKeys = Array(difficultyHistoryDict.keys.prefix(3))
+      print("  → Difficulty sample dates: \(sampleKeys)")
     }
     #endif
 

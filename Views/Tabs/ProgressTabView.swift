@@ -562,7 +562,13 @@ struct ProgressTabView: View {
       // Update time base completion data when view appears
       updateTimeBaseCompletionData()
     }
-    .onChange(of: habitRepository.habits) {
+    .onChange(of: habitRepository.habits) { oldHabits, newHabits in
+      // Refresh selectedHabit to get latest data (including difficulty history)
+      if let selectedId = selectedHabit?.id,
+         let updatedHabit = newHabits.first(where: { $0.id == selectedId }) {
+        selectedHabit = updatedHabit
+      }
+      
       // Reload yearly data when habits change
       loadYearlyData()
       // Update difficulty data when habits change
@@ -3978,9 +3984,18 @@ struct ProgressTabView: View {
       return
     }
 
+    // Debug: Log difficulty history count
+    print("🔍 updateDifficultyData: Habit '\(habit.name)' has \(habit.difficultyHistory.count) difficulty entries")
+    if !habit.difficultyHistory.isEmpty {
+      let sampleKeys = Array(habit.difficultyHistory.keys.prefix(5))
+      print("🔍 Sample difficulty keys: \(sampleKeys)")
+    }
+
     weeklyDifficultyData = getWeeklyDifficultyData(for: habit)
     monthlyDifficultyData = getMonthlyDifficultyData(for: habit)
-
+    
+    print("🔍 Weekly difficulty data points: \(weeklyDifficultyData.count) (with data: \(weeklyDifficultyData.filter { $0.hasData }.count))")
+    print("🔍 Monthly difficulty data points: \(monthlyDifficultyData.count) (with data: \(monthlyDifficultyData.filter { $0.hasData }.count))")
   }
 
   // MARK: - Time Base Completion Data Update
@@ -4010,15 +4025,26 @@ struct ProgressTabView: View {
     // Get difficulty logs for the week directly from habit's difficulty history
     var difficultyLogs: [(date: Date, difficulty: Int)] = []
 
+    print("🔍 getWeeklyDifficultyData: Week range \(weekStart) to \(adjustedWeekEnd)")
+    print("🔍 Total difficulty history entries: \(habit.difficultyHistory.count)")
+
     for (dateKey, difficulty) in habit.difficultyHistory {
       let formatter = DateFormatter()
       formatter.dateFormat = "yyyy-MM-dd"
-      guard let date = formatter.date(from: dateKey) else { continue }
+      guard let date = formatter.date(from: dateKey) else {
+        print("⚠️ Failed to parse dateKey: \(dateKey)")
+        continue
+      }
 
       if date >= weekStart, date <= adjustedWeekEnd {
         difficultyLogs.append((date: date, difficulty: difficulty))
+        print("✅ Added difficulty log: \(dateKey) = \(difficulty)")
+      } else {
+        print("⏭️ Skipped difficulty log: \(dateKey) (outside week range)")
       }
     }
+    
+    print("🔍 Filtered difficulty logs for week: \(difficultyLogs.count)")
 
     // Sort by date
     difficultyLogs.sort { $0.date < $1.date }
@@ -4079,15 +4105,26 @@ struct ProgressTabView: View {
     // Get difficulty logs for the month directly from habit's difficulty history
     var difficultyLogs: [(date: Date, difficulty: Int)] = []
 
+    print("🔍 getMonthlyDifficultyData: Month range \(monthStart) to \(adjustedMonthEnd)")
+    print("🔍 Total difficulty history entries: \(habit.difficultyHistory.count)")
+
     for (dateKey, difficulty) in habit.difficultyHistory {
       let formatter = DateFormatter()
       formatter.dateFormat = "yyyy-MM-dd"
-      guard let date = formatter.date(from: dateKey) else { continue }
+      guard let date = formatter.date(from: dateKey) else {
+        print("⚠️ Failed to parse dateKey: \(dateKey)")
+        continue
+      }
 
       if date >= monthStart, date <= adjustedMonthEnd {
         difficultyLogs.append((date: date, difficulty: difficulty))
+        print("✅ Added difficulty log: \(dateKey) = \(difficulty)")
+      } else {
+        print("⏭️ Skipped difficulty log: \(dateKey) (outside month range)")
       }
     }
+    
+    print("🔍 Filtered difficulty logs for month: \(difficultyLogs.count)")
 
     // Sort by date
     difficultyLogs.sort { $0.date < $1.date }

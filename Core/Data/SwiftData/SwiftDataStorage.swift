@@ -104,6 +104,41 @@ final class SwiftDataStorage: HabitStorageProtocol {
         if let existingHabitData {
           // Update existing habit
           await existingHabitData.updateFromHabit(habit)
+          
+          // ✅ CRITICAL FIX: Sync difficulty history from habit.difficultyHistory
+          // This ensures difficulty ratings are persisted when habits are saved
+          existingHabitData.difficultyHistory.removeAll()
+          for (dateString, difficulty) in habit.difficultyHistory {
+            // ✅ CRITICAL FIX: Use DateUtils.date() to parse "yyyy-MM-dd" format (dateKey format)
+            // difficultyHistory uses dateKey format, not ISO8601
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone.current
+            
+            if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+              let difficultyRecord = await DifficultyRecord(
+                userId: getCurrentUserId() ?? "",
+                habitId: existingHabitData.id,
+                date: date,
+                difficulty: difficulty)
+              existingHabitData.difficultyHistory.append(difficultyRecord)
+              print("✅ SAVE DIFFICULTY: Saved difficulty \(difficulty) for \(dateString) (parsed as \(date))")
+            } else {
+              print("❌ SAVE DIFFICULTY: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
+            }
+          }
+          print("✅ SAVE DIFFICULTY: Synced \(existingHabitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
+          
+          // ✅ CRITICAL FIX: Sync usage history from habit.actualUsage
+          existingHabitData.usageHistory.removeAll()
+          for (key, value) in habit.actualUsage {
+            let usageRecord = await UsageRecord(
+              userId: getCurrentUserId() ?? "",
+              habitId: existingHabitData.id,
+              key: key,
+              value: value)
+            existingHabitData.usageHistory.append(usageRecord)
+          }
         } else {
           // Create new habit with user ID
           let habitData = await HabitData(
@@ -149,16 +184,25 @@ final class SwiftDataStorage: HabitStorageProtocol {
           }
 
           // Add difficulty history
+          // ✅ CRITICAL FIX: Use DateUtils.date() to parse "yyyy-MM-dd" format (dateKey format)
+          let dateFormatter = DateFormatter()
+          dateFormatter.dateFormat = "yyyy-MM-dd"
+          dateFormatter.timeZone = TimeZone.current
+          
           for (dateString, difficulty) in habit.difficultyHistory {
-            if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+            if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
               let difficultyRecord = await DifficultyRecord(
                 userId: getCurrentUserId() ?? "",
                 habitId: habitData.id,
                 date: date,
                 difficulty: difficulty)
               habitData.difficultyHistory.append(difficultyRecord)
+              print("✅ CREATE DIFFICULTY: Created difficulty \(difficulty) for \(dateString) (parsed as \(date))")
+            } else {
+              print("❌ CREATE DIFFICULTY: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
             }
           }
+          print("✅ CREATE DIFFICULTY: Created \(habitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
           // Add usage history
           for (key, value) in habit.actualUsage {
@@ -460,17 +504,26 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("✅ SWIFTDATA_DEBUG: Updated habit '\(habit.name)' - CompletionRecords synced via updateFromHabit")
 
         // Update difficulty history
+        // ✅ CRITICAL FIX: Use DateUtils.date() to parse "yyyy-MM-dd" format (dateKey format)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone.current
+        
         existingHabitData.difficultyHistory.removeAll()
         for (dateString, difficulty) in habit.difficultyHistory {
-          if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
+          if let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
             let difficultyRecord = await DifficultyRecord(
               userId: getCurrentUserId() ?? "",
               habitId: existingHabitData.id,
               date: date,
               difficulty: difficulty)
             existingHabitData.difficultyHistory.append(difficultyRecord)
+            print("✅ SAVE_HABIT DIFFICULTY: Saved difficulty \(difficulty) for \(dateString) (parsed as \(date))")
+          } else {
+            print("❌ SAVE_HABIT DIFFICULTY: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
           }
         }
+        print("✅ SAVE_HABIT DIFFICULTY: Synced \(existingHabitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
         // Update usage history
         existingHabitData.usageHistory.removeAll()
