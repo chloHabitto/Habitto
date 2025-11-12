@@ -151,22 +151,7 @@ class XPManager {
     updateLevelProgress()
   }
 
-  /// ❌ DEPRECATED: Use publishXP(completedDaysCount:) instead
-  @available(*, unavailable, message: "Use XPManager.publishXP(completedDaysCount:) for idempotent XP updates")
-  func updateXPFromDailyAward(xpGranted: Int, dateKey: String) {
-    fatalError("updateXPFromDailyAward is deprecated. Use publishXP(completedDaysCount:) instead.")
-  }
 
-  /// ❌ REMOVED: Force award XP for testing
-  /// This method has been removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.
-  @available(
-    *,
-    unavailable,
-    message: "Removed in Phase 4. Use XPService.awardDailyCompletionIfEligible instead.")
-  func debugForceAwardXP(_: Int) {
-    fatalError(
-      "debugForceAwardXP has been removed. Use XPService.awardDailyCompletionIfEligible instead.")
-  }
 
   /// ✅ DEBUG: Get current XP status
   func debugGetXPStatus() -> String {

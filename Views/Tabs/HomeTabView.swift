@@ -1102,17 +1102,6 @@ struct HomeTabView: View {
     return completedCount
   }
   
-  /// ❌ DEPRECATED: Old incremental XP approach (replaced by derived XP)
-  @available(*, unavailable, message: "Use countCompletedDays() and publishXP() instead")
-  private func checkAndAwardMissingXPForPreviousDays() async {
-    fatalError("This method is deprecated. Use countCompletedDays() and publishXP() instead.")
-  }
-  
-  /// ❌ DEPRECATED: Old celebration check (replaced by derived XP on toggles)
-  @available(*, unavailable, message: "XP is now derived on habit toggles via publishXP()")
-  private func checkAndTriggerCelebrationIfAllCompleted() async {
-    fatalError("This method is deprecated. XP is now derived on habit toggles via publishXP().")
-  }
 
   /// Refresh habits data when user pulls down
   private func refreshHabits() async {
