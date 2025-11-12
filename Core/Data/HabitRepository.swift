@@ -1100,17 +1100,14 @@ class HabitRepository: ObservableObject {
     lastSyncDate = Date()
     saveLastSyncDate()
     
-    // Update unsynced count after sync
-    Task {
+    // Update unsynced count after sync, then show success toast
+    Task { @MainActor in
       await updateUnsyncedCount()
-    }
-    
-    // Show success toast if there were pending items that are now synced
-    if unsyncedCount == 0 {
-      Task { @MainActor in
-        await SyncSuccessToast(message: "All changes synced")
-          .present()
-      }
+      
+      // Show success toast after confirming everything is synced
+      // Only show if we transitioned from syncing to synced (not if already synced)
+      await SyncSuccessToast(message: "All changes synced")
+        .present()
     }
   }
   
