@@ -14,6 +14,7 @@ struct HeaderView: View {
   @ObservedObject private var avatarManager = AvatarManager.shared
   @State private var showingLoginView = false
   @State private var showingProfileView = false
+  @State private var showingSubscriptionView = false
 
   var body: some View {
     HStack(spacing: 0) {
@@ -101,7 +102,7 @@ struct HeaderView: View {
               .foregroundColor(.white)
           }
           .padding(.horizontal, 12)
-          .frame(height: 48)
+          .frame(height: 44)
           .background {
             // iOS glass effect using Material
             RoundedRectangle(cornerRadius: 24)
@@ -142,33 +143,69 @@ struct HeaderView: View {
           }
         }
       } else {
-        // Add icon with advanced glass effect for other tabs
-        Button(action: onCreateHabit) {
-          Image(systemName: "plus")
-            .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.white)
-        }
-        .frame(width: 40, height: 40)
-        .background {
-          // iOS glass effect using Material
-          Circle()
-            .fill(.ultraThinMaterial)
-            .overlay {
-              // Liquid glass effect with gradient opacity stroke
-              Circle()
-                .stroke(
-                  LinearGradient(
-                    stops: [
-                      .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-                      .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-                      .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                  ),
-                  lineWidth: 1.5
-                )
-            }
+        // Crown button and Add button with advanced glass effect
+        HStack(spacing: 12) {
+          // Crown button for subscription
+          Button(action: {
+            showingSubscriptionView = true
+          }) {
+            Image("Icon-crown_Filled")
+              .renderingMode(.template)
+              .resizable()
+              .frame(width: 20, height: 20)
+              .foregroundColor(Color(hex: "FCD884"))
+          }
+          .frame(width: 36, height: 36)
+          .background {
+            // iOS glass effect using Material
+            Circle()
+              .fill(.ultraThinMaterial)
+              .overlay {
+                // Liquid glass effect with gradient opacity stroke
+                Circle()
+                  .stroke(
+                    LinearGradient(
+                      stops: [
+                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                      ],
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                  )
+              }
+          }
+          
+          // Add icon with advanced glass effect
+          Button(action: onCreateHabit) {
+            Image(systemName: "plus")
+              .font(.system(size: 16, weight: .bold))
+              .foregroundColor(.white)
+          }
+          .frame(width: 36, height: 36)
+          .background {
+            // iOS glass effect using Material
+            Circle()
+              .fill(.ultraThinMaterial)
+              .overlay {
+                // Liquid glass effect with gradient opacity stroke
+                Circle()
+                  .stroke(
+                    LinearGradient(
+                      stops: [
+                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                      ],
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                  )
+              }
+          }
         }
       }
     }
@@ -181,6 +218,9 @@ struct HeaderView: View {
     }
     .sheet(isPresented: $showingProfileView) {
       ProfileView()
+    }
+    .sheet(isPresented: $showingSubscriptionView) {
+      SubscriptionView()
     }
   }
 
