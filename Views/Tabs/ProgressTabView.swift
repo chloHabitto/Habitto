@@ -2020,14 +2020,11 @@ struct ProgressTabView: View {
   private func getWeeklyScheduledHabitsCount() -> Int {
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let weekStart = selectedWeekStartDate
-    let today = selectedProgressDate
 
-    // Only count days from week start up to today (or selected date)
-    let daysToCount = min(7, calendar.dateComponents([.day], from: weekStart, to: today).day ?? 0) +
-      1
-
+    // Count all habits scheduled for the entire week (7 days)
+    // This gives us the total number of habits planned for the week
     var totalScheduled = 0
-    for dayOffset in 0 ..< daysToCount {
+    for dayOffset in 0 ..< 7 {
       if let currentDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
         let scheduledHabits = habitRepository.habits.filter { habit in
           StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDay)
