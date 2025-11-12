@@ -491,7 +491,7 @@ struct ProgressTabView: View {
           ScrollView {
             mainContentView
               .padding(.top, 20)
-              .padding(.bottom, 20)
+              .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
           }
         }
     }

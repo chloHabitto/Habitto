@@ -46,7 +46,7 @@ struct MoreTabView: View {
           }
           .padding(.horizontal, 0)
           .padding(.top, 0)
-          .padding(.bottom, 20)
+          .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
         }
       }
       .sheet(isPresented: $showingProfileView) {
