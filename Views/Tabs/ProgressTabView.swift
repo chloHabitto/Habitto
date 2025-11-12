@@ -2067,11 +2067,14 @@ struct ProgressTabView: View {
   }
 
   private func getWeeklyProgressPercentage() -> Double {
-    let completedDays = getWeeklyCompletedDaysCount()
-    let totalPossibleDays = getWeeklyTotalPossibleDays()
-    guard totalPossibleDays > 0 else { return 0.0 }
+    // Use habit-based counting instead of day-based counting
+    // This shows actual progress (e.g., 60% if 6 out of 10 habits completed)
+    // rather than perfect days (which would be 0% if any day has incomplete habits)
+    let completedHabits = getWeeklyCompletedHabitsCount()
+    let scheduledHabits = getWeeklyScheduledHabitsCount()
+    guard scheduledHabits > 0 else { return 0.0 }
 
-    return Double(completedDays) / Double(totalPossibleDays)
+    return Double(completedHabits) / Double(scheduledHabits)
   }
 
   private func getWeeklyEncouragingMessage() -> String {
