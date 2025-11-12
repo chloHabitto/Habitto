@@ -83,29 +83,46 @@ struct HeaderView: View {
           }
         }
       } else {
-        // Streak pill
+        // Streak pill with advanced glass effect
         Button(action: onStreakTap) {
           HStack(spacing: 6) {
             // Show frozen fire icon when vacation mode is active
             if VacationManager.shared.isActive {
               Image("Icon-fire-frozen")
                 .resizable()
-                .frame(width: 32, height: 32)
+                .frame(width: 24, height: 24)
             } else {
               Image(.iconFire)
                 .resizable()
-                .frame(width: 32, height: 32)
+                .frame(width: 24, height: 24)
             }
             Text(pluralizeStreak(currentStreak))
               .font(.appButtonText1)
-              .foregroundColor(.black)
+              .foregroundColor(.white)
           }
-          .padding(.top, 8)
-          .padding(.bottom, 8)
-          .padding(.leading, 12)
-          .padding(.trailing, 16)
-          .background(Color.white)
-          .clipShape(Capsule())
+          .padding(.horizontal, 12)
+          .frame(height: 48)
+          .background {
+            // iOS glass effect using Material
+            RoundedRectangle(cornerRadius: 24)
+              .fill(.ultraThinMaterial)
+              .overlay {
+                // Liquid glass effect with gradient opacity stroke
+                RoundedRectangle(cornerRadius: 24)
+                  .stroke(
+                    LinearGradient(
+                      stops: [
+                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                      ],
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                  )
+              }
+          }
         }
         .buttonStyle(PlainButtonStyle())
       }
@@ -125,15 +142,34 @@ struct HeaderView: View {
           }
         }
       } else {
-        // Add icon for other tabs
+        // Add icon with advanced glass effect for other tabs
         Button(action: onCreateHabit) {
-          Image("Icon-AddCircle_Filled")
-            .renderingMode(.template)
-            .resizable()
-            .frame(width: 32, height: 32)
-            .foregroundColor(.onPrimary)
+          Image(systemName: "plus")
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.white)
         }
-        .frame(width: 44, height: 44)
+        .frame(width: 40, height: 40)
+        .background {
+          // iOS glass effect using Material
+          Circle()
+            .fill(.ultraThinMaterial)
+            .overlay {
+              // Liquid glass effect with gradient opacity stroke
+              Circle()
+                .stroke(
+                  LinearGradient(
+                    stops: [
+                      .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                      .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                      .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                  ),
+                  lineWidth: 1.5
+                )
+            }
+        }
       }
     }
     .padding(.leading, 20)
