@@ -364,10 +364,33 @@ struct HomeTabView: View {
         .renderingMode(.template)
         .resizable()
         .frame(width: 28, height: 28)
-        .foregroundColor(.onPrimary)
+        .foregroundColor(Color.white)
     }
     .frame(width: 44, height: 44)
+    .background {
+      // iOS glass effect using Material
+      Circle()
+        .fill(.ultraThinMaterial)
+        .overlay {
+          // Liquid glass effect with gradient opacity stroke
+          Circle()
+            .stroke(
+              LinearGradient(
+                stops: [
+                  .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                  .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                  .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              ),
+              lineWidth: 1.5
+            )
+        }
+    }
     .buttonStyle(PlainButtonStyle())
+    .accessibilityLabel("Add new habit")
+    .accessibilityHint("Double tap to create a new habit")
   }
 
   @ViewBuilder
