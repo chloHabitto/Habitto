@@ -17,12 +17,10 @@ class HabitSchedulingLogic {
   /// Determines if a habit should be shown on a given date
   /// This is the SINGLE SOURCE OF TRUTH used by both XP and streak calculations
   static func shouldShowHabitOnDate(_ habit: Habit, date: Date, habits: [Habit]) -> Bool {
-    print("🔍 shouldShowHabitOnDate called for '\(habit.name)' with schedule: '\(habit.schedule)'")
     let weekday = Calendar.current.component(.weekday, from: date)
 
     // Check if the date is before the habit start date
     if date < DateUtils.startOfDay(for: habit.startDate) {
-      print("🔍 shouldShowHabitOnDate - '\(habit.name)' EXCLUDED: before start date")
       return false
     }
 

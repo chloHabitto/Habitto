@@ -21,9 +21,6 @@ struct MoreTabView: View {
   @ObservedObject var habitRepository = HabitRepository.shared
 
   var body: some View {
-    // 🔍 DEBUG: Log XP value on every body render
-    let _ = print("🟣 MoreTabView body render | xpManager.totalXP: \(xpManager.totalXP) | instance: \(ObjectIdentifier(xpManager))")
-    
     return WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())

@@ -9,7 +9,6 @@ struct XPLevelDisplay: View {
   @Environment(XPManager.self) private var xpManager
 
   var body: some View {
-    let _ = print("💡 XPLevelDisplay body re-render with XP: \(xpManager.totalXP) | instance: \(ObjectIdentifier(xpManager))")
     return VStack(spacing: 12) {
       // Level and XP Info
       HStack(spacing: 16) {
@@ -102,14 +101,9 @@ struct XPLevelDisplay: View {
     .scaleEffect(appeared ? 1 : 0.95)
     .offset(y: appeared ? 0 : 10)
     .onAppear {
-      print(
-        "🎯 UI: XPLevelDisplay appeared - totalXP: \(xpManager.totalXP), level: \(xpManager.currentLevel), instance: \(ObjectIdentifier(xpManager))")
       withAnimation(.spring(response: 0.4, dampingFraction: 0.75).delay(0.05)) {
         appeared = true
       }
-    }
-    .onChange(of: xpManager.totalXP) { oldValue, newValue in
-      print("🎯 UI: XPLevelDisplay XP changed from \(oldValue) to \(newValue)")
     }
   }
 

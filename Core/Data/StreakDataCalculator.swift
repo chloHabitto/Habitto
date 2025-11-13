@@ -168,11 +168,7 @@ class StreakDataCalculator {
     // Get completion percentage for this date
     let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
 
-    // Debug: Print heatmap data for troubleshooting
-    let dateKey = DateUtils.dateKey(for: targetDate)
-    let actualProgress = habit.getProgress(for: targetDate)
-    print(
-      "🔍 YEARLY HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress)")
+    // Debug: Print heatmap data for troubleshooting (disabled for performance)
 
     // If not scheduled, return 0 intensity and 0% completion
     if !isScheduled {
@@ -571,18 +567,14 @@ class StreakDataCalculator {
   static func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
     let calendar = Calendar.current
     let weekday = calendar.component(.weekday, from: date)
-    let dateKey = DateUtils.dateKey(for: date)
 
     // Check if the date is before the habit start date
     if date < calendar.startOfDay(for: habit.startDate) {
-      print(
-        "🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Date before start date")
       return false
     }
 
     // Check if the date is after the habit end date (if set)
     if let endDate = habit.endDate, date > calendar.startOfDay(for: endDate) {
-      print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Date after end date")
       return false
     }
 
@@ -590,7 +582,6 @@ class StreakDataCalculator {
     // during active vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isActive, vacationManager.isVacationDay(date) {
-      print("🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Active vacation day")
       return false
     }
 
@@ -599,14 +590,6 @@ class StreakDataCalculator {
       habit,
       weekday: weekday,
       targetDate: date)
-
-    print(
-      "🔍 SCHEDULE DEBUG - Habit '\(habit.name)' | Date: \(dateKey) | Weekday: \(weekday) | Schedule: '\(habit.schedule)' | Scheduled for weekday: \(isScheduledForWeekday)")
-
-    if !isScheduledForWeekday {
-      print(
-        "🔍 SCHEDULE DEBUG - Habit '\(habit.name)' not shown on \(dateKey): Not scheduled for weekday \(weekday)")
-    }
 
     return isScheduledForWeekday
   }
@@ -625,9 +608,6 @@ class StreakDataCalculator {
     // Calculate percentage based on actual progress vs goal
     let percentage = (Double(actualProgress) / Double(goalAmount)) * 100.0
     let clampedPercentage = max(0.0, min(100.0, percentage))
-
-    print(
-      "🔍 COMPLETION PERCENTAGE DEBUG - Habit '\(habit.name)' | Date: \(DateUtils.dateKey(for: date)) | Actual: \(actualProgress) | Goal: \(goalAmount) | Percentage: \(percentage)% | Clamped: \(clampedPercentage)%")
 
     return clampedPercentage
   }
@@ -688,9 +668,6 @@ class StreakDataCalculator {
         let endIndex = min(startIndex + itemsPerPage, habits.count)
         let habitsToProcess = Array(habits[startIndex ..< endIndex])
 
-        print(
-          "🔍 ASYNC YEARLY DATA GENERATION - Processing \(habitsToProcess.count) habits (start: \(startIndex), end: \(endIndex))")
-
         for (index, habit) in habitsToProcess.enumerated() {
           var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] =
             []
@@ -704,16 +681,12 @@ class StreakDataCalculator {
           components.day = 1
 
           guard let yearStartDate = calendar.date(from: components) else {
-            print("🔍 ASYNC YEARLY DATA ERROR - Could not create start date for year \(year)")
             continue
           }
 
           // Handle leap years - use 366 days for leap years, 365 for regular years
           let isLeapYear = calendar.isLeapYear(year)
           let daysInYear = isLeapYear ? 366 : 365
-
-          print(
-            "🔍 ASYNC YEARLY DATA DEBUG - Habit \(index): '\(habit.name)', \(daysInYear) days, leap year: \(isLeapYear)")
 
           // Generate data for each day of the year
           for day in 0 ..< daysInYear {
@@ -731,18 +704,12 @@ class StreakDataCalculator {
           // Cache this habit's data for future use (year-specific)
           cacheManager.set(habitYearlyData, forKey: "\(habit.id.uuidString)_\(year)")
 
-          print(
-            "🔍 ASYNC YEARLY DATA DEBUG - Habit \(index): Generated \(habitYearlyData.count) days of data")
-
           // Report progress
           let progressValue = Double(index + 1) / Double(habitsToProcess.count)
           DispatchQueue.main.async {
             progress(progressValue)
           }
         }
-
-        print(
-          "🔍 ASYNC YEARLY DATA GENERATION - Completed: \(yearlyData.count) habits, \(yearlyData.first?.count ?? 0) days per habit")
         continuation.resume(returning: yearlyData)
       }
     }
@@ -886,15 +853,10 @@ class StreakDataCalculator {
   {
     let schedule = habit.schedule.lowercased()
 
-    print(
-      "🔍 WEEKDAY SCHEDULE DEBUG - Habit '\(habit.name)' | Weekday: \(weekday) | Schedule: '\(schedule)'")
-
     // Check if schedule contains multiple weekdays separated by commas
     if schedule.contains(",") {
       let weekdays = extractWeekdays(from: habit.schedule)
       let isScheduled = weekdays.contains(weekday)
-      print(
-        "🔍 WEEKDAY SCHEDULE DEBUG - Multiple weekdays detected: \(weekdays) | Contains \(weekday): \(isScheduled)")
       return isScheduled
     }
 
@@ -902,7 +864,6 @@ class StreakDataCalculator {
     switch schedule {
     case "every day",
          "everyday":
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Everyday schedule detected")
       return true
 
     case let s where s.hasPrefix("every ") && s.contains("days"):
@@ -913,18 +874,13 @@ class StreakDataCalculator {
         let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: targetDateStart)
           .day ?? 0
         let isScheduled = daysSinceStart >= 0 && daysSinceStart % dayCount == 0
-        print(
-          "🔍 WEEKDAY SCHEDULE DEBUG - Every \(dayCount) days schedule | Target date: \(targetDateStart) | Days since start: \(daysSinceStart) | Scheduled: \(isScheduled)")
         return isScheduled
       }
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'every X days' schedule")
       return false
 
     case let s where s.hasPrefix("every ") && !s.contains("days"):
       let weekdays = extractWeekdays(from: habit.schedule)
       let isScheduled = weekdays.contains(weekday)
-      print(
-        "🔍 WEEKDAY SCHEDULE DEBUG - Specific weekdays: \(weekdays) | Contains \(weekday): \(isScheduled)")
       return isScheduled
 
     case let s where s.contains("times a week"):
@@ -937,11 +893,8 @@ class StreakDataCalculator {
           from: startDate,
           to: targetDateStart).weekOfYear ?? 0
         let isScheduled = weeksSinceStart >= 0 && weeksSinceStart % timesPerWeek == 0
-        print(
-          "🔍 WEEKDAY SCHEDULE DEBUG - \(timesPerWeek) times per week | Weeks since start: \(weeksSinceStart) | Scheduled: \(isScheduled)")
         return isScheduled
       }
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Failed to parse 'X times a week' schedule")
       return false
 
     case let s where s.contains("once a week") || s.contains("twice a week") || s.contains("day a week") || s.contains("days a week"):
@@ -951,19 +904,15 @@ class StreakDataCalculator {
       let startDate = calendar.startOfDay(for: habit.startDate)
       let targetDateStart = calendar.startOfDay(for: targetDate)
       let isAfterStart = targetDateStart >= startDate
-      print(
-        "🔍 WEEKDAY SCHEDULE DEBUG - 'weekly frequency' schedule | After start date: \(isAfterStart)")
       return isAfterStart
 
     case let s where s.contains("once a month") || s.contains("twice a month") || s.contains("day a month") || s.contains("days a month"):
       // Monthly frequency schedules like "5 days a month"
       // Use the helper function to determine if habit should show
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Monthly frequency schedule detected")
       return shouldShowHabitWithMonthlyFrequency(habit: habit, date: targetDate)
 
     default:
       // For any unrecognized schedule format, don't show the habit (safer default)
-      print("🔍 WEEKDAY SCHEDULE DEBUG - Unrecognized schedule format: '\(schedule)'")
       return false
     }
   }

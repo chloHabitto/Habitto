@@ -510,19 +510,6 @@ struct Habit: Identifiable, Codable, Equatable {
     // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use completionHistory
     // actualUsage, baseline, current, and target are DISPLAY-ONLY fields
     let progress = completionHistory[dateKey] ?? 0
-    
-    print("🔍 GET_PROGRESS: \(name) (type=\(habitType == .breaking ? "breaking" : "formation"))")
-    print("   📅 dateKey=\(dateKey)")
-    print("   📊 completionHistory keys: \(Array(completionHistory.keys.sorted()))")
-    print("   📊 completionHistory[\(dateKey)] = \(completionHistory[dateKey] ?? -999)")
-    
-    if habitType == .breaking {
-      print("   ⚠️ actualUsage keys: \(Array(actualUsage.keys.sorted()))")
-      print("   ⚠️ actualUsage[\(dateKey)] = \(actualUsage[dateKey] ?? -999)")
-      print("   ❌ NEVER USE actualUsage for progress! Only completionHistory!")
-    }
-    
-    print("   ✅ Returning progress=\(progress)")
     return progress
   }
 
