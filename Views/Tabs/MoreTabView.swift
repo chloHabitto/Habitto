@@ -184,10 +184,17 @@ struct MoreTabView: View {
 
   private var trialBanner: some View {
     HStack {
-      Image("Icon-crowd_Filled")
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .frame(width: 24, height: 24)
+      ZStack {
+        Circle()
+          .fill(Color(hex: "FCD884").opacity(0.4))
+          .frame(width: 32, height: 32)
+        
+        Image("Icon-crown_Filled")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 24, height: 24)
+      }
+      .padding(8)
       
       Text("Build better habits with Premium!")
         .font(.system(size: 16, weight: .medium))
