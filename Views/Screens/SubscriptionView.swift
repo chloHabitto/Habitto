@@ -131,22 +131,24 @@ struct SubscriptionView: View {
             .background(Color.red)
         }
         .padding(.vertical, 16)
+        .overlay(
+          Rectangle()
+            .frame(height: 1)
+            .foregroundColor(.outline3),
+          alignment: .bottom
+        )
         
         // Table rows
-        ForEach(subscriptionFeatures, id: \.title) { feature in
-          comparisonRow(feature: feature)
+        ForEach(Array(subscriptionFeatures.enumerated()), id: \.element.title) { index, feature in
+          comparisonRow(feature: feature, isLast: index == subscriptionFeatures.count - 1)
         }
       }
       .cornerRadius(16)
-      .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .stroke(Color.outline3, lineWidth: 1)
-      )
       }
     }
   }
   
-  private func comparisonRow(feature: SubscriptionFeature) -> some View {
+  private func comparisonRow(feature: SubscriptionFeature, isLast: Bool) -> some View {
     HStack(spacing: 0) {
       // Benefit name
       Text(feature.title)
@@ -175,9 +177,13 @@ struct SubscriptionView: View {
     }
     .padding(.vertical, 16)
     .overlay(
-      Rectangle()
-        .frame(height: 1)
-        .foregroundColor(.outline3),
+      Group {
+        if !isLast {
+          Rectangle()
+            .frame(height: 1)
+            .foregroundColor(.outline3)
+        }
+      },
       alignment: .bottom
     )
   }
