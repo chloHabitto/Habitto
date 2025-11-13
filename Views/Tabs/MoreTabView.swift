@@ -186,25 +186,30 @@ struct MoreTabView: View {
     HStack {
       ZStack {
         Circle()
-          .fill(Color(hex: "FCD884").opacity(0.4))
-          .frame(width: 32, height: 32)
+          .fill(Color(hex: "FCD884").opacity(0.2))
+          .frame(width: 84, height: 84)
+        
+        Circle()
+          .fill(Color(hex: "FCD884").opacity(0.3))
+          .frame(width: 48, height: 48)
         
         Image("Icon-crown_Filled")
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 24, height: 24)
       }
-      .padding(8)
       
       Text("Build better habits with Premium!")
         .font(.system(size: 16, weight: .medium))
         .foregroundColor(.text01)
+        .background(Color.red)
 
       Spacer()
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
         .foregroundColor(.text01)
+        .background(Color.blue)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
