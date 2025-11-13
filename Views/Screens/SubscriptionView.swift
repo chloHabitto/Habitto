@@ -12,15 +12,11 @@ struct SubscriptionView: View {
           VStack(spacing: 0) {
             // Header text
             headerText
-              .padding(.top, 16)
+              .padding(.top, 20)
               .padding(.bottom, 32)
             
             // Comparison table
             comparisonTable
-              .padding(.bottom, 32)
-            
-            // Subscription options
-            subscriptionOptions
               .padding(.bottom, 100) // Space for button
             
             // Benefits list (commented out for future use)
@@ -30,7 +26,7 @@ struct SubscriptionView: View {
           .padding(.horizontal, 20)
         }
         .background(
-          Image("LightLightBlueGradient@4x")
+          Image("secondaryBlueGradient@4x")
             .resizable()
             .aspectRatio(contentMode: .fill)
             .ignoresSafeArea()
@@ -58,31 +54,27 @@ struct SubscriptionView: View {
           }
         }
       }
+      .sheet(isPresented: $showingSubscriptionOptions) {
+        subscriptionOptionsSheet
+      }
     }
   }
 
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+  @State private var selectedOption: SubscriptionOption = .lifetime
+  @State private var showingSubscriptionOptions = false
   
   private var headerText: some View {
-    (Text("Unlock your full Habitto experience with ") +
+    (Text("Unlock your full Habitto experience with ")
+       .foregroundColor(.text02.opacity(0.85)) +
      Text("Premium")
        .font(.system(size: 28, weight: .black))
-       .foregroundStyle(
-         LinearGradient(
-           gradient: Gradient(colors: [
-             Color(hex: "74ADFA"),
-             Color(hex: "183288")
-           ]),
-           startPoint: .top,
-           endPoint: .bottom
-         )
-       ) +
+       .foregroundColor(.primary) +
      Text("")
     )
-    .font(.appHeadlineMediumEmphasised)
-    .foregroundColor(.text01)
+    .font(.appHeadlineMedium)
     .multilineTextAlignment(.center)
     .frame(maxWidth: .infinity)
   }
@@ -116,10 +108,59 @@ struct SubscriptionView: View {
     }
   }
   
+  private var subscriptionOptionsSheet: some View {
+    NavigationView {
+      VStack(spacing: 0) {
+        ScrollView {
+          VStack(spacing: 20) {
+            // Profile image
+            Image("Default-Profile@4x")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 80, height: 80)
+              .clipShape(Circle())
+            
+            subscriptionOptions
+          }
+          .padding(.horizontal, 20)
+          .padding(.top, 20)
+          .padding(.bottom, 20)
+        }
+        
+        // Bottom buttons
+        VStack(spacing: 12) {
+          HabittoButton.largeFillPrimary(text: "Continue") {
+            // Handle subscription action
+            print("Continue subscription tapped")
+            showingSubscriptionOptions = false
+          }
+          
+          HabittoButton(
+            size: .medium,
+            style: .tertiary,
+            content: .text("Maybe Later"),
+            action: {
+              showingSubscriptionOptions = false
+            }
+          )
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .padding(.top, 12)
+        .background(Color.surface)
+      }
+      .navigationTitle("Choose Your Plan")
+      .navigationBarTitleDisplayMode(.inline)
+    }
+    .presentationDetents([.height(650), .large])
+    .presentationDragIndicator(.visible)
+  }
+  
   private var subscriptionOptions: some View {
     VStack(spacing: 12) {
       // Lifetime Access
       subscriptionOptionCard(
+        option: .lifetime,
         emoji: "💎",
         title: "Lifetime Access",
         price: "€24.99",
@@ -130,6 +171,7 @@ struct SubscriptionView: View {
       
       // Annual
       subscriptionOptionCard(
+        option: .annual,
         emoji: "",
         title: "Annual",
         price: "€12.99/year",
@@ -141,6 +183,7 @@ struct SubscriptionView: View {
       
       // Monthly
       subscriptionOptionCard(
+        option: .monthly,
         emoji: "",
         title: "Monthly",
         price: "€1.99/month",
@@ -152,6 +195,7 @@ struct SubscriptionView: View {
   }
   
   private func subscriptionOptionCard(
+    option: SubscriptionOption,
     emoji: String,
     title: String,
     price: String,
@@ -160,57 +204,88 @@ struct SubscriptionView: View {
     showBadge: Bool,
     showCrossedPrice: Bool
   ) -> some View {
-    HStack {
-      if !emoji.isEmpty {
-        Text(emoji)
-          .font(.system(size: 24))
+    Button(action: {
+      withAnimation(.easeInOut(duration: 0.2)) {
+        selectedOption = option
       }
-      
-      VStack(alignment: .leading, spacing: 4) {
-        HStack(spacing: 8) {
-          Text(title)
-            .font(.appBodyMedium)
-            .foregroundColor(.text01)
+    }) {
+      HStack(spacing: 16) {
+        // Radio button circle
+        ZStack {
+          Circle()
+            .fill(selectedOption == option ? Color.primary : Color.clear)
+            .frame(width: 24, height: 24)
+            .animation(.easeInOut(duration: 0.2), value: selectedOption)
           
-          if showBadge, let badge = badge {
-            Text(badge)
-              .font(.system(size: 10, weight: .semibold))
-              .foregroundColor(.white)
-              .padding(.horizontal, 8)
-              .padding(.vertical, 4)
-              .background(
-                LinearGradient(
-                  gradient: Gradient(colors: [
-                    Color(hex: "74ADFA"),
-                    Color(hex: "183288")
-                  ]),
-                  startPoint: .leading,
-                  endPoint: .trailing
-                )
-              )
-              .cornerRadius(8)
+          Circle()
+            .stroke(selectedOption == option ? Color.primary : Color.outline3, lineWidth: 2)
+            .frame(width: 24, height: 24)
+            .animation(.easeInOut(duration: 0.2), value: selectedOption)
+          
+          if selectedOption == option {
+            Circle()
+              .fill(Color.white)
+              .frame(width: 8, height: 8)
+              .animation(.easeInOut(duration: 0.2), value: selectedOption)
           }
         }
         
-        HStack(spacing: 8) {
-          if showCrossedPrice, let originalPrice = originalPrice {
-            Text(originalPrice)
-              .font(.appBodySmall)
-              .foregroundColor(.text04)
-              .strikethrough()
+        if !emoji.isEmpty {
+          Text(emoji)
+            .font(.system(size: 24))
+        }
+        
+        VStack(alignment: .leading, spacing: 4) {
+          HStack(spacing: 8) {
+            Text(title)
+              .font(.appBodyMedium)
+              .foregroundColor(.text01)
+            
+            if showBadge, let badge = badge {
+              Text(badge)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                  LinearGradient(
+                    gradient: Gradient(colors: [
+                      Color(hex: "74ADFA"),
+                      Color(hex: "183288")
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                  )
+                )
+                .cornerRadius(8)
+            }
           }
           
-          Text(price)
-            .font(.appBodyMedium)
-            .foregroundColor(.text01)
+          HStack(spacing: 8) {
+            if showCrossedPrice, let originalPrice = originalPrice {
+              Text(originalPrice)
+                .font(.appBodySmall)
+                .foregroundColor(.text04)
+                .strikethrough()
+            }
+            
+            Text(price)
+              .font(.appBodyMedium)
+              .foregroundColor(.text01)
+          }
         }
+        
+        Spacer()
       }
-      
-      Spacer()
+      .padding(16)
+      .background(selectedOption == option ? Color.primary.opacity(0.05) : Color.surface)
+      .cornerRadius(12)
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .stroke(selectedOption == option ? Color.primary : Color.clear, lineWidth: 2)
+      )
     }
-    .padding(16)
-    .background(Color.surface)
-    .cornerRadius(12)
+    .buttonStyle(PlainButtonStyle())
   }
   
   // MARK: - Comparison Table
@@ -240,13 +315,14 @@ struct SubscriptionView: View {
           .frame(width: 80)
           .cornerRadius(16)
           
-          // Premium column gradient background
-          Image("blueGradient")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+          // Premium column background
+          Color("pastelBlue100")
             .frame(width: 100, height: CGFloat(56 + (56 * subscriptionFeatures.count)))
-            .clipped()
             .cornerRadius(16)
+            .overlay(
+              RoundedRectangle(cornerRadius: 16)
+                .stroke(Color("pastelBlue300"), lineWidth: 2)
+            )
         }
         
         // Main table
@@ -340,16 +416,7 @@ struct SubscriptionView: View {
       if isPremium {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 24, weight: .semibold))
-          .foregroundStyle(
-            LinearGradient(
-              gradient: Gradient(colors: [
-                Color(hex: "74ADFA"),
-                Color(hex: "183288")
-              ]),
-              startPoint: .top,
-              endPoint: .bottom
-            )
-          )
+          .foregroundColor(Color("pastelBlue500"))
       } else {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 16, weight: .semibold))
@@ -364,9 +431,8 @@ struct SubscriptionView: View {
   }
   
   private var ctaButton: some View {
-    HabittoButton.largeFillPrimary(text: "Continue") {
-      // Handle subscription action
-      print("Start subscription tapped")
+    HabittoButton.largeFillPrimary(text: "See all plans") {
+      showingSubscriptionOptions = true
     }
   }
   
@@ -404,6 +470,14 @@ struct SubscriptionView: View {
       isPremiumAvailable: true
     )
   ]
+}
+
+// MARK: - SubscriptionOption
+
+enum SubscriptionOption {
+  case lifetime
+  case annual
+  case monthly
 }
 
 // MARK: - SubscriptionFeature
