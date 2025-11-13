@@ -58,10 +58,6 @@ struct HomeTabView: View {
   let onStreakRecalculationNeeded: (() -> Void)?
 
   var body: some View {
-    // 🔎 PROBE: Check instance and XP value
-    let _ = print("🟢 HomeTabView re-render | xp:", xpManager.totalXP,
-                  "| instance:", ObjectIdentifier(xpManager))
-    
     return mainContent
       .onAppear {
         let today = LegacyDateUtils.today()

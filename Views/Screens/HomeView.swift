@@ -365,21 +365,11 @@ class HomeViewState: ObservableObject {
             HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: checkDate, habits: habits)
           }
           
-          // ✅ Enhanced logging: Show what date we're checking
-          let isToday = calendar.isDateInToday(checkDate)
-          let isYesterday = calendar.isDateInYesterday(checkDate)
-          let dayLabel = isToday ? "(TODAY)" : isYesterday ? "(YESTERDAY)" : ""
-          
-          print("🔍 STREAK_RECALC: Checking \(dateKey) \(dayLabel)")
-          
           guard !scheduledHabits.isEmpty else {
             // No habits scheduled for this date - this might mean app wasn't used yet
-            print("⏭️ STREAK_RECALC: Day \(dateKey) \(dayLabel) - no habits scheduled, skipping")
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
             continue
           }
-          
-          print("   📅 \(scheduledHabits.count) habit(s) scheduled: \(scheduledHabits.map { $0.name }.joined(separator: ", "))")
           
           // ✅ CRITICAL: Use EXACT same logic as XP calculation (check CompletionRecords, not completionHistory)
           // ✅ CRITICAL FIX: Use same userId fallback logic as toHabit() to handle userId mismatches
@@ -399,27 +389,6 @@ class HomeViewState: ObservableObject {
             }
           }
           
-          // ✅ Show detailed completion status
-          print("   🔍 CompletionRecords found: \(completedRecords.count)/\(scheduledHabits.count)")
-          for habit in scheduledHabits {
-            let record = completedRecords.first(where: { $0.habitId == habit.id })
-            if let record = record {
-              print("     ✅ \(habit.name) - CompletionRecord exists (isCompleted=\(record.isCompleted), progress=\(record.progress))")
-            } else {
-              // ✅ IMPROVED: Check if ANY record exists (even if not completed) for better diagnostics
-              let anyRecord = allRecords.first(where: { 
-                $0.habitId == habit.id && 
-                $0.dateKey == dateKey &&
-                (userId.isEmpty || userId == "guest" ? ($0.userId.isEmpty || $0.userId == "guest" || $0.userId == userId) : $0.userId == userId)
-              })
-              if let anyRecord = anyRecord {
-                print("     ⚠️ \(habit.name) - CompletionRecord exists but NOT completed (isCompleted=\(anyRecord.isCompleted), progress=\(anyRecord.progress))")
-              } else {
-                print("     ❌ \(habit.name) - NO CompletionRecord found for dateKey=\(dateKey)")
-              }
-            }
-          }
-          
           // Check if ALL habits have a completed CompletionRecord (same as XP logic)
           let allComplete = scheduledHabits.allSatisfy { habit in
             completedRecords.contains(where: { $0.habitId == habit.id })
@@ -431,25 +400,12 @@ class HomeViewState: ObservableObject {
             if lastCompleteDate == nil {
               lastCompleteDate = checkDate
             }
-            print("   ✅ RESULT: Day \(dateKey) \(dayLabel) COMPLETE - streak now \(currentStreakCount)")
           } else {
-            // Day is incomplete
-            let missingHabits = scheduledHabits.filter { habit in
-              !completedRecords.contains(where: { $0.habitId == habit.id })
-            }
-            print("   ❌ RESULT: Day \(dateKey) \(dayLabel) INCOMPLETE - missing: \(missingHabits.map { $0.name }.joined(separator: ", "))")
-            
             // ✅ CRITICAL FIX: Only break if we've already found complete days
             // This allows us to skip today if incomplete and continue checking yesterday
             if currentStreakCount > 0 {
               // We've found complete days already, so this incomplete day breaks the streak
-              print("   ⏸️ STOPPING: Streak broken at \(currentStreakCount) day(s)")
-              print("   📊 Last complete date was: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
               break
-            } else {
-              // We haven't found any complete days yet, so keep looking backwards
-              // This handles the case where today is incomplete but yesterday might be complete
-              print("   ⏭️ SKIPPING: Day incomplete, continuing backwards to find streak start...")
             }
           }
           
