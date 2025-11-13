@@ -184,7 +184,12 @@ struct MoreTabView: View {
 
   private var trialBanner: some View {
     HStack {
-      Text("Start your 7-day Free Trial!")
+      Image("Icon-crowd_Filled")
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 24, height: 24)
+      
+      Text("Build better habits with Premium!")
         .font(.system(size: 16, weight: .medium))
         .foregroundColor(.text01)
 
