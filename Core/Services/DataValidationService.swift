@@ -310,11 +310,26 @@ struct HabitDateConsistencyRule: ValidationRule {
     // Date filtering happens in DISPLAY logic, not CREATION logic
     
     // Check end date is after start date
-    if let endDate = habit.endDate, endDate <= habit.startDate {
-      errors.append(ValidationError(
-        field: "endDate",
-        message: "End date must be after start date",
-        severity: .error))
+    if let endDate = habit.endDate {
+      let calendar = Calendar.current
+      let now = Date()
+      let today = calendar.startOfDay(for: now)
+      let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) ?? today
+      
+      let endDateStartOfDay = calendar.startOfDay(for: endDate)
+      let startDateStartOfDay = calendar.startOfDay(for: habit.startDate)
+      
+      // Check if endDate is in the recent past (within 7 days) - this is allowed for inactive habits
+      let isRecentPast = endDate < today && endDate >= sevenDaysAgo
+      
+      // Only enforce "endDate must be after startDate" if endDate is not in the recent past
+      // Recent past endDates are intentionally set to mark habits as inactive
+      if endDateStartOfDay <= startDateStartOfDay && !isRecentPast {
+        errors.append(ValidationError(
+          field: "endDate",
+          message: "End date must be after start date",
+          severity: .error))
+      }
     }
 
     return errors.isEmpty ? .valid : .invalid(errors)

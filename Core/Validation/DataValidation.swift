@@ -250,6 +250,8 @@ class HabitValidator: DataValidator {
 
     let now = Date()
     let calendar = Calendar.current
+    let today = calendar.startOfDay(for: now)
+    let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) ?? today
 
     // ✅ FIX: REMOVED future start date validation
     // Habits SHOULD be allowed to have future start dates
@@ -257,14 +259,24 @@ class HabitValidator: DataValidator {
     
     // End date validation
     if let endDate {
-      if endDate <= startDate {
+      let endDateStartOfDay = calendar.startOfDay(for: endDate)
+      let startDateStartOfDay = calendar.startOfDay(for: startDate)
+      
+      // Check if endDate is in the recent past (within 7 days) - this is allowed for inactive habits
+      let isRecentPast = endDate < today && endDate >= sevenDaysAgo
+      
+      // Only enforce "endDate must be after startDate" if endDate is not in the recent past
+      // Recent past endDates are intentionally set to mark habits as inactive
+      if endDateStartOfDay <= startDateStartOfDay && !isRecentPast {
         errors.append(ValidationError(
           field: "endDate",
           message: "End date must be after start date",
           severity: .error))
       }
 
-      if endDate < now {
+      // Only warn about past endDate if it's older than 7 days
+      // Recent past endDates (within 7 days) are intentionally set to mark habits as inactive
+      if endDate < sevenDaysAgo {
         errors.append(ValidationError(
           field: "endDate",
           message: "End date is in the past",

@@ -210,7 +210,7 @@ struct HabitDetailView: View {
       }
     } message: {
       Text(
-        "This habit will be moved to the Inactive tab. You can reactivate it anytime by toggling it back on.")
+        "This habit will be inactive and doesn't appear in the home screen from today.")
     }
     .alert("Delete Reminder", isPresented: $showingReminderDeleteConfirmation) {
       Button("Cancel", role: .cancel) {
