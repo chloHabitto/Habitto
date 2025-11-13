@@ -266,7 +266,7 @@ struct HabitDetailView: View {
   @State private var showingNotificationsSettings = false
 
   /// Check if habit reminders are globally enabled - using @AppStorage for automatic updates
-  @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = false
+  @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
 
   private var formattedDate: String {
     AppDateFormatter.shared.formatDisplayDate(Date())
