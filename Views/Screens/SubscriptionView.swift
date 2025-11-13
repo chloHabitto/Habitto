@@ -130,7 +130,6 @@ struct SubscriptionView: View {
             .frame(width: 100, alignment: .center)
             .background(Color.red)
         }
-        .padding(.horizontal, 16)
         .padding(.vertical, 16)
         
         // Table rows
@@ -174,7 +173,6 @@ struct SubscriptionView: View {
         .frame(width: 100, alignment: .center)
         .background(Color.red)
     }
-    .padding(.horizontal, 16)
     .padding(.vertical, 16)
     .overlay(
       Rectangle()
