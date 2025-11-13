@@ -118,6 +118,9 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingAboutUsView) {
         AboutUsView()
       }
+      .sheet(isPresented: $showingSubscriptionView) {
+        SubscriptionView()
+      }
       #if DEBUG
       .sheet(isPresented: $showingSyncHealth) {
         SyncHealthView()
@@ -173,6 +176,7 @@ struct MoreTabView: View {
   @State private var showingAboutUsView = false
   @State private var showingSignOutAlert = false
   @State private var showingMigrationStatus = false
+  @State private var showingSubscriptionView = false
   
   // ✅ DEBUG: Habit Investigation
   #if DEBUG
@@ -183,7 +187,10 @@ struct MoreTabView: View {
   // MARK: - Trial Banner
 
   private var trialBanner: some View {
-    HStack {
+    Button(action: {
+      showingSubscriptionView = true
+    }) {
+      HStack {
       ZStack {
         Circle()
           .fill(Color(hex: "FCD884").opacity(0.2))
@@ -204,14 +211,13 @@ struct MoreTabView: View {
         .font(.system(size: 16, weight: .medium))
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red)
+        .padding(.leading, 12)
 
       Spacer()
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
         .foregroundColor(.text01)
-        .background(Color.blue)
     }
     .padding(.leading, -4)
     .padding(.trailing, 16)
@@ -221,6 +227,8 @@ struct MoreTabView: View {
     .padding(.horizontal, 20)
     .padding(.top, 20)
     .padding(.bottom, 16)
+    }
+    .buttonStyle(PlainButtonStyle())
   }
 
   // MARK: - Settings Sections
