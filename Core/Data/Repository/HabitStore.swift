@@ -116,33 +116,46 @@ final actor HabitStore {
     logger.debug("History capping applied to \(habits.count) habits")
 
     // ✅ FIX: Auto-clear end dates that are in the past to prevent validation warnings
+    // BUT preserve recent end dates (within last 7 days) as they may be intentionally set
+    // to mark habits as inactive
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) ?? Date.distantPast
+    
     let sanitizedHabits = cappedHabits.map { habit -> Habit in
       if let endDate = habit.endDate, endDate < Date() {
-        logger.info("🔧 Auto-clearing past end date for habit '\(habit.name)' (was: \(endDate))")
-        // Create new Habit with endDate cleared
-        return Habit(
-          id: habit.id,
-          name: habit.name,
-          description: habit.description,
-          icon: habit.icon,
-          color: habit.color,
-          habitType: habit.habitType,
-          schedule: habit.schedule,
-          goal: habit.goal,
-          reminder: habit.reminder,
-          startDate: habit.startDate,
-          endDate: nil,  // ✅ Clear past end date
-          createdAt: habit.createdAt,
-          reminders: habit.reminders,
-          baseline: habit.baseline,
-          target: habit.target,
-          completionHistory: habit.completionHistory,
-          completionStatus: habit.completionStatus,
-          completionTimestamps: habit.completionTimestamps,
-          difficultyHistory: habit.difficultyHistory,
-          actualUsage: habit.actualUsage,
-          lastSyncedAt: habit.lastSyncedAt,
-          syncStatus: habit.syncStatus)
+        // Only clear endDate if it's more than 7 days old
+        // Recent end dates (like yesterday) are preserved to mark habits as inactive
+        if endDate < sevenDaysAgo {
+          logger.info("🔧 Auto-clearing old end date for habit '\(habit.name)' (was: \(endDate), more than 7 days ago)")
+          // Create new Habit with endDate cleared
+          return Habit(
+            id: habit.id,
+            name: habit.name,
+            description: habit.description,
+            icon: habit.icon,
+            color: habit.color,
+            habitType: habit.habitType,
+            schedule: habit.schedule,
+            goal: habit.goal,
+            reminder: habit.reminder,
+            startDate: habit.startDate,
+            endDate: nil,  // ✅ Clear old end date
+            createdAt: habit.createdAt,
+            reminders: habit.reminders,
+            baseline: habit.baseline,
+            target: habit.target,
+            completionHistory: habit.completionHistory,
+            completionStatus: habit.completionStatus,
+            completionTimestamps: habit.completionTimestamps,
+            difficultyHistory: habit.difficultyHistory,
+            actualUsage: habit.actualUsage,
+            lastSyncedAt: habit.lastSyncedAt,
+            syncStatus: habit.syncStatus)
+        } else {
+          // Preserve recent end dates (within last 7 days) - these are intentionally set
+          logger.debug("🔧 Preserving recent end date for habit '\(habit.name)' (was: \(endDate), within last 7 days)")
+        }
       }
       return habit
     }
