@@ -68,20 +68,20 @@ struct NotificationsView: View {
   @Environment(\.dismiss) private var dismiss
 
   // Plan Reminder State
-  @State private var originalPlanReminderEnabled = false
+  @State private var originalPlanReminderEnabled = true
   @State private var originalPlanReminderTime = Date().settingHour(8).settingMinute(0)
-  @State private var planReminderEnabled = false
+  @State private var planReminderEnabled = true
   @State private var planReminderTime = Date().settingHour(8).settingMinute(0)
 
   // Completion Reminder State
-  @State private var originalCompletionReminderEnabled = false
+  @State private var originalCompletionReminderEnabled = true
   @State private var originalCompletionReminderTime = Date().settingHour(20).settingMinute(30)
-  @State private var completionReminderEnabled = false
+  @State private var completionReminderEnabled = true
   @State private var completionReminderTime = Date().settingHour(20).settingMinute(30)
 
   // Habit Reminder State
-  @State private var originalHabitReminderEnabled = false
-  @State private var habitReminderEnabled = false
+  @State private var originalHabitReminderEnabled = true
+  @State private var habitReminderEnabled = true
 
   // Alert state for habit reminder confirmation
   @State private var showHabitReminderConfirmation = false
@@ -200,91 +200,12 @@ struct NotificationsView: View {
           .fixedSize(horizontal: false, vertical: true)
 
         if habitReminderEnabled {
-          VStack(alignment: .leading, spacing: 8) {
-            Text(
-              "💡 Add reminders to individual habits in their detail screens to receive notifications.")
-              .font(.appBodySmall)
-              .foregroundColor(.text05)
-              .fixedSize(horizontal: false, vertical: true)
-
-            VStack(spacing: 8) {
-              HStack(spacing: 8) {
-                Button(action: {
-                  Task { @MainActor in
-                    NotificationManager.shared.scheduleTestHabitReminder()
-                  }
-                }) {
-                  Text("🧪 Test Notification (10 seconds)")
-                    .font(.appBodySmall)
-                    .foregroundColor(.primary)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color.primary.opacity(0.1))
-                    .cornerRadius(8)
-                }
-
-                Button(action: {
-                  Task { @MainActor in
-                    await printPendingNotificationsCount()
-                  }
-                }) {
-                  Text("📊 Check Status")
-                    .font(.appBodySmall)
-                    .foregroundColor(.blue)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
-                }
-              }
-
-              Button(action: {
-                Task { @MainActor in
-                  NotificationManager.shared.debugHabitRemindersStatus()
-                }
-              }) {
-                Text("🔍 Debug Habit Reminders")
-                  .font(.appBodySmall)
-                  .foregroundColor(.secondary)
-                  .padding(.vertical, 4)
-                  .padding(.horizontal, 8)
-                  .background(Color.secondary.opacity(0.1))
-                  .cornerRadius(8)
-              }
-
-              Button(action: {
-                Task { @MainActor in
-                  NotificationManager.shared.forceRescheduleAllHabitReminders()
-                }
-              }) {
-                Text("🔄 Force Reschedule All Habit Reminders")
-                  .font(.appBodySmall)
-                  .foregroundColor(.orange)
-                  .padding(.vertical, 4)
-                  .padding(.horizontal, 8)
-                  .background(Color.orange.opacity(0.1))
-                  .cornerRadius(8)
-              }
-
-              Button(action: {
-                Task { @MainActor in
-                  // Clear all existing habit reminders
-                  NotificationManager.shared.removeAllHabitReminders()
-                  // Reschedule with corrected timezone handling
-                  NotificationManager.shared.forceRescheduleAllHabitReminders()
-                }
-              }) {
-                Text("🔧 Fix Timezone & Reschedule")
-                  .font(.appBodySmall)
-                  .foregroundColor(.red)
-                  .padding(.vertical, 4)
-                  .padding(.horizontal, 8)
-                  .background(Color.red.opacity(0.1))
-                  .cornerRadius(8)
-              }
-            }
-          }
-          .padding(.top, 4)
+          Text(
+            "💡 Add reminders to individual habits in their detail screens to receive notifications.")
+            .font(.appBodySmall)
+            .foregroundColor(.text05)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 4)
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -521,9 +442,10 @@ struct NotificationsView: View {
     print("📥 NOTIFICATION SETTINGS: Loading preferences from UserDefaults")
     print(String(repeating: "=", count: 60))
 
-    let planEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
-    let completionEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
-    let habitEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Default to true if key doesn't exist (first time)
+    let planEnabled = UserDefaults.standard.object(forKey: "planReminderEnabled") as? Bool ?? true
+    let completionEnabled = UserDefaults.standard.object(forKey: "completionReminderEnabled") as? Bool ?? true
+    let habitEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
 
     print("📋 Plan Reminder: \(planEnabled ? "ON ✅" : "OFF 🔇")")
     print("✅ Completion Reminder: \(completionEnabled ? "ON ✅" : "OFF 🔇")")

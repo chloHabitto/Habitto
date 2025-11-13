@@ -704,8 +704,8 @@ class NotificationManager: ObservableObject {
     // First, remove all existing notifications for this habit
     removeAllNotifications(for: habit)
 
-    // Check if habit reminders are globally enabled
-    let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Check if habit reminders are globally enabled (default to true if not set)
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
       print(
         "📅 NotificationManager: Habit reminders globally disabled, skipping individual habit notifications for '\(habit.name)'")
@@ -926,8 +926,8 @@ class NotificationManager: ObservableObject {
   func scheduleNotificationsForDate(_ date: Date, habits: [Habit]) {
     print("🔄 NotificationManager: Scheduling notifications for date: \(date)")
 
-    // Check if habit reminders are globally enabled
-    let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Check if habit reminders are globally enabled (default to true if not set)
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
       print(
         "🔇 NotificationManager: Habit reminders are disabled, skipping notifications for \(date)")
@@ -1150,8 +1150,8 @@ class NotificationManager: ObservableObject {
       print("📅 NotificationManager: Completion reminders are disabled, skipping...")
     }
 
-    // Step 5: Schedule habit reminders based on global setting
-    let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Step 5: Schedule habit reminders based on global setting (default to true if not set)
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if habitReminderEnabled {
       print(
         "📅 NotificationManager: Habit reminders are enabled, rescheduling all existing habits...")
@@ -1189,8 +1189,8 @@ class NotificationManager: ObservableObject {
   func forceRescheduleAllHabitReminders() {
     print("🔄 NotificationManager: Force rescheduling all habit reminders...")
 
-    // Check if habit reminders are globally enabled
-    let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Check if habit reminders are globally enabled (default to true if not set)
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
       print("🔇 NotificationManager: Habit reminders are disabled, cannot force reschedule")
       return
@@ -1308,8 +1308,8 @@ class NotificationManager: ObservableObject {
   func debugHabitRemindersStatus() {
     print("🔍 ===== COMPREHENSIVE HABIT REMINDERS DEBUG =====")
 
-    // Check global toggle
-    let habitReminderEnabled = UserDefaults.standard.bool(forKey: "habitReminderEnabled")
+    // Check global toggle (default to true if not set)
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     print("🔍 Global habit reminder toggle: \(habitReminderEnabled)")
 
     // Check habits
