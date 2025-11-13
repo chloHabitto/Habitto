@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - SubscriptionView
 
@@ -62,15 +63,49 @@ struct SubscriptionView: View {
       .sheet(isPresented: $showingSubscriptionOptions) {
         subscriptionOptionsSheet
       }
+      .onAppear {
+        startAutoScroll()
+      }
+      .onDisappear {
+        stopAutoScroll()
+      }
     }
   }
-
-  // MARK: Private
-
+  
+  private func startAutoScroll() {
+    stopAutoScroll() // Stop any existing timer
+    autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
+      let nextIndex = currentReviewIndex + 1
+      let totalCount = reviews.count + 2 // reviews + 2 duplicates
+      
+      // If we're at the duplicate last item (index = totalCount - 1), jump to real first item (index 1) without animation
+      if nextIndex == totalCount {
+        // Jump to real first item without animation
+        currentReviewIndex = 1
+        // Small delay then continue to second item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+          withAnimation(.easeInOut(duration: 1.2)) {
+            currentReviewIndex = 2
+          }
+        }
+      } else {
+        withAnimation(.easeInOut(duration: 1.2)) {
+          currentReviewIndex = nextIndex
+        }
+      }
+    }
+  }
+  
+  private func stopAutoScroll() {
+    autoScrollTimer?.invalidate()
+    autoScrollTimer = nil
+  }
+  
   @Environment(\.dismiss) private var dismiss
   @State private var selectedOption: SubscriptionOption = .lifetime
   @State private var showingSubscriptionOptions = false
-  @State private var currentReviewIndex: Int = 0
+  @State private var currentReviewIndex: Int = 1 // Start at 1 (first real item)
+  @State private var autoScrollTimer: Timer?
   
   private let reviews: [Review] = [
     Review(id: "1", text: "This app transformed my daily routine. Premium features are worth it!"),
@@ -78,6 +113,11 @@ struct SubscriptionView: View {
     Review(id: "3", text: "Love vacation mode! Perfect for breaks without losing my streak."),
     Review(id: "4", text: "Unlimited habits is a game changer. Highly recommend premium!")
   ]
+  
+  // Create infinite loop by duplicating first and last items
+  private var infiniteReviews: [Review] {
+    [reviews.last!] + reviews + [reviews.first!]
+  }
   
   private var headerText: some View {
     (Text("Unlock your full Habitto experience with ")
@@ -93,63 +133,58 @@ struct SubscriptionView: View {
   }
   
   private var reviewCarousel: some View {
-    VStack(spacing: 16) {
-      ScrollViewReader { proxy in
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 16) {
-            ForEach(Array(reviews.enumerated()), id: \.element.id) { index, review in
-              reviewCard(review: review)
-                .id(index)
-            }
-          }
-          .padding(.horizontal, 20)
-        }
-        .onAppear {
-          proxy.scrollTo(currentReviewIndex, anchor: .center)
-        }
-        .onChange(of: currentReviewIndex) { _, newValue in
-          withAnimation {
-            proxy.scrollTo(newValue, anchor: .center)
-          }
+    VStack(spacing: 0) {
+      TabView(selection: $currentReviewIndex) {
+        ForEach(Array(infiniteReviews.enumerated()), id: \.offset) { index, review in
+          reviewCard(review: review)
+            .tag(index)
         }
       }
-      .gesture(
-        DragGesture()
-          .onEnded { value in
-            let threshold: CGFloat = 50
-            if value.translation.width > threshold && currentReviewIndex > 0 {
-              withAnimation {
-                currentReviewIndex -= 1
-              }
-            } else if value.translation.width < -threshold && currentReviewIndex < reviews.count - 1 {
-              withAnimation {
-                currentReviewIndex += 1
-              }
-            }
+      .tabViewStyle(.page(indexDisplayMode: .never))
+      .frame(height: 100)
+      .onChange(of: currentReviewIndex) { oldValue, newValue in
+        // Handle seamless looping
+        if newValue == 0 {
+          // Jumped to duplicate first item at the beginning, move to real last item
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            currentReviewIndex = reviews.count
           }
-      )
+        } else if newValue == infiniteReviews.count - 1 {
+          // Jumped to duplicate last item at the end, move to real first item
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            currentReviewIndex = 1
+          }
+        }
+        // Restart timer when user manually swipes
+        startAutoScroll()
+      }
       
-      // Page controls
-      HStack(spacing: 8) {
+      // Page controls (only show real reviews, not duplicates)
+      HStack(spacing: 6) {
         ForEach(0..<reviews.count, id: \.self) { index in
           Circle()
-            .fill(index == currentReviewIndex ? Color.primary : Color.outline3)
-            .frame(width: 8, height: 8)
+            .fill((index + 1) == currentReviewIndex ? Color.primary : Color.text04.opacity(0.3))
+            .frame(width: 6, height: 6)
             .animation(.easeInOut(duration: 0.2), value: currentReviewIndex)
         }
       }
       .padding(.top, 8)
+      .frame(maxWidth: .infinity)
+    }
+    .onAppear {
+      // Set initial position to first real item
+      currentReviewIndex = 1
     }
   }
   
   private func reviewCard(review: Review) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .center, spacing: 12) {
       // 5 stars
       HStack(spacing: 4) {
         ForEach(0..<5) { _ in
           Image(systemName: "star.fill")
             .font(.system(size: 16))
-            .foregroundColor(.yellow100)
+            .foregroundColor(Color("yellow300"))
         }
       }
       
@@ -158,28 +193,22 @@ struct SubscriptionView: View {
         .font(.appBodyMedium)
         .foregroundColor(.text01)
         .lineLimit(3)
+        .multilineTextAlignment(.center)
     }
     .padding(16)
-    .frame(width: 280)
+    .frame(maxWidth: .infinity)
     .background {
-      // Liquid glass effect
-      RoundedRectangle(cornerRadius: 12)
-        .fill(.ultraThinMaterial)
-        .overlay {
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(
-              LinearGradient(
-                stops: [
-                  .init(color: Color.white.opacity(0.4), location: 0.0),
-                  .init(color: Color.white.opacity(0.1), location: 0.5),
-                  .init(color: Color.white.opacity(0.4), location: 1.0)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-              ),
-              lineWidth: 1.5
-            )
-        }
+      RoundedRectangle(cornerRadius: 20)
+        .fill(
+          LinearGradient(
+            gradient: Gradient(colors: [
+              Color(hex: "F6F9FF"),
+              Color(hex: "E9EFFF")
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          )
+        )
     }
   }
   
@@ -265,7 +294,7 @@ struct SubscriptionView: View {
       // Lifetime Access
       subscriptionOptionCard(
         option: .lifetime,
-        emoji: "💎",
+        emoji: "",
         title: "Lifetime Access",
         price: "€24.99",
         badge: "Popular",
@@ -314,6 +343,42 @@ struct SubscriptionView: View {
       }
     }) {
       HStack(spacing: 16) {
+        if !emoji.isEmpty {
+          Text(emoji)
+            .font(.system(size: 24))
+        }
+        
+        VStack(alignment: .leading, spacing: 4) {
+          if showBadge, let badge = badge {
+            Text(badge)
+              .font(.system(size: 10, weight: .semibold))
+              .foregroundColor(Color("navy900"))
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(Color("pastelBlue300"))
+              .cornerRadius(8)
+          }
+          
+          Text(title)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.text02)
+          
+          HStack(spacing: 8) {
+            if showCrossedPrice, let originalPrice = originalPrice {
+              Text(originalPrice)
+                .font(.appBodySmall)
+                .foregroundColor(.text04)
+                .strikethrough()
+            }
+            
+            Text(price)
+              .font(.appBodySmallEmphasised)
+              .foregroundColor(.text05)
+          }
+        }
+        
+        Spacer()
+        
         // Radio button circle
         ZStack {
           Circle()
@@ -333,60 +398,13 @@ struct SubscriptionView: View {
               .animation(.easeInOut(duration: 0.2), value: selectedOption)
           }
         }
-        
-        if !emoji.isEmpty {
-          Text(emoji)
-            .font(.system(size: 24))
-        }
-        
-        VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: 8) {
-            Text(title)
-              .font(.appBodyMedium)
-              .foregroundColor(.text01)
-            
-            if showBadge, let badge = badge {
-              Text(badge)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                  LinearGradient(
-                    gradient: Gradient(colors: [
-                      Color(hex: "74ADFA"),
-                      Color(hex: "183288")
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                  )
-                )
-                .cornerRadius(8)
-            }
-          }
-          
-          HStack(spacing: 8) {
-            if showCrossedPrice, let originalPrice = originalPrice {
-              Text(originalPrice)
-                .font(.appBodySmall)
-                .foregroundColor(.text04)
-                .strikethrough()
-            }
-            
-            Text(price)
-              .font(.appBodyMedium)
-              .foregroundColor(.text01)
-          }
-        }
-        
-        Spacer()
       }
       .padding(16)
       .background(selectedOption == option ? Color.primary.opacity(0.05) : Color.surface)
-      .cornerRadius(12)
+      .cornerRadius(16)
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
-          .stroke(selectedOption == option ? Color.primary : Color.clear, lineWidth: 2)
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(selectedOption == option ? Color.primary : Color.outline3, lineWidth: 2)
       )
     }
     .buttonStyle(PlainButtonStyle())
