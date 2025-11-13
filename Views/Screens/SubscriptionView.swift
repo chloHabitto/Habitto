@@ -17,12 +17,20 @@ struct SubscriptionView: View {
             
             // Comparison table
             comparisonTable
+              .padding(.bottom, 32)
+            
+            // Subscription options
+            subscriptionOptions
               .padding(.bottom, 100) // Space for button
+            
+            // Benefits list (commented out for future use)
+            // benefitsList
+            //   .padding(.bottom, 32)
           }
           .padding(.horizontal, 20)
         }
         .background(
-          Image("Light-gradient-BG@4x")
+          Image("LightLightBlueGradient@4x")
             .resizable()
             .aspectRatio(contentMode: .fill)
             .ignoresSafeArea()
@@ -34,7 +42,7 @@ struct SubscriptionView: View {
           restorePurchaseButton
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 16)
+        .padding(.bottom, 8)
       }
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
@@ -58,62 +66,187 @@ struct SubscriptionView: View {
   @Environment(\.dismiss) private var dismiss
   
   private var headerText: some View {
-    Text("Unlock your full Habitto experience with Premium")
-      .font(.appHeadlineMediumEmphasised)
-      .foregroundColor(.text01)
-      .multilineTextAlignment(.center)
-      .frame(maxWidth: .infinity)
+    (Text("Unlock your full Habitto experience with ") +
+     Text("Premium")
+       .font(.system(size: 28, weight: .black))
+       .foregroundStyle(
+         LinearGradient(
+           gradient: Gradient(colors: [
+             Color(hex: "74ADFA"),
+             Color(hex: "183288")
+           ]),
+           startPoint: .top,
+           endPoint: .bottom
+         )
+       ) +
+     Text("")
+    )
+    .font(.appHeadlineMediumEmphasised)
+    .foregroundColor(.text01)
+    .multilineTextAlignment(.center)
+    .frame(maxWidth: .infinity)
   }
   
+  private var benefitsList: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      ForEach(subscriptionFeatures, id: \.title) { feature in
+        HStack(spacing: 12) {
+          // Premium check icon
+          if feature.isPremiumAvailable {
+            Image(systemName: "checkmark.circle.fill")
+              .font(.system(size: 20, weight: .semibold))
+              .foregroundStyle(
+                LinearGradient(
+                  gradient: Gradient(colors: [
+                    Color(hex: "74ADFA"),
+                    Color(hex: "183288")
+                  ]),
+                  startPoint: .top,
+                  endPoint: .bottom
+                )
+              )
+          }
+          
+          // Benefit title
+          Text(feature.title)
+            .font(.appBodyMedium)
+            .foregroundColor(.text01)
+        }
+      }
+    }
+  }
+  
+  private var subscriptionOptions: some View {
+    VStack(spacing: 12) {
+      // Lifetime Access
+      subscriptionOptionCard(
+        emoji: "💎",
+        title: "Lifetime Access",
+        price: "€24.99",
+        badge: "Popular",
+        showBadge: true,
+        showCrossedPrice: false
+      )
+      
+      // Annual
+      subscriptionOptionCard(
+        emoji: "",
+        title: "Annual",
+        price: "€12.99/year",
+        originalPrice: "€23.88",
+        badge: "50% off",
+        showBadge: true,
+        showCrossedPrice: true
+      )
+      
+      // Monthly
+      subscriptionOptionCard(
+        emoji: "",
+        title: "Monthly",
+        price: "€1.99/month",
+        badge: nil,
+        showBadge: false,
+        showCrossedPrice: false
+      )
+    }
+  }
+  
+  private func subscriptionOptionCard(
+    emoji: String,
+    title: String,
+    price: String,
+    originalPrice: String? = nil,
+    badge: String?,
+    showBadge: Bool,
+    showCrossedPrice: Bool
+  ) -> some View {
+    HStack {
+      if !emoji.isEmpty {
+        Text(emoji)
+          .font(.system(size: 24))
+      }
+      
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 8) {
+          Text(title)
+            .font(.appBodyMedium)
+            .foregroundColor(.text01)
+          
+          if showBadge, let badge = badge {
+            Text(badge)
+              .font(.system(size: 10, weight: .semibold))
+              .foregroundColor(.white)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(
+                LinearGradient(
+                  gradient: Gradient(colors: [
+                    Color(hex: "74ADFA"),
+                    Color(hex: "183288")
+                  ]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                )
+              )
+              .cornerRadius(8)
+          }
+        }
+        
+        HStack(spacing: 8) {
+          if showCrossedPrice, let originalPrice = originalPrice {
+            Text(originalPrice)
+              .font(.appBodySmall)
+              .foregroundColor(.text04)
+              .strikethrough()
+          }
+          
+          Text(price)
+            .font(.appBodyMedium)
+            .foregroundColor(.text01)
+        }
+      }
+      
+      Spacer()
+    }
+    .padding(16)
+    .background(Color.surface)
+    .cornerRadius(12)
+  }
+  
+  // MARK: - Comparison Table
+  
   private var comparisonTable: some View {
-    GeometryReader { geometry in
-      ZStack {
+    let tableHeight = CGFloat(56 + (56 * subscriptionFeatures.count))
+    
+    return ZStack {
         // Free column background
         HStack(spacing: 0) {
           Spacer()
             .frame(maxWidth: .infinity)
           
-          Color.surface2
-            .frame(width: 80)
-            .cornerRadius(16)
-            .mask(
-              VStack(spacing: 0) {
-                // Header row
-                Rectangle()
-                  .frame(height: 48)
-                
-                // Feature rows
-                ForEach(subscriptionFeatures, id: \.title) { _ in
-                  Rectangle()
-                    .frame(height: 56)
-                }
-              }
-            )
+          VStack(spacing: 0) {
+            // Header row background
+            Color.navy50
+              .opacity(0.4)
+              .frame(height: 56)
+            
+            // Feature rows background
+            ForEach(subscriptionFeatures, id: \.title) { _ in
+              Color.navy50
+                .opacity(0.4)
+                .frame(height: 56)
+            }
+          }
+          .frame(width: 80)
+          .cornerRadius(16)
           
           // Premium column gradient background
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color(hex: "8E2AF9"), // Purple
-              Color(hex: "F92A95")  // Pink/Orange
-            ]),
-            startPoint: .top,
-            endPoint: .bottom
-          )
-          .frame(width: 100)
-          .cornerRadius(16)
-          .mask(
-            VStack(spacing: 0) {
-              // Header row
-              Rectangle()
-                .frame(height: 48)
-              
-              // Feature rows
-              ForEach(subscriptionFeatures, id: \.title) { _ in
-                Rectangle()
-                  .frame(height: 56)
-              }
-            }
-          )
+          Image("blueGradient")
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .frame(width: 100, height: CGFloat(56 + (56 * subscriptionFeatures.count)))
+            .clipped()
+            .cornerRadius(16)
         }
         
         // Main table
@@ -122,23 +255,27 @@ struct SubscriptionView: View {
         HStack(spacing: 0) {
           Text("Benefits")
             .font(.appTitleSmallEmphasised)
+            .fontWeight(.black)
             .foregroundColor(.text02)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.surface)
+            .background(Color.clear)
           
           Text("Free")
             .font(.appTitleSmallEmphasised)
+            .fontWeight(.black)
             .foregroundColor(.text02)
             .frame(width: 80, alignment: .center)
             .background(Color.clear)
           
           Text("Premium")
             .font(.appTitleSmallEmphasised)
-            .foregroundColor(.white)
+            .fontWeight(.black)
+            .foregroundColor(.black)
             .frame(width: 100, alignment: .center)
             .background(Color.clear)
         }
         .padding(.vertical, 16)
+        .frame(height: 56)
         .overlay(
           Rectangle()
             .frame(height: 1)
@@ -152,8 +289,8 @@ struct SubscriptionView: View {
         }
       }
       .cornerRadius(16)
-      }
     }
+    .frame(height: tableHeight)
   }
   
   private func comparisonRow(feature: SubscriptionFeature, isLast: Bool) -> some View {
@@ -163,7 +300,7 @@ struct SubscriptionView: View {
         .font(.appBodyMedium)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.surface)
+        .background(Color.clear)
       
       // Free column - transparent background so container shows through
       Group {
@@ -184,6 +321,7 @@ struct SubscriptionView: View {
         .background(Color.clear)
     }
     .padding(.vertical, 16)
+    .frame(height: 56)
     .overlay(
       Group {
         if !isLast {
@@ -196,15 +334,32 @@ struct SubscriptionView: View {
     )
   }
   
+  @ViewBuilder
   private func featureIcon(isAvailable: Bool, isPremium: Bool) -> some View {
     if isAvailable {
-      Image(systemName: "checkmark")
-        .font(.system(size: 16, weight: .semibold))
-        .foregroundColor(isPremium ? .white : Color(hex: "FF7838")) // White for premium, orange for free
+      if isPremium {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.system(size: 24, weight: .semibold))
+          .foregroundStyle(
+            LinearGradient(
+              gradient: Gradient(colors: [
+                Color(hex: "74ADFA"),
+                Color(hex: "183288")
+              ]),
+              startPoint: .top,
+              endPoint: .bottom
+            )
+          )
+      } else {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundColor(Color(hex: "FF7838")) // Orange for free
+      }
     } else {
-      Image(systemName: "xmark")
+      Image(systemName: "xmark.circle.fill")
         .font(.system(size: 16, weight: .semibold))
         .foregroundColor(.text04) // Grey cross
+        .opacity(0.5)
     }
   }
   
@@ -235,11 +390,6 @@ struct SubscriptionView: View {
     ),
     SubscriptionFeature(
       title: "Progress Insights",
-      isFreeAvailable: false,
-      isPremiumAvailable: true
-    ),
-    SubscriptionFeature(
-      title: "Deeper Insights",
       isFreeAvailable: false,
       isPremiumAvailable: true
     ),
