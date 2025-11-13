@@ -12,7 +12,7 @@ struct SubscriptionView: View {
           VStack(spacing: 0) {
             // Header text
             headerText
-              .padding(.top, 32)
+              .padding(.top, 16)
               .padding(.bottom, 32)
             
             // Comparison table
@@ -21,12 +21,20 @@ struct SubscriptionView: View {
           }
           .padding(.horizontal, 20)
         }
-        .background(Color.surface2)
+        .background(
+          Image("Light-gradient-BG@4x")
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .ignoresSafeArea()
+        )
         
-        // Call-to-action button at bottom
-        ctaButton
-          .padding(.horizontal, 20)
-          .padding(.bottom, 40)
+        // Call-to-action buttons at bottom
+        VStack(spacing: 12) {
+          ctaButton
+          restorePurchaseButton
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
       }
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
@@ -51,7 +59,7 @@ struct SubscriptionView: View {
   
   private var headerText: some View {
     Text("Unlock your full Habitto experience with Premium")
-      .font(.appHeadlineSmallEmphasised)
+      .font(.appHeadlineMediumEmphasised)
       .foregroundColor(.text01)
       .multilineTextAlignment(.center)
       .frame(maxWidth: .infinity)
@@ -65,7 +73,7 @@ struct SubscriptionView: View {
           Spacer()
             .frame(maxWidth: .infinity)
           
-          Color.surface
+          Color.surface2
             .frame(width: 80)
             .cornerRadius(16)
             .mask(
@@ -113,22 +121,22 @@ struct SubscriptionView: View {
         // Table header
         HStack(spacing: 0) {
           Text("Benefits")
-            .font(.appBodyMedium)
+            .font(.appTitleSmallEmphasised)
             .foregroundColor(.text02)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.surface)
           
           Text("Free")
-            .font(.appBodyMedium)
+            .font(.appTitleSmallEmphasised)
             .foregroundColor(.text02)
             .frame(width: 80, alignment: .center)
-            .background(Color.blue)
+            .background(Color.clear)
           
           Text("Premium")
-            .font(.appBodyMedium)
+            .font(.appTitleSmallEmphasised)
             .foregroundColor(.white)
             .frame(width: 100, alignment: .center)
-            .background(Color.red)
+            .background(Color.clear)
         }
         .padding(.vertical, 16)
         .overlay(
@@ -168,12 +176,12 @@ struct SubscriptionView: View {
         }
       }
       .frame(width: 80, alignment: .center)
-      .background(Color.blue)
+      .background(Color.clear)
       
       // Premium column - transparent background so gradient shows through
       featureIcon(isAvailable: feature.isPremiumAvailable, isPremium: true)
         .frame(width: 100, alignment: .center)
-        .background(Color.red)
+        .background(Color.clear)
     }
     .padding(.vertical, 16)
     .overlay(
@@ -201,17 +209,20 @@ struct SubscriptionView: View {
   }
   
   private var ctaButton: some View {
-    Button(action: {
+    HabittoButton.largeFillPrimary(text: "Continue") {
       // Handle subscription action
       print("Start subscription tapped")
-    }) {
-      Text("Start my free week")
-        .font(.appButtonText1)
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(Color.text01) // Black button
-        .cornerRadius(16)
+    }
+  }
+  
+  private var restorePurchaseButton: some View {
+    HabittoButton(
+      size: .medium,
+      style: .outline,
+      content: .text("Restore purchase")
+    ) {
+      // Handle restore purchase action
+      print("Restore purchase tapped")
     }
   }
   
