@@ -8,6 +8,13 @@ struct SubscriptionView: View {
   var body: some View {
     NavigationView {
       ZStack(alignment: .bottom) {
+        // Background
+        Image("secondaryBlueGradient(top,bottom)@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .ignoresSafeArea(.all)
+        
         ScrollView {
           VStack(spacing: 0) {
             // Header text
@@ -17,6 +24,10 @@ struct SubscriptionView: View {
             
             // Comparison table
             comparisonTable
+              .padding(.bottom, 32)
+            
+            // Review carousel
+            reviewCarousel
               .padding(.bottom, 100) // Space for button
             
             // Benefits list (commented out for future use)
@@ -25,12 +36,6 @@ struct SubscriptionView: View {
           }
           .padding(.horizontal, 20)
         }
-        .background(
-          Image("secondaryBlueGradient@4x")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .ignoresSafeArea()
-        )
         
         // Call-to-action buttons at bottom
         VStack(spacing: 12) {
@@ -65,6 +70,14 @@ struct SubscriptionView: View {
   @Environment(\.dismiss) private var dismiss
   @State private var selectedOption: SubscriptionOption = .lifetime
   @State private var showingSubscriptionOptions = false
+  @State private var currentReviewIndex: Int = 0
+  
+  private let reviews: [Review] = [
+    Review(id: "1", text: "This app transformed my daily routine. Premium features are worth it!"),
+    Review(id: "2", text: "Best habit tracker I've used. The insights are incredible."),
+    Review(id: "3", text: "Love vacation mode! Perfect for breaks without losing my streak."),
+    Review(id: "4", text: "Unlimited habits is a game changer. Highly recommend premium!")
+  ]
   
   private var headerText: some View {
     (Text("Unlock your full Habitto experience with ")
@@ -77,6 +90,97 @@ struct SubscriptionView: View {
     .font(.appHeadlineMedium)
     .multilineTextAlignment(.center)
     .frame(maxWidth: .infinity)
+  }
+  
+  private var reviewCarousel: some View {
+    VStack(spacing: 16) {
+      ScrollViewReader { proxy in
+        ScrollView(.horizontal, showsIndicators: false) {
+          HStack(spacing: 16) {
+            ForEach(Array(reviews.enumerated()), id: \.element.id) { index, review in
+              reviewCard(review: review)
+                .id(index)
+            }
+          }
+          .padding(.horizontal, 20)
+        }
+        .onAppear {
+          proxy.scrollTo(currentReviewIndex, anchor: .center)
+        }
+        .onChange(of: currentReviewIndex) { _, newValue in
+          withAnimation {
+            proxy.scrollTo(newValue, anchor: .center)
+          }
+        }
+      }
+      .gesture(
+        DragGesture()
+          .onEnded { value in
+            let threshold: CGFloat = 50
+            if value.translation.width > threshold && currentReviewIndex > 0 {
+              withAnimation {
+                currentReviewIndex -= 1
+              }
+            } else if value.translation.width < -threshold && currentReviewIndex < reviews.count - 1 {
+              withAnimation {
+                currentReviewIndex += 1
+              }
+            }
+          }
+      )
+      
+      // Page controls
+      HStack(spacing: 8) {
+        ForEach(0..<reviews.count, id: \.self) { index in
+          Circle()
+            .fill(index == currentReviewIndex ? Color.primary : Color.outline3)
+            .frame(width: 8, height: 8)
+            .animation(.easeInOut(duration: 0.2), value: currentReviewIndex)
+        }
+      }
+      .padding(.top, 8)
+    }
+  }
+  
+  private func reviewCard(review: Review) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      // 5 stars
+      HStack(spacing: 4) {
+        ForEach(0..<5) { _ in
+          Image(systemName: "star.fill")
+            .font(.system(size: 16))
+            .foregroundColor(.yellow100)
+        }
+      }
+      
+      // Review text
+      Text(review.text)
+        .font(.appBodyMedium)
+        .foregroundColor(.text01)
+        .lineLimit(3)
+    }
+    .padding(16)
+    .frame(width: 280)
+    .background {
+      // Liquid glass effect
+      RoundedRectangle(cornerRadius: 12)
+        .fill(.ultraThinMaterial)
+        .overlay {
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(
+              LinearGradient(
+                stops: [
+                  .init(color: Color.white.opacity(0.4), location: 0.0),
+                  .init(color: Color.white.opacity(0.1), location: 0.5),
+                  .init(color: Color.white.opacity(0.4), location: 1.0)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              ),
+              lineWidth: 1.5
+            )
+        }
+    }
   }
   
   private var benefitsList: some View {
@@ -478,6 +582,13 @@ enum SubscriptionOption {
   case lifetime
   case annual
   case monthly
+}
+
+// MARK: - Review
+
+struct Review {
+  let id: String
+  let text: String
 }
 
 // MARK: - SubscriptionFeature
