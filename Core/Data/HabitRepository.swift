@@ -803,11 +803,7 @@ class HabitRepository: ObservableObject {
 
     // Update the local habits array immediately for UI responsiveness
     if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits write to completionHistory
-      // The actualUsage field is DISPLAY ONLY and NOT used for completion logic
       let oldProgress = habits[index].completionHistory[dateKey] ?? 0
-      
-      // ✅ CRITICAL FIX: Create a mutable copy to modify
       var updatedHabit = habits[index]
       updatedHabit.completionHistory[dateKey] = progress
       #if DEBUG

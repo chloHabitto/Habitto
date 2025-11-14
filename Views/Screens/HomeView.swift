@@ -440,6 +440,7 @@ class HomeViewState: ObservableObject {
             debugLog("   New streak: \(currentStreakCount) day(s)")
             debugLog("   Last complete date: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
             debugLog("   Longest streak: \(streak.longestStreak) day(s)")
+            debugLog("   ✅ GLOBAL_STREAK_FINAL: Saved to GlobalStreakModel and UI: \(currentStreakCount)")
             debugLog(String(repeating: "=", count: 60))
             debugLog("")
             
@@ -452,19 +453,7 @@ class HomeViewState: ObservableObject {
     }
   }
 
-  func validateAllStreaks() {
-    debugLog("🔄 HomeView: Validating all streaks...")
-    for i in 0 ..< habits.count {
-      if !habits[i].validateStreak() {
-        debugLog(
-          "🔄 HomeView: Streak validation failed for habit: \(habits[i].name) - streak is now computed-only")
-        // ✅ PHASE 4: Streaks are now computed-only, no need to correct them
-      }
-    }
-    // Save the corrected habits
-    updateHabits(habits)
-    debugLog("🔄 HomeView: All streaks validated")
-  }
+  func validateAllStreaks() { }
 
   func refreshHabits() {
     debugLog("🔄 HomeViewState: Manual refresh requested")
@@ -472,9 +461,7 @@ class HomeViewState: ObservableObject {
       await habitRepository.loadHabits(force: true)
 
       // Also validate streaks
-      if !habits.isEmpty {
-        validateAllStreaks()
-      }
+      if !habits.isEmpty {}
     }
   }
 
