@@ -838,6 +838,13 @@ class NotificationManager: ObservableObject {
 
   /// Reschedule all notifications for all habits
   func rescheduleAllNotifications(for habits: [Habit]) {
+    let habitReminderEnabled = UserDefaults.standard.object(
+      forKey: "habitReminderEnabled") as? Bool ?? true
+    guard habitReminderEnabled else {
+      debugLog("ℹ️ NotificationManager: Habit reminders disabled, skipping reschedule")
+      return
+    }
+    
     print("🔄 NotificationManager: Rescheduling all notifications for \(habits.count) habits")
 
     // First, remove all existing notifications
@@ -1106,6 +1113,15 @@ class NotificationManager: ObservableObject {
   /// Reschedule all daily reminders (useful when settings change)
   @MainActor
   func rescheduleDailyReminders() {
+    let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
+    let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
+    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
+    
+    guard planReminderEnabled || completionReminderEnabled || habitReminderEnabled else {
+      debugLog("ℹ️ NotificationManager: All reminders disabled, skipping reschedule")
+      return
+    }
+    
     print("🔄 NotificationManager: Rescheduling all daily reminders...")
 
     // Step 1: Setup notification categories first (for snooze functionality)
@@ -1119,9 +1135,6 @@ class NotificationManager: ObservableObject {
 
     // Step 4: Schedule new ones based on current settings
     // Only schedule if the user has enabled them
-    let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
-    let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
-
     if planReminderEnabled {
       print("📅 NotificationManager: Plan reminders are enabled, scheduling...")
       scheduleDailyPlanReminders()
@@ -1137,7 +1150,6 @@ class NotificationManager: ObservableObject {
     }
 
     // Step 5: Schedule habit reminders based on global setting (default to true if not set)
-    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if habitReminderEnabled {
       print(
         "📅 NotificationManager: Habit reminders are enabled, rescheduling all existing habits...")

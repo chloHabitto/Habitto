@@ -85,6 +85,8 @@ class HomeViewState: ObservableObject {
   /// ✅ CRASH FIX: Cache streak as @Published instead of computed property
   /// Computed properties that access @Published cause infinite loops!
   @Published var currentStreak: Int = 0
+  private var lastStreakUpdateTime: Date?
+  private let streakUpdateInterval: TimeInterval = 0.5
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
@@ -276,6 +278,16 @@ class HomeViewState: ObservableObject {
   }
 
   func updateAllStreaks() {
+    let now = Date()
+    if let lastUpdate = lastStreakUpdateTime,
+       now.timeIntervalSince(lastUpdate) < streakUpdateInterval
+    {
+      debugLog(
+        "ℹ️ STREAK_UPDATE: Skipping - recently updated \(String(format: "%.1f", now.timeIntervalSince(lastUpdate)))s ago")
+      return
+    }
+    lastStreakUpdateTime = now
+    
     let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
     debugLog("")
     debugLog(String(repeating: "=", count: 60))
@@ -343,8 +355,12 @@ class HomeViewState: ObservableObject {
             var currentStreakCount = 0
             var lastCompleteDate: Date? = nil
             
-            // Look back up to 365 days
-            let startDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+            // Look back up to 365 days or earliest habit start (whichever is later)
+            let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+            let earliestHabitStart = habits
+              .map { calendar.startOfDay(for: $0.startDate) }
+              .min() ?? defaultStartDate
+            let startDate = max(defaultStartDate, earliestHabitStart)
             
             debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
         
@@ -395,6 +411,7 @@ class HomeViewState: ObservableObject {
             continue
           }
           
+          debugLog("ℹ️ STREAK_RECALC: Stopped at \(dateKey) - first incomplete day")
           break
         }
         

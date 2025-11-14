@@ -345,25 +345,12 @@ struct HabittoApp: App {
             Task.detached { @MainActor in
               try? await Task.sleep(nanoseconds: 500_000_000)
               await habitRepository.loadHabits()
-
-              // Initialize notification categories first (for snooze functionality)
-              NotificationManager.shared.initializeNotificationCategories()
-
-              // Set deterministic calendar for DST handling in production
-              NotificationManager.shared.setDeterministicCalendarForDST()
-
-              // Reschedule notifications after habits are loaded
-              try? await Task.sleep(nanoseconds: 500_000_000)
-              let habits = habitRepository.habits
-              NotificationManager.shared.rescheduleAllNotifications(for: habits)
-
-              // Schedule daily reminders after habits are loaded
-              try? await Task.sleep(nanoseconds: 500_000_000)
-              NotificationManager.shared.rescheduleDailyReminders()
-
-              // Reset daily XP counter if needed (maintenance operation)
-              // This is a legitimate daily counter reset, not an XP award mutation
-              XPManager.shared.resetDailyXP()
+            }
+            
+            // Defer heavy work until after the first frame renders
+            Task.detached(priority: .background) {
+              try? await Task.sleep(nanoseconds: 2_000_000_000)
+              await habitRepository.postLaunchWarmup()
             }
           }
         }
@@ -404,36 +391,9 @@ private func setupCoreData() {
   { _ in
     Task.detached { @MainActor in
       await HabitRepository.shared.loadHabits()
-
-      // Initialize notification categories first (for snooze functionality)
-      NotificationManager.shared.initializeNotificationCategories()
-
-      // Reschedule notifications after a short delay to ensure habits are loaded
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      let habits = HabitRepository.shared.habits
-      NotificationManager.shared.rescheduleAllNotifications(for: habits)
-
-      // Schedule daily reminders when app becomes active
-      try? await Task.sleep(nanoseconds: 500_000_000)
-      NotificationManager.shared.rescheduleDailyReminders()
-      
-      // ✅ PRIORITY 3: Start periodic event sync (only for authenticated users)
-      let userId = await CurrentUser().idOrGuest
-      if !CurrentUser.isGuestId(userId) {
-        await SyncEngine.shared.startPeriodicSync(userId: userId)
-      }
-      
-      // ✅ PRIORITY 1: Schedule event compaction (only for authenticated users)
-      if !CurrentUser.isGuestId(userId) {
-        debugLog("📅 EventCompactor: Initializing for user: \(userId)")
-        NSLog("📅 EventCompactor: Initializing for user: %@", userId)
-        let compactor = EventCompactor(userId: userId)
-        await compactor.scheduleNextCompaction()
-        debugLog("✅ EventCompactor: Initialization and scheduling completed")
-        NSLog("✅ EventCompactor: Initialization and scheduling completed")
-      } else {
-        debugLog("⏭️ EventCompactor: Skipping for guest user")
-        NSLog("⏭️ EventCompactor: Skipping for guest user")
+      Task.detached(priority: .background) {
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        await HabitRepository.shared.postLaunchWarmup()
       }
     }
   }
