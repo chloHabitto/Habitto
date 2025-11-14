@@ -87,11 +87,14 @@ class HomeViewState: ObservableObject {
   @Published var currentStreak: Int = 0
   private var lastStreakUpdateTime: Date?
   private let streakUpdateInterval: TimeInterval = 0.5
+  private var pendingStreakRecalculation = false
+  private var activePersistenceOperations = 0
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
     // ✅ FIX: Read streak from GlobalStreakModel in SwiftData instead of old calculation
     Task { @MainActor in
+      defer { self.processStreakRecalculationQueue() }
       do {
         // ✅ FIX: Add small delay to ensure SwiftData context sees the newly saved streak
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 second
@@ -121,6 +124,7 @@ class HomeViewState: ObservableObject {
         
         if let streak = allStreaks.first {
           let loadedStreak = streak.currentStreak
+          debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
           
           // ✅ FIX: Also broadcast via notification for consistency
@@ -130,9 +134,11 @@ class HomeViewState: ObservableObject {
             userInfo: ["newStreak": loadedStreak]
           )
         } else {
+          debugLog("🔍 UI_STREAK: updateStreak() found no GlobalStreakModel, defaulting to 0")
           currentStreak = 0
         }
       } catch {
+        debugLog("🔍 UI_STREAK: updateStreak() failed to load streak, defaulting to 0 (\(error.localizedDescription))")
         currentStreak = 0
       }
     }
@@ -148,9 +154,14 @@ class HomeViewState: ObservableObject {
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func toggleHabitCompletion(_ habit: Habit, for date: Date? = nil) async {
     let targetDate = date ?? Calendar.current.startOfDay(for: Date())
+    let opContext = "toggleHabitCompletion(\(habit.id))"
+    beginPersistenceOperation(opContext)
+    defer { endPersistenceOperation(opContext) }
+
     do {
       try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
       debugLog("✅ GUARANTEED: Completion toggled and persisted")
+      requestStreakRecalculation(reason: "Persistence completed for \(opContext)")
     } catch {
       debugLog("❌ Failed to toggle completion: \(error.localizedDescription)")
     }
@@ -188,6 +199,10 @@ class HomeViewState: ObservableObject {
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) async {
     let startTime = Date()
+    let opContext = "setHabitProgress(\(habit.id), progress: \(progress))"
+    beginPersistenceOperation(opContext)
+    defer { endPersistenceOperation(opContext) }
+
     debugLog("═══════════════════════════════════════════════════════")
     debugLog("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
     debugLog("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
@@ -198,6 +213,7 @@ class HomeViewState: ObservableObject {
       debugLog("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
       debugLog("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
       debugLog("═══════════════════════════════════════════════════════")
+      requestStreakRecalculation(reason: "Persistence completed for \(opContext)")
     } catch {
       let endTime = Date()
       let duration = endTime.timeIntervalSince(startTime)
@@ -277,14 +293,70 @@ class HomeViewState: ObservableObject {
     habitRepository.cleanupDuplicateHabits()
   }
 
+  // MARK: - Streak Recalculation Queue
+
+  func requestStreakRecalculation(reason: String, delay: TimeInterval = 0) {
+    debugLog(
+      "📥 STREAK_QUEUE: Request received (\(reason)) delay=\(String(format: "%.2f", delay))s")
+    pendingStreakRecalculation = true
+
+    if delay > 0 {
+      scheduleStreakRecalculationRetry(after: delay)
+    } else {
+      processStreakRecalculationQueue()
+    }
+  }
+
+  private func beginPersistenceOperation(_ context: String) {
+    activePersistenceOperations += 1
+    debugLog(
+      "⏳ STREAK_QUEUE: Persistence op started (\(context)) → count=\(activePersistenceOperations)")
+  }
+
+  private func endPersistenceOperation(_ context: String) {
+    activePersistenceOperations = max(0, activePersistenceOperations - 1)
+    debugLog(
+      "⏳ STREAK_QUEUE: Persistence op finished (\(context)) → remaining=\(activePersistenceOperations)")
+    processStreakRecalculationQueue()
+  }
+
+  @MainActor
+  private func processStreakRecalculationQueue() {
+    guard pendingStreakRecalculation else { return }
+
+    guard activePersistenceOperations == 0 else {
+      debugLog(
+        "⏳ STREAK_QUEUE: Waiting for \(activePersistenceOperations) persistence op(s) before recalculation")
+      return
+    }
+
+    pendingStreakRecalculation = false
+    updateAllStreaks()
+  }
+
+  private func scheduleStreakRecalculationRetry(after delay: TimeInterval) {
+    let clampedDelay = max(0, delay)
+    let nanoseconds = UInt64(clampedDelay * 1_000_000_000)
+
+    Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: nanoseconds)
+      guard let self else { return }
+      self.processStreakRecalculationQueue()
+    }
+  }
+
   func updateAllStreaks() {
     let now = Date()
-    if let lastUpdate = lastStreakUpdateTime,
-       now.timeIntervalSince(lastUpdate) < streakUpdateInterval
-    {
-      debugLog(
-        "ℹ️ STREAK_UPDATE: Skipping - recently updated \(String(format: "%.1f", now.timeIntervalSince(lastUpdate)))s ago")
-      return
+    if let lastUpdate = lastStreakUpdateTime {
+      let elapsed = now.timeIntervalSince(lastUpdate)
+      if elapsed < streakUpdateInterval {
+        let remaining = streakUpdateInterval - elapsed
+        debugLog(
+          "ℹ️ STREAK_UPDATE: Skipping - updated \(String(format: "%.1f", elapsed))s ago, retrying in \(String(format: "%.2f", remaining))s")
+        pendingStreakRecalculation = true
+        scheduleStreakRecalculationRetry(after: remaining)
+        return
+      }
     }
     lastStreakUpdateTime = now
     
@@ -310,8 +382,6 @@ class HomeViewState: ObservableObject {
         }
         
         let modelContext = SwiftDataContainer.shared.modelContext
-        let readContext = ModelContext(SwiftDataContainer.shared.modelContainer)
-        readContext.autosaveEnabled = false
         
         debugLog("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
         
@@ -328,6 +398,7 @@ class HomeViewState: ObservableObject {
           modelContext.insert(newStreak)
           return newStreak
         }()
+        debugLog("🔍 STREAK_START: GlobalStreakModel.currentStreak = \(streak.currentStreak)")
         
         // Fetch all habits for this user
         var habitsDescriptor = FetchDescriptor<HabitData>(
@@ -336,7 +407,7 @@ class HomeViewState: ObservableObject {
           }
         )
         habitsDescriptor.includePendingChanges = true
-        let habitDataList = try readContext.fetch(habitsDescriptor)
+        let habitDataList = try modelContext.fetch(habitsDescriptor)
         let habits = habitDataList.map { $0.toHabit() }
         
         guard !habits.isEmpty else {
@@ -369,7 +440,7 @@ class HomeViewState: ObservableObject {
         
         var completionDescriptor = FetchDescriptor<CompletionRecord>()
         completionDescriptor.includePendingChanges = true
-        let allCompletionRecords = try readContext.fetch(completionDescriptor)
+        let allCompletionRecords = try modelContext.fetch(completionDescriptor)
         let filteredCompletionRecords = allCompletionRecords.filter { record in
           guard record.isCompleted else { return false }
           if userId.isEmpty || userId == "guest" {
@@ -379,6 +450,15 @@ class HomeViewState: ObservableObject {
           }
         }
         let recordsByDate = Dictionary(grouping: filteredCompletionRecords, by: { $0.dateKey })
+        let todayKey = Habit.dateKey(for: today)
+        let todayRecords = filteredCompletionRecords.filter { $0.dateKey == todayKey }
+        if todayRecords.isEmpty {
+          debugLog("🔍 STREAK_DB: \(todayKey) CompletionRecord: none found")
+        } else {
+          for record in todayRecords {
+            debugLog("🔍 STREAK_DB: \(todayKey) CompletionRecord -> habitId=\(record.habitId), progress=\(record.progress), isCompleted=\(record.isCompleted), userId=\(record.userId)")
+          }
+        }
 
         while checkDate >= startDate {
           let dateKey = Habit.dateKey(for: checkDate)
@@ -426,6 +506,7 @@ class HomeViewState: ObservableObject {
         
             // Update streak model
             let oldStreak = streak.currentStreak
+            debugLog("🔍 STREAK_END: Calculated streak = \(currentStreakCount), saving to GlobalStreakModel")
             streak.currentStreak = currentStreakCount
             streak.longestStreak = max(streak.longestStreak, currentStreakCount)
             streak.lastCompleteDate = lastCompleteDate
@@ -668,8 +749,8 @@ struct HomeView: View {
           // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
           // This ensures streak updates reactively, just like XP does
           debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView")
-          state.updateAllStreaks()
-          debugLog("✅ HomeView: Streak recalculation completed")
+          state.requestStreakRecalculation(reason: "HomeTabView callback")
+          debugLog("✅ HomeView: Streak recalculation enqueued")
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -868,8 +949,8 @@ struct HomeView: View {
       HabitRepository.shared.debugHabitsState()
       
       // ✅ FIX: Recalculate streak from CompletionRecords when app launches
-      state.updateAllStreaks()
-      
+      state.requestStreakRecalculation(reason: "HomeView onAppear")
+
       // ✅ FIX: Also refresh streak UI
       state.updateStreak()
 
@@ -886,10 +967,7 @@ struct HomeView: View {
       .publisher(for: UIApplication.didBecomeActiveNotification))
     { _ in
       debugLog("🏠 HomeView: App became active, updating streaks...")
-      // Debounce to prevent excessive updates
-      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-        state.updateAllStreaks()
-      }
+      state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
     }
     .sheet(isPresented: $state.showingCreateHabit) {
       CreateHabitFlowView(onSave: { habit in
@@ -981,7 +1059,7 @@ struct HomeView: View {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
         debugLog("🔄 REACTIVE_STREAK: Now recalculating streak after SwiftData sync...")
-        state.updateAllStreaks()
+        state.requestStreakRecalculation(reason: "Habits publisher change")
       }
     }
   }
