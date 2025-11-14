@@ -297,11 +297,6 @@ final class HabitData {
       // Query ALL CompletionRecords for this habitId
       let allRecords = try context.fetch(allRecordsDescriptor)
       
-      if !allRecords.isEmpty {
-        let allUserIds = Array(Set(allRecords.map { $0.userId }))
-        print("🔍 toHabit() DEBUG: Found \(allRecords.count) total CompletionRecords for habit '\(self.name)' with userIds: \(allUserIds)")
-      }
-      
       // Now filter by userId with fallback logic
       var fetchedRecords: [CompletionRecord]
       
@@ -323,35 +318,18 @@ final class HabitData {
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
       fetchedRecords = try context.fetch(descriptor)
       
-      print("🔍 toHabit(): Found \(fetchedRecords.count) CompletionRecords for habit '\(self.name)' (habitId: \(habitId), userId: '\(userId.isEmpty ? "guest" : userId)')")
-      
       // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them with fallback logic
       // This handles cases where CompletionRecord was saved with different userId due to timing issues
       if fetchedRecords.isEmpty && !allRecords.isEmpty {
-        // Check if there's a userId mismatch - use records anyway but log warning
-        print("⚠️ toHabit() FALLBACK: No CompletionRecords found with userId '\(userId.isEmpty ? "guest" : userId)', but \(allRecords.count) exist with different userIds!")
-        print("   Using all records for habit '\(self.name)' (userId mismatch may need fixing)")
-        
         // ✅ FIX: For authenticated users, still use records if they exist (likely userId mismatch)
         // This prevents data loss when userId doesn't match exactly
         fetchedRecords = allRecords
       }
       
-      if fetchedRecords.count > 0 {
-        let userIds = Array(Set(fetchedRecords.map { $0.userId }))
-        if userIds.count > 1 || (userIds.first != userId && !userId.isEmpty) {
-          print("⚠️ toHabit() WARNING: CompletionRecords have userId mismatch for habit '\(self.name)'")
-          print("   HabitData.userId: '\(userId.isEmpty ? "guest" : userId)'")
-          print("   CompletionRecord userIds: \(userIds)")
-        }
-      }
-      
       completionRecords = fetchedRecords
     } catch {
-      print("❌ toHabit(): Failed to query CompletionRecords: \(error)")
       // Fallback to relationship if query fails
       completionRecords = completionHistory
-      print("🔍 toHabit(): Falling back to relationship with \(completionRecords.count) CompletionRecords for habit '\(self.name)'")
     }
 
     // ✅ FILTER: Only include records for the current userId to avoid cross-user duplicates
@@ -366,13 +344,6 @@ final class HabitData {
       }
     }
     
-    // ✅ DEBUG: Log filtering results
-    if completionRecords.count != filteredRecords.count {
-      let uniqueUserIds = Array(Set(completionRecords.map { $0.userId }))
-      print("⚠️ toHabit(): Filtered out \(completionRecords.count - filteredRecords.count) CompletionRecords due to userId mismatch")
-      print("   HabitData.userId: '\(self.userId)'")
-      print("   CompletionRecord userIds: \(uniqueUserIds)")
-    }
     
     // ✅ HOTFIX: Rebuild ALL dictionaries from CompletionRecords to prevent data loss
     // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries
@@ -407,40 +378,15 @@ final class HabitData {
     // The relationship should be loaded when HabitData is fetched
     let difficultyRecords = difficultyHistory
     
-    print("🔍 toHabit() DIFFICULTY: Found \(difficultyRecords.count) DifficultyRecords from relationship for habit '\(name)'")
-    
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyRecords
       .map {
         (DateUtils.dateKey(for: $0.date), $0.difficulty)
       })
-    
-    print("🔍 toHabit() DIFFICULTY: Converted to dictionary with \(difficultyHistoryDict.count) entries")
-    if !difficultyHistoryDict.isEmpty {
-      let sampleKeys = Array(difficultyHistoryDict.keys.prefix(3))
-      print("🔍 toHabit() DIFFICULTY: Sample keys: \(sampleKeys)")
-    }
 
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
       ($0.key, $0.value)
     })
     
-    // ✅ DIAGNOSTIC LOGGING: Verify data was rebuilt correctly
-    #if DEBUG
-    print("🔧 HOTFIX: toHabit() for '\(name)':")
-    print("  → CompletionRecords: \(filteredRecords.count)")
-    print("  → completionHistory entries: \(completionHistoryDict.count)")
-    print("  → completionStatus entries: \(completionStatusDict.count)")
-    print("  → completionTimestamps entries: \(completionTimestampsDict.count)")
-    print("  → difficultyHistory entries: \(difficultyHistoryDict.count)")
-    if filteredRecords.count > 0 {
-      let completedCount = filteredRecords.filter { $0.isCompleted }.count
-      print("  → Completed days: \(completedCount)/\(filteredRecords.count)")
-    }
-    if !difficultyHistoryDict.isEmpty {
-      let sampleKeys = Array(difficultyHistoryDict.keys.prefix(3))
-      print("  → Difficulty sample dates: \(sampleKeys)")
-    }
-    #endif
 
     return Habit(
       id: id,

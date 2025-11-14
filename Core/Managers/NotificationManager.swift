@@ -808,12 +808,12 @@ class NotificationManager: ObservableObject {
   // Debug: List all pending notifications
   func debugPendingNotifications() {
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-      print("🔍 NOTIFICATION DEBUG - Pending notifications count: \(requests.count)")
-      for (index, request) in requests.enumerated() {
-        print("  \(index + 1). ID: \(request.identifier)")
+      // Debug logging removed for performance
+      for (_, request) in requests.enumerated() {
         if let trigger = request.trigger as? UNCalendarNotificationTrigger {
-          print("     Trigger: \(trigger.dateComponents)")
-          print("     Repeats: \(trigger.repeats)")
+          // Debug info available but not logged
+          _ = trigger.dateComponents
+          _ = trigger.repeats
         }
       }
     }
@@ -832,22 +832,8 @@ class NotificationManager: ObservableObject {
 
   // Debug: Check if a specific habit should receive notifications on a given date
   func debugHabitNotificationStatus(_ habit: Habit, for date: Date) {
-    let calendar = Calendar.current
-    let weekday = calendar.component(.weekday, from: date)
-    let dateKey = calendar.startOfDay(for: date)
-
-    print("🔍 NOTIFICATION DEBUG - Habit: '\(habit.name)'")
-    print("  Date: \(dateKey)")
-    print("  Weekday: \(weekday)")
-    print("  Schedule: '\(habit.schedule)'")
-    print("  Start Date: \(habit.startDate)")
-    print("  End Date: \(habit.endDate?.description ?? "None")")
-    print("  Should Show: \(shouldShowHabitOnDate(habit, date: date))")
-    print("  Active Reminders: \(habit.reminders.filter { $0.isActive }.count)")
-
-    for (index, reminder) in habit.reminders.enumerated() {
-      print("    Reminder \(index + 1): \(reminder.time) - Active: \(reminder.isActive)")
-    }
+    // Debug logging removed for performance
+    _ = shouldShowHabitOnDate(habit, date: date)
   }
 
   /// Reschedule all notifications for all habits
@@ -1944,36 +1930,22 @@ class NotificationManager: ObservableObject {
 
     // Check if the date is before the habit start date
     if dateKey < calendar.startOfDay(for: habit.startDate) {
-      print(
-        "🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Date before start date")
       return false
     }
 
     // Check if the date is after the habit end date (if set)
     if let endDate = habit.endDate, dateKey > calendar.startOfDay(for: endDate) {
-      print(
-        "🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Date after end date")
       return false
     }
 
     // Check if the habit is already completed for this date (only for today, not future dates)
     let today = calendar.startOfDay(for: Date())
     if dateKey == today, habit.isCompleted(for: date) {
-      print(
-        "🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Already completed for today")
       return false
     }
 
     // Check if the habit is scheduled for this weekday
     let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
-
-    print(
-      "🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' | Date: \(dateKey) | Weekday: \(weekday) | Schedule: '\(habit.schedule)' | Scheduled for weekday: \(isScheduledForWeekday)")
-
-    if !isScheduledForWeekday {
-      print(
-        "🔍 NOTIFICATION DEBUG - Habit '\(habit.name)' not scheduled on \(dateKey): Not scheduled for weekday \(weekday)")
-    }
 
     return isScheduledForWeekday
   }

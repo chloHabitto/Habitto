@@ -699,15 +699,11 @@ struct Habit: Identifiable, Codable, Equatable {
       // A habit is complete when progress reaches or exceeds the goal amount
       // This works for BOTH Formation AND Breaking habits
       let isCompleted = progress >= targetAmount
-      print(
-        "🔍 COMPLETION CHECK - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Goal: \(targetAmount) | Completed: \(isCompleted)")
       return isCompleted
     }
 
     // Fallback: if we can't parse the goal, consider it complete with any progress
     let isCompleted = progress > 0
-    print(
-      "🔍 COMPLETION CHECK - Habit '\(name)' | Date: \(dateKey) | Progress: \(progress) | Completed: \(isCompleted) (fallback - no goal parsed)")
     return isCompleted
   }
 
