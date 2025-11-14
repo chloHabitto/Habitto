@@ -75,12 +75,12 @@ struct HomeTabView: View {
           await prefetchCompletionStatus()
           
       // ✅ FIX: Compute initial XP from persisted habit data
-          print("✅ INITIAL_XP: Computing XP from loaded habits")
+          debugLog("✅ INITIAL_XP: Computing XP from loaded habits")
       let completedDaysCount = countCompletedDays()
       await MainActor.run {
         xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
       }
-          print("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+          debugLog("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         }
 
         // Subscribe to event bus
@@ -89,18 +89,18 @@ struct HomeTabView: View {
           .sink { event in
             switch event {
             case .dailyAwardGranted(let dateKey):
-              print("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
+              debugLog("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
 
               // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
               // Set delay to 0.8s to ensure difficulty sheet is completely closed
               DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                print("🎯 STEP 12: Setting showCelebration = true")
+                debugLog("🎯 STEP 12: Setting showCelebration = true")
                 showCelebration = true
               }
 
             case .dailyAwardRevoked(let dateKey):
-              print("🎯 STEP 12: Received dailyAwardRevoked event for \(dateKey)")
-              print("🎯 STEP 12: Setting showCelebration = false")
+              debugLog("🎯 STEP 12: Received dailyAwardRevoked event for \(dateKey)")
+              debugLog("🎯 STEP 12: Setting showCelebration = false")
               showCelebration = false
             }
           }
@@ -354,7 +354,7 @@ struct HomeTabView: View {
   private var addButton: some View {
     Button(action: {
       // Navigate to create habit flow
-      print("➕ Add habit button tapped")
+      debugLog("➕ Add habit button tapped")
     }) {
       Image("Icon-AddCircle_Filled")
         .renderingMode(.template)
@@ -395,7 +395,7 @@ struct HomeTabView: View {
   private var notificationButton: some View {
     Button(action: {
       // Navigate to notification settings
-      print("🔔 Notification button tapped")
+      debugLog("🔔 Notification button tapped")
     }) {
       Image("Icon-Bell_Filled")
         .renderingMode(.template)
@@ -548,7 +548,7 @@ struct HomeTabView: View {
           try await HabitRepository.shared.triggerManualSync()
         } catch {
           // Error will be handled by HabitRepository and shown via sync status
-            print("❌ HomeTabView: Manual sync failed: \(error.localizedDescription)")
+            debugLog("❌ HomeTabView: Manual sync failed: \(error.localizedDescription)")
         }
       }
     }
@@ -600,7 +600,7 @@ struct HomeTabView: View {
             }
           })
       .onAppear {
-        print("🎯 HomeTabView: HabitDetailView appeared for habit: \(habit.name)")
+        debugLog("🎯 HomeTabView: HabitDetailView appeared for habit: \(habit.name)")
       }
   }
 
@@ -609,9 +609,9 @@ struct HomeTabView: View {
       habit: habit,
       selectedDate: selectedDate,
       onRowTap: {
-        print("🎯 HomeTabView: Row tapped for habit: \(habit.name)")
+        debugLog("🎯 HomeTabView: Row tapped for habit: \(habit.name)")
         selectedHabit = habit
-        print("🎯 HomeTabView: selectedHabit set to: \(selectedHabit?.name ?? "nil")")
+        debugLog("🎯 HomeTabView: selectedHabit set to: \(selectedHabit?.name ?? "nil")")
       },
       onProgressChange: { habit, date, progress in
         // Use the new progress setting method that properly saves to Core Data
@@ -645,7 +645,7 @@ struct HomeTabView: View {
 
   private func handleHabitsChange(oldHabits: [Habit], newHabits: [Habit]) {
     // Resort habits when the habits array changes
-    print("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
+    debugLog("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
     resortHabits()
   }
 
@@ -803,7 +803,7 @@ struct HomeTabView: View {
     var habitInstances: [HabitInstance] = []
 
     // Create initial habit instances starting from today
-    // print("🔍 Creating \(daysPerWeek) habit instances starting from today: \(todayStart)") //
+    // debugLog("🔍 Creating \(daysPerWeek) habit instances starting from today: \(todayStart)") //
     // Removed as per edit hint
     for i in 0 ..< daysPerWeek {
       if let instanceDate = calendar.date(byAdding: .day, value: i, to: todayStart) {
@@ -812,7 +812,7 @@ struct HomeTabView: View {
           originalDate: instanceDate,
           currentDate: instanceDate)
         habitInstances.append(instance)
-        // print("🔍 Created instance \(i): \(instanceDate)") // Removed as per edit hint
+        // debugLog("🔍 Created instance \(i): \(instanceDate)") // Removed as per edit hint
       }
     }
 
@@ -908,7 +908,7 @@ struct HomeTabView: View {
     let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
     
     if wasCompletedOnThisDate {
-      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Was completed on \(dateKey) → true")
+      debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Was completed on \(dateKey) → true")
       return true
     }
 
@@ -923,7 +923,7 @@ struct HomeTabView: View {
     
     // If already completed the monthly goal, don't show for future dates
     if completionsNeeded <= 0 {
-      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
+      debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
       return false
     }
     
@@ -939,7 +939,7 @@ struct HomeTabView: View {
     let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
     let shouldShow = daysUntilTarget >= 0 && daysUntilTarget < daysToShow
     
-    print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
+    debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
     
     return shouldShow
   }
@@ -989,7 +989,7 @@ struct HomeTabView: View {
       completionStatusMap = statusMap
     }
 
-    print("✅ HomeTabView: Prefetched completion status for \(statusMap.count) habits from local data")
+    debugLog("✅ HomeTabView: Prefetched completion status for \(statusMap.count) habits from local data")
   }
 
   // MARK: - Derived XP Helpers
@@ -1043,23 +1043,23 @@ struct HomeTabView: View {
 
         #if DEBUG
         let totalRecords = recordsByDate[dateKey]?.count ?? 0
-        print("🔍 XP_DEBUG: \(dateKey) totalCompletedRecords=\(totalRecords)")
+        debugLog("🔍 XP_DEBUG: \(dateKey) totalCompletedRecords=\(totalRecords)")
         if !allCompleted {
           let missingHabits = habitsForDate
             .filter { !completedIds.contains($0.id) }
             .map(\.name)
-          print("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.joined(separator: ", "))")
+          debugLog("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.joined(separator: ", "))")
         }
         #endif
 
         if allCompleted {
           completedCount += 1
           #if DEBUG
-          print("✅ XP_CALC: [\(dateKey)] ALL \(habitsForDate.count)/\(habitsForDate.count) habits complete - COUNTED! (+50 XP)")
+          debugLog("✅ XP_CALC: [\(dateKey)] ALL \(habitsForDate.count)/\(habitsForDate.count) habits complete - COUNTED! (+50 XP)")
           #endif
         } else {
           #if DEBUG
-          print("❌ XP_CALC: [\(dateKey)] NOT all habits complete - SKIPPED (0 XP)")
+          debugLog("❌ XP_CALC: [\(dateKey)] NOT all habits complete - SKIPPED (0 XP)")
           #endif
         }
       }
@@ -1069,7 +1069,7 @@ struct HomeTabView: View {
     }
 
     #if DEBUG
-    print("🎯 XP_CALC: Total completed days: \(completedCount)")
+    debugLog("🎯 XP_CALC: Total completed days: \(completedCount)")
     #endif
     return completedCount
   }
@@ -1098,12 +1098,12 @@ struct HomeTabView: View {
   // MARK: - Sorting Logic
 
   private func resortHabits() {
-    print("🔄 resortHabits() called - deferResort: \(deferResort)")
+    debugLog("🔄 resortHabits() called - deferResort: \(deferResort)")
     guard !deferResort else {
-      print("   ⚠️ resortHabits() BLOCKED by deferResort flag")
+      debugLog("   ⚠️ resortHabits() BLOCKED by deferResort flag")
       return
     }
-    print("   ✅ resortHabits() proceeding...")
+    debugLog("   ✅ resortHabits() proceeding...")
 
     let todayHabits = habits.filter { habit in
       let selected = DateUtils.startOfDay(for: selectedDate)
@@ -1149,10 +1149,10 @@ struct HomeTabView: View {
       return habit1.name < habit2.name
     })
     
-    print("   ✅ resortHabits() completed - sortedHabits count: \(sortedHabits.count)")
+    debugLog("   ✅ resortHabits() completed - sortedHabits count: \(sortedHabits.count)")
     for (index, habit) in sortedHabits.enumerated() {
       let isComplete = completionStatusMap[habit.id] ?? false
-      print("      [\(index)] \(habit.name) - completed: \(isComplete)")
+      debugLog("      [\(index)] \(habit.name) - completed: \(isComplete)")
     }
   }
       
@@ -1161,7 +1161,7 @@ struct HomeTabView: View {
   private func onHabitCompleted(_ habit: Habit) {
     let dateKey = Habit.dateKey(for: selectedDate)
 
-    print(
+    debugLog(
       "🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
 
     // Mark complete and present difficulty sheet
@@ -1188,21 +1188,21 @@ struct HomeTabView: View {
       let isComplete: Bool
       if goalAmount > 0 {
         isComplete = progress >= goalAmount
-        print("  🔍 \(habitData.habitType == .breaking ? "Breaking" : "Formation") habit '\(h.name)': progress=\(progress), goal=\(goalAmount), complete=\(isComplete)")
+        debugLog("  🔍 \(habitData.habitType == .breaking ? "Breaking" : "Formation") habit '\(h.name)': progress=\(progress), goal=\(goalAmount), complete=\(isComplete)")
     } else {
         isComplete = progress > 0
-        print("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
+        debugLog("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
   }
 
       // ✅ UNIVERSAL RULE: Both types use completionHistory
-      print("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | progress=\(habitData.completionHistory[dateKey] ?? 0)")
+      debugLog("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | progress=\(habitData.completionHistory[dateKey] ?? 0)")
       return !isComplete // Return true if NOT complete
     }
 
         if remainingHabits.isEmpty {
           // This is the last habit - set flag and let difficulty sheet be shown
       // The celebration will be triggered after the difficulty sheet is dismissed
-      print(
+      debugLog(
         "🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
           onLastHabitCompleted()
       // Don't set selectedHabit = nil here - let the difficulty sheet show
@@ -1210,7 +1210,7 @@ struct HomeTabView: View {
       // Present difficulty sheet (existing logic)
       // Don't set selectedHabit here as it triggers habit detail screen
       // The difficulty sheet will be shown by the ScheduledHabitItem
-      print("🎯 COMPLETION_FLOW: Habit completed, \(remainingHabits.count) remaining")
+      debugLog("🎯 COMPLETION_FLOW: Habit completed, \(remainingHabits.count) remaining")
     }
   }
 
@@ -1222,11 +1222,11 @@ struct HomeTabView: View {
     Task {
       #if DEBUG
       debugRevokeCalls += 1
-      print("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
+      debugLog("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
       #endif
 
       let dateKey = Habit.dateKey(for: selectedDate)
-      print("🎯 UNCOMPLETE_FLOW: Habit '\(habit.name)' uncompleted for \(dateKey)")
+      debugLog("🎯 UNCOMPLETE_FLOW: Habit '\(habit.name)' uncompleted for \(dateKey)")
       
       // Check if all habits are still completed for this date
       let habitsForDate = baseHabitsForSelectedDate
@@ -1235,21 +1235,21 @@ struct HomeTabView: View {
       }
       
       // ✅ NEW APPROACH: Always recalculate XP from state (idempotent!)
-      print("✅ DERIVED_XP: Recalculating XP after uncomplete")
+      debugLog("✅ DERIVED_XP: Recalculating XP after uncomplete")
       let completedDaysCount = countCompletedDays()
       await MainActor.run {
         xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
       }
-      print("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+      debugLog("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
       
       // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
       // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
       // This ensures streak always reflects current state, regardless of which day is uncompleted
-      print("🔄 DERIVED_STREAK: Recalculating streak after uncomplete")
+      debugLog("🔄 DERIVED_STREAK: Recalculating streak after uncomplete")
       await MainActor.run {
         onStreakRecalculationNeeded?()
       }
-      print("✅ DERIVED_STREAK: Streak recalculation triggered")
+      debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
       
       // Clean up DailyAward record if day is no longer complete
       if !allCompleted {
@@ -1268,14 +1268,14 @@ struct HomeTabView: View {
               modelContext.delete(award)
             }
             try modelContext.save()
-          print("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
+          debugLog("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
           
           // ✅ REMOVED: No longer calling decrementGlobalStreak() here!
           // The onStreakRecalculationNeeded() callback above handles ALL streak updates
           // This prevents the old early-return logic from interfering with today's uncompletes
-          print("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
+          debugLog("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
           } catch {
-          print("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
+          debugLog("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
           }
         }
       }
@@ -1288,38 +1288,38 @@ struct HomeTabView: View {
   private func onDifficultySheetDismissed() {
     let dateKey = Habit.dateKey(for: selectedDate)
     
-    print(
+    debugLog(
       "🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
 
     // ✅ FIX: Wait 1 second before resorting to allow smooth sheet dismissal animation
     Task { @MainActor in
-      print("🔄 COMPLETION_FLOW: Starting 1-second delay before resort...")
-      print("   deferResort (before delay): \(deferResort)")
-      print("   sortedHabits count (before delay): \(sortedHabits.count)")
+      debugLog("🔄 COMPLETION_FLOW: Starting 1-second delay before resort...")
+      debugLog("   deferResort (before delay): \(deferResort)")
+      debugLog("   sortedHabits count (before delay): \(sortedHabits.count)")
       
       try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
       
-      print("🔄 COMPLETION_FLOW: 1 second passed, now resorting...")
+      debugLog("🔄 COMPLETION_FLOW: 1 second passed, now resorting...")
       
       // ✅ FIX: Refresh completion status map BEFORE resorting
-      print("   Refreshing completionStatusMap...")
+      debugLog("   Refreshing completionStatusMap...")
       await prefetchCompletionStatus()
-      print("   ✅ completionStatusMap refreshed")
+      debugLog("   ✅ completionStatusMap refreshed")
       
-      print("   Setting deferResort = false")
+      debugLog("   Setting deferResort = false")
       deferResort = false
       
-      print("   Calling resortHabits() with animation...")
+      debugLog("   Calling resortHabits() with animation...")
       withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
         resortHabits()
       }
       
-      print("✅ COMPLETION_FLOW: Resort completed!")
-      print("   sortedHabits count (after resort): \(sortedHabits.count)")
+      debugLog("✅ COMPLETION_FLOW: Resort completed!")
+      debugLog("   sortedHabits count (after resort): \(sortedHabits.count)")
       if !sortedHabits.isEmpty {
         for (index, habit) in sortedHabits.enumerated() {
           let isComplete = completionStatusMap[habit.id] ?? false
-          print("   [\(index)] \(habit.name) - completed: \(isComplete)")
+          debugLog("   [\(index)] \(habit.name) - completed: \(isComplete)")
         }
       }
     }
@@ -1330,39 +1330,39 @@ struct HomeTabView: View {
       // This is the ONLY place where XP should be awarded for habit completion
       // Do NOT call XPManager methods directly - always use DailyAwardService
       let userId = getCurrentUserId()
-      print(
+      debugLog(
         "🎉 COMPLETION_FLOW: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
-      print("🎯 COMPLETION_FLOW: userId = \(userId)")
+      debugLog("🎯 COMPLETION_FLOW: userId = \(userId)")
 
       Task {
       #if DEBUG
         debugGrantCalls += 1
-        print(
+        debugLog(
           "🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
         if debugGrantCalls > 1 {
-          print("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
-          print("⚠️ Stack trace:")
-          Thread.callStackSymbols.forEach { print("  \($0)") }
+          debugLog("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
+          debugLog("⚠️ Stack trace:")
+          Thread.callStackSymbols.forEach { debugLog("  \($0)") }
         }
       #endif
       
-        print("✅ DERIVED_XP: Recalculating XP from completed days")
+        debugLog("✅ DERIVED_XP: Recalculating XP from completed days")
         
         // ✅ NEW APPROACH: Derive XP from state (idempotent!)
         let completedDaysCount = countCompletedDays()
         await MainActor.run {
           xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
         }
-        print("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+        debugLog("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         
         // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
         // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
         // This ensures streak always reflects current state
-        print("🔄 DERIVED_STREAK: Recalculating streak after completion")
+        debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
           onStreakRecalculationNeeded?()
         }
-        print("✅ DERIVED_STREAK: Streak recalculation triggered")
+        debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
         
         do {
           // Still save DailyAward for history tracking
@@ -1376,34 +1376,34 @@ struct HomeTabView: View {
             )
             modelContext.insert(dailyAward)
             try modelContext.save()
-          print("✅ COMPLETION_FLOW: DailyAward record created for history")
+          debugLog("✅ COMPLETION_FLOW: DailyAward record created for history")
           
           // ✅ REMOVED: No longer calling updateGlobalStreak() here!
           // The onStreakRecalculationNeeded() callback above handles ALL streak updates
           // This prevents duplicate/conflicting streak calculations
-          print("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
+          debugLog("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
           
           // Trigger celebration
           showCelebration = true
-          print("🎉 COMPLETION_FLOW: Celebration triggered!")
+          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
           
           // ✅ REMOVED: No longer posting StreakUpdated notification manually
           // The callback will trigger updateAllStreaks() which updates GlobalStreakModel
           // SwiftUI @Query will automatically pick up the changes
-          print("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
+          debugLog("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
           } catch {
-          print("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
+          debugLog("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
         }
         
         // Check XP after award
         let currentXP = xpManager.totalXP  // ✅ Use environment object
-        print("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
-        print("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")  // ✅ Use environment object
+        debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
+        debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")  // ✅ Use environment object
         
         // ✅ FIX: Call completion callback AFTER streak update completes
         await MainActor.run {
           onCompletionDismiss?()
-          print("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
+          debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
         }
       }
 
@@ -1412,7 +1412,7 @@ struct HomeTabView: View {
     } else {
       // ✅ FIX: Call completion callback even if not last habit
       onCompletionDismiss?()
-      print("✅ COMPLETION_FLOW: Called onCompletionDismiss callback (not last habit)")
+      debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback (not last habit)")
     }
   }
 
@@ -1425,14 +1425,14 @@ struct HomeTabView: View {
 
     // Note: XP will be awarded in onDifficultySheetDismissed() after the difficulty sheet is
     // dismissed
-    print("🎉 STEP 1: Last habit completed! Will award XP after difficulty sheet is dismissed")
-    print("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
+    debugLog("🎉 STEP 1: Last habit completed! Will award XP after difficulty sheet is dismissed")
+    debugLog("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
   }
 
   private func getCurrentUserId() -> String {
     // ✅ FIX: Use actual userId from AuthenticationManager (same as HomeViewState)
     let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
-    print("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId)")
+    debugLog("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId)")
     return userId
   }
   
@@ -1443,7 +1443,7 @@ struct HomeTabView: View {
     let normalizedDate = calendar.startOfDay(for: date)
     let dateKey = Habit.dateKey(for: normalizedDate)
     
-    print("🔥 STREAK_UPDATE: Updating global streak for \(dateKey)")
+    debugLog("🔥 STREAK_UPDATE: Updating global streak for \(dateKey)")
     
     // Get or create GlobalStreakModel
     let descriptor = FetchDescriptor<GlobalStreakModel>(
@@ -1455,11 +1455,11 @@ struct HomeTabView: View {
     var streak: GlobalStreakModel
     if let existing = try modelContext.fetch(descriptor).first {
       streak = existing
-      print("🔥 STREAK_UPDATE: Found existing streak - current: \(streak.currentStreak), longest: \(streak.longestStreak)")
+      debugLog("🔥 STREAK_UPDATE: Found existing streak - current: \(streak.currentStreak), longest: \(streak.longestStreak)")
     } else {
       streak = GlobalStreakModel(userId: userId)
       modelContext.insert(streak)
-      print("🔥 STREAK_UPDATE: Created new streak for user \(userId)")
+      debugLog("🔥 STREAK_UPDATE: Created new streak for user \(userId)")
     }
     
     // Check if this is today
@@ -1473,13 +1473,13 @@ struct HomeTabView: View {
       let newStreak = streak.currentStreak
       
       try modelContext.save()
-      print("✅ STREAK_UPDATE: Streak incremented \(oldStreak) → \(newStreak) for \(dateKey)")
-      print("🔥 STREAK_UPDATE: Longest streak: \(streak.longestStreak), Total complete days: \(streak.totalCompleteDays)")
+      debugLog("✅ STREAK_UPDATE: Streak incremented \(oldStreak) → \(newStreak) for \(dateKey)")
+      debugLog("🔥 STREAK_UPDATE: Longest streak: \(streak.longestStreak), Total complete days: \(streak.totalCompleteDays)")
       
       return newStreak
     } else {
       // For past dates, just log a warning
-      print("⚠️ STREAK_UPDATE: Completing past date \(dateKey) - streak may need recalculation")
+      debugLog("⚠️ STREAK_UPDATE: Completing past date \(dateKey) - streak may need recalculation")
       return streak.currentStreak
     }
   }
@@ -1491,7 +1491,7 @@ struct HomeTabView: View {
     let normalizedDate = calendar.startOfDay(for: date)
     let dateKey = Habit.dateKey(for: normalizedDate)
     
-    print("🔥 STREAK_REVERSAL: Decrementing global streak for \(dateKey)")
+    debugLog("🔥 STREAK_REVERSAL: Decrementing global streak for \(dateKey)")
     
     // Get existing GlobalStreakModel
     let descriptor = FetchDescriptor<GlobalStreakModel>(
@@ -1501,11 +1501,11 @@ struct HomeTabView: View {
     )
     
     guard let streak = try modelContext.fetch(descriptor).first else {
-      print("⚠️ STREAK_REVERSAL: No streak found for user \(userId), nothing to decrement")
+      debugLog("⚠️ STREAK_REVERSAL: No streak found for user \(userId), nothing to decrement")
       return 0
     }
     
-    print("🔥 STREAK_REVERSAL: Found existing streak - current: \(streak.currentStreak)")
+    debugLog("🔥 STREAK_REVERSAL: Found existing streak - current: \(streak.currentStreak)")
     
     // Check if this is today
     let today = calendar.startOfDay(for: Date())
@@ -1515,11 +1515,11 @@ struct HomeTabView: View {
       // ✅ CRITICAL FIX: Today's completion status should NOT affect the current streak
       // The streak only counts consecutive PAST completed days (yesterday and before)
       // Today is still in progress, so uncompleting today's habits should not decrement the streak
-      print("ℹ️ STREAK_REVERSAL: Uncompleting today's habits - streak unchanged (today doesn't count until midnight)")
+      debugLog("ℹ️ STREAK_REVERSAL: Uncompleting today's habits - streak unchanged (today doesn't count until midnight)")
       return streak.currentStreak
     } else {
       // ✅ PAST DATE: Recalculate streak from scratch since we changed history
-      print("⚠️ STREAK_REVERSAL: Uncompleting past date \(dateKey) - recalculating streak")
+      debugLog("⚠️ STREAK_REVERSAL: Uncompleting past date \(dateKey) - recalculating streak")
       
       // Decrement totalCompleteDays since a past completed day is now incomplete
       streak.totalCompleteDays = max(0, streak.totalCompleteDays - 1)
@@ -1554,8 +1554,8 @@ struct HomeTabView: View {
       streak.currentStreak = calculatedStreak
       
       try modelContext.save()
-      print("✅ STREAK_REVERSAL: Streak recalculated \(oldStreak) → \(calculatedStreak) after uncompleting past date")
-      print("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
+      debugLog("✅ STREAK_REVERSAL: Streak recalculated \(oldStreak) → \(calculatedStreak) after uncompleting past date")
+      debugLog("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
       
       // Broadcast the new streak value
       await MainActor.run {
@@ -1564,7 +1564,7 @@ struct HomeTabView: View {
           object: nil,
           userInfo: ["newStreak": calculatedStreak]
         )
-        print("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(calculatedStreak)")
+        debugLog("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(calculatedStreak)")
       }
       
       return calculatedStreak

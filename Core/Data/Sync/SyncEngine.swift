@@ -55,7 +55,7 @@ actor SyncEngine {
         self.firestore = Firestore.firestore()
         self.habitStore = HabitStore.shared
         logger.info("SyncEngine initialized")
-        print("🔄 SyncEngine: Initialized")
+        debugLog("🔄 SyncEngine: Initialized")
         NSLog("🔄 SyncEngine: Initialized (NSLog)")
         fflush(stdout)
     }
@@ -303,7 +303,7 @@ actor SyncEngine {
     /// - Parameter userId: The authenticated user ID (must not be guest). If nil, will fetch from CurrentUser.
     func startPeriodicSync(userId: String? = nil) {
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
-        print("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
+        debugLog("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
         NSLog("🔄 SyncEngine: Starting periodic sync (every %.0fs)", self.syncInterval)
         fflush(stdout)
         
@@ -314,11 +314,11 @@ actor SyncEngine {
             let initialUserId: String
             if let providedUserId = userId {
                 initialUserId = providedUserId
-                print("🔄 SyncEngine: Using provided userId: \(providedUserId)")
+                debugLog("🔄 SyncEngine: Using provided userId: \(providedUserId)")
                 NSLog("🔄 SyncEngine: Using provided userId: %@", providedUserId)
             } else {
                 initialUserId = await CurrentUser().idOrGuest
-                print("🔄 SyncEngine: Fetched userId: '\(initialUserId)' (empty=\(initialUserId.isEmpty))")
+                debugLog("🔄 SyncEngine: Fetched userId: '\(initialUserId)' (empty=\(initialUserId.isEmpty))")
                 NSLog("🔄 SyncEngine: Fetched userId: '%@' (empty=%@)", initialUserId, initialUserId.isEmpty ? "YES" : "NO")
             }
             fflush(stdout)
@@ -326,28 +326,28 @@ actor SyncEngine {
             // Skip sync for guest users
             guard !CurrentUser.isGuestId(initialUserId) else {
                 logger.info("⏭️ Skipping periodic sync for guest user")
-                print("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
+                debugLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
                 NSLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '%@')", initialUserId)
                 fflush(stdout)
                 return
             }
             
-            print("🔄 SyncEngine: Starting periodic sync for authenticated user: \(initialUserId)")
+            debugLog("🔄 SyncEngine: Starting periodic sync for authenticated user: \(initialUserId)")
             NSLog("🔄 SyncEngine: Starting periodic sync for authenticated user: %@", initialUserId)
             fflush(stdout)
             
             // Perform immediate sync on start (don't wait for first interval)
             do {
-                print("🔄 SyncEngine: Performing initial sync cycle...")
+                debugLog("🔄 SyncEngine: Performing initial sync cycle...")
                 NSLog("🔄 SyncEngine: Performing initial sync cycle...")
                 fflush(stdout)
                 try await self.performFullSyncCycle(userId: initialUserId)
-                print("✅ SyncEngine: Initial sync cycle completed")
+                debugLog("✅ SyncEngine: Initial sync cycle completed")
                 NSLog("✅ SyncEngine: Initial sync cycle completed")
                 fflush(stdout)
             } catch {
                 self.logger.error("❌ Initial sync failed: \(error.localizedDescription)")
-                print("❌ SyncEngine: Initial sync failed: \(error.localizedDescription)")
+                debugLog("❌ SyncEngine: Initial sync failed: \(error.localizedDescription)")
                 NSLog("❌ SyncEngine: Initial sync failed: %@", error.localizedDescription)
                 fflush(stdout)
             }
@@ -364,7 +364,7 @@ actor SyncEngine {
                 let currentUserId = await CurrentUser().idOrGuest
                 guard !CurrentUser.isGuestId(currentUserId) else {
                     logger.info("⏭️ User is now guest, stopping periodic sync")
-                    print("⏭️ SyncEngine: User is now guest, stopping periodic sync")
+                    debugLog("⏭️ SyncEngine: User is now guest, stopping periodic sync")
                     break
                 }
                 
@@ -373,7 +373,7 @@ actor SyncEngine {
                     try await self.performFullSyncCycle(userId: currentUserId)
                 } catch {
                     self.logger.error("❌ Periodic sync failed: \(error.localizedDescription)")
-                    print("❌ SyncEngine: Periodic sync failed: \(error.localizedDescription)")
+                    debugLog("❌ SyncEngine: Periodic sync failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -386,12 +386,12 @@ actor SyncEngine {
         // Double-check userId is not guest (safety check)
         guard !CurrentUser.isGuestId(userId) else {
             logger.info("⏭️ Skipping full sync cycle for guest user")
-            print("⏭️ SyncEngine: Skipping full sync cycle for guest user (userId: '\(userId)')")
+            debugLog("⏭️ SyncEngine: Skipping full sync cycle for guest user (userId: '\(userId)')")
             return
         }
         
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
-        print("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
+        debugLog("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
         
         // Notify HabitRepository that sync started
         Task { @MainActor in
@@ -436,7 +436,7 @@ actor SyncEngine {
             let summary = try await pullRemoteChanges(userId: userId)
             let pullDuration = Date().timeIntervalSince(pullStartTime)
             logger.info("✅ Pull remote changes completed: \(summary)")
-            print("✅ SyncEngine: Pull remote changes completed: \(summary)")
+            debugLog("✅ SyncEngine: Pull remote changes completed: \(summary)")
             NSLog("✅ SyncEngine: Pull remote changes completed: %@", summary.description)
             fflush(stdout)
             
@@ -455,7 +455,7 @@ actor SyncEngine {
         } catch {
             pullError = error
             logger.error("❌ Failed to pull remote changes: \(error.localizedDescription)")
-            print("❌ SyncEngine: Failed to pull remote changes: \(error.localizedDescription)")
+            debugLog("❌ SyncEngine: Failed to pull remote changes: \(error.localizedDescription)")
             NSLog("❌ SyncEngine: Failed to pull remote changes: %@", error.localizedDescription)
             fflush(stdout)
             // Continue with local sync even if pull fails
@@ -897,14 +897,14 @@ actor SyncEngine {
         // Skip sync for guest users (no cloud sync)
         guard !CurrentUser.isGuestId(actualUserId) else {
             logger.info("⏭️ Skipping pull for guest user")
-            print("⏭️ SyncEngine: Skipping pull for guest user (userId: '\(actualUserId)')")
+            debugLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '\(actualUserId)')")
             NSLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '%@')", actualUserId)
             fflush(stdout)
             return PullSyncSummary()
         }
         
         logger.info("🔄 Starting pull remote changes for user: \(actualUserId)")
-        print("🔄 SyncEngine: Starting pull remote changes for user: \(actualUserId)")
+        debugLog("🔄 SyncEngine: Starting pull remote changes for user: \(actualUserId)")
         NSLog("🔄 SyncEngine: Starting pull remote changes for user: %@", actualUserId)
         fflush(stdout)
         

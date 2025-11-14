@@ -19,26 +19,26 @@ enum FirebaseConfiguration {
   /// Configure all Firebase services
   @MainActor
   static func configure() {
-    print("🔥 FirebaseConfiguration: Starting Firebase initialization...")
+    debugLog("🔥 FirebaseConfiguration: Starting Firebase initialization...")
     
     // Check if Firebase is already configured
     if FirebaseApp.app() != nil {
-      print("✅ FirebaseConfiguration: Firebase already configured")
+      debugLog("✅ FirebaseConfiguration: Firebase already configured")
       configureFirestore()
       return
     }
     
     // Check if GoogleService-Info.plist exists
     guard AppEnvironment.isFirebaseConfigured else {
-      print("⚠️ FirebaseConfiguration: Firebase configuration missing")
-      print("📝 Add GoogleService-Info.plist to enable Firebase features")
-      print("📝 App will run with limited functionality (unit tests will use mocks)")
+      debugLog("⚠️ FirebaseConfiguration: Firebase configuration missing")
+      debugLog("📝 Add GoogleService-Info.plist to enable Firebase features")
+      debugLog("📝 App will run with limited functionality (unit tests will use mocks)")
       return
     }
     
     // Configure Firebase
     FirebaseApp.configure()
-    print("✅ FirebaseConfiguration: Firebase Core configured")
+    debugLog("✅ FirebaseConfiguration: Firebase Core configured")
     
     // Configure Firestore with offline persistence
     configureFirestore()
@@ -54,7 +54,7 @@ enum FirebaseConfiguration {
   /// ⚠️ IMPORTANT: This must be called BEFORE any other Firestore access in the app
   /// Can be called from any thread - Firestore configuration is thread-safe
   static func configureFirestore() {
-    print("🔥 FirebaseConfiguration: Configuring Firestore...")
+    debugLog("🔥 FirebaseConfiguration: Configuring Firestore...")
     
     // Create and configure settings first
     let settings = FirestoreSettings()
@@ -64,7 +64,7 @@ enum FirebaseConfiguration {
     
     // Use emulator if configured
     if AppEnvironment.isUsingEmulator {
-      print("🧪 FirebaseConfiguration: Using Firestore Emulator at \(AppEnvironment.firestoreEmulatorHost)")
+      debugLog("🧪 FirebaseConfiguration: Using Firestore Emulator at \(AppEnvironment.firestoreEmulatorHost)")
       let components = AppEnvironment.firestoreEmulatorHost.split(separator: ":")
       if components.count == 2, let port = Int(components[1]) {
         settings.host = "\(components[0]):\(port)"
@@ -76,43 +76,43 @@ enum FirebaseConfiguration {
     // This MUST be the first access to Firestore in the entire app
     let db = Firestore.firestore()
     db.settings = settings
-    print("✅ FirebaseConfiguration: Firestore configured with offline persistence")
+    debugLog("✅ FirebaseConfiguration: Firestore configured with offline persistence")
   }
   
   /// Configure Firebase Auth
   @MainActor
   static func configureAuth() {
-    print("🔥 FirebaseConfiguration: Configuring Firebase Auth...")
+    debugLog("🔥 FirebaseConfiguration: Configuring Firebase Auth...")
     
     // Use emulator if configured
     if AppEnvironment.isUsingEmulator {
-      print("🧪 FirebaseConfiguration: Using Auth Emulator at \(AppEnvironment.authEmulatorHost)")
+      debugLog("🧪 FirebaseConfiguration: Using Auth Emulator at \(AppEnvironment.authEmulatorHost)")
       let components = AppEnvironment.authEmulatorHost.split(separator: ":")
       if components.count == 2, let port = Int(components[1]) {
         Auth.auth().useEmulator(withHost: String(components[0]), port: port)
       }
     }
     
-    print("✅ FirebaseConfiguration: Firebase Auth configured")
+    debugLog("✅ FirebaseConfiguration: Firebase Auth configured")
   }
   
   /// Ensure user is authenticated (sign in anonymously if needed)
   @MainActor
   static func ensureAuthenticated() async throws -> String {
-    print("🔐 FirebaseConfiguration: Ensuring user authentication...")
+    debugLog("🔐 FirebaseConfiguration: Ensuring user authentication...")
     
     // Check if user is already signed in
     if let currentUser = Auth.auth().currentUser {
-      print("✅ FirebaseConfiguration: User already signed in: \(currentUser.uid)")
+      debugLog("✅ FirebaseConfiguration: User already signed in: \(currentUser.uid)")
       return currentUser.uid
     }
     
     // Sign in anonymously
-    print("🔐 FirebaseConfiguration: No user signed in, signing in anonymously...")
+    debugLog("🔐 FirebaseConfiguration: No user signed in, signing in anonymously...")
     let result = try await Auth.auth().signInAnonymously()
     let uid = result.user.uid
     
-    print("✅ FirebaseConfiguration: Anonymous sign-in successful: \(uid)")
+    debugLog("✅ FirebaseConfiguration: Anonymous sign-in successful: \(uid)")
     return uid
   }
   
@@ -127,16 +127,16 @@ enum FirebaseConfiguration {
   @MainActor
   private static func logConfigurationStatus() {
     let status = AppEnvironment.firebaseConfigurationStatus
-    print("📊 FirebaseConfiguration Status: \(status.message)")
+    debugLog("📊 FirebaseConfiguration Status: \(status.message)")
     
     if AppEnvironment.isRunningTests {
-      print("🧪 Running in test environment")
+      debugLog("🧪 Running in test environment")
     }
     
     if AppEnvironment.isUsingEmulator {
-      print("🧪 Using Firebase Emulator Suite")
-      print("   - Firestore: \(AppEnvironment.firestoreEmulatorHost)")
-      print("   - Auth: \(AppEnvironment.authEmulatorHost)")
+      debugLog("🧪 Using Firebase Emulator Suite")
+      debugLog("   - Firestore: \(AppEnvironment.firestoreEmulatorHost)")
+      debugLog("   - Auth: \(AppEnvironment.authEmulatorHost)")
     }
   }
 }
