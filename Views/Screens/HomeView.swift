@@ -385,12 +385,17 @@ class HomeViewState: ObservableObject {
           if allComplete {
             currentStreakCount += 1
             lastCompleteDate = lastCompleteDate ?? checkDate
-          } else {
-            break
+            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+            continue
           }
           
-          // Move to previous day
-          checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+          if calendar.isDate(checkDate, inSameDayAs: today) {
+            print("ℹ️ STREAK_RECALC: Today (\(dateKey)) not complete - continuing with yesterday")
+            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+            continue
+          }
+          
+          break
         }
         
             // Update streak model
