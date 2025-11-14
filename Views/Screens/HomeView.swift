@@ -1042,9 +1042,9 @@ struct HomeView: View {
 
   private func loadHabitsOptimized() {
     print("🏠 HomeView: Loading habits from HabitRepository...")
-    // Force reload from Core Data to ensure we have the latest state
+    // Refresh from Core Data to ensure we have the latest state (let repository debounce)
     Task {
-      await HabitRepository.shared.loadHabits(force: true)
+      await HabitRepository.shared.loadHabits()
       print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
     }
 

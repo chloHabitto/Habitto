@@ -341,10 +341,10 @@ struct HabittoApp: App {
             // Removed redundant call to migrationService.checkAndExecuteMigrations()
             // to prevent "Migration already in progress" warnings
 
-            // Force reload habits after a short delay to ensure data is loaded
+            // Refresh habits after a short delay to ensure data is loaded
             Task.detached { @MainActor in
               try? await Task.sleep(nanoseconds: 500_000_000)
-              await habitRepository.loadHabits(force: true)
+              await habitRepository.loadHabits()
 
               // Initialize notification categories first (for snooze functionality)
               NotificationManager.shared.initializeNotificationCategories()
@@ -403,7 +403,7 @@ private func setupCoreData() {
     queue: .main)
   { _ in
     Task.detached { @MainActor in
-      await HabitRepository.shared.loadHabits(force: true)
+      await HabitRepository.shared.loadHabits()
 
       // Initialize notification categories first (for snooze functionality)
       NotificationManager.shared.initializeNotificationCategories()

@@ -1080,9 +1080,8 @@ struct HomeTabView: View {
     // Add a small delay to make the refresh feel more responsive
     try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
-    // Refresh habits data from Core Data
-    // Force reload habits from Core Data
-    await HabitRepository.shared.loadHabits(force: true)
+    // Refresh habits data from Core Data (debounced inside repository)
+    await HabitRepository.shared.loadHabits()
 
     // ✅ PHASE 5: Refetch completion status after refresh
     await prefetchCompletionStatus()
