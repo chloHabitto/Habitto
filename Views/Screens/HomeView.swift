@@ -55,7 +55,6 @@ class HomeViewState: ObservableObject {
       .receive(on: DispatchQueue.main)
       .sink { [weak self] notification in
         if let newStreak = notification.userInfo?["newStreak"] as? Int {
-          print("📢 STREAK_UI_UPDATE: Received StreakUpdated notification with newStreak: \(newStreak)")
           self?.currentStreak = newStreak
         }
       }
@@ -108,8 +107,6 @@ class HomeViewState: ObservableObject {
           userId = "" // No user = guest
         }
         
-        print("🔍 STREAK_UI_UPDATE: Fetching streak for userId: '\(userId.isEmpty ? "guest" : userId)'")
-        
         var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
             streak.userId == userId
@@ -119,12 +116,10 @@ class HomeViewState: ObservableObject {
         descriptor.includePendingChanges = true
         
         let allStreaks = try modelContext.fetch(descriptor)
-        print("🔍 STREAK_UI_UPDATE: Found \(allStreaks.count) streak records")
         
         if let streak = allStreaks.first {
           let loadedStreak = streak.currentStreak
           currentStreak = loadedStreak
-          print("✅ STREAK_UI_UPDATE: Loaded streak from GlobalStreakModel - currentStreak: \(loadedStreak), longestStreak: \(streak.longestStreak)")
           
           // ✅ FIX: Also broadcast via notification for consistency
           NotificationCenter.default.post(
@@ -132,13 +127,10 @@ class HomeViewState: ObservableObject {
             object: nil,
             userInfo: ["newStreak": loadedStreak]
           )
-          print("📢 STREAK_UI_UPDATE: Broadcasted loaded streak via notification: \(loadedStreak)")
         } else {
           currentStreak = 0
-          print("ℹ️ STREAK_UI_UPDATE: No GlobalStreakModel found for userId: \(userId), using streak = 0")
         }
       } catch {
-        print("❌ STREAK_UI_UPDATE: Failed to load GlobalStreakModel: \(error)")
         currentStreak = 0
       }
     }
@@ -788,9 +780,6 @@ struct HomeView: View {
   }
 
   var body: some View {
-    // 🔎 PROBE: HomeView re-render when XP changes
-    let _ = print("🔵 HomeView re-render | xp:", xpManager.totalXP, "| selectedTab:", state.selectedTab)
-    
     return ZStack(alignment: .top) {
       // Dynamic theme background fills entire screen
       Color.primary

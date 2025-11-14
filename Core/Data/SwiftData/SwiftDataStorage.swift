@@ -333,14 +333,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // Retry up to 5 times with increasing delays (up to 2.5 seconds total)
     if currentUserId == nil {
       logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
-      let initialAuthUserId = await MainActor.run { Auth.auth().currentUser?.uid }
-      logger.info("🔍 DEBUG: Auth.auth().currentUser = \(initialAuthUserId ?? "nil")")
+      _ = await MainActor.run { Auth.auth().currentUser?.uid }
       for attempt in 1...5 {
         let delay = UInt64(500_000_000 * UInt64(attempt)) // 0.5s, 1s, 1.5s, 2s, 2.5s
         try? await Task.sleep(nanoseconds: delay)
         currentUserId = await getCurrentUserId()
-        let retryAuthUserId = await MainActor.run { Auth.auth().currentUser?.uid }
-        logger.info("🔍 DEBUG: Retry \(attempt)/5: Auth.auth().currentUser = \(retryAuthUserId ?? "nil"), currentUserId = \(currentUserId ?? "nil")")
         if currentUserId != nil {
           logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
           break
@@ -350,18 +347,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
     }
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
-    
-    // 🔍 DEBUG: Log what's actually in the database
-    do {
-      let allHabitsDescriptor = FetchDescriptor<HabitData>()
-      let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
-      logger.info("🔍 DEBUG: Total habits in database: \(allHabits.count)")
-      for habit in allHabits.prefix(5) {
-        logger.info("🔍 DEBUG: Habit '\(habit.name)' has userId: '\(habit.userId)' (empty=\(habit.userId.isEmpty))")
-      }
-    } catch {
-      logger.warning("⚠️ Failed to fetch all habits for debugging: \(error.localizedDescription)")
-    }
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -372,12 +357,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
       // Filter by current user ID if authenticated, otherwise show guest data
       if let userId = currentUserId {
-        logger.info("🔍 DEBUG: Querying for habits with userId: '\(userId)'")
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == userId
         }
       } else {
-        logger.info("🔍 DEBUG: Querying for guest habits (userId == '')")
         // For guest users, show data with empty userId
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == ""
@@ -385,7 +368,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
 
       var habitDataArray = try container.modelContext.fetch(descriptor)
-      logger.info("🔍 DEBUG: Found \(habitDataArray.count) habits matching query for userId: '\(currentUserId ?? "guest")'")
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId
@@ -421,7 +403,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("⚠️ Querying as guest found 0 habits, checking if habits exist with other userIds...")
         let allHabitsDescriptor = FetchDescriptor<HabitData>()
         let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
-        logger.info("🔍 DEBUG: Total habits in database: \(allHabits.count)")
         
         // Check if any habits have non-empty userId (likely authenticated user)
         let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
