@@ -765,7 +765,7 @@ class NotificationManager: ObservableObject {
               }
             }
           }
-        } else {
+        } else if habit.reminders.contains(where: { $0.isActive }) {
           print("⚠️ NotificationManager: Habit '\(habit.name)' not scheduled for \(targetDate)")
         }
       }
@@ -976,7 +976,7 @@ class NotificationManager: ObservableObject {
             }
           }
         }
-      } else {
+      } else if habit.reminders.contains(where: { $0.isActive }) {
         print("⚠️ NotificationManager: Habit '\(habit.name)' not scheduled for \(date)")
       }
     }
