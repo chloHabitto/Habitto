@@ -159,18 +159,44 @@ final class HabitData {
     var createdCount = 0
     var updatedCount = 0
     
+    let habitId = self.id
+    let habitUserId = self.userId
+    let habitRecordsPredicate = #Predicate<CompletionRecord> { record in
+      record.habitId == habitId && record.userId == habitUserId
+    }
+    let habitRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: habitRecordsPredicate)
+    let existingRecords = (try? context.fetch(habitRecordsDescriptor)) ?? []
+    let existingRecordsByDate = Dictionary(uniqueKeysWithValues: existingRecords.map { ($0.dateKey, $0) })
+    
+    var parsedEntries: [(date: Date, dateKey: String, progress: Int, isCompleted: Bool)] = []
+    for (dateString, progress) in habit.completionHistory {
+      guard let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
+        debugLog("⚠️ syncCompletionRecordsFromHabit: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
+        continue
+      }
+      let dateKey = DateUtils.dateKey(for: date)
+      let isCompleted = progress >= goalAmount
+      parsedEntries.append((date, dateKey, progress, isCompleted))
+    }
+    
+    let requiresSync = parsedEntries.contains { entry in
+      guard let existingRecord = existingRecordsByDate[entry.dateKey] else { return true }
+      return existingRecord.isCompleted != entry.isCompleted || existingRecord.progress != entry.progress
+    }
+    
+    if !requiresSync && parsedEntries.count == existingRecordsByDate.count {
+      debugLog("ℹ️ syncCompletionRecordsFromHabit: Habit '\(habit.name)' already synced - skipping")
+      return
+    }
+    
     // ✅ CRITICAL FIX: Only sync records FROM completionHistory (additive approach)
     // This ensures we don't lose CompletionRecords that exist in SwiftData but not in habit.completionHistory
     // (e.g., when habit is loaded from Firestore with empty completionHistory)
-    for (dateString, progress) in habit.completionHistory {
-      // Try parsing as dateKey format first (yyyy-MM-dd)
-      guard let date = dateFormatter.date(from: dateString) ?? ISO8601DateHelper.shared.dateWithFallback(from: dateString) else {
-        print("⚠️ syncCompletionRecordsFromHabit: Failed to parse dateString '\(dateString)' for habit '\(habit.name)'")
-        continue
-      }
-      
-      let dateKey = DateUtils.dateKey(for: date)
-      let isCompleted = progress >= goalAmount
+    for entry in parsedEntries {
+      let date = entry.date
+      let dateKey = entry.dateKey
+      let progress = entry.progress
+      let isCompleted = entry.isCompleted
       
       // Check if CompletionRecord already exists
       let uniqueKey = "\(self.userId)#\(self.id.uuidString)#\(dateKey)"
@@ -218,15 +244,9 @@ final class HabitData {
     // This helps diagnose data loss issues
     if habit.completionHistory.isEmpty {
       // Check if CompletionRecords exist for this habit
-      // ✅ FIX: Capture values before using in predicate (SwiftData predicates can't reference self)
-      let habitId = self.id
-      let userId = self.userId
-      let habitRecordsPredicate = #Predicate<CompletionRecord> { record in
-        record.habitId == habitId && record.userId == userId
-      }
-      let habitRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: habitRecordsPredicate)
-      if let existingRecords = try? context.fetch(habitRecordsDescriptor), !existingRecords.isEmpty {
-        print("⚠️ syncCompletionRecordsFromHabit: Habit '\(habit.name)' has empty completionHistory but \(existingRecords.count) CompletionRecords exist - preserving existing records")
+      if !existingRecords.isEmpty {
+        debugLog(
+          "⚠️ syncCompletionRecordsFromHabit: Habit '\(habit.name)' has empty completionHistory but \(existingRecords.count) CompletionRecords exist - preserving existing records")
       }
     }
     

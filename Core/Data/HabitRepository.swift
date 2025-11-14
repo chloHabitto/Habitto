@@ -986,6 +986,7 @@ class HabitRepository: ObservableObject {
 
   /// Combine cancellables for subscriptions
   private var cancellables = Set<AnyCancellable>()
+  private var lastWarmupDate: Date?
 
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
@@ -993,6 +994,76 @@ class HabitRepository: ObservableObject {
   // Defer CloudKit initialization to avoid crashes
   private lazy var cloudKitManager = CloudKitManager.shared
   private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
+
+  // MARK: - Post Launch Warmup
+
+  func postLaunchWarmup() async {
+    let now = Date()
+    if let lastWarmupDate,
+       now.timeIntervalSince(lastWarmupDate) < 5.0
+    {
+      debugLog(
+        "ℹ️ POST_LAUNCH: Skipping warmup - ran \(String(format: "%.1f", now.timeIntervalSince(lastWarmupDate)))s ago")
+      return
+    }
+    lastWarmupDate = now
+
+    debugLog("🚀 POST_LAUNCH: Starting deferred warmup tasks...")
+
+    let snapshotHabits = habits
+    guard !snapshotHabits.isEmpty else {
+      debugLog("🚀 POST_LAUNCH: Skipped warmup - no habits loaded yet")
+      return
+    }
+
+    let userId = await CurrentUser().idOrGuest
+
+    Task.detached(priority: .background) { [snapshotHabits] in
+      guard !snapshotHabits.isEmpty else { return }
+      let notificationManager = NotificationManager.shared
+      notificationManager.initializeNotificationCategories()
+      notificationManager.setDeterministicCalendarForDST()
+      notificationManager.rescheduleAllNotifications(for: snapshotHabits)
+      await MainActor.run {
+        notificationManager.rescheduleDailyReminders()
+      }
+    }
+
+    Task.detached(priority: .background) { [userId] in
+      guard !CurrentUser.isGuestId(userId) else {
+        debugLog("ℹ️ POST_LAUNCH: Skipping periodic sync for guest user")
+        return
+      }
+      await SyncEngine.shared.startPeriodicSync(userId: userId)
+      do {
+        try await SyncEngine.shared.syncCompletions()
+      } catch {
+        debugLog("⚠️ POST_LAUNCH: Completion sync failed: \(error)")
+      }
+    }
+
+    Task.detached(priority: .utility) {
+      do {
+        _ = try await DataRetentionManager.shared.performCleanup()
+      } catch {
+        debugLog("⚠️ POST_LAUNCH: Data retention cleanup failed: \(error)")
+      }
+    }
+
+    Task.detached(priority: .background) {
+      await MainActor.run {
+        XPManager.shared.resetDailyXP()
+      }
+    }
+
+    Task.detached(priority: .utility) { [userId] in
+      guard !CurrentUser.isGuestId(userId) else { return }
+      let compactor = EventCompactor(userId: userId)
+      await compactor.scheduleNextCompaction()
+    }
+
+    debugLog("🚀 POST_LAUNCH: All warmup tasks scheduled")
+  }
 
   // MARK: - Safe CloudKit Initialization
 
