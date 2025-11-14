@@ -398,6 +398,8 @@ class HomeViewState: ObservableObject {
             completedRecords.contains(where: { $0.habitId == habit.id })
           }
           
+          let isToday = calendar.isDate(checkDate, inSameDayAs: today)
+          
           if allComplete {
             currentStreakCount += 1
             lastCompleteDate = lastCompleteDate ?? checkDate
@@ -405,7 +407,8 @@ class HomeViewState: ObservableObject {
             continue
           }
           
-          if calendar.isDate(checkDate, inSameDayAs: today) {
+          // CRITICAL: When today is incomplete, continue from yesterday (don't break streak)
+          if isToday {
             debugLog("ℹ️ STREAK_RECALC: Today (\(dateKey)) not complete - continuing with yesterday")
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
             continue
