@@ -15,9 +15,13 @@ import UserNotifications
 // MARK: - AppDelegate
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+  private static var hasLoggedInit = false
+  private static var hasCompletedLaunch = false
   
   override init() {
     super.init()
+    guard !Self.hasLoggedInit else { return }
+    Self.hasLoggedInit = true
     // Use both print and NSLog to ensure visibility
     debugLog("🚀 AppDelegate: INIT CALLED")
     NSLog("🚀 AppDelegate: INIT CALLED (NSLog)")
@@ -28,6 +32,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil)
     -> Bool
   {
+    if Self.hasCompletedLaunch {
+      debugLog("⏭️ AppDelegate: Duplicate didFinishLaunchingWithOptions call detected, skipping redundant initialization")
+      return true
+    }
+    Self.hasCompletedLaunch = true
+    
     // Use both print and NSLog to ensure visibility - SYNCHRONOUSLY at the very start
     debugLog("🚀 AppDelegate: didFinishLaunchingWithOptions called")
     NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")

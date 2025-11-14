@@ -48,6 +48,7 @@ actor SyncEngine {
     // Background sync scheduler
     private var syncTask: Task<Void, Never>?
     private let syncInterval: TimeInterval = 300 // 5 minutes
+    private var periodicSyncUserId: String?
     
     // MARK: - Initialization
     
@@ -301,7 +302,15 @@ actor SyncEngine {
     /// Orchestrates all sync operations: pull remote changes, then sync local changes
     /// Performs an immediate sync on start, then continues periodically
     /// - Parameter userId: The authenticated user ID (must not be guest). If nil, will fetch from CurrentUser.
-    func startPeriodicSync(userId: String? = nil) {
+    func startPeriodicSync(userId: String? = nil, forceRestart: Bool = false) {
+        if let providedUserId = userId {
+            if !forceRestart, periodicSyncUserId == providedUserId, syncTask != nil {
+                logger.info("⏭️ Periodic sync already running for user \(providedUserId), skipping restart")
+                debugLog("⏭️ SyncEngine: Periodic sync already running for user \(providedUserId), skipping restart")
+                return
+            }
+            periodicSyncUserId = providedUserId
+        }
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         debugLog("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
         NSLog("🔄 SyncEngine: Starting periodic sync (every %.0fs)", self.syncInterval)
@@ -329,8 +338,11 @@ actor SyncEngine {
                 debugLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
                 NSLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '%@')", initialUserId)
                 fflush(stdout)
+                self.stopPeriodicSync(reason: "guest user")
                 return
             }
+            
+            self.periodicSyncUserId = initialUserId
             
             debugLog("🔄 SyncEngine: Starting periodic sync for authenticated user: \(initialUserId)")
             NSLog("🔄 SyncEngine: Starting periodic sync for authenticated user: %@", initialUserId)
@@ -377,6 +389,20 @@ actor SyncEngine {
                 }
             }
         }
+    }
+    
+    /// Stop the periodic sync task (e.g., when user signs out)
+    func stopPeriodicSync(reason: String? = nil) {
+        if let reason {
+            logger.info("🛑 Stopping periodic sync (\(reason))")
+            debugLog("🛑 SyncEngine: Stopping periodic sync (\(reason))")
+        } else {
+            logger.info("🛑 Stopping periodic sync")
+            debugLog("🛑 SyncEngine: Stopping periodic sync")
+        }
+        syncTask?.cancel()
+        syncTask = nil
+        periodicSyncUserId = nil
     }
     
     /// Perform a full sync cycle: pull remote changes, then sync local changes

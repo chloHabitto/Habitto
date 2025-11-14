@@ -400,7 +400,8 @@ final class HabitData {
     
     let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyRecords
       .map {
-        (DateUtils.dateKey(for: $0.date), $0.difficulty)
+        let key = $0.dateKey.isEmpty ? DateUtils.dateKey(for: $0.date) : $0.dateKey
+        return (key, $0.difficulty)
       })
 
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
@@ -555,19 +556,26 @@ final class CompletionRecord {
 final class DifficultyRecord {
   // MARK: Lifecycle
 
+  init(userId _: String, habitId _: UUID, dateKey: String, difficulty: Int) {
+    self.dateKey = dateKey
+    self.date = DateUtils.date(from: dateKey) ?? Date()
+    self.difficulty = difficulty
+    self.createdAt = Date()
+  }
+
+  /// Legacy initializer for backward compatibility
+  @available(*, deprecated, message: "Use init(userId:habitId:dateKey:difficulty:) instead")
   init(userId _: String, habitId _: UUID, date: Date, difficulty: Int) {
-    // self.userId = userId  // ❌ Property not available in current SwiftData version
-    // self.habitId = habitId  // ❌ Property not available in current SwiftData version
+    self.dateKey = DateUtils.dateKey(for: date)
     self.date = date
     self.difficulty = difficulty
     self.createdAt = Date()
   }
 
   /// Legacy initializer for backward compatibility
-  @available(*, deprecated, message: "Use init(userId:habitId:date:difficulty:) instead")
+  @available(*, deprecated, message: "Use init(userId:habitId:dateKey:difficulty:) instead")
   init(date: Date, difficulty: Int) {
-    // self.userId = "legacy"  // ❌ Property not available in current SwiftData version
-    // self.habitId = UUID()  // ❌ Property not available in current SwiftData version
+    self.dateKey = DateUtils.dateKey(for: date)
     self.date = date
     self.difficulty = difficulty
     self.createdAt = Date()
@@ -575,6 +583,7 @@ final class DifficultyRecord {
 
   // MARK: Internal
 
+  var dateKey: String = ""
   // @Attribute(.indexed) // Not supported in current SwiftData version var userId: String
   // @Attribute(.indexed) // Not supported in current SwiftData version var habitId: UUID
   var date: Date

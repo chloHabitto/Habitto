@@ -568,7 +568,7 @@ class BackupManager: ObservableObject {
         let difficulty = DifficultyRecord(
           userId: userId,
           habitId: habit.id,
-          date: backupDifficulty.date,
+          dateKey: DateUtils.dateKey(for: backupDifficulty.date),
           difficulty: backupDifficulty.difficulty)
         habit.difficultyHistory.append(difficulty)
       }
