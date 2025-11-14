@@ -7,6 +7,7 @@ import FirebaseAuth
 
 @MainActor
 final class SwiftDataStorage: HabitStorageProtocol {
+  private let guestMigrationFlagKey = "guestToAuthMigrationComplete"
   // MARK: Lifecycle
 
   nonisolated init() { }
@@ -371,7 +372,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId
-      if let userId = currentUserId, habitDataArray.isEmpty {
+      if let userId = currentUserId,
+         habitDataArray.isEmpty,
+         !UserDefaults.standard.bool(forKey: guestMigrationFlagKey) {
         logger.info("⚠️ No habits found for authenticated user '\(userId)', checking for guest habits (migration fallback)...")
         let guestDescriptor = FetchDescriptor<HabitData>(
           predicate: #Predicate<HabitData> { habitData in
@@ -392,6 +395,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
             }
           }
           try container.modelContext.save()
+          UserDefaults.standard.set(true, forKey: guestMigrationFlagKey)
           logger.info("✅ Migrated \(guestHabits.count) habits and their CompletionRecords to userId '\(userId)'")
           habitDataArray = guestHabits
         }
@@ -399,7 +403,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
       
       // ✅ ADDITIONAL FALLBACK: If querying as guest returns 0 habits, check if there are habits with ANY userId
       // This handles the case where Firebase Auth hasn't initialized yet but habits exist with authenticated userId
-      if currentUserId == nil, habitDataArray.isEmpty {
+      if currentUserId == nil,
+         habitDataArray.isEmpty,
+         !UserDefaults.standard.bool(forKey: guestMigrationFlagKey) {
         logger.info("⚠️ Querying as guest found 0 habits, checking if habits exist with other userIds...")
         let allHabitsDescriptor = FetchDescriptor<HabitData>()
         let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
