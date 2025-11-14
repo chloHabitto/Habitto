@@ -791,10 +791,10 @@ class HabitRepository: ObservableObject {
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
-    print(
-      "🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
-    print(
-      "🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
+    #if DEBUG
+    print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+    print("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
+    #endif
 
     // Update the local habits array immediately for UI responsiveness
     if let index = habits.firstIndex(where: { $0.id == habit.id }) {
@@ -805,14 +805,18 @@ class HabitRepository: ObservableObject {
       // ✅ CRITICAL FIX: Create a mutable copy to modify
       var updatedHabit = habits[index]
       updatedHabit.completionHistory[dateKey] = progress
+      #if DEBUG
       print("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
+      #endif
 
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
       // Set completionStatus[dateKey] = true when progress >= goal
       let goalAmount = StreakDataCalculator.parseGoalAmount(from: updatedHabit.goal)
       let isComplete = progress >= goalAmount
       updatedHabit.completionStatus[dateKey] = isComplete
+      #if DEBUG
       print("🔍 COMPLETION FIX - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      #endif
 
       // Handle timestamp recording for time-based completion analysis
       let currentTimestamp = Date()
@@ -825,10 +829,10 @@ class HabitRepository: ObservableObject {
         for _ in 0 ..< newCompletions {
           updatedHabit.completionTimestamps[dateKey]?.append(currentTimestamp)
         }
-        print(
-          "🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
-        print(
-          "🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
+        #if DEBUG
+        print("🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
+        print("🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
+        #endif
       } else if progress < oldProgress {
         // Progress decreased - remove recent timestamps
         let removedCompletions = oldProgress - progress
@@ -837,71 +841,70 @@ class HabitRepository: ObservableObject {
             updatedHabit.completionTimestamps[dateKey]?.removeLast()
           }
         }
-        print(
-          "🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+        #if DEBUG
+        print("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+        #endif
       }
 
       // ✅ CRITICAL FIX: Reassign to habits array to trigger @Published emission
+      objectWillChange.send()
       habits[index] = updatedHabit
       
       // ✅ PHASE 4: Streak is now computed-only, no need to update
       // Streak is derived from completion history in real-time
+      #if DEBUG
       print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
       print("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
+      #endif
 
       // ✅ XP SYSTEM: XP awarding is now handled by the UI layer (HomeTabView)
       // Removed automatic XP check here to prevent double celebrations
 
       // Send notification for UI components to update
-      print(
-        "🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
+      #if DEBUG
+      print("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
+      #endif
       NotificationCenter.default.post(
         name: .habitProgressUpdated,
         object: nil,
         userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey])
+      #if DEBUG
       print("🎯 HabitRepository: Notification posted successfully")
+      #endif
       
       // ✅ CRITICAL FIX: Await save completion BEFORE returning
       do {
         let startTime = Date()
+        #if DEBUG
         print("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
         print("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
+        #endif
         
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
         
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
+        #if DEBUG
         print("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
         print("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
         print("  ✅ GUARANTEED: Data persisted to SwiftData")
-        
-        // ✅ CRITICAL FIX: Reload habits from SwiftData to refresh completionStatus from CompletionRecords
-        // This ensures streak calculation uses the latest data
-        print("  🔄 STREAK_FIX: Reloading habits to refresh completionStatus for streak calculation...")
-        await loadHabits(force: true)
-        
-        // ✅ DEBUG: Verify streak calculation after reload
-        if let reloadedIndex = habits.firstIndex(where: { $0.id == habit.id }) {
-          let reloadedHabit = habits[reloadedIndex]
-          let todayKey = Habit.dateKey(for: Date())
-          let todayCompleted = reloadedHabit.isCompleted(for: Date())
-          let calculatedStreak = reloadedHabit.calculateTrueStreak()
-          print("  🔍 STREAK_VERIFY: After reload - todayKey: \(todayKey), todayCompleted: \(todayCompleted), calculatedStreak: \(calculatedStreak)")
-          print("  🔍 STREAK_VERIFY: completionStatus[\(todayKey)] = \(reloadedHabit.completionStatus[todayKey] ?? false)")
-          print("  🔍 STREAK_VERIFY: completionHistory[\(todayKey)] = \(reloadedHabit.completionHistory[todayKey] ?? 0)")
-        }
+        #endif
 
       } catch {
+        #if DEBUG
         print("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
         print("  ❌ Error type: \(type(of: error))")
         print("  ❌ Error details: \(error)")
+        #endif
         
         // Revert UI change on error
         var revertedHabit = habits[index]
         revertedHabit.completionHistory[dateKey] = oldProgress
         habits[index] = revertedHabit
+        #if DEBUG
         print("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
         print("  📢 HabitRepository: @Published habits array reverted, triggering subscriber notifications")
+        #endif
         
         // Re-throw to let caller know save failed
         throw error
