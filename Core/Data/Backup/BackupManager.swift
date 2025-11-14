@@ -178,8 +178,15 @@ class BackupManager: ObservableObject {
   @Published var lastBackupDate: Date?
   @Published var backupCount = 0
   @Published var availableBackups: [BackupSnapshot] = []
+  @Published private(set) var corruptedBackupCount = 0
 
   let backupDirectory: URL
+  
+  private let iso8601Formatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+  }()
 
   // MARK: - Public Methods
 
@@ -1048,6 +1055,8 @@ class BackupManager: ObservableObject {
           logger
             .warning(
               "Failed to load backup file \(fileURL.lastPathComponent): \(error.localizedDescription) - Deleting corrupted file")
+          let rawData = try? Data(contentsOf: fileURL)
+          recordCorruptedBackupTelemetry(for: fileURL, error: error, rawData: rawData)
           do {
             try fileManager.removeItem(at: fileURL)
             logger.info("✅ Deleted corrupted backup file: \(fileURL.lastPathComponent)")
@@ -1063,6 +1072,46 @@ class BackupManager: ObservableObject {
       availableBackups = []
     }
   }
+  
+  private func recordCorruptedBackupTelemetry(for fileURL: URL, error: Error, rawData: Data?) {
+    corruptedBackupCount += 1
+    
+    var telemetryData: [String: Any] = [
+      "file": fileURL.lastPathComponent,
+      "sessionCount": corruptedBackupCount,
+      "error": error.localizedDescription
+    ]
+    
+    if
+      let resourceValues = try? fileURL.resourceValues(forKeys: [.creationDateKey]),
+      let fileCreationDate = resourceValues.creationDate
+    {
+      telemetryData["fileCreatedAt"] = iso8601Formatter.string(from: fileCreationDate)
+    }
+    
+    if
+      let rawData,
+      let metadataProbe = try? JSONDecoder().decode(BackupMetadataProbe.self, from: rawData)
+    {
+      if let backupCreatedAt = metadataProbe.createdAt {
+        telemetryData["backupCreatedAt"] = iso8601Formatter.string(from: backupCreatedAt)
+      }
+      if let version = metadataProbe.appVersion {
+        telemetryData["appVersion"] = version
+      }
+    }
+    
+    if telemetryData["appVersion"] == nil {
+      telemetryData["appVersion"] = "unknown"
+    }
+    
+    TelemetryService.shared.logEvent("backup.corruption.detected", data: telemetryData)
+  }
+}
+
+private struct BackupMetadataProbe: Decodable {
+  let appVersion: String?
+  let createdAt: Date?
 }
 
 // MARK: - BackupData
