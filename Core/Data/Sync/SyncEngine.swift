@@ -839,15 +839,25 @@ actor SyncEngine {
                 .collection("completions")
                 .document(completion.completionId)
             
-            // Check if completion already exists (idempotency)
-            let existingDoc = try? await completionRef.getDocument()
-            if existingDoc?.exists == true {
-                // Completion already synced, skip
-                alreadySyncedCount += 1
+            var shouldWriteRemote = true
+            
+            if let existingDoc = try? await completionRef.getDocument(), existingDoc.exists {
+                let remoteData = existingDoc.data() ?? [:]
+                let remoteProgress = remoteData["progress"] as? Int
+                let remoteCompleted = remoteData["isCompleted"] as? Bool
+                
+                if remoteProgress == completion.progress && remoteCompleted == completion.isCompleted {
+                    // Remote already matches local state, skip write
+                    alreadySyncedCount += 1
+                    shouldWriteRemote = false
+                }
+            }
+            
+            guard shouldWriteRemote else {
                 continue
             }
             
-            // Create completion document
+            // Create/overwrite completion document
             let completionData: [String: Any] = [
                 "userId": userId,
                 "habitId": completion.habitId,
@@ -903,12 +913,13 @@ actor SyncEngine {
             return PullSyncSummary()
         }
         
+        let lastSync = getLastSyncTimestamp(userId: actualUserId) ?? Date.distantPast
+        
         logger.info("🔄 Starting pull remote changes for user: \(actualUserId)")
-        debugLog("🔄 SyncEngine: Starting pull remote changes for user: \(actualUserId)")
+        debugLog("🔵 SYNC_PULL_START: userId=\(actualUserId), lastSync=\(lastSync.ISO8601Format())")
         NSLog("🔄 SyncEngine: Starting pull remote changes for user: %@", actualUserId)
         fflush(stdout)
         
-        let lastSync = getLastSyncTimestamp(userId: actualUserId) ?? Date.distantPast
         var summary = PullSyncSummary()
         
         // 1. Pull habits updated since last sync
@@ -1010,9 +1021,15 @@ actor SyncEngine {
             
             let snapshot = try? await completionsRef.getDocuments()
             guard let snapshot = snapshot else { continue }
+            debugLog("🔵 SYNC_PULL_COMPS: yearMonth=\(yearMonth), remoteCount=\(snapshot.documents.count)")
             
             for document in snapshot.documents {
                 let data = document.data()
+                let habitId = data["habitId"] as? String ?? "unknown"
+                let dateKey = data["dateKey"] as? String ?? "unknown"
+                let progress = data["progress"] as? Int ?? -1
+                let isCompleted = data["isCompleted"] as? Bool ?? false
+                debugLog("🔵 SYNC_PULL_DATA: habitId=\(habitId), dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
                 
                 // Merge completion into SwiftData
                 try await mergeCompletionFromFirestore(data: data, userId: userId)
@@ -1114,14 +1131,24 @@ actor SyncEngine {
     
     /// Merge completion from Firestore into SwiftData
     private func mergeCompletionFromFirestore(data: [String: Any], userId: String) async throws {
+        guard let habitIdString = data["habitId"] as? String,
+              let habitId = UUID(uuidString: habitIdString),
+              let dateKey = data["dateKey"] as? String else {
+            return
+        }
+        
+        // If there are pending local events for this habit/date, skip remote overwrite
+        if await hasPendingLocalEvents(habitId: habitId, dateKey: dateKey) {
+            debugLog("⏭️ SYNC_PULL_SKIP: habitId=\(habitId), dateKey=\(dateKey) has pending local events – keeping local completion")
+            return
+        }
+        
+        let remoteIsCompleted = data["isCompleted"] as? Bool ?? false
+        let remoteProgress = data["progress"] as? Int ?? 0
+        let remoteCreatedAt = (data["createdAt"] as? Timestamp)?.dateValue()
+        
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
-            
-            guard let habitIdString = data["habitId"] as? String,
-                  let habitId = UUID(uuidString: habitIdString),
-                  let dateKey = data["dateKey"] as? String else {
-                return
-            }
             
             // Check if completion exists (using deterministic ID)
             let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
@@ -1133,12 +1160,15 @@ actor SyncEngine {
             
             if let existingRecord = try? modelContext.fetch(descriptor).first {
                 // Update existing record
-                existingRecord.isCompleted = data["isCompleted"] as? Bool ?? false
-                existingRecord.progress = data["progress"] as? Int ?? 0
-                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                let previousProgress = existingRecord.progress
+                let previousCompleted = existingRecord.isCompleted
+                existingRecord.isCompleted = remoteIsCompleted
+                existingRecord.progress = remoteProgress
+                if let createdAt = remoteCreatedAt {
                     existingRecord.createdAt = createdAt
                 }
                 try? modelContext.save()
+                debugLog("🔵 SYNC_PULL_OVERWRITE: habitId=\(habitId), dateKey=\(dateKey), oldProgress=\(previousProgress)/\(previousCompleted), newProgress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
             } else {
                 // Create new record
                 guard let date = DateUtils.date(from: dateKey) else {
@@ -1150,17 +1180,33 @@ actor SyncEngine {
                     habitId: habitId,
                     date: date,
                     dateKey: dateKey,
-                    isCompleted: data["isCompleted"] as? Bool ?? false,
-                    progress: data["progress"] as? Int ?? 0
+                    isCompleted: remoteIsCompleted,
+                    progress: remoteProgress
                 )
                 
-                if let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() {
+                if let createdAt = remoteCreatedAt {
                     record.createdAt = createdAt
                 }
                 
                 modelContext.insert(record)
                 try? modelContext.save()
+                debugLog("🔵 SYNC_PULL_CREATE: habitId=\(habitId), dateKey=\(dateKey), progress=\(record.progress), isCompleted=\(record.isCompleted)")
             }
+        }
+    }
+
+    private func hasPendingLocalEvents(habitId: UUID, dateKey: String) async -> Bool {
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<ProgressEvent> { event in
+                event.habitId == habitId &&
+                event.dateKey == dateKey &&
+                event.synced == false &&
+                event.deletedAt == nil
+            }
+            let descriptor = FetchDescriptor<ProgressEvent>(predicate: predicate)
+            let events = try? modelContext.fetch(descriptor)
+            return (events?.isEmpty == false)
         }
     }
     

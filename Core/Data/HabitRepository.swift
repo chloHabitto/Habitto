@@ -530,6 +530,16 @@ class HabitRepository: ObservableObject {
     do {
       // Use the HabitStore actor for data operations
       let loadedHabits = try await habitStore.loadHabits()
+      
+      if !hasLoggedStartupState {
+        let todayKey = Habit.dateKey(for: Date())
+        debugLog("🟢 APP_START: Loaded \(loadedHabits.count) habits from disk")
+        for habit in loadedHabits {
+          let progress = habit.completionHistory[todayKey] ?? 0
+          debugLog("🟢 APP_START: \(habit.name) (\(habit.id)) todayProgress=\(progress)")
+        }
+        hasLoggedStartupState = true
+      }
       debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
 
       // Debug each loaded habit with progress for today
@@ -804,8 +814,20 @@ class HabitRepository: ObservableObject {
     // Update the local habits array immediately for UI responsiveness
     if let index = habits.firstIndex(where: { $0.id == habit.id }) {
       let oldProgress = habits[index].completionHistory[dateKey] ?? 0
+      let isUncompleteAction = progress < oldProgress
+      #if DEBUG
+      if isUncompleteAction {
+        debugLog("🔴 UNCOMPLETE_START: habitId=\(habit.id), dateKey=\(dateKey), oldProgress=\(oldProgress), newProgress=\(progress)")
+      }
+      #endif
       var updatedHabit = habits[index]
       updatedHabit.completionHistory[dateKey] = progress
+      #if DEBUG
+      if isUncompleteAction {
+        let memProgress = updatedHabit.completionHistory[dateKey] ?? -999
+        debugLog("🔴 UNCOMPLETE_MEMORY: Updated in-memory completionHistory[\(dateKey)]=\(memProgress)")
+      }
+      #endif
       #if DEBUG
       debugLog("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
       #endif
@@ -847,6 +869,10 @@ class HabitRepository: ObservableObject {
         #endif
       }
 
+      // ✅ SYNC METADATA: Any progress change must be re-synced to Firestore
+      updatedHabit.lastSyncedAt = nil
+      updatedHabit.syncStatus = .pending
+
       // ✅ CRITICAL FIX: Reassign to habits array to trigger @Published emission
       objectWillChange.send()
       habits[index] = updatedHabit
@@ -882,6 +908,24 @@ class HabitRepository: ObservableObject {
         #endif
         
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
+        #if DEBUG
+        if isUncompleteAction {
+          debugLog("🔴 UNCOMPLETE_SWIFTDATA: habitStore.setProgress succeeded for habitId=\(habit.id)")
+        }
+        #endif
+        
+        #if DEBUG
+        if isUncompleteAction {
+          do {
+            let verificationHabits = try await habitStore.loadHabits()
+            let reloadedHabit = verificationHabits.first(where: { $0.id == habit.id })
+            let reloadedProgress = reloadedHabit?.completionHistory[dateKey] ?? -999
+            debugLog("🔴 UNCOMPLETE_VERIFY: Reloaded progress for \(habit.id) on \(dateKey) = \(reloadedProgress)")
+          } catch {
+            debugLog("🔴 UNCOMPLETE_VERIFY: Failed to reload habits - \(error)")
+          }
+        }
+        #endif
         
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
@@ -983,6 +1027,7 @@ class HabitRepository: ObservableObject {
   /// Combine cancellables for subscriptions
   private var cancellables = Set<AnyCancellable>()
   private var lastWarmupDate: Date?
+  private var hasLoggedStartupState = false
 
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
