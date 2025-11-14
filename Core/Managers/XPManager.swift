@@ -1,3 +1,4 @@
+import FirebaseCore
 import Foundation
 import OSLog
 import SwiftData
@@ -230,6 +231,11 @@ class XPManager {
     
     // ✅ Dual-write to Firestore (cloud backup)
     Task {
+      guard await waitForFirebaseConfigurationIfNeeded() else {
+        logger.warning("⏸️ Skipping Firestore XP save - Firebase not configured yet")
+        return
+      }
+      
       do {
         let firestoreProgress = FirestoreUserProgress(
           totalXP: userProgress.totalXP,
@@ -251,6 +257,11 @@ class XPManager {
   func loadUserProgress() {
     // Try Firestore first (cloud-first strategy)
     Task {
+      guard await waitForFirebaseConfigurationIfNeeded() else {
+        logger.debug("⏸️ Skipping Firestore XP load - Firebase not configured yet")
+        return
+      }
+      
       do {
         if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
           // Load from Firestore (authoritative source)
@@ -333,6 +344,11 @@ class XPManager {
     saveDailyAwards()
 
     // Delete from Firestore
+    guard await waitForFirebaseConfigurationIfNeeded() else {
+      logger.warning("⏸️ Skipping Firestore XP delete - Firebase not configured yet")
+      return
+    }
+    
     do {
       try await FirestoreService.shared.deleteUserProgress()
       logger.info("✅ XP data cleared from Firestore")
@@ -491,6 +507,26 @@ class XPManager {
   /// Pure function to calculate level from XP
   private func level(forXP totalXP: Int) -> Int {
     Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
+  }
+
+  // MARK: - Firebase Coordination
+
+  private func waitForFirebaseConfigurationIfNeeded(timeout: TimeInterval = 3) async -> Bool {
+    if FirebaseApp.app() != nil {
+      return true
+    }
+    
+    let pollInterval: UInt64 = 50_000_000 // 50ms
+    let maxIterations = Int((timeout * 1_000_000_000) / Double(pollInterval))
+    
+    for _ in 0 ..< maxIterations {
+      try? await Task.sleep(nanoseconds: pollInterval)
+      if FirebaseApp.app() != nil {
+        return true
+      }
+    }
+    
+    return FirebaseApp.app() != nil
   }
 
   // MARK: - DEPRECATED XP Methods (DO NOT USE)
