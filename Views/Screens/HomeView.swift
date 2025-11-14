@@ -348,6 +348,18 @@ class HomeViewState: ObservableObject {
             
             print("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
         
+        let completionDescriptor = FetchDescriptor<CompletionRecord>()
+        let allCompletionRecords = try modelContext.fetch(completionDescriptor)
+        let filteredCompletionRecords = allCompletionRecords.filter { record in
+          guard record.isCompleted else { return false }
+          if userId.isEmpty || userId == "guest" {
+            return record.userId.isEmpty || record.userId == "guest" || record.userId == userId
+          } else {
+            return record.userId == userId
+          }
+        }
+        let recordsByDate = Dictionary(grouping: filteredCompletionRecords, by: { $0.dateKey })
+
         while checkDate >= startDate {
           let dateKey = Habit.dateKey(for: checkDate)
           
@@ -363,23 +375,7 @@ class HomeViewState: ObservableObject {
             continue
           }
           
-          // ✅ CRITICAL: Use EXACT same logic as XP calculation (check CompletionRecords, not completionHistory)
-          // ✅ CRITICAL FIX: Use same userId fallback logic as toHabit() to handle userId mismatches
-          // Fetch CompletionRecords from SwiftData for this date
-          let descriptor = FetchDescriptor<CompletionRecord>()
-          let allRecords = try modelContext.fetch(descriptor)
-          let completedRecords = allRecords.filter { record in
-            guard record.dateKey == dateKey && record.isCompleted else { return false }
-            
-            // ✅ CRITICAL FIX: Handle userId mismatches (same logic as toHabit())
-            // For guest users, accept both "" and "guest" userIds (legacy compatibility)
-            if userId.isEmpty || userId == "guest" {
-              return record.userId.isEmpty || record.userId == "guest" || record.userId == userId
-            } else {
-              // For authenticated users, exact match required
-              return record.userId == userId
-            }
-          }
+          let completedRecords = recordsByDate[dateKey] ?? []
           
           // Check if ALL habits have a completed CompletionRecord (same as XP logic)
           let allComplete = scheduledHabits.allSatisfy { habit in
@@ -387,18 +383,10 @@ class HomeViewState: ObservableObject {
           }
           
           if allComplete {
-            // Day is complete - increment streak
             currentStreakCount += 1
-            if lastCompleteDate == nil {
-              lastCompleteDate = checkDate
-            }
+            lastCompleteDate = lastCompleteDate ?? checkDate
           } else {
-            // ✅ CRITICAL FIX: Only break if we've already found complete days
-            // This allows us to skip today if incomplete and continue checking yesterday
-            if currentStreakCount > 0 {
-              // We've found complete days already, so this incomplete day breaks the streak
-              break
-            }
+            break
           }
           
           // Move to previous day
