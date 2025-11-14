@@ -19,6 +19,7 @@ final actor HabitStore {
   // MARK: Internal
 
   static let shared = HabitStore()
+  private var scheduledHabitsCache: (dateKey: String, habits: [Habit])?
   
   // ✅ FIX #18: Track cleanup per app session to prevent excessive runs
   private static var hasRunCleanupThisSession = false
@@ -342,6 +343,19 @@ final actor HabitStore {
     try await activeStorage.deleteHabit(id: habit.id)
 
     logger.info("Successfully deleted habit: \(habit.name)")
+  }
+
+  private func scheduledHabits(for date: Date) async throws -> [Habit] {
+    let dateKey = CoreDataManager.dateKey(for: date)
+    if let cache = scheduledHabitsCache, cache.dateKey == dateKey {
+      return cache.habits
+    }
+    let allHabits = try await loadHabits()
+    let filtered = allHabits.filter { habit in
+      StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+    }
+    scheduledHabitsCache = (dateKey: dateKey, habits: filtered)
+    return filtered
   }
 
   // MARK: - Set Progress
@@ -1156,13 +1170,8 @@ final actor HabitStore {
       return
     }
     
-    // Load all habits
-    let habits = try await loadHabits()
-    
-    // Filter to habits scheduled for this date
-    let scheduledHabits = habits.filter { habit in
-      StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
-    }
+    // Load only the habits scheduled for this date
+    let scheduledHabits = try await scheduledHabits(for: date)
     
     logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits for \(dateKey)")
     
@@ -1171,39 +1180,26 @@ final actor HabitStore {
       return
     }
     
-    // Calculate progress from events for each habit (functional approach - no mutation)
-    let completionResults = await withTaskGroup(of: (habitId: UUID, habitName: String, isComplete: Bool).self) { group in
-      for habit in scheduledHabits {
-        group.addTask {
-          let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-          
-          // Calculate progress from events (event-sourced)
-          // Note: ProgressEventService is @MainActor and accesses ModelContext internally
-          let result = await ProgressEventService.shared.calculateProgressFromEvents(
-            habitId: habit.id,
-            dateKey: dateKey,
-            goalAmount: goalAmount,
-            legacyProgress: habit.completionHistory[dateKey]
-          )
-          
-          return (habitId: habit.id, habitName: habit.name, isComplete: result.progress >= goalAmount)
-        }
-      }
+    let scheduledHabitIds = Set(scheduledHabits.map(\.id))
+    
+    let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
+      let modelContext = SwiftDataContainer.shared.modelContext
       
-      // Collect results
-      var results: [(habitId: UUID, habitName: String, isComplete: Bool)] = []
-      for await result in group {
-        results.append(result)
+      let completionPredicate = #Predicate<CompletionRecord> { record in
+        record.userId == userId && record.dateKey == dateKey && record.isCompleted == true
       }
-      return results
+      let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+      let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
+      let completedIds = Set(completionRecords.map(\.habitId))
+      let missingHabits = scheduledHabits
+        .filter { !completedIds.contains($0.id) }
+        .map(\.name)
+      let allDone = scheduledHabitIds.isSubset(of: completedIds)
+      return (allDone, missingHabits)
     }
     
-    // Check if all habits are completed (immutable value)
-    let allCompleted = completionResults.allSatisfy { $0.isComplete }
-    
-    // Log incomplete habits
-    for result in completionResults where !result.isComplete {
-      logger.info("🎯 XP_CHECK: Habit '\(result.habitName)' not completed")
+    for habitName in incompleteHabits {
+      logger.info("🎯 XP_CHECK: Habit '\(habitName)' not completed")
     }
     
     // Check if award already exists (synchronous MainActor work)
