@@ -998,105 +998,79 @@ struct HomeTabView: View {
   /// This is the single source of truth for XP calculation
   @MainActor
   private func countCompletedDays() -> Int {
-    // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
-      let currentUser = AuthenticationManager.shared.currentUser
+    let currentUser = AuthenticationManager.shared.currentUser
     let userId: String
-      if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
-      userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
-      } else if let uid = currentUser?.uid {
-      userId = uid // Authenticated non-anonymous user
-      } else {
-      userId = "" // No user = guest
+    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+      userId = ""
+    } else if let uid = currentUser?.uid {
+      userId = uid
+    } else {
+      userId = ""
     }
-    
+
     guard !habits.isEmpty else { return 0 }
-    
+
     let calendar = Calendar.current
-    let today = LegacyDateUtils.today()
-    
-    // Find the earliest habit start date
+    let today = DateUtils.startOfDay(for: LegacyDateUtils.today())
+
     guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }
-    let startDate = DateUtils.startOfDay(for: earliestStartDate)
-    
+    var currentDate = DateUtils.startOfDay(for: earliestStartDate)
     var completedCount = 0
-    var currentDate = startDate
-    
-    // ✅ FIX: Get ModelContext for querying CompletionRecords from SwiftData
+
     let modelContext = SwiftDataContainer.shared.modelContext
-    
-    // Count all days where all habits are completed
+    let predicate = #Predicate<CompletionRecord> { record in
+      record.userId == userId && record.isCompleted == true
+    }
+    let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+    let completedRecords = (try? modelContext.fetch(descriptor)) ?? []
+    let recordsByDate = Dictionary(grouping: completedRecords, by: { $0.dateKey })
+
     while currentDate <= today {
       let dateKey = Habit.dateKey(for: currentDate)
-      
-      // ✅ CRITICAL FIX: Use shared scheduling logic (same as streak calculation)
+
       let habitsForDate = habits.filter { habit in
         let selected = DateUtils.startOfDay(for: currentDate)
         let start = DateUtils.startOfDay(for: habit.startDate)
         let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
-        
+
         guard selected >= start, selected <= end else { return false }
         return HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: currentDate, habits: habits)
       }
-      
-      // ✅ CRITICAL FIX: Check CompletionRecords from SwiftData instead of old completionHistory!
-      // This was causing XP to stay at 0 even though CompletionRecords were being created
-      var allCompleted = false
+
       if !habitsForDate.isEmpty {
-        // Fetch all CompletionRecords for this date and user
-        let descriptor = FetchDescriptor<CompletionRecord>()
-        
-        do {
-          let allRecords = try modelContext.fetch(descriptor)
-          let completedRecords = allRecords.filter { $0.dateKey == dateKey && $0.userId == userId && $0.isCompleted }
-          
-          // ✅ DEBUG: Log detailed info to diagnose XP=0 issue
-          print("🔍 XP_DEBUG: Date=\(dateKey)")
-          print("   Total CompletionRecords in DB: \(allRecords.count)")
-          print("   Matching dateKey '\(dateKey)': \(allRecords.filter { $0.dateKey == dateKey }.count)")
-          print("   Matching userId '\(userId)': \(allRecords.filter { $0.userId == userId }.count)")
-          print("   isCompleted=true: \(allRecords.filter { $0.isCompleted }.count)")
-          print("   Final filtered (complete+matching): \(completedRecords.count)")
-          print("   Habits scheduled for this date: \(habitsForDate.count)")
-          print("   📊 COMPLETION RATIO: \(completedRecords.count)/\(habitsForDate.count) habits completed")
-          
-          for record in completedRecords {
-            print("     ✅ Record: habitId=\(record.habitId), dateKey=\(record.dateKey), userId=\(record.userId), isCompleted=\(record.isCompleted)")
-          }
-          
-          for habit in habitsForDate {
-            let hasRecord = completedRecords.contains(where: { $0.habitId == habit.id })
-            print("     \(hasRecord ? "✅" : "❌") Habit '\(habit.name)' (id=\(habit.id)) \(hasRecord ? "HAS" : "MISSING") CompletionRecord")
-          }
-          
-          // Check if all habits for this date have a completed record
-          allCompleted = habitsForDate.allSatisfy { habit in
-            completedRecords.contains(where: { $0.habitId == habit.id })
-          }
-          
-          if !allCompleted {
-            let missingHabits = habitsForDate.filter { habit in
-              !completedRecords.contains(where: { $0.habitId == habit.id })
-            }
-            print("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.map { $0.name }.joined(separator: ", "))")
-          }
-      } catch {
-          print("❌ XP_CALC: Failed to fetch CompletionRecords for \(dateKey): \(error)")
-          allCompleted = false
+        let completedIds = Set(recordsByDate[dateKey, default: []].map(\.habitId))
+        let allCompleted = habitsForDate.allSatisfy { completedIds.contains($0.id) }
+
+        #if DEBUG
+        let totalRecords = recordsByDate[dateKey]?.count ?? 0
+        print("🔍 XP_DEBUG: \(dateKey) totalCompletedRecords=\(totalRecords)")
+        if !allCompleted {
+          let missingHabits = habitsForDate
+            .filter { !completedIds.contains($0.id) }
+            .map(\.name)
+          print("🔍 XP_CALC: \(dateKey) - Missing: \(missingHabits.joined(separator: ", "))")
+        }
+        #endif
+
+        if allCompleted {
+          completedCount += 1
+          #if DEBUG
+          print("✅ XP_CALC: [\(dateKey)] ALL \(habitsForDate.count)/\(habitsForDate.count) habits complete - COUNTED! (+50 XP)")
+          #endif
+        } else {
+          #if DEBUG
+          print("❌ XP_CALC: [\(dateKey)] NOT all habits complete - SKIPPED (0 XP)")
+          #endif
         }
       }
-      
-      if allCompleted {
-        completedCount += 1
-        print("✅ XP_CALC: [\(dateKey)] ALL \(habitsForDate.count)/\(habitsForDate.count) habits complete - COUNTED! (+50 XP)")
-      } else if !habitsForDate.isEmpty {
-        print("❌ XP_CALC: [\(dateKey)] NOT all habits complete - SKIPPED (0 XP)")
-      }
-      
+
       guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
       currentDate = nextDate
     }
-    
+
+    #if DEBUG
     print("🎯 XP_CALC: Total completed days: \(completedCount)")
+    #endif
     return completedCount
   }
   
