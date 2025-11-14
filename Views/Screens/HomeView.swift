@@ -401,6 +401,7 @@ class HomeViewState: ObservableObject {
           let isToday = calendar.isDate(checkDate, inSameDayAs: today)
           
           if allComplete {
+            debugLog("✅ STREAK_DEBUG: \(dateKey) - ALL COMPLETE, streak now \(currentStreakCount + 1)")
             currentStreakCount += 1
             lastCompleteDate = lastCompleteDate ?? checkDate
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
@@ -409,12 +410,13 @@ class HomeViewState: ObservableObject {
           
           // CRITICAL: When today is incomplete, continue from yesterday (don't break streak)
           if isToday {
-            debugLog("ℹ️ STREAK_RECALC: Today (\(dateKey)) not complete - continuing with yesterday")
+            debugLog("⚠️ STREAK_DEBUG: TODAY (\(dateKey)) INCOMPLETE - SKIPPING TO YESTERDAY")
+            debugLog("   Current streak before skip: \(currentStreakCount)")
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
             continue
           }
           
-          debugLog("ℹ️ STREAK_RECALC: Stopped at \(dateKey) - first incomplete day")
+          debugLog("❌ STREAK_DEBUG: \(dateKey) - INCOMPLETE, BREAKING STREAK at count \(currentStreakCount)")
           break
         }
         
