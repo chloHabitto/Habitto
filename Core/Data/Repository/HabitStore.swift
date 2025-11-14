@@ -470,6 +470,10 @@ final actor HabitStore {
         logger.info("Removed 1 completion timestamp for \(habit.name)")
       }
 
+      // ✅ SYNC METADATA: Mark habit as needing re-sync whenever progress changes
+      currentHabits[index].lastSyncedAt = nil
+      currentHabits[index].syncStatus = .pending
+
       // ✅ PHASE 4: Streaks are now computed-only, no need to update them
 
       // ✅ FIX: Create CompletionRecord entries for SwiftData queries
