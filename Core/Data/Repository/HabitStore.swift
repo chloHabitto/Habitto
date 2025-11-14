@@ -605,7 +605,7 @@ final actor HabitStore {
     // Filter difficulty history by date range
     var difficulties: [Double] = []
     for (dateString, difficulty) in habit.difficultyHistory {
-      guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
+      guard let date = DateUtils.date(from: dateString) else { continue }
       if date >= startDate, date < endDate {
         difficulties.append(Double(difficulty))
       }
@@ -646,7 +646,7 @@ final actor HabitStore {
     var allDifficulties: [Double] = []
     for habit in habits {
       for (dateString, difficulty) in habit.difficultyHistory {
-        guard let date = ISO8601DateHelper.shared.date(from: dateString) else { continue }
+        guard let date = DateUtils.date(from: dateString) else { continue }
         if date >= startDate, date < endDate {
           allDifficulties.append(Double(difficulty))
         }

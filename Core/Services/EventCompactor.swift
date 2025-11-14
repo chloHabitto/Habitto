@@ -400,6 +400,16 @@ actor EventCompactor {
   /// Register background task handler
   /// This should be called from AppDelegate.didFinishLaunchingWithOptions
   static func registerBackgroundTaskHandler() {
+    struct RegistrationState {
+      static var hasRegistered = false
+    }
+    
+    if RegistrationState.hasRegistered {
+      Logger(subsystem: "com.habitto.app", category: "EventCompactor")
+        .info("⏭️ Event compaction background task handler already registered, skipping")
+      return
+    }
+    
     let logger = Logger(subsystem: "com.habitto.app", category: "EventCompactor")
     logger.info("Registering event compaction background task handler")
     
@@ -411,6 +421,7 @@ actor EventCompactor {
     }
     
     logger.info("✅ Event compaction background task handler registered")
+    RegistrationState.hasRegistered = true
   }
   
   /// Handle background compaction task

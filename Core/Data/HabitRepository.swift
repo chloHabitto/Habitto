@@ -1028,6 +1028,7 @@ class HabitRepository: ObservableObject {
   private var cancellables = Set<AnyCancellable>()
   private var lastWarmupDate: Date?
   private var hasLoggedStartupState = false
+  private var isUserCurrentlyAuthenticated = false
 
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
@@ -1072,10 +1073,9 @@ class HabitRepository: ObservableObject {
 
     Task.detached(priority: .background) { [userId] in
       guard !CurrentUser.isGuestId(userId) else {
-        debugLog("ℹ️ POST_LAUNCH: Skipping periodic sync for guest user")
+        debugLog("ℹ️ POST_LAUNCH: Skipping completion sync for guest user")
         return
       }
-      await SyncEngine.shared.startPeriodicSync(userId: userId)
       do {
         try await SyncEngine.shared.syncCompletions()
       } catch {
@@ -1095,12 +1095,6 @@ class HabitRepository: ObservableObject {
       await MainActor.run {
         XPManager.shared.resetDailyXP()
       }
-    }
-
-    Task.detached(priority: .utility) { [userId] in
-      guard !CurrentUser.isGuestId(userId) else { return }
-      let compactor = EventCompactor(userId: userId)
-      await compactor.scheduleNextCompaction()
     }
 
     debugLog("🚀 POST_LAUNCH: All warmup tasks scheduled")
@@ -1289,6 +1283,7 @@ class HabitRepository: ObservableObject {
   private func handleUserChange(_ authState: AuthenticationState) async {
     switch authState {
     case .authenticated(let user):
+      isUserCurrentlyAuthenticated = true
       debugLog(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
@@ -1398,8 +1393,20 @@ class HabitRepository: ObservableObject {
 
       // Load user's XP from SwiftData
       await loadUserXPFromSwiftData(userId: user.uid)
+      
+      await SyncEngine.shared.startPeriodicSync(userId: user.uid)
+      Task.detached(priority: .background) {
+        let compactor = EventCompactor(userId: user.uid)
+        await compactor.scheduleNextCompaction()
+      }
 
     case .unauthenticated:
+      guard isUserCurrentlyAuthenticated else {
+        debugLog("ℹ️ HabitRepository: Ignoring unauthenticated state before initial login completes")
+        return
+      }
+      isUserCurrentlyAuthenticated = false
+      await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Instead of clearing data, load guest habits
       await loadHabits(force: true)
