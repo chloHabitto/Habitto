@@ -1318,9 +1318,9 @@ class HabitRepository: ObservableObject {
   private func appDidBecomeActive() {
     print("🔄 HabitRepository: App became active, reloading habits...")
 
-    // Force reload habits from storage
+    // Refresh habits from storage (debounced to avoid redundant loads)
     Task {
-      await loadHabits(force: true)
+      await loadHabits()
       print("✅ HabitRepository: Habits reloaded after app became active")
     }
   }
