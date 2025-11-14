@@ -274,6 +274,25 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 @main
 struct HabittoApp: App {
   // MARK: Internal
+  
+  init() {
+    if FirebaseApp.app() == nil {
+      debugLog("🔥 HabittoApp: Configuring Firebase in init()")
+      FirebaseApp.configure()
+      FirebaseConfiguration.configureFirestore()
+    } else {
+      debugLog("✅ HabittoApp: Firebase already configured before init()")
+    }
+    
+    _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
+    _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
+    _migrationService = StateObject(wrappedValue: MigrationService.shared)
+    _tutorialManager = StateObject(wrappedValue: TutorialManager())
+    _authManager = StateObject(wrappedValue: AuthenticationManager.shared)
+    _vacationManager = StateObject(wrappedValue: VacationManager.shared)
+    _themeManager = StateObject(wrappedValue: ThemeManager.shared)
+    _xpManager = State(initialValue: XPManager.shared)
+  }
 
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
@@ -372,16 +391,14 @@ struct HabittoApp: App {
 
   // ✅ FIX #11: Removed @Environment(\.modelContext) - we use SwiftDataContainer.shared.modelContext directly
   // This prevents SwiftUI from creating a second container with Persistent History enabled
-  @StateObject private var notificationManager = NotificationManager.shared
-  // @StateObject private var coreDataManager = CoreDataManager.shared  // Disabled - using
-  // SwiftData only
-  @StateObject private var habitRepository = HabitRepository.shared
-  @StateObject private var migrationService = MigrationService.shared
-  @StateObject private var tutorialManager = TutorialManager()
-  @StateObject private var authManager = AuthenticationManager.shared
-  @StateObject private var vacationManager = VacationManager.shared
-  @StateObject private var themeManager = ThemeManager.shared
-  @State private var xpManager = XPManager.shared
+  @StateObject private var notificationManager: NotificationManager
+  @StateObject private var habitRepository: HabitRepository
+  @StateObject private var migrationService: MigrationService
+  @StateObject private var tutorialManager: TutorialManager
+  @StateObject private var authManager: AuthenticationManager
+  @StateObject private var vacationManager: VacationManager
+  @StateObject private var themeManager: ThemeManager
+  @State private var xpManager: XPManager
   @State private var showSplash = true
 }
 
