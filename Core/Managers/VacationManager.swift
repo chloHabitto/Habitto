@@ -91,7 +91,7 @@ final class VacationManager: ObservableObject {
     current = VacationPeriod(start: start)
     muteNotifications()
     saveVacationData()
-    print("🏖️ VACATION MODE DEBUG: Started vacation mode - isActive: \(isActive)")
+    debugLog("🏖️ VACATION MODE DEBUG: Started vacation mode - isActive: \(isActive)")
   }
 
   func endVacation(now: Date = .now) {
@@ -101,27 +101,27 @@ final class VacationManager: ObservableObject {
     appendAndCoalesce(cur)
     rescheduleNotifications()
     saveVacationData()
-    print("🏖️ VACATION MODE DEBUG: Ended vacation mode - isActive: \(isActive)")
+    debugLog("🏖️ VACATION MODE DEBUG: Ended vacation mode - isActive: \(isActive)")
   }
 
   func cancelVacationForDate(_ date: Date) {
     let targetDate = date.startOfDay(in: tz)
     let today = Date().startOfDay(in: tz)
 
-    print("🏖️ VACATION MODE DEBUG: cancelVacationForDate called for: \(targetDate)")
-    print("🏖️ VACATION MODE DEBUG: Today is: \(today)")
-    print("🏖️ VACATION MODE DEBUG: Current vacation active: \(isActive)")
+    debugLog("🏖️ VACATION MODE DEBUG: cancelVacationForDate called for: \(targetDate)")
+    debugLog("🏖️ VACATION MODE DEBUG: Today is: \(today)")
+    debugLog("🏖️ VACATION MODE DEBUG: Current vacation active: \(isActive)")
 
     // If vacation is currently active, end it completely
     // This is the most user-friendly approach - when they click cancel, vacation ends now
     if isActive {
       endVacation(now: today)
-      print("🏖️ VACATION MODE DEBUG: Ended vacation completely - vacation was active")
+      debugLog("🏖️ VACATION MODE DEBUG: Ended vacation completely - vacation was active")
       return
     }
 
     // If no current vacation is active, just log it
-    print("🏖️ VACATION MODE DEBUG: No active vacation to cancel")
+    debugLog("🏖️ VACATION MODE DEBUG: No active vacation to cancel")
   }
 
   func isVacationDay(_ day: Date) -> Bool {
@@ -140,7 +140,7 @@ final class VacationManager: ObservableObject {
     // Debug logging for vacation day detection
     let dateKey = ISO8601DateHelper.shared.string(from: day)
     if result {
-      print(
+      debugLog(
         "🏖️ VACATION DAY DEBUG: \(dateKey) is a vacation day - Current: \(isCurrentVacationDay), Historical: \(isHistoricalVacationDay)")
     }
 
@@ -181,13 +181,13 @@ final class VacationManager: ObservableObject {
   // MARK: - Notification Management
 
   private func muteNotifications() {
-    print("🔇 Vacation Mode: Muting all habit notifications")
+    debugLog("🔇 Vacation Mode: Muting all habit notifications")
     NotificationManager.shared.removeAllPendingNotifications()
-    print("✅ Vacation Mode: All notifications have been muted")
+    debugLog("✅ Vacation Mode: All notifications have been muted")
   }
 
   private func rescheduleNotifications() {
-    print("🔔 Vacation Mode: Rescheduling all habit notifications")
+    debugLog("🔔 Vacation Mode: Rescheduling all habit notifications")
 
     // Trigger notification rescheduling through the HabitRepository
     // This will be handled automatically when the app detects vacation mode has ended
@@ -199,7 +199,7 @@ final class VacationManager: ObservableObject {
       NotificationCenter.default.post(name: .vacationModeEnded, object: nil)
     }
 
-    print("✅ Vacation Mode: Notifications rescheduling triggered")
+    debugLog("✅ Vacation Mode: Notifications rescheduling triggered")
   }
 
   // MARK: - Data Persistence
@@ -218,16 +218,16 @@ final class VacationManager: ObservableObject {
     guard let data = UserDefaults.standard.data(forKey: "VacationData"),
           let vacationData = try? JSONDecoder().decode(VacationData.self, from: data) else
     {
-      print("🏖️ VACATION MODE DEBUG: No vacation data found in UserDefaults")
+      debugLog("🏖️ VACATION MODE DEBUG: No vacation data found in UserDefaults")
       return
     }
 
     current = vacationData.current
     history = vacationData.history
-    print(
+    debugLog(
       "🏖️ VACATION MODE DEBUG: Loaded vacation data - isActive: \(isActive), History count: \(history.count)")
     if let current {
-      print(
+      debugLog(
         "🏖️ VACATION MODE DEBUG: Current vacation period: \(current.start) - \(current.end?.description ?? "ongoing")")
     }
   }
@@ -283,51 +283,51 @@ extension VacationManager {
   }
 
   func pauseAnalytics() {
-    print("📊 VacationManager: Pausing analytics during vacation")
+    debugLog("📊 VacationManager: Pausing analytics during vacation")
     // Analytics are already disabled in Firebase config
   }
 
   func pauseBackups() {
-    print("💾 VacationManager: Pausing automatic backups during vacation")
+    debugLog("💾 VacationManager: Pausing automatic backups during vacation")
     // Backup pausing would be implemented in the backup manager
   }
 
   func pauseCloudSync() {
-    print("☁️ VacationManager: Pausing cloud sync during vacation")
+    debugLog("☁️ VacationManager: Pausing cloud sync during vacation")
     // Cloud sync is already disabled in the app
   }
 
   func pauseAchievements() {
-    print("🏆 VacationManager: Pausing achievement tracking during vacation")
+    debugLog("🏆 VacationManager: Pausing achievement tracking during vacation")
     // Achievement pausing would be implemented in the achievement manager
   }
 
   // MARK: - Debug Methods
 
   func debugVacationStatus() {
-    print("🔍 VACATION DEBUG STATUS:")
+    debugLog("🔍 VACATION DEBUG STATUS:")
     if let current {
-      print("  - Current vacation: \(current.start) - \(current.end?.description ?? "ongoing")")
+      debugLog("  - Current vacation: \(current.start) - \(current.end?.description ?? "ongoing")")
     } else {
-      print("  - Current vacation: None")
+      debugLog("  - Current vacation: None")
     }
-    print("  - History count: \(history.count)")
+    debugLog("  - History count: \(history.count)")
     for (index, period) in history.enumerated() {
-      print("  - History[\(index)]: \(period.start) - \(period.end?.description ?? "ongoing")")
+      debugLog("  - History[\(index)]: \(period.start) - \(period.end?.description ?? "ongoing")")
     }
-    print("  - Is active: \(isActive)")
-    print("  - Current timezone: \(tz.identifier)")
-    print("  - Today is vacation day: \(isVacationDay(Date()))")
+    debugLog("  - Is active: \(isActive)")
+    debugLog("  - Current timezone: \(tz.identifier)")
+    debugLog("  - Today is vacation day: \(isVacationDay(Date()))")
   }
 
   // MARK: - Debug Helper Methods
 
   func clearAllVacationData() {
-    print("🏖️ VACATION MODE DEBUG: Clearing all vacation data")
+    debugLog("🏖️ VACATION MODE DEBUG: Clearing all vacation data")
     current = nil
     history = []
     saveVacationData()
-    print("🏖️ VACATION MODE DEBUG: All vacation data cleared - isActive: \(isActive)")
+    debugLog("🏖️ VACATION MODE DEBUG: All vacation data cleared - isActive: \(isActive)")
   }
 
   // MARK: Private
@@ -341,7 +341,7 @@ extension VacationManager {
       queue: .main)
     { [weak self] _ in
       guard let self else { return }
-      print("🌍 VacationManager: Timezone changed, refreshing vacation data")
+      debugLog("🌍 VacationManager: Timezone changed, refreshing vacation data")
       // Vacation periods are stored in UTC, so timezone changes don't affect the data
       // But we should log this event for debugging
       debugVacationStatus()

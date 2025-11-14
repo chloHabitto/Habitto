@@ -23,10 +23,10 @@ class HomeViewState: ObservableObject {
   // MARK: Lifecycle
 
   init() {
-    print("🚀 HomeViewState: Initializing...")
+    debugLog("🚀 HomeViewState: Initializing...")
     let today = LegacyDateUtils.today()
     self.selectedDate = today
-    print("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
+    debugLog("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
 
     // Debug the repository state
     habitRepository.debugRepositoryState()
@@ -148,9 +148,9 @@ class HomeViewState: ObservableObject {
     let targetDate = date ?? Calendar.current.startOfDay(for: Date())
     do {
       try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
-      print("✅ GUARANTEED: Completion toggled and persisted")
+      debugLog("✅ GUARANTEED: Completion toggled and persisted")
     } catch {
-      print("❌ Failed to toggle completion: \(error.localizedDescription)")
+      debugLog("❌ Failed to toggle completion: \(error.localizedDescription)")
     }
   }
 
@@ -166,9 +166,9 @@ class HomeViewState: ObservableObject {
     // Then delete from storage
     do {
       try await habitRepository.deleteHabit(habit)
-      print("✅ GUARANTEED: Habit deleted and persisted")
+      debugLog("✅ GUARANTEED: Habit deleted and persisted")
     } catch {
-      print("❌ Failed to delete habit: \(error.localizedDescription)")
+      debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
     }
     habitToDelete = nil
   }
@@ -177,31 +177,31 @@ class HomeViewState: ObservableObject {
   func updateHabit(_ updatedHabit: Habit) async {
     do {
       try await habitRepository.updateHabit(updatedHabit)
-      print("✅ GUARANTEED: Habit updated and persisted")
+      debugLog("✅ GUARANTEED: Habit updated and persisted")
     } catch {
-      print("❌ Failed to update habit: \(error.localizedDescription)")
+      debugLog("❌ Failed to update habit: \(error.localizedDescription)")
     }
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) async {
     let startTime = Date()
-    print("═══════════════════════════════════════════════════════")
-    print("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
-    print("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
+    debugLog("═══════════════════════════════════════════════════════")
+    debugLog("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
+    debugLog("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
     do {
       try await habitRepository.setProgress(for: habit, date: date, progress: progress)
       let endTime = Date()
       let duration = endTime.timeIntervalSince(startTime)
-      print("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-      print("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
-      print("═══════════════════════════════════════════════════════")
+      debugLog("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+      debugLog("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
+      debugLog("═══════════════════════════════════════════════════════")
     } catch {
       let endTime = Date()
       let duration = endTime.timeIntervalSince(startTime)
-      print("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-      print("❌ Failed to set progress: \(error.localizedDescription) (took \(String(format: "%.3f", duration))s)")
-      print("═══════════════════════════════════════════════════════")
+      debugLog("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+      debugLog("❌ Failed to set progress: \(error.localizedDescription) (took \(String(format: "%.3f", duration))s)")
+      debugLog("═══════════════════════════════════════════════════════")
     }
   }
 
@@ -211,40 +211,40 @@ class HomeViewState: ObservableObject {
     CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_before_create")
     
     #if DEBUG
-    print("═══════════════════════════════════════════════════════")
-    print("🎯 [3/8] HomeViewState.createHabit: creating habit")
-    print("  → Habit: '\(habit.name)', ID: \(habit.id)")
+    debugLog("═══════════════════════════════════════════════════════")
+    debugLog("🎯 [3/8] HomeViewState.createHabit: creating habit")
+    debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
     
     // ✅ DIAGNOSTIC: Log habit dates
     let dateFormatter = DateFormatter()
     dateFormatter.dateStyle = .medium
     dateFormatter.timeStyle = .short
-    print("🗓️ DIAGNOSTIC: habit.startDate = \(dateFormatter.string(from: habit.startDate))")
+    debugLog("🗓️ DIAGNOSTIC: habit.startDate = \(dateFormatter.string(from: habit.startDate))")
     if let end = habit.endDate {
-      print("🗓️ DIAGNOSTIC: habit.endDate = \(dateFormatter.string(from: end))")
+      debugLog("🗓️ DIAGNOSTIC: habit.endDate = \(dateFormatter.string(from: end))")
     } else {
-      print("🗓️ DIAGNOSTIC: habit.endDate = nil")
+      debugLog("🗓️ DIAGNOSTIC: habit.endDate = nil")
     }
     let today = Date()
-    print("🗓️ DIAGNOSTIC: today = \(dateFormatter.string(from: today))")
-    print("🗓️ DIAGNOSTIC: startDate is today? \(Calendar.current.isDate(habit.startDate, inSameDayAs: today))")
+    debugLog("🗓️ DIAGNOSTIC: today = \(dateFormatter.string(from: today))")
+    debugLog("🗓️ DIAGNOSTIC: startDate is today? \(Calendar.current.isDate(habit.startDate, inSameDayAs: today))")
     
-    print("  → Current habits count: \(habits.count)")
+    debugLog("  → Current habits count: \(habits.count)")
     #endif
     
     // Check if vacation mode is active
     if VacationManager.shared.isActive {
       #if DEBUG
-      print("🚫 HomeViewState: Cannot create habit during vacation mode")
-      print("═══════════════════════════════════════════════════════")
+      debugLog("🚫 HomeViewState: Cannot create habit during vacation mode")
+      debugLog("═══════════════════════════════════════════════════════")
       #endif
       CrashlyticsService.shared.log("Habit creation blocked: vacation mode active")
       return
     }
     
     #if DEBUG
-    print("✅ Vacation mode check passed")
-    print("🎯 [4/8] HomeViewState.createHabit: calling HabitRepository")
+    debugLog("✅ Vacation mode check passed")
+    debugLog("🎯 [4/8] HomeViewState.createHabit: calling HabitRepository")
     #endif
 
     await habitRepository.createHabit(habit)
@@ -254,34 +254,34 @@ class HomeViewState: ObservableObject {
     CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_after_create")
 
     #if DEBUG
-    print("  → HabitRepository.createHabit completed")
-    print("  → New habits count: \(habits.count)")
-    print("═══════════════════════════════════════════════════════")
+    debugLog("  → HabitRepository.createHabit completed")
+    debugLog("  → New habits count: \(habits.count)")
+    debugLog("═══════════════════════════════════════════════════════")
     #endif
   }
 
   func backupHabits() {
     // Backup is now handled automatically by the HabitStore
-    print("✅ HomeView: Habits are automatically backed up by HabitStore")
+    debugLog("✅ HomeView: Habits are automatically backed up by HabitStore")
   }
 
   func loadHabits() {
     // Core Data adapter automatically loads habits
-    print("🔄 HomeView: Habits loaded from Core Data")
+    debugLog("🔄 HomeView: Habits loaded from Core Data")
   }
 
   func cleanupDuplicateHabits() {
-    print("🔄 HomeView: Cleaning up duplicate habits...")
+    debugLog("🔄 HomeView: Cleaning up duplicate habits...")
     habitRepository.cleanupDuplicateHabits()
   }
 
   func updateAllStreaks() {
     let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-    print("")
-    print(String(repeating: "=", count: 60))
-    print("🔄 STREAK_TRIGGER: updateAllStreaks() called at \(timestamp)")
-    print("   Triggered by: Reactive callback from habit completion/uncompletion")
-    print(String(repeating: "=", count: 60))
+    debugLog("")
+    debugLog(String(repeating: "=", count: 60))
+    debugLog("🔄 STREAK_TRIGGER: updateAllStreaks() called at \(timestamp)")
+    debugLog("   Triggered by: Reactive callback from habit completion/uncompletion")
+    debugLog(String(repeating: "=", count: 60))
     
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
     Task { @MainActor in
@@ -299,7 +299,7 @@ class HomeViewState: ObservableObject {
         
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        print("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
+        debugLog("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
         
         // Get or create GlobalStreakModel
         let streakDescriptor = FetchDescriptor<GlobalStreakModel>(
@@ -325,7 +325,7 @@ class HomeViewState: ObservableObject {
         let habits = habitDataList.map { $0.toHabit() }
         
         guard !habits.isEmpty else {
-          print("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")
+          debugLog("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")
           streak.currentStreak = 0
           streak.lastCompleteDate = nil
           try modelContext.save()
@@ -346,7 +346,7 @@ class HomeViewState: ObservableObject {
             // Look back up to 365 days
             let startDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
             
-            print("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
+            debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
         
         let completionDescriptor = FetchDescriptor<CompletionRecord>()
         let allCompletionRecords = try modelContext.fetch(completionDescriptor)
@@ -390,7 +390,7 @@ class HomeViewState: ObservableObject {
           }
           
           if calendar.isDate(checkDate, inSameDayAs: today) {
-            print("ℹ️ STREAK_RECALC: Today (\(dateKey)) not complete - continuing with yesterday")
+            debugLog("ℹ️ STREAK_RECALC: Today (\(dateKey)) not complete - continuing with yesterday")
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
             continue
           }
@@ -407,41 +407,41 @@ class HomeViewState: ObservableObject {
             
             try modelContext.save()
             
-            print("")
-            print(String(repeating: "=", count: 60))
-            print("✅ STREAK_RECALC: Recalculation COMPLETE")
-            print("   Old streak: \(oldStreak) day(s)")
-            print("   New streak: \(currentStreakCount) day(s)")
-            print("   Last complete date: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
-            print("   Longest streak: \(streak.longestStreak) day(s)")
-            print(String(repeating: "=", count: 60))
-            print("")
+            debugLog("")
+            debugLog(String(repeating: "=", count: 60))
+            debugLog("✅ STREAK_RECALC: Recalculation COMPLETE")
+            debugLog("   Old streak: \(oldStreak) day(s)")
+            debugLog("   New streak: \(currentStreakCount) day(s)")
+            debugLog("   Last complete date: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
+            debugLog("   Longest streak: \(streak.longestStreak) day(s)")
+            debugLog(String(repeating: "=", count: 60))
+            debugLog("")
             
             // Reload the UI streak
             updateStreak()
         
       } catch {
-        print("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
+        debugLog("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
       }
     }
   }
 
   func validateAllStreaks() {
-    print("🔄 HomeView: Validating all streaks...")
+    debugLog("🔄 HomeView: Validating all streaks...")
     for i in 0 ..< habits.count {
       if !habits[i].validateStreak() {
-        print(
+        debugLog(
           "🔄 HomeView: Streak validation failed for habit: \(habits[i].name) - streak is now computed-only")
         // ✅ PHASE 4: Streaks are now computed-only, no need to correct them
       }
     }
     // Save the corrected habits
     updateHabits(habits)
-    print("🔄 HomeView: All streaks validated")
+    debugLog("🔄 HomeView: All streaks validated")
   }
 
   func refreshHabits() {
-    print("🔄 HomeViewState: Manual refresh requested")
+    debugLog("🔄 HomeViewState: Manual refresh requested")
     Task {
       await habitRepository.loadHabits(force: true)
 
@@ -454,29 +454,29 @@ class HomeViewState: ObservableObject {
 
   /// Debug method to check current state
   func debugCurrentState() {
-    print("🔍 HomeViewState: === DEBUG STATE ===")
-    print("🔍 HomeViewState: Current habits count: \(habits.count)")
-    print("🔍 HomeViewState: HabitRepository habits count: \(habitRepository.habits.count)")
-    print("🔍 HomeViewState: Current selectedDate: \(selectedDate)")
+    debugLog("🔍 HomeViewState: === DEBUG STATE ===")
+    debugLog("🔍 HomeViewState: Current habits count: \(habits.count)")
+    debugLog("🔍 HomeViewState: HabitRepository habits count: \(habitRepository.habits.count)")
+    debugLog("🔍 HomeViewState: Current selectedDate: \(selectedDate)")
 
     for (index, habit) in habits.enumerated() {
-      print("🔍 HomeViewState: Habit \(index): \(habit.name) (ID: \(habit.id))")
+      debugLog("🔍 HomeViewState: Habit \(index): \(habit.name) (ID: \(habit.id))")
     }
 
-    print("🔍 HomeViewState: === END DEBUG ===")
+    debugLog("🔍 HomeViewState: === END DEBUG ===")
   }
 
   /// Debug method to track habit updates
   func debugHabitUpdate(_ context: String) {
-    print("🔄 HomeViewState: \(context)")
-    print("  - Current habits count: \(habits.count)")
-    print("  - HabitRepository habits count: \(habitRepository.habits.count)")
-    print("  - Habits match: \(habits.count == habitRepository.habits.count)")
+    debugLog("🔄 HomeViewState: \(context)")
+    debugLog("  - Current habits count: \(habits.count)")
+    debugLog("  - HabitRepository habits count: \(habitRepository.habits.count)")
+    debugLog("  - Habits match: \(habits.count == habitRepository.habits.count)")
   }
 
   /// Test method to create a sample habit
   func createTestHabit() {
-    print("🧪 HomeViewState: Creating test habit...")
+    debugLog("🧪 HomeViewState: Creating test habit...")
     let testHabit = Habit(
       name: "Test Habit",
       description: "This is a test habit",
@@ -504,7 +504,7 @@ class HomeViewState: ObservableObject {
 
   /// Simple test method that bypasses validation
   func createSimpleTestHabit() {
-    print("🧪 HomeViewState: Creating simple test habit...")
+    debugLog("🧪 HomeViewState: Creating simple test habit...")
     let testHabit = Habit(
       name: "Simple Test",
       description: "Simple test habit",
@@ -525,38 +525,38 @@ class HomeViewState: ObservableObject {
       difficultyHistory: [:],
       actualUsage: [:])
 
-    print("🧪 HomeViewState: Created habit: \(testHabit.name) (ID: \(testHabit.id))")
+    debugLog("🧪 HomeViewState: Created habit: \(testHabit.name) (ID: \(testHabit.id))")
 
     // Try to save directly to UserDefaults as a test
     Task {
       // Test habit creation - JSON encoding is working correctly
       // This was previously commented out due to a temporary issue
-      print("🧪 HomeViewState: Saved to UserDefaults directly")
+      debugLog("🧪 HomeViewState: Saved to UserDefaults directly")
 
       // Try to reload
       await habitRepository.loadHabits(force: true)
-      print("🧪 HomeViewState: Reloaded habits, count: \(habitRepository.habits.count)")
+      debugLog("🧪 HomeViewState: Reloaded habits, count: \(habitRepository.habits.count)")
     }
   }
 
   /// Force update selectedDate to today
   func forceUpdateSelectedDateToToday() {
-    print("🔄 HomeViewState: Force updating selectedDate to today")
+    debugLog("🔄 HomeViewState: Force updating selectedDate to today")
     let today = LegacyDateUtils.today()
-    print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
-    print("🔄 HomeViewState: Target today: \(today)")
+    debugLog("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
+    debugLog("🔄 HomeViewState: Target today: \(today)")
     selectedDate = today
-    print("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
+    debugLog("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
   }
 
   /// Force refresh selectedDate with cache clearing
   func forceRefreshSelectedDate() {
-    print("🔄 HomeViewState: Force refreshing selectedDate")
+    debugLog("🔄 HomeViewState: Force refreshing selectedDate")
     let today = LegacyDateUtils.forceRefreshToday()
-    print("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
-    print("🔄 HomeViewState: Refreshed today: \(today)")
+    debugLog("🔄 HomeViewState: Current selectedDate: \(selectedDate)")
+    debugLog("🔄 HomeViewState: Refreshed today: \(today)")
     selectedDate = today
-    print("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
+    debugLog("🔄 HomeViewState: Updated selectedDate to: \(selectedDate)")
   }
 
   // MARK: Private
@@ -614,31 +614,31 @@ struct HomeView: View {
           }
         },
         onUpdateHabit: { updatedHabit in
-          print("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
+          debugLog("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
           Task {
             await state.updateHabit(updatedHabit)
           }
-          print("🔄 HomeView: Habit array updated and saved")
+          debugLog("🔄 HomeView: Habit array updated and saved")
         },
         onSetProgress: { habit, date, progress in
-          print("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
-          print("🔄 HomeView: Current state.habits count: \(state.habits.count)")
+          debugLog("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
+          debugLog("🔄 HomeView: Current state.habits count: \(state.habits.count)")
 
           Task {
             // Find the habit by ID from the current state to ensure we have the latest Core
             // Data-synced version
             if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
-              print("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
-              print(
+              debugLog("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
+              debugLog(
                 "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
               await state.setHabitProgress(syncedHabit, for: date, progress: progress)
-              print("🔄 HomeView: Progress saved to Core Data using synced habit")
+              debugLog("🔄 HomeView: Progress saved to Core Data using synced habit")
             } else {
-              print(
+              debugLog(
                 "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
-              print("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
+              debugLog("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
               await state.setHabitProgress(habit, for: date, progress: progress)
-              print("🔄 HomeView: Progress saved to Core Data using original habit")
+              debugLog("🔄 HomeView: Progress saved to Core Data using original habit")
             }
           }
         },
@@ -648,15 +648,15 @@ struct HomeView: View {
         },
         onCompletionDismiss: {
           // ✅ FIX: Update streak UI after completion flow finishes
-          print("🔄 HomeView: Habit completion bottom sheet dismissed")
+          debugLog("🔄 HomeView: Habit completion bottom sheet dismissed")
           state.updateStreak()
         },
         onStreakRecalculationNeeded: {
           // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
           // This ensures streak updates reactively, just like XP does
-          print("🔄 HomeView: Streak recalculation requested from HomeTabView")
+          debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView")
           state.updateAllStreaks()
-          print("✅ HomeView: Streak recalculation completed")
+          debugLog("✅ HomeView: Streak recalculation completed")
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -722,19 +722,19 @@ struct HomeView: View {
           state.showingDeleteConfirmation = true
         },
         onEditHabit: { habit in
-          print("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
-          print("🔄 HomeView: Setting habitToEdit to open HabitEditView")
+          debugLog("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
+          debugLog("🔄 HomeView: Setting habitToEdit to open HabitEditView")
           state.habitToEdit = habit
         },
         onCreateHabit: {
           state.showingCreateHabit = true
         },
         onUpdateHabit: { updatedHabit in
-          print("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
+          debugLog("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
           Task {
             await state.updateHabit(updatedHabit)
           }
-          print("🔄 HomeView: Habit updated and saved successfully")
+          debugLog("🔄 HomeView: Habit updated and saved successfully")
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -839,8 +839,8 @@ struct HomeView: View {
       }
     }
     .onAppear {
-      print("🚀 HomeView: onAppear called!")
-      print("🚀 HomeView: This is a test log - if you see this, logging is working!")
+      debugLog("🚀 HomeView: onAppear called!")
+      debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
       
       // ✅ Ensure auth listener is set up (safety check)
       authManager.ensureAuthListenerSetup()
@@ -848,8 +848,8 @@ struct HomeView: View {
       loadHabitsOptimized()
 
       // Add additional debugging
-      print("🔍 HomeView: Current habits count: \(state.habits.count)")
-      print("🔍 HomeView: HabitRepository habits count: \(HabitRepository.shared.habits.count)")
+      debugLog("🔍 HomeView: Current habits count: \(state.habits.count)")
+      debugLog("🔍 HomeView: HabitRepository habits count: \(HabitRepository.shared.habits.count)")
 
       // Debug Core Data state
       HabitRepository.shared.debugHabitsState()
@@ -866,13 +866,13 @@ struct HomeView: View {
     .onReceive(NotificationCenter.default
       .publisher(for: UIApplication.willResignActiveNotification))
     { _ in
-      print("🏠 HomeView: App going to background, backing up habits...")
+      debugLog("🏠 HomeView: App going to background, backing up habits...")
       state.backupHabits()
     }
     .onReceive(NotificationCenter.default
       .publisher(for: UIApplication.didBecomeActiveNotification))
     { _ in
-      print("🏠 HomeView: App became active, updating streaks...")
+      debugLog("🏠 HomeView: App became active, updating streaks...")
       // Debounce to prevent excessive updates
       DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
         state.updateAllStreaks()
@@ -881,16 +881,16 @@ struct HomeView: View {
     .sheet(isPresented: $state.showingCreateHabit) {
       CreateHabitFlowView(onSave: { habit in
         #if DEBUG
-        print("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
-        print("  → Habit: '\(habit.name)', ID: \(habit.id)")
-        print("  → Current habits count: \(state.habits.count)")
+        debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
+        debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
+        debugLog("  → Current habits count: \(state.habits.count)")
         #endif
 
         // ✅ FIX: Wait for habit creation to complete before dismissing sheet
         Task { @MainActor in
           await state.createHabit(habit)
           #if DEBUG
-          print("  → Habit creation completed, dismissing sheet")
+          debugLog("  → Habit creation completed, dismissing sheet")
           #endif
           state.showingCreateHabit = false
         }
@@ -898,14 +898,14 @@ struct HomeView: View {
     }
     .fullScreenCover(item: $state.habitToEdit) { habit in
       HabitEditView(habit: habit, onSave: { updatedHabit in
-        print("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
+        debugLog("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
         Task {
           await state.updateHabit(updatedHabit)
           await MainActor.run {
             state.habitToEdit = nil
           }
         }
-        print("🔄 HomeView: Habit updated and saved successfully")
+        debugLog("🔄 HomeView: Habit updated and saved successfully")
       })
     }
     .confirmationDialog(
@@ -914,18 +914,18 @@ struct HomeView: View {
       titleVisibility: .visible)
     {
       Button("Cancel", role: .cancel) {
-        print("❌ Delete cancelled")
+        debugLog("❌ Delete cancelled")
         state.habitToDelete = nil
       }
       Button("Delete", role: .destructive) {
         if let habit = state.habitToDelete {
-          print("🗑️ Deleting habit: \(habit.name)")
+          debugLog("🗑️ Deleting habit: \(habit.name)")
           Task {
             await state.deleteHabit(habit)
           }
-          print("🗑️ Delete completed")
+          debugLog("🗑️ Delete completed")
         } else {
-          print("❌ No habit to delete")
+          debugLog("❌ No habit to delete")
         }
       }
     } message: {
@@ -952,22 +952,22 @@ struct HomeView: View {
       // ✅ FIX: Reactively recalculate XP AND STREAK whenever habits change
       // This ensures both XP and streak update immediately when habits are toggled
       Task { @MainActor in
-        print("✅ REACTIVE_XP: Habits changed, recalculating XP...")
+        debugLog("✅ REACTIVE_XP: Habits changed, recalculating XP...")
         
         // Count completed days from the current habit state
         let completedDaysCount = countCompletedDays(habits: newHabits)
         xpManager.publishXP(completedDaysCount: completedDaysCount)
         
-        print("✅ REACTIVE_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+        debugLog("✅ REACTIVE_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
         
         // ✅ CRITICAL FIX: Also recalculate streak when habits change!
         // But add a small delay to ensure SwiftData has finished saving CompletionRecords
-        print("🔄 REACTIVE_STREAK: Habits changed, scheduling streak recalculation...")
+        debugLog("🔄 REACTIVE_STREAK: Habits changed, scheduling streak recalculation...")
         
         // Wait 100ms to allow SwiftData saves to complete
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
-        print("🔄 REACTIVE_STREAK: Now recalculating streak after SwiftData sync...")
+        debugLog("🔄 REACTIVE_STREAK: Now recalculating streak after SwiftData sync...")
         state.updateAllStreaks()
       }
     }
@@ -1026,37 +1026,37 @@ struct HomeView: View {
   // MARK: - Lifecycle
 
   private func loadHabits() {
-    print("🏠 HomeView: Loading habits from HabitRepository...")
+    debugLog("🏠 HomeView: Loading habits from HabitRepository...")
     // Use HabitRepository instead of direct Habit.loadHabits()
     // The HabitRepository already loads habits in its init()
-    print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
+    debugLog("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
 
     // Validate and correct streaks to ensure accuracy
-    print("🏠 HomeView: Validating streaks...")
+    debugLog("🏠 HomeView: Validating streaks...")
     state.validateAllStreaks()
-    print("🏠 HomeView: Streak validation completed")
+    debugLog("🏠 HomeView: Streak validation completed")
     
     // ✅ FIX: Refresh global streak from database after habits load
     state.updateStreak()
   }
 
   private func loadHabitsOptimized() {
-    print("🏠 HomeView: Loading habits from HabitRepository...")
+    debugLog("🏠 HomeView: Loading habits from HabitRepository...")
     // Refresh from Core Data to ensure we have the latest state (let repository debounce)
     Task {
       await HabitRepository.shared.loadHabits()
-      print("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
+      debugLog("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
     }
 
     // Only validate streaks if we have habits and haven't validated recently
     if !state.habits.isEmpty {
-      print("🏠 HomeView: Validating streaks...")
+      debugLog("🏠 HomeView: Validating streaks...")
       // Use Task to prevent UI blocking
       Task {
         let habits = state.habits
         for i in 0 ..< habits.count {
           if !habits[i].validateStreak() {
-            print(
+            debugLog(
               "🔄 HomeView: Streak validation failed for habit: \(habits[i].name) - streak is now computed-only")
             // ✅ PHASE 4: Streaks are now computed-only, no need to correct them
           }
@@ -1065,7 +1065,7 @@ struct HomeView: View {
         // Update on main thread
         await MainActor.run {
           state.updateHabits(habits)
-          print("🏠 HomeView: Streak validation completed")
+          debugLog("🏠 HomeView: Streak validation completed")
           
           // ✅ FIX: Refresh global streak from database after validation
           state.updateStreak()

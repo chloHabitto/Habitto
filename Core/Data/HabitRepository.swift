@@ -180,16 +180,16 @@ class HabitRepository: ObservableObject {
 
   private init() {
     // Initialize basic functionality first
-    print("✅ HabitRepository: Initializing...")
-    print("✅ HabitRepository: Starting with \(habits.count) habits")
+    debugLog("✅ HabitRepository: Initializing...")
+    debugLog("✅ HabitRepository: Starting with \(habits.count) habits")
 
     // Load habits using the new actor
-    print("✅ HabitRepository: Using HabitStore actor for data operations...")
+    debugLog("✅ HabitRepository: Using HabitStore actor for data operations...")
 
     // Load habits immediately and wait for completion
     Task { @MainActor in
       await loadHabits(force: true)
-      print("✅ HabitRepository: Initial habit loading completed with \(habits.count) habits")
+      debugLog("✅ HabitRepository: Initial habit loading completed with \(habits.count) habits")
     }
 
     // Defer CloudKit initialization to avoid crashes
@@ -203,7 +203,7 @@ class HabitRepository: ObservableObject {
     // Initialize sync status monitoring
     initializeSyncStatusMonitoring()
 
-    print("✅ HabitRepository: Initialization completed")
+    debugLog("✅ HabitRepository: Initialization completed")
   }
 
   // MARK: Internal
@@ -235,10 +235,10 @@ class HabitRepository: ObservableObject {
 
   /// Debug method to check if repository is working
   func debugRepositoryState() {
-    print("🔍 HabitRepository: Debug State")
-    print("  - habits.count: \(habits.count)")
-    print("  - habits: \(habits.map { "\($0.name) (ID: \($0.id))" })")
-    print("  - habitStore: \(habitStore)")
+    debugLog("🔍 HabitRepository: Debug State")
+    debugLog("  - habits.count: \(habits.count)")
+    debugLog("  - habits: \(habits.map { "\($0.name) (ID: \($0.id))" })")
+    debugLog("  - habitStore: \(habitStore)")
   }
 
   // MARK: - Guest Data Migration
@@ -261,18 +261,18 @@ class HabitRepository: ObservableObject {
 
   /// Emergency fix for repeated migration screen - clears stale guest data
   func fixRepeatedMigrationIssue() {
-    print("🚨 HabitRepository: Applying emergency fix for repeated migration screen...")
+    debugLog("🚨 HabitRepository: Applying emergency fix for repeated migration screen...")
 
     // ✅ FIX #23: Actually migrate guest data instead of clearing it
     if guestDataMigration.hasGuestData() {
-      print("⚠️ HabitRepository: Guest data detected during emergency fix - attempting migration...")
+      debugLog("⚠️ HabitRepository: Guest data detected during emergency fix - attempting migration...")
       Task {
         do {
           try await guestDataMigration.migrateGuestData()
-          print("✅ HabitRepository: Guest data migrated successfully during emergency fix")
+          debugLog("✅ HabitRepository: Guest data migrated successfully during emergency fix")
         } catch {
-          print("❌ HabitRepository: Guest migration failed: \(error)")
-          print("⚠️ Guest data PRESERVED - user can retry migration later")
+          debugLog("❌ HabitRepository: Guest migration failed: \(error)")
+          debugLog("⚠️ Guest data PRESERVED - user can retry migration later")
           // ❌ CRITICAL FIX: NEVER auto-delete user data - let them choose
           // guestDataMigration.clearStaleGuestData()  // Removed to prevent data loss
         }
@@ -284,7 +284,7 @@ class HabitRepository: ObservableObject {
         await loadHabits(force: true)
       }
     } else {
-      print("ℹ️ HabitRepository: No guest data to migrate")
+      debugLog("ℹ️ HabitRepository: No guest data to migrate")
       // Force mark migration as completed
       guestDataMigration.forceMarkMigrationCompleted()
       
@@ -297,14 +297,14 @@ class HabitRepository: ObservableObject {
       }
     }
 
-    print("✅ HabitRepository: Emergency fix applied - migration screen should no longer appear")
+    debugLog("✅ HabitRepository: Emergency fix applied - migration screen should no longer appear")
   }
 
   // MARK: - Emergency Recovery Methods
 
   /// Emergency method to recover lost habits by forcing a reload
   func emergencyRecoverHabits() async {
-    print("🚨 HabitRepository: Emergency habit recovery initiated...")
+    debugLog("🚨 HabitRepository: Emergency habit recovery initiated...")
 
     // Clear any cached data
     await MainActor.run {
@@ -315,25 +315,25 @@ class HabitRepository: ObservableObject {
     // Force reload from storage
     await loadHabits(force: true)
 
-    print("🚨 HabitRepository: Emergency recovery completed. Found \(habits.count) habits.")
+    debugLog("🚨 HabitRepository: Emergency recovery completed. Found \(habits.count) habits.")
   }
 
   // MARK: - Debug Methods
 
   func debugHabitsState() {
-    print("🔍 HabitRepository: Debug - Current habits state:")
-    print("  - Published habits count: \(habits.count)")
+    debugLog("🔍 HabitRepository: Debug - Current habits state:")
+    debugLog("  - Published habits count: \(habits.count)")
 
     // List all published habits
-    print("📋 Published habits:")
+    debugLog("📋 Published habits:")
     for (index, habit) in habits.enumerated() {
-      print("  \(index): \(habit.name) (ID: \(habit.id), reminders: \(habit.reminders.count))")
+      debugLog("  \(index): \(habit.name) (ID: \(habit.id), reminders: \(habit.reminders.count))")
     }
 
     // Check for any habits without IDs
     let invalidHabits = habits.filter { $0.id == UUID() }
     if !invalidHabits.isEmpty {
-      print("⚠️ HabitRepository: Found \(invalidHabits.count) habits with default UUIDs")
+      debugLog("⚠️ HabitRepository: Found \(invalidHabits.count) habits with default UUIDs")
     }
 
     // Check for duplicate IDs
@@ -348,49 +348,49 @@ class HabitRepository: ObservableObject {
     }
 
     if !duplicates.isEmpty {
-      print("⚠️ HabitRepository: Found \(duplicates.count) duplicate habits:")
+      debugLog("⚠️ HabitRepository: Found \(duplicates.count) duplicate habits:")
       for duplicate in duplicates {
-        print("    - \(duplicate.name) (ID: \(duplicate.id))")
+        debugLog("    - \(duplicate.name) (ID: \(duplicate.id))")
       }
     }
 
-    print("✅ HabitRepository: Debug completed")
+    debugLog("✅ HabitRepository: Debug completed")
   }
 
   func debugCreateHabitFlow(_ habit: Habit) {
-    print("🔍 HabitRepository: Debug Create Habit Flow")
-    print("  - Habit to create: \(habit.name) (ID: \(habit.id))")
-    print("  - Current habits count: \(habits.count)")
-    print("  - Current habits: \(habits.map { $0.name })")
+    debugLog("🔍 HabitRepository: Debug Create Habit Flow")
+    debugLog("  - Habit to create: \(habit.name) (ID: \(habit.id))")
+    debugLog("  - Current habits count: \(habits.count)")
+    debugLog("  - Current habits: \(habits.map { $0.name })")
   }
 
   /// Emergency recovery method
   func recoverMissingHabits() {
-    print("🚨 HabitRepository: Starting emergency habit recovery...")
+    debugLog("🚨 HabitRepository: Starting emergency habit recovery...")
 
     // Force reload habits from storage
     Task {
       await loadHabits(force: true)
-      print("🚨 Recovery complete: \(habits.count) habits recovered")
+      debugLog("🚨 Recovery complete: \(habits.count) habits recovered")
     }
   }
 
   /// Debug function to analyze user data distribution
   func debugUserStats() async {
-    print("\n" + String(repeating: "=", count: 60))
-    print("📊 USER STATISTICS DEBUG REPORT")
-    print(String(repeating: "=", count: 60) + "\n")
+    debugLog("\n" + String(repeating: "=", count: 60))
+    debugLog("📊 USER STATISTICS DEBUG REPORT")
+    debugLog(String(repeating: "=", count: 60) + "\n")
     
     // 1. Current authentication state
     let currentUserId = await CurrentUser().id
     let isGuest = await CurrentUser().isGuest
     let currentEmail = await CurrentUser().email
     
-    print("🔐 Current Authentication State:")
-    print("  - User ID: \(currentUserId.isEmpty ? "(guest)" : currentUserId)")
-    print("  - Is Guest: \(isGuest)")
-    print("  - Email: \(currentEmail ?? "N/A")")
-    print()
+    debugLog("🔐 Current Authentication State:")
+    debugLog("  - User ID: \(currentUserId.isEmpty ? "(guest)" : currentUserId)")
+    debugLog("  - Is Guest: \(isGuest)")
+    debugLog("  - Email: \(currentEmail ?? "N/A")")
+    debugLog()
     
     // 2. Load ALL habits from SwiftData (bypassing user filter)
     do {
@@ -410,87 +410,87 @@ class HabitRepository: ObservableObject {
         // Get unique user IDs
         let uniqueUserIds = Set(authenticatedHabits.map { $0.userId })
         
-        print("📊 SwiftData Analysis:")
-        print("  - Total habits in database: \(allHabitData.count)")
-        print("  - Guest habits (userId=\"\"): \(guestHabits.count)")
-        print("  - Authenticated habits: \(authenticatedHabits.count)")
-        print("  - Unique authenticated users: \(uniqueUserIds.count)")
-        print()
+        debugLog("📊 SwiftData Analysis:")
+        debugLog("  - Total habits in database: \(allHabitData.count)")
+        debugLog("  - Guest habits (userId=\"\"): \(guestHabits.count)")
+        debugLog("  - Authenticated habits: \(authenticatedHabits.count)")
+        debugLog("  - Unique authenticated users: \(uniqueUserIds.count)")
+        debugLog()
         
         // 3. Show guest habit details if any exist
         if !guestHabits.isEmpty {
-            print("⚠️  GUEST HABITS DETECTED:")
+            debugLog("⚠️  GUEST HABITS DETECTED:")
             for (index, habitData) in guestHabits.prefix(10).enumerated() {
                 let completionCount = habitData.completionHistory.count
-                print("  [\(index + 1)] \(habitData.name)")
-                print("      - Created: \(habitData.createdAt.formatted())")
-                print("      - Completions: \(completionCount)")
+                debugLog("  [\(index + 1)] \(habitData.name)")
+                debugLog("      - Created: \(habitData.createdAt.formatted())")
+                debugLog("      - Completions: \(completionCount)")
             }
             if guestHabits.count > 10 {
-                print("  ... and \(guestHabits.count - 10) more")
+                debugLog("  ... and \(guestHabits.count - 10) more")
             }
-            print()
+            debugLog()
         }
         
         // 4. Show authenticated user breakdown
         if !uniqueUserIds.isEmpty {
-            print("👥 AUTHENTICATED USERS:")
+            debugLog("👥 AUTHENTICATED USERS:")
             for userId in uniqueUserIds {
                 let userHabits = authenticatedHabits.filter { $0.userId == userId }
                 let isCurrent = userId == currentUserId
-                print("  - User: \(userId.prefix(8))... \(isCurrent ? "(CURRENT)" : "")")
-                print("    Habits: \(userHabits.count)")
+                debugLog("  - User: \(userId.prefix(8))... \(isCurrent ? "(CURRENT)" : "")")
+                debugLog("    Habits: \(userHabits.count)")
             }
-            print()
+            debugLog()
         }
         
         // 5. Check for orphaned data
         let currentUserHabits = allHabitData.filter { $0.userId == currentUserId }
-        print("🎯 Current User Data:")
-        print("  - Visible habits (published): \(habits.count)")
-        print("  - Habits in SwiftData: \(currentUserHabits.count)")
+        debugLog("🎯 Current User Data:")
+        debugLog("  - Visible habits (published): \(habits.count)")
+        debugLog("  - Habits in SwiftData: \(currentUserHabits.count)")
         
         if habits.count != currentUserHabits.count {
-            print("  ⚠️  MISMATCH: Published count doesn't match SwiftData!")
+            debugLog("  ⚠️  MISMATCH: Published count doesn't match SwiftData!")
         }
-        print()
+        debugLog()
         
         // 6. Migration risk assessment
-        print("🚨 RISK ASSESSMENT:")
+        debugLog("🚨 RISK ASSESSMENT:")
         if guestHabits.count > 0 && !isGuest {
-            print("  ⚠️  HIGH RISK: Guest habits exist but user is authenticated!")
-            print("     These habits are ORPHANED and invisible to the user.")
-            print("     User may have lost \(guestHabits.count) habits when they signed in.")
+            debugLog("  ⚠️  HIGH RISK: Guest habits exist but user is authenticated!")
+            debugLog("     These habits are ORPHANED and invisible to the user.")
+            debugLog("     User may have lost \(guestHabits.count) habits when they signed in.")
         } else if guestHabits.count > 0 && isGuest {
-            print("  ⚠️  MEDIUM RISK: User has \(guestHabits.count) guest habits.")
-            print("     These will become orphaned if user signs in without proper migration.")
+            debugLog("  ⚠️  MEDIUM RISK: User has \(guestHabits.count) guest habits.")
+            debugLog("     These will become orphaned if user signs in without proper migration.")
         } else if guestHabits.count == 0 && !isGuest {
-            print("  ✅ LOW RISK: No guest habits, user is authenticated.")
+            debugLog("  ✅ LOW RISK: No guest habits, user is authenticated.")
         } else {
-            print("  ✅ LOW RISK: Fresh installation or no data.")
+            debugLog("  ✅ LOW RISK: Fresh installation or no data.")
         }
-        print()
+        debugLog()
         
         // 7. Actionable recommendations
-        print("💡 RECOMMENDATIONS:")
+        debugLog("💡 RECOMMENDATIONS:")
         if guestHabits.count > 0 && !isGuest {
-            print("  1. User has orphaned guest data - consider migration")
-            print("  2. Run data recovery to restore these habits")
+            debugLog("  1. User has orphaned guest data - consider migration")
+            debugLog("  2. Run data recovery to restore these habits")
         } else if guestHabits.count > 0 && isGuest {
-            print("  1. Fix guest migration before user signs in")
-            print("  2. Implement proper data migration flow")
+            debugLog("  1. Fix guest migration before user signs in")
+            debugLog("  2. Implement proper data migration flow")
         } else {
-            print("  1. No immediate action needed")
+            debugLog("  1. No immediate action needed")
         }
         
     } catch {
-        print("❌ Error analyzing user data: \(error)")
-        print("   \(error.localizedDescription)")
+        debugLog("❌ Error analyzing user data: \(error)")
+        debugLog("   \(error.localizedDescription)")
     }
     
-    print("\n" + String(repeating: "=", count: 60))
-    print("END OF DEBUG REPORT")
-    print(String(repeating: "=", count: 60) + "\n")
+    debugLog("\n" + String(repeating: "=", count: 60))
+    debugLog("END OF DEBUG REPORT")
+    debugLog(String(repeating: "=", count: 60) + "\n")
   }
 
   // MARK: - Load Habits
@@ -500,24 +500,24 @@ class HabitRepository: ObservableObject {
     
     // ✅ FIX: Use cache to prevent excessive reloads within short time window
     if !force, let lastLoad = lastLoadTime, now.timeIntervalSince(lastLoad) < loadCacheInterval {
-      print(
+      debugLog(
         "ℹ️ LOAD_HABITS: Skipping load - recently loaded \(String(format: "%.1f", now.timeIntervalSince(lastLoad)))s ago")
       return
     }
     
     // ✅ FIX: Prevent concurrent loads to reduce excessive data loading
     if isLoading {
-      print("⚠️ LOAD_HABITS: Skipping load - already loading")
+      debugLog("⚠️ LOAD_HABITS: Skipping load - already loading")
       return
     }
     
     lastLoadTime = now
     
-    print("🔄 LOAD_HABITS_START: Loading from storage (force: \(force))")
+    debugLog("🔄 LOAD_HABITS_START: Loading from storage (force: \(force))")
 
     // Always load if force is true, or if habits is empty
     if !force, !habits.isEmpty, lastLoadTime != nil {
-      print("ℹ️ LOAD_HABITS: Skipping load - habits not empty and not forced")
+      debugLog("ℹ️ LOAD_HABITS: Skipping load - habits not empty and not forced")
       return
     }
 
@@ -530,7 +530,7 @@ class HabitRepository: ObservableObject {
     do {
       // Use the HabitStore actor for data operations
       let loadedHabits = try await habitStore.loadHabits()
-      print("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
+      debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
 
       // Debug each loaded habit with progress for today
       let todayKey = Habit.dateKey(for: Date())
@@ -538,7 +538,7 @@ class HabitRepository: ObservableObject {
         let progress = habit.completionHistory[todayKey] ?? 0
         let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
         let isComplete = progress >= goalAmount
-        print("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
+        debugLog("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
       }
 
       // Deduplicate habits by ID to prevent duplicates
@@ -550,7 +550,7 @@ class HabitRepository: ObservableObject {
           uniqueHabits.append(habit)
           seenIds.insert(habit.id)
         } else {
-          print(
+          debugLog(
             "⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
         }
       }
@@ -562,7 +562,7 @@ class HabitRepository: ObservableObject {
       }
 
     } catch {
-      print("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
+      debugLog("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
       // Keep existing habits if loading fails
     }
   }
@@ -584,10 +584,10 @@ class HabitRepository: ObservableObject {
           objectWillChange.send()
         }
 
-        print("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
+        debugLog("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
 
       } catch {
-        print("❌ HabitRepository: Failed to save difficulty: \(error.localizedDescription)")
+        debugLog("❌ HabitRepository: Failed to save difficulty: \(error.localizedDescription)")
       }
     }
   }
@@ -599,7 +599,7 @@ class HabitRepository: ObservableObject {
       // Use the HabitStore actor for data operations
       return try await habitStore.fetchDifficultiesForHabit(habitId, month: month, year: year)
     } catch {
-      print("❌ HabitRepository: Failed to fetch difficulties: \(error.localizedDescription)")
+      debugLog("❌ HabitRepository: Failed to fetch difficulties: \(error.localizedDescription)")
       return []
     }
   }
@@ -609,7 +609,7 @@ class HabitRepository: ObservableObject {
       // Use the HabitStore actor for data operations
       return try await habitStore.fetchAllDifficulties(month: month, year: year)
     } catch {
-      print("❌ HabitRepository: Failed to fetch all difficulties: \(error.localizedDescription)")
+      debugLog("❌ HabitRepository: Failed to fetch all difficulties: \(error.localizedDescription)")
       return []
     }
   }
@@ -617,7 +617,7 @@ class HabitRepository: ObservableObject {
   // MARK: - Save Habits
 
   func saveHabits(_ habits: [Habit]) {
-    print("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
+    debugLog("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
 
     Task {
       do {
@@ -635,10 +635,10 @@ class HabitRepository: ObservableObject {
           await cloudKitIntegration.startSync()
         }
 
-        print("✅ HabitRepository: Successfully saved \(habits.count) habits")
+        debugLog("✅ HabitRepository: Successfully saved \(habits.count) habits")
 
       } catch {
-        print("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
+        debugLog("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
       }
     }
   }
@@ -647,36 +647,36 @@ class HabitRepository: ObservableObject {
 
   func createHabit(_ habit: Habit) async {
     #if DEBUG
-    print("🎯 [5/8] HabitRepository.createHabit: persisting habit")
-    print("  → Habit: '\(habit.name)', ID: \(habit.id)")
-    print("  → Current habits count: \(habits.count)")
+    debugLog("🎯 [5/8] HabitRepository.createHabit: persisting habit")
+    debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
+    debugLog("  → Current habits count: \(habits.count)")
     #endif
 
     do {
       // Use the HabitStore actor for data operations
       #if DEBUG
-      print("  → Calling HabitStore.createHabit")
+      debugLog("  → Calling HabitStore.createHabit")
       #endif
       try await habitStore.createHabit(habit)
       #if DEBUG
-      print("  → HabitStore.createHabit completed")
+      debugLog("  → HabitStore.createHabit completed")
       #endif
 
       // Reload habits to get the updated list
       #if DEBUG
-      print("  → Reloading habits from storage")
+      debugLog("  → Reloading habits from storage")
       #endif
       await loadHabits(force: true)
       #if DEBUG
-      print("  ✅ Success! New habits count: \(habits.count)")
+      debugLog("  ✅ Success! New habits count: \(habits.count)")
       #endif
 
     } catch {
       #if DEBUG
-      print("  ❌ FAILED: \(error.localizedDescription)")
-      print("  ❌ Error type: \(type(of: error))")
+      debugLog("  ❌ FAILED: \(error.localizedDescription)")
+      debugLog("  ❌ Error type: \(type(of: error))")
       if let dataError = error as? DataError {
-        print("  ❌ DataError: \(dataError)")
+        debugLog("  ❌ DataError: \(dataError)")
       }
       #endif
     }
@@ -686,28 +686,28 @@ class HabitRepository: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func updateHabit(_ habit: Habit) async throws {
-    print("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
-    print("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
-    print("🔄 HabitRepository: Current habits count before update: \(habits.count)")
-    print("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
+    debugLog("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
+    debugLog("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
+    debugLog("🔄 HabitRepository: Current habits count before update: \(habits.count)")
+    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
 
     do {
       // Use the HabitStore actor for data operations
-      print("🔄 HabitRepository: Calling habitStore.updateHabit...")
+      debugLog("🔄 HabitRepository: Calling habitStore.updateHabit...")
       try await habitStore.updateHabit(habit)
-      print("✅ HabitRepository: habitStore.updateHabit completed successfully")
+      debugLog("✅ HabitRepository: habitStore.updateHabit completed successfully")
 
       // Reload habits to get the updated list
-      print("🔄 HabitRepository: Reloading habits...")
+      debugLog("🔄 HabitRepository: Reloading habits...")
       await loadHabits(force: true)
-      print("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
-      print("✅ GUARANTEED: Habit update persisted to SwiftData")
+      debugLog("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
+      debugLog("✅ GUARANTEED: Habit update persisted to SwiftData")
 
     } catch {
-      print("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
-      print("❌ HabitRepository: Error type: \(type(of: error))")
+      debugLog("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
+      debugLog("❌ HabitRepository: Error type: \(type(of: error))")
       if let dataError = error as? DataError {
-        print("❌ HabitRepository: DataError details: \(dataError)")
+        debugLog("❌ HabitRepository: DataError details: \(dataError)")
       }
       throw error
     }
@@ -719,7 +719,7 @@ class HabitRepository: ObservableObject {
   func deleteHabit(_ habit: Habit) async throws {
     // Remove all notifications for this habit first
     NotificationManager.shared.removeAllNotifications(for: habit)
-    print("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
+    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
 
     do {
       // Use the HabitStore actor for data operations
@@ -727,10 +727,10 @@ class HabitRepository: ObservableObject {
       
       // Reload habits to get the updated list
       await loadHabits(force: true)
-      print("✅ GUARANTEED: Habit deleted from SwiftData")
+      debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
 
     } catch {
-      print("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
+      debugLog("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
       throw error
     }
   }
@@ -738,7 +738,7 @@ class HabitRepository: ObservableObject {
   // MARK: - Clear All Habits
 
   func clearAllHabits() async throws {
-    print("🗑️ HabitRepository: Clearing all habits")
+    debugLog("🗑️ HabitRepository: Clearing all habits")
 
     // Remove all notifications
     NotificationManager.shared.removeAllPendingNotifications()
@@ -752,7 +752,7 @@ class HabitRepository: ObservableObject {
       self.objectWillChange.send()
     }
 
-    print("✅ HabitRepository: All habits cleared")
+    debugLog("✅ HabitRepository: All habits cleared")
   }
 
   // MARK: - Toggle Habit Completion
@@ -760,7 +760,7 @@ class HabitRepository: ObservableObject {
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func toggleHabitCompletion(_ habit: Habit, for date: Date) async throws {
     // Skip Core Data and handle completion directly in UserDefaults
-    print("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
+    debugLog("⚠️ HabitRepository: Bypassing Core Data for toggleHabitCompletion")
 
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
     
@@ -768,13 +768,13 @@ class HabitRepository: ObservableObject {
     let currentProgress = habit.completionHistory[dateKey] ?? 0
     
     if habit.habitType == .breaking {
-      print("🔍 TOGGLE - Breaking Habit '\(habit.name)' | Current progress: \(currentProgress)")
+      debugLog("🔍 TOGGLE - Breaking Habit '\(habit.name)' | Current progress: \(currentProgress)")
     } else {
-      print("🔍 TOGGLE - Formation Habit '\(habit.name)' | Current progress: \(currentProgress)")
+      debugLog("🔍 TOGGLE - Formation Habit '\(habit.name)' | Current progress: \(currentProgress)")
     }
     
     let newProgress = currentProgress > 0 ? 0 : 1
-    print("🔍 TOGGLE - Setting new progress to: \(newProgress)")
+    debugLog("🔍 TOGGLE - Setting new progress to: \(newProgress)")
 
     // ✅ CRITICAL FIX: Await save completion
     try await setProgress(for: habit, date: date, progress: newProgress)
@@ -783,12 +783,12 @@ class HabitRepository: ObservableObject {
   // MARK: - Force Save All Changes
 
   func forceSaveAllChanges() {
-    print("🔄 HabitRepository: Force saving all changes...")
+    debugLog("🔄 HabitRepository: Force saving all changes...")
 
     // Save current habits
     saveHabits(habits)
 
-    print("✅ HabitRepository: All changes saved")
+    debugLog("✅ HabitRepository: All changes saved")
   }
 
   // MARK: - Set Progress
@@ -797,8 +797,8 @@ class HabitRepository: ObservableObject {
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
     #if DEBUG
-    print("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
-    print("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
+    debugLog("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
+    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
     #endif
 
     // Update the local habits array immediately for UI responsiveness
@@ -811,7 +811,7 @@ class HabitRepository: ObservableObject {
       var updatedHabit = habits[index]
       updatedHabit.completionHistory[dateKey] = progress
       #if DEBUG
-      print("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
+      debugLog("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
       #endif
 
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
@@ -820,7 +820,7 @@ class HabitRepository: ObservableObject {
       let isComplete = progress >= goalAmount
       updatedHabit.completionStatus[dateKey] = isComplete
       #if DEBUG
-      print("🔍 COMPLETION FIX - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      debugLog("🔍 COMPLETION FIX - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
       #endif
 
       // Handle timestamp recording for time-based completion analysis
@@ -835,8 +835,8 @@ class HabitRepository: ObservableObject {
           updatedHabit.completionTimestamps[dateKey]?.append(currentTimestamp)
         }
         #if DEBUG
-        print("🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
-        print("🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
+        debugLog("🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
+        debugLog("🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
         #endif
       } else if progress < oldProgress {
         // Progress decreased - remove recent timestamps
@@ -847,7 +847,7 @@ class HabitRepository: ObservableObject {
           }
         }
         #if DEBUG
-        print("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
+        debugLog("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
         #endif
       }
 
@@ -858,8 +858,8 @@ class HabitRepository: ObservableObject {
       // ✅ PHASE 4: Streak is now computed-only, no need to update
       // Streak is derived from completion history in real-time
       #if DEBUG
-      print("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
-      print("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
+      debugLog("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
+      debugLog("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
       #endif
 
       // ✅ XP SYSTEM: XP awarding is now handled by the UI layer (HomeTabView)
@@ -867,22 +867,22 @@ class HabitRepository: ObservableObject {
 
       // Send notification for UI components to update
       #if DEBUG
-      print("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
+      debugLog("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
       #endif
       NotificationCenter.default.post(
         name: .habitProgressUpdated,
         object: nil,
         userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey])
       #if DEBUG
-      print("🎯 HabitRepository: Notification posted successfully")
+      debugLog("🎯 HabitRepository: Notification posted successfully")
       #endif
       
       // ✅ CRITICAL FIX: Await save completion BEFORE returning
       do {
         let startTime = Date()
         #if DEBUG
-        print("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
-        print("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
+        debugLog("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
+        debugLog("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
         #endif
         
         try await habitStore.setProgress(for: habit, date: date, progress: progress)
@@ -890,16 +890,16 @@ class HabitRepository: ObservableObject {
         let endTime = Date()
         let duration = endTime.timeIntervalSince(startTime)
         #if DEBUG
-        print("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-        print("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
-        print("  ✅ GUARANTEED: Data persisted to SwiftData")
+        debugLog("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+        debugLog("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
+        debugLog("  ✅ GUARANTEED: Data persisted to SwiftData")
         #endif
 
       } catch {
         #if DEBUG
-        print("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
-        print("  ❌ Error type: \(type(of: error))")
-        print("  ❌ Error details: \(error)")
+        debugLog("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
+        debugLog("  ❌ Error type: \(type(of: error))")
+        debugLog("  ❌ Error details: \(error)")
         #endif
         
         // Revert UI change on error
@@ -907,8 +907,8 @@ class HabitRepository: ObservableObject {
         revertedHabit.completionHistory[dateKey] = oldProgress
         habits[index] = revertedHabit
         #if DEBUG
-        print("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
-        print("  📢 HabitRepository: @Published habits array reverted, triggering subscriber notifications")
+        debugLog("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
+        debugLog("  📢 HabitRepository: @Published habits array reverted, triggering subscriber notifications")
         #endif
         
         // Re-throw to let caller know save failed
@@ -931,8 +931,8 @@ class HabitRepository: ObservableObject {
     // 🔍 DEBUG: Log if progress is 0 but completionStatus suggests completion
     let dateKey = Habit.dateKey(for: date)
     if progress == 0, let isCompleted = habit.completionStatus[dateKey], isCompleted {
-      print("⚠️ getProgress MISMATCH: habit=\(habit.name), dateKey=\(dateKey), progress=0 but completionStatus=true")
-      print("   → completionHistory keys: \(Array(habit.completionHistory.keys.sorted()))")
+      debugLog("⚠️ getProgress MISMATCH: habit=\(habit.name), dateKey=\(dateKey), progress=0 but completionStatus=true")
+      debugLog("   → completionHistory keys: \(Array(habit.completionHistory.keys.sorted()))")
     }
     
     return progress
@@ -941,7 +941,7 @@ class HabitRepository: ObservableObject {
   // MARK: - Clean Up Duplicates
 
   func cleanupDuplicateHabits() {
-    print("🔄 HabitRepository: Starting duplicate cleanup...")
+    debugLog("🔄 HabitRepository: Starting duplicate cleanup...")
 
     // Check for duplicate IDs in current habits
     var seenIds: Set<UUID> = []
@@ -950,7 +950,7 @@ class HabitRepository: ObservableObject {
     for habit in habits {
       if seenIds.contains(habit.id) {
         duplicatesToRemove.append(habit)
-        print(
+        debugLog(
           "⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - will be removed")
       } else {
         seenIds.insert(habit.id)
@@ -958,7 +958,7 @@ class HabitRepository: ObservableObject {
     }
 
     if !duplicatesToRemove.isEmpty {
-      print("🔄 HabitRepository: Removing \(duplicatesToRemove.count) duplicate habits...")
+      debugLog("🔄 HabitRepository: Removing \(duplicatesToRemove.count) duplicate habits...")
 
       // Remove duplicates from habits array
       habits.removeAll { habit in
@@ -967,9 +967,9 @@ class HabitRepository: ObservableObject {
 
       // Save updated habits
       saveHabits(habits)
-      print("✅ HabitRepository: Duplicate cleanup completed, total habits: \(habits.count)")
+      debugLog("✅ HabitRepository: Duplicate cleanup completed, total habits: \(habits.count)")
     } else {
-      print("✅ HabitRepository: No duplicate habits found")
+      debugLog("✅ HabitRepository: No duplicate habits found")
     }
   }
 
@@ -999,13 +999,13 @@ class HabitRepository: ObservableObject {
   private func initializeCloudKitSafely() async {
     // Initialize CloudKit integration safely
     await cloudKitIntegration.initialize()
-    print("✅ HabitRepository: CloudKit integration initialized safely")
+    debugLog("✅ HabitRepository: CloudKit integration initialized safely")
 
     // Initialize CloudKit sync safely
     if cloudKitManager.isCloudKitAvailable() {
       cloudKitManager.initializeCloudKitSync()
     } else {
-      print("ℹ️ HabitRepository: CloudKit not available, skipping sync initialization")
+      debugLog("ℹ️ HabitRepository: CloudKit not available, skipping sync initialization")
     }
 
     // Monitor app lifecycle to reload data when app becomes active
@@ -1177,7 +1177,7 @@ class HabitRepository: ObservableObject {
   private func handleUserChange(_ authState: AuthenticationState) async {
     switch authState {
     case .authenticated(let user):
-      print(
+      debugLog(
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
       // ✅ CRITICAL FIX: Only show migration UI if user is NOT anonymous
@@ -1185,7 +1185,7 @@ class HabitRepository: ObservableObject {
       let isAnonymous = (user as? User)?.isAnonymous ?? false
       
       if isAnonymous {
-        print("ℹ️ HabitRepository: User is anonymous - skipping migration UI (still in guest mode)")
+        debugLog("ℹ️ HabitRepository: User is anonymous - skipping migration UI (still in guest mode)")
         shouldShowMigrationView = false
         await loadHabits(force: true)
         return
@@ -1196,12 +1196,12 @@ class HabitRepository: ObservableObject {
       let hasGuestDataToMigrate = guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData()
       
       if hasGuestDataToMigrate {
-        print("🔄 HabitRepository: Guest data detected - showing migration UI...")
+        debugLog("🔄 HabitRepository: Guest data detected - showing migration UI...")
         shouldShowMigrationView = true  // ✅ Show migration UI, let user choose
-        print("✅ Guest data found, user can choose to migrate or start fresh")
+        debugLog("✅ Guest data found, user can choose to migrate or start fresh")
         // Don't auto-migrate - wait for user's choice in migration UI
       } else {
-        print("ℹ️ HabitRepository: No guest data to migrate or already migrated")
+        debugLog("ℹ️ HabitRepository: No guest data to migrate or already migrated")
         shouldShowMigrationView = false
         
         // ✅ CRITICAL FIX: Auto-migrate data from anonymous user to email user (silent migration)
@@ -1222,7 +1222,7 @@ class HabitRepository: ObservableObject {
           let oldUserId = habitData.userId
           habitData.userId = user.uid
           migratedCount += 1
-          print("  ✓ Auto-migrating habit '\(habitData.name)' from userId '\(oldUserId)' to '\(user.uid)'")
+          debugLog("  ✓ Auto-migrating habit '\(habitData.name)' from userId '\(oldUserId)' to '\(user.uid)'")
         }
         
         // Migrate CompletionRecords
@@ -1235,7 +1235,7 @@ class HabitRepository: ObservableObject {
         for record in guestRecords {
           let oldUserId = record.userId
           record.userId = user.uid
-          print("  ✓ Auto-migrating CompletionRecord from userId '\(oldUserId)' to '\(user.uid)'")
+          debugLog("  ✓ Auto-migrating CompletionRecord from userId '\(oldUserId)' to '\(user.uid)'")
         }
         
         // Migrate DailyAwards
@@ -1248,7 +1248,7 @@ class HabitRepository: ObservableObject {
         for award in guestAwards {
           let oldUserId = award.userId
           award.userId = user.uid
-          print("  ✓ Auto-migrating DailyAward from userId '\(oldUserId)' to '\(user.uid)'")
+          debugLog("  ✓ Auto-migrating DailyAward from userId '\(oldUserId)' to '\(user.uid)'")
         }
         
         // Migrate UserProgressData
@@ -1261,16 +1261,16 @@ class HabitRepository: ObservableObject {
         for progress in guestProgress {
           let oldUserId = progress.userId
           progress.userId = user.uid
-          print("  ✓ Auto-migrating UserProgressData from userId '\(oldUserId)' to '\(user.uid)'")
+          debugLog("  ✓ Auto-migrating UserProgressData from userId '\(oldUserId)' to '\(user.uid)'")
         }
         
         // Save all changes
         if migratedCount > 0 || !guestRecords.isEmpty || !guestAwards.isEmpty || !guestProgress.isEmpty {
           do {
             try context.save()
-            print("✅ HabitRepository: Successfully auto-migrated \(guestHabits.count) habits, \(guestRecords.count) completion records, \(guestAwards.count) awards, \(guestProgress.count) progress records")
+            debugLog("✅ HabitRepository: Successfully auto-migrated \(guestHabits.count) habits, \(guestRecords.count) completion records, \(guestAwards.count) awards, \(guestProgress.count) progress records")
           } catch {
-            print("❌ HabitRepository: Failed to save migrated data: \(error.localizedDescription)")
+            debugLog("❌ HabitRepository: Failed to save migrated data: \(error.localizedDescription)")
           }
         }
         
@@ -1282,22 +1282,22 @@ class HabitRepository: ObservableObject {
 
       // Load user data
       await loadHabits(force: true)
-      print("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
+      debugLog("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
 
       // Load user's XP from SwiftData
       await loadUserXPFromSwiftData(userId: user.uid)
 
     case .unauthenticated:
-      print("🔄 HabitRepository: User signed out, loading guest data...")
+      debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Instead of clearing data, load guest habits
       await loadHabits(force: true)
-      print("✅ HabitRepository: Guest data loaded for unauthenticated user")
+      debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user")
 
     case .authenticating:
-      print("🔄 HabitRepository: User authenticating, keeping current data...")
+      debugLog("🔄 HabitRepository: User authenticating, keeping current data...")
 
     case .error(let error):
-      print("❌ HabitRepository: Authentication error: \(error)")
+      debugLog("❌ HabitRepository: Authentication error: \(error)")
     }
   }
 
@@ -1309,19 +1309,19 @@ class HabitRepository: ObservableObject {
 
     // Clear any user-specific cache or temporary data
     // This ensures a clean slate when switching between users
-    print("✅ HabitRepository: User data cleared for account switch")
+    debugLog("✅ HabitRepository: User data cleared for account switch")
   }
 
   // MARK: - App Lifecycle Handling
 
   @objc
   private func appDidBecomeActive() {
-    print("🔄 HabitRepository: App became active, reloading habits...")
+    debugLog("🔄 HabitRepository: App became active, reloading habits...")
 
     // Refresh habits from storage (debounced to avoid redundant loads)
     Task {
       await loadHabits()
-      print("✅ HabitRepository: Habits reloaded after app became active")
+      debugLog("✅ HabitRepository: Habits reloaded after app became active")
     }
   }
 
@@ -1331,7 +1331,7 @@ class HabitRepository: ObservableObject {
   private func checkAndAwardXPForDate(_ date: Date) async {
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
 
-    print("🎯 XP CHECK: Checking if all habits completed for \(dateKey)")
+    debugLog("🎯 XP CHECK: Checking if all habits completed for \(dateKey)")
 
     // Check if all habits are completed for this date
     let allCompleted = habits.allSatisfy { habit in
@@ -1340,25 +1340,25 @@ class HabitRepository: ObservableObject {
       return progress >= goalAmount
     }
 
-    print("🎯 XP CHECK: All habits completed: \(allCompleted)")
+    debugLog("🎯 XP CHECK: All habits completed: \(allCompleted)")
 
     if allCompleted {
-      print("🎯 XP CHECK: ✅ All habits completed, awarding XP")
+      debugLog("🎯 XP CHECK: ✅ All habits completed, awarding XP")
 
       // Award XP using new Firebase-based DailyAwardService
       do {
         let awardService = DailyAwardService.shared
         try await awardService.awardDailyCompletionBonus(on: date)
-        print("🎯 XP CHECK: XP awarded for all habits complete")
+        debugLog("🎯 XP CHECK: XP awarded for all habits complete")
       } catch {
-        print("❌ XP CHECK: Failed to award XP: \(error)")
+        debugLog("❌ XP CHECK: Failed to award XP: \(error)")
       }
     } else {
-      print("🎯 XP CHECK: ❌ Not all habits completed, no XP awarded")
+      debugLog("🎯 XP CHECK: ❌ Not all habits completed, no XP awarded")
 
       // Note: XP revocation handled by DailyAwardService integrity checks
       // The ledger-based system doesn't need explicit revocation
-      print("🎯 XP CHECK: ❌ Not all habits completed, no XP change needed")
+      debugLog("🎯 XP CHECK: ❌ Not all habits completed, no XP change needed")
     }
   }
 
@@ -1375,14 +1375,14 @@ class HabitRepository: ObservableObject {
 
   /// Load user's XP from SwiftData DailyAward records
   private func loadUserXPFromSwiftData(userId: String) async {
-    print("🎯 XP LOAD: Loading XP from SwiftData for userId: \(userId)")
+    debugLog("🎯 XP LOAD: Loading XP from SwiftData for userId: \(userId)")
 
     // ✅ FIX #10: Use SwiftDataContainer's ModelContext instead of creating a new container
     // Creating a new container was causing Persistent History to delete tables
     await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       XPManager.shared.loadUserXPFromSwiftData(userId: userId, modelContext: modelContext)
-      print("✅ XP LOAD: User XP loaded successfully")
+      debugLog("✅ XP LOAD: User XP loaded successfully")
     }
   }
 }
@@ -1396,23 +1396,23 @@ extension HabitEntity {
 
     // Convert completion history
     var completionHistory: [String: Int] = [:]
-    print(
+    debugLog(
       "🔍 HabitRepository: Raw completionHistory property: \(String(describing: self.completionHistory))")
 
     if let completionRecords = self.completionHistory as? Set<CompletionRecordEntity> {
-      print(
+      debugLog(
         "🔍 HabitRepository: Converting \(completionRecords.count) completion records for habit '\(name ?? "Unknown")'")
       for record in completionRecords {
         if let dateKey = record.dateKey {
           let progress = Int(record.progress)
           completionHistory[dateKey] = progress
-          print("  📅 Converting: \(dateKey) -> \(progress)")
+          debugLog("  📅 Converting: \(dateKey) -> \(progress)")
         }
       }
     } else {
-      print("🔍 HabitRepository: No completion records found for habit '\(name ?? "Unknown")'")
-      print("🔍 HabitRepository: completionHistory type: \(type(of: self.completionHistory))")
-      print("🔍 HabitRepository: completionHistory is NSSet: \(self.completionHistory != nil)")
+      debugLog("🔍 HabitRepository: No completion records found for habit '\(name ?? "Unknown")'")
+      debugLog("🔍 HabitRepository: completionHistory type: \(type(of: self.completionHistory))")
+      debugLog("🔍 HabitRepository: completionHistory is NSSet: \(self.completionHistory != nil)")
     }
 
     // Convert actual usage
