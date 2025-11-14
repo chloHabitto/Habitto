@@ -310,6 +310,8 @@ class HomeViewState: ObservableObject {
         }
         
         let modelContext = SwiftDataContainer.shared.modelContext
+        let readContext = ModelContext(SwiftDataContainer.shared.modelContainer)
+        readContext.autosaveEnabled = false
         
         debugLog("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
         
@@ -328,12 +330,13 @@ class HomeViewState: ObservableObject {
         }()
         
         // Fetch all habits for this user
-        let habitsDescriptor = FetchDescriptor<HabitData>(
+        var habitsDescriptor = FetchDescriptor<HabitData>(
           predicate: #Predicate { habit in
             habit.userId == userId
           }
         )
-        let habitDataList = try modelContext.fetch(habitsDescriptor)
+        habitsDescriptor.includePendingChanges = true
+        let habitDataList = try readContext.fetch(habitsDescriptor)
         let habits = habitDataList.map { $0.toHabit() }
         
         guard !habits.isEmpty else {
@@ -364,8 +367,9 @@ class HomeViewState: ObservableObject {
             
             debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
         
-        let completionDescriptor = FetchDescriptor<CompletionRecord>()
-        let allCompletionRecords = try modelContext.fetch(completionDescriptor)
+        var completionDescriptor = FetchDescriptor<CompletionRecord>()
+        completionDescriptor.includePendingChanges = true
+        let allCompletionRecords = try readContext.fetch(completionDescriptor)
         let filteredCompletionRecords = allCompletionRecords.filter { record in
           guard record.isCompleted else { return false }
           if userId.isEmpty || userId == "guest" {
