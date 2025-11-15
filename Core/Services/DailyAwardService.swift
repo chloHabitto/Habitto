@@ -1,5 +1,6 @@
-import Foundation
 import Combine
+import FirebaseCore
+import Foundation
 
 /// Service for managing XP awards with ledger-based integrity
 ///
@@ -262,18 +263,24 @@ class DailyAwardService: ObservableObject {
     private func startXPStateStream() {
         print("👂 DailyAwardService: Starting XP state stream")
         
-        repository.streamXPState()
-        
-        // In production, subscribe to repository.xpState publisher
-        // For now, set up the structure
+        Task {
+            guard await waitForFirebaseConfigurationIfNeeded() else {
+                print("⚠️ DailyAwardService: Firebase not configured, XP stream not started")
+                return
+            }
+            repository.streamXPState()
+        }
     }
     
     /// Refresh XP state from repository
     func refreshXPState() async {
         print("🔄 DailyAwardService: Refreshing XP state")
         
-        // In production with real Firestore, this would be automatic via stream
-        // For mock mode, update from repository state
+        guard await waitForFirebaseConfigurationIfNeeded() else {
+            print("⚠️ DailyAwardService: Firebase not configured, skipping XP refresh")
+            return
+        }
+        
         xpState = repository.xpState
     }
     
@@ -281,6 +288,24 @@ class DailyAwardService: ObservableObject {
     func stopListening() {
         repository.stopListening()
         print("🛑 DailyAwardService: Stopped all XP listeners")
+    }
+    
+    private func waitForFirebaseConfigurationIfNeeded(timeout: TimeInterval = 3) async -> Bool {
+        if FirebaseBootstrapper.isConfigured {
+            return true
+        }
+        
+        let pollInterval: UInt64 = 50_000_000 // 50ms
+        let maxIterations = Int((timeout * 1_000_000_000) / Double(pollInterval))
+        
+        for _ in 0..<maxIterations {
+            try? await Task.sleep(nanoseconds: pollInterval)
+            if FirebaseBootstrapper.isConfigured {
+                return true
+            }
+        }
+        
+        return FirebaseBootstrapper.isConfigured
     }
 }
 

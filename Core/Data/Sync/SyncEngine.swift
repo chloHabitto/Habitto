@@ -687,12 +687,6 @@ actor SyncEngine {
                 batchSynced += 1
             }
             
-            // Update progress/current document atomically with total XP
-            let progressRef = self.firestore.collection("users")
-                .document(userId)
-                .collection("progress")
-                .document("current")
-            
             // Also update xp/state document (for XP state stream compatibility)
             let xpStateRef = self.firestore.collection("users")
                 .document(userId)
@@ -702,16 +696,17 @@ actor SyncEngine {
             // Calculate level from total XP (simple formula: every 100 XP = 1 level)
             let level = (totalXP / 100) + 1
             let currentLevelXP = totalXP % 100
+            let nextLevelXP = 100
             
             let progressData: [String: Any] = [
                 "totalXP": totalXP,
                 "level": level,
                 "currentLevelXP": currentLevelXP,
+                "dailyXP": 0,
+                "nextLevelXP": nextLevelXP,
                 "lastUpdated": Timestamp(date: Date())
             ]
             
-            // Update both paths for consistency
-            transaction.setData(progressData, forDocument: progressRef, merge: true)
             transaction.setData(progressData, forDocument: xpStateRef, merge: true)
             
             // Return counts as tuple (wrapped in array for easier casting)
@@ -1289,39 +1284,21 @@ actor SyncEngine {
         await syncXPStateFromFirestore(userId: userId)
     }
     
-    /// Sync XP state from Firestore's progress/current document
+    /// Sync XP state from Firestore's xp/state document
     /// This ensures XP stays in sync when importing remote awards
-    /// 
-    /// Note: syncAwards() writes to /users/{userId}/progress/current, but the XP state stream
-    /// listens to /users/{userId}/xp/state. We check progress/current here since that's where
-    /// awards sync their XP state. The XP state stream will eventually sync from xp/state,
-    /// but we ensure immediate consistency by refreshing here.
     private func syncXPStateFromFirestore(userId: String) async {
-        // Check both XP state paths for consistency
-        let progressRef = firestore.collection("users")
-            .document(userId)
-            .collection("progress")
-            .document("current")
-        
+        // Fetch current XP state directly from xp/state (single source of truth)
         let xpStateRef = firestore.collection("users")
             .document(userId)
             .collection("xp")
             .document("state")
         
-        // Try to get XP from xp/state first (preferred path)
-        // Using try? means errors are handled gracefully (returns nil)
         let xpStateSnapshot = try? await xpStateRef.getDocument()
         let xpStateData = xpStateSnapshot?.data()
         let xpStateTotalXP = xpStateData?["totalXP"] as? Int
         
-        // Fallback to progress/current if xp/state doesn't exist
-        let progressSnapshot = try? await progressRef.getDocument()
-        let progressData = progressSnapshot?.data()
-        let progressTotalXP = progressData?["totalXP"] as? Int
-        
-        // Use xp/state if available, otherwise fallback to progress/current
-        guard let remoteTotalXP = xpStateTotalXP ?? progressTotalXP else {
-            logger.info("ℹ️ No remote XP state found in either path, skipping sync")
+        guard let remoteTotalXP = xpStateTotalXP else {
+            logger.info("ℹ️ No remote XP state found, skipping sync")
             return
         }
         
@@ -1333,7 +1310,7 @@ actor SyncEngine {
             let localTotalXP = DailyAwardService.shared.getTotalXP()
             
             if remoteTotalXP != localTotalXP {
-                logger.info("🔄 XP sync: Local=\(localTotalXP), Remote=\(remoteTotalXP) (from \(xpStateTotalXP != nil ? "xp/state" : "progress/current"))")
+                logger.info("🔄 XP sync: Local=\(localTotalXP), Remote=\(remoteTotalXP) (xp/state)")
                 logger.info("ℹ️ XP state stream should update DailyAwardService automatically")
             } else {
                 logger.info("✅ XP already in sync: \(localTotalXP)")

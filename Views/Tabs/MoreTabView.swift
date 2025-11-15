@@ -546,19 +546,19 @@ struct MoreTabView: View {
       }
       
       // Check progress document
-      print("\n📊 Fetching progress from Firestore...")
-      let progressDoc = try await db.collection("users").document(userId).collection("progress").document("current").getDocument()
+      print("\n📊 Fetching XP state from Firestore...")
+      let progressDoc = try await db.collection("users").document(userId).collection("xp").document("state").getDocument()
       if progressDoc.exists {
         let data = progressDoc.data() ?? [:]
         let totalXP = data["totalXP"] as? Int ?? 0
         let level = data["level"] as? Int ?? 1
         let dailyXP = data["dailyXP"] as? Int ?? 0
-        print("📊 Progress:")
+        print("📊 XP State:")
         print("   → totalXP: \(totalXP)")
         print("   → level: \(level)")
         print("   → dailyXP: \(dailyXP)")
       } else {
-        print("❌ No progress document found")
+        print("❌ No XP state document found")
       }
       
       // Check migration status

@@ -1,4 +1,4 @@
-import FirebaseCore
+import Combine
 import Foundation
 import OSLog
 import SwiftData
@@ -21,7 +21,8 @@ class XPManager {
   // 🔍 DIAGNOSTIC: Fail-fast registry for duplicate instances
   private static weak var _instance: XPManager?
 
-  init() {
+  init(awardService: DailyAwardService = .shared) {
+    self.awardService = awardService
     // 🔍 FAIL-FAST: Prevent multiple instances
     if let existing = XPManager._instance {
       let existingId = ObjectIdentifier(existing)
@@ -38,6 +39,15 @@ class XPManager {
     loadUserProgress()
     loadRecentTransactions()
     loadDailyAwards()
+    observeXPState()
+    
+    if let xpState = awardService.xpState {
+      applyXPState(xpState)
+    } else {
+      Task {
+        await awardService.refreshXPState()
+      }
+    }
     
     logger
       .info(
@@ -221,72 +231,11 @@ class XPManager {
   // MARK: - Data Persistence
 
   func saveUserProgress() {
-    // Save to UserDefaults (local backup)
-    if let encoded = try? JSONEncoder().encode(userProgress) {
-      userDefaults.set(encoded, forKey: userProgressKey)
-    } else {
-      print("❌ Failed to encode user progress")
-      return
-    }
-    
-    // ✅ Dual-write to Firestore (cloud backup)
-    Task {
-      guard await waitForFirebaseConfigurationIfNeeded() else {
-        logger.warning("⏸️ Skipping Firestore XP save - Firebase not configured yet")
-        return
-      }
-      
-      do {
-        let firestoreProgress = FirestoreUserProgress(
-          totalXP: userProgress.totalXP,
-          level: userProgress.currentLevel,
-          dailyXP: userProgress.dailyXP,
-          lastUpdated: Date(),
-          currentLevelXP: userProgress.xpForCurrentLevel,
-          nextLevelXP: userProgress.xpForNextLevel
-        )
-        
-        try await FirestoreService.shared.saveUserProgress(firestoreProgress)
-      } catch {
-        print("⚠️ Failed to sync XP to Firestore: \(error.localizedDescription)")
-        // Don't throw - local save succeeded
-      }
-    }
+    saveUserProgressToLocal()
   }
-
+  
   func loadUserProgress() {
-    // Try Firestore first (cloud-first strategy)
-    Task {
-      guard await waitForFirebaseConfigurationIfNeeded() else {
-        logger.debug("⏸️ Skipping Firestore XP load - Firebase not configured yet")
-        return
-      }
-      
-      do {
-        if let firestoreProgress = try await FirestoreService.shared.loadUserProgress() {
-          // Load from Firestore (authoritative source)
-          var newProgress = UserProgress()
-          newProgress.totalXP = firestoreProgress.totalXP
-          newProgress.currentLevel = firestoreProgress.level
-          newProgress.dailyXP = firestoreProgress.dailyXP
-          newProgress.xpForCurrentLevel = firestoreProgress.currentLevelXP ?? 0
-          newProgress.xpForNextLevel = firestoreProgress.nextLevelXP ?? 300
-          
-          userProgress = newProgress
-          totalXP = newProgress.totalXP
-          dailyXP = newProgress.dailyXP
-          updateLevelFromXP()
-          
-          // Sync to UserDefaults
-          saveUserProgressToLocal()
-          return
-        }
-      } catch {
-        // Silently fall back to local storage
-      }
-    }
-    
-    // Fallback to UserDefaults (local storage)
+    // Load last-known snapshot from local storage
     if let data = userDefaults.data(forKey: userProgressKey),
        let progress = try? JSONDecoder().decode(UserProgress.self, from: data)
     {
@@ -304,7 +253,7 @@ class XPManager {
     }
   }
   
-  /// Save to UserDefaults only (helper for syncing after Firestore load)
+  /// Save to UserDefaults (helper for syncing after XP state updates)
   private func saveUserProgressToLocal() {
     if let encoded = try? JSONEncoder().encode(userProgress) {
       userDefaults.set(encoded, forKey: userProgressKey)
@@ -342,19 +291,6 @@ class XPManager {
     }
     saveRecentTransactions()
     saveDailyAwards()
-
-    // Delete from Firestore
-    guard await waitForFirebaseConfigurationIfNeeded() else {
-      logger.warning("⏸️ Skipping Firestore XP delete - Firebase not configured yet")
-      return
-    }
-    
-    do {
-      try await FirestoreService.shared.deleteUserProgress()
-      logger.info("✅ XP data cleared from Firestore")
-    } catch {
-      logger.error("⚠️ Failed to clear XP from Firestore: \(error.localizedDescription)")
-    }
 
     logger.info("XP data cleared for sign-out - user will start fresh")
   }
@@ -495,6 +431,8 @@ class XPManager {
   private let userProgressKey = "user_progress"
   private let recentTransactionsKey = "recent_xp_transactions"
   private let dailyAwardsKey = "daily_xp_awards"
+  private let awardService: DailyAwardService
+  private var xpStateCancellable: AnyCancellable?
 
   /// Track which habits have been awarded XP today to prevent duplicates
   private var dailyAwards: [String: Set<UUID>] = [:]
@@ -507,26 +445,6 @@ class XPManager {
   /// Pure function to calculate level from XP
   private func level(forXP totalXP: Int) -> Int {
     Int(sqrt(Double(totalXP) / Double(levelBaseXP))) + 1
-  }
-
-  // MARK: - Firebase Coordination
-
-  private func waitForFirebaseConfigurationIfNeeded(timeout: TimeInterval = 3) async -> Bool {
-    if FirebaseBootstrapper.isConfigured {
-      return true
-    }
-    
-    let pollInterval: UInt64 = 50_000_000 // 50ms
-    let maxIterations = Int((timeout * 1_000_000_000) / Double(pollInterval))
-    
-    for _ in 0 ..< maxIterations {
-      try? await Task.sleep(nanoseconds: pollInterval)
-      if FirebaseBootstrapper.isConfigured {
-        return true
-      }
-    }
-    
-    return FirebaseBootstrapper.isConfigured
   }
 
   // MARK: - DEPRECATED XP Methods (DO NOT USE)
@@ -745,5 +663,28 @@ class XPManager {
     {
       dailyAwards = awards
     }
+  }
+
+  private func observeXPState() {
+    xpStateCancellable = awardService.$xpState
+      .receive(on: RunLoop.main)
+      .sink { [weak self] state in
+        guard let self, let state else { return }
+        self.applyXPState(state)
+      }
+  }
+  
+  private func applyXPState(_ state: XPState) {
+    totalXP = state.totalXP
+    currentLevel = max(1, state.level)
+    
+    var updatedProgress = userProgress
+    updatedProgress.totalXP = state.totalXP
+    updatedProgress.currentLevel = currentLevel
+    updatedProgress.xpForCurrentLevel = state.currentLevelXP
+    userProgress = updatedProgress
+    
+    updateLevelProgress()
+    saveUserProgress()
   }
 }
