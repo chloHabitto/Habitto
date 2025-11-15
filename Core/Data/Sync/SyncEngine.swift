@@ -892,7 +892,7 @@ actor SyncEngine {
                 "isCompleted": completion.isCompleted,
                 "progress": completion.progress,
                 "createdAt": Timestamp(date: completion.createdAt),
-                "updatedAt": Timestamp(date: completion.updatedAt ?? completion.createdAt),
+                "updatedAt": Timestamp(date: completion.updatedAt),
                 "completionId": completion.completionId
             ]
             

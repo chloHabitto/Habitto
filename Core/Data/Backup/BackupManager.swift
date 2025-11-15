@@ -278,17 +278,12 @@ class BackupManager: ObservableObject {
       throw BackupError.fileNotFound
     }
 
-    // Get file attributes to verify it has reasonable size
+    let rawData = try Data(contentsOf: backupURL)
+    _ = try decodeBackupPayload(from: rawData)
+
     let attributes = try fileManager.attributesOfItem(atPath: backupURL.path)
     let fileSize = attributes[.size] as? Int64 ?? 0
 
-    // Verify file has reasonable size (at least 100 bytes)
-    guard fileSize > 100 else {
-      throw BackupError.validationFailed("Backup file is too small or corrupted")
-    }
-
-    // For now, we'll consider a backup valid if it exists and has reasonable size
-    // The actual backup restoration functionality is tested separately
     logger.debug("Backup verification passed: \(snapshot.id) (size: \(fileSize) bytes)")
     return true
   }
@@ -882,31 +877,43 @@ class BackupManager: ObservableObject {
     to filePath: URL,
     compressionEnabled: Bool = true) async throws -> BackupFileInfo
   {
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    encoder.outputFormatting = .prettyPrinted
+    let backupEncoder = JSONEncoder()
+    backupEncoder.dateEncodingStrategy = .iso8601
+    backupEncoder.outputFormatting = .prettyPrinted
 
-    let jsonData = try encoder.encode(backupData)
+    let jsonData = try backupEncoder.encode(backupData)
 
-    let finalData: Data
+    let payloadData: Data
     let isCompressed: Bool
 
     if compressionEnabled {
-      finalData = try compressData(jsonData)
+      payloadData = try compressData(jsonData)
       isCompressed = true
     } else {
-      finalData = jsonData
+      payloadData = jsonData
       isCompressed = false
     }
 
     // Generate checksum for integrity verification
-    let checksum = generateChecksum(for: finalData)
+    let checksum = generateChecksum(for: payloadData)
 
-    // Write to file
-    try finalData.write(to: filePath)
+    // Wrap payload in envelope so we can detect compression and validate checksum later
+    let envelope = BackupFileEnvelope(
+      version: 1,
+      createdAt: backupData.createdAt,
+      appVersion: backupData.appVersion,
+      isCompressed: isCompressed,
+      checksum: checksum,
+      payload: payloadData)
 
-    // Get file attributes
-    let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
+    let envelopeEncoder = JSONEncoder()
+    envelopeEncoder.dateEncodingStrategy = .iso8601
+    let envelopeData = try envelopeEncoder.encode(envelope)
+
+    // Atomic write to avoid partial/corrupted files
+    try envelopeData.write(to: filePath, options: .atomic)
+
+    let attributes = try fileManager.attributesOfItem(atPath: filePath.path)
     let fileSize = attributes[.size] as? Int64 ?? 0
 
     return BackupFileInfo(
@@ -926,6 +933,37 @@ class BackupManager: ObservableObject {
   /// Decompress data using compression framework
   private func decompressData(_ compressedData: Data) throws -> Data {
     try compressedData.decompressed(algorithm: COMPRESSION_LZFSE)
+  }
+
+  /// Decode backup payload, supporting both envelope-based and legacy formats
+  private func decodeBackupPayload(from rawData: Data) throws -> (BackupData, BackupFileEnvelope?) {
+    let envelopeDecoder = JSONDecoder()
+    envelopeDecoder.dateDecodingStrategy = .iso8601
+
+    if let envelope = try? envelopeDecoder.decode(BackupFileEnvelope.self, from: rawData) {
+      if !envelope.checksum.isEmpty {
+        try verifyChecksum(for: envelope.payload, expectedChecksum: envelope.checksum)
+      }
+      let payload = envelope.isCompressed ? try decompressData(envelope.payload) : envelope.payload
+      let backupDecoder = JSONDecoder()
+      backupDecoder.dateDecodingStrategy = .iso8601
+      let backupData = try backupDecoder.decode(BackupData.self, from: payload)
+      return (backupData, envelope)
+    }
+
+    let backupDecoder = JSONDecoder()
+    backupDecoder.dateDecodingStrategy = .iso8601
+    if let legacyBackup = try? backupDecoder.decode(BackupData.self, from: rawData) {
+      return (legacyBackup, nil)
+    }
+
+    if let decompressed = try? decompressData(rawData),
+       let decompressedBackup = try? backupDecoder.decode(BackupData.self, from: decompressed)
+    {
+      return (decompressedBackup, nil)
+    }
+
+    throw BackupError.corruptedData("Unable to decode backup file payload")
   }
 
   /// Get user settings from UserDefaults
@@ -985,8 +1023,8 @@ class BackupManager: ObservableObject {
 
   private func performRestore(_ snapshot: BackupSnapshot) async throws {
     let backupURL = backupDirectory.appendingPathComponent(snapshot.id.uuidString)
-    let data = try Data(contentsOf: backupURL)
-    let backupData = try JSONDecoder().decode(BackupData.self, from: data)
+    let rawData = try Data(contentsOf: backupURL)
+    let (backupData, _) = try decodeBackupPayload(from: rawData)
 
     // Restore habits to storage - handle both legacy and new format
     let habitStore = HabitStore.shared
@@ -1040,7 +1078,7 @@ class BackupManager: ObservableObject {
       for fileURL in backupFiles {
         do {
           let data = try Data(contentsOf: fileURL)
-          let backupData = try JSONDecoder().decode(BackupData.self, from: data)
+          let (backupData, _) = try decodeBackupPayload(from: data)
 
           let snapshot = BackupSnapshot(
             id: backupData.id,
@@ -1089,15 +1127,20 @@ class BackupManager: ObservableObject {
       telemetryData["fileCreatedAt"] = iso8601Formatter.string(from: fileCreationDate)
     }
     
-    if
-      let rawData,
-      let metadataProbe = try? JSONDecoder().decode(BackupMetadataProbe.self, from: rawData)
-    {
-      if let backupCreatedAt = metadataProbe.createdAt {
-        telemetryData["backupCreatedAt"] = iso8601Formatter.string(from: backupCreatedAt)
-      }
-      if let version = metadataProbe.appVersion {
-        telemetryData["appVersion"] = version
+    if let rawData {
+      let decoder = JSONDecoder()
+      decoder.dateDecodingStrategy = .iso8601
+
+      if let envelope = try? decoder.decode(BackupFileEnvelope.self, from: rawData) {
+        telemetryData["backupCreatedAt"] = iso8601Formatter.string(from: envelope.createdAt)
+        telemetryData["appVersion"] = envelope.appVersion
+      } else if let metadataProbe = try? decoder.decode(BackupMetadataProbe.self, from: rawData) {
+        if let backupCreatedAt = metadataProbe.createdAt {
+          telemetryData["backupCreatedAt"] = iso8601Formatter.string(from: backupCreatedAt)
+        }
+        if let version = metadataProbe.appVersion {
+          telemetryData["appVersion"] = version
+        }
       }
     }
     
@@ -1112,6 +1155,16 @@ class BackupManager: ObservableObject {
 private struct BackupMetadataProbe: Decodable {
   let appVersion: String?
   let createdAt: Date?
+}
+
+/// Wrapper written to disk for each backup file so we can detect compression
+private struct BackupFileEnvelope: Codable {
+  let version: Int
+  let createdAt: Date
+  let appVersion: String
+  let isCompressed: Bool
+  let checksum: String
+  let payload: Data
 }
 
 // MARK: - BackupData

@@ -37,7 +37,8 @@ struct UserProgress: Codable, Identifiable {
 
     guard xpNeededForNextLevel > 0 else { return 0 }
     let progress = Double(xpInCurrentLevel) / Double(xpNeededForNextLevel)
-    return min(progress, 1.0) // Clamp to maximum of 1.0
+    // Clamp to a safe 0...1 range to avoid negative/NaN layout values in SwiftUI
+    return max(0, min(progress, 1.0))
   }
 
   var isCloseToLevelUp: Bool {
