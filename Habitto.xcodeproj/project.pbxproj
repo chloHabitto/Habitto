@@ -92,6 +92,7 @@
 		89A922902EC71A2100DE8197 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89A934F42EC4DC9D005115E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89A942C52EC7B9B000DE8197 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89A9D3E62EC88C1F00DE8197 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89ADBED72EAE91F400D15EA8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89B2DFB42E8D70FA008AC70D /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89B401F72E8E92BD00F8D589 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -473,6 +474,11 @@
 			sourceTree = "<group>";
 		};
 		89A942D42EC7B9B000DE8197 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		89A9D3F52EC88C1F00DE8197 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -996,6 +1002,10 @@
 					ProductGroup = 8935E4FD2E7C21CE004BF684 /* Products */;
 					ProjectRef = 8935E4F92E7C21CE004BF684 /* Habitto.xcodeproj */;
 				},
+				{
+					ProductGroup = 89A9D3F52EC88C1F00DE8197 /* Products */;
+					ProjectRef = 89A9D3E62EC88C1F00DE8197 /* Habitto.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -1164,8 +1174,8 @@
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
-				ENABLE_PREVIEWS = YES;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
+				ENABLE_PREVIEWS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
@@ -1182,23 +1192,20 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.3.2;
+				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SEPARATE_DSYM = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
-				STRIP_SWIFT_SYMBOLS = NO;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = debugging;
-				OTHER_SWIFT_FLAGS = (
-					"$(inherited)",
-					"-g",
-				);
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRIP_SWIFT_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				com.apple.developer.applesignin = "$(PRODUCT_BUNDLE_IDENTIFIER)";
@@ -1219,8 +1226,8 @@
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
-				ENABLE_PREVIEWS = YES;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
+				ENABLE_PREVIEWS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
@@ -1237,23 +1244,20 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.3.2;
+				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SEPARATE_DSYM = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
-				STRIP_SWIFT_SYMBOLS = NO;
 				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = debugging;
-				OTHER_SWIFT_FLAGS = (
-					"$(inherited)",
-					"-g",
-				);
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRIP_SWIFT_SYMBOLS = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				com.apple.developer.applesignin = "$(PRODUCT_BUNDLE_IDENTIFIER)";
