@@ -752,9 +752,9 @@ struct HabitEditView: View {
   private func CustomTextField(
     placeholder: String,
     text: Binding<String>,
-    isFocused: FocusState<Bool>.Binding? = nil) -> some View
+    isFocused: FocusState<Bool>.Binding) -> some View
   {
-    let field = TextField(placeholder, text: text)
+    TextField(placeholder, text: text)
       .font(.appBodyLarge)
       .foregroundColor(.text01)
       .textFieldStyle(PlainTextFieldStyle())
@@ -767,12 +767,7 @@ struct HabitEditView: View {
           .stroke(.outline3, lineWidth: 1.5))
       .cornerRadius(12)
       .fixedSize(horizontal: false, vertical: true)
-
-    if let isFocused {
-      field.focused(isFocused)
-    } else {
-      field
-    }
+      .focused(isFocused)
   }
 
   /// Helper function for selection rows with visual elements (matching create habit step 1)
@@ -881,14 +876,7 @@ struct HabitEditView: View {
       
       if baselineValue <= targetValue {
         baselineValue = max(targetValue + 5, 10)
-        print("⚠️ EDIT SAVE - Baseline (\(Int(form.baselineNumber) ?? 0)) <= target (\(targetValue))")
-        print("✅ EDIT SAVE - Auto-adjusted baseline to \(baselineValue) for breaking habit '\(form.habitName)'")
       }
-
-      print(
-        "🔍 EDIT SAVE - Habit Breaking: goalString: \(goalString), scheduleString: \(scheduleString)")
-      print(
-        "🔍 EDIT SAVE - Target: \(targetValue), Baseline: \(baselineValue)")
 
       updatedHabit = Habit(
         name: form.habitName,
