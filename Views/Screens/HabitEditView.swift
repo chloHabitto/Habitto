@@ -1273,6 +1273,8 @@ struct HabitEditView: View {
       baseline: updatedHabit.baseline,
       target: updatedHabit.target,
       completionHistory: habit.completionHistory, // Preserve original completion history
+      completionStatus: habit.completionStatus, // Preserve historical completion status
+      completionTimestamps: habit.completionTimestamps, // Preserve recorded completion times
       difficultyHistory: habit.difficultyHistory, // Preserve original difficulty history
       actualUsage: habit.actualUsage // Preserve original usage data
     )
