@@ -512,7 +512,7 @@ class XPManager {
   // MARK: - Firebase Coordination
 
   private func waitForFirebaseConfigurationIfNeeded(timeout: TimeInterval = 3) async -> Bool {
-    if FirebaseApp.app() != nil {
+    if FirebaseBootstrapper.isConfigured {
       return true
     }
     
@@ -521,12 +521,12 @@ class XPManager {
     
     for _ in 0 ..< maxIterations {
       try? await Task.sleep(nanoseconds: pollInterval)
-      if FirebaseApp.app() != nil {
+      if FirebaseBootstrapper.isConfigured {
         return true
       }
     }
     
-    return FirebaseApp.app() != nil
+    return FirebaseBootstrapper.isConfigured
   }
 
   // MARK: - DEPRECATED XP Methods (DO NOT USE)

@@ -15,21 +15,14 @@ enum AppEnvironment {
   // MARK: Internal
   
   static var isFirebaseConfigured: Bool {
-    // Check if GoogleService-Info.plist exists
+    // Check if GoogleService-Info.plist exists and is readable
     guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") else {
       print("⚠️ Env: GoogleService-Info.plist not found")
       return false
     }
     
-    // Check if plist is readable
-    guard let _ = NSDictionary(contentsOfFile: path) else {
+    guard NSDictionary(contentsOfFile: path) != nil else {
       print("⚠️ Env: GoogleService-Info.plist is not readable")
-      return false
-    }
-    
-    // Check if Firebase app is configured
-    guard FirebaseApp.app() != nil else {
-      print("⚠️ Env: Firebase not initialized")
       return false
     }
     
@@ -37,12 +30,11 @@ enum AppEnvironment {
   }
   
   static var firebaseConfigurationStatus: ConfigurationStatus {
-    if !isFirebaseConfigured {
+    guard isFirebaseConfigured else {
       return .missing
     }
     
-    // Verify required Firebase services are available
-    guard FirebaseApp.app() != nil else {
+    guard FirebaseBootstrapper.isConfigured else {
       return .invalid("Firebase app not initialized")
     }
     

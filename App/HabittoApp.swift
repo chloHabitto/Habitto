@@ -22,7 +22,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   private static var hasCompletedLaunch = false
   
   override init() {
-    FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.init")
     super.init()
     guard !Self.hasLoggedInit else { return }
     Self.hasLoggedInit = true
@@ -42,13 +41,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     Self.hasCompletedLaunch = true
     
+    FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
+    
     // Use both print and NSLog to ensure visibility - SYNCHRONOUSLY at the very start
     debugLog("🚀 AppDelegate: didFinishLaunchingWithOptions called")
     NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")
     fflush(stdout) // Force flush to ensure log appears immediately
     
     FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
-    debugLog("✅ AppDelegate: Firebase already configured")
+    debugLog("✅ AppDelegate: Firebase configured (or already configured)")
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
     let remoteConfig = RemoteConfig.remoteConfig()
@@ -282,7 +283,6 @@ struct HabittoApp: App {
     // Force the UIApplicationDelegateAdaptor to instantiate AppDelegate before configuring Firebase.
     // This ensures GoogleUtilities' AppDelegate swizzler sees a valid delegate instance.
     _ = delegate
-    FirebaseBootstrapper.configureIfNeeded(source: "HabittoApp.init")
   }
 
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate

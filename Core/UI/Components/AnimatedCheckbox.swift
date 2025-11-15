@@ -16,7 +16,7 @@ struct AnimatedCheckbox: View {
         // Background circle
         Circle()
           .fill(isChecked ? accentColor : Color.white)
-          .frame(width: 30, height: 30)
+          .frame(width: 26, height: 26)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .scaleEffect(isAnimating ? 1.2 : 1.0)
           .animation(
@@ -26,7 +26,7 @@ struct AnimatedCheckbox: View {
         // Stroke circle
         Circle()
           .stroke(isChecked ? Color.white : Color.outline3, lineWidth: 2)
-          .frame(width: 30, height: 30)
+          .frame(width: 26, height: 26)
           .scaleEffect(isAnimating ? 1.2 : 1.0)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .animation(
@@ -44,7 +44,7 @@ struct AnimatedCheckbox: View {
       }
     }
     .buttonStyle(PlainButtonStyle())
-    .frame(width: 44, height: 44)
+    .frame(width: 36, height: 36)
     .contentShape(Rectangle())
     .onHover { hovering in
       isHovered = hovering
