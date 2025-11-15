@@ -623,6 +623,8 @@ struct HabitEditView: View {
               Spacer()
               Button("Done") {
                 // Dismiss all focused fields
+                isNameFieldFocused = false
+                isDescriptionFieldFocused = false
                 isGoalNumberFocused = false
                 isBaselineFieldFocused = false
                 isTargetFieldFocused = false
