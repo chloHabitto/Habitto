@@ -21,31 +21,6 @@ struct HabitEditView: View {
 
   // MARK: Private
 
-  /// Custom modifier to handle focus and tap gesture
-  private struct FocusModifier: ViewModifier {
-    let isFocused: FocusState<Bool>.Binding?
-    let showTapGesture: Bool
-
-    func body(content: Content) -> some View {
-      if let isFocused {
-        content
-          .focused(isFocused)
-          .onTapGesture {
-            // Only focus if explicitly requested via showTapGesture
-            if showTapGesture {
-              isFocused.wrappedValue = true
-            }
-          }
-      } else {
-        content
-          .onTapGesture {
-            // For fields without focus binding, just ensure they can be tapped
-            // SwiftUI will handle focus automatically
-          }
-      }
-    }
-  }
-
   @FocusState private var isGoalNumberFocused: Bool
   @FocusState private var isBaselineFieldFocused: Bool
   @FocusState private var isTargetFieldFocused: Bool
@@ -210,15 +185,13 @@ struct HabitEditView: View {
       CustomTextField(
         placeholder: "Name",
         text: $form.habitName,
-        isFocused: $isNameFieldFocused,
-        showTapGesture: false)
+        isFocused: $isNameFieldFocused)
 
       // Description
       CustomTextField(
         placeholder: "Description (Optional)",
         text: $form.habitDescription,
-        isFocused: $isDescriptionFieldFocused,
-        showTapGesture: false)
+        isFocused: $isDescriptionFieldFocused)
 
       // Color Selection (moved before Icon to match creation flow)
       VisualSelectionRow(
@@ -402,12 +375,7 @@ struct HabitEditView: View {
             ToolbarItemGroup(placement: .keyboard) {
               Spacer()
               Button("Done") {
-                // Dismiss all focused fields
-                isNameFieldFocused = false
-                isDescriptionFieldFocused = false
-                isGoalNumberFocused = false
-                isBaselineFieldFocused = false
-                isTargetFieldFocused = false
+                resignAllFocus()
               }
               .font(.appBodyMedium)
               .foregroundColor(.white)
@@ -418,20 +386,14 @@ struct HabitEditView: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-              Button("Done") {
+              Button("Close") {
                 dismiss()
               }
               .foregroundColor(.primary)
             }
           }
-          .navigationTitle("Edit habit")
-          .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: isNameFieldFocused) { oldValue, newValue in
-          print("🔍 HabitEditView: Name field focus changed from \(oldValue) to \(newValue)")
-        }
-        .onChange(of: isDescriptionFieldFocused) { oldValue, newValue in
-          print("🔍 HabitEditView: Description field focus changed from \(oldValue) to \(newValue)")
-        }
+        .navigationTitle("Edit habit")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEmojiPicker) {
           EmojiKeyboardBottomSheet(
             selectedEmoji: $form.selectedIcon,
@@ -786,13 +748,13 @@ struct HabitEditView: View {
 
   // MARK: - Custom TextField Component (same as CreateHabitStep1View)
 
+  @ViewBuilder
   private func CustomTextField(
     placeholder: String,
     text: Binding<String>,
-    isFocused: FocusState<Bool>.Binding? = nil,
-    showTapGesture: Bool = false) -> some View
+    isFocused: FocusState<Bool>.Binding? = nil) -> some View
   {
-    TextField(placeholder, text: text)
+    let field = TextField(placeholder, text: text)
       .font(.appBodyLarge)
       .foregroundColor(.text01)
       .textFieldStyle(PlainTextFieldStyle())
@@ -805,7 +767,12 @@ struct HabitEditView: View {
           .stroke(.outline3, lineWidth: 1.5))
       .cornerRadius(12)
       .fixedSize(horizontal: false, vertical: true)
-      .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
+
+    if let isFocused {
+      field.focused(isFocused)
+    } else {
+      field
+    }
   }
 
   /// Helper function for selection rows with visual elements (matching create habit step 1)
@@ -858,9 +825,19 @@ struct HabitEditView: View {
   }
   
   private func scrollToField(_ target: ScrollTarget, with proxy: ScrollViewProxy) {
-    DispatchQueue.main.async {
-      proxy.scrollTo(target, anchor: .top)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      withAnimation(.easeInOut(duration: 0.3)) {
+        proxy.scrollTo(target, anchor: .center)
+      }
     }
+  }
+
+  private func resignAllFocus() {
+    isNameFieldFocused = false
+    isDescriptionFieldFocused = false
+    isGoalNumberFocused = false
+    isBaselineFieldFocused = false
+    isTargetFieldFocused = false
   }
 
   // MARK: - Save Function
