@@ -152,7 +152,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
             startDate: habit.startDate,
             endDate: habit.endDate,
             baseline: habit.baseline,
-            target: habit.target)
+            target: habit.target,
+            goalHistory: habit.goalHistory)
 
           // ✅ MIGRATION FIX: Create CompletionRecords from Firestore completionHistory
           // Problem was: old code checked `progress == 1` which was wrong
@@ -540,7 +541,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
           startDate: habit.startDate,
           endDate: habit.endDate,
           baseline: habit.baseline,
-          target: habit.target)
+          target: habit.target,
+          goalHistory: habit.goalHistory)
 
         // ✅ MIGRATION FIX: Create CompletionRecords from Firestore completionHistory
         // Problem was: old code checked `progress == 1` which was wrong

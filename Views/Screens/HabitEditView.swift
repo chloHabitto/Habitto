@@ -1255,6 +1255,16 @@ struct HabitEditView: View {
         target: targetValue)
     }
 
+    var updatedGoalHistory = habit.goalHistory
+    if updatedGoalHistory.isEmpty {
+      let startKey = Habit.dateKey(for: habit.startDate)
+      updatedGoalHistory[startKey] = habit.goal
+    }
+    if habit.goal != updatedHabit.goal {
+      let todayKey = Habit.dateKey(for: Date())
+      updatedGoalHistory[todayKey] = updatedHabit.goal
+    }
+
     // Create a new habit with the original ID, preserving all existing completion data
     updatedHabit = Habit(
       id: habit.id,
@@ -1276,7 +1286,8 @@ struct HabitEditView: View {
       completionStatus: habit.completionStatus, // Preserve historical completion status
       completionTimestamps: habit.completionTimestamps, // Preserve recorded completion times
       difficultyHistory: habit.difficultyHistory, // Preserve original difficulty history
-      actualUsage: habit.actualUsage // Preserve original usage data
+      actualUsage: habit.actualUsage, // Preserve original usage data
+      goalHistory: updatedGoalHistory
     )
 
     // ✅ PHASE 4: Completion status is now computed-only, no need to recalculate

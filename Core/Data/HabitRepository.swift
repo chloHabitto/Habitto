@@ -834,7 +834,7 @@ class HabitRepository: ObservableObject {
 
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
       // Set completionStatus[dateKey] = true when progress >= goal
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: updatedHabit.goal)
+      let goalAmount = updatedHabit.goalAmount(for: date)
       let isComplete = progress >= goalAmount
       updatedHabit.completionStatus[dateKey] = isComplete
       #if DEBUG

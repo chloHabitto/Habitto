@@ -1185,7 +1185,7 @@ struct HomeTabView: View {
       // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
       // Both check: progress >= goal (extracted from goal string)
       let progress = habitData.completionHistory[dateKey] ?? 0
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+      let goalAmount = habitData.goalAmount(for: selectedDate)
       
       let isComplete: Bool
       if goalAmount > 0 {
