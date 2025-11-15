@@ -510,7 +510,7 @@ struct Streak: Codable {
 
 // MARK: - FirestoreDailyAward
 
-/// Daily award document stored in /users/{uid}/progress/daily_awards/{YYYY-MM}/{DD}
+/// Daily award document stored in /users/{uid}/daily_awards/{userIdDateKey}
 struct FirestoreDailyAward: Codable {
   var date: String // "YYYY-MM-DD"
   var xpGranted: Int
@@ -598,7 +598,7 @@ struct FirestoreDailyAward: Codable {
 
 // MARK: - FirestoreUserProgress
 
-/// User progress document stored in /users/{uid}/progress/current
+/// User progress document stored in /users/{uid}/xp/state
 struct FirestoreUserProgress: Codable {
   var totalXP: Int
   var level: Int
@@ -628,10 +628,11 @@ struct FirestoreUserProgress: Codable {
   
   static func from(data: [String: Any]) -> FirestoreUserProgress? {
     guard let totalXP = data["totalXP"] as? Int,
-          let level = data["level"] as? Int,
-          let dailyXP = data["dailyXP"] as? Int else {
+          let level = data["level"] as? Int else {
       return nil
     }
+    
+    let dailyXP = data["dailyXP"] as? Int ?? 0
     
     let lastUpdated: Date
     if let timestamp = data["lastUpdated"] as? Date {

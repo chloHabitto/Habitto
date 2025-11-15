@@ -274,33 +274,10 @@ class FirestoreService: FirebaseService, ObservableObject {
     // Use transaction to prevent race conditions
     let docRef = db.collection("users")
       .document(userId)
-      .collection("progress")
-      .document("current")
+      .collection("xp")
+      .document("state")
     
-    // ✅ FIX: Explicitly discard transaction result to silence warning
-    _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
-      let snapshot: DocumentSnapshot
-      do {
-        snapshot = try transaction.getDocument(docRef)
-      } catch let error as NSError {
-        errorPointer?.pointee = error
-        return nil
-      }
-      
-      // Check if we should update (use latest timestamp)
-      if let existingData = snapshot.data(),
-         let existingTimestamp = existingData["lastUpdated"] as? Timestamp {
-        let existingDate = existingTimestamp.dateValue()
-        
-        // Only update if new data is more recent
-        if progress.lastUpdated <= existingDate {
-          return nil
-        }
-      }
-      
-      transaction.setData(progressData, forDocument: docRef)
-      return nil
-    })
+    try await docRef.setData(progressData, merge: true)
   }
   
   /// Load user's current progress
@@ -316,8 +293,8 @@ class FirestoreService: FirebaseService, ObservableObject {
     
     let snapshot = try await db.collection("users")
       .document(userId)
-      .collection("progress")
-      .document("current")
+      .collection("xp")
+      .document("state")
       .getDocument()
     
     guard snapshot.exists, let data = snapshot.data() else {
@@ -339,26 +316,33 @@ class FirestoreService: FirebaseService, ObservableObject {
       return
     }
     
-    do {
-      // Delete all documents in the progress collection
-      // This includes the "current" document and any other progress data
-      let progressCollection = db.collection("users")
-        .document(userId)
-        .collection("progress")
-      
-      // Get all documents in the progress collection
-      let snapshot = try await progressCollection.getDocuments()
-      
-      for document in snapshot.documents {
-        try await document.reference.delete()
+    // Delete xp/state document
+    try? await db.collection("users")
+      .document(userId)
+      .collection("xp")
+      .document("state")
+      .delete()
+    
+    // Delete XP ledger entries
+    if let ledgerSnapshot = try? await db.collection("users")
+      .document(userId)
+      .collection("xp_ledger")
+      .getDocuments()
+    {
+      for document in ledgerSnapshot.documents {
+        try? await document.reference.delete()
       }
-      
-      // Note: Subcollections under documents (like daily_awards subcollections)
-      // are not automatically deleted and would need to be deleted separately
-      // For now, we're deleting the main progress documents which is the critical data
-    } catch {
-      print("❌ Firestore XP deletion failed: \(error)")
-      // Don't throw - we want to continue even if Firestore deletion fails
+    }
+    
+    // Delete daily awards
+    if let awardsSnapshot = try? await db.collection("users")
+      .document(userId)
+      .collection("daily_awards")
+      .getDocuments()
+    {
+      for document in awardsSnapshot.documents {
+        try? await document.reference.delete()
+      }
     }
   }
   
@@ -373,26 +357,18 @@ class FirestoreService: FirebaseService, ObservableObject {
       throw FirestoreServiceError.notAuthenticated
     }
     
-    // Parse date to extract year-month and day
-    // Format: "YYYY-MM-DD" -> month: "YYYY-MM", day: "DD"
-    let components = award.date.split(separator: "-")
-    guard components.count == 3 else {
-      throw FirestoreServiceError.invalidData
-    }
+    var awardData = award.toFirestoreData()
+    let documentId = "\(userId)#\(award.date)"
+    awardData["userId"] = userId
+    awardData["userIdDateKey"] = documentId
+    awardData["dateKey"] = award.date
     
-    let yearMonth = "\(components[0])-\(components[1])" // "YYYY-MM"
-    let day = String(components[2]) // "DD"
-    
-    let awardData = award.toFirestoreData()
-    
-    // Path: /users/{uid}/progress/daily_awards/{YYYY-MM}/{DD}
+    // Path: /users/{uid}/daily_awards/{userIdDateKey}
     try await db.collection("users")
       .document(userId)
-      .collection("progress")
-      .document("daily_awards")
-      .collection(yearMonth)
-      .document(day)
-      .setData(awardData)
+      .collection("daily_awards")
+      .document(documentId)
+      .setData(awardData, merge: true)
   }
   
   /// Load daily awards for a specific month
@@ -406,11 +382,34 @@ class FirestoreService: FirebaseService, ObservableObject {
       throw FirestoreServiceError.notAuthenticated
     }
     
+    let calendar = Calendar(identifier: .gregorian)
+    var components = DateComponents()
+    let yearMonthParts = yearMonth.split(separator: "-")
+    guard yearMonthParts.count == 2,
+          let year = Int(yearMonthParts[0]),
+          let month = Int(yearMonthParts[1]) else {
+      throw FirestoreServiceError.invalidData
+    }
+    components.year = year
+    components.month = month
+    components.day = 1
+    
+    guard let monthDate = calendar.date(from: components),
+          let nextMonth = calendar.date(byAdding: .month, value: 1, to: monthDate) else {
+      throw FirestoreServiceError.invalidData
+    }
+    
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone(identifier: "Europe/Amsterdam")
+    let monthStartKey = formatter.string(from: monthDate)
+    let nextMonthKey = formatter.string(from: nextMonth)
+    
     let snapshot = try await db.collection("users")
       .document(userId)
-      .collection("progress")
-      .document("daily_awards")
-      .collection(yearMonth)
+      .collection("daily_awards")
+      .whereField("date", isGreaterThanOrEqualTo: monthStartKey)
+      .whereField("date", isLessThan: nextMonthKey)
       .getDocuments()
     
     let awards = snapshot.documents.compactMap { doc -> FirestoreDailyAward? in
