@@ -270,8 +270,6 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
-    FirebaseBootstrapper.configureIfNeeded(source: "HabittoApp.init")
-    
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
     _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
     _migrationService = StateObject(wrappedValue: MigrationService.shared)
@@ -280,6 +278,11 @@ struct HabittoApp: App {
     _vacationManager = StateObject(wrappedValue: VacationManager.shared)
     _themeManager = StateObject(wrappedValue: ThemeManager.shared)
     _xpManager = State(initialValue: XPManager.shared)
+
+    // Force the UIApplicationDelegateAdaptor to instantiate AppDelegate before configuring Firebase.
+    // This ensures GoogleUtilities' AppDelegate swizzler sees a valid delegate instance.
+    _ = delegate
+    FirebaseBootstrapper.configureIfNeeded(source: "HabittoApp.init")
   }
 
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
