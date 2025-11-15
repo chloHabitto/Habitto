@@ -5,210 +5,19 @@ struct HabitEditView: View {
   // MARK: Lifecycle
 
   init(habit: Habit, onSave: @escaping (Habit) -> Void) {
-    self.habit = habit
     self.onSave = onSave
-
-    self._habitName = State(initialValue: habit.name)
-    self._habitDescription = State(initialValue: habit.description)
-    self._selectedIcon = State(initialValue: habit.icon)
-    self._selectedColor = State(initialValue: habit.color.color)
-    self._selectedHabitType = State(initialValue: habit.habitType)
-    self._selectedSchedule = State(initialValue: habit.schedule)
-    self._selectedReminder = State(initialValue: habit.reminder)
-    self._isReminderEnabled = State(initialValue: !habit.reminder.isEmpty)
-    self._reminders = State(initialValue: habit.reminders)
-    self._startDate = State(initialValue: habit.startDate)
-    self._endDate = State(initialValue: habit.endDate)
-
-    // Initialize goal/baseline/target data from saved habit
-    let today = LegacyDateUtils.today()
-    let todayGoalString = habit.goalString(for: today)
-
-    if habit.habitType == .formation {
-      // Parse habit building goal data from habit.goal string
-      let parsedGoal = Self.parseGoalString(todayGoalString)
-      print(
-        "🔍 EDIT INIT - Habit Building: \(todayGoalString) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
-      self._goalNumber = State(initialValue: parsedGoal.number)
-      self._goalUnit = State(initialValue: parsedGoal.unit)
-      self._goalFrequency = State(initialValue: parsedGoal.frequency)
-
-      // Set defaults for unused fields
-      self._baselineNumber = State(initialValue: "1")
-      self._baselineUnit = State(initialValue: "time")
-      self._baselineFrequency = State(initialValue: "everyday")
-      self._targetNumber = State(initialValue: "1")
-      self._targetUnit = State(initialValue: "time")
-      self._targetFrequency = State(initialValue: "everyday")
-    } else {
-      // Parse habit breaking data from habit.goal string and habit properties
-      let parsedGoal = Self.parseGoalString(todayGoalString)
-      print(
-        "🔍 EDIT INIT - Habit Breaking: \(todayGoalString) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
-      print("🔍 EDIT INIT - Schedule: \(habit.schedule), Baseline: \(habit.baseline)")
-
-      // For habit breaking, goal string contains target info
-      self._targetNumber = State(initialValue: parsedGoal.number)
-      self._targetUnit = State(initialValue: parsedGoal.unit)
-      self
-        ._targetFrequency = State(initialValue: parsedGoal.frequency) // Frequency from goal string
-
-      // Use baseline from habit properties
-      self._baselineNumber = State(initialValue: String(habit.baseline))
-      self._baselineUnit = State(initialValue: parsedGoal.unit) // Assume same unit
-      self._baselineFrequency = State(initialValue: "everyday") // Default, not used for schedule
-
-      // Set defaults for unused goal fields
-      self._goalNumber = State(initialValue: "1")
-      self._goalUnit = State(initialValue: "time")
-      self._goalFrequency = State(initialValue: "everyday")
-    }
+    self._form = StateObject(wrappedValue: HabitEditFormState(habit: habit))
   }
 
   // MARK: Internal
 
-  let habit: Habit
   let onSave: (Habit) -> Void
+  @StateObject private var form: HabitEditFormState
 
   var body: some View {
     mainViewWithSheets
   }
 
-  // MARK: - Static Helper Functions
-
-  static func sortFrequencyChronologically(_ frequency: String) -> String {
-    // Sort weekdays in chronological order for display
-    // e.g., "every friday, every monday" → "every monday, every friday"
-
-    let lowercasedFrequency = frequency.lowercased()
-
-    // Check if it contains multiple weekdays
-    if lowercasedFrequency.contains("every"), lowercasedFrequency.contains(",") {
-      // Extract individual day phrases
-      let dayPhrases = frequency.components(separatedBy: ", ")
-
-      // Sort by weekday order
-      let weekdayOrder = [
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday"
-      ]
-
-      let sortedPhrases = dayPhrases.sorted { phrase1, phrase2 in
-        let lowercased1 = phrase1.lowercased()
-        let lowercased2 = phrase2.lowercased()
-
-        // Find which weekday each phrase contains
-        let day1Index = weekdayOrder.firstIndex { lowercased1.contains($0) } ?? 99
-        let day2Index = weekdayOrder.firstIndex { lowercased2.contains($0) } ?? 99
-
-        return day1Index < day2Index
-      }
-
-      return sortedPhrases.joined(separator: ", ")
-    }
-
-    // Return as-is if it's not a multi-day weekday frequency
-    return frequency
-  }
-
-  static func parseGoalString(_ goalString: String)
-    -> (number: String, unit: String, frequency: String)
-  {
-    // Goal strings are in format:
-    // Habit Building: "3 times on everyday" or "1 time on monday"
-    // Habit Breaking: "1 time on everyday" or "2 times on monday" (changed from "per" to "on")
-    // Legacy Habit Breaking: "1 time per everyday" (support old format)
-
-    // Extract number (first part)
-    let components = goalString.components(separatedBy: " ")
-    let number = components.first ?? "1"
-
-    // Extract unit and frequency
-    if goalString.contains(" on ") {
-      // Both habit building and new habit breaking format: "3 times on everyday"
-      let parts = goalString.components(separatedBy: " on ")
-      let beforeOn = parts[0] // "3 times"
-      let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
-
-      // Sort and format frequency before returning
-      let sortedFrequency = sortFrequencyChronologically(rawFrequency)
-      let frequency = formatFrequencyText(sortedFrequency)
-
-      // Extract unit from "3 times"
-      let unitComponents = beforeOn.components(separatedBy: " ")
-      let unit = unitComponents.count > 1 ? unitComponents[1] : "time"
-
-      return (number: number, unit: unit, frequency: frequency)
-    } else if goalString.contains(" per ") {
-      // Legacy habit breaking format: "1 time per everyday" (for backward compatibility)
-      let parts = goalString.components(separatedBy: " per ")
-      let beforePer = parts[0] // "1 time"
-      let rawFrequency = parts.count > 1 ? parts[1] : "everyday"
-
-      // Sort and format frequency before returning
-      let sortedFrequency = sortFrequencyChronologically(rawFrequency)
-      let frequency = formatFrequencyText(sortedFrequency)
-
-      // Extract unit from "1 time"
-      let unitComponents = beforePer.components(separatedBy: " ")
-      let unit = unitComponents.count > 1 ? unitComponents[1] : "time"
-
-      return (number: number, unit: unit, frequency: frequency)
-    } else {
-      // Format without "on"/"per" (e.g., "2 times everyday")
-      let tokens = goalString.components(separatedBy: " ")
-      let numberToken = tokens.first ?? "1"
-      let unitToken = tokens.count > 1 ? tokens[1] : "time"
-      let rawFrequency = tokens.count > 2 ? tokens.dropFirst(2).joined(separator: " ") : "everyday"
-      let frequency = formatFrequencyText(rawFrequency)
-      return (number: numberToken, unit: unitToken, frequency: frequency)
-    }
-  }
-  
-  /// Converts old frequency formats to new standardized formats
-  static func formatFrequencyText(_ frequency: String) -> String {
-    let lowerFreq = frequency.lowercased()
-    
-    // Check for "X day(s) a week" patterns
-    if lowerFreq.contains("day a week") || lowerFreq.contains("days a week") {
-      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*week"#, options: .caseInsensitive),
-         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
-        let range = match.range(at: 1)
-        if let numberRange = Range(range, in: frequency),
-           let number = Int(frequency[numberRange]) {
-          switch number {
-          case 1: return "once a week"
-          case 2: return "twice a week"
-          case 7: return "everyday"
-          default: return "\(number) days a week"
-          }
-        }
-      }
-    }
-    
-    // Check for "X day(s) a month" patterns
-    if lowerFreq.contains("day a month") || lowerFreq.contains("days a month") {
-      if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*month"#, options: .caseInsensitive),
-         let match = regex.firstMatch(in: frequency, options: [], range: NSRange(location: 0, length: frequency.count)) {
-        let range = match.range(at: 1)
-        if let numberRange = Range(range, in: frequency),
-           let number = Int(frequency[numberRange]) {
-          switch number {
-          case 1: return "once a month"
-          case 2: return "twice a month"
-          default: return "\(number) days a month"
-          }
-        }
-      }
-    }
-    
-    return frequency
-  }
 
   // MARK: Private
 
@@ -249,28 +58,6 @@ struct HabitEditView: View {
 
   @Environment(\.dismiss) private var dismiss
 
-  @State private var habitName: String
-  @State private var habitDescription: String
-  @State private var selectedIcon: String
-  @State private var selectedColor: Color
-  @State private var selectedHabitType: HabitType
-  @State private var selectedSchedule: String
-  @State private var selectedReminder: String
-  @State private var isReminderEnabled: Bool
-  @State private var reminders: [ReminderItem]
-  @State private var startDate: Date
-  @State private var endDate: Date?
-
-  // NEW UNIFIED APPROACH - Unified state for both habit building and breaking
-  @State private var goalNumber = "1"
-  @State private var goalUnit = "time"
-  @State private var goalFrequency = "everyday"
-  @State private var baselineNumber = "1"
-  @State private var baselineUnit = "time"
-  @State private var baselineFrequency = "everyday"
-  @State private var targetNumber = "1"
-  @State private var targetUnit = "time"
-  @State private var targetFrequency = "everyday"
   @State private var showingGoalUnitSheet = false
   @State private var showingGoalFrequencySheet = false
   @State private var showingBaselineUnitSheet = false
@@ -293,41 +80,43 @@ struct HabitEditView: View {
   @FocusState private var isNameFieldFocused: Bool
   @FocusState private var isDescriptionFieldFocused: Bool
 
+  private var originalHabit: Habit { form.originalHabit }
+
   /// Computed property to check if any changes have been made
   private var hasChanges: Bool {
     // Check basic fields
-    let basicChanges = habitName != habit.name ||
-      habitDescription != habit.description ||
-      selectedIcon != habit.icon ||
-      selectedColor != habit.color.color ||
-      selectedHabitType != habit.habitType ||
-      selectedReminder != habit.reminder ||
-      reminders != habit.reminders ||
-      startDate != habit.startDate ||
-      endDate != habit.endDate
+    let basicChanges = form.habitName != originalHabit.name ||
+      form.habitDescription != originalHabit.description ||
+      form.selectedIcon != originalHabit.icon ||
+      form.selectedColor != originalHabit.color.color ||
+      form.selectedHabitType != originalHabit.habitType ||
+      form.selectedReminder != originalHabit.reminder ||
+      form.reminders != originalHabit.reminders ||
+      form.startDate != originalHabit.startDate ||
+      form.endDate != originalHabit.endDate
 
     // Check schedule changes (different logic for habit building vs breaking)
-    let scheduleChanges: Bool = if selectedHabitType == .formation {
+    let scheduleChanges: Bool = if form.selectedHabitType == .formation {
       // For habit building, schedule is derived from goal frequency
-      goalFrequency != habit.schedule
+      form.goalFrequency != originalHabit.schedule
     } else {
       // For habit breaking, schedule is derived from baseline frequency
-      baselineFrequency != habit.schedule
+      form.baselineFrequency != originalHabit.schedule
     }
 
     // Check unified approach fields
     var unifiedChanges = false
 
-    if selectedHabitType == .formation {
+    if form.selectedHabitType == .formation {
       // For habit building, check goal fields
-      let currentGoal = "\(goalNumber) \(pluralizedGoalUnit) on \(goalFrequency)"
-      let originalGoal = habit.goal
+      let currentGoal = "\(form.goalNumber) \(pluralizedGoalUnit) on \(form.goalFrequency)"
+      let originalGoal = originalHabit.goal
       unifiedChanges = currentGoal != originalGoal
     } else {
       // For habit breaking, check baseline and target fields
-      let currentBaseline = Int(baselineNumber) ?? 0
-      let currentTarget = Int(targetNumber) ?? 0
-      unifiedChanges = currentBaseline != habit.baseline || currentTarget != habit.target
+      let currentBaseline = Int(form.baselineNumber) ?? 0
+      let currentTarget = Int(form.targetNumber) ?? 0
+      unifiedChanges = currentBaseline != originalHabit.baseline || currentTarget != originalHabit.target
     }
 
     return basicChanges || scheduleChanges || unifiedChanges
@@ -335,48 +124,48 @@ struct HabitEditView: View {
 
   /// NEW Unified computed properties
   private var pluralizedGoalUnit: String {
-    let number = Int(goalNumber) ?? 1
+    let number = Int(form.goalNumber) ?? 1
     if number == 0 {
       return "time" // Always show singular for 0
     }
-    return pluralizedUnit(number, unit: goalUnit)
+    return pluralizedUnit(number, unit: form.goalUnit)
   }
 
   private var pluralizedBaselineUnit: String {
-    let number = Int(baselineNumber) ?? 1
+    let number = Int(form.baselineNumber) ?? 1
     if number == 0 {
       return "time" // Always show singular for 0
     }
-    return pluralizedUnit(number, unit: baselineUnit)
+    return pluralizedUnit(number, unit: form.baselineUnit)
   }
 
   private var pluralizedTargetUnit: String {
-    let number = Int(targetNumber) ?? 1
+    let number = Int(form.targetNumber) ?? 1
     if number == 0 {
       return "time" // Always show singular for 0
     }
-    return pluralizedUnit(number, unit: targetUnit)
+    return pluralizedUnit(number, unit: form.targetUnit)
   }
 
   /// NEW Unified computed properties for validation
   private var isGoalValid: Bool {
-    let number = Int(goalNumber) ?? 0
+    let number = Int(form.goalNumber) ?? 0
     return number > 0
   }
 
   private var isBaselineValid: Bool {
-    let number = Int(baselineNumber) ?? 0
+    let number = Int(form.baselineNumber) ?? 0
     return number > 0
   }
 
   private var isTargetValid: Bool {
-    let number = Int(targetNumber) ?? 0
+    let number = Int(form.targetNumber) ?? 0
     return number >= 0 // Allow 0 for reduction goal in habit breaking
   }
 
   /// Overall form validation
   private var isFormValid: Bool {
-    if selectedHabitType == .formation {
+    if form.selectedHabitType == .formation {
       isGoalValid
     } else {
       isBaselineValid && isTargetValid
@@ -429,30 +218,30 @@ struct HabitEditView: View {
       // Habit Name
       CustomTextField(
         placeholder: "Name",
-        text: $habitName,
+        text: $form.habitName,
         isFocused: $isNameFieldFocused,
         showTapGesture: false)
 
       // Description
       CustomTextField(
         placeholder: "Description (Optional)",
-        text: $habitDescription,
+        text: $form.habitDescription,
         isFocused: $isDescriptionFieldFocused,
         showTapGesture: false)
 
       // Color Selection (moved before Icon to match creation flow)
       VisualSelectionRow(
         title: "Colour",
-        color: selectedColor,
-        value: getColorDisplayName(selectedColor),
+        color: form.selectedColor,
+        value: getColorDisplayName(form.selectedColor),
         action: { showingColorSheet = true })
 
       // Icon Selection (moved after Color to match creation flow)
       VisualSelectionRow(
         title: "Icon",
-        color: selectedColor,
-        icon: selectedIcon,
-        value: getIconDisplayName(selectedIcon),
+        color: form.selectedColor,
+        icon: form.selectedIcon,
+        value: getIconDisplayName(form.selectedIcon),
         action: { showingEmojiPicker = true })
 
       // Habit Type
@@ -463,13 +252,13 @@ struct HabitEditView: View {
   @ViewBuilder
   private var goalSection: some View {
     // Goal - NEW UNIFIED APPROACH
-    if selectedHabitType == .formation {
+    if form.selectedHabitType == .formation {
       UnifiedInputElement(
         title: "Goal",
         description: "What do you want to achieve?",
-        numberText: $goalNumber,
+        numberText: $form.goalNumber,
         unitText: pluralizedGoalUnit,
-        frequencyText: goalFrequency,
+        frequencyText: form.goalFrequency,
         isValid: isGoalValid,
         errorMessage: "Please enter a number greater than 0",
         onUnitTap: { showingGoalUnitSheet = true },
@@ -484,9 +273,9 @@ struct HabitEditView: View {
         UnifiedInputElement(
           title: "Current",
           description: "How much do you currently do?",
-          numberText: $baselineNumber,
+          numberText: $form.baselineNumber,
           unitText: pluralizedBaselineUnit,
-          frequencyText: baselineFrequency,
+          frequencyText: form.baselineFrequency,
           isValid: isBaselineValid,
           errorMessage: "Please enter a number greater than 0",
           onUnitTap: { showingBaselineUnitSheet = true },
@@ -499,9 +288,9 @@ struct HabitEditView: View {
         UnifiedInputElement(
           title: "Goal",
           description: "How much do you want to reduce to?",
-          numberText: $targetNumber,
+          numberText: $form.targetNumber,
           unitText: pluralizedTargetUnit,
-          frequencyText: targetFrequency,
+          frequencyText: form.targetFrequency,
           isValid: isTargetValid,
           errorMessage: "Please enter a number greater than or equal to 0",
           onUnitTap: { showingTargetUnitSheet = true },
@@ -654,12 +443,12 @@ struct HabitEditView: View {
         }
         .sheet(isPresented: $showingEmojiPicker) {
           EmojiKeyboardBottomSheet(
-            selectedEmoji: $selectedIcon,
+            selectedEmoji: $form.selectedIcon,
             onClose: {
               showingEmojiPicker = false
             },
             onSave: { emoji in
-              selectedIcon = emoji
+              form.selectedIcon = emoji
               showingEmojiPicker = false
             })
         }
@@ -667,10 +456,10 @@ struct HabitEditView: View {
           ColorBottomSheet(
             onClose: { showingColorSheet = false },
             onColorSelected: { color in
-              selectedColor = color
+              form.selectedColor = color
             },
             onSave: { color in
-              selectedColor = color
+              form.selectedColor = color
               showingColorSheet = false
             })
         }
@@ -678,16 +467,16 @@ struct HabitEditView: View {
           ScheduleBottomSheet(
             onClose: { showingScheduleSheet = false },
             onScheduleSelected: { schedule in
-              selectedSchedule = schedule
+              form.selectedSchedule = schedule
               showingScheduleSheet = false
             },
-            initialSchedule: selectedSchedule)
+            initialSchedule: form.selectedSchedule)
         }
         .sheet(isPresented: $showingReminderSheet) {
           ReminderBottomSheet(
             onClose: { showingReminderSheet = false },
             onReminderSelected: { reminder in
-              selectedReminder = reminder
+              form.selectedReminder = reminder
               showingReminderSheet = false
             },
             onRemindersUpdated: { _ in })
@@ -695,10 +484,10 @@ struct HabitEditView: View {
         .sheet(isPresented: $showingStartDateSheet) {
           PeriodBottomSheet(
             isSelectingStartDate: true,
-            startDate: startDate,
-            initialDate: startDate,
+            startDate: form.startDate,
+            initialDate: form.startDate,
             onStartDateSelected: { date in
-              startDate = date
+              form.startDate = date
               showingStartDateSheet = false
             },
             onEndDateSelected: { _ in }, // Not used for start date
@@ -707,15 +496,15 @@ struct HabitEditView: View {
         .sheet(isPresented: $showingEndDateSheet) {
           PeriodBottomSheet(
             isSelectingStartDate: false,
-            startDate: startDate,
-            initialDate: endDate ?? Date(),
+            startDate: form.startDate,
+            initialDate: form.endDate ?? Date(),
             onStartDateSelected: { _ in }, // Not used for end date
             onEndDateSelected: { date in
-              endDate = date
+              form.endDate = date
               showingEndDateSheet = false
             },
             onRemoveEndDate: {
-              endDate = nil
+              form.endDate = nil
               showingEndDateSheet = false
             })
         }
@@ -723,55 +512,64 @@ struct HabitEditView: View {
           UnitBottomSheet(
             onClose: { showingGoalUnitSheet = false },
             onUnitSelected: { selectedUnit in
-              goalUnit = selectedUnit
+              form.goalUnit = selectedUnit
               showingGoalUnitSheet = false
             },
-            currentUnit: goalUnit)
+            currentUnit: form.goalUnit)
         }
         .sheet(isPresented: $showingGoalFrequencySheet) {
           ScheduleBottomSheet(
             onClose: { showingGoalFrequencySheet = false },
             onScheduleSelected: { selectedSchedule in
-              goalFrequency = selectedSchedule
+              form.goalFrequency = selectedSchedule
               showingGoalFrequencySheet = false
             },
-            initialSchedule: goalFrequency)
+            initialSchedule: form.goalFrequency)
         }
         .sheet(isPresented: $showingBaselineUnitSheet) {
           UnitBottomSheet(
             onClose: { showingBaselineUnitSheet = false },
             onUnitSelected: { selectedUnit in
-              baselineUnit = selectedUnit
+              form.baselineUnit = selectedUnit
               showingBaselineUnitSheet = false
             },
-            currentUnit: baselineUnit)
+            currentUnit: form.baselineUnit)
         }
         .sheet(isPresented: $showingBaselineFrequencySheet) {
           ScheduleBottomSheet(
             onClose: { showingBaselineFrequencySheet = false },
             onScheduleSelected: { selectedSchedule in
-              baselineFrequency = selectedSchedule
+              form.baselineFrequency = selectedSchedule
               showingBaselineFrequencySheet = false
             },
-            initialSchedule: baselineFrequency)
+            initialSchedule: form.baselineFrequency)
         }
         .sheet(isPresented: $showingTargetUnitSheet) {
           UnitBottomSheet(
             onClose: { showingTargetUnitSheet = false },
             onUnitSelected: { selectedUnit in
-              targetUnit = selectedUnit
+              form.targetUnit = selectedUnit
               showingTargetUnitSheet = false
             },
-            currentUnit: targetUnit)
+            currentUnit: form.targetUnit)
         }
         .sheet(isPresented: $showingTargetFrequencySheet) {
           ScheduleBottomSheet(
             onClose: { showingTargetFrequencySheet = false },
             onScheduleSelected: { selectedSchedule in
-              targetFrequency = selectedSchedule.lowercased()
+              form.targetFrequency = selectedSchedule.lowercased()
               showingTargetFrequencySheet = false
             },
-            initialSchedule: targetFrequency)
+            initialSchedule: form.targetFrequency)
+        }
+        .onChange(of: form.goalNumber) { _, _ in
+          uiUpdateTrigger.toggle()
+        }
+        .onChange(of: form.baselineNumber) { _, _ in
+          uiUpdateTrigger.toggle()
+        }
+        .onChange(of: form.targetNumber) { _, _ in
+          uiUpdateTrigger.toggle()
         }
 
       }
@@ -779,159 +577,6 @@ struct HabitEditView: View {
     }
   }
 
-  @ViewBuilder
-  private var allSheets: some View {
-    sheet(isPresented: $showingColorSheet) {
-      ColorBottomSheet(
-        onClose: { showingColorSheet = false },
-        onColorSelected: { color in
-          selectedColor = color
-        },
-        onSave: { color in
-          selectedColor = color
-          showingColorSheet = false
-        })
-    }
-    .sheet(isPresented: $showingScheduleSheet) {
-      ScheduleBottomSheet(
-        onClose: { showingScheduleSheet = false },
-        onScheduleSelected: { schedule in
-          selectedSchedule = schedule
-          showingScheduleSheet = false
-        },
-        initialSchedule: selectedSchedule)
-    }
-
-    // NEW UNIFIED APPROACH - Frequency sheets
-    .sheet(isPresented: $showingGoalUnitSheet) {
-      UnitBottomSheet(
-        onClose: { showingGoalUnitSheet = false },
-        onUnitSelected: { selectedUnit in
-          goalUnit = selectedUnit
-          showingGoalUnitSheet = false
-        },
-        currentUnit: goalUnit)
-    }
-    .sheet(isPresented: $showingGoalFrequencySheet) {
-      ScheduleBottomSheet(
-        onClose: { showingGoalFrequencySheet = false },
-        onScheduleSelected: { selectedSchedule in
-          goalFrequency = selectedSchedule.lowercased()
-          showingGoalFrequencySheet = false
-        },
-        initialSchedule: goalFrequency)
-    }
-    .sheet(isPresented: $showingBaselineUnitSheet) {
-      UnitBottomSheet(
-        onClose: { showingBaselineUnitSheet = false },
-        onUnitSelected: { selectedUnit in
-          baselineUnit = selectedUnit
-          showingBaselineUnitSheet = false
-        },
-        currentUnit: baselineUnit)
-    }
-    .sheet(isPresented: $showingBaselineFrequencySheet) {
-      ScheduleBottomSheet(
-        onClose: { showingBaselineFrequencySheet = false },
-        onScheduleSelected: { selectedSchedule in
-          baselineFrequency = selectedSchedule.lowercased()
-          showingBaselineFrequencySheet = false
-        },
-        initialSchedule: baselineFrequency)
-    }
-    .sheet(isPresented: $showingTargetUnitSheet) {
-      UnitBottomSheet(
-        onClose: { showingTargetUnitSheet = false },
-        onUnitSelected: { selectedUnit in
-          targetUnit = selectedUnit
-          showingTargetUnitSheet = false
-        },
-        currentUnit: targetUnit)
-    }
-    .sheet(isPresented: $showingTargetFrequencySheet) {
-      ScheduleBottomSheet(
-        onClose: { showingTargetFrequencySheet = false },
-        onScheduleSelected: { selectedSchedule in
-          targetFrequency = selectedSchedule
-          showingTargetFrequencySheet = false
-        },
-        initialSchedule: targetFrequency)
-    }
-
-    .sheet(isPresented: $showingReminderSheet) {
-      ReminderBottomSheet(
-        onClose: { showingReminderSheet = false },
-        onReminderSelected: { reminder in
-          selectedReminder = reminder
-          showingReminderSheet = false
-        },
-        onRemindersUpdated: { _ in })
-    }
-
-    .onAppear {
-      // Initialize values for the new unified approach
-      if selectedHabitType == .formation {
-        // NEW UNIFIED APPROACH - Parse existing goal into number, unit, and frequency
-        let goalComponents = habit.goal.components(separatedBy: " ")
-        if goalComponents.count >= 4 && goalComponents[2] == "per" {
-          goalNumber = goalComponents[0]
-          goalUnit = goalComponents[1]
-          goalFrequency = goalComponents[3]
-        } else if goalComponents.count >= 2 {
-          // Fallback for old format
-          goalNumber = goalComponents[0]
-          goalUnit = goalComponents[1]
-          goalFrequency = "everyday"
-        } else {
-          // Fallback for very old format
-          goalNumber = "1"
-          goalUnit = "time"
-          goalFrequency = "everyday"
-        }
-
-        // IMPORTANT: Initialize goalFrequency from the habit's schedule if it's a frequency-based schedule
-        if habit.schedule.contains("days a week") || habit.schedule.contains("days a month") {
-          goalFrequency = habit.schedule
-        }
-      } else {
-        // NEW UNIFIED APPROACH - Habit Breaking
-        baselineNumber = String(habit.baseline)
-        targetNumber = String(habit.target)
-
-        let goalComponents = habit.goal.components(separatedBy: " ")
-        if goalComponents.count >= 4, goalComponents[2] == "per" {
-          targetUnit = goalComponents[1]
-          targetFrequency = goalComponents[3]
-          baselineUnit = targetUnit // Assume same unit for baseline
-          baselineFrequency = targetFrequency // Assume same frequency for baseline
-        } else if goalComponents.count >= 2 {
-          // Fallback for old format
-          targetUnit = goalComponents[1]
-          targetFrequency = "everyday"
-          baselineUnit = targetUnit
-          baselineFrequency = "everyday"
-        } else {
-          // Fallback for very old format
-          targetUnit = "time"
-          targetFrequency = "everyday"
-          baselineUnit = "time"
-          baselineFrequency = "everyday"
-        }
-      }
-    }
-    .onChange(of: goalNumber) { _, _ in
-      // Force UI update when goal number changes
-      uiUpdateTrigger.toggle()
-    }
-    .onChange(of: baselineNumber) { _, _ in
-      // Force UI update when baseline changes
-      uiUpdateTrigger.toggle()
-    }
-    .onChange(of: targetNumber) { _, _ in
-      // Force UI update when target changes
-      uiUpdateTrigger.toggle()
-    }
-  }
 
   // MARK: - Top Navigation Bar
 
@@ -954,24 +599,24 @@ struct HabitEditView: View {
       HStack(spacing: 12) {
         // Habit Building button
         Button(action: {
-          selectedHabitType = .formation
+          form.selectedHabitType = .formation
         }) {
           HStack(spacing: 8) {
-            if selectedHabitType == .formation {
+            if form.selectedHabitType == .formation {
               Image(systemName: "checkmark")
                 .font(.appLabelSmallEmphasised)
                 .foregroundColor(.onPrimary)
             }
             Text("Habit Building")
-              .font(selectedHabitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
-              .foregroundColor(selectedHabitType == .formation ? .onPrimary : .onPrimaryContainer)
+              .font(form.selectedHabitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
+              .foregroundColor(form.selectedHabitType == .formation ? .onPrimary : .onPrimaryContainer)
               .lineLimit(1)
               .minimumScaleFactor(0.8)
           }
           .frame(maxWidth: .infinity)
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(selectedHabitType == .formation ? .primary : .primaryContainer)
+          .background(form.selectedHabitType == .formation ? .primary : .primaryContainer)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(.outline3, lineWidth: 1.5))
@@ -981,24 +626,24 @@ struct HabitEditView: View {
 
         // Habit Breaking button
         Button(action: {
-          selectedHabitType = .breaking
+          form.selectedHabitType = .breaking
         }) {
           HStack(spacing: 8) {
-            if selectedHabitType == .breaking {
+            if form.selectedHabitType == .breaking {
               Image(systemName: "checkmark")
                 .font(.appLabelSmallEmphasised)
                 .foregroundColor(.onPrimary)
             }
             Text("Habit Breaking")
-              .font(selectedHabitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
-              .foregroundColor(selectedHabitType == .breaking ? .onPrimary : .onPrimaryContainer)
+              .font(form.selectedHabitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
+              .foregroundColor(form.selectedHabitType == .breaking ? .onPrimary : .onPrimaryContainer)
               .lineLimit(1)
               .minimumScaleFactor(0.8)
           }
           .frame(maxWidth: .infinity)
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(selectedHabitType == .breaking ? .primary : .primaryContainer)
+          .background(form.selectedHabitType == .breaking ? .primary : .primaryContainer)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(.outline3, lineWidth: 1.5))
@@ -1026,10 +671,10 @@ struct HabitEditView: View {
           .font(.appTitleMedium)
           .foregroundColor(.text01)
         Spacer()
-        Text(reminders.isEmpty
+        Text(form.reminders.isEmpty
           ? "Add"
           :
-          "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
+          "\(form.reminders.filter { $0.isActive }.count) reminder\(form.reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
           .font(.appBodyLarge)
           .foregroundColor(.text04)
         Image(systemName: "chevron.right")
@@ -1041,13 +686,13 @@ struct HabitEditView: View {
         showingReminderSheet = true
       }
 
-      if !reminders.isEmpty {
+      if !form.reminders.isEmpty {
         Divider()
           .background(.outline3)
           .padding(.vertical, 4)
 
         VStack(spacing: 4) {
-          ForEach(reminders.filter { $0.isActive }) { reminder in
+          ForEach(form.reminders.filter { $0.isActive }) { reminder in
             HStack {
               Text(formatTime(reminder.time))
                 .font(.appBodyMedium)
@@ -1073,14 +718,14 @@ struct HabitEditView: View {
           // Keep for backward compatibility
           showingReminderSheet = false
         },
-        initialReminders: reminders,
+        initialReminders: form.reminders,
         onRemindersUpdated: { updatedReminders in
-          reminders = updatedReminders
+          form.reminders = updatedReminders
           let activeReminders = updatedReminders.filter { $0.isActive }
           if !activeReminders.isEmpty {
-            selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
+            form.selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
           } else {
-            selectedReminder = "No reminder"
+            form.selectedReminder = "No reminder"
           }
           showingReminderSheet = false
         })
@@ -1104,7 +749,7 @@ struct HabitEditView: View {
             Text("Start Date")
               .font(.appBodyMedium)
               .foregroundColor(.text05)
-            Text(isToday(startDate) ? "Today" : formatDate(startDate))
+            Text(isToday(form.startDate) ? "Today" : formatDate(form.startDate))
               .font(.appBodyLarge)
               .foregroundColor(.text04)
               .frame(maxWidth: .infinity, alignment: .center)
@@ -1121,9 +766,9 @@ struct HabitEditView: View {
             Text("End Date")
               .font(.appBodyMedium)
               .foregroundColor(.text05)
-            Text(endDate == nil
+            Text(form.endDate == nil
               ? "Not Selected"
-              : (isToday(endDate!) ? "Today" : formatDate(endDate!)))
+              : (isToday(form.endDate!) ? "Today" : formatDate(form.endDate!)))
               .font(.appBodyLarge)
               .foregroundColor(.text04)
               .frame(maxWidth: .infinity, alignment: .center)
@@ -1233,44 +878,44 @@ struct HabitEditView: View {
   private func saveHabit() {
     var updatedHabit: Habit
 
-    if selectedHabitType == .formation {
+    if form.selectedHabitType == .formation {
       // NEW UNIFIED APPROACH - Habit Building
-      let goalNumberInt = Int(goalNumber) ?? 1
-      let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: goalUnit)
-      let goalString = HabitFormLogic.formatGoalString(number: goalNumber, unit: pluralizedUnit, frequency: goalFrequency)
+      let goalNumberInt = Int(form.goalNumber) ?? 1
+      let pluralizedUnit = pluralizedUnit(goalNumberInt, unit: form.goalUnit)
+      let goalString = HabitFormLogic.formatGoalString(number: form.goalNumber, unit: pluralizedUnit, frequency: form.goalFrequency)
 
       // For habit building, schedule is derived from goal frequency
-      let scheduleString = goalFrequency
+      let scheduleString = form.goalFrequency
 
       updatedHabit = Habit(
-        name: habitName,
-        description: habitDescription,
-        icon: selectedIcon,
-        color: selectedColor,
-        habitType: selectedHabitType,
+        name: form.habitName,
+        description: form.habitDescription,
+        icon: form.selectedIcon,
+        color: form.selectedColor,
+        habitType: form.selectedHabitType,
         schedule: scheduleString,
         goal: goalString,
-        reminder: isReminderEnabled ? selectedReminder : "",
-        startDate: startDate,
-        endDate: endDate,
-        reminders: reminders)
+        reminder: form.isReminderEnabled ? form.selectedReminder : "",
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reminders: form.reminders)
     } else {
       // NEW UNIFIED APPROACH - Habit Breaking
-      let targetInt = Int(targetNumber) ?? 1
-      let targetPluralizedUnit = pluralizedUnit(targetInt, unit: targetUnit)
-      let goalString = HabitFormLogic.formatGoalString(number: targetNumber, unit: targetPluralizedUnit, frequency: targetFrequency)
+      let targetInt = Int(form.targetNumber) ?? 1
+      let targetPluralizedUnit = pluralizedUnit(targetInt, unit: form.targetUnit)
+      let goalString = HabitFormLogic.formatGoalString(number: form.targetNumber, unit: targetPluralizedUnit, frequency: form.targetFrequency)
 
       // For habit breaking, schedule is derived from target frequency
-      let scheduleString = targetFrequency
+      let scheduleString = form.targetFrequency
 
       // ✅ FIX: Ensure baseline > target for breaking habits
-      var baselineValue = Int(baselineNumber) ?? 0
-      let targetValue = Int(targetNumber) ?? 0
+      var baselineValue = Int(form.baselineNumber) ?? 0
+      let targetValue = Int(form.targetNumber) ?? 0
       
       if baselineValue <= targetValue {
         baselineValue = max(targetValue + 5, 10)
-        print("⚠️ EDIT SAVE - Baseline (\(Int(baselineNumber) ?? 0)) <= target (\(targetValue))")
-        print("✅ EDIT SAVE - Auto-adjusted baseline to \(baselineValue) for breaking habit '\(habitName)'")
+        print("⚠️ EDIT SAVE - Baseline (\(Int(form.baselineNumber) ?? 0)) <= target (\(targetValue))")
+        print("✅ EDIT SAVE - Auto-adjusted baseline to \(baselineValue) for breaking habit '\(form.habitName)'")
       }
 
       print(
@@ -1279,34 +924,34 @@ struct HabitEditView: View {
         "🔍 EDIT SAVE - Target: \(targetValue), Baseline: \(baselineValue)")
 
       updatedHabit = Habit(
-        name: habitName,
-        description: habitDescription,
-        icon: selectedIcon,
-        color: selectedColor,
-        habitType: selectedHabitType,
+        name: form.habitName,
+        description: form.habitDescription,
+        icon: form.selectedIcon,
+        color: form.selectedColor,
+        habitType: form.selectedHabitType,
         schedule: scheduleString,
         goal: goalString,
-        reminder: isReminderEnabled ? selectedReminder : "",
-        startDate: startDate,
-        endDate: endDate,
-        reminders: reminders,
+        reminder: form.isReminderEnabled ? form.selectedReminder : "",
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reminders: form.reminders,
         baseline: baselineValue,
         target: targetValue)
     }
 
-    var updatedGoalHistory = habit.goalHistory
+    var updatedGoalHistory = originalHabit.goalHistory
     if updatedGoalHistory.isEmpty {
-      let startKey = Habit.dateKey(for: habit.startDate)
-      updatedGoalHistory[startKey] = habit.goal
+      let startKey = Habit.dateKey(for: originalHabit.startDate)
+      updatedGoalHistory[startKey] = originalHabit.goal
     }
-    if habit.goal != updatedHabit.goal {
+    if originalHabit.goal != updatedHabit.goal {
       let todayKey = Habit.dateKey(for: Date())
       updatedGoalHistory[todayKey] = updatedHabit.goal
     }
 
     // Create a new habit with the original ID, preserving all existing completion data
     updatedHabit = Habit(
-      id: habit.id,
+      id: originalHabit.id,
       name: updatedHabit.name,
       description: updatedHabit.description,
       icon: updatedHabit.icon,
@@ -1316,16 +961,16 @@ struct HabitEditView: View {
       goal: updatedHabit.goal,
       reminder: updatedHabit.reminder,
       startDate: updatedHabit.startDate,
-      endDate: endDate,
-      createdAt: habit.createdAt, // Preserve original creation date
+      endDate: form.endDate,
+      createdAt: originalHabit.createdAt, // Preserve original creation date
       reminders: updatedHabit.reminders,
       baseline: updatedHabit.baseline,
       target: updatedHabit.target,
-      completionHistory: habit.completionHistory, // Preserve original completion history
-      completionStatus: habit.completionStatus, // Preserve historical completion status
-      completionTimestamps: habit.completionTimestamps, // Preserve recorded completion times
-      difficultyHistory: habit.difficultyHistory, // Preserve original difficulty history
-      actualUsage: habit.actualUsage, // Preserve original usage data
+      completionHistory: originalHabit.completionHistory, // Preserve original completion history
+      completionStatus: originalHabit.completionStatus, // Preserve historical completion status
+      completionTimestamps: originalHabit.completionTimestamps, // Preserve recorded completion times
+      difficultyHistory: originalHabit.difficultyHistory, // Preserve original difficulty history
+      actualUsage: originalHabit.actualUsage, // Preserve original usage data
       goalHistory: updatedGoalHistory
     )
 
@@ -1333,7 +978,7 @@ struct HabitEditView: View {
     // Completion status is derived from completion history in real-time
 
     // Update notifications for the habit
-    NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
+    NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: form.reminders)
 
     onSave(updatedHabit)
     dismiss()
