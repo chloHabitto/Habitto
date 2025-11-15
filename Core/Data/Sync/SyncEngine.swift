@@ -607,9 +607,13 @@ actor SyncEngine {
         
         logger.info("📤 Found \(awardDataArray.count) awards to sync")
         
-        // Get current total XP from DailyAwardService (source of truth)
-        let totalXP = await MainActor.run {
-            DailyAwardService.shared.getTotalXP()
+        // Snapshot the latest XP state from DailyAwardService (source of truth)
+        let xpSnapshot: XPState? = await MainActor.run {
+            DailyAwardService.shared.xpState
+        }
+        
+        if xpSnapshot == nil {
+            logger.warning("⚠️ SyncEngine: XP snapshot unavailable; xp/state document update will be skipped to avoid zeroing remote data")
         }
         
         // Sync awards in batches using transactions
@@ -619,7 +623,11 @@ actor SyncEngine {
             let batch = Array(awardDataArray[batchStart..<batchEnd])
             
             do {
-                let result = try await syncAwardsBatch(awards: batch, userId: userId, totalXP: totalXP)
+                let result = try await syncAwardsBatch(
+                    awards: batch,
+                    userId: userId,
+                    xpSnapshot: xpSnapshot
+                )
                 syncedCount += result.synced
                 alreadySyncedCount += result.alreadySynced
                 logger.info("✅ Synced batch: \(result.synced) awards (\(syncedCount + alreadySyncedCount)/\(awardDataArray.count))")
@@ -640,7 +648,7 @@ actor SyncEngine {
     private func syncAwardsBatch(
         awards: [AwardData],
         userId: String,
-        totalXP: Int
+        xpSnapshot: XPState?
     ) async throws -> (synced: Int, alreadySynced: Int) {
         // Track counts locally to avoid double-counting on transaction retries
         var syncedCount = 0
@@ -687,27 +695,23 @@ actor SyncEngine {
                 batchSynced += 1
             }
             
-            // Also update xp/state document (for XP state stream compatibility)
-            let xpStateRef = self.firestore.collection("users")
-                .document(userId)
-                .collection("xp")
-                .document("state")
-            
-            // Calculate level from total XP (simple formula: every 100 XP = 1 level)
-            let level = (totalXP / 100) + 1
-            let currentLevelXP = totalXP % 100
-            let nextLevelXP = 100
-            
-            let progressData: [String: Any] = [
-                "totalXP": totalXP,
-                "level": level,
-                "currentLevelXP": currentLevelXP,
-                "dailyXP": 0,
-                "nextLevelXP": nextLevelXP,
-                "lastUpdated": Timestamp(date: Date())
-            ]
-            
-            transaction.setData(progressData, forDocument: xpStateRef, merge: true)
+            if let xpSnapshot {
+                let xpStateRef = self.firestore.collection("users")
+                    .document(userId)
+                    .collection("xp")
+                    .document("state")
+                
+                let progressData: [String: Any] = [
+                    "totalXP": xpSnapshot.totalXP,
+                    "level": xpSnapshot.level,
+                    "currentLevelXP": xpSnapshot.currentLevelXP,
+                    "lastUpdated": Timestamp(date: xpSnapshot.lastUpdated)
+                ]
+                
+                transaction.setData(progressData, forDocument: xpStateRef, merge: true)
+            } else {
+                self.logger.warning("⚠️ SyncEngine: Transaction skipped xp/state update – missing XP snapshot")
+            }
             
             // Return counts as tuple (wrapped in array for easier casting)
             return [batchSynced, batchAlreadySynced]
