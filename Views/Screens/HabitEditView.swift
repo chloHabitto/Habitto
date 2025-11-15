@@ -806,15 +806,14 @@ struct HabitEditView: View {
       .foregroundColor(.text01)
       .textFieldStyle(PlainTextFieldStyle())
       .submitLabel(.done)
-      .frame(maxWidth: .infinity, minHeight: 48)
+      .frame(minHeight: 48)
       .padding(.horizontal, 16)
       .background(.surface)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
           .stroke(.outline3, lineWidth: 1.5))
       .cornerRadius(12)
-      .contentShape(Rectangle())
-      .allowsHitTesting(true)
+      .fixedSize(horizontal: false, vertical: true)
       .modifier(FocusModifier(isFocused: isFocused, showTapGesture: showTapGesture))
   }
 
