@@ -179,7 +179,6 @@ class HabitRepository: ObservableObject {
   // MARK: Lifecycle
 
   private init() {
-    FirebaseBootstrapper.configureIfNeeded(source: "HabitRepository.init")
     // Initialize basic functionality first
     debugLog("✅ HabitRepository: Initializing...")
     debugLog("✅ HabitRepository: Starting with \(habits.count) habits")
