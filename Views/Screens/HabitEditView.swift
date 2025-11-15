@@ -21,11 +21,13 @@ struct HabitEditView: View {
     self._endDate = State(initialValue: habit.endDate)
 
     // Initialize goal/baseline/target data from saved habit
+    let todayGoalString = habit.goalString(for: Date())
+
     if habit.habitType == .formation {
       // Parse habit building goal data from habit.goal string
-      let parsedGoal = Self.parseGoalString(habit.goal)
+      let parsedGoal = Self.parseGoalString(todayGoalString)
       print(
-        "🔍 EDIT INIT - Habit Building: \(habit.goal) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
+        "🔍 EDIT INIT - Habit Building: \(todayGoalString) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
       self._goalNumber = State(initialValue: parsedGoal.number)
       self._goalUnit = State(initialValue: parsedGoal.unit)
       self._goalFrequency = State(initialValue: parsedGoal.frequency)
@@ -39,9 +41,9 @@ struct HabitEditView: View {
       self._targetFrequency = State(initialValue: "everyday")
     } else {
       // Parse habit breaking data from habit.goal string and habit properties
-      let parsedGoal = Self.parseGoalString(habit.goal)
+      let parsedGoal = Self.parseGoalString(todayGoalString)
       print(
-        "🔍 EDIT INIT - Habit Breaking: \(habit.goal) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
+        "🔍 EDIT INIT - Habit Breaking: \(todayGoalString) → number: \(parsedGoal.number), unit: \(parsedGoal.unit), frequency: \(parsedGoal.frequency)")
       print("🔍 EDIT INIT - Schedule: \(habit.schedule), Baseline: \(habit.baseline)")
 
       // For habit breaking, goal string contains target info
