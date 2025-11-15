@@ -160,8 +160,13 @@ struct HabitEditView: View {
 
       return (number: number, unit: unit, frequency: frequency)
     } else {
-      // Fallback for unknown format
-      return (number: "1", unit: "time", frequency: "everyday")
+      // Format without "on"/"per" (e.g., "2 times everyday")
+      let tokens = goalString.components(separatedBy: " ")
+      let numberToken = tokens.first ?? "1"
+      let unitToken = tokens.count > 1 ? tokens[1] : "time"
+      let rawFrequency = tokens.count > 2 ? tokens.dropFirst(2).joined(separator: " ") : "everyday"
+      let frequency = formatFrequencyText(rawFrequency)
+      return (number: numberToken, unit: unitToken, frequency: frequency)
     }
   }
   
