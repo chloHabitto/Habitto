@@ -1045,9 +1045,10 @@ final actor HabitStore {
           .info("🎯 createCompletionRecordIfNeeded: Found \(existingRecords.count) existing records")
 
         // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
-        // Check if habit ACTUALLY met its goal: progress >= goalAmount
+        // Prefer the recorded completion status for this date to avoid retroactively changing history.
+        let recordedStatus = habit.completionStatus[dateKey]
         let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-        let isCompleted = progress >= goalAmount
+        let isCompleted = recordedStatus ?? (progress >= goalAmount)
         
         // Debug logging with habit type
         let habitTypeStr = habit.habitType == .breaking ? "breaking" : "formation"
