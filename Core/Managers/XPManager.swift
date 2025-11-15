@@ -22,6 +22,7 @@ class XPManager {
   private static weak var _instance: XPManager?
 
   init() {
+    FirebaseBootstrapper.configureIfNeeded(source: "XPManager.init")
     // 🔍 FAIL-FAST: Prevent multiple instances
     if let existing = XPManager._instance {
       let existingId = ObjectIdentifier(existing)

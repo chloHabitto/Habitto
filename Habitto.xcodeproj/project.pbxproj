@@ -91,6 +91,7 @@
 		899A94112E76CA7D00D63889 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89A922902EC71A2100DE8197 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89A934F42EC4DC9D005115E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89A942C52EC7B9B000DE8197 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89ADBED72EAE91F400D15EA8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89B2DFB42E8D70FA008AC70D /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89B401F72E8E92BD00F8D589 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -471,6 +472,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		89A942D42EC7B9B000DE8197 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		89ADBF202EAE91F400D15EA8 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
@@ -705,6 +711,10 @@
 				{
 					ProductGroup = 89A9229F2EC71A2100DE8197 /* Products */;
 					ProjectRef = 89A922902EC71A2100DE8197 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89A942D42EC7B9B000DE8197 /* Products */;
+					ProjectRef = 89A942C52EC7B9B000DE8197 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89F6449A2E8BC3C4009417BE /* Products */;
@@ -1071,10 +1081,10 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
-				STRIP_INSTALLED_PRODUCT = NO;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
