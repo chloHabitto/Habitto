@@ -1222,9 +1222,7 @@ struct HabitEditView: View {
   
   private func scrollToField(_ target: ScrollTarget, with proxy: ScrollViewProxy) {
     DispatchQueue.main.async {
-      withAnimation(.easeInOut) {
-        proxy.scrollTo(target, anchor: .center)
-      }
+      proxy.scrollTo(target, anchor: .top)
     }
   }
 
