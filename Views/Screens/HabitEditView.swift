@@ -319,14 +319,6 @@ struct HabitEditView: View {
     return basicChanges || scheduleChanges || unifiedChanges
   }
 
-  /// Computed property for Done button visibility
-  private var shouldShowDoneButton: Bool {
-    let shouldShow = isGoalNumberFocused || isBaselineFieldFocused || isTargetFieldFocused
-    print(
-      "🔍 HabitEditView: shouldShowDoneButton = \(shouldShow) (goal: \(isGoalNumberFocused), baseline: \(isBaselineFieldFocused), target: \(isTargetFieldFocused))")
-    return shouldShow
-  }
-
   /// NEW Unified computed properties
   private var pluralizedGoalUnit: String {
     let number = Int(goalNumber) ?? 1
@@ -621,18 +613,6 @@ struct HabitEditView: View {
           }
           .navigationTitle("Edit habit")
           .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: isGoalNumberFocused) { _, newValue in
-          print("🔍 HabitEditView: Goal field focus changed to \(newValue)")
-          print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
-        }
-        .onChange(of: isBaselineFieldFocused) { _, newValue in
-          print("🔍 HabitEditView: Baseline field focus changed to \(newValue)")
-          print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
-        }
-        .onChange(of: isTargetFieldFocused) { _, newValue in
-          print("🔍 HabitEditView: Target field focus changed to \(newValue)")
-          print("🔍 HabitEditView: shouldShowDoneButton = \(shouldShowDoneButton)")
-        }
         .onChange(of: isNameFieldFocused) { oldValue, newValue in
           print("🔍 HabitEditView: Name field focus changed from \(oldValue) to \(newValue)")
         }
@@ -761,31 +741,6 @@ struct HabitEditView: View {
             initialSchedule: targetFrequency)
         }
 
-      // Done button positioned above keyboard
-      if shouldShowDoneButton {
-        VStack {
-          Spacer()
-          HStack {
-            Spacer()
-            HabittoButton(
-              size: .medium,
-              style: .fillPrimary,
-              content: .text("Done"),
-              hugging: true)
-            {
-              print("🔍 HabitEditView: Done button tapped")
-              isGoalNumberFocused = false
-              isBaselineFieldFocused = false
-              isTargetFieldFocused = false
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
-          }
-        }
-        .onAppear {
-          print("🔍 HabitEditView: Done button appeared")
-        }
-      }
       }
       .navigationViewStyle(.stack)
     }
