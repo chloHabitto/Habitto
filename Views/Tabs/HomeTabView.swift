@@ -6,6 +6,7 @@ import SwiftUI
 // Note: AuthenticationManager and CurrentUser are automatically available
 // through the app's module since they're in the same target
 
+@MainActor
 struct HomeTabView: View {
   // MARK: Lifecycle
 
@@ -187,6 +188,7 @@ struct HomeTabView: View {
   
   /// ✅ FIX: Track processed dates to prevent duplicate XP awards in same session
   @State private var processedDates = Set<String>()
+  @State private var awardedDateKeys = Set<String>()
   
   /// ✅ FIX: Prevent concurrent execution of XP check
   @State private var isCheckingXP = false
@@ -1260,23 +1262,24 @@ struct HomeTabView: View {
         }
         let request = FetchDescriptor<DailyAward>(predicate: predicate)
         
-          do {
+        do {
           // ✅ FIX #12: Use SwiftDataContainer's context
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let existingAwards = try modelContext.fetch(request)
-            for award in existingAwards {
-              modelContext.delete(award)
-            }
-            try modelContext.save()
+          let modelContext = SwiftDataContainer.shared.modelContext
+          let existingAwards = try modelContext.fetch(request)
+          for award in existingAwards {
+            modelContext.delete(award)
+          }
+          try modelContext.save()
           debugLog("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
+          awardedDateKeys.remove(dateKey)
           
           // ✅ REMOVED: No longer calling decrementGlobalStreak() here!
           // The onStreakRecalculationNeeded() callback above handles ALL streak updates
           // This prevents the old early-return logic from interfering with today's uncompletes
           debugLog("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
-          } catch {
+        } catch {
           debugLog("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
-          }
+        }
         }
       }
 
@@ -1326,81 +1329,77 @@ struct HomeTabView: View {
 
     // Check if the last habit was just completed
     if lastHabitJustCompleted {
+      if awardedDateKeys.contains(dateKey) {
+        debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate grant")
+        lastHabitJustCompleted = false
+        onCompletionDismiss?()
+        return
+      }
+      
+      awardedDateKeys.insert(dateKey)
       // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
       // This is the ONLY place where XP should be awarded for habit completion
       // Do NOT call XPManager methods directly - always use DailyAwardService
-      let userId = getCurrentUserId()
       debugLog(
         "🎉 COMPLETION_FLOW: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
-      debugLog("🎯 COMPLETION_FLOW: userId = \(userId)")
 
       Task {
-      #if DEBUG
+#if DEBUG
         debugGrantCalls += 1
-        debugLog(
-          "🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
+        debugLog("🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
         if debugGrantCalls > 1 {
           debugLog("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
           debugLog("⚠️ Stack trace:")
           Thread.callStackSymbols.forEach { debugLog("  \($0)") }
         }
-      #endif
-      
+#endif
+
+        let userId = await MainActor.run {
+          AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
+        }
+        debugLog("🎯 COMPLETION_FLOW: userId = \(userId)")
         debugLog("✅ DERIVED_XP: Recalculating XP from completed days")
-        
-        // ✅ NEW APPROACH: Derive XP from state (idempotent!)
+
         let completedDaysCount = countCompletedDays()
         await MainActor.run {
-          xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
+          xpManager.publishXP(completedDaysCount: completedDaysCount)
         }
         debugLog("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
-        
-        // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
-        // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
-        // This ensures streak always reflects current state
+
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
           onStreakRecalculationNeeded?()
         }
         debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
-        
+
         do {
-          // Still save DailyAward for history tracking
-          // ✅ FIX #12: Use SwiftDataContainer's context
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let dailyAward = DailyAward(
-              userId: userId,
-              dateKey: dateKey,
-              xpGranted: 50,
-              allHabitsCompleted: true
-            )
-            modelContext.insert(dailyAward)
-            try modelContext.save()
+          let modelContext = SwiftDataContainer.shared.modelContext
+          let dailyAward = DailyAward(
+            userId: userId,
+            dateKey: dateKey,
+            xpGranted: 50,
+            allHabitsCompleted: true
+          )
+          modelContext.insert(dailyAward)
+          try modelContext.save()
           debugLog("✅ COMPLETION_FLOW: DailyAward record created for history")
-          
-          // ✅ REMOVED: No longer calling updateGlobalStreak() here!
-          // The onStreakRecalculationNeeded() callback above handles ALL streak updates
-          // This prevents duplicate/conflicting streak calculations
           debugLog("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
-          
-          // Trigger celebration
           showCelebration = true
           debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
-          
-          // ✅ REMOVED: No longer posting StreakUpdated notification manually
-          // The callback will trigger updateAllStreaks() which updates GlobalStreakModel
-          // SwiftUI @Query will automatically pick up the changes
           debugLog("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
-          } catch {
+        } catch {
+          awardedDateKeys.remove(dateKey)
           debugLog("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
+          await MainActor.run {
+            onCompletionDismiss?()
+          }
+          return
         }
-        
-        // Check XP after award
-        let currentXP = xpManager.totalXP  // ✅ Use environment object
+
+        let currentXP = xpManager.totalXP
         debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
-        debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")  // ✅ Use environment object
-        
-        // ✅ FIX: Call completion callback AFTER streak update completes
+        debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")
+
         await MainActor.run {
           onCompletionDismiss?()
           debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
@@ -1429,13 +1428,6 @@ struct HomeTabView: View {
     debugLog("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
   }
 
-  private func getCurrentUserId() -> String {
-    // ✅ FIX: Use actual userId from AuthenticationManager (same as HomeViewState)
-    let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
-    debugLog("🎯 USER SCOPING: HomeTabView.getCurrentUserId() = \(userId)")
-    return userId
-  }
-  
   /// Update the global streak when all habits are completed for a day
   /// Returns the new streak value so it can be displayed in the UI immediately
   private func updateGlobalStreak(for userId: String, on date: Date, modelContext: ModelContext) throws -> Int {
@@ -1557,17 +1549,17 @@ struct HomeTabView: View {
       debugLog("✅ STREAK_REVERSAL: Streak recalculated \(oldStreak) → \(calculatedStreak) after uncompleting past date")
       debugLog("🔥 STREAK_REVERSAL: Total complete days: \(streak.totalCompleteDays)")
       
-      // Broadcast the new streak value
+      let newStreakValue = calculatedStreak
       await MainActor.run {
         NotificationCenter.default.post(
           name: NSNotification.Name("StreakUpdated"),
           object: nil,
-          userInfo: ["newStreak": calculatedStreak]
+          userInfo: ["newStreak": newStreakValue]
         )
-        debugLog("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(calculatedStreak)")
+        debugLog("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(newStreakValue)")
       }
       
-      return calculatedStreak
+      return newStreakValue
     }
   }
 }
