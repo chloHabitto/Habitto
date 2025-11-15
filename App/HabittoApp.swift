@@ -14,6 +14,7 @@ import UserNotifications
 
 // MARK: - AppDelegate
 
+@objc(AppDelegate)
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
   private static var hasLoggedInit = false
   private static var hasCompletedLaunch = false
@@ -43,18 +44,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")
     fflush(stdout) // Force flush to ensure log appears immediately
     
-    // ✅ FIX: Firebase is already configured in HabittoApp.init()
-    // Just verify it's configured and skip if already done
-    if FirebaseApp.app() == nil {
-      debugLog("🔥 AppDelegate: Configuring Firebase...")
-      FirebaseApp.configure()
-      
-      // Configure Firestore settings
-      FirebaseConfiguration.configureFirestore()
-      debugLog("✅ AppDelegate: Firebase configured")
-    } else {
-      debugLog("✅ AppDelegate: Firebase already configured")
-    }
+    FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
+    debugLog("✅ AppDelegate: Firebase already configured")
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
     let remoteConfig = RemoteConfig.remoteConfig()
@@ -276,13 +267,7 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
-    if FirebaseApp.app() == nil {
-      debugLog("🔥 HabittoApp: Configuring Firebase in init()")
-      FirebaseApp.configure()
-      FirebaseConfiguration.configureFirestore()
-    } else {
-      debugLog("✅ HabittoApp: Firebase already configured before init()")
-    }
+    FirebaseBootstrapper.configureIfNeeded(source: "HabittoApp.init")
     
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
     _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
@@ -400,6 +385,26 @@ struct HabittoApp: App {
   @StateObject private var themeManager: ThemeManager
   @State private var xpManager: XPManager
   @State private var showSplash = true
+}
+
+// MARK: - FirebaseBootstrapper
+
+private enum FirebaseBootstrapper {
+  private static var didConfigure = false
+  
+  static func configureIfNeeded(source: String) {
+    guard !didConfigure else { return }
+    
+    if FirebaseApp.app() == nil {
+      debugLog("🔥 FirebaseBootstrapper (\(source)): Configuring Firebase")
+      FirebaseApp.configure()
+    } else {
+      debugLog("ℹ️ FirebaseBootstrapper (\(source)): Firebase already configured")
+    }
+    
+    FirebaseConfiguration.configureFirestore()
+    didConfigure = true
+  }
 }
 
 private func setupCoreData() {
