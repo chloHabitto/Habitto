@@ -175,7 +175,8 @@ final class HabitData {
         continue
       }
       let dateKey = DateUtils.dateKey(for: date)
-      let isCompleted = progress >= goalAmount
+      let recordedStatus = habit.completionStatus[dateKey]
+      let isCompleted = recordedStatus ?? (progress >= goalAmount)
       parsedEntries.append((date, dateKey, progress, isCompleted))
     }
     

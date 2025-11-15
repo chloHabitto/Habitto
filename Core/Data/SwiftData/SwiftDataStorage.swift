@@ -162,15 +162,16 @@ final class SwiftDataStorage: HabitStorageProtocol {
           
           for (dateString, progress) in habit.completionHistory {
             if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-              // ✅ CORRECT: Check if progress >= goal for completion
+              let dateKey = Habit.dateKey(for: date)
+              let recordedStatus = habit.completionStatus[dateKey]
               let goalInt = Int(habit.goal) ?? 1
-              let isCompleted = progress >= goalInt
+              let isCompleted = recordedStatus ?? (progress >= goalInt)
               
               let completionRecord = CompletionRecord(
                 userId: await getCurrentUserId() ?? "",
                 habitId: habitData.id,
                 date: date,
-                dateKey: Habit.dateKey(for: date),
+                dateKey: dateKey,
                 isCompleted: isCompleted,
                 progress: progress)  // Store actual progress too
               
@@ -549,15 +550,16 @@ final class SwiftDataStorage: HabitStorageProtocol {
         
         for (dateString, progress) in habit.completionHistory {
           if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
-            // ✅ CORRECT: Check if progress >= goal for completion
+            let dateKey = Habit.dateKey(for: date)
+            let recordedStatus = habit.completionStatus[dateKey]
             let goalInt = Int(habit.goal) ?? 1
-            let isCompleted = progress >= goalInt
+            let isCompleted = recordedStatus ?? (progress >= goalInt)
             
             let completionRecord = CompletionRecord(
               userId: await getCurrentUserId() ?? "",
               habitId: habitData.id,
               date: date,
-              dateKey: Habit.dateKey(for: date),
+              dateKey: dateKey,
               isCompleted: isCompleted,
               progress: progress)  // Store actual progress too
             

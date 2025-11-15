@@ -249,14 +249,11 @@ actor EventCompactor {
         
         let existingRecords = (try? modelContext.fetch(recordDescriptor)) ?? []
         
+        let normalizedProgress = max(0, update.finalProgress)
+        
         if let existingRecord = existingRecords.first {
-          // Update existing record with final progress
-          existingRecord.progress = max(0, update.finalProgress) // Ensure non-negative
-          
-          // Update isCompleted based on goal
-          if let goalAmount = habitGoals[update.habitId] {
-            existingRecord.isCompleted = update.finalProgress >= goalAmount
-          }
+          // Update existing record with final progress but preserve its completion status.
+          existingRecord.progress = normalizedProgress
           
           recordsUpdated += 1
           compactionLogger.debug("Updated CompletionRecord: habitId=\(update.habitId.uuidString), dateKey=\(update.dateKey), progress=\(update.finalProgress)")
@@ -270,13 +267,15 @@ actor EventCompactor {
           dateFormatter.timeZone = TimeZone.current
           
           if let date = dateFormatter.date(from: update.dateKey) {
+            let goalAmount = habitGoals[update.habitId] ?? 1
+            let didReachGoal = normalizedProgress >= goalAmount
             let record = CompletionRecord(
               userId: currentUserId,
               habitId: update.habitId,
               date: date,
               dateKey: update.dateKey,
-              isCompleted: false,
-              progress: max(0, update.finalProgress)
+              isCompleted: didReachGoal,
+              progress: normalizedProgress
             )
             modelContext.insert(record)
             recordsUpdated += 1
