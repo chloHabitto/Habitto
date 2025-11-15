@@ -21,7 +21,8 @@ struct HabitEditView: View {
     self._endDate = State(initialValue: habit.endDate)
 
     // Initialize goal/baseline/target data from saved habit
-    let todayGoalString = habit.goalString(for: Date())
+    let today = LegacyDateUtils.today()
+    let todayGoalString = habit.goalString(for: today)
 
     if habit.habitType == .formation {
       // Parse habit building goal data from habit.goal string
