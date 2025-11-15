@@ -240,6 +240,12 @@ struct HabitEditView: View {
   @FocusState private var isGoalNumberFocused: Bool
   @FocusState private var isBaselineFieldFocused: Bool
   @FocusState private var isTargetFieldFocused: Bool
+  
+  private enum ScrollTarget: Hashable {
+    case goal
+    case baseline
+    case target
+  }
 
   @Environment(\.dismiss) private var dismiss
 
@@ -381,25 +387,39 @@ struct HabitEditView: View {
 
   @ViewBuilder
   private var mainContent: some View {
-    ScrollView {
-      VStack(spacing: 16) {
-        basicInfoSection
-        goalSection
-        reminderAndPeriodSection
+    ScrollViewReader { proxy in
+      ScrollView {
+        VStack(spacing: 16) {
+          basicInfoSection
+          goalSection
+          reminderAndPeriodSection
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .padding(.bottom, 100) // Add bottom padding to account for fixed button
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 16)
-      .padding(.bottom, 100) // Add bottom padding to account for fixed button
-    }
-    .background(.surface2)
-    .contentShape(Rectangle())
-    .onTapGesture {
-      // Dismiss keyboard when tapping background
-      UIApplication.shared.sendAction(
-        #selector(UIResponder.resignFirstResponder),
-        to: nil,
-        from: nil,
-        for: nil)
+      .background(.surface2)
+      .contentShape(Rectangle())
+      .onTapGesture {
+        // Dismiss keyboard when tapping background
+        UIApplication.shared.sendAction(
+          #selector(UIResponder.resignFirstResponder),
+          to: nil,
+          from: nil,
+          for: nil)
+      }
+      .onChange(of: isGoalNumberFocused) { _, newValue in
+        guard newValue else { return }
+        scrollToField(.goal, with: proxy)
+      }
+      .onChange(of: isBaselineFieldFocused) { _, newValue in
+        guard newValue else { return }
+        scrollToField(.baseline, with: proxy)
+      }
+      .onChange(of: isTargetFieldFocused) { _, newValue in
+        guard newValue else { return }
+        scrollToField(.target, with: proxy)
+      }
     }
   }
 
@@ -456,6 +476,7 @@ struct HabitEditView: View {
         onFrequencyTap: { showingGoalFrequencySheet = true },
         uiUpdateTrigger: uiUpdateTrigger,
         isFocused: $isGoalNumberFocused)
+      .id(ScrollTarget.goal)
     } else {
       // Habit Breaking Form
       VStack(spacing: 16) {
@@ -472,6 +493,7 @@ struct HabitEditView: View {
           onFrequencyTap: { showingBaselineFrequencySheet = true },
           uiUpdateTrigger: uiUpdateTrigger,
           isFocused: $isBaselineFieldFocused)
+        .id(ScrollTarget.baseline)
 
         // Target - NEW UNIFIED APPROACH
         UnifiedInputElement(
@@ -486,6 +508,7 @@ struct HabitEditView: View {
           onFrequencyTap: { showingTargetFrequencySheet = true },
           uiUpdateTrigger: uiUpdateTrigger,
           isFocused: $isTargetFieldFocused)
+        .id(ScrollTarget.target)
       }
     }
   }
@@ -1195,6 +1218,14 @@ struct HabitEditView: View {
       return count == 1 ? "time" : "times"
     }
     return unit
+  }
+  
+  private func scrollToField(_ target: ScrollTarget, with proxy: ScrollViewProxy) {
+    DispatchQueue.main.async {
+      withAnimation(.easeInOut) {
+        proxy.scrollTo(target, anchor: .center)
+      }
+    }
   }
 
   // MARK: - Save Function
