@@ -390,26 +390,6 @@ struct HabittoApp: App {
   @State private var showSplash = true
 }
 
-// MARK: - FirebaseBootstrapper
-
-private enum FirebaseBootstrapper {
-  private static var didConfigure = false
-  
-  static func configureIfNeeded(source: String) {
-    guard !didConfigure else { return }
-    
-    if FirebaseApp.app() == nil {
-      debugLog("🔥 FirebaseBootstrapper (\(source)): Configuring Firebase")
-      FirebaseApp.configure()
-    } else {
-      debugLog("ℹ️ FirebaseBootstrapper (\(source)): Firebase already configured")
-    }
-    
-    FirebaseConfiguration.configureFirestore()
-    didConfigure = true
-  }
-}
-
 private func setupCoreData() {
   // Check if migration is needed
   let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataMigrationCompleted")
