@@ -14,12 +14,15 @@ import UserNotifications
 
 // MARK: - AppDelegate
 
+@objcMembers
 @objc(AppDelegate)
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+  var window: UIWindow?
   private static var hasLoggedInit = false
   private static var hasCompletedLaunch = false
   
   override init() {
+    FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.init")
     super.init()
     guard !Self.hasLoggedInit else { return }
     Self.hasLoggedInit = true
