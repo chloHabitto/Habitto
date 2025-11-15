@@ -37,7 +37,8 @@ struct UnifiedInputElement: View {
           .keyboardType(.numberPad) // Back to .numberPad - toolbar will work
           .focused($isFocused)
           .multilineTextAlignment(.center)
-          .frame(width: 40)
+          .frame(minWidth: 44, idealWidth: 56, maxWidth: 72)
+          .animation(.none, value: isFocused)
           .inputFieldStyle()
 
         // Unit selector button - smaller width
@@ -51,7 +52,8 @@ struct UnifiedInputElement: View {
               .font(.appLabelSmall)
               .foregroundColor(.primaryDim)
           }
-          .frame(width: 70)
+          .frame(minWidth: 70)
+          .fixedSize(horizontal: true, vertical: false)
           .inputFieldStyle()
         }
         .buttonStyle(PlainButtonStyle())
