@@ -4271,14 +4271,12 @@ struct TimeBaseCompletionChart: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 12)
-        .background(Color.red)
 
         Image(bestTime.timePeriod)
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 80, height: 80)
           .clipped()
-          .background(Color.yellow)
       }
       .padding(.leading, 20)
       .frame(maxWidth: .infinity)

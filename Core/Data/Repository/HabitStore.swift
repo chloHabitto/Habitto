@@ -13,6 +13,7 @@ final actor HabitStore {
   // MARK: Lifecycle
 
   private init() {
+    FirebaseBootstrapper.configureIfNeeded(source: "HabitStore.init")
     logger.info("HabitStore initialized")
   }
 
