@@ -465,6 +465,7 @@ final class CompletionRecord {
     self.isCompleted = isCompleted
     self.progress = progress  // ✅ NEW: Store actual progress count
     self.createdAt = Date()
+    self.updatedAt = Date()
     self.userIdHabitIdDateKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
   }
 
@@ -480,6 +481,7 @@ final class CompletionRecord {
     self.progress = isCompleted ? 1 : 0  // ✅ Legacy default
     self.createdAt = Date()
     self.userIdHabitIdDateKey = "legacy#\(habitId.uuidString)#"
+    self.updatedAt = Date()
   }
 
   // MARK: Internal
@@ -489,9 +491,14 @@ final class CompletionRecord {
   var date: Date
   var dateKey: String // ✅ PHASE 5: Added field for date-based queries (indexing not supported in
   // current SwiftData)
-  var isCompleted: Bool
-  var progress: Int = 0  // ✅ CRITICAL FIX: Store actual progress count (e.g., 10 for "10 times")
+  var isCompleted: Bool {
+    didSet { updatedAt = Date() }
+  }
+  var progress: Int = 0 {  // ✅ CRITICAL FIX: Store actual progress count (e.g., 10 for "10 times")
+    didSet { updatedAt = Date() }
+  }
   var createdAt: Date
+  var updatedAt: Date?
 
   /// ✅ PHASE 5: Composite unique constraint to prevent duplicate completions
   @Attribute(.unique) var userIdHabitIdDateKey: String

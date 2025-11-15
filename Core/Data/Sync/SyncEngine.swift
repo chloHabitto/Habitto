@@ -33,6 +33,7 @@ actor SyncEngine {
         let isCompleted: Bool
         let progress: Int
         let createdAt: Date
+        let updatedAt: Date
     }
     // MARK: - Singleton
     
@@ -805,7 +806,8 @@ actor SyncEngine {
                     dateKey: completion.dateKey,
                     isCompleted: completion.isCompleted,
                     progress: completion.progress,
-                    createdAt: completion.createdAt
+                    createdAt: completion.createdAt,
+                    updatedAt: completion.updatedAt ?? completion.createdAt
                 )
             }
         }
@@ -890,6 +892,7 @@ actor SyncEngine {
                 "isCompleted": completion.isCompleted,
                 "progress": completion.progress,
                 "createdAt": Timestamp(date: completion.createdAt),
+                "updatedAt": Timestamp(date: completion.updatedAt ?? completion.createdAt),
                 "completionId": completion.completionId
             ]
             
@@ -1171,6 +1174,8 @@ actor SyncEngine {
         let remoteIsCompleted = data["isCompleted"] as? Bool ?? false
         let remoteProgress = data["progress"] as? Int ?? 0
         let remoteCreatedAt = (data["createdAt"] as? Timestamp)?.dateValue()
+        let remoteUpdatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
+        let remoteTimestamp = remoteUpdatedAt ?? remoteCreatedAt ?? .distantPast
         
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
@@ -1184,7 +1189,13 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
             
             if let existingRecord = try? modelContext.fetch(descriptor).first {
-                // Update existing record
+                let localUpdatedAt = existingRecord.updatedAt ?? existingRecord.createdAt
+                // Only overwrite if remote data is newer than local
+                guard remoteTimestamp > localUpdatedAt else {
+                    debugLog("⏭️ SYNC_PULL_KEEP_LOCAL: habitId=\(habitId), dateKey=\(dateKey) local updatedAt=\(localUpdatedAt) remote=\(remoteTimestamp)")
+                    return
+                }
+                
                 let previousProgress = existingRecord.progress
                 let previousCompleted = existingRecord.isCompleted
                 existingRecord.isCompleted = remoteIsCompleted
@@ -1192,6 +1203,7 @@ actor SyncEngine {
                 if let createdAt = remoteCreatedAt {
                     existingRecord.createdAt = createdAt
                 }
+                existingRecord.updatedAt = remoteTimestamp
                 try? modelContext.save()
                 debugLog("🔵 SYNC_PULL_OVERWRITE: habitId=\(habitId), dateKey=\(dateKey), oldProgress=\(previousProgress)/\(previousCompleted), newProgress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
             } else {
@@ -1212,6 +1224,7 @@ actor SyncEngine {
                 if let createdAt = remoteCreatedAt {
                     record.createdAt = createdAt
                 }
+                record.updatedAt = remoteTimestamp
                 
                 modelContext.insert(record)
                 try? modelContext.save()
