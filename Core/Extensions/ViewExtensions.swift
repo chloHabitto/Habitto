@@ -57,6 +57,9 @@ extension View {
 // MARK: - LegacyDateUtils
 
 enum LegacyDateUtils {
+  /// Toggle to enable verbose date logging when debugging time-zone bugs.
+  /// Default is `false` to avoid blocking the main thread with log spam.
+  static var isVerboseLoggingEnabled = false
   // MARK: Internal
 
   static let calendar = Calendar.current
@@ -65,22 +68,28 @@ enum LegacyDateUtils {
 
   static func today() -> Date {
     let now = Date()
-    print("🔍 LegacyDateUtils.today() - Raw Date(): \(now)")
-    print("🔍 LegacyDateUtils.today() - Current timezone: \(TimeZone.current)")
+    if isVerboseLoggingEnabled {
+      print("🔍 LegacyDateUtils.today() - Raw Date(): \(now)")
+      print("🔍 LegacyDateUtils.today() - Current timezone: \(TimeZone.current)")
+    }
 
     // Get today's date components in the current timezone
     let components = calendar.dateComponents([.year, .month, .day], from: now)
     let today = calendar.date(from: components) ?? now
 
-    print("🔍 LegacyDateUtils.today() - Calculated today: \(today)")
-    print("🔍 LegacyDateUtils.today() - Today components: \(components)")
+    if isVerboseLoggingEnabled {
+      print("🔍 LegacyDateUtils.today() - Calculated today: \(today)")
+      print("🔍 LegacyDateUtils.today() - Today components: \(components)")
+    }
 
     return today
   }
 
   /// Force refresh today's date (useful for debugging timezone issues)
   static func forceRefreshToday() -> Date {
-    print("🔄 LegacyDateUtils.forceRefreshToday() - Clearing date cache and recalculating...")
+    if isVerboseLoggingEnabled {
+      print("🔄 LegacyDateUtils.forceRefreshToday() - Clearing date cache and recalculating...")
+    }
     clearDateCache()
 
     // Force timezone refresh
@@ -90,9 +99,11 @@ enum LegacyDateUtils {
     robustCalendar.locale = Locale.current
 
     let today = robustCalendar.startOfDay(for: now)
-    print("🔄 LegacyDateUtils.forceRefreshToday() - New today: \(today)")
-    print(
-      "🔄 LegacyDateUtils.forceRefreshToday() - New components: \(robustCalendar.dateComponents([.year, .month, .day], from: today))")
+    if isVerboseLoggingEnabled {
+      print("🔄 LegacyDateUtils.forceRefreshToday() - New today: \(today)")
+      let components = robustCalendar.dateComponents([.year, .month, .day], from: today)
+      print("🔄 LegacyDateUtils.forceRefreshToday() - New components: \(components)")
+    }
 
     return today
   }
