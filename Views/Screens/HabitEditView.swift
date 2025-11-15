@@ -188,15 +188,11 @@ struct HabitEditView: View {
         .padding(.bottom, 100) // Add bottom padding to account for fixed button
       }
       .background(.surface2)
-      .contentShape(Rectangle())
-      .onTapGesture {
-        // Dismiss keyboard when tapping background
-        UIApplication.shared.sendAction(
-          #selector(UIResponder.resignFirstResponder),
-          to: nil,
-          from: nil,
-          for: nil)
-      }
+      .gesture(
+        TapGesture().onEnded {
+          dismissKeyboard()
+        },
+        including: .gesture)
       .onChange(of: isGoalNumberFocused) { _, newValue in
         guard newValue else { return }
         scrollToField(.goal, with: proxy)
@@ -870,6 +866,14 @@ struct HabitEditView: View {
     DispatchQueue.main.async {
       proxy.scrollTo(target, anchor: .top)
     }
+  }
+
+  private func dismissKeyboard() {
+    UIApplication.shared.sendAction(
+      #selector(UIResponder.resignFirstResponder),
+      to: nil,
+      from: nil,
+      for: nil)
   }
 
   // MARK: - Save Function
