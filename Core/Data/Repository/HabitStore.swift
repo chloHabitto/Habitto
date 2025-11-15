@@ -413,7 +413,7 @@ final actor HabitStore {
       
       // ✅ PRIORITY 1: Always create ProgressEvent (event sourcing is now default)
       // This is the source of truth for all progress changes
-      let goalAmount = StreakDataCalculator.parseGoalAmount(from: currentHabits[index].goal)
+      let goalAmount = currentHabits[index].goalAmount(for: date)
       
       // Get current user ID (used for both event creation and XP checks)
       let userId = await CurrentUser().idOrGuest
@@ -539,7 +539,7 @@ final actor HabitStore {
   /// Falls back to completionHistory for backward compatibility (habits without events yet)
   func getProgress(for habit: Habit, date: Date) async -> Int {
     let dateKey = CoreDataManager.dateKey(for: date)
-    let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+    let goalAmount = habit.goalAmount(for: date)
     
     // Get legacy progress from completionHistory (fallback)
     let legacyProgress = habit.completionHistory[dateKey] ?? 0
@@ -1047,7 +1047,7 @@ final actor HabitStore {
         // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
         // Prefer the recorded completion status for this date to avoid retroactively changing history.
         let recordedStatus = habit.completionStatus[dateKey]
-        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let goalAmount = habit.goalAmount(for: date)
         let isCompleted = recordedStatus ?? (progress >= goalAmount)
         
         // Debug logging with habit type

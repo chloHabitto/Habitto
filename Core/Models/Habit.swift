@@ -139,6 +139,8 @@ struct Habit: Identifiable, Codable, Equatable {
       forKey: .difficultyHistory) ?? [:]
     self.actualUsage = try container
       .decodeIfPresent([String: Int].self, forKey: .actualUsage) ?? [:]
+    self.goalHistory = try container
+      .decodeIfPresent([String: String].self, forKey: .goalHistory) ?? [:]
 
     // Handle migration for new completionTimestamps field
     self.completionTimestamps = try container.decodeIfPresent(
@@ -149,6 +151,7 @@ struct Habit: Identifiable, Codable, Equatable {
     // Decode with defaults for backward compatibility
     self.lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
     self.syncStatus = try container.decodeIfPresent(FirestoreSyncStatus.self, forKey: .syncStatus) ?? .pending
+    ensureGoalHistoryInitialized()
   }
 
   // MARK: - Designated Initializer
@@ -174,6 +177,7 @@ struct Habit: Identifiable, Codable, Equatable {
     completionTimestamps: [String: [Date]] = [:],
     difficultyHistory: [String: Int] = [:],
     actualUsage: [String: Int] = [:],
+    goalHistory: [String: String] = [:],
     lastSyncedAt: Date? = nil,
     syncStatus: FirestoreSyncStatus = .pending)
   {
@@ -200,9 +204,11 @@ struct Habit: Identifiable, Codable, Equatable {
     self.completionTimestamps = completionTimestamps
     self.difficultyHistory = difficultyHistory
     self.actualUsage = actualUsage
+    self.goalHistory = goalHistory
     // Sync metadata
     self.lastSyncedAt = lastSyncedAt
     self.syncStatus = syncStatus
+    ensureGoalHistoryInitialized()
   }
 
   // MARK: - Convenience Initializers
@@ -298,6 +304,7 @@ struct Habit: Identifiable, Codable, Equatable {
     case difficultyHistory
     case actualUsage
     case completionTimestamps
+    case goalHistory
     // Sync metadata (Phase 1: Dual-Write)
     case lastSyncedAt
     case syncStatus
@@ -327,6 +334,8 @@ struct Habit: Identifiable, Codable, Equatable {
     [:] // Track completion timestamps: "yyyy-MM-dd" -> [completion_times]
   var difficultyHistory: [String: Int] =
     [:] // Track daily difficulty: "yyyy-MM-dd" -> Int (1-10 scale)
+  var goalHistory: [String: String] =
+    [:] // Track goal changes per effective date: "yyyy-MM-dd" -> goal string
 
   // Habit Breaking specific properties
   var baseline = 0 // Current average usage
@@ -366,6 +375,45 @@ struct Habit: Identifiable, Codable, Equatable {
     OptimizedHabitStorageManager.shared.clearCache()
   }
 
+  private mutating func ensureGoalHistoryInitialized() {
+    if goalHistory.isEmpty {
+      goalHistory[Self.dateKey(for: startDate)] = goal
+      return
+    }
+
+    if !goalHistory.values.contains(goal) {
+      goalHistory[Self.dateKey(for: Date())] = goal
+    }
+  }
+
+  func goalString(for date: Date) -> String {
+    guard !goalHistory.isEmpty else { return goal }
+
+    let targetDate = DateUtils.startOfDay(for: date)
+    var latestMatch: (date: Date, goal: String)?
+
+    for (key, value) in goalHistory {
+      guard let entryDate = DateUtils.date(from: key) else { continue }
+      let normalizedEntryDate = DateUtils.startOfDay(for: entryDate)
+
+      if normalizedEntryDate <= targetDate {
+        if let existingMatch = latestMatch {
+          if normalizedEntryDate > existingMatch.date {
+            latestMatch = (normalizedEntryDate, value)
+          }
+        } else {
+          latestMatch = (normalizedEntryDate, value)
+        }
+      }
+    }
+
+    return latestMatch?.goal ?? goal
+  }
+
+  func goalAmount(for date: Date) -> Int {
+    StreakDataCalculator.parseGoalAmount(from: goalString(for: date))
+  }
+
   func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
 
@@ -389,6 +437,7 @@ struct Habit: Identifiable, Codable, Equatable {
     try container.encode(completionStatus, forKey: .completionStatus)
     try container.encode(difficultyHistory, forKey: .difficultyHistory)
     try container.encode(actualUsage, forKey: .actualUsage)
+    try container.encode(goalHistory, forKey: .goalHistory)
     try container.encode(completionTimestamps, forKey: .completionTimestamps)
     
     // MARK: - Sync Metadata (Phase 1: Dual-Write)
@@ -408,7 +457,7 @@ struct Habit: Identifiable, Codable, Equatable {
     // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
     // Set completionStatus[dateKey] = true when progress >= goal
     let newProgress = completionHistory[dateKey] ?? 0
-    if let goalAmount = parseGoalAmount(from: goal) {
+    if let goalAmount = parseGoalAmount(from: goalString(for: date)) {
       let isComplete = newProgress >= goalAmount
       completionStatus[dateKey] = isComplete
       print("🔍 COMPLETION FIX - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' marked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
@@ -458,7 +507,7 @@ struct Habit: Identifiable, Codable, Equatable {
     // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
     // Update completionStatus[dateKey] based on whether progress >= goal after decrement
     let newProgress = completionHistory[dateKey] ?? 0
-    if let goalAmount = parseGoalAmount(from: goal) {
+    if let goalAmount = parseGoalAmount(from: goalString(for: date)) {
       let isComplete = newProgress >= goalAmount
       completionStatus[dateKey] = isComplete
       print("🔍 COMPLETION FIX - \(habitType == .breaking ? "Breaking" : "Formation") Habit '\(name)' unmarked | Progress: \(newProgress) | Goal: \(goalAmount) | Completed: \(isComplete)")
@@ -696,7 +745,7 @@ struct Habit: Identifiable, Codable, Equatable {
     let progress = completionHistory[dateKey] ?? 0
     
     // Parse the goal to get the target amount
-    if let targetAmount = parseGoalAmount(from: goal) {
+    if let targetAmount = parseGoalAmount(from: goalString(for: date)) {
       // A habit is complete when progress reaches or exceeds the goal amount
       // This works for BOTH Formation AND Breaking habits
       let isCompleted = progress >= targetAmount

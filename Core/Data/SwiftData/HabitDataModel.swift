@@ -23,7 +23,8 @@ final class HabitData {
     startDate: Date,
     endDate: Date? = nil,
     baseline: Int = 0,
-    target: Int = 1)
+    target: Int = 1,
+    goalHistory: [String: String] = [:])
   {
     self.id = id
     self.userId = userId
@@ -35,6 +36,7 @@ final class HabitData {
     self.schedule = schedule
     self.goal = goal
     self.reminder = reminder
+    self.goalHistoryJSON = Self.encodeGoalHistory(goalHistory)
     self.startDate = startDate
     self.endDate = endDate
     self.baseline = baseline
@@ -61,6 +63,7 @@ final class HabitData {
   var schedule: String
   var goal: String
   var reminder: String
+  var goalHistoryJSON: String = "{}"
   var startDate: Date
   var endDate: Date?
   var createdAt: Date
@@ -114,6 +117,27 @@ final class HabitData {
       opacity: Double(components[3]))
   }
 
+  private static func encodeGoalHistory(_ history: [String: String]) -> String {
+    guard !history.isEmpty else {
+      return "{}"
+    }
+
+    if let data = try? JSONEncoder().encode(history),
+       let string = String(data: data, encoding: .utf8) {
+      return string
+    }
+
+    return "{}"
+  }
+
+  private static func decodeGoalHistory(_ json: String) -> [String: String] {
+    guard let data = json.data(using: .utf8) else {
+      return [:]
+    }
+
+    return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+  }
+
   // MARK: - Update Methods
 
   @MainActor
@@ -130,6 +154,7 @@ final class HabitData {
     endDate = habit.endDate
     baseline = habit.baseline
     target = habit.target
+    goalHistoryJSON = Self.encodeGoalHistory(habit.goalHistory)
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
     
@@ -147,8 +172,6 @@ final class HabitData {
   @MainActor
   private func syncCompletionRecordsFromHabit(_ habit: Habit) async {
     let context = SwiftDataContainer.shared.modelContext
-    let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
-    
     // ✅ CRITICAL FIX: Parse dateString as "yyyy-MM-dd" format (dateKey format)
     // completionHistory uses DateUtils.dateKey format, not ISO8601
     let dateFormatter = DateFormatter()
@@ -176,6 +199,7 @@ final class HabitData {
       }
       let dateKey = DateUtils.dateKey(for: date)
       let recordedStatus = habit.completionStatus[dateKey]
+      let goalAmount = habit.goalAmount(for: date)
       let isCompleted = recordedStatus ?? (progress >= goalAmount)
       parsedEntries.append((date, dateKey, progress, isCompleted))
     }
@@ -428,7 +452,8 @@ final class HabitData {
       completionStatus: completionStatusDict,  // ✅ NOW REBUILT!
       completionTimestamps: completionTimestampsDict,  // ✅ NOW REBUILT!
       difficultyHistory: difficultyHistoryDict,
-      actualUsage: actualUsageDict)
+      actualUsage: actualUsageDict,
+      goalHistory: Self.decodeGoalHistory(goalHistoryJSON))
   }
 
   // MARK: Private

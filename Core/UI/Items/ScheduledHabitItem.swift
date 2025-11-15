@@ -300,9 +300,17 @@ struct ScheduledHabitItem: View {
     }
   }
 
+  private var goalStringForSelectedDate: String {
+    habit.goalString(for: selectedDate)
+  }
+
+  private var goalAmountForSelectedDate: Int {
+    extractNumericGoalAmount(from: goalStringForSelectedDate)
+  }
+
   /// Computed property for progress percentage (allows over-completion display)
   private var progressPercentage: Double {
-    let goalAmount = extractNumericGoalAmount(from: habit.goal)
+    let goalAmount = goalAmountForSelectedDate
     guard goalAmount > 0 else { return 0.0 }
     // Use local currentProgress for immediate UI feedback
     let percentage = Double(currentProgress) / Double(goalAmount)
@@ -316,7 +324,7 @@ struct ScheduledHabitItem: View {
     // ✅ BOTH habit types show: currentProgress / goalAmount
     // For Breaking habits: "0/10" where 10 comes from "Goal: 10 times/everyday"
     // baseline and current fields are DISPLAY-ONLY (for statistics, not progress)
-    return "\(currentProgress)/\(extractGoalAmount(from: habit.goal))"
+    return "\(currentProgress)/\(extractGoalAmount(from: goalStringForSelectedDate))"
   }
 
   /// Computed property to check if it's a vacation day and vacation is currently active
@@ -438,7 +446,7 @@ struct ScheduledHabitItem: View {
   /// Helper function to check if habit is completed for the selected date
   private func isHabitCompleted() -> Bool {
     // Use local currentProgress for immediate UI feedback
-    let goalAmount = extractNumericGoalAmount(from: habit.goal)
+    let goalAmount = goalAmountForSelectedDate
     return currentProgress >= goalAmount
   }
 
@@ -447,7 +455,7 @@ struct ScheduledHabitItem: View {
   /// Design: Instant jump to goal (complete) or reset to 0 (uncomplete)
   /// Note: Swipe gestures (+1/-1) are still available for gradual progress tracking
   private func completeHabit() {
-    let goalAmount = extractNumericGoalAmount(from: habit.goal)
+    let goalAmount = goalAmountForSelectedDate
     
     print("🔘 CIRCLE_BUTTON: Current=\(currentProgress), Goal=\(goalAmount)")
     
@@ -598,7 +606,7 @@ struct ScheduledHabitItem: View {
     }
 
     // Check if habit is completed and show completion sheet
-    let goalAmount = extractNumericGoalAmount(from: habit.goal)
+    let goalAmount = goalAmountForSelectedDate
     if newProgress >= goalAmount {
       showCompletionSheet()
     }
