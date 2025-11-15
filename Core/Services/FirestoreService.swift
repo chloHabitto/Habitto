@@ -48,7 +48,6 @@ class FirestoreService: FirebaseService, ObservableObject {
   // MARK: Lifecycle
   
   nonisolated private init() {
-    FirebaseBootstrapper.configureIfNeeded(source: "FirestoreService.init")
     setupTelemetry()
   }
   

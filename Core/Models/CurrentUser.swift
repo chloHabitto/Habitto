@@ -16,17 +16,18 @@ struct CurrentUser {
   var id: String {
     get async {
       await MainActor.run {
-        guard let user = AuthenticationManager.shared.currentUser else {
-          return Self.guestId
+        if let resolvedId = resolveUserId(from: AuthenticationManager.shared.currentUser) {
+          return resolvedId
         }
         
-        // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
-        // Anonymous users should use "" as userId for consistency with guest mode
-        if let firebaseUser = user as? User, firebaseUser.isAnonymous {
-          return Self.guestId // Anonymous = guest
+        // ✅ FALLBACK: Auth.auth().currentUser is available before AuthenticationManager finishes setup
+        if let authUser = Auth.auth().currentUser,
+           let fallbackId = resolveUserId(from: authUser)
+        {
+          return fallbackId
         }
         
-        return user.uid // Authenticated non-anonymous user
+        return Self.guestId
       }
     }
   }
@@ -42,7 +43,10 @@ struct CurrentUser {
   var isAuthenticated: Bool {
     get async {
       await MainActor.run {
-        AuthenticationManager.shared.currentUser != nil
+        if AuthenticationManager.shared.currentUser != nil {
+          return true
+        }
+        return Auth.auth().currentUser != nil
       }
     }
   }
@@ -58,7 +62,10 @@ struct CurrentUser {
   var email: String? {
     get async {
       await MainActor.run {
-        AuthenticationManager.shared.currentUser?.email
+        if let email = AuthenticationManager.shared.currentUser?.email {
+          return email
+        }
+        return Auth.auth().currentUser?.email
       }
     }
   }
@@ -67,7 +74,10 @@ struct CurrentUser {
   var displayName: String? {
     get async {
       await MainActor.run {
-        AuthenticationManager.shared.currentUser?.displayName
+        if let displayName = AuthenticationManager.shared.currentUser?.displayName {
+          return displayName
+        }
+        return Auth.auth().currentUser?.displayName
       }
     }
   }
@@ -80,6 +90,23 @@ struct CurrentUser {
   /// Get a safe user ID (never nil, falls back to guest)
   static func safeUserId(_ userId: String?) -> String {
     userId ?? guestId
+  }
+
+  // MARK: - Helpers
+
+  private func resolveUserId(from user: UserProtocol?) -> String? {
+    guard let user else { return nil }
+
+    if let firebaseUser = user as? User {
+      if firebaseUser.isAnonymous {
+        return Self.guestId
+      }
+      let uid = firebaseUser.uid
+      return uid.isEmpty ? Self.guestId : uid
+    }
+
+    let uid = user.uid
+    return uid.isEmpty ? Self.guestId : uid
   }
 }
 
