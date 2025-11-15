@@ -263,11 +263,23 @@ class DailyAwardService: ObservableObject {
     private func startXPStateStream() {
         print("👂 DailyAwardService: Starting XP state stream")
         
-        Task {
+        Task { @MainActor in
             guard await waitForFirebaseConfigurationIfNeeded() else {
                 print("⚠️ DailyAwardService: Firebase not configured, XP stream not started")
                 return
             }
+            
+            do {
+                if let snapshot = try await repository.fetchXPStateOnce() {
+                    xpState = snapshot
+                    print("✅ DailyAwardService: Loaded initial XP snapshot (totalXP: \(snapshot.totalXP))")
+                } else {
+                    print("⚠️ DailyAwardService: XP snapshot missing, awaiting live stream")
+                }
+            } catch {
+                print("❌ DailyAwardService: Failed to load initial XP snapshot: \(error.localizedDescription)")
+            }
+            
             repository.streamXPState()
         }
     }
@@ -279,6 +291,15 @@ class DailyAwardService: ObservableObject {
         guard await waitForFirebaseConfigurationIfNeeded() else {
             print("⚠️ DailyAwardService: Firebase not configured, skipping XP refresh")
             return
+        }
+        
+        do {
+            if let snapshot = try await repository.fetchXPStateOnce() {
+                xpState = snapshot
+                return
+            }
+        } catch {
+            print("❌ DailyAwardService: refresh failed to fetch XP snapshot: \(error.localizedDescription)")
         }
         
         xpState = repository.xpState

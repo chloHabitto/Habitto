@@ -287,6 +287,26 @@ class FirestoreRepository: ObservableObject {
     print("✅ FirestoreRepository: XP awarded")
   }
   
+  /// Fetch XP state once (used to hydrate UI before live stream updates)
+  func fetchXPStateOnce() async throws -> XPState? {
+    guard let userId = userId else {
+      throw FirestoreError.notAuthenticated
+    }
+    
+    let db = Firestore.firestore()
+    let doc = try await db.collection("users").document(userId)
+      .collection("xp").document("state").getDocument()
+    
+    guard let data = doc.data(), let snapshot = XPState.from(data: data) else {
+      print("⚠️ FirestoreRepository: XP state document missing or malformed")
+      return nil
+    }
+    
+    xpState = snapshot
+    print("✅ FirestoreRepository: XP snapshot loaded (totalXP: \(snapshot.totalXP))")
+    return snapshot
+  }
+  
   /// Verify XP integrity (sum of ledger should equal state.totalXP)
   func verifyXPIntegrity() async throws -> Bool {
     guard let userId = userId else {
