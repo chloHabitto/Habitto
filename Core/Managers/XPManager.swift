@@ -21,8 +21,9 @@ class XPManager {
   // 🔍 DIAGNOSTIC: Fail-fast registry for duplicate instances
   private static weak var _instance: XPManager?
 
-  init(awardService: DailyAwardService = .shared) {
-    self.awardService = awardService
+  init(awardService: DailyAwardService? = nil) {
+    let resolvedService = awardService ?? DailyAwardService.shared
+    self.awardService = resolvedService
     // 🔍 FAIL-FAST: Prevent multiple instances
     if let existing = XPManager._instance {
       let existingId = ObjectIdentifier(existing)
@@ -41,11 +42,11 @@ class XPManager {
     loadDailyAwards()
     observeXPState()
     
-    if let xpState = awardService.xpState {
+    if let xpState = resolvedService.xpState {
       applyXPState(xpState)
     } else {
       Task {
-        await awardService.refreshXPState()
+        await self.awardService.refreshXPState()
       }
     }
     
