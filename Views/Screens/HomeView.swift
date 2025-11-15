@@ -73,7 +73,7 @@ class HomeViewState: ObservableObject {
 
   // UI State
   @Published var showingCreateHabit = false
-  @Published var habitToEdit: Habit? = nil
+  @Published var habitToEditSession: HabitEditSession? = nil
   @Published var showingDeleteConfirmation = false
   @Published var habitToDelete: Habit?
   @Published var showingOverviewView = false
@@ -786,8 +786,8 @@ struct HomeView: View {
         },
         onEditHabit: { habit in
           debugLog("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
-          debugLog("🔄 HomeView: Setting habitToEdit to open HabitEditView")
-          state.habitToEdit = habit
+          debugLog("🔄 HomeView: Setting habitToEditSession to open HabitEditView")
+          state.habitToEditSession = HabitEditSession(habit: habit)
         },
         onCreateHabit: {
           state.showingCreateHabit = true
@@ -956,13 +956,13 @@ struct HomeView: View {
         }
       })
     }
-    .fullScreenCover(item: $state.habitToEdit) { habit in
-      HabitEditView(habit: habit, onSave: { updatedHabit in
+    .fullScreenCover(item: $state.habitToEditSession) { session in
+      HabitEditView(habit: session.habit, onSave: { updatedHabit in
         debugLog("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
         Task {
           await state.updateHabit(updatedHabit)
           await MainActor.run {
-            state.habitToEdit = nil
+            state.habitToEditSession = nil
           }
         }
         debugLog("🔄 HomeView: Habit updated and saved successfully")
