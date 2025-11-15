@@ -419,25 +419,6 @@ class HomeViewState: ObservableObject {
           return
         }
         
-            // Calculate streak from CompletionRecords
-            let today = DateUtils.startOfDay(for: Date())
-            let calendar = Calendar.current
-            
-            // ✅ Start from yesterday, but check if today is complete first
-            // Streak counts consecutive complete days up to AND INCLUDING today if today is complete
-            var checkDate = today
-            var currentStreakCount = 0
-            var lastCompleteDate: Date? = nil
-            
-            // Look back up to 365 days or earliest habit start (whichever is later)
-            let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
-            let earliestHabitStart = habits
-              .map { calendar.startOfDay(for: $0.startDate) }
-              .min() ?? defaultStartDate
-            let startDate = max(defaultStartDate, earliestHabitStart)
-            
-            debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
-        
         var completionDescriptor = FetchDescriptor<CompletionRecord>()
         completionDescriptor.includePendingChanges = true
         let allCompletionRecords = try modelContext.fetch(completionDescriptor)
@@ -449,86 +430,74 @@ class HomeViewState: ObservableObject {
             return record.userId == userId
           }
         }
-        let recordsByDate = Dictionary(grouping: filteredCompletionRecords, by: { $0.dateKey })
-        let todayKey = Habit.dateKey(for: today)
-        let todayRecords = filteredCompletionRecords.filter { $0.dateKey == todayKey }
-        if todayRecords.isEmpty {
-          debugLog("🔍 STREAK_DB: \(todayKey) CompletionRecord: none found")
-        } else {
-          for record in todayRecords {
-            debugLog("🔍 STREAK_DB: \(todayKey) CompletionRecord -> habitId=\(record.habitId), progress=\(record.progress), isCompleted=\(record.isCompleted), userId=\(record.userId)")
-          }
+
+        let today = DateUtils.startOfDay(for: Date())
+        let calendar = Calendar.current
+
+        debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
+
+        let computation = StreakCalculator.computeCurrentStreak(
+          habits: habits,
+          completionRecords: filteredCompletionRecords,
+          today: today,
+          calendar: calendar)
+
+        let oldStreak = streak.currentStreak
+        let mismatchDetected = oldStreak != computation.currentStreak
+
+        debugLog("🔍 STREAK_END: Calculated streak = \(computation.currentStreak), saving to GlobalStreakModel")
+        streak.currentStreak = computation.currentStreak
+        streak.longestStreak = max(streak.longestStreak, computation.currentStreak)
+        streak.lastCompleteDate = computation.lastCompleteDate
+        streak.lastUpdated = Date()
+
+        try modelContext.save()
+
+        debugLog("")
+        debugLog(String(repeating: "=", count: 60))
+        debugLog("✅ STREAK_RECALC: Recalculation COMPLETE")
+        debugLog("   Old streak: \(oldStreak) day(s)")
+        debugLog("   New streak: \(computation.currentStreak) day(s)")
+        debugLog("   Last complete date: \(computation.lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
+        debugLog("   Longest streak: \(streak.longestStreak) day(s)")
+        debugLog("   ✅ GLOBAL_STREAK_FINAL: Saved to GlobalStreakModel and UI: \(computation.currentStreak)")
+        debugLog(String(repeating: "=", count: 60))
+        debugLog("")
+
+        let userFingerprint = userId.isEmpty ? "guest" : String(userId.prefix(6))
+        TelemetryService.shared.logEvent(
+          "streak.update.success",
+          data: [
+            "user": userFingerprint,
+            "old": oldStreak,
+            "new": computation.currentStreak,
+            "processedDays": computation.processedDayCount
+          ])
+
+        if mismatchDetected {
+          TelemetryService.shared.logEvent(
+            "streak.integrity.mismatch",
+            data: [
+              "user": userFingerprint,
+              "previous": oldStreak,
+              "current": computation.currentStreak
+            ])
         }
 
-        while checkDate >= startDate {
-          let dateKey = Habit.dateKey(for: checkDate)
-          
-          // Get scheduled habits for this date
-          // ✅ CRITICAL FIX: Use EXACT same scheduling logic as XP calculation
-          let scheduledHabits = habits.filter { habit in
-            HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: checkDate, habits: habits)
-          }
-          
-          guard !scheduledHabits.isEmpty else {
-            // No habits scheduled for this date - this might mean app wasn't used yet
-            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
-            continue
-          }
-          
-          let completedRecords = recordsByDate[dateKey] ?? []
-          
-          // Check if ALL habits have a completed CompletionRecord (same as XP logic)
-          let allComplete = scheduledHabits.allSatisfy { habit in
-            completedRecords.contains(where: { $0.habitId == habit.id })
-          }
-          
-          let isToday = calendar.isDate(checkDate, inSameDayAs: today)
-          
-          if allComplete {
-            debugLog("✅ STREAK_DEBUG: \(dateKey) - ALL COMPLETE, streak now \(currentStreakCount + 1)")
-            currentStreakCount += 1
-            lastCompleteDate = lastCompleteDate ?? checkDate
-            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
-            continue
-          }
-          
-          // CRITICAL: When today is incomplete, continue from yesterday (don't break streak)
-          if isToday {
-            debugLog("⚠️ STREAK_DEBUG: TODAY (\(dateKey)) INCOMPLETE - SKIPPING TO YESTERDAY")
-            debugLog("   Current streak before skip: \(currentStreakCount)")
-            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
-            continue
-          }
-          
-          debugLog("❌ STREAK_DEBUG: \(dateKey) - INCOMPLETE, BREAKING STREAK at count \(currentStreakCount)")
-          break
-        }
-        
-            // Update streak model
-            let oldStreak = streak.currentStreak
-            debugLog("🔍 STREAK_END: Calculated streak = \(currentStreakCount), saving to GlobalStreakModel")
-            streak.currentStreak = currentStreakCount
-            streak.longestStreak = max(streak.longestStreak, currentStreakCount)
-            streak.lastCompleteDate = lastCompleteDate
-            streak.lastUpdated = Date()
-            
-            try modelContext.save()
-            
-            debugLog("")
-            debugLog(String(repeating: "=", count: 60))
-            debugLog("✅ STREAK_RECALC: Recalculation COMPLETE")
-            debugLog("   Old streak: \(oldStreak) day(s)")
-            debugLog("   New streak: \(currentStreakCount) day(s)")
-            debugLog("   Last complete date: \(lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
-            debugLog("   Longest streak: \(streak.longestStreak) day(s)")
-            debugLog("   ✅ GLOBAL_STREAK_FINAL: Saved to GlobalStreakModel and UI: \(currentStreakCount)")
-            debugLog(String(repeating: "=", count: 60))
-            debugLog("")
-            
-            // Reload the UI streak
-            updateStreak()
+        let snapshot = StreakIntegritySnapshot(
+          userId: userId,
+          timestamp: Date(),
+          currentStreak: computation.currentStreak,
+          longestStreak: streak.longestStreak,
+          lastCompleteDate: computation.lastCompleteDate,
+          completionChecksum: StreakCalculator.checksum(for: filteredCompletionRecords))
+        StreakIntegrityChecker.shared.handleSnapshot(snapshot)
+
+        // Reload the UI streak
+        updateStreak()
         
       } catch {
+        TelemetryService.shared.logError("streak.update.failed", error: error)
         debugLog("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
       }
     }
