@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - BottomSheetManager
 
@@ -25,8 +26,16 @@ class BottomSheetManager: ObservableObject {
   }
 
   func dismissSheet() {
+    // Capture which sheet is being dismissed before clearing state
+    let sheetBeingDismissed = currentSheet
     isShowingSheet = false
     currentSheet = nil
+    // If the icon chooser is closing, also broadcast a notification so any emoji sheet can close
+    if case .icon = sheetBeingDismissed {
+      NotificationCenter.default.post(name: .iconSheetClosed, object: nil)
+      // Force dismiss any active keyboard
+      UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
   }
 }
 
@@ -169,6 +178,14 @@ extension View {
   func withBottomSheetManager() -> some View {
     environment(\.bottomSheetManager, BottomSheetManager())
   }
+}
+
+// MARK: - Notifications
+
+extension Notification.Name {
+  /// Posted when the icon bottom sheet (choose icon) is dismissed,
+  /// allowing any emoji keyboard sheets to close in sync.
+  static let iconSheetClosed = Notification.Name("iconSheetClosed")
 }
 
 #Preview {

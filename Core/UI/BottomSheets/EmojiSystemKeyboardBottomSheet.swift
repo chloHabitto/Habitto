@@ -5,20 +5,55 @@ struct EmojiSystemKeyboardBottomSheet: View {
 
   let onClose: () -> Void
   let onSave: (String) -> Void
+  @Environment(\.dismiss) private var dismiss
 
   @FocusState private var isFocused: Bool
   @State private var draft: String = ""
   @State private var hasAppeared = false
   @State private var focusEnforcer: Task<Void, Never>? = nil
+  @State private var allowResign: Bool = false
+  @State private var isClosing: Bool = false
 
   var body: some View {
-    BaseBottomSheet(
+    // Two-phase close: keyboard first, then sheet
+    let initiateClose: () -> Void = {
+      guard isClosing == false else { return }
+      isClosing = true
+      allowResign = true
+      isFocused = false
+      UIApplication.shared.sendAction(
+        #selector(UIResponder.resignFirstResponder),
+        to: nil,
+        from: nil,
+        for: nil)
+      Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(300))
+        dismiss()
+        onClose()
+      }
+    }
+
+    return BaseBottomSheet(
       title: "Choose Icon",
       description: "Select an emoji for your habit",
-      onClose: onClose,
+      onClose: initiateClose,
       confirmButton: {
+        // Save selection, then close via the same two-phase approach
         let normalized = draft.isEmpty ? selectedEmoji : draft
-        onSave(normalized)
+        isClosing = true
+        allowResign = true
+        isFocused = false
+        UIApplication.shared.sendAction(
+          #selector(UIResponder.resignFirstResponder),
+          to: nil,
+          from: nil,
+          for: nil)
+        Task { @MainActor in
+          try? await Task.sleep(for: .milliseconds(300))
+          onSave(normalized)
+          dismiss()
+          onClose()
+        }
       },
       confirmButtonTitle: "Save")
     {
@@ -44,13 +79,14 @@ struct EmojiSystemKeyboardBottomSheet: View {
             print("🎯 Keyboard opened")
           },
           onEndEditing: {
-            print("⚠️ Keyboard attempted to close - forcing reopen")
-            // Immediate refocus to prevent flicker or auto-dismiss
-            isFocused = true
+            // If we are not in a dismissal flow, keep the keyboard open
+            if allowResign == false {
+              isFocused = true
+            }
           },
-          // Never allow resign; keep the keyboard always up in this sheet
+          // Allow resign only when the sheet is actively dismissing
           shouldAllowEndEditing: {
-            false
+            allowResign
           },
           shouldChangeText: { current, range, replacement in
             // Allow backspace
@@ -85,11 +121,13 @@ struct EmojiSystemKeyboardBottomSheet: View {
       .contentShape(Rectangle())
     }
     .background(.surface2)
-    .interactiveDismissDisabled()
+    // Block swipe-to-dismiss entirely to avoid racing with keyboard animation
+    .interactiveDismissDisabled(true)
     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     .onAppear {
       print("📱 Sheet appeared")
       hasAppeared = true
+      allowResign = false
       // Start with empty input unless the existing selection is a single emoji
       if selectedEmoji.isSingleEmoji {
         draft = selectedEmoji
@@ -135,12 +173,25 @@ struct EmojiSystemKeyboardBottomSheet: View {
         }
       }
     }
+    // If the global "choose icon" sheet closes elsewhere, permit resign and drop focus immediately.
+    .onReceive(NotificationCenter.default.publisher(for: .iconSheetClosed)) { _ in
+      allowResign = true
+      isFocused = false
+    }
     .onDisappear {
       print("👋 Sheet disappearing")
       hasAppeared = false
       focusEnforcer?.cancel()
       focusEnforcer = nil
+      // Ensure we allow the text field to resign when this sheet goes away
+      allowResign = true
       isFocused = false
+      // Hard-stop: force-dismiss any active keyboard globally
+      UIApplication.shared.sendAction(
+        #selector(UIResponder.resignFirstResponder),
+        to: nil,
+        from: nil,
+        for: nil)
     }
   }
 }
