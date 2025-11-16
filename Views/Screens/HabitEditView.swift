@@ -40,8 +40,10 @@ struct HabitEditView: View {
   @State private var showingTargetUnitSheet = false
   @State private var showingTargetFrequencySheet = false
 
-  /// Force UI updates when number changes
-  @State private var uiUpdateTrigger = false
+  /// Cached unit display strings to avoid recomputation and re-render forcing
+  @State private var goalUnitDisplay: String = "time"
+  @State private var baselineUnitDisplay: String = "time"
+  @State private var targetUnitDisplay: String = "time"
 
   // Sheet states
   @State private var showingEmojiPicker = false
@@ -54,8 +56,6 @@ struct HabitEditView: View {
   // Focus states for text fields
   @FocusState private var isNameFieldFocused: Bool
   @FocusState private var isDescriptionFieldFocused: Bool
-  @FocusState private var disabledFocusProxy: Bool
-  @State private var canActivateFocus = false
 
   private var originalHabit: Habit { form.originalHabit }
 
@@ -86,7 +86,7 @@ struct HabitEditView: View {
 
     if form.selectedHabitType == .formation {
       // For habit building, check goal fields
-      let currentGoal = "\(form.goalNumber) \(pluralizedGoalUnit) on \(form.goalFrequency)"
+      let currentGoal = "\(form.goalNumber) \(goalUnitDisplay) on \(form.goalFrequency)"
       let originalGoal = originalHabit.goal
       unifiedChanges = currentGoal != originalGoal
     } else {
@@ -99,29 +99,11 @@ struct HabitEditView: View {
     return basicChanges || scheduleChanges || unifiedChanges
   }
 
-  /// NEW Unified computed properties
-  private var pluralizedGoalUnit: String {
-    let number = Int(form.goalNumber) ?? 1
-    if number == 0 {
-      return "time" // Always show singular for 0
-    }
-    return pluralizedUnit(number, unit: form.goalUnit)
-  }
-
-  private var pluralizedBaselineUnit: String {
-    let number = Int(form.baselineNumber) ?? 1
-    if number == 0 {
-      return "time" // Always show singular for 0
-    }
-    return pluralizedUnit(number, unit: form.baselineUnit)
-  }
-
-  private var pluralizedTargetUnit: String {
-    let number = Int(form.targetNumber) ?? 1
-    if number == 0 {
-      return "time" // Always show singular for 0
-    }
-    return pluralizedUnit(number, unit: form.targetUnit)
+  /// Unit pluralization helpers
+  private func computePluralizedUnit(for numberText: String, unit: String) -> String {
+    let number = Int(numberText) ?? 1
+    if number == 0 { return "time" }
+    return pluralizedUnit(number, unit: unit)
   }
 
   /// NEW Unified computed properties for validation
@@ -136,8 +118,24 @@ struct HabitEditView: View {
   }
 
   private var isTargetValid: Bool {
-    let number = Int(form.targetNumber) ?? 0
-    return number >= 0 // Allow 0 for reduction goal in habit breaking
+    let targetValue = Int(form.targetNumber) ?? 0
+    // Allow 0 for reduction goal in habit breaking, but enforce baseline > target when in breaking mode
+    if form.selectedHabitType == .breaking {
+      let baselineValue = Int(form.baselineNumber) ?? 0
+      return targetValue >= 0 && baselineValue > targetValue
+    }
+    return targetValue >= 0
+  }
+
+  /// Inline error message for target when breaking validation fails (baseline must be > target)
+  private var targetInlineErrorMessage: String {
+    let baselineValue = Int(form.baselineNumber) ?? 0
+    let targetValue = Int(form.targetNumber) ?? 0
+    if form.selectedHabitType == .breaking && baselineValue <= targetValue {
+      let suggested = max(targetValue + 5, targetValue + 1)
+      return "Goal must be less than Current. Suggested Current: \(suggested)"
+    }
+    return "Please enter a number greater than or equal to 0"
   }
 
   /// Overall form validation
@@ -223,14 +221,13 @@ struct HabitEditView: View {
         title: "Goal",
         description: "What do you want to achieve?",
         numberText: $form.goalNumber,
-        unitText: pluralizedGoalUnit,
+        unitText: goalUnitDisplay,
         frequencyText: form.goalFrequency,
         isValid: isGoalValid,
         errorMessage: "Please enter a number greater than 0",
         onUnitTap: { showingGoalUnitSheet = true },
         onFrequencyTap: { showingGoalFrequencySheet = true },
-        uiUpdateTrigger: uiUpdateTrigger,
-        isFocused: canActivateFocus ? $isGoalNumberFocused : $disabledFocusProxy)
+        isFocused: $isGoalNumberFocused)
       .id(ScrollTarget.goal)
     } else {
       // Habit Breaking Form
@@ -240,14 +237,13 @@ struct HabitEditView: View {
           title: "Current",
           description: "How much do you currently do?",
           numberText: $form.baselineNumber,
-          unitText: pluralizedBaselineUnit,
+          unitText: baselineUnitDisplay,
           frequencyText: form.baselineFrequency,
           isValid: isBaselineValid,
           errorMessage: "Please enter a number greater than 0",
           onUnitTap: { showingBaselineUnitSheet = true },
           onFrequencyTap: { showingBaselineFrequencySheet = true },
-          uiUpdateTrigger: uiUpdateTrigger,
-          isFocused: canActivateFocus ? $isBaselineFieldFocused : $disabledFocusProxy)
+          isFocused: $isBaselineFieldFocused)
         .id(ScrollTarget.baseline)
 
         // Target - NEW UNIFIED APPROACH
@@ -255,14 +251,13 @@ struct HabitEditView: View {
           title: "Goal",
           description: "How much do you want to reduce to?",
           numberText: $form.targetNumber,
-          unitText: pluralizedTargetUnit,
+          unitText: targetUnitDisplay,
           frequencyText: form.targetFrequency,
           isValid: isTargetValid,
-          errorMessage: "Please enter a number greater than or equal to 0",
+          errorMessage: targetInlineErrorMessage,
           onUnitTap: { showingTargetUnitSheet = true },
           onFrequencyTap: { showingTargetFrequencySheet = true },
-          uiUpdateTrigger: uiUpdateTrigger,
-          isFocused: canActivateFocus ? $isTargetFieldFocused : $disabledFocusProxy)
+          isFocused: $isTargetFieldFocused)
         .id(ScrollTarget.target)
       }
     }
@@ -397,13 +392,10 @@ struct HabitEditView: View {
         .navigationTitle("Edit habit")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-          canActivateFocus = false
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            canActivateFocus = true
-          }
-        }
-        .onDisappear {
-          canActivateFocus = false
+          // Initialize cached unit display values
+          goalUnitDisplay = computePluralizedUnit(for: form.goalNumber, unit: form.goalUnit)
+          baselineUnitDisplay = computePluralizedUnit(for: form.baselineNumber, unit: form.baselineUnit)
+          targetUnitDisplay = computePluralizedUnit(for: form.targetNumber, unit: form.targetUnit)
         }
         .sheet(isPresented: $showingEmojiPicker) {
           EmojiKeyboardBottomSheet(
@@ -526,14 +518,24 @@ struct HabitEditView: View {
             },
             initialSchedule: form.targetFrequency)
         }
-        .onChange(of: form.goalNumber) { _, _ in
-          uiUpdateTrigger.toggle()
+        // Update cached unit display values reactively
+        .onChange(of: form.goalNumber) { _, newValue in
+          goalUnitDisplay = computePluralizedUnit(for: newValue, unit: form.goalUnit)
         }
-        .onChange(of: form.baselineNumber) { _, _ in
-          uiUpdateTrigger.toggle()
+        .onChange(of: form.goalUnit) { _, newValue in
+          goalUnitDisplay = computePluralizedUnit(for: form.goalNumber, unit: newValue)
         }
-        .onChange(of: form.targetNumber) { _, _ in
-          uiUpdateTrigger.toggle()
+        .onChange(of: form.baselineNumber) { _, newValue in
+          baselineUnitDisplay = computePluralizedUnit(for: newValue, unit: form.baselineUnit)
+        }
+        .onChange(of: form.baselineUnit) { _, newValue in
+          baselineUnitDisplay = computePluralizedUnit(for: form.baselineNumber, unit: newValue)
+        }
+        .onChange(of: form.targetNumber) { _, newValue in
+          targetUnitDisplay = computePluralizedUnit(for: newValue, unit: form.targetUnit)
+        }
+        .onChange(of: form.targetUnit) { _, newValue in
+          targetUnitDisplay = computePluralizedUnit(for: form.targetNumber, unit: newValue)
         }
 
       }
@@ -831,10 +833,8 @@ struct HabitEditView: View {
   }
   
   private func scrollToField(_ target: ScrollTarget, with proxy: ScrollViewProxy) {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-      withAnimation(.easeInOut(duration: 0.3)) {
-        proxy.scrollTo(target, anchor: .center)
-      }
+    withAnimation(.easeInOut(duration: 0.2)) {
+      proxy.scrollTo(target, anchor: .center)
     }
   }
 
