@@ -54,6 +54,8 @@ struct HabitEditView: View {
   // Focus states for text fields
   @FocusState private var isNameFieldFocused: Bool
   @FocusState private var isDescriptionFieldFocused: Bool
+  @FocusState private var disabledFocusProxy: Bool
+  @State private var canActivateFocus = false
 
   private var originalHabit: Habit { form.originalHabit }
 
@@ -228,7 +230,7 @@ struct HabitEditView: View {
         onUnitTap: { showingGoalUnitSheet = true },
         onFrequencyTap: { showingGoalFrequencySheet = true },
         uiUpdateTrigger: uiUpdateTrigger,
-        isFocused: $isGoalNumberFocused)
+        isFocused: canActivateFocus ? $isGoalNumberFocused : $disabledFocusProxy)
       .id(ScrollTarget.goal)
     } else {
       // Habit Breaking Form
@@ -245,7 +247,7 @@ struct HabitEditView: View {
           onUnitTap: { showingBaselineUnitSheet = true },
           onFrequencyTap: { showingBaselineFrequencySheet = true },
           uiUpdateTrigger: uiUpdateTrigger,
-          isFocused: $isBaselineFieldFocused)
+          isFocused: canActivateFocus ? $isBaselineFieldFocused : $disabledFocusProxy)
         .id(ScrollTarget.baseline)
 
         // Target - NEW UNIFIED APPROACH
@@ -260,7 +262,7 @@ struct HabitEditView: View {
           onUnitTap: { showingTargetUnitSheet = true },
           onFrequencyTap: { showingTargetFrequencySheet = true },
           uiUpdateTrigger: uiUpdateTrigger,
-          isFocused: $isTargetFieldFocused)
+          isFocused: canActivateFocus ? $isTargetFieldFocused : $disabledFocusProxy)
         .id(ScrollTarget.target)
       }
     }
@@ -394,6 +396,15 @@ struct HabitEditView: View {
           }
         .navigationTitle("Edit habit")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+          canActivateFocus = false
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            canActivateFocus = true
+          }
+        }
+        .onDisappear {
+          canActivateFocus = false
+        }
         .sheet(isPresented: $showingEmojiPicker) {
           EmojiKeyboardBottomSheet(
             selectedEmoji: $form.selectedIcon,
