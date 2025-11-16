@@ -905,10 +905,21 @@ struct HabitEditView: View {
     }
 
     var updatedGoalHistory = originalHabit.goalHistory
+    let startKey = Habit.dateKey(for: originalHabit.startDate)
+    
+    // ✅ CRITICAL FIX: Always ensure start date entry exists BEFORE adding new goal change entry
+    // This preserves the original goal (1) for dates 12th-14th even after goal changes to 2 on 15th
     if updatedGoalHistory.isEmpty {
-      let startKey = Habit.dateKey(for: originalHabit.startDate)
+      // No history - initialize with start date goal
+      updatedGoalHistory[startKey] = originalHabit.goal
+    } else if !updatedGoalHistory.keys.contains(startKey) {
+      // History exists but start date entry is missing - add it with original goal
+      // Use the earliest entry's goal as original goal if it's before start date,
+      // otherwise preserve the original goal value (which should be the start date goal)
       updatedGoalHistory[startKey] = originalHabit.goal
     }
+    
+    // Add new goal change entry if goal changed
     if originalHabit.goal != updatedHabit.goal {
       let todayKey = Habit.dateKey(for: Date())
       updatedGoalHistory[todayKey] = updatedHabit.goal
