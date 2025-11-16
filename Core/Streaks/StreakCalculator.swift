@@ -49,8 +49,6 @@ enum StreakCalculator {
       .min() ?? defaultStartDate
     let startDate = max(defaultStartDate, earliestHabitStart)
 
-    let recordsByDate = Dictionary(grouping: completionRecords, by: { $0.dateKey })
-
     while checkDate >= startDate {
       let scheduledHabits = habits.filter {
         HabitSchedulingLogic.shouldShowHabitOnDate($0, date: checkDate, habits: habits)
@@ -64,10 +62,13 @@ enum StreakCalculator {
 
       processedDays += 1
       let dateKey = Habit.dateKey(for: checkDate)
-      let completedRecords = recordsByDate[dateKey] ?? []
 
+      // ✅ CRITICAL FIX: Always use habit.isCompleted(for:) which respects historical goals
+      // CompletionRecords may have been created with current goal, not historical goal for that date
+      // habit.isCompleted(for:) uses goalHistory to determine the correct goal for each date
+      // Example: If goal changed from 1→2 on 15th, then 12th/13th/14th should check against goal=1, not goal=2
       let allComplete = scheduledHabits.allSatisfy { habit in
-        completedRecords.contains(where: { $0.habitId == habit.id })
+        habit.isCompleted(for: checkDate)
       }
 
       if allComplete {

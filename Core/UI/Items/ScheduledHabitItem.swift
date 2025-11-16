@@ -305,7 +305,7 @@ struct ScheduledHabitItem: View {
   }
 
   private var goalAmountForSelectedDate: Int {
-    extractNumericGoalAmount(from: goalStringForSelectedDate)
+    return extractNumericGoalAmount(from: goalStringForSelectedDate)
   }
 
   /// Computed property for progress percentage (allows over-completion display)

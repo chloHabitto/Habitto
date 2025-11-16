@@ -376,7 +376,10 @@ struct Habit: Identifiable, Codable, Equatable {
   }
 
   private mutating func ensureGoalHistoryInitialized() {
-    if goalHistory.isEmpty {
+    // Only seed goalHistory for *new* habits (no completion history yet).
+    // For existing habits with historical data, we must not assume the current goal
+    // has always been active since startDate.
+    if goalHistory.isEmpty, completionHistory.isEmpty {
       goalHistory[Self.dateKey(for: startDate)] = goal
       return
     }
@@ -387,16 +390,48 @@ struct Habit: Identifiable, Codable, Equatable {
   }
 
   func goalString(for date: Date) -> String {
-    guard !goalHistory.isEmpty else { return goal }
-
     let targetDate = DateUtils.startOfDay(for: date)
-    var latestMatch: (date: Date, goal: String)?
+    let dateKey = Self.dateKey(for: targetDate)
 
-    for (key, value) in goalHistory {
-      guard let entryDate = DateUtils.date(from: key) else { continue }
-      let normalizedEntryDate = DateUtils.startOfDay(for: entryDate)
+    // 🔍 DEBUG: Log goal inference context
+    print("🔍 GOAL_DEBUG: goalString(for: \(dateKey))")
+    print("  - goalHistory.isEmpty: \(goalHistory.isEmpty)")
+    print("  - goalHistory keys: \(goalHistory.keys.sorted())")
+    print("  - goalHistory values: \(goalHistory.values)")
+    print("  - current goal: '\(goal)'")
+    print("  - completionHistory[\(dateKey)]: \(completionHistory[dateKey] ?? -1)")
 
-      if normalizedEntryDate <= targetDate {
+    let result = goalStringCore(for: date)
+    print("  → RETURNING: '\(result)'")
+    return result
+  }
+
+  /// Core implementation for goalString(for:), separated so we can wrap it with debug logging
+  private func goalStringCore(for date: Date) -> String {
+    let targetDate = DateUtils.startOfDay(for: date)
+    let currentGoalString = goal
+    let currentGoalAmount = StreakDataCalculator.parseGoalAmount(from: currentGoalString)
+
+    // Determine if goalHistory has rich history (multiple entries or different goals),
+    // or if it's effectively "simple" (empty or a single entry equal to the current goal).
+    let simpleHistory: Bool = {
+      if goalHistory.isEmpty { return true }
+      if goalHistory.count == 1, let onlyValue = goalHistory.values.first {
+        return onlyValue == currentGoalString
+      }
+      return false
+    }()
+
+    // 1) For rich goalHistory, use it as the primary source of truth.
+    if !simpleHistory, !goalHistory.isEmpty {
+      var latestMatch: (date: Date, goal: String)?
+
+      for (key, value) in goalHistory {
+        guard let entryDate = DateUtils.date(from: key) else { continue }
+        let normalizedEntryDate = DateUtils.startOfDay(for: entryDate)
+
+        guard normalizedEntryDate <= targetDate else { continue }
+
         if let existingMatch = latestMatch {
           if normalizedEntryDate > existingMatch.date {
             latestMatch = (normalizedEntryDate, value)
@@ -405,9 +440,83 @@ struct Habit: Identifiable, Codable, Equatable {
           latestMatch = (normalizedEntryDate, value)
         }
       }
+
+      if let match = latestMatch {
+        return match.goal
+      }
     }
 
-    return latestMatch?.goal ?? goal
+    // 2) If goalHistory is missing or too simple, infer a historical goal from completionHistory.
+    //    This handles the case where the goal was increased later (e.g., 1 → 2 on the 15th),
+    //    but older days (12–14) only ever reached 1.
+    if currentGoalAmount > 1 {
+      var earliestHighGoalDate: Date?
+      var smallestPositiveProgressBeforeHighGoal: Int?
+
+      for (key, progress) in completionHistory {
+        guard let rawDate = DateUtils.date(from: key) else { continue }
+        let day = DateUtils.startOfDay(for: rawDate)
+
+        if progress >= currentGoalAmount {
+          // This day reached the *new* goal (e.g., 2 times) – candidate for goal-change date
+          if earliestHighGoalDate == nil || day < earliestHighGoalDate! {
+            earliestHighGoalDate = day
+          }
+        } else if progress > 0 {
+          // Completed but below current goal – candidate for the *old* goal amount
+          if smallestPositiveProgressBeforeHighGoal == nil ||
+            progress < smallestPositiveProgressBeforeHighGoal!
+          {
+            smallestPositiveProgressBeforeHighGoal = progress
+          }
+        }
+      }
+
+      if
+        let changeDate = earliestHighGoalDate,
+        let oldGoalAmount = smallestPositiveProgressBeforeHighGoal
+      {
+        if targetDate < changeDate {
+          // For dates before the inferred change date, use the inferred old goal amount.
+          return adjustedGoalString(baseGoal: currentGoalString, amount: oldGoalAmount)
+        } else {
+          // For dates on/after the inferred change date, use the current goal string.
+          return currentGoalString
+        }
+      }
+    }
+
+    // 3) Fallback – use the current goal string.
+    return currentGoalString
+  }
+
+  /// Returns a copy of `baseGoal` with its leading numeric amount replaced by `amount`.
+  /// Example: baseGoal = "2 times on everyday", amount = 1 → "1 time on everyday".
+  private func adjustedGoalString(baseGoal: String, amount: Int) -> String {
+    guard amount > 0 else { return baseGoal }
+
+    // Replace the first number in the string with the new amount.
+    let pattern = #"(\d+)"#
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+          let match = regex.firstMatch(
+            in: baseGoal,
+            options: [],
+            range: NSRange(location: 0, length: baseGoal.utf16.count))
+    else {
+      // If there is no number, fall back to the original goal.
+      return baseGoal
+    }
+
+    let amountString = "\(amount)"
+    let nsBase = baseGoal as NSString
+    let newString = nsBase.replacingCharacters(in: match.range, with: amountString)
+
+    // Simple singular/plural fix for "time"/"times" when amount is 1
+    if amount == 1 {
+      return newString.replacingOccurrences(of: "times", with: "time")
+    }
+
+    return newString
   }
 
   func goalAmount(for date: Date) -> Int {
@@ -730,31 +839,31 @@ struct Habit: Identifiable, Codable, Equatable {
   /// Internal completion check that doesn't consider vacation days
   private func isCompletedInternal(for date: Date) -> Bool {
     let dateKey = Self.dateKey(for: date)
-
-    // First check the new boolean completion status
-    if let completionStatus = completionStatus[dateKey] {
-      // ✅ FIX #13: Removed flooding debug log
-      return completionStatus
-    }
-
-    // Fallback to old system for migration purposes
-    // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
-    // Both check: progress >= goal (extracted from goal string)
-    // The target/baseline/actualUsage fields are DISPLAY ONLY and NOT used for completion
-    
     let progress = completionHistory[dateKey] ?? 0
-    
-    // Parse the goal to get the target amount
-    if let targetAmount = parseGoalAmount(from: goalString(for: date)) {
-      // A habit is complete when progress reaches or exceeds the goal amount
-      // This works for BOTH Formation AND Breaking habits
-      let isCompleted = progress >= targetAmount
-      return isCompleted
+    let historicalGoal = goalString(for: date)
+    let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
+    let storedStatus = completionStatus[dateKey]
+
+    print("🔍 COMPLETE_DEBUG: isCompleted(\(dateKey))")
+    print("  - progress: \(progress)")
+    print("  - historicalGoal: '\(historicalGoal)'")
+    print("  - goalAmount: \(goalAmount)")
+    print("  - completionStatus[\(dateKey)]: \(storedStatus.map { String($0) } ?? "nil")")
+
+    // Derive completion from underlying data (progress vs historical goal).
+    let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
+
+    if let storedStatus {
+      // If stored status matches the calculated one, trust it.
+      if storedStatus == calculatedCompleted {
+        return storedStatus
+      }
+      // If they disagree, trust the calculated result based on historical goal and progress.
+      return calculatedCompleted
     }
 
-    // Fallback: if we can't parse the goal, consider it complete with any progress
-    let isCompleted = progress > 0
-    return isCompleted
+    // No stored status – use the calculated value.
+    return calculatedCompleted
   }
 
   /// Helper method to parse goal amount from goal string
