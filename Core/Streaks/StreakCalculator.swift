@@ -61,7 +61,6 @@ enum StreakCalculator {
       }
 
       processedDays += 1
-      let dateKey = Habit.dateKey(for: checkDate)
 
       // ✅ CRITICAL FIX: Always use habit.isCompleted(for:) which respects historical goals
       // CompletionRecords may have been created with current goal, not historical goal for that date
