@@ -240,7 +240,7 @@ struct CreateHabitStep1View: View {
     .ignoresSafeArea(.keyboard, edges: .bottom)
     .keyboardDoneButton()
     .sheet(isPresented: $showingEmojiPicker) {
-      EmojiKeyboardBottomSheet(
+      EmojiSystemKeyboardBottomSheet(
         selectedEmoji: $icon,
         onClose: {
           showingEmojiPicker = false
