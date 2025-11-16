@@ -4,17 +4,31 @@ struct BottomSheetHeader: View {
   let title: String
   let description: String
   let onClose: () -> Void
+  var useGlassCloseButton: Bool = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       // Close button row
       HStack {
         Button(action: onClose) {
-          Image(.iconClose)
-            .resizable()
-            .frame(width: 24, height: 24)
-            .foregroundColor(.text04)
-            .frame(width: 48, height: 48)
+          if useGlassCloseButton {
+            Image(.iconClose)
+              .resizable()
+              .frame(width: 24, height: 24)
+              .foregroundColor(.text04)
+              .frame(width: 48, height: 48)
+              .background(.ultraThinMaterial, in: Circle())
+              .overlay(
+                Circle()
+                  .strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5)
+              )
+          } else {
+            Image(.iconClose)
+              .resizable()
+              .frame(width: 24, height: 24)
+              .foregroundColor(.text04)
+              .frame(width: 48, height: 48)
+          }
         }
         Spacer()
       }
