@@ -244,11 +244,21 @@ struct CreateHabitStep1View: View {
         selectedEmoji: $icon,
         onClose: {
           showingEmojiPicker = false
+          // Ensure keyboard is dismissed when emoji sheet closes
+          UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         },
         onSave: { emoji in
           icon = emoji
           showingEmojiPicker = false
+          // Ensure keyboard is dismissed after saving
+          UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         })
+    }
+    // If the global "choose icon" sheet closes elsewhere, ensure this emoji sheet also closes.
+    .onReceive(NotificationCenter.default.publisher(for: .iconSheetClosed)) { _ in
+      showingEmojiPicker = false
+      // Also force-dismiss any active keyboard
+      UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
     .sheet(isPresented: $showingColorSheet) {
       ColorBottomSheet(
