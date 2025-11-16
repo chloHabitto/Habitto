@@ -9,6 +9,7 @@ struct BaseBottomSheet<Content: View>: View {
     title: String,
     description: String,
     onClose: @escaping () -> Void,
+    useGlassCloseButton: Bool = false,
     confirmButton: (() -> Void)? = nil,
     confirmButtonTitle: String? = nil,
     @ViewBuilder content: () -> Content)
@@ -16,6 +17,7 @@ struct BaseBottomSheet<Content: View>: View {
     self.title = title
     self.description = description
     self.onClose = onClose
+    self.useGlassCloseButton = useGlassCloseButton
     self.confirmButton = confirmButton
     self.confirmButtonTitle = confirmButtonTitle
     self.content = content()
@@ -26,6 +28,7 @@ struct BaseBottomSheet<Content: View>: View {
   let title: String
   let description: String
   let onClose: () -> Void
+  let useGlassCloseButton: Bool
   let content: Content
   let confirmButton: (() -> Void)?
   let confirmButtonTitle: String?
@@ -36,7 +39,8 @@ struct BaseBottomSheet<Content: View>: View {
       BottomSheetHeader(
         title: title,
         description: description,
-        onClose: onClose)
+        onClose: onClose,
+        useGlassCloseButton: useGlassCloseButton)
 
       // Content
       content
@@ -67,12 +71,14 @@ extension BaseBottomSheet where Content == AnyView {
     title: String,
     description: String,
     onClose: @escaping () -> Void,
+    useGlassCloseButton: Bool = false,
     @ViewBuilder content: () -> some View)
   {
     self.init(
       title: title,
       description: description,
       onClose: onClose,
+      useGlassCloseButton: useGlassCloseButton,
       content: { AnyView(content()) })
   }
 }

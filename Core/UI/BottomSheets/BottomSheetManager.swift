@@ -186,6 +186,8 @@ extension Notification.Name {
   /// Posted when the icon bottom sheet (choose icon) is dismissed,
   /// allowing any emoji keyboard sheets to close in sync.
   static let iconSheetClosed = Notification.Name("iconSheetClosed")
+  /// Posted after the emoji sheet presentation animation has completed.
+  static let emojiSheetPresented = Notification.Name("emojiSheetPresented")
 }
 
 #Preview {

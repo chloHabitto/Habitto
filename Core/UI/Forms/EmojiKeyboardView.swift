@@ -23,7 +23,6 @@ struct EmojiKeyboardView: View {
         Image(systemName: "magnifyingglass")
           .foregroundColor(.gray)
         TextField("Search emoji", text: $searchText)
-          .focused($isSearchFocused)
           .textFieldStyle(PlainTextFieldStyle())
       }
       .padding(.horizontal, 16)
@@ -79,20 +78,12 @@ struct EmojiKeyboardView: View {
         .padding(.bottom, 12)
       }
     }
-    .onAppear {
-      // Ensure the search field is focused when the keyboard view appears
-      // Using async to guarantee it happens after presentation animations
-      DispatchQueue.main.async {
-        isSearchFocused = true
-      }
-    }
   }
 
   // MARK: Private
 
   @State private var searchText = ""
   @State private var selectedCategory = 0
-  @FocusState private var isSearchFocused: Bool
 
   private let categories = EmojiData.categories
   private let categoryNames = EmojiData.categoryNames
