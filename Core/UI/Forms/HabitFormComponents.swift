@@ -12,7 +12,6 @@ struct UnifiedInputElement: View {
   let errorMessage: String
   let onUnitTap: () -> Void
   let onFrequencyTap: () -> Void
-  let uiUpdateTrigger: Bool
   @FocusState.Binding var isFocused: Bool
 
   var body: some View {
@@ -47,7 +46,6 @@ struct UnifiedInputElement: View {
             Text(unitText)
               .font(.appBodyLarge)
               .foregroundColor(isValid ? .text04 : .text06)
-              .id(uiUpdateTrigger) // Force re-render when trigger changes
             Image(systemName: "chevron.right")
               .font(.appLabelSmall)
               .foregroundColor(.primaryDim)
@@ -70,7 +68,6 @@ struct UnifiedInputElement: View {
             Text(frequencyText)
               .font(.appBodyLarge)
               .foregroundColor(isValid ? .text04 : .text06)
-              .id(uiUpdateTrigger) // Force re-render when trigger changes
               .lineLimit(1)
               .minimumScaleFactor(0.8)
             Image(systemName: "chevron.right")
@@ -256,7 +253,6 @@ struct HabitBuildingForm: View {
   let pluralizedGoalUnit: String
   let goalFrequency: String
   let isGoalValid: Bool
-  let uiUpdateTrigger: Bool
   let onGoalUnitTap: () -> Void
   let onGoalFrequencyTap: () -> Void
   let reminderSection: ReminderSection
@@ -276,7 +272,6 @@ struct HabitBuildingForm: View {
         errorMessage: "Please enter a number greater than 0",
         onUnitTap: onGoalUnitTap,
         onFrequencyTap: onGoalFrequencyTap,
-        uiUpdateTrigger: uiUpdateTrigger,
         isFocused: $isGoalNumberFocused)
 
       // Reminder
@@ -300,7 +295,6 @@ struct HabitBreakingForm: View {
   let targetFrequency: String
   let isBaselineValid: Bool
   let isTargetValid: Bool
-  let uiUpdateTrigger: Bool
   let onBaselineUnitTap: () -> Void
   let onBaselineFrequencyTap: () -> Void
   let onTargetUnitTap: () -> Void
@@ -323,7 +317,6 @@ struct HabitBreakingForm: View {
         errorMessage: "Please enter a number greater than 0",
         onUnitTap: onBaselineUnitTap,
         onFrequencyTap: onBaselineFrequencyTap,
-        uiUpdateTrigger: uiUpdateTrigger,
         isFocused: $isBaselineFieldFocused)
 
       // Goal
@@ -337,7 +330,6 @@ struct HabitBreakingForm: View {
         errorMessage: "Please enter a number greater than or equal to 0",
         onUnitTap: onTargetUnitTap,
         onFrequencyTap: onTargetFrequencyTap,
-        uiUpdateTrigger: uiUpdateTrigger,
         isFocused: $isTargetFieldFocused)
 
       // Reminder

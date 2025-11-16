@@ -372,8 +372,7 @@ struct CreateHabitStep2View: View {
   @State private var activeTooltip: String? // "baseline" or "target" or nil
   // @State private var sharedPopTip: PopTip?
 
-  /// Force UI updates when number changes
-  @State private var uiUpdateTrigger = false
+  // Removed manual UI update trigger; rely on SwiftUI state changes
 
   // Focus state for Done button overlay
   @FocusState private var isGoalNumberFocused: Bool
@@ -517,15 +516,6 @@ struct CreateHabitStep2View: View {
         }
       }
       .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
-      .onChange(of: goalNumber) { _, _ in
-        uiUpdateTrigger.toggle()
-      }
-      .onChange(of: baselineNumber) { _, _ in
-        uiUpdateTrigger.toggle()
-      }
-      .onChange(of: targetNumber) { _, _ in
-        uiUpdateTrigger.toggle()
-      }
   }
 
   // MARK: - Habit Building Form
@@ -537,7 +527,6 @@ struct CreateHabitStep2View: View {
       pluralizedGoalUnit: pluralizedGoalUnit,
       goalFrequency: goalFrequency,
       isGoalValid: isGoalValid,
-      uiUpdateTrigger: uiUpdateTrigger,
       onGoalUnitTap: { showingGoalUnitSheet = true },
       onGoalFrequencyTap: { showingGoalFrequencySheet = true },
       reminderSection: ReminderSection(
@@ -564,7 +553,6 @@ struct CreateHabitStep2View: View {
       targetFrequency: targetFrequency,
       isBaselineValid: isBaselineValid,
       isTargetValid: isTargetValid,
-      uiUpdateTrigger: uiUpdateTrigger,
       onBaselineUnitTap: { showingBaselineUnitSheet = true },
       onBaselineFrequencyTap: { showingBaselineFrequencySheet = true },
       onTargetUnitTap: { showingTargetUnitSheet = true },
