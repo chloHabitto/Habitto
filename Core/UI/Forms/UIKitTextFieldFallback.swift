@@ -200,6 +200,26 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
       addDoneButtonToolbar(to: textField)
     }
 
+    // If focus is already requested at creation time, attempt to focus now and with retries
+    if isFocused?.wrappedValue == true {
+      // Try immediately if attached
+      if textField.window != nil {
+        DispatchQueue.main.async {
+          textField.becomeFirstResponder()
+        }
+      }
+      // Schedule retries to cover attachment timing
+      let delays: [UInt64] = [120, 220, 420, 800, 1200, 1600, 2000] // ms
+      for delay in delays {
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(delay))) { [weak textField] in
+          guard let tf = textField else { return }
+          if self.isFocused?.wrappedValue == true, tf.isFirstResponder == false, tf.window != nil {
+            tf.becomeFirstResponder()
+          }
+        }
+      }
+    }
+
     return textField
   }
 
@@ -208,12 +228,8 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
     // Programmatic focus control
     if let shouldFocus = isFocused?.wrappedValue {
       if shouldFocus && uiView.isFirstResponder == false {
-        // Only attempt to focus when the view is attached to a window
-        if uiView.window != nil {
-          DispatchQueue.main.async {
-            uiView.becomeFirstResponder()
-          }
-        }
+        // Attempt to focus immediately if attached to a window; otherwise retry shortly
+        focusTextField(uiView)
       } else if shouldFocus == false && uiView.isFirstResponder {
         DispatchQueue.main.async {
           uiView.resignFirstResponder()
@@ -229,6 +245,28 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
   // MARK: Private
 
   // MARK: - Private Helper
+  private func focusTextField(_ textField: UITextField) {
+    // If already attached, focus immediately
+    if textField.window != nil {
+      DispatchQueue.main.async {
+        textField.becomeFirstResponder()
+      }
+      return
+    }
+    // Otherwise, schedule a few retries to outlast sheet animations/attachment timing
+    let delays: [UInt64] = [120, 220, 420, 800, 1200, 1600, 2000] // milliseconds
+    for delay in delays {
+      DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(Int(delay))) { [weak textField] in
+        guard let tf = textField else { return }
+        // Only proceed if focus is still requested
+        if self.isFocused?.wrappedValue == true, tf.isFirstResponder == false {
+          if tf.window != nil {
+            tf.becomeFirstResponder()
+          }
+        }
+      }
+    }
+  }
 
   private func addDoneButtonToolbar(to textField: UITextField) {
     let toolbar = UIToolbar()

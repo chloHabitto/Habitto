@@ -9,7 +9,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
   @FocusState private var isFocused: Bool
   @State private var draft: String = ""
   @State private var hasAppeared = false
-  @State private var userDismissedKeyboard = false
+  @State private var focusEnforcer: Task<Void, Never>? = nil
 
   var body: some View {
     BaseBottomSheet(
@@ -42,20 +42,15 @@ struct EmojiSystemKeyboardBottomSheet: View {
           ),
           onBeginEditing: {
             print("🎯 Keyboard opened")
-            userDismissedKeyboard = false
           },
           onEndEditing: {
-            print("⚠️ Keyboard closing - checking if intentional")
-            // Only re-focus if not intentionally dismissed
-            if hasAppeared && !userDismissedKeyboard {
-              print("🔄 Re-focusing keyboard immediately (not intentional dismissal)")
-              // Immediate refocus to prevent flicker or auto-dismiss
-              isFocused = true
-            }
+            print("⚠️ Keyboard attempted to close - forcing reopen")
+            // Immediate refocus to prevent flicker or auto-dismiss
+            isFocused = true
           },
-          // Only allow resign if user intentionally dismissed
+          // Never allow resign; keep the keyboard always up in this sheet
           shouldAllowEndEditing: {
-            userDismissedKeyboard
+            false
           },
           shouldChangeText: { current, range, replacement in
             // Allow backspace
@@ -95,7 +90,6 @@ struct EmojiSystemKeyboardBottomSheet: View {
     .onAppear {
       print("📱 Sheet appeared")
       hasAppeared = true
-      userDismissedKeyboard = false
       // Start with empty input unless the existing selection is a single emoji
       if selectedEmoji.isSingleEmoji {
         draft = selectedEmoji
@@ -108,29 +102,44 @@ struct EmojiSystemKeyboardBottomSheet: View {
       // Short retry to ensure the text field is attached to a window
       Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(150))
-        if hasAppeared && !userDismissedKeyboard {
+        if hasAppeared {
           isFocused = true
         }
       }
       // Final retry if needed for slower animations/devices
       Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(350))
-        if hasAppeared && !userDismissedKeyboard {
+        if hasAppeared {
           isFocused = true
         }
       }
       // Safety retry for slow devices/transitions
       Task { @MainActor in
         try? await Task.sleep(for: .milliseconds(800))
-        if hasAppeared && !userDismissedKeyboard {
+        if hasAppeared {
           isFocused = true
+        }
+      }
+      // Aggressive focus enforcement loop while the sheet is visible
+      focusEnforcer?.cancel()
+      focusEnforcer = Task { @MainActor in
+        // Run for up to ~3 seconds, nudging focus every 120ms
+        for _ in 0..<25 {
+          if Task.isCancelled { break }
+          if hasAppeared {
+            isFocused = true
+          } else {
+            break
+          }
+          try? await Task.sleep(for: .milliseconds(120))
         }
       }
     }
     .onDisappear {
       print("👋 Sheet disappearing")
       hasAppeared = false
-      userDismissedKeyboard = false
+      focusEnforcer?.cancel()
+      focusEnforcer = nil
       isFocused = false
     }
   }
