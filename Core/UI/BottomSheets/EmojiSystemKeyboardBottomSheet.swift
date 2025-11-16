@@ -13,12 +13,14 @@ struct EmojiSystemKeyboardBottomSheet: View {
   @State private var focusEnforcer: Task<Void, Never>? = nil
   @State private var allowResign: Bool = false
   @State private var isClosing: Bool = false
+  @StateObject private var keyboardController = EmojiKeyboardFocusController()
 
   var body: some View {
     // Two-phase close: keyboard first, then sheet
     let initiateClose: () -> Void = {
       guard isClosing == false else { return }
       isClosing = true
+      keyboardController.releaseKeyboard()
       allowResign = true
       isFocused = false
       UIApplication.shared.sendAction(
@@ -41,6 +43,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
         // Save selection, then close via the same two-phase approach
         let normalized = draft.isEmpty ? selectedEmoji : draft
         isClosing = true
+        keyboardController.releaseKeyboard()
         allowResign = true
         isFocused = false
         UIApplication.shared.sendAction(
@@ -114,6 +117,12 @@ struct EmojiSystemKeyboardBottomSheet: View {
 
         // Flexible space so header+input stay at top and Save button sits at bottom above keyboard
         Spacer()
+
+        // Hidden proxy for instant keyboard display
+        EmojiKeyboardFocusProxyView(controller: keyboardController)
+          .frame(width: 0, height: 0)
+          .allowsHitTesting(false)
+          .accessibilityHidden(true)
       }
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
@@ -125,6 +134,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
     .interactiveDismissDisabled(true)
     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     .onAppear {
+      keyboardController.prewarmKeyboard()
       print("📱 Sheet appeared")
       hasAppeared = true
       allowResign = false
@@ -177,6 +187,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
     .onReceive(NotificationCenter.default.publisher(for: .iconSheetClosed)) { _ in
       allowResign = true
       isFocused = false
+      keyboardController.releaseKeyboard()
     }
     .onDisappear {
       print("👋 Sheet disappearing")
@@ -186,6 +197,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
       // Ensure we allow the text field to resign when this sheet goes away
       allowResign = true
       isFocused = false
+      keyboardController.releaseKeyboard()
       // Hard-stop: force-dismiss any active keyboard globally
       UIApplication.shared.sendAction(
         #selector(UIResponder.resignFirstResponder),
@@ -202,6 +214,7 @@ struct EmojiSystemKeyboardBottomSheet: View {
     selectedEmoji: .constant(""),
     onClose: { },
     onSave: { _ in })
+  .environmentObject(EmojiKeyboardFocusController())
 }
 #endif
 
