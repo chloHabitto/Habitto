@@ -1,4 +1,5 @@
 import MCEmojiPicker
+import Combine
 import SwiftUI
 
 /// CreateHabitStep1View - Optimized for keyboard performance
@@ -37,10 +38,6 @@ struct CreateHabitStep1View: View {
       // Main content with simplified structure
       ScrollView(showsIndicators: false) {
         VStack(spacing: 16) {
-          // Debug: Log when view body is computed
-          Color.clear.frame(height: 0).onAppear {
-            print("⏱️ DEBUG: CreateHabitStep1View appeared at \(Date())")
-          }
           // Name field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Name")
@@ -49,30 +46,13 @@ struct CreateHabitStep1View: View {
               placeholder: "Habit name",
               text: $name,
               externalFocus: $isNameFieldFocused)
-              .onChange(of: isNameFieldFocused) { oldValue, newValue in
-                if newValue {
-                  print("⏱️ DEBUG: Text field focused at \(Date())")
-                }
-              }
+              .keyboardDoneButton()
               .onChange(of: name) { _, newValue in
-                // Only validate if name is not empty and has actual content
-                guard !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                  nameValidationError = nil
-                  isNameValid = true
-                  return
-                }
-                
-                // Debounce validation to avoid excessive calls
-                Task { @MainActor in
-                  try? await Task.sleep(nanoseconds: 300_000_000) // 300ms delay
-                  if name == newValue { // Only validate if name hasn't changed during delay
-                    validateHabitName()
-                  }
-                }
+                validationManager.nameInput = newValue
               }
 
             // Error message display
-            if let errorMessage = nameValidationError {
+            if let errorMessage = validationManager.errorMessage {
               HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
                   .font(.system(size: 14, weight: .medium))
@@ -92,7 +72,7 @@ struct CreateHabitStep1View: View {
           .background(.surface)
           .overlay(
             RoundedRectangle(cornerRadius: 16)
-              .stroke(isNameValid ? .outline3 : .error, lineWidth: 1.5))
+              .stroke(validationManager.isValid ? .outline3 : .error, lineWidth: 1.5))
           .cornerRadius(16)
 
           // Description field - container with surface background and stroke
@@ -103,6 +83,7 @@ struct CreateHabitStep1View: View {
               placeholder: "Description (Optional)",
               text: $description,
               externalFocus: $isDescriptionFieldFocused)
+              .keyboardDoneButton()
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
@@ -258,15 +239,7 @@ struct CreateHabitStep1View: View {
     }
     .background(.surface2)
     .navigationBarHidden(true)
-    .contentShape(Rectangle())
-    .onTapGesture {
-      // Dismiss keyboard when tapping background
-      UIApplication.shared.sendAction(
-        #selector(UIResponder.resignFirstResponder),
-        to: nil,
-        from: nil,
-        for: nil)
-    }
+    .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
     .sheet(isPresented: $showingEmojiPicker) {
       EmojiKeyboardBottomSheet(
@@ -282,42 +255,23 @@ struct CreateHabitStep1View: View {
     .sheet(isPresented: $showingColorSheet) {
       ColorBottomSheet(
         onClose: {
-          print("🔍 CreateHabitStep1View: Color sheet closing")
           showingColorSheet = false
         },
         onColorSelected: { selectedColor in
-          print("🔍 CreateHabitStep1View: Color selected: \(selectedColor)")
           color = selectedColor
         },
         onSave: { selectedColor in
-          print("🔍 CreateHabitStep1View: Color saved: \(selectedColor)")
           color = selectedColor
           showingColorSheet = false
         })
     }
-    .onChange(of: isDescriptionFieldFocused) { oldValue, newValue in
-      print(
-        "🔍 CreateHabitStep1View: Description field focus changed from \(oldValue) to \(newValue)")
-    }
-    .task(priority: .userInitiated) {
-      // ⏱️ PERFORMANCE FIX: Load habits in BACKGROUND thread to prevent UI blocking
-      print("⏱️ DEBUG: Starting async habit load at \(Date())")
-      let startTime = Date()
-      
-      // Use Task.detached to run on background thread, NOT main thread
-      // This allows text field to focus immediately without waiting
-      let habits = await Task.detached(priority: .userInitiated) {
-        // Access MainActor property from background thread
-        await MainActor.run {
-          HabitRepository.shared.habits
-        }
-      }.value
-      
-      let loadTime = Date().timeIntervalSince(startTime)
-      print("⏱️ DEBUG: Finished async habit load in \(String(format: "%.3f", loadTime))s")
-      
-      cachedHabits = habits
-      print("⏱️ DEBUG: Cached \(habits.count) habits for validation")
+    .onAppear {
+      // Configure debounced validation
+      validationManager.configure {
+        (name, description, icon, color, habitType, cachedHabits)
+      }
+      // Seed initial value
+      validationManager.nameInput = name
     }
   }
 
@@ -328,13 +282,11 @@ struct CreateHabitStep1View: View {
   @FocusState private var isNameFieldFocused: Bool
   @FocusState private var isDescriptionFieldFocused: Bool
 
-  // Validation state management
-  @State private var nameValidationError: String? = nil
-  @State private var isNameValid = true
-  @State private var validationInProgress = false
-  
+  // Validation
+  @StateObject private var validationManager = ValidationManager()
+
   // Cache existing habits list to avoid repeated MainActor calls during validation
-  @State private var cachedHabits: [Habit] = []
+  @State private var cachedHabits: [Habit] = HabitRepository.shared.habits
 
   /// Cache screen width to avoid repeated UIScreen.main.bounds.width access
   private let screenWidth = UIScreen.main.bounds.width
@@ -350,7 +302,7 @@ struct CreateHabitStep1View: View {
 
   /// Performance optimization: Pre-computed values to reduce view updates
   private var continueButtonDisabled: Bool {
-    name.isEmpty || !isNameValid || validationInProgress
+    name.isEmpty || !validationManager.isValid
   }
 
   private var continueButtonColor: Color {
@@ -480,42 +432,13 @@ struct CreateHabitStep1View: View {
     icon == "None" ? "None" : ""
   }
 
-  // MARK: - Validation Functions
-
-  @MainActor
-  private func validateHabitName() {
-    // Reset validation state
-    validationInProgress = true
-    nameValidationError = nil
-    isNameValid = true
-
-    // Skip validation if name is empty (handled by continue button logic)
-    guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      validationInProgress = false
-      return
-    }
-
-    // Perform validation using cached habits list to avoid MainActor bottleneck
-    let validationResult = ValidationBusinessRulesLogic.validateHabitCreation(
-      name: name,
-      description: description,
-      icon: icon,
-      color: color,
-      habitType: habitType,
-      existingHabits: cachedHabits)
-
-    // Update validation state
-    isNameValid = validationResult.isValid
-    nameValidationError = validationResult.errorMessage
-    validationInProgress = false
-  }
-
   /// Helper function to get appropriate display value for icon
   private func iconDisplayValue(_ icon: String) -> String {
     icon == "None" ? "None" : ""
   }
 }
 
+#if DEBUG
 #Preview {
   CreateHabitStep1View(
     name: .constant(""),
@@ -525,4 +448,56 @@ struct CreateHabitStep1View: View {
     habitType: .constant(.formation),
     onNext: { _, _, _, _, _ in },
     onCancel: { })
+}
+#endif
+
+// MARK: - ValidationManager
+
+@MainActor
+final class ValidationManager: ObservableObject {
+  // Inputs
+  @Published var nameInput: String = ""
+
+  // Outputs
+  @Published var errorMessage: String? = nil
+  @Published var isValid: Bool = true
+
+  // Internals
+  private var cancellables = Set<AnyCancellable>()
+  private var contextProvider: (() -> (String, String, String, Color, HabitType, [Habit]))?
+
+  func configure(
+    debounceMilliseconds: Int = 150,
+    contextProvider: @escaping () -> (String, String, String, Color, HabitType, [Habit]))
+  {
+    self.contextProvider = contextProvider
+
+    $nameInput
+      .debounce(for: .milliseconds(debounceMilliseconds), scheduler: RunLoop.main)
+      .removeDuplicates()
+      .sink { [weak self] latestName in
+        guard let self = self, let ctx = self.contextProvider?() else { return }
+        let (currentName, currentDescription, currentIcon, currentColor, currentHabitType, habits) = ctx
+
+        // If the debounced value differs from the current binding, prefer the debounced text
+        let nameToValidate = latestName.isEmpty ? currentName : latestName
+        if nameToValidate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+          self.isValid = true
+          self.errorMessage = nil
+          return
+        }
+
+        let result = ValidationBusinessRulesLogic.validateHabitCreation(
+          name: nameToValidate,
+          description: currentDescription,
+          icon: currentIcon,
+          color: currentColor,
+          habitType: currentHabitType,
+          existingHabits: habits)
+
+        self.isValid = result.isValid
+        self.errorMessage = result.errorMessage
+      }
+      .store(in: &cancellables)
+  }
 }

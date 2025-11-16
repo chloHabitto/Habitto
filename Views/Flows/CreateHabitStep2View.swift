@@ -515,7 +515,8 @@ struct CreateHabitStep2View: View {
           .clipShape(Capsule())
         }
       }
-      .keyboardHandling(dismissOnTapOutside: true, showDoneButton: false)
+      .scrollDismissesKeyboard(.interactively)
+      .ignoresSafeArea(.keyboard, edges: .bottom)
   }
 
   // MARK: - Habit Building Form
