@@ -1,4 +1,3 @@
-import MCEmojiPicker
 import Combine
 import SwiftUI
 
@@ -46,7 +45,6 @@ struct CreateHabitStep1View: View {
               placeholder: "Habit name",
               text: $name,
               externalFocus: $isNameFieldFocused)
-              .keyboardDoneButton()
               .onChange(of: name) { _, newValue in
                 validationManager.nameInput = newValue
               }
@@ -83,7 +81,6 @@ struct CreateHabitStep1View: View {
               placeholder: "Description (Optional)",
               text: $description,
               externalFocus: $isDescriptionFieldFocused)
-              .keyboardDoneButton()
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
@@ -241,6 +238,7 @@ struct CreateHabitStep1View: View {
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
+    .keyboardDoneButton()
     .sheet(isPresented: $showingEmojiPicker) {
       EmojiKeyboardBottomSheet(
         selectedEmoji: $icon,
