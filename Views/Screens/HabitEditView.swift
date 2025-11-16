@@ -1,4 +1,3 @@
-import MCEmojiPicker
 import SwiftUI
 
 struct HabitEditView: View {
