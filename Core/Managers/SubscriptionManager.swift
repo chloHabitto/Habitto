@@ -93,16 +93,17 @@ class SubscriptionManager: ObservableObject {
   func restorePurchases() async -> (success: Bool, message: String) {
     print("🔄 SubscriptionManager: Starting restore purchases...")
     
-    do {
-      // Check for current entitlements (active subscriptions)
-      var foundActiveSubscription = false
-      
-      for await result in Transaction.currentEntitlements {
-        if case .verified(let transaction) = result {
-          // Check if this is a subscription product
-          if let product = try? await Product.products(for: [transaction.productID]).first {
-            // Check if subscription is still active
-            if transaction.revocationDate == nil {
+    // Check for current entitlements (active subscriptions)
+    var foundActiveSubscription = false
+    
+    for await result in Transaction.currentEntitlements {
+      if case .verified(let transaction) = result {
+        // Check if subscription is still active
+        if transaction.revocationDate == nil {
+          // Try to get product info (this can throw)
+          do {
+            let products = try await Product.products(for: [transaction.productID])
+            if let product = products.first {
               print("✅ SubscriptionManager: Found active subscription: \(product.id)")
               foundActiveSubscription = true
               
@@ -114,20 +115,21 @@ class SubscriptionManager: ObservableObject {
               // Break after finding first active subscription
               break
             }
+          } catch {
+            // If product lookup fails, continue checking other transactions
+            print("⚠️ SubscriptionManager: Failed to get product info for \(transaction.productID): \(error.localizedDescription)")
+            continue
           }
         }
       }
-      
-      if foundActiveSubscription {
-        print("✅ SubscriptionManager: Restore successful - active subscription found")
-        return (true, "Your subscription has been restored successfully!")
-      } else {
-        print("ℹ️ SubscriptionManager: No active subscriptions found")
-        return (false, "No active subscription found. If you've purchased a subscription, make sure you're signed in with the same Apple ID used for the purchase.")
-      }
-    } catch {
-      print("❌ SubscriptionManager: Error restoring purchases: \(error.localizedDescription)")
-      return (false, "Failed to restore purchases. Please try again later.")
+    }
+    
+    if foundActiveSubscription {
+      print("✅ SubscriptionManager: Restore successful - active subscription found")
+      return (true, "Your subscription has been restored successfully!")
+    } else {
+      print("ℹ️ SubscriptionManager: No active subscriptions found")
+      return (false, "No active subscription found. If you've purchased a subscription, make sure you're signed in with the same Apple ID used for the purchase.")
     }
   }
 }
