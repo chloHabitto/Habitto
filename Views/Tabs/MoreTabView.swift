@@ -19,6 +19,9 @@ struct MoreTabView: View {
   
   // Sync status observation
   @ObservedObject var habitRepository = HabitRepository.shared
+  
+  // Subscription manager
+  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
   var body: some View {
     return WhiteSheetContainer(
@@ -28,9 +31,11 @@ struct MoreTabView: View {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
-            // Trial Banner (now scrollable)
-            trialBanner
-              .entranceAnimation(delay: 0.0)
+            // Trial Banner (now scrollable) - only show for free users
+            if !subscriptionManager.isPremium {
+              trialBanner
+                .entranceAnimation(delay: 0.0)
+            }
 
             // XP Level Display (now scrollable)
             XPLevelDisplay()  // ✅ Gets xpManager from EnvironmentObject
