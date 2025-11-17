@@ -1,0 +1,113 @@
+{
+  "identifier" : "A1B2C3D4E5",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "24.99",
+      "familyShareable" : false,
+      "internalID" : "6734567890",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited habits, progress insights, vacation mode, and all future features with lifetime access to Habitto Premium.",
+          "displayName" : "Lifetime Access",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chloe-lee.Habitto.subscription.lifetime",
+      "referenceName" : "Lifetime Access",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "12.99",
+      "familyShareable" : false,
+      "internalID" : "6734567891",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited habits, progress insights, vacation mode, and all future features with an annual subscription to Habitto Premium.",
+          "displayName" : "Annual Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chloe-lee.Habitto.subscription.annual",
+      "referenceName" : "Annual Premium",
+      "subscriptionGroupID" : "21474836",
+      "subscriptionPeriod" : "P1Y",
+      "type" : "AutoRenewableSubscription"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "6734567892",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited habits, progress insights, vacation mode, and all future features with a monthly subscription to Habitto Premium.",
+          "displayName" : "Monthly Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.chloe-lee.Habitto.subscription.monthly",
+      "referenceName" : "Monthly Premium",
+      "subscriptionGroupID" : "21474836",
+      "subscriptionPeriod" : "P1M",
+      "type" : "AutoRenewableSubscription"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ],
+    "_subscriptionRenewalRate" : "hourly"
+  },
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
+

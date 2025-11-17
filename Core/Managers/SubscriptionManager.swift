@@ -16,6 +16,17 @@ class SubscriptionManager: ObservableObject {
   /// Maximum number of habits for free users
   static let freeUserHabitLimit = 5
   
+  /// Product IDs for subscriptions
+  enum ProductID {
+    static let lifetime = "com.chloe-lee.Habitto.subscription.lifetime"
+    static let annual = "com.chloe-lee.Habitto.subscription.annual"
+    static let monthly = "com.chloe-lee.Habitto.subscription.monthly"
+    
+    static var all: [String] {
+      [lifetime, annual, monthly]
+    }
+  }
+  
   // MARK: - Initialization
   
   private init() {
@@ -60,27 +71,39 @@ class SubscriptionManager: ObservableObject {
   
   /// Check subscription status using StoreKit
   private func checkSubscriptionStatus() async {
-    // TODO: Implement actual StoreKit subscription checking
-    // This is a placeholder for future implementation
-    // Example:
-    // do {
-    //   for await result in Transaction.currentEntitlements {
-    //     if case .verified(let transaction) = result {
-    //       // Check if subscription is active
-    //       if transaction.revocationDate == nil {
-    //         isPremium = true
-    //         return
-    //       }
-    //     }
-    //   }
-    //   isPremium = false
-    // } catch {
-    //   print("Error checking subscription: \(error)")
-    //   isPremium = false
-    // }
-    
-    // For now, always return false (free user)
-    isPremium = false
+    do {
+      var hasActiveSubscription = false
+      
+      // Check for active entitlements (subscriptions and non-consumables)
+      for await result in Transaction.currentEntitlements {
+        if case .verified(let transaction) = result {
+          // Check if it's one of our subscription products
+          let productIDs = ProductID.all
+          if productIDs.contains(transaction.productID) {
+            // Check if subscription is still active (not revoked)
+            if transaction.revocationDate == nil {
+              print("✅ SubscriptionManager: Found active subscription/product: \(transaction.productID)")
+              hasActiveSubscription = true
+              break
+            }
+          }
+        }
+      }
+      
+      await MainActor.run {
+        self.isPremium = hasActiveSubscription
+        if hasActiveSubscription {
+          print("✅ SubscriptionManager: Premium status enabled")
+        } else {
+          print("ℹ️ SubscriptionManager: No active subscription found - free user")
+        }
+      }
+    } catch {
+      print("❌ SubscriptionManager: Error checking subscription status: \(error.localizedDescription)")
+      await MainActor.run {
+        self.isPremium = false
+      }
+    }
   }
   
   /// Update subscription status (call this after purchase)
@@ -93,43 +116,82 @@ class SubscriptionManager: ObservableObject {
   func restorePurchases() async -> (success: Bool, message: String) {
     print("🔄 SubscriptionManager: Starting restore purchases...")
     
-    // Check for current entitlements (active subscriptions)
-    var foundActiveSubscription = false
+    // Re-check subscription status (this will update isPremium)
+    await checkSubscriptionStatus()
     
-    for await result in Transaction.currentEntitlements {
-      if case .verified(let transaction) = result {
-        // Check if subscription is still active
-        if transaction.revocationDate == nil {
-          // Try to get product info (this can throw)
-          do {
-            let products = try await Product.products(for: [transaction.productID])
-            if let product = products.first {
-              print("✅ SubscriptionManager: Found active subscription: \(product.id)")
-              foundActiveSubscription = true
-              
-              // Update premium status
-              await MainActor.run {
-                self.isPremium = true
-              }
-              
-              // Break after finding first active subscription
-              break
-            }
-          } catch {
-            // If product lookup fails, continue checking other transactions
-            print("⚠️ SubscriptionManager: Failed to get product info for \(transaction.productID): \(error.localizedDescription)")
-            continue
-          }
-        }
-      }
-    }
-    
-    if foundActiveSubscription {
+    if isPremium {
       print("✅ SubscriptionManager: Restore successful - active subscription found")
       return (true, "Your subscription has been restored successfully!")
     } else {
       print("ℹ️ SubscriptionManager: No active subscriptions found")
       return (false, "No active subscription found. If you've purchased a subscription, make sure you're signed in with the same Apple ID used for the purchase.")
+    }
+  }
+  
+  /// Purchase a subscription product
+  /// - Parameter productID: The product ID to purchase
+  /// - Returns: A result indicating success or failure with a message
+  func purchase(_ productID: String) async -> (success: Bool, message: String) {
+    print("🛒 SubscriptionManager: Attempting to purchase: \(productID)")
+    
+    do {
+      // Fetch the product
+      let products = try await Product.products(for: [productID])
+      guard let product = products.first else {
+        return (false, "Product not found. Please try again.")
+      }
+      
+      // Purchase the product
+      let result = try await product.purchase()
+      
+      switch result {
+      case .success(let verification):
+        // Verify the transaction
+        switch verification {
+        case .verified(let transaction):
+          print("✅ SubscriptionManager: Purchase successful for \(productID)")
+          
+          // Update premium status
+          await checkSubscriptionStatus()
+          
+          // Finish the transaction
+          await transaction.finish()
+          
+          return (true, "Purchase successful! Premium features are now unlocked.")
+          
+        case .unverified(_, let error):
+          print("⚠️ SubscriptionManager: Unverified transaction: \(error.localizedDescription)")
+          return (false, "Purchase could not be verified. Please contact support.")
+        }
+        
+      case .userCancelled:
+        print("ℹ️ SubscriptionManager: User cancelled purchase")
+        return (false, "Purchase was cancelled.")
+        
+      case .pending:
+        print("⏳ SubscriptionManager: Purchase is pending")
+        return (false, "Purchase is pending approval.")
+        
+      @unknown default:
+        print("❓ SubscriptionManager: Unknown purchase result")
+        return (false, "An unknown error occurred. Please try again.")
+      }
+    } catch {
+      print("❌ SubscriptionManager: Purchase error: \(error.localizedDescription)")
+      return (false, "Purchase failed: \(error.localizedDescription)")
+    }
+  }
+  
+  /// Get available subscription products
+  /// - Returns: Array of Product objects
+  func getAvailableProducts() async -> [Product] {
+    do {
+      let products = try await Product.products(for: ProductID.all)
+      print("✅ SubscriptionManager: Loaded \(products.count) products")
+      return products
+    } catch {
+      print("❌ SubscriptionManager: Failed to load products: \(error.localizedDescription)")
+      return []
     }
   }
 }
