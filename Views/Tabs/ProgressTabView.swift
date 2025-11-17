@@ -97,6 +97,11 @@ struct Arc: Shape {
 
 struct ProgressTabView: View {
   @EnvironmentObject var themeManager: ThemeManager
+  
+  // MARK: - Subscription
+  
+  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+  @State private var showingPaywall = false
 
   // MARK: - State
 
@@ -481,6 +486,48 @@ struct ProgressTabView: View {
       }
     }
   }
+  
+  // MARK: - Paywall Overlay
+  
+  @ViewBuilder
+  private var paywallOverlay: some View {
+    VStack(spacing: 0) {
+      // Header area - transparent, allows touches to pass through to tabs
+      // Estimated header height: ~100 points (habit selector + tabs + padding)
+      Color.clear
+        .frame(height: 100)
+        .allowsHitTesting(false) // Allow touches to pass through to tabs below
+      
+      // Gradient overlay: white with opacity from 0% at top to 100% at bottom
+      // Covers only the content area (below header)
+      ZStack(alignment: .bottom) {
+        LinearGradient(
+          gradient: Gradient(stops: [
+            .init(color: Color.white.opacity(0.0), location: 0.0),  // 0% opacity at top
+            .init(color: Color.white.opacity(0.3), location: 0.3), // 30% opacity at 30%
+            .init(color: Color.white.opacity(0.6), location: 0.6), // 60% opacity at 60%
+            .init(color: Color.white.opacity(1.0), location: 1.0)  // 100% opacity at bottom
+          ]),
+          startPoint: .top,
+          endPoint: .bottom
+        )
+        .allowsHitTesting(true) // Block touches to prevent scrolling
+        
+        // Button on top of overlay
+        VStack {
+          Spacer()
+          
+          HabittoButton.largeFillPrimary(text: "See more progress") {
+            showingPaywall = true
+          }
+          .padding(.horizontal, 20)
+          .padding(.bottom, 100) // Space above bottom navigation
+        }
+      }
+      .frame(maxHeight: .infinity)
+    }
+    .ignoresSafeArea(.all)
+  }
 
   var body: some View {
     ZStack {
@@ -493,7 +540,13 @@ struct ProgressTabView: View {
               .padding(.top, 20)
               .padding(.bottom, 80) // Increased padding to prevent content from being covered by bottom navigation
           }
+          .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
+      
+      // Paywall overlay for free users
+      if !subscriptionManager.isPremium {
+        paywallOverlay
+      }
     }
     .sheet(isPresented: $showingHabitSelector) {
       habitSelectorSheet
@@ -548,6 +601,9 @@ struct ProgressTabView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
+    }
+    .sheet(isPresented: $showingPaywall) {
+      SubscriptionView()
     }
     .onAppear {
       // Calculate streak statistics when view appears
