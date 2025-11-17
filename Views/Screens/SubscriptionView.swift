@@ -72,6 +72,15 @@ struct SubscriptionView: View {
           Text(message)
         }
       }
+      .alert("Purchase", isPresented: $showingPurchaseAlert) {
+        Button("OK", role: .cancel) {
+          purchaseMessage = nil
+        }
+      } message: {
+        if let message = purchaseMessage {
+          Text(message)
+        }
+      }
       .onAppear {
         startAutoScroll()
       }
@@ -118,6 +127,9 @@ struct SubscriptionView: View {
   @State private var isRestoring = false
   @State private var restoreMessage: String?
   @State private var showingRestoreAlert = false
+  @State private var isPurchasing = false
+  @State private var purchaseMessage: String?
+  @State private var showingPurchaseAlert = false
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   
   private let reviews: [Review] = [
@@ -275,10 +287,13 @@ struct SubscriptionView: View {
         
         // Bottom buttons
         VStack(spacing: 12) {
-          HabittoButton.largeFillPrimary(text: "Continue") {
-            // Handle subscription action
-            print("Continue subscription tapped")
-            showingSubscriptionOptions = false
+          HabittoButton.largeFillPrimary(
+            text: isPurchasing ? "Processing..." : "Continue",
+            state: isPurchasing ? .loading : .default
+          ) {
+            Task {
+              await purchaseSubscription()
+            }
           }
           
           HabittoButton(
@@ -580,6 +595,40 @@ struct SubscriptionView: View {
     ) {
       Task {
         await restorePurchases()
+      }
+    }
+  }
+  
+  /// Purchase the selected subscription
+  private func purchaseSubscription() async {
+    isPurchasing = true
+    purchaseMessage = nil
+    
+    // Map selected option to product ID
+    let productID: String
+    switch selectedOption {
+    case .lifetime:
+      productID = SubscriptionManager.ProductID.lifetime
+    case .annual:
+      productID = SubscriptionManager.ProductID.annual
+    case .monthly:
+      productID = SubscriptionManager.ProductID.monthly
+    }
+    
+    let result = await subscriptionManager.purchase(productID)
+    
+    await MainActor.run {
+      isPurchasing = false
+      purchaseMessage = result.message
+      showingPurchaseAlert = true
+      
+      // If purchase was successful and user is now premium, dismiss the view
+      if result.success && subscriptionManager.isPremium {
+        showingSubscriptionOptions = false
+        // Small delay to show success message before dismissing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+          dismiss()
+        }
       }
     }
   }
