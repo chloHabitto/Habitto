@@ -63,6 +63,15 @@ struct SubscriptionView: View {
       .sheet(isPresented: $showingSubscriptionOptions) {
         subscriptionOptionsSheet
       }
+      .alert("Restore Purchase", isPresented: $showingRestoreAlert) {
+        Button("OK", role: .cancel) {
+          restoreMessage = nil
+        }
+      } message: {
+        if let message = restoreMessage {
+          Text(message)
+        }
+      }
       .onAppear {
         startAutoScroll()
       }
@@ -106,6 +115,10 @@ struct SubscriptionView: View {
   @State private var showingSubscriptionOptions = false
   @State private var currentReviewIndex: Int = 1 // Start at 1 (first real item)
   @State private var autoScrollTimer: Timer?
+  @State private var isRestoring = false
+  @State private var restoreMessage: String?
+  @State private var showingRestoreAlert = false
+  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   
   private let reviews: [Review] = [
     Review(id: "1", text: "This app transformed my daily routine. Premium features are worth it!"),
@@ -562,10 +575,34 @@ struct SubscriptionView: View {
     HabittoButton(
       size: .medium,
       style: .outline,
-      content: .text("Restore purchase")
+      content: .text(isRestoring ? "Restoring..." : "Restore purchase"),
+      state: isRestoring ? .loading : .default
     ) {
-      // Handle restore purchase action
-      print("Restore purchase tapped")
+      Task {
+        await restorePurchases()
+      }
+    }
+  }
+  
+  /// Restore previous purchases
+  private func restorePurchases() async {
+    isRestoring = true
+    restoreMessage = nil
+    
+    let result = await subscriptionManager.restorePurchases()
+    
+    await MainActor.run {
+      isRestoring = false
+      restoreMessage = result.message
+      showingRestoreAlert = true
+      
+      // If restore was successful and user is now premium, dismiss the view
+      if result.success && subscriptionManager.isPremium {
+        // Small delay to show success message before dismissing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+          dismiss()
+        }
+      }
     }
   }
   
