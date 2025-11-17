@@ -294,11 +294,6 @@ struct MoreTabView: View {
             showingTermsConditions = true
           })
         ])
-
-      // ✅ DEBUG: Debug Tools Section
-      #if DEBUG
-      debugXPSyncSection
-      #endif
       
       // Version Information
       VStack(spacing: 0) {
