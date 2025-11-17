@@ -12,6 +12,7 @@ struct HeaderView: View {
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var vacationManager: VacationManager
   @ObservedObject private var avatarManager = AvatarManager.shared
+  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   @State private var showingLoginView = false
   @State private var showingProfileView = false
   @State private var showingSubscriptionView = false
@@ -145,37 +146,39 @@ struct HeaderView: View {
       } else {
         // Crown button and Add button with advanced glass effect
         HStack(spacing: 12) {
-          // Crown button for subscription
-          Button(action: {
-            showingSubscriptionView = true
-          }) {
-            Image("Icon-crown_Filled")
-              .renderingMode(.template)
-              .resizable()
-              .frame(width: 20, height: 20)
-              .foregroundColor(Color(hex: "FCD884"))
-          }
-          .frame(width: 36, height: 36)
-          .background {
-            // iOS glass effect using Material
-            Circle()
-              .fill(.ultraThinMaterial)
-              .overlay {
-                // Liquid glass effect with gradient opacity stroke
-                Circle()
-                  .stroke(
-                    LinearGradient(
-                      stops: [
-                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-                      ],
-                      startPoint: .topLeading,
-                      endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                  )
-              }
+          // Crown button for subscription - only show for free users
+          if !subscriptionManager.isPremium {
+            Button(action: {
+              showingSubscriptionView = true
+            }) {
+              Image("Icon-crown_Filled")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 20, height: 20)
+                .foregroundColor(Color(hex: "FCD884"))
+            }
+            .frame(width: 36, height: 36)
+            .background {
+              // iOS glass effect using Material
+              Circle()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                  // Liquid glass effect with gradient opacity stroke
+                  Circle()
+                    .stroke(
+                      LinearGradient(
+                        stops: [
+                          .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+                          .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+                          .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                      ),
+                      lineWidth: 1.5
+                    )
+                }
+            }
           }
           
           // Add icon with advanced glass effect
