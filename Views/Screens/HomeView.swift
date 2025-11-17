@@ -73,6 +73,7 @@ class HomeViewState: ObservableObject {
 
   // UI State
   @Published var showingCreateHabit = false
+  @Published var showingPaywall = false
   @Published var habitToEditSession: HabitEditSession? = nil
   @Published var showingDeleteConfirmation = false
   @Published var habitToDelete: Habit?
@@ -81,6 +82,9 @@ class HomeViewState: ObservableObject {
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
+  
+  /// Subscription manager
+  let subscriptionManager = SubscriptionManager.shared
 
   /// ✅ CRASH FIX: Cache streak as @Published instead of computed property
   /// Computed properties that access @Published cause infinite loops!
@@ -149,6 +153,19 @@ class HomeViewState: ObservableObject {
     // For individual habit operations, use createHabit, updateHabit, or deleteHabit
     habitRepository.saveHabits(newHabits)
     lastHabitsUpdate = Date()
+  }
+  
+  /// Check if user can create a new habit and handle paywall if needed
+  func handleCreateHabitRequest() {
+    let currentHabitCount = habits.count
+    
+    if subscriptionManager.canCreateHabit(currentHabitCount: currentHabitCount) {
+      // User can create habit, show create flow
+      showingCreateHabit = true
+    } else {
+      // User has reached limit, show paywall
+      showingPaywall = true
+    }
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
@@ -655,7 +672,7 @@ struct HomeView: View {
         // Header - show streak for home tab
         HeaderView(
           onCreateHabit: {
-            state.showingCreateHabit = true
+            state.handleCreateHabitRequest()
           },
           onStreakTap: {
             state.showingOverviewView = true
@@ -738,7 +755,7 @@ struct HomeView: View {
         // Header - show streak for progress tab
         HeaderView(
           onCreateHabit: {
-            state.showingCreateHabit = true
+            state.handleCreateHabitRequest()
           },
           onStreakTap: {
             state.showingOverviewView = true
@@ -767,7 +784,7 @@ struct HomeView: View {
         // Header - show streak for habits tab
         HeaderView(
           onCreateHabit: {
-            state.showingCreateHabit = true
+            state.handleCreateHabitRequest()
           },
           onStreakTap: {
             state.showingOverviewView = true
@@ -790,7 +807,7 @@ struct HomeView: View {
           state.habitToEditSession = HabitEditSession(habit: habit)
         },
         onCreateHabit: {
-          state.showingCreateHabit = true
+          state.handleCreateHabitRequest()
         },
         onUpdateHabit: { updatedHabit in
           debugLog("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
@@ -816,7 +833,7 @@ struct HomeView: View {
         // Header - show profile for more tab
         HeaderView(
           onCreateHabit: {
-            state.showingCreateHabit = true
+            state.handleCreateHabitRequest()
           },
           onStreakTap: {
             state.showingOverviewView = true
@@ -955,6 +972,9 @@ struct HomeView: View {
           state.showingCreateHabit = false
         }
       })
+    }
+    .sheet(isPresented: $state.showingPaywall) {
+      SubscriptionView()
     }
     .fullScreenCover(item: $state.habitToEditSession) { session in
       HabitEditView(habit: session.habit, onSave: { updatedHabit in

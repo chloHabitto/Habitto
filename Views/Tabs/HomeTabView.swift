@@ -357,6 +357,8 @@ struct HomeTabView: View {
     Button(action: {
       // Navigate to create habit flow
       debugLog("➕ Add habit button tapped")
+      // Note: This button is currently not connected to create habit flow
+      // The create habit flow is triggered from HeaderView instead
     }) {
       Image("Icon-AddCircle_Filled")
         .renderingMode(.template)
