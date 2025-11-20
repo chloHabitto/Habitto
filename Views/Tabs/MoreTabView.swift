@@ -31,24 +31,26 @@ struct MoreTabView: View {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
-            // Trial Banner (now scrollable) - only show for free users
-            if !subscriptionManager.isPremium {
-              trialBanner
-                .entranceAnimation(delay: 0.0)
-            }
+            // Container for Banner and XP
+            VStack(spacing: 20) {
+              // Trial Banner (now scrollable) - only show for free users
+              if !subscriptionManager.isPremium {
+                trialBanner
+                  .entranceAnimation(delay: 0.0)
+              }
 
-            // XP Level Display (now scrollable)
-            XPLevelDisplay()  // ✅ Gets xpManager from EnvironmentObject
-              .id("xp-\(xpManager.totalXP)")  // ✅ Force view recreation when XP changes
-              .padding(.top, 24)
-              .padding(.bottom, 16)
-              .entranceAnimation(delay: 0.05)
+              // XP Level Display (now scrollable)
+              XPLevelDisplay()  // ✅ Gets xpManager from EnvironmentObject
+                .id("xp-\(xpManager.totalXP)")  // ✅ Force view recreation when XP changes
+                .padding(.bottom, 16)
+                .entranceAnimation(delay: 0.05)
+            }
 
             // Settings Sections
             settingsSections
           }
           .padding(.horizontal, 0)
-          .padding(.top, 0)
+          .padding(.top, 20)
           .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
         }
       }
@@ -228,8 +230,8 @@ struct MoreTabView: View {
     .background(Color.surfaceDim)
     .cornerRadius(24)
     .padding(.horizontal, 20)
-    .padding(.top, 20)
-    .padding(.bottom, 16)
+    .padding(.top, 0)
+    .padding(.bottom, 0)
     }
     .buttonStyle(PlainButtonStyle())
   }
