@@ -113,12 +113,13 @@ class AuthenticationManager: ObservableObject {
       }
     }
   }
+  */
   
   /// Check if current user is anonymous
+  /// Note: This property is kept active for compatibility, but sign-in is disabled
   var isAnonymous: Bool {
     Auth.auth().currentUser?.isAnonymous ?? false
   }
-  */
 
   // MARK: - Email/Password Authentication
 

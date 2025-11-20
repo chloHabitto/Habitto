@@ -100,7 +100,8 @@ struct HabitsFirestoreDemoView: View {
   }
   
   private var userInfoSection: some View {
-    VStack(spacing: 8) {
+    let isAnonymous = authManager.isAnonymous
+    return VStack(spacing: 8) {
       HStack {
         Image(systemName: "person.circle.fill")
           .font(.title2)
@@ -115,7 +116,7 @@ struct HabitsFirestoreDemoView: View {
             .truncationMode(.middle)
         }
         Spacer()
-        if authManager.isAnonymous {
+        if isAnonymous {
           Text("Anonymous")
             .font(.caption)
             .padding(.horizontal, 8)

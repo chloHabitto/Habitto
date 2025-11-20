@@ -92,7 +92,8 @@ struct FirestoreRepoDemoView: View {
   // MARK: Private
   
   private var userInfoSection: some View {
-    VStack(spacing: 8) {
+    let isAnonymous = authManager.isAnonymous
+    return VStack(spacing: 8) {
       HStack {
         Image(systemName: "person.circle.fill")
           .font(.title2)
@@ -106,7 +107,7 @@ struct FirestoreRepoDemoView: View {
             .lineLimit(1)
         }
         Spacer()
-        if authManager.isAnonymous {
+        if isAnonymous {
           Text("Anonymous")
             .font(.caption)
             .padding(.horizontal, 8)
