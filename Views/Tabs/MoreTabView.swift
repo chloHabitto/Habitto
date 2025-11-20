@@ -420,6 +420,19 @@ struct MoreTabView: View {
           }
         )
         
+        // Premium Testing Button
+        debugButton(
+          title: subscriptionManager.isPremium ? "🔓 Disable Premium (Debug)" : "🔒 Enable Premium (Debug)",
+          subtitle: subscriptionManager.isPremium ? "Turn off premium for testing" : "Turn on premium for testing",
+          action: {
+            if subscriptionManager.isPremium {
+              subscriptionManager.disablePremiumForTesting()
+            } else {
+              subscriptionManager.enablePremiumForTesting()
+            }
+          }
+        )
+        
         debugButton(
           title: "🧪 Test Event Sourcing",
           subtitle: "Automated test of event creation & XP",
