@@ -44,6 +44,24 @@ struct HabitDetailView: View {
         }
       }
       .onAppear {
+        // ✅ FIX: Reload habit from repository to ensure we have the latest version
+        // This fixes the issue where edited habit changes don't show when reopening the detail view
+        Task {
+          // Try to find the latest version from HabitRepository
+          if let latestHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
+            await MainActor.run {
+              // Only update if the habit actually changed to avoid unnecessary re-renders
+              if latestHabit.name != habit.name || 
+                 latestHabit.icon != habit.icon ||
+                 latestHabit.description != habit.description ||
+                 latestHabit.reminder != habit.reminder ||
+                 latestHabit.reminders != habit.reminders {
+                habit = latestHabit
+              }
+            }
+          }
+        }
+        
         todayProgress = habit.getProgress(for: selectedDate)
         
         // Always recalculate active state based on current habit's dates

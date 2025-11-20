@@ -8,6 +8,8 @@ import FirebaseAuth
 @MainActor
 final class SwiftDataStorage: HabitStorageProtocol {
   private let guestMigrationFlagKey = "guestToAuthMigrationComplete"
+  private var isSaving = false // ✅ FIX: Prevent concurrent saves
+  
   // MARK: Lifecycle
 
   nonisolated init() { }
@@ -56,6 +58,17 @@ final class SwiftDataStorage: HabitStorageProtocol {
   // MARK: - Habit-Specific Storage Methods
 
   func saveHabits(_ habits: [Habit], immediate _: Bool = false) async throws {
+    // ✅ FIX: Prevent concurrent saves
+    guard !isSaving else {
+      #if DEBUG
+      logger.warning("⚠️ saveHabits: Already saving, skipping concurrent save")
+      #endif
+      return
+    }
+    
+    isSaving = true
+    defer { isSaving = false }
+    
     #if DEBUG
     logger.info("🎯 [8/8] SwiftDataStorage.saveHabits: writing to SwiftData")
     logger.info("  → Count: \(habits.count)")
@@ -331,20 +344,28 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // This ensures we use the correct user ID even if called during app initialization
     var currentUserId = await getCurrentUserId()
     
-    // ✅ IMPROVED: More aggressive retry logic with exponential backoff
-    // Retry up to 5 times with increasing delays (up to 2.5 seconds total)
+    // ✅ FIX: Only retry if we're expecting an authenticated user
+    // For guest users, nil is expected and we should use "guest" immediately
+    // Check if Firebase Auth is actually configured and might have a user
     if currentUserId == nil {
-      logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
-      _ = await MainActor.run { Auth.auth().currentUser?.uid }
-      for attempt in 1...5 {
-        let delay = UInt64(500_000_000 * UInt64(attempt)) // 0.5s, 1s, 1.5s, 2s, 2.5s
-        try? await Task.sleep(nanoseconds: delay)
-        currentUserId = await getCurrentUserId()
-        if currentUserId != nil {
-          logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
-          break
+      // Quick check: if Auth is not configured or definitely no user, skip retries
+      let hasAuthUser = await MainActor.run { Auth.auth().currentUser != nil }
+      if hasAuthUser {
+        // User might be authenticating, retry a few times
+        logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
+        for attempt in 1...3 { // ✅ FIX: Reduced from 5 to 3 retries
+          let delay = UInt64(200_000_000 * UInt64(attempt)) // ✅ FIX: Reduced delay: 0.2s, 0.4s, 0.6s
+          try? await Task.sleep(nanoseconds: delay)
+          currentUserId = await getCurrentUserId()
+          if currentUserId != nil {
+            logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
+            break
+          }
+          logger.info("⚠️ Retry \(attempt)/3: getCurrentUserId still nil")
         }
-        logger.info("⚠️ Retry \(attempt)/5: getCurrentUserId still nil")
+      } else {
+        // No auth user exists, we're in guest mode - skip retries
+        logger.info("ℹ️ getCurrentUserId returned nil (guest mode), skipping retries")
       }
     }
     

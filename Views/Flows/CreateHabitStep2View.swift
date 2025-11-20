@@ -367,6 +367,7 @@ struct CreateHabitStep2View: View {
   @State private var showingBaselineFrequencySheet = false
   @State private var showingTargetUnitSheet = false
   @State private var showingTargetFrequencySheet = false
+  @State private var isSaving = false // ✅ FIX: Prevent multiple save button taps
 
   /// Tooltip state - only one can be shown at a time
   @State private var activeTooltip: String? // "baseline" or "target" or nil
@@ -479,10 +480,17 @@ struct CreateHabitStep2View: View {
       Spacer()
 
       FormActionButtons(
-        isFormValid: isFormValid,
+        isFormValid: isFormValid && !isSaving, // ✅ FIX: Disable button while saving
         primaryColor: color,
         onBack: goBack,
         onSave: {
+          // ✅ FIX: Prevent multiple taps
+          guard !isSaving else {
+            #if DEBUG
+            print("⚠️ SAVE BUTTON: Ignoring tap - save already in progress")
+            #endif
+            return
+          }
           #if DEBUG
           print("🔘 SAVE BUTTON TAPPED!")
           print("  → isFormValid at tap time: \(isFormValid)")
@@ -594,6 +602,16 @@ struct CreateHabitStep2View: View {
   }
 
   private func saveHabit() {
+    // ✅ FIX: Prevent multiple saves
+    guard !isSaving else {
+      #if DEBUG
+      print("⚠️ saveHabit: Already saving, ignoring duplicate call")
+      #endif
+      return
+    }
+    
+    isSaving = true
+    
     let newHabit = createHabit()
     #if DEBUG
     print("🎯 [1/8] CreateHabitStep2View.saveHabit: tap Add button")
@@ -609,6 +627,7 @@ struct CreateHabitStep2View: View {
     #if DEBUG
     print("  → onSave callback invoked")
     #endif
+    // Note: isSaving will be reset when the sheet dismisses
     // ✅ FIX: Don't dismiss here - let HomeView handle dismiss after async save completes
     // dismiss() ← REMOVED: This was dismissing before the async save in HomeView completed!
   }
