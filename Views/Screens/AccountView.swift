@@ -25,6 +25,8 @@ struct AccountView: View {
                   .padding(.horizontal, 20)
                   .padding(.top, 8)
                 
+                // DISABLED: Sign-in functionality commented out for future use
+                /*
                 // Personal Information Section
                 VStack(spacing: 0) {
                   AccountOptionRow(
@@ -37,6 +39,7 @@ struct AccountView: View {
                     showingPersonalInformation = true
                   }
                 }
+                */
                 .background(Color.surface)
                 .cornerRadius(16)
                 .padding(.horizontal, 20)
@@ -178,10 +181,10 @@ struct AccountView: View {
     .sheet(isPresented: $showingLoginView) {
       LoginView()
     }
-    */
     .sheet(isPresented: $showingPersonalInformation) {
       PersonalInformationView()
     }
+    */
     .sheet(isPresented: $showingDeleteAccountConfirmation) {
       AccountDeletionConfirmationView()
     }

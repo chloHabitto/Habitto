@@ -1,3 +1,5 @@
+// DISABLED: Sign-in functionality commented out for future use
+/*
 import SwiftUI
 import UIKit
 
@@ -252,3 +254,4 @@ struct PersonalInformationView: View {
 #Preview {
   PersonalInformationView()
 }
+*/

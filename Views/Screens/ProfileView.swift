@@ -527,6 +527,8 @@ struct ProfileView: View {
     originalEmail = email
   }
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   private func saveChanges() {
     // Update the user's display name in Firebase
     let newDisplayName = [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " ")
@@ -549,6 +551,12 @@ struct ProfileView: View {
         }
       }
     }
+  }
+  */
+  
+  // Placeholder method since profile saving is disabled
+  private func saveChanges() {
+    print("⚠️ Profile saving is currently disabled")
   }
 }
 

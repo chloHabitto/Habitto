@@ -34,6 +34,8 @@ struct SecurityView: View {
               .padding(.horizontal, 20)
               .padding(.top, 8)
 
+            // DISABLED: Sign-in functionality commented out for future use
+            /*
             // Account Options
             VStack(spacing: 0) {
               // Personal Information
@@ -86,6 +88,11 @@ struct SecurityView: View {
                 .padding(.vertical, 16)
               }
             }
+            */
+            // Account Options - disabled (empty placeholder)
+            VStack(spacing: 0) {
+              // All account options disabled
+            }
             .background(Color.surface)
             .cornerRadius(16)
             .padding(.horizontal, 20)
@@ -95,6 +102,8 @@ struct SecurityView: View {
           .padding(.bottom, 20)
         }
 
+        // DISABLED: Sign-in functionality commented out for future use
+        /*
         // Fixed bottom section with buttons
         VStack(spacing: 16) {
           // Sign Out Section
@@ -129,6 +138,7 @@ struct SecurityView: View {
           .padding(.horizontal, 20)
         }
         .padding(.bottom, 20)
+        */
       }
       .background(Color.surface2)
       .navigationTitle("Account")
@@ -145,22 +155,25 @@ struct SecurityView: View {
           }
         }
       }
-    }
-    .sheet(isPresented: $showingPersonalInformation) {
-      PersonalInformationView()
-    }
-    .sheet(isPresented: $showingDeleteAccountConfirmation) {
-      print("🗑️ SecurityView: Presenting AccountDeletionConfirmationView")
-      return AccountDeletionConfirmationView()
-    }
-    .alert("Sign Out", isPresented: $showingSignOutAlert) {
-      Button("Cancel", role: .cancel) { }
-      Button("Sign Out", role: .destructive) {
-        authManager.signOut()
-        dismiss()
+      // DISABLED: Sign-in functionality commented out for future use
+      /*
+      .sheet(isPresented: $showingPersonalInformation) {
+        PersonalInformationView()
       }
-    } message: {
-      Text("Are you sure you want to sign out? You'll need to sign in again to access your data.")
+      .sheet(isPresented: $showingDeleteAccountConfirmation) {
+        print("🗑️ SecurityView: Presenting AccountDeletionConfirmationView")
+        return AccountDeletionConfirmationView()
+      }
+      .alert("Sign Out", isPresented: $showingSignOutAlert) {
+        Button("Cancel", role: .cancel) { }
+        Button("Sign Out", role: .destructive) {
+          authManager.signOut()
+          dismiss()
+        }
+      } message: {
+        Text("Are you sure you want to sign out? You'll need to sign in again to access your data.")
+      }
+      */
     }
   }
 }

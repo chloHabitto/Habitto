@@ -139,6 +139,8 @@ struct MoreTabView: View {
         MigrationStatusDebugView()
       }
       #endif
+      // DISABLED: Sign-in functionality commented out for future use
+      /*
       .alert(isPresented: $showingSignOutAlert) {
         Alert(
           title: Text("Sign Out"),
@@ -148,6 +150,7 @@ struct MoreTabView: View {
           },
           secondaryButton: .cancel())
       }
+      */
       .onAppear {
         // 🔍 DEBUG: Log XP when tab appears
         print("🟣 MoreTabView.onAppear | XP: \(xpManager.totalXP) | Level: \(xpManager.currentLevel) | instance: \(ObjectIdentifier(xpManager))")

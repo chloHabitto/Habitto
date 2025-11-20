@@ -215,6 +215,8 @@ final class AccountDeletionService: ObservableObject {
     print("✅ AccountDeletionService: App data cleared")
   }
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   private func deleteFirebaseAccount() async throws {
     print("🗑️ AccountDeletionService: Deleting Firebase account")
 
@@ -231,6 +233,12 @@ final class AccountDeletionService: ObservableObject {
         }
       }
     }
+  }
+  */
+  
+  // Placeholder that throws an error since account deletion is disabled
+  private func deleteFirebaseAccount() async throws {
+    throw AccountDeletionError.deletionFailed("Account deletion is currently disabled")
   }
 
   private func finalizeDeletion() async throws {
