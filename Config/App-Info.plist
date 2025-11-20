@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.habitto.app.backup</string>
+		<string>com.habitto.app.backup.refresh</string>
+		<string>com.habitto.app.event-compaction</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Habitto</string>
 	<key>CFBundleExecutable</key>
@@ -49,22 +55,6 @@
 	<string>1</string>
 	<key>GIDClientID</key>
 	<string>657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com</string>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIStatusBarStyle</key>
-	<string></string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Habitto needs access to your camera to take profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -74,11 +64,14 @@
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIStatusBarStyle</key>
+	<string></string>
+	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>com.habitto.app.backup</string>
-		<string>com.habitto.app.backup.refresh</string>
-		<string>com.habitto.app.event-compaction</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 </dict>
 </plist>
