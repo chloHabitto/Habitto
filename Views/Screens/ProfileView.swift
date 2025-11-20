@@ -233,6 +233,8 @@ struct ProfileView: View {
             }
           }
           */
+          // DISABLED: Guest mode overlay - profile editing unavailable (commented out)
+          /*
           // Guest mode overlay - profile editing unavailable
           if !isLoggedIn {
             ZStack {
@@ -265,6 +267,7 @@ struct ProfileView: View {
               }
             }
           }
+          */
 
         }
       }
