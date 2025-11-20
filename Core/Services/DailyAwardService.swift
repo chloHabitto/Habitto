@@ -1,6 +1,7 @@
 import Combine
-import FirebaseCore
 import Foundation
+import SwiftData
+import OSLog
 
 /// Service for managing XP awards with ledger-based integrity
 ///
@@ -9,17 +10,19 @@ import Foundation
 ///
 /// Responsibilities:
 /// - Award XP with delta and reason (positive or negative)
-/// - Maintain append-only ledger for audit trail
-/// - Update XP state transactionally
+/// - Maintain append-only ledger via DailyAward records (audit trail)
+/// - Update XP state transactionally in SwiftData
 /// - Calculate level progression
-/// - Verify XP integrity (sum(ledger) == state.totalXP)
+/// - Verify XP integrity (sum(DailyAwards) == UserProgressData.totalXP)
 /// - Auto-repair on integrity mismatch
 ///
 /// Integrity Guarantee:
-/// - Ledger is append-only (immutable)
-/// - State is derived from ledger
+/// - DailyAward records are append-only (immutable)
+/// - UserProgressData.totalXP is derived from sum of DailyAward.xpGranted
 /// - Integrity check on app start
 /// - Auto-repair if mismatch detected
+///
+/// ✅ GUEST-ONLY MODE: Uses SwiftData only, no Firestore/authentication required
 @MainActor
 class DailyAwardService: ObservableObject {
     // MARK: - Singleton
@@ -28,7 +31,7 @@ class DailyAwardService: ObservableObject {
     
     // MARK: - Published Properties
     
-    /// Current XP state
+    /// Current XP state (derived from SwiftData)
     @Published private(set) var xpState: XPState?
     
     /// Error state
@@ -36,8 +39,8 @@ class DailyAwardService: ObservableObject {
     
     // MARK: - Dependencies
     
-    private let repository: FirestoreRepository
     private let dateFormatter: LocalDateFormatter
+    private let logger = Logger(subsystem: "com.habitto.app", category: "DailyAwardService")
     
     // MARK: - Constants
     
@@ -57,14 +60,14 @@ class DailyAwardService: ObservableObject {
     // MARK: - Initialization
     
     init(
-        repository: FirestoreRepository? = nil,
         dateFormatter: LocalDateFormatter? = nil
     ) {
-        self.repository = repository ?? FirestoreRepository.shared
         self.dateFormatter = dateFormatter ?? LocalDateFormatter()
         
-        // Start streaming XP state
-        startXPStateStream()
+        // ✅ GUEST-ONLY MODE: Load XP state from SwiftData on init
+        Task {
+            await refreshXPState()
+        }
     }
     
     // MARK: - XP Award Methods
@@ -72,33 +75,61 @@ class DailyAwardService: ObservableObject {
     /// Award XP to the user
     ///
     /// This is the **only** method that should be used to change XP.
-    /// It maintains an append-only ledger and updates state transactionally.
+    /// It updates UserProgressData by adding delta (or recalculating from DailyAward records).
     ///
     /// - Parameters:
     ///   - delta: The XP change (can be positive or negative)
     ///   - reason: Human-readable reason for the award (1-500 characters)
     ///
-    /// - Note: Uses Firestore transaction to ensure ledger and state stay in sync
+    /// - Note: ✅ GUEST-ONLY MODE: Updates UserProgressData in SwiftData (no authentication required)
+    ///   After DailyAward record is created by HabitStore, refreshXPState() will recalculate from ledger.
     func awardXP(delta: Int, reason: String) async throws {
         guard !reason.isEmpty && reason.count <= 500 else {
             throw XPError.invalidReason("Reason must be 1-500 characters")
         }
         
-        print("🎖️ DailyAwardService: Awarding \(delta) XP for '\(reason)'")
+        logger.info("🎖️ DailyAwardService: Awarding \(delta) XP for '\(reason)'")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = await CurrentUser().idOrGuest
         
         do {
-            // Award via repository (appends to ledger + updates state)
-            try await repository.awardXP(delta: delta, reason: reason)
+            // ✅ GUEST-ONLY MODE: Get or create UserProgressData for this user
+            let progressPredicate = #Predicate<UserProgressData> { progress in
+                progress.userId == userId
+            }
+            let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
+            let existingProgress = (try? modelContext.fetch(progressDescriptor)) ?? []
             
-            // Refresh state
+            let userProgress: UserProgressData
+            if let existing = existingProgress.first {
+                userProgress = existing
+            } else {
+                // Create new UserProgressData for guest/user
+                userProgress = UserProgressData(userId: userId)
+                modelContext.insert(userProgress)
+                logger.info("✅ DailyAwardService: Created new UserProgressData for userId: '\(userId.isEmpty ? "guest" : userId)'")
+            }
+            
+            // Update XP by adding delta (this recalculates level automatically)
+            // Note: After DailyAward record is created, refreshXPState() will recalculate from ledger
+            let newTotalXP = max(0, userProgress.xpTotal + delta)
+            userProgress.updateXP(newTotalXP)
+            
+            logger.info("🎖️ DailyAwardService: Updated XP - Old: \(userProgress.xpTotal - delta), New: \(newTotalXP), Level: \(userProgress.level)")
+            
+            // Save changes
+            try modelContext.save()
+            
+            // Refresh state to update xpState (recalculates from DailyAward records if they exist)
             await refreshXPState()
             
             if let state = xpState {
-                print("✅ DailyAwardService: XP awarded - Total: \(state.totalXP), Level: \(state.level)")
+                logger.info("✅ DailyAwardService: XP awarded - Total: \(state.totalXP), Level: \(state.level)")
             }
             
         } catch {
-            print("❌ DailyAwardService: Failed to award XP: \(error)")
+            logger.error("❌ DailyAwardService: Failed to award XP: \(error.localizedDescription)")
             self.error = .awardFailed(error.localizedDescription)
             throw error
         }
@@ -177,64 +208,113 @@ class DailyAwardService: ObservableObject {
     /// - Parameter totalXP: Total XP accumulated
     /// - Returns: (level, currentLevelXP)
     func calculateLevel(totalXP: Int) -> (level: Int, currentLevelXP: Int) {
-        var level = 1
-        var remainingXP = totalXP
+        // ✅ GUEST-ONLY MODE: Use same formula as UserProgressData
+        // Level formula: level = floor(sqrt(xp / 300)) + 1
+        let levelFloat = sqrt(Double(totalXP) / 300.0)
+        let level = max(1, Int(floor(levelFloat)) + 1)
         
-        while remainingXP >= xpRequiredForLevel(level) {
-            remainingXP -= xpRequiredForLevel(level)
-            level += 1
-        }
+        // Calculate currentLevelXP
+        let currentLevelStartXP = Int(pow(Double(level - 1), 2) * 300)
+        let currentLevelXP = totalXP - currentLevelStartXP
         
-        return (level: level, currentLevelXP: remainingXP)
+        return (level: level, currentLevelXP: max(0, currentLevelXP))
     }
     
     // MARK: - Integrity Methods
     
     /// Verify XP integrity
     ///
-    /// Checks that `sum(ledger) == state.totalXP`.
+    /// Checks that `sum(DailyAward.xpGranted) == UserProgressData.totalXP`.
     ///
     /// - Returns: True if integrity check passes
     func verifyIntegrity() async throws -> Bool {
-        print("🔍 DailyAwardService: Verifying XP integrity...")
+        logger.info("🔍 DailyAwardService: Verifying XP integrity...")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = await CurrentUser().idOrGuest
         
         do {
-            let isValid = try await repository.verifyXPIntegrity()
+            // Calculate XP from DailyAward records (source of truth)
+            let awardPredicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+            let awards = try modelContext.fetch(awardDescriptor)
+            let calculatedXP = awards.reduce(0) { $0 + $1.xpGranted }
+            
+            // Get stored XP from UserProgressData
+            let progressPredicate = #Predicate<UserProgressData> { progress in
+                progress.userId == userId
+            }
+            let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
+            let progressRecords = try modelContext.fetch(progressDescriptor)
+            let storedXP = progressRecords.first?.xpTotal ?? 0
+            
+            let isValid = calculatedXP == storedXP
             
             if isValid {
-                print("✅ DailyAwardService: XP integrity verified")
+                logger.info("✅ DailyAwardService: XP integrity verified (calculated: \(calculatedXP), stored: \(storedXP))")
             } else {
-                print("⚠️ DailyAwardService: XP integrity mismatch detected")
+                logger.warning("⚠️ DailyAwardService: XP integrity mismatch detected (calculated: \(calculatedXP), stored: \(storedXP))")
             }
             
             return isValid
         } catch {
-            print("❌ DailyAwardService: Integrity check failed: \(error)")
+            logger.error("❌ DailyAwardService: Integrity check failed: \(error.localizedDescription)")
             throw XPError.integrityCheckFailed(error.localizedDescription)
         }
     }
     
-    /// Repair XP integrity by recalculating from ledger
+    /// Repair XP integrity by recalculating from DailyAward records
     ///
-    /// Recalculates totalXP and level from the ledger (source of truth).
+    /// Recalculates totalXP and level from DailyAward records (source of truth).
     /// Safe to call if integrity check fails.
     func repairIntegrity() async throws {
-        print("🔧 DailyAwardService: Repairing XP integrity...")
+        logger.info("🔧 DailyAwardService: Repairing XP integrity...")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = await CurrentUser().idOrGuest
         
         do {
-            try await repository.repairXPIntegrity()
+            // Calculate XP from DailyAward records (source of truth)
+            let awardPredicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+            let awards = try modelContext.fetch(awardDescriptor)
+            let calculatedXP = awards.reduce(0) { $0 + $1.xpGranted }
+            
+            // Get or create UserProgressData
+            let progressPredicate = #Predicate<UserProgressData> { progress in
+                progress.userId == userId
+            }
+            let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
+            let progressRecords = try modelContext.fetch(progressDescriptor)
+            
+            let userProgress: UserProgressData
+            if let existing = progressRecords.first {
+                userProgress = existing
+            } else {
+                userProgress = UserProgressData(userId: userId)
+                modelContext.insert(userProgress)
+            }
+            
+            // Update XP to calculated value
+            userProgress.updateXP(calculatedXP)
+            
+            try modelContext.save()
             
             // Refresh state after repair
             await refreshXPState()
             
-            print("✅ DailyAwardService: XP integrity repaired")
+            logger.info("✅ DailyAwardService: XP integrity repaired - Total: \(calculatedXP)")
             
             if let state = xpState {
-                print("   New state - Total: \(state.totalXP), Level: \(state.level)")
+                logger.info("   New state - Total: \(state.totalXP), Level: \(state.level)")
             }
             
         } catch {
-            print("❌ DailyAwardService: Integrity repair failed: \(error)")
+            logger.error("❌ DailyAwardService: Integrity repair failed: \(error.localizedDescription)")
             self.error = .repairFailed(error.localizedDescription)
             throw error
         }
@@ -249,7 +329,7 @@ class DailyAwardService: ObservableObject {
         let isValid = try await verifyIntegrity()
         
         if !isValid {
-            print("⚠️ DailyAwardService: Integrity mismatch, auto-repairing...")
+            logger.warning("⚠️ DailyAwardService: Integrity mismatch, auto-repairing...")
             try await repairIntegrity()
             return true
         }
@@ -257,76 +337,76 @@ class DailyAwardService: ObservableObject {
         return true
     }
     
-    // MARK: - Real-time Streams
+    // MARK: - XP State Management
     
-    /// Start streaming XP state for real-time UI updates
-    private func startXPStateStream() {
-        print("👂 DailyAwardService: Starting XP state stream")
-        
-        Task { @MainActor in
-            guard await waitForFirebaseConfigurationIfNeeded() else {
-                print("⚠️ DailyAwardService: Firebase not configured, XP stream not started")
-                return
-            }
-            
-            do {
-                if let snapshot = try await repository.fetchXPStateOnce() {
-                    xpState = snapshot
-                    print("✅ DailyAwardService: Loaded initial XP snapshot (totalXP: \(snapshot.totalXP))")
-                } else {
-                    print("⚠️ DailyAwardService: XP snapshot missing, awaiting live stream")
-                }
-            } catch {
-                print("❌ DailyAwardService: Failed to load initial XP snapshot: \(error.localizedDescription)")
-            }
-            
-            repository.streamXPState()
-        }
-    }
-    
-    /// Refresh XP state from repository
+    /// Refresh XP state from SwiftData
+    /// ✅ GUEST-ONLY MODE: Loads XP from UserProgressData and DailyAward records
     func refreshXPState() async {
-        print("🔄 DailyAwardService: Refreshing XP state")
+        logger.info("🔄 DailyAwardService: Refreshing XP state from SwiftData")
         
-        guard await waitForFirebaseConfigurationIfNeeded() else {
-            print("⚠️ DailyAwardService: Firebase not configured, skipping XP refresh")
-            return
-        }
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = await CurrentUser().idOrGuest
         
         do {
-            if let snapshot = try await repository.fetchXPStateOnce() {
-                xpState = snapshot
-                return
+            // Calculate XP from DailyAward records (source of truth)
+            let awardPredicate = #Predicate<DailyAward> { award in
+                award.userId == userId
             }
+            let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+            let awards = try modelContext.fetch(awardDescriptor)
+            let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+            
+            // Get level from UserProgressData or calculate from XP
+            let progressPredicate = #Predicate<UserProgressData> { progress in
+                progress.userId == userId
+            }
+            let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
+            let progressRecords = try modelContext.fetch(progressDescriptor)
+            
+            let level: Int
+            let currentLevelXP: Int
+            if let progress = progressRecords.first, progress.xpTotal == totalXP {
+                // UserProgressData is in sync, use its level
+                level = progress.level
+                currentLevelXP = progress.xpForCurrentLevel
+            } else {
+                // Calculate level from XP
+                let levelInfo = calculateLevel(totalXP: totalXP)
+                level = levelInfo.level
+                currentLevelXP = levelInfo.currentLevelXP
+                
+                // Update UserProgressData if it exists but is out of sync
+                if let progress = progressRecords.first {
+                    progress.updateXP(totalXP)
+                    try? modelContext.save()
+                }
+            }
+            
+            // Update XPState
+            xpState = XPState(
+                totalXP: totalXP,
+                level: level,
+                currentLevelXP: currentLevelXP,
+                lastUpdated: Date()
+            )
+            
+            logger.info("✅ DailyAwardService: XP state refreshed - Total: \(totalXP), Level: \(level)")
+            
         } catch {
-            print("❌ DailyAwardService: refresh failed to fetch XP snapshot: \(error.localizedDescription)")
+            logger.error("❌ DailyAwardService: Failed to refresh XP state: \(error.localizedDescription)")
+            // Initialize with default state if error
+            xpState = XPState(
+                totalXP: 0,
+                level: 1,
+                currentLevelXP: 0,
+                lastUpdated: Date()
+            )
         }
-        
-        xpState = repository.xpState
     }
     
-    /// Stop all listeners
+    /// Stop all listeners (no-op in guest-only mode)
     func stopListening() {
-        repository.stopListening()
-        print("🛑 DailyAwardService: Stopped all XP listeners")
-    }
-    
-    private func waitForFirebaseConfigurationIfNeeded(timeout: TimeInterval = 3) async -> Bool {
-        if FirebaseBootstrapper.isConfigured {
-            return true
-        }
-        
-        let pollInterval: UInt64 = 50_000_000 // 50ms
-        let maxIterations = Int((timeout * 1_000_000_000) / Double(pollInterval))
-        
-        for _ in 0..<maxIterations {
-            try? await Task.sleep(nanoseconds: pollInterval)
-            if FirebaseBootstrapper.isConfigured {
-                return true
-            }
-        }
-        
-        return FirebaseBootstrapper.isConfigured
+        logger.info("🛑 DailyAwardService: stopListening() called (no-op in guest-only mode)")
     }
 }
 
