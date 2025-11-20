@@ -437,6 +437,8 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - User Profile Management
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   func updateUserProfile(
     displayName: String?,
     photoURL: URL?,
@@ -495,6 +497,7 @@ class AuthenticationManager: ObservableObject {
       }
     }
   }
+  */
 
   // MARK: - Validation
 
@@ -639,6 +642,8 @@ class AuthenticationManager: ObservableObject {
   }
   */
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
     print("🗑️ AuthenticationManager: Starting account deletion")
 
@@ -681,6 +686,7 @@ class AuthenticationManager: ObservableObject {
       completion(.success(()))
     }
   }
+  */
 
   // MARK: Private
 
