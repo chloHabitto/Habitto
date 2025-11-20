@@ -242,6 +242,13 @@ struct MoreTabView: View {
         title: "General Settings",
         items: [
           SettingItem(
+            title: "My subscription",
+            value: subscriptionManager.isPremium ? "Premium" : "Free",
+            hasChevron: true,
+            action: {
+              showingSubscriptionView = true
+            }),
+          SettingItem(
             title: "Vacation Mode",
             value: vacationManager.isActive ? "On" : "Off",
             hasChevron: true,
@@ -809,6 +816,8 @@ struct MoreTabView: View {
 
   private func iconForSetting(_ title: String) -> String {
     switch title {
+    case "My subscription":
+      "Icon-crown_Filled"
     case "Vacation Mode":
       "Icon-Vacation_Filled"
     case "Account":
