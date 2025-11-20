@@ -1071,7 +1071,7 @@ class HabitRepository: ObservableObject {
       }
     }
 
-    Task.detached(priority: .background) { [userId] in
+    Task.detached(priority: .background) {
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // guard !CurrentUser.isGuestId(userId) else {
       //   debugLog("ℹ️ POST_LAUNCH: Skipping completion sync for guest user")
@@ -1265,20 +1265,15 @@ class HabitRepository: ObservableObject {
   func triggerManualSync() async throws {
     syncStarted()
     
-    do {
-      let userId = await CurrentUser().idOrGuest
-      guard !CurrentUser.isGuestId(userId) else {
-        syncCompleted()
-        return
-      }
-      
-      // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
-      // try await SyncEngine.shared.performFullSyncCycle(userId: userId)
+    let userId = await CurrentUser().idOrGuest
+    guard !CurrentUser.isGuestId(userId) else {
       syncCompleted()
-    } catch {
-      syncFailed(error: error)
-      throw error
+      return
     }
+    
+    // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
+    // try await SyncEngine.shared.performFullSyncCycle(userId: userId)
+    syncCompleted()
   }
 
   private func handleUserChange(_ authState: AuthenticationState) async {

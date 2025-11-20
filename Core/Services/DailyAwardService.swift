@@ -74,27 +74,97 @@ class DailyAwardService: ObservableObject {
     
     /// Award XP to the user
     ///
-    /// This is the **only** method that should be used to change XP.
-    /// It updates UserProgressData by adding delta (or recalculating from DailyAward records).
+    /// This is the **single source of truth** for all XP changes.
+    /// It maintains an append-only ledger (DailyAward records) and derives state from it.
+    ///
+    /// **Architecture:**
+    /// 1. Creates or deletes DailyAward record (immutable ledger entry)
+    /// 2. Recalculates UserProgressData.totalXP from sum(DailyAward.xpGranted) (source of truth)
+    /// 3. Updates xpState for UI reactivity
     ///
     /// - Parameters:
-    ///   - delta: The XP change (can be positive or negative)
+    ///   - delta: The XP change (positive = award, negative = reversal)
+    ///   - dateKey: The date key (yyyy-MM-dd) for the DailyAward record
     ///   - reason: Human-readable reason for the award (1-500 characters)
     ///
-    /// - Note: ✅ GUEST-ONLY MODE: Updates UserProgressData in SwiftData (no authentication required)
-    ///   After DailyAward record is created by HabitStore, refreshXPState() will recalculate from ledger.
-    func awardXP(delta: Int, reason: String) async throws {
+    /// - Note: ✅ GUEST-ONLY MODE: Uses SwiftData only, no authentication required
+    func awardXP(delta: Int, dateKey: String, reason: String) async throws {
         guard !reason.isEmpty && reason.count <= 500 else {
             throw XPError.invalidReason("Reason must be 1-500 characters")
         }
         
-        logger.info("🎖️ DailyAwardService: Awarding \(delta) XP for '\(reason)'")
+        guard !dateKey.isEmpty else {
+            throw XPError.invalidReason("Date key cannot be empty")
+        }
+        
+        logger.info("🎖️ DailyAwardService: Awarding \(delta) XP for '\(reason)' on \(dateKey)")
         
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
         
         do {
-            // ✅ GUEST-ONLY MODE: Get or create UserProgressData for this user
+            // ✅ STEP 1: Create or delete DailyAward record (immutable ledger entry)
+            // This is the source of truth - all XP calculations derive from this
+            if delta > 0 {
+                // Award XP: Create DailyAward record
+                // Check if award already exists (idempotency)
+                let existingPredicate = #Predicate<DailyAward> { award in
+                    award.userId == userId && award.dateKey == dateKey
+                }
+                let existingDescriptor = FetchDescriptor<DailyAward>(predicate: existingPredicate)
+                let existingAwards = (try? modelContext.fetch(existingDescriptor)) ?? []
+                
+                if existingAwards.isEmpty {
+                    // Create new DailyAward record
+                    let award = DailyAward(
+                        userId: userId,
+                        dateKey: dateKey,
+                        xpGranted: delta,
+                        allHabitsCompleted: true
+                    )
+                    modelContext.insert(award)
+                    logger.info("✅ DailyAwardService: Created DailyAward record for \(dateKey): \(delta) XP")
+                } else {
+                    // Award already exists - update it (shouldn't happen, but handle gracefully)
+                    if let existing = existingAwards.first {
+                        logger.warning("⚠️ DailyAwardService: DailyAward already exists for \(dateKey), updating from \(existing.xpGranted) to \(delta)")
+                        existing.xpGranted = delta
+                    }
+                }
+            } else if delta < 0 {
+                // Reverse XP: Delete DailyAward record(s) for this date
+                let deletePredicate = #Predicate<DailyAward> { award in
+                    award.userId == userId && award.dateKey == dateKey
+                }
+                let deleteDescriptor = FetchDescriptor<DailyAward>(predicate: deletePredicate)
+                let awardsToDelete = (try? modelContext.fetch(deleteDescriptor)) ?? []
+                
+                for award in awardsToDelete {
+                    modelContext.delete(award)
+                    logger.info("✅ DailyAwardService: Deleted DailyAward record for \(dateKey): \(award.xpGranted) XP reversed")
+                }
+                
+                if awardsToDelete.isEmpty {
+                    logger.warning("⚠️ DailyAwardService: No DailyAward found to delete for \(dateKey) (reversal)")
+                }
+            }
+            // delta == 0: No-op (no ledger change needed)
+            
+            // Save ledger changes first
+            try modelContext.save()
+            
+            // ✅ STEP 2: Recalculate UserProgressData.totalXP from ALL DailyAward records (source of truth)
+            // Calculate total XP from sum of all DailyAward records
+            let allAwardsPredicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let allAwardsDescriptor = FetchDescriptor<DailyAward>(predicate: allAwardsPredicate)
+            let allAwards = try modelContext.fetch(allAwardsDescriptor)
+            let calculatedTotalXP = allAwards.reduce(0) { $0 + $1.xpGranted }
+            
+            logger.info("🎖️ DailyAwardService: Calculated total XP from \(allAwards.count) DailyAward records: \(calculatedTotalXP)")
+            
+            // Get or create UserProgressData
             let progressPredicate = #Predicate<UserProgressData> { progress in
                 progress.userId == userId
             }
@@ -111,17 +181,15 @@ class DailyAwardService: ObservableObject {
                 logger.info("✅ DailyAwardService: Created new UserProgressData for userId: '\(userId.isEmpty ? "guest" : userId)'")
             }
             
-            // Update XP by adding delta (this recalculates level automatically)
-            // Note: After DailyAward record is created, refreshXPState() will recalculate from ledger
-            let newTotalXP = max(0, userProgress.xpTotal + delta)
-            userProgress.updateXP(newTotalXP)
+            // Update XP from calculated value (this recalculates level automatically)
+            userProgress.updateXP(calculatedTotalXP)
             
-            logger.info("🎖️ DailyAwardService: Updated XP - Old: \(userProgress.xpTotal - delta), New: \(newTotalXP), Level: \(userProgress.level)")
+            logger.info("🎖️ DailyAwardService: Updated UserProgressData - Total: \(calculatedTotalXP), Level: \(userProgress.level)")
             
-            // Save changes
+            // Save UserProgressData
             try modelContext.save()
             
-            // Refresh state to update xpState (recalculates from DailyAward records if they exist)
+            // ✅ STEP 3: Update xpState for UI reactivity
             await refreshXPState()
             
             if let state = xpState {
@@ -145,10 +213,11 @@ class DailyAwardService: ObservableObject {
     ///   - date: The completion date
     func awardHabitCompletionXP(habitId: String, habitName: String, on date: Date) async throws {
         let localDateString = dateFormatter.dateToString(date)
+        let dateKey = DateUtils.dateKey(for: date)
         let reason = "Completed '\(habitName)' on \(localDateString)"
         
         // Standard completion XP: 10 points
-        try await awardXP(delta: 10, reason: reason)
+        try await awardXP(delta: 10, dateKey: dateKey, reason: reason)
     }
     
     /// Award XP for maintaining a streak
@@ -158,12 +227,14 @@ class DailyAwardService: ObservableObject {
     /// - Parameters:
     ///   - habitId: The habit identifier
     ///   - streakDays: Current streak count
-    func awardStreakBonusXP(habitId: String, streakDays: Int) async throws {
+    ///   - date: The date for the streak bonus
+    func awardStreakBonusXP(habitId: String, streakDays: Int, on date: Date) async throws {
+        let dateKey = DateUtils.dateKey(for: date)
         let reason = "Streak bonus: \(streakDays) consecutive days"
         
         // Streak bonus: 5 XP per day
         let bonus = streakDays * 5
-        try await awardXP(delta: bonus, reason: reason)
+        try await awardXP(delta: bonus, dateKey: dateKey, reason: reason)
     }
     
     /// Award XP for completing all habits in a day
@@ -173,10 +244,11 @@ class DailyAwardService: ObservableObject {
     /// - Parameter date: The date of completion
     func awardDailyCompletionBonus(on date: Date) async throws {
         let localDateString = dateFormatter.dateToString(date)
+        let dateKey = DateUtils.dateKey(for: date)
         let reason = "All habits completed on \(localDateString)"
         
         // Daily completion bonus: 50 XP
-        try await awardXP(delta: 50, reason: reason)
+        try await awardXP(delta: 50, dateKey: dateKey, reason: reason)
     }
     
     // MARK: - XP State Query Methods
