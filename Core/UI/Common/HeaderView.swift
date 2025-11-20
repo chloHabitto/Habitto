@@ -132,6 +132,8 @@ struct HeaderView: View {
       Spacer()
 
       if showProfile {
+        // DISABLED: Sign-in functionality commented out for future use
+        /*
         // Only show Sign In button when user is not signed in
         if !isLoggedIn {
           HabittoButton(
@@ -143,6 +145,7 @@ struct HeaderView: View {
             showingLoginView = true
           }
         }
+        */
       } else {
         // Crown button and Add button with advanced glass effect
         HStack(spacing: 12) {
@@ -216,9 +219,12 @@ struct HeaderView: View {
     .padding(.trailing, 16)
     .padding(.top, 16)
     .padding(.bottom, 24)
+    // DISABLED: Sign-in functionality commented out for future use
+    /*
     .sheet(isPresented: $showingLoginView) {
       LoginView()
     }
+    */
     .sheet(isPresented: $showingProfileView) {
       ProfileView()
     }

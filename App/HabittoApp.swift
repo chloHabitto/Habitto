@@ -76,6 +76,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       NSLog("🚀 AppDelegate: Task block started executing...")
       fflush(stdout)
       
+      // DISABLED: Sign-in functionality commented out for future use
+      /*
       // ✅ FIX: Firestore already configured synchronously above
       // Only configure Auth here
       debugLog("🚀 AppDelegate: Calling FirebaseConfiguration.configureAuth()...")
@@ -157,6 +159,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
           NSLog("❌ SyncEngine: Error userInfo: %@", String(describing: nsError.userInfo))
         }
       }
+      */
     }
     
     // Initialize Crashlytics
@@ -187,6 +190,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       await MigrateCompletionsToEvents.shared.performMigrationIfNeeded()
     }
 
+    // DISABLED: Sign-in functionality commented out for future use
+    /*
     // Configure Google Sign-In
     let clientID = "657427864427-glmcdnuu4jkjoh9nqoun18t87u443rq8.apps.googleusercontent.com"
     GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
@@ -196,6 +201,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         debugLog("❌ Google Sign-In restore error: \(error.localizedDescription)")
       }
     }
+    */
 
     // Configure notification center delegate
     UNUserNotificationCenter.current().delegate = self
@@ -254,6 +260,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
   }
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   /// Handle Google Sign-In URL callback
   func application(
     _: UIApplication,
@@ -262,6 +270,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   {
     GIDSignIn.sharedInstance.handle(url)
   }
+  */
 }
 
 // MARK: - HabittoApp

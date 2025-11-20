@@ -188,6 +188,8 @@ struct ProfileView: View {
             .padding(.bottom, 20)
           }
 
+          // DISABLED: Sign-in functionality commented out for future use
+          /*
           // Guest mode overlay with gradient blur and sign-in prompt
           if !isLoggedIn {
             ZStack {
@@ -225,6 +227,39 @@ struct ProfileView: View {
                     showingSignIn = true
                   }
                   .padding(.horizontal, 20)
+                }
+                .padding(.bottom, 40)
+              }
+            }
+          }
+          */
+          // Guest mode overlay - profile editing unavailable
+          if !isLoggedIn {
+            ZStack {
+              // Gradient overlay that blurs the background
+              LinearGradient(
+                gradient: Gradient(colors: [
+                  Color.surface2.opacity(0.3),
+                  Color.surface2.opacity(0.6),
+                  Color.surface2.opacity(0.85),
+                  Color.surface2.opacity(0.95),
+                  Color.surface2.opacity(1.0)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom)
+                .ignoresSafeArea()
+                .blur(radius: 0.5)
+              
+              // Message on top
+              VStack(spacing: 20) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                  Text("Profile editing is currently unavailable")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 40)
               }
@@ -319,9 +354,12 @@ struct ProfileView: View {
         avatarManager.selectCustomPhoto(image)
       }
     }
+    // DISABLED: Sign-in functionality commented out for future use
+    /*
     .sheet(isPresented: $showingSignIn) {
       LoginView()
     }
+    */
     .alert("Welcome!", isPresented: $showingMigrationAlert) {
       Button("Start Fresh") {
         avatarManager.clearGuestData()

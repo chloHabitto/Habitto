@@ -96,6 +96,8 @@ enum FirebaseConfiguration {
     debugLog("✅ FirebaseConfiguration: Firebase Auth configured")
   }
   
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   /// Ensure user is authenticated (sign in anonymously if needed)
   @MainActor
   static func ensureAuthenticated() async throws -> String {
@@ -115,6 +117,7 @@ enum FirebaseConfiguration {
     debugLog("✅ FirebaseConfiguration: Anonymous sign-in successful: \(uid)")
     return uid
   }
+  */
   
   /// Get current user ID (nil if not authenticated)
   @MainActor
