@@ -18,9 +18,9 @@ class SubscriptionManager: ObservableObject {
   
   /// Product IDs for subscriptions
   enum ProductID {
-    static let lifetime = "com.chloe-lee.Habitto.subscription.lifetime"
-    static let annual = "com.chloe-lee.Habitto.subscription.annual"
-    static let monthly = "com.chloe-lee.Habitto.subscription.monthly"
+    static let lifetime = "com.chloe_lee.Habitto.subscription.lifetime"
+    static let annual = "com.chloe_lee.Habitto.subscription.annual"
+    static let monthly = "com.chloe_lee.Habitto.subscription.monthly.v2"
     
     static var all: [String] {
       [lifetime, annual, monthly]
