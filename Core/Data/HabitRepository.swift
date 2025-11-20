@@ -1072,15 +1072,16 @@ class HabitRepository: ObservableObject {
     }
 
     Task.detached(priority: .background) { [userId] in
-      guard !CurrentUser.isGuestId(userId) else {
-        debugLog("ℹ️ POST_LAUNCH: Skipping completion sync for guest user")
-        return
-      }
-      do {
-        try await SyncEngine.shared.syncCompletions()
-      } catch {
-        debugLog("⚠️ POST_LAUNCH: Completion sync failed: \(error)")
-      }
+      // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
+      // guard !CurrentUser.isGuestId(userId) else {
+      //   debugLog("ℹ️ POST_LAUNCH: Skipping completion sync for guest user")
+      //   return
+      // }
+      // do {
+      //   try await SyncEngine.shared.syncCompletions()
+      // } catch {
+      //   debugLog("⚠️ POST_LAUNCH: Completion sync failed: \(error)")
+      // }
     }
 
     Task.detached(priority: .utility) {
@@ -1271,8 +1272,8 @@ class HabitRepository: ObservableObject {
         return
       }
       
-      // Trigger SyncEngine full sync cycle
-      try await SyncEngine.shared.performFullSyncCycle(userId: userId)
+      // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
+      // try await SyncEngine.shared.performFullSyncCycle(userId: userId)
       syncCompleted()
     } catch {
       syncFailed(error: error)
@@ -1394,11 +1395,12 @@ class HabitRepository: ObservableObject {
       // Load user's XP from SwiftData
       await loadUserXPFromSwiftData(userId: user.uid)
       
-      await SyncEngine.shared.startPeriodicSync(userId: user.uid)
-      Task.detached(priority: .background) {
-        let compactor = EventCompactor(userId: user.uid)
-        await compactor.scheduleNextCompaction()
-      }
+      // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
+      // await SyncEngine.shared.startPeriodicSync(userId: user.uid)
+      // Task.detached(priority: .background) {
+      //   let compactor = EventCompactor(userId: user.uid)
+      //   await compactor.scheduleNextCompaction()
+      // }
 
     case .unauthenticated:
       guard isUserCurrentlyAuthenticated else {
@@ -1406,7 +1408,8 @@ class HabitRepository: ObservableObject {
         return
       }
       isUserCurrentlyAuthenticated = false
-      await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
+      // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
+      // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Instead of clearing data, load guest habits
       await loadHabits(force: true)

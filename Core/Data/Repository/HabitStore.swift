@@ -857,45 +857,14 @@ final actor HabitStore {
   private lazy var userDefaultsStorage = UserAwareStorage(baseStorage: baseUserDefaultsStorage)
   private lazy var swiftDataStorage = UserAwareStorage(baseStorage: baseSwiftDataStorage)
   
-  // MARK: - Active Storage (with Firestore support)
+  // MARK: - Active Storage (Guest-Only Mode)
   
-  /// Returns the appropriate storage based on feature flags
-  /// - If Firestore sync is enabled: returns DualWriteStorage (writes to both SwiftData and Firestore)
-  /// - Otherwise: returns SwiftData storage only
+  /// Returns SwiftData storage for guest-only mode (no cloud sync)
+  /// ✅ GUEST-ONLY MODE: Using SwiftData only, no Firestore sync
   private var activeStorage: any HabitStorageProtocol {
     get {
-      // ✅ CRITICAL FIX: Force Firestore sync to TRUE
-      // 
-      // BACKGROUND:
-      // RemoteConfig access from actor context causes Swift concurrency isolation issues.
-      // RemoteConfig.remoteConfig() is @MainActor, but HabitStore is an Actor.
-      // Cross-isolation access returns static defaults (FALSE) instead of plist defaults (TRUE).
-      // 
-      // SOLUTION:
-      // Hardcode TRUE to ensure Firestore sync is always enabled.
-      // 
-      // TODO (Optional - Only if remote toggle needed):
-      // - See ACTOR_ISOLATION_FIX_PLAN.md for proper actor-safe implementation
-      // - Use "Pass at Init" approach to read RemoteConfig on MainActor during startup
-      // - Pass boolean to HabitStore initializer to avoid cross-actor access
-      // 
-      // PRODUCTION DECISION:
-      // For apps where Firestore sync should ALWAYS be enabled, hardcoding is
-      // the correct approach (not technical debt). Remote toggle capability
-      // would require app restart anyway.
-      let enableFirestore = true  // Hardcoded - see comment above
-      
-      logger.info("🔍 HabitStore.activeStorage: enableFirestore = \(enableFirestore) (FORCED TRUE)")
-      
-      // Since enableFirestore is hardcoded to true, always use DualWriteStorage
-      logger.info("🔥 HabitStore: Firestore sync ENABLED - using DualWriteStorage")
-      return DualWriteStorage(
-        primaryStorage: FirestoreService.shared,
-        secondaryStorage: swiftDataStorage
-      )
-      
-      // Note: SwiftData-only fallback removed since enableFirestore is hardcoded to true
-      // If you need to disable Firestore in the future, change the enableFirestore constant above
+      logger.info("📱 HabitStore: Guest-only mode - using SwiftData only (no cloud sync)")
+      return swiftDataStorage
     }
   }
 

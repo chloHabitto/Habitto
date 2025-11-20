@@ -1424,10 +1424,70 @@ struct HomeTabView: View {
     // Set flag to trigger celebration when difficulty sheet is dismissed
     lastHabitJustCompleted = true
 
-    // Note: XP will be awarded in onDifficultySheetDismissed() after the difficulty sheet is
-    // dismissed
-    debugLog("🎉 STEP 1: Last habit completed! Will award XP after difficulty sheet is dismissed")
+    // ✅ FIX: Update XP immediately using fast in-memory calculation (no database query)
+    // This provides instant UI feedback - runs synchronously on MainActor (we're already on MainActor)
+    debugLog("✅ DERIVED_XP: Updating XP immediately when last habit completed (fast path)")
+    let completedDaysCount = countCompletedDaysFast() // Use fast version that doesn't query DB
+    xpManager.publishXP(completedDaysCount: completedDaysCount)
+    debugLog("✅ DERIVED_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+
+    debugLog("🎉 STEP 1: Last habit completed! XP updated immediately, celebration after sheet dismissal")
     debugLog("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
+  }
+  
+  /// ✅ FAST PATH: Count completed days using in-memory habit data (no database query)
+  /// This is used for immediate UI updates when habits are completed
+  /// Includes optimistic completion status from completionStatusMap for today
+  @MainActor
+  private func countCompletedDaysFast() -> Int {
+    guard !habits.isEmpty else { return 0 }
+    
+    let calendar = Calendar.current
+    let today = DateUtils.startOfDay(for: LegacyDateUtils.today())
+    let todayKey = Habit.dateKey(for: today)
+    
+    guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }
+    var currentDate = DateUtils.startOfDay(for: earliestStartDate)
+    var completedCount = 0
+    
+    while currentDate <= today {
+      let dateKey = Habit.dateKey(for: currentDate)
+      let isToday = dateKey == todayKey
+      
+      // Filter habits that should be active on this date
+      let habitsForDate = habits.filter { habit in
+        let selected = DateUtils.startOfDay(for: currentDate)
+        let start = DateUtils.startOfDay(for: habit.startDate)
+        let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
+        
+        guard selected >= start, selected <= end else { return false }
+        return HabitSchedulingLogic.shouldShowHabitOnDate(habit, date: currentDate, habits: habits)
+      }
+      
+      if !habitsForDate.isEmpty {
+        // ✅ FAST: Check completion directly from habit.completionHistory (in-memory, no DB query)
+        // For today, also check completionStatusMap for optimistic updates
+        let allCompleted = habitsForDate.allSatisfy { habit in
+          if isToday, let optimisticStatus = completionStatusMap[habit.id] {
+            // Use optimistic status from completionStatusMap for today
+            return optimisticStatus
+          }
+          // For past dates, use completionHistory
+          let progress = habit.completionHistory[dateKey] ?? 0
+          let goalAmount = habit.goalAmount(for: currentDate)
+          return goalAmount > 0 ? progress >= goalAmount : progress > 0
+        }
+        
+        if allCompleted {
+          completedCount += 1
+        }
+      }
+      
+      guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
+      currentDate = nextDate
+    }
+    
+    return completedCount
   }
 
   /// Update the global streak when all habits are completed for a day
