@@ -239,10 +239,22 @@ class BackupManager: ObservableObject {
     logger.info("Deleting backup: \(snapshot.id)")
 
     let backupURL = backupDirectory.appendingPathComponent(snapshot.id.uuidString)
-    try fileManager.removeItem(at: backupURL)
-
-    loadAvailableBackups()
-    logger.info("Backup deleted successfully")
+    
+    // Check if file exists before attempting deletion
+    guard fileManager.fileExists(atPath: backupURL.path) else {
+      logger.info("Backup file already removed or doesn't exist: \(snapshot.id)")
+      loadAvailableBackups()
+      return
+    }
+    
+    do {
+      try fileManager.removeItem(at: backupURL)
+      loadAvailableBackups()
+      logger.info("Backup deleted successfully")
+    } catch {
+      logger.error("Failed to delete backup \(snapshot.id): \(error.localizedDescription)")
+      throw error
+    }
   }
 
   /// Check if backup is needed based on interval
@@ -1054,7 +1066,13 @@ class BackupManager: ObservableObject {
       let backupsToDelete = Array(sortedBackups.dropFirst(maxBackups))
 
       for backup in backupsToDelete {
-        try await deleteBackup(backup)
+        do {
+          try await deleteBackup(backup)
+        } catch {
+          // Log but don't fail backup creation if cleanup fails
+          logger.warning("⚠️ Failed to delete old backup \(backup.id): \(error.localizedDescription)")
+          // Continue with other backups even if one fails
+        }
       }
     }
   }

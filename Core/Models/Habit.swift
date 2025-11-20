@@ -390,19 +390,18 @@ struct Habit: Identifiable, Codable, Equatable {
   }
 
   func goalString(for date: Date) -> String {
-    let targetDate = DateUtils.startOfDay(for: date)
-    let dateKey = Self.dateKey(for: targetDate)
-
-    // 🔍 DEBUG: Log goal inference context
-    print("🔍 GOAL_DEBUG: goalString(for: \(dateKey))")
-    print("  - goalHistory.isEmpty: \(goalHistory.isEmpty)")
-    print("  - goalHistory keys: \(goalHistory.keys.sorted())")
-    print("  - goalHistory values: \(goalHistory.values)")
-    print("  - current goal: '\(goal)'")
-    print("  - completionHistory[\(dateKey)]: \(completionHistory[dateKey] ?? -1)")
+    // 🔍 DEBUG: Uncomment for debugging goal inference
+    // let targetDate = DateUtils.startOfDay(for: date)
+    // let dateKey = Self.dateKey(for: targetDate)
+    // print("🔍 GOAL_DEBUG: goalString(for: \(dateKey))")
+    // print("  - goalHistory.isEmpty: \(goalHistory.isEmpty)")
+    // print("  - goalHistory keys: \(goalHistory.keys.sorted())")
+    // print("  - goalHistory values: \(goalHistory.values)")
+    // print("  - current goal: '\(goal)'")
+    // print("  - completionHistory[\(dateKey)]: \(completionHistory[dateKey] ?? -1)")
 
     let result = goalStringCore(for: date)
-    print("  → RETURNING: '\(result)'")
+    // print("  → RETURNING: '\(result)'")
     return result
   }
 
