@@ -40,6 +40,7 @@ struct MoreTabView: View {
             // XP Level Display (now scrollable)
             XPLevelDisplay()  // ✅ Gets xpManager from EnvironmentObject
               .id("xp-\(xpManager.totalXP)")  // ✅ Force view recreation when XP changes
+              .padding(.top, 24)
               .padding(.bottom, 16)
               .entranceAnimation(delay: 0.05)
 
