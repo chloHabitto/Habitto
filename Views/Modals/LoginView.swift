@@ -12,6 +12,8 @@ enum LoginField {
 
 // MARK: - LoginView
 
+// DISABLED: Sign-in functionality commented out for future use
+/*
 struct LoginView: View {
   // MARK: Internal
 
@@ -631,3 +633,4 @@ struct PasswordRequirementRow: View {
 #Preview {
   LoginView()
 }
+*/

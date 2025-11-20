@@ -1,3 +1,5 @@
+// DISABLED: Sign-in functionality commented out for future use
+/*
 import SwiftUI
 
 struct ForgotPasswordView: View {
@@ -166,3 +168,4 @@ struct ForgotPasswordView: View {
 #Preview {
   ForgotPasswordView()
 }
+*/

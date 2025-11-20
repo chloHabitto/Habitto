@@ -81,6 +81,8 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - Anonymous Authentication
   
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   /// Sign in anonymously (for guest users who want to try the app)
   func signInAnonymously(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
     print("🔐 AuthenticationManager: Starting anonymous sign-in")
@@ -116,9 +118,12 @@ class AuthenticationManager: ObservableObject {
   var isAnonymous: Bool {
     Auth.auth().currentUser?.isAnonymous ?? false
   }
+  */
 
   // MARK: - Email/Password Authentication
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   func signInWithEmail(
     email: String,
     password: String,
@@ -238,6 +243,7 @@ class AuthenticationManager: ObservableObject {
       }
     }
   }
+  */
 
   func signOut() {
     print("🔐 AuthenticationManager: Starting sign out")
@@ -261,6 +267,8 @@ class AuthenticationManager: ObservableObject {
     }
   }
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   /// Reset password
   func resetPassword(email: String, completion: @escaping (Result<Void, Error>) -> Void) {
     print("🔐 AuthenticationManager: Starting password reset")
@@ -274,6 +282,7 @@ class AuthenticationManager: ObservableObject {
       }
     }
   }
+  */
 
   func generateNonce() -> String {
     let nonce = randomNonceString()
@@ -283,6 +292,8 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - Google Sign In
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   func signInWithGoogle(completion: @escaping (Result<UserProtocol, Error>) -> Void) {
     print("🔐 AuthenticationManager: Starting Google Sign-In process...")
     authState = .authenticating
@@ -342,9 +353,12 @@ class AuthenticationManager: ObservableObject {
         }
       }
   }
+  */
 
   // MARK: - Apple Sign In
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   func signInWithApple(
     credential: ASAuthorizationAppleIDCredential,
     nonce _: String,
@@ -418,6 +432,7 @@ class AuthenticationManager: ObservableObject {
       completion(.success(mockUser))
     }
   }
+  */
 
   // MARK: - User Profile Management
 
@@ -497,6 +512,8 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - Account Deletion
 
+  // DISABLED: Sign-in functionality commented out for future use
+  /*
   /// Re-authenticate the current user to refresh their authentication token
   func reauthenticateUser(completion: @escaping (Result<Void, Error>) -> Void) {
     print("🔐 AuthenticationManager: Starting re-authentication")
@@ -619,6 +636,7 @@ class AuthenticationManager: ObservableObject {
       }
     }
   }
+  */
 
   func deleteAccount(completion: @escaping (Result<Void, Error>) -> Void) {
     print("🗑️ AuthenticationManager: Starting account deletion")

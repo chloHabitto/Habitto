@@ -118,6 +118,8 @@ struct AccountView: View {
             .background(Color.surface2)
           }
         } else {
+          // DISABLED: Sign-in functionality commented out for future use
+          /*
           // Guest mode - simple text prompt with sign in button
             VStack(spacing: 24) {
             Spacer()
@@ -137,6 +139,17 @@ struct AccountView: View {
                 })
                 .padding(.horizontal, 20)
 
+            Spacer()
+          }
+          */
+          // Guest mode - empty state
+          VStack(spacing: 24) {
+            Spacer()
+            Text("Account features are currently unavailable")
+              .font(.appBodyLarge)
+              .foregroundColor(.text01)
+              .multilineTextAlignment(.center)
+              .padding(.horizontal, 40)
             Spacer()
           }
         }
@@ -160,9 +173,12 @@ struct AccountView: View {
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
     }
+    // DISABLED: Sign-in functionality commented out for future use
+    /*
     .sheet(isPresented: $showingLoginView) {
       LoginView()
     }
+    */
     .sheet(isPresented: $showingPersonalInformation) {
       PersonalInformationView()
     }
