@@ -128,12 +128,31 @@ class SubscriptionManager: ObservableObject {
     print("🛒 SubscriptionManager: Attempting to purchase: \(productID)")
     
     do {
-      // Fetch the product
-      print("🔍 SubscriptionManager: Fetching product from StoreKit...")
+      // First, try to fetch ALL products to see if StoreKit is working at all
+      print("🔍 SubscriptionManager: Testing StoreKit - fetching all products...")
+      let allProducts = try await Product.products(for: ProductID.all)
+      print("🔍 SubscriptionManager: StoreKit test - found \(allProducts.count) total product(s)")
+      if allProducts.isEmpty {
+        print("⚠️ SubscriptionManager: StoreKit returned 0 products. This means StoreKit configuration is NOT loaded.")
+        print("⚠️ SubscriptionManager: Verify:")
+        print("   1. Scheme → Run → Options → StoreKit Configuration File is set")
+        print("   2. File is in Xcode project with correct target membership")
+        print("   3. Clean build folder and restart Xcode")
+        print("   4. Testing on iOS 15+ simulator/device")
+      } else {
+        print("✅ SubscriptionManager: StoreKit is working! Available products:")
+        for product in allProducts {
+          print("   - \(product.id): \(product.displayName) (\(product.displayPrice))")
+        }
+      }
+      
+      // Fetch the specific product
+      print("🔍 SubscriptionManager: Fetching specific product: \(productID)...")
       let products = try await Product.products(for: [productID])
-      print("🔍 SubscriptionManager: Fetched \(products.count) product(s)")
+      print("🔍 SubscriptionManager: Fetched \(products.count) product(s) for \(productID)")
       guard let product = products.first else {
-        print("❌ SubscriptionManager: Product not found in StoreKit. Make sure StoreKit config file is set up in Xcode scheme.")
+        print("❌ SubscriptionManager: Product '\(productID)' not found in StoreKit.")
+        print("❌ SubscriptionManager: Available product IDs: \(allProducts.map { $0.id })")
         return (false, "Product not found. Please make sure StoreKit configuration is set up in Xcode.")
       }
       print("✅ SubscriptionManager: Product found: \(product.displayName) - \(product.displayPrice)")
