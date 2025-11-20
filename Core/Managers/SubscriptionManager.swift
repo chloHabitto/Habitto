@@ -129,13 +129,19 @@ class SubscriptionManager: ObservableObject {
     
     do {
       // Fetch the product
+      print("🔍 SubscriptionManager: Fetching product from StoreKit...")
       let products = try await Product.products(for: [productID])
+      print("🔍 SubscriptionManager: Fetched \(products.count) product(s)")
       guard let product = products.first else {
-        return (false, "Product not found. Please try again.")
+        print("❌ SubscriptionManager: Product not found in StoreKit. Make sure StoreKit config file is set up in Xcode scheme.")
+        return (false, "Product not found. Please make sure StoreKit configuration is set up in Xcode.")
       }
+      print("✅ SubscriptionManager: Product found: \(product.displayName) - \(product.displayPrice)")
       
       // Purchase the product
+      print("🛒 SubscriptionManager: Initiating purchase...")
       let result = try await product.purchase()
+      print("🛒 SubscriptionManager: Purchase result received")
       
       switch result {
       case .success(let verification):
@@ -144,11 +150,19 @@ class SubscriptionManager: ObservableObject {
         case .verified(let transaction):
           print("✅ SubscriptionManager: Purchase successful for \(productID)")
           
-          // Update premium status
-          await checkSubscriptionStatus()
+          // Immediately set premium status since purchase was successful
+          await MainActor.run {
+            self.isPremium = true
+            print("✅ SubscriptionManager: Premium status enabled immediately after purchase")
+          }
           
           // Finish the transaction
           await transaction.finish()
+          
+          // Verify subscription status (this will double-check and handle any edge cases)
+          // Add a small delay to allow StoreKit to update entitlements
+          try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+          await checkSubscriptionStatus()
           
           return (true, "Purchase successful! Premium features are now unlocked.")
           
@@ -170,7 +184,10 @@ class SubscriptionManager: ObservableObject {
         return (false, "An unknown error occurred. Please try again.")
       }
     } catch {
-      print("❌ SubscriptionManager: Purchase error: \(error.localizedDescription)")
+      print("❌ SubscriptionManager: Purchase error occurred")
+      print("❌ SubscriptionManager: Error type: \(type(of: error))")
+      print("❌ SubscriptionManager: Error description: \(error.localizedDescription)")
+      print("❌ SubscriptionManager: Full error: \(error)")
       return (false, "Purchase failed: \(error.localizedDescription)")
     }
   }
@@ -187,5 +204,25 @@ class SubscriptionManager: ObservableObject {
       return []
     }
   }
+  
+  // MARK: - Debug Methods (Remove before release)
+  
+  #if DEBUG
+  /// Temporary debug method to enable premium for testing
+  /// ⚠️ REMOVE THIS BEFORE RELEASE
+  func enablePremiumForTesting() {
+    print("🧪 SubscriptionManager: DEBUG - Manually enabling premium for testing")
+    self.isPremium = true
+    print("✅ SubscriptionManager: Premium enabled (DEBUG MODE)")
+  }
+  
+  /// Temporary debug method to disable premium for testing
+  /// ⚠️ REMOVE THIS BEFORE RELEASE
+  func disablePremiumForTesting() {
+    print("🧪 SubscriptionManager: DEBUG - Manually disabling premium for testing")
+    self.isPremium = false
+    print("ℹ️ SubscriptionManager: Premium disabled (DEBUG MODE)")
+  }
+  #endif
 }
 
