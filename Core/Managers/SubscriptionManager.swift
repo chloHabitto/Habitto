@@ -71,37 +71,30 @@ class SubscriptionManager: ObservableObject {
   
   /// Check subscription status using StoreKit
   private func checkSubscriptionStatus() async {
-    do {
-      var hasActiveSubscription = false
-      
-      // Check for active entitlements (subscriptions and non-consumables)
-      for await result in Transaction.currentEntitlements {
-        if case .verified(let transaction) = result {
-          // Check if it's one of our subscription products
-          let productIDs = ProductID.all
-          if productIDs.contains(transaction.productID) {
-            // Check if subscription is still active (not revoked)
-            if transaction.revocationDate == nil {
-              print("✅ SubscriptionManager: Found active subscription/product: \(transaction.productID)")
-              hasActiveSubscription = true
-              break
-            }
+    var hasActiveSubscription = false
+    
+    // Check for active entitlements (subscriptions and non-consumables)
+    for await result in Transaction.currentEntitlements {
+      if case .verified(let transaction) = result {
+        // Check if it's one of our subscription products
+        let productIDs = ProductID.all
+        if productIDs.contains(transaction.productID) {
+          // Check if subscription is still active (not revoked)
+          if transaction.revocationDate == nil {
+            print("✅ SubscriptionManager: Found active subscription/product: \(transaction.productID)")
+            hasActiveSubscription = true
+            break
           }
         }
       }
-      
-      await MainActor.run {
-        self.isPremium = hasActiveSubscription
-        if hasActiveSubscription {
-          print("✅ SubscriptionManager: Premium status enabled")
-        } else {
-          print("ℹ️ SubscriptionManager: No active subscription found - free user")
-        }
-      }
-    } catch {
-      print("❌ SubscriptionManager: Error checking subscription status: \(error.localizedDescription)")
-      await MainActor.run {
-        self.isPremium = false
+    }
+    
+    await MainActor.run {
+      self.isPremium = hasActiveSubscription
+      if hasActiveSubscription {
+        print("✅ SubscriptionManager: Premium status enabled")
+      } else {
+        print("ℹ️ SubscriptionManager: No active subscription found - free user")
       }
     }
   }
