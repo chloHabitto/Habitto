@@ -6,7 +6,7 @@
 1. Open your project in Xcode
 2. In the Project Navigator, right-click on your project folder
 3. Select **"Add Files to Habitto..."**
-4. Navigate to and select **`HabittoSubscriptions.storekit`**
+4. Navigate to and select **`HabittoPremium.storekit`**
 5. Make sure **"Copy items if needed"** is checked
 6. Click **"Add"**
 
@@ -14,7 +14,7 @@
 1. In Xcode menu: **Product → Scheme → Edit Scheme...**
 2. Select **Run** in the left sidebar
 3. Click the **Options** tab
-4. Under **StoreKit Configuration**, select **HabittoSubscriptions.storekit**
+4. Under **StoreKit Configuration**, select **HabittoPremium.storekit**
 5. Click **Close**
 
 ### Step 3: Run the App
@@ -173,9 +173,9 @@ The StoreKit config is set to renew subscriptions **hourly** for fast testing:
 4. Premium status should remain active
 
 To change renewal speed:
-- Edit `HabittoSubscriptions.storekit`
-- Find `"subscriptionRenewalRate": "hourly"`
-- Change to `"daily"` or `"monthly"` if needed
+- Edit `HabittoPremium.storekit`
+- Find `"_timeRate"` (renewal speed setting)
+- Adjust as needed for testing
 
 ---
 
