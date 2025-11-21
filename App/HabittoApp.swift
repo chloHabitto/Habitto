@@ -1,4 +1,5 @@
 import FirebaseCore
+import FirebaseAuth
 // Note: Add these imports after adding packages in Xcode:
 import FirebaseCrashlytics
 import FirebaseRemoteConfig
@@ -353,6 +354,11 @@ struct HabittoApp: App {
               }
           }
           .onAppear {
+            // ✅ DIAGNOSTIC - Run this FIRST before anything else
+            Task { @MainActor in
+              await diagnoseDataIssue()
+            }
+            
             setupCoreData()
 
             // ✅ STEP 1: Ensure anonymous authentication for cloud backup
@@ -888,5 +894,139 @@ struct HabittoApp: App {
     case .error(let error):
       debugLog("❌ Authentication error: \(error)")
     }
+  }
+  
+  // MARK: - Diagnostic Functions
+  
+  /// Complete data diagnosis - shows the full state of the database
+  @MainActor
+  private func diagnoseDataIssue() async {
+    print(String(repeating: "=", count: 80))
+    print("📊 STARTING COMPLETE DATA DIAGNOSIS")
+    print(String(repeating: "=", count: 80))
+    
+    let context = SwiftDataContainer.shared.modelContext
+    let currentUserId = Auth.auth().currentUser?.uid ?? "nil"
+    
+    print("\n🔍 Current authenticated userId: \(currentUserId)")
+    
+    // 1. Check habits
+    do {
+      let habitsDesc = FetchDescriptor<HabitData>()
+      let allHabits = try context.fetch(habitsDesc)
+      print("\n📊 DIAGNOSIS: Found \(allHabits.count) total habits in database")
+      
+      for habit in allHabits {
+        print("   Habit: '\(habit.name)'")
+        print("      HabitData.userId: '\(habit.userId.isEmpty ? "EMPTY STRING" : habit.userId.prefix(8))...'")
+        print("      completionHistory relationship: \(habit.completionHistory.count) records")
+      }
+      
+      // 2. Check CompletionRecords
+      let recordsDesc = FetchDescriptor<CompletionRecord>()
+      let allRecords = try context.fetch(recordsDesc)
+      print("\n📊 DIAGNOSIS: Found \(allRecords.count) total CompletionRecords in database")
+      
+      let recordsByHabit = Dictionary(grouping: allRecords, by: { $0.habitId })
+      for (habitId, records) in recordsByHabit.sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
+        let userIdDisplay = records.first?.userId.isEmpty ?? true ? "EMPTY STRING" : "\(records.first!.userId.prefix(8))..."
+        print("   Habit ID \(habitId.uuidString.prefix(8))...: \(records.count) records (userId: '\(userIdDisplay)')")
+      }
+      
+      // Group by userId
+      let recordsByUserId = Dictionary(grouping: allRecords, by: { $0.userId })
+      print("\n📊 DIAGNOSIS: CompletionRecords grouped by userId:")
+      for (userId, records) in recordsByUserId.sorted(by: { $0.key < $1.key }) {
+        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
+        print("   userId '\(userIdDisplay)': \(records.count) records")
+      }
+      
+      // 3. Check if records are linked to habits via relationship
+      print("\n📊 DIAGNOSIS: Checking relationship links between habits and records")
+      for habit in allHabits {
+        let recordsForHabit = allRecords.filter { $0.habitId == habit.id }
+        let linkedRecords = habit.completionHistory.count
+        print("   Habit '\(habit.name)':")
+        print("      Records that exist with habitId: \(recordsForHabit.count)")
+        print("      Records linked via relationship: \(linkedRecords)")
+        if recordsForHabit.count != linkedRecords {
+          print("      ⚠️ MISMATCH! \(recordsForHabit.count) records exist but only \(linkedRecords) are linked")
+        }
+        
+        // Check userId match
+        let matchingRecords = recordsForHabit.filter { $0.userId == habit.userId }
+        if matchingRecords.count != recordsForHabit.count {
+          print("      ⚠️ USERID MISMATCH! \(matchingRecords.count) records match habit userId, \(recordsForHabit.count - matchingRecords.count) don't")
+          let mismatched = recordsForHabit.filter { $0.userId != habit.userId }
+          for record in mismatched.prefix(3) {
+            let recordUserIdDisplay = record.userId.isEmpty ? "EMPTY STRING" : "\(record.userId.prefix(8))..."
+            print("         Record userId: '\(recordUserIdDisplay)', habit userId: '\(habit.userId.isEmpty ? "EMPTY STRING" : habit.userId.prefix(8))...'")
+          }
+        }
+      }
+      
+      // 4. Check UserProgressData
+      let xpDesc = FetchDescriptor<UserProgressData>()
+      let allXP = try context.fetch(xpDesc)
+      print("\n📊 DIAGNOSIS: Found \(allXP.count) UserProgressData records")
+      for xp in allXP {
+        let userIdDisplay = xp.userId.isEmpty ? "EMPTY STRING" : "\(xp.userId.prefix(8))..."
+        print("   userId: '\(userIdDisplay)', XP: \(xp.xpTotal), Level: \(xp.level), Streak: \(xp.streakDays)")
+      }
+      
+      // 5. Check DailyAwards
+      let awardsDesc = FetchDescriptor<DailyAward>()
+      let allAwards = try context.fetch(awardsDesc)
+      print("\n📊 DIAGNOSIS: Found \(allAwards.count) DailyAward records")
+      let awardsByUserId = Dictionary(grouping: allAwards, by: { $0.userId })
+      for (userId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
+        let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
+        print("   userId '\(userIdDisplay)': \(awards.count) awards, Total XP: \(totalXP)")
+      }
+      
+      // 6. Check what the app will actually load
+      print("\n📊 DIAGNOSIS: What will the app load for current userId '\(currentUserId)'?")
+      if currentUserId != "nil" {
+        let habitsForUser = allHabits.filter { $0.userId == currentUserId }
+        let recordsForUser = allRecords.filter { $0.userId == currentUserId }
+        let xpForUser = allXP.filter { $0.userId == currentUserId }
+        let awardsForUser = allAwards.filter { $0.userId == currentUserId }
+        
+        print("   Habits: \(habitsForUser.count)")
+        print("   CompletionRecords: \(recordsForUser.count)")
+        print("   UserProgressData: \(xpForUser.count)")
+        print("   DailyAwards: \(awardsForUser.count)")
+        
+        if habitsForUser.isEmpty && !allHabits.isEmpty {
+          print("   ⚠️ WARNING: No habits found for current userId, but \(allHabits.count) habits exist with other userIds")
+        }
+        if recordsForUser.isEmpty && !allRecords.isEmpty {
+          print("   ⚠️ WARNING: No CompletionRecords found for current userId, but \(allRecords.count) records exist with other userIds")
+        }
+        if awardsForUser.isEmpty && !allAwards.isEmpty {
+          print("   ⚠️ WARNING: No DailyAwards found for current userId, but \(allAwards.count) awards exist with other userIds")
+        }
+      } else {
+        print("   ⚠️ WARNING: No authenticated user - will query for userId = \"\"")
+        let guestHabits = allHabits.filter { $0.userId.isEmpty }
+        let guestRecords = allRecords.filter { $0.userId.isEmpty }
+        let guestXP = allXP.filter { $0.userId.isEmpty }
+        let guestAwards = allAwards.filter { $0.userId.isEmpty }
+        
+        print("   Guest habits (userId = \"\"): \(guestHabits.count)")
+        print("   Guest CompletionRecords (userId = \"\"): \(guestRecords.count)")
+        print("   Guest UserProgressData (userId = \"\"): \(guestXP.count)")
+        print("   Guest DailyAwards (userId = \"\"): \(guestAwards.count)")
+      }
+      
+    } catch {
+      print("❌ DIAGNOSIS ERROR: \(error.localizedDescription)")
+      print("   Error details: \(error)")
+    }
+    
+    print("\n" + String(repeating: "=", count: 80))
+    print("📊 DIAGNOSIS COMPLETE")
+    print(String(repeating: "=", count: 80))
   }
 }
