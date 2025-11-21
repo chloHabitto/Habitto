@@ -370,11 +370,16 @@ class SchemaMigrationTestRunner: ObservableObject {
     let currentVersion = HabittoMigrationPlan.currentVersion
     let v1Version = HabittoSchemaV1.versionIdentifier
     
-    guard currentVersion == v1Version else {
-      log("   ❌ Current version mismatch: expected \(v1Version), got \(currentVersion)")
+    // Schema.Version may not support == operator, so compare by description
+    let currentDesc = String(describing: currentVersion)
+    let v1Desc = String(describing: v1Version)
+    
+    guard currentDesc == v1Desc else {
+      log("   ❌ Current version mismatch: expected \(v1Desc), got \(currentDesc)")
       return false
     }
     
+    // V1 should not need migration from itself
     let needsMigration = HabittoMigrationPlan.needsMigration(from: v1Version)
     guard !needsMigration else {
       log("   ❌ V1 should not need migration from itself")

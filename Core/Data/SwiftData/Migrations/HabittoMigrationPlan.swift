@@ -50,8 +50,14 @@ extension HabittoMigrationPlan {
   }
   
   /// Check if migration is needed from a given version
+  /// Note: Schema.Version doesn't support < operator directly
+  /// This is a placeholder - actual comparison would need custom logic
   static func needsMigration(from version: Schema.Version) -> Bool {
-    version < currentVersion
+    // Since Schema.Version doesn't expose components, we compare by description
+    // or assume migration is needed if versions don't match
+    let currentDesc = String(describing: currentVersion)
+    let fromDesc = String(describing: version)
+    return currentDesc != fromDesc
   }
   
   /// Get migration path information
