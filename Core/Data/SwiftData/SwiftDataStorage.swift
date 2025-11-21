@@ -488,6 +488,17 @@ final class SwiftDataStorage: HabitStorageProtocol {
       logger
         .info(
           "Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
+      
+      // ✅ DIAGNOSTIC: Log detailed information about loaded habits
+      if habits.isEmpty {
+        print("⚠️ [HABIT_LOAD] No habits found for userId: \(currentUserId ?? "guest")")
+        // Check if habits exist with different userIds
+        await diagnosticCheckForHabits()
+      } else {
+        print("✅ [HABIT_LOAD] Loaded \(habits.count) habits successfully")
+        print("   User ID: \(currentUserId ?? "guest")")
+        print("   Habit names: \(habits.map { $0.name }.joined(separator: ", "))")
+      }
 
       return habits
 
@@ -769,6 +780,45 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
   private lazy var container = SwiftDataContainer.shared
   private let logger = Logger(subsystem: "com.habitto.app", category: "SwiftDataStorage")
+  
+  /// Diagnostic function to check for habits with different userIds
+  private func diagnosticCheckForHabits() async {
+    do {
+      let allHabitsDescriptor = FetchDescriptor<HabitData>()
+      let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
+      
+      if allHabits.isEmpty {
+        print("🔍 [DIAGNOSTIC] No habits found in database at all")
+        return
+      }
+      
+      // Group by userId
+      let habitsByUserId = Dictionary(grouping: allHabits) { $0.userId }
+      
+      print("🔍 [DIAGNOSTIC] Found habits with different userIds:")
+      for (userId, habits) in habitsByUserId {
+        let userIdDisplay = userId.isEmpty ? "(empty/guest)" : userId.prefix(8) + "..."
+        print("   User ID: \(userIdDisplay) - \(habits.count) habits")
+        print("      Names: \(habits.map { $0.name }.joined(separator: ", "))")
+      }
+      
+      // Check current authenticated user
+      let currentUserId = await getCurrentUserId()
+      print("🔍 [DIAGNOSTIC] Current authenticated user ID: \(currentUserId ?? "nil (guest)")")
+      
+      if let currentUserId = currentUserId {
+        let matchingHabits = habitsByUserId[currentUserId] ?? []
+        if matchingHabits.isEmpty {
+          print("⚠️ [DIAGNOSTIC] No habits found for current user ID: \(currentUserId)")
+          print("   This might indicate a userId mismatch after migration")
+        } else {
+          print("✅ [DIAGNOSTIC] Found \(matchingHabits.count) habits for current user ID")
+        }
+      }
+    } catch {
+      print("❌ [DIAGNOSTIC] Failed to check habits: \(error.localizedDescription)")
+    }
+  }
 
   /// Helper method to get current user ID for data isolation
   /// Returns nil for guest users (empty string when used with ?? "")
@@ -788,14 +838,17 @@ final class SwiftDataStorage: HabitStorageProtocol {
         return nil // Guest user - will use "" when used with ?? ""
       }
       
-      // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
-      // Anonymous users should use "" as userId for consistency with guest mode
+      // ✅ CRITICAL FIX: Anonymous users should use their Firebase UID (not nil)
+      // This ensures habits migrated to anonymous userId are found
+      // Anonymous users are NOT guests - they have a real Firebase UID for cloud backup
       if firebaseUser.isAnonymous {
-        logger.info("🔍 getCurrentUserId: Anonymous user detected, returning nil (guest)")
-        return nil // Anonymous = guest, use "" as userId
+        logger.info("🔍 getCurrentUserId: Anonymous user detected, returning UID: \(firebaseUser.uid)")
+        print("✅ [USER_ID] Anonymous user UID: \(firebaseUser.uid)")
+        return firebaseUser.uid // Anonymous users have a real UID for data isolation
       }
       
       logger.info("🔍 getCurrentUserId: Authenticated user found: \(firebaseUser.uid)")
+      print("✅ [USER_ID] Authenticated user UID: \(firebaseUser.uid)")
       return firebaseUser.uid // Authenticated non-anonymous user
     }
   }
