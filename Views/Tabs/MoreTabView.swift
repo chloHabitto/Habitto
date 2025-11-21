@@ -20,6 +20,9 @@ struct MoreTabView: View {
   // Sync status observation
   @ObservedObject var habitRepository = HabitRepository.shared
   
+  // iCloud sync status
+  @StateObject private var icloudStatus = ICloudStatusManager.shared
+  
   // Subscription manager
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
@@ -156,6 +159,10 @@ struct MoreTabView: View {
           secondaryButton: .cancel())
       }
       */
+      .task {
+        // Check iCloud status when view appears
+        await icloudStatus.checkStatus()
+      }
       .onAppear {
         // 🔍 DEBUG: Log XP when tab appears
         print("🟣 MoreTabView.onAppear | XP: \(xpManager.totalXP) | Level: \(xpManager.currentLevel) | instance: \(ObjectIdentifier(xpManager))")
@@ -777,42 +784,19 @@ struct MoreTabView: View {
   // MARK: - Sync Status Item
   
   private var syncStatusItem: SettingItem {
-    let (title, value, badgeCount) = syncStatusDisplay
-    
+    // Use iCloud sync status instead of Firebase sync status
     return SettingItem(
-      title: title,
-      value: value,
+      title: "iCloud Sync",
+      value: icloudStatus.statusMessage,
       hasChevron: false,
-      badgeCount: badgeCount,
+      badgeCount: nil,
       action: {
-        // Show sync status details or trigger sync
-        if case .error = habitRepository.syncStatus {
-          // If there's an error, allow retry
-          Task {
-            do {
-              try await habitRepository.triggerManualSync()
-            } catch {
-              // Error will be shown via toast
-            }
-          }
+        // Refresh iCloud status when tapped
+        Task {
+          await icloudStatus.checkStatus()
         }
       }
     )
-  }
-  
-  private var syncStatusDisplay: (title: String, value: String?, badgeCount: Int?) {
-    switch habitRepository.syncStatus {
-    case .synced:
-      let lastSyncText = formatLastSyncDate(habitRepository.lastSyncDate)
-      return ("Sync Status", lastSyncText, nil)
-    case .syncing:
-      return ("Sync Status", "Syncing...", nil)
-    case .pending(let count):
-      return ("Sync Status", "\(count) unsynced", count > 0 ? count : nil)
-    case .error(let error):
-      let errorMessage = error.localizedDescription
-      return ("Sync Status", "Error: \(errorMessage)", nil)
-    }
   }
   
   // MARK: - Data Repair
