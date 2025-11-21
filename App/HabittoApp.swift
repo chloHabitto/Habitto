@@ -393,18 +393,27 @@ struct HabittoApp: App {
                 print("   xpManager === XPManager.shared: \(areSameInstance)")
                 print("   xpManager.totalXP before load: \(xpManager.totalXP)")
                 
-                // Use the @State instance that the UI is observing
-                xpManager.loadUserXPFromSwiftData(
-                  userId: userId,
-                  modelContext: SwiftDataContainer.shared.modelContext
-                )
+                // ✅ FIX: Refresh DailyAwardService FIRST to ensure xpState is correct
+                // This way the observer won't overwrite the loaded value
+                print("🔄 [RELOAD] Refreshing DailyAwardService state first...")
+                await DailyAwardService.shared.refreshXPState()
+                
+                // If DailyAwardService has the correct state, use it
+                if let xpState = DailyAwardService.shared.xpState, xpState.totalXP > 0 {
+                  print("✅ [RELOAD] DailyAwardService has correct XP state: \(xpState.totalXP) - using it")
+                  // The observer will automatically apply this state
+                } else {
+                  print("⚠️ [RELOAD] DailyAwardService state is nil or 0 - loading directly from SwiftData")
+                  // Use the @State instance that the UI is observing
+                  xpManager.loadUserXPFromSwiftData(
+                    userId: userId,
+                    modelContext: SwiftDataContainer.shared.modelContext
+                  )
+                }
                 
                 // Verify the load worked
                 print("   xpManager.totalXP after load: \(xpManager.totalXP)")
                 print("   XPManager.shared.totalXP after load: \(XPManager.shared.totalXP)")
-                
-                // Refresh DailyAwardService
-                await DailyAwardService.shared.refreshXPState()
               }
               
               // ✅ FORCE UI REFRESH - Ensure SwiftUI sees the updated data
