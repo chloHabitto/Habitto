@@ -32,10 +32,10 @@ final class SwiftDataContainer: ObservableObject {
       // ✅ CRITICAL: Check if database file exists FIRST
       let databaseExists = FileManager.default.fileExists(atPath: databaseURL.path)
       
-      // ✅ ONE-TIME FIX: Force delete database if it has CloudKit enabled (migration to CloudKit-disabled mode)
-      // BUT ONLY if a database actually exists (don't trigger on fresh installs)
-      let cloudKitMigrationKey = "SwiftData_CloudKit_Disabled_Migration_v1"
-      let needsCloudKitMigration = databaseExists && !UserDefaults.standard.bool(forKey: cloudKitMigrationKey)
+      // ✅ NOTE: CloudKit is now enabled for iCloud sync
+      // Old migration keys are no longer needed as we're migrating TO CloudKit
+      let cloudKitMigrationKey = "SwiftData_CloudKit_Enabled_Migration_v1"
+      let needsCloudKitMigration = false // No migration needed - CloudKit is enabled going forward
       
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
@@ -49,7 +49,7 @@ final class SwiftDataContainer: ObservableObject {
       let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration || needsOneTimeFix
       
       if needsCloudKitMigration {
-        logger.warning("🔧 SwiftData: CloudKit migration needed - will recreate database without CloudKit")
+        logger.warning("🔧 SwiftData: CloudKit migration needed - will recreate database with CloudKit enabled")
       }
       
       if needsOneTimeFix {
@@ -215,15 +215,15 @@ final class SwiftDataContainer: ObservableObject {
         return // Skip normal database creation
       }
 
-      // ✅ CRITICAL: Explicitly disable CloudKit auto-sync
-      // We're using our own custom CloudKit sync layer (CloudKitManager)
-      // NOT SwiftData's built-in CloudKit integration
+      // ✅ iCLOUD SYNC: Enable automatic CloudKit sync via SwiftData
+      // This provides seamless cross-device sync without requiring sign-in
+      // iCloud automatically handles user scoping and data isolation
       let modelConfiguration = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: false,
-        cloudKitDatabase: .none)  // Disable automatic CloudKit sync
+        cloudKitDatabase: .automatic)  // Enable automatic CloudKit/iCloud sync
 
-      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: DISABLED)...")
+      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: ENABLED)...")
       self.modelContainer = try ModelContainer(
         for: schema,
         migrationPlan: migrationPlan,
@@ -463,11 +463,11 @@ final class SwiftDataContainer: ObservableObject {
     let schema = Schema(versionedSchema: HabittoSchemaV1.self)
 
     do {
-      // Create new model configuration (explicitly disable CloudKit)
+      // Create new model configuration (enable CloudKit for iCloud sync)
       let modelConfiguration = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: false,
-        cloudKitDatabase: .none)  // Disable automatic CloudKit sync
+        cloudKitDatabase: .automatic)  // Enable automatic CloudKit/iCloud sync
 
       // ✅ FIX: Use _ to indicate intentionally unused value
       _ = try ModelContainer(
