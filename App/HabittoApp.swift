@@ -355,6 +355,15 @@ struct HabittoApp: App {
           .onAppear {
             setupCoreData()
 
+            // ✅ STEP 1: Ensure anonymous authentication for cloud backup
+            // This runs silently in the background - no UI changes
+            Task { @MainActor in
+              await authManager.ensureAnonymousAuth()
+              
+              // After anonymous auth, migrate guest data if needed
+              await migrateGuestDataToAnonymousUser()
+            }
+
             // ✅ FIX #25: Don't force-hide migration UI - let HabitRepository decide
             // (Removed: habitRepository.shouldShowMigrationView = false)
             // The migration view will appear if guest data exists when user signs in
@@ -543,6 +552,128 @@ struct HabittoApp: App {
     }
     
     logger.info("✅ CompletionRecord Reconciliation: Completed")
+  }
+  
+  // MARK: - Guest Data Migration
+  
+  /// Migrate guest data (userId = "") to anonymous user
+  /// This runs automatically after anonymous auth is established
+  @MainActor
+  private func migrateGuestDataToAnonymousUser() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "GuestMigration")
+    
+    // Check if user is authenticated (anonymous or otherwise)
+    guard let currentUser = authManager.currentUser else {
+      logger.debug("⏭️ GuestMigration: No authenticated user, skipping migration")
+      return
+    }
+    
+    let newUserId = currentUser.uid
+    
+    // Check if migration already completed
+    let migrationKey = "guest_to_anonymous_migrated_\(newUserId)"
+    if UserDefaults.standard.bool(forKey: migrationKey) {
+      logger.debug("⏭️ GuestMigration: Already migrated for user \(newUserId.prefix(8))...")
+      return
+    }
+    
+    logger.info("🔄 GuestMigration: Starting migration to anonymous user \(newUserId.prefix(8))...")
+    
+    do {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      
+      // 1. Migrate HabitData
+      let guestHabitsDescriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { habit in
+          habit.userId == ""
+        }
+      )
+      let guestHabits = try modelContext.fetch(guestHabitsDescriptor)
+      
+      if !guestHabits.isEmpty {
+        logger.info("🔄 GuestMigration: Migrating \(guestHabits.count) habits...")
+        
+        for habitData in guestHabits {
+          habitData.userId = newUserId
+          
+          // Update CompletionRecords
+          for record in habitData.completionHistory {
+            record.userId = newUserId
+            record.userIdHabitIdDateKey = "\(newUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
+          }
+        }
+        
+        try modelContext.save()
+        logger.info("✅ GuestMigration: Migrated \(guestHabits.count) habits")
+      }
+      
+      // 2. Migrate DailyAwards
+      let guestAwardsDescriptor = FetchDescriptor<DailyAward>(
+        predicate: #Predicate<DailyAward> { award in
+          award.userId == ""
+        }
+      )
+      let guestAwards = try modelContext.fetch(guestAwardsDescriptor)
+      
+      if !guestAwards.isEmpty {
+        logger.info("🔄 GuestMigration: Migrating \(guestAwards.count) daily awards...")
+        
+        for award in guestAwards {
+          award.userId = newUserId
+          award.userIdDateKey = "\(newUserId)#\(award.dateKey)"
+        }
+        
+        try modelContext.save()
+        logger.info("✅ GuestMigration: Migrated \(guestAwards.count) daily awards")
+      }
+      
+      // 3. Migrate UserProgressData
+      let guestProgressDescriptor = FetchDescriptor<UserProgressData>(
+        predicate: #Predicate<UserProgressData> { progress in
+          progress.userId == ""
+        }
+      )
+      let guestProgress = try modelContext.fetch(guestProgressDescriptor).first
+      
+      if let progress = guestProgress {
+        logger.info("🔄 GuestMigration: Migrating user progress...")
+        progress.userId = newUserId
+        try modelContext.save()
+        logger.info("✅ GuestMigration: Migrated user progress")
+      }
+      
+      // Mark migration as complete
+      UserDefaults.standard.set(true, forKey: migrationKey)
+      logger.info("✅ GuestMigration: Migration complete for user \(newUserId.prefix(8))...")
+      
+      // Trigger backup of migrated data
+      Task.detached {
+        await self.backupMigratedGuestData(userId: newUserId)
+      }
+      
+    } catch {
+      logger.error("❌ GuestMigration: Failed to migrate guest data: \(error.localizedDescription)")
+      // Don't throw - app continues working
+    }
+  }
+  
+  /// Backup migrated guest data to Firestore
+  private func backupMigratedGuestData(userId: String) async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "GuestMigration")
+    logger.info("🔄 GuestMigration: Starting backup of migrated data...")
+    
+    // Load habits and backup them
+    do {
+      let habits = try await HabitStore.shared.loadHabits()
+      for habit in habits {
+        await MainActor.run {
+          FirebaseBackupService.shared.backupHabit(habit)
+        }
+      }
+      logger.info("✅ GuestMigration: Backed up \(habits.count) habits to Firestore")
+    } catch {
+      logger.warning("⚠️ GuestMigration: Failed to backup habits: \(error.localizedDescription)")
+    }
   }
 }
 
