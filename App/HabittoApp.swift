@@ -358,11 +358,17 @@ struct HabittoApp: App {
             Task { @MainActor in
               await diagnoseDataIssue()
               
-              // ✅ FIX - Repair broken relationships
-              await repairCompletionRecordRelationships()
-              
-              // ✅ VERIFY - Check that the fix worked
-              await diagnoseDataIssue()
+              // ✅ FIX - Repair broken relationships (one-time only)
+              let repairKey = "completionRecordRelationshipsRepaired"
+              if !UserDefaults.standard.bool(forKey: repairKey) {
+                await repairCompletionRecordRelationships()
+                UserDefaults.standard.set(true, forKey: repairKey)
+                
+                // ✅ VERIFY - Check that the fix worked
+                await diagnoseDataIssue()
+              } else {
+                print("ℹ️ [REPAIR] Relationship repair already completed - skipping")
+              }
             }
             
             setupCoreData()
@@ -374,6 +380,23 @@ struct HabittoApp: App {
               
               // After anonymous auth, migrate guest data if needed
               await migrateGuestDataToAnonymousUser()
+              
+              // ✅ FORCE RELOAD - Reload data after repair to ensure UI sees fixed relationships
+              print("🔄 [RELOAD] Forcing data reload after relationship repair...")
+              await habitRepository.loadHabits()
+              
+              // Reload XP
+              if let userId = authManager.currentUser?.uid {
+                XPManager.shared.loadUserXPFromSwiftData(
+                  userId: userId,
+                  modelContext: SwiftDataContainer.shared.modelContext
+                )
+                
+                // Refresh DailyAwardService
+                await DailyAwardService.shared.refreshXPState()
+              }
+              
+              print("✅ [RELOAD] Data reload complete")
             }
 
             // ✅ FIX #25: Don't force-hide migration UI - let HabitRepository decide
@@ -392,16 +415,12 @@ struct HabittoApp: App {
             // Removed redundant call to migrationService.checkAndExecuteMigrations()
             // to prevent "Migration already in progress" warnings
 
-            // Refresh habits after a short delay to ensure data is loaded
+            // ✅ PRIORITY 2: Run XP integrity check after data is loaded
+            // This ensures XP data is consistent on every app launch
+            // (Data is already loaded in the auth task above, so we can run this after a short delay)
             Task.detached { @MainActor in
-              try? await Task.sleep(nanoseconds: 500_000_000)
-              await habitRepository.loadHabits()
-              
-              // ✅ PRIORITY 2: Run XP integrity check after data is loaded
-              // This ensures XP data is consistent on every app launch
-              Task.detached(priority: .background) { @MainActor in
-                await performXPIntegrityCheck()
-              }
+              try? await Task.sleep(nanoseconds: 1_000_000_000) // Wait for auth task to complete
+              await performXPIntegrityCheck()
               
               // ✅ PRIORITY 3: Run CompletionRecord reconciliation after XP check
               // This ensures CompletionRecord.progress matches ProgressEvents (source of truth)
