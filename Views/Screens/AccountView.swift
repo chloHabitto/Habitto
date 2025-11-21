@@ -127,7 +127,7 @@ struct AccountView: View {
             VStack(spacing: 24) {
             Spacer()
             
-            Text("Sign in or sign up to access your account")
+            Text("Sign in to access your account")
               .font(.appBodyLarge)
                   .foregroundColor(.text01)
                   .multilineTextAlignment(.center)
