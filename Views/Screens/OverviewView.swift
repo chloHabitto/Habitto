@@ -71,6 +71,7 @@ struct OverviewView: View {
       .navigationTitle("Overview")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
+      .toolbarColorScheme(.dark, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
           Button(action: {
