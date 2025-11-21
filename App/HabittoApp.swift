@@ -454,6 +454,13 @@ struct HabittoApp: App {
             // Removed redundant call to migrationService.checkAndExecuteMigrations()
             // to prevent "Migration already in progress" warnings
 
+            // ✅ PRIORITY 1: Fix userId mismatches FIRST to ensure data is visible
+            // This fixes cases where CompletionRecords/DailyAwards were saved with wrong userId
+            Task.detached { @MainActor in
+              try? await Task.sleep(nanoseconds: 500_000_000) // Wait for auth to complete
+              await repairUserIdMismatches()
+            }
+            
             // ✅ PRIORITY 2: Run XP integrity check after data is loaded
             // This ensures XP data is consistent on every app launch
             // (Data is already loaded in the auth task above, so we can run this after a short delay)
@@ -494,6 +501,133 @@ struct HabittoApp: App {
   @State private var showSplash = true
   
   // MARK: - Integrity Checks
+  
+  /// Repair userId mismatches on CompletionRecords and DailyAward records
+  ///
+  /// ✅ CRITICAL FIX: This fixes data loss issues where records were saved with wrong userId
+  /// (e.g., empty string when user was guest, but now they're authenticated)
+  ///
+  /// Algorithm:
+  /// 1. Get current userId
+  /// 2. Find all CompletionRecords for current user's habits with mismatched userId
+  /// 3. Find all DailyAward records with mismatched userId
+  /// 4. Update userId and unique constraint keys to match current user
+  /// 5. Save changes
+  @MainActor
+  private func repairUserIdMismatches() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "UserIdRepair")
+    
+    logger.info("🔧 UserId Repair: Starting userId mismatch repair...")
+    
+    // Prevent multiple simultaneous repairs
+    struct RepairLock {
+      static var isRunning = false
+    }
+    
+    guard !RepairLock.isRunning else {
+      logger.info("⏭️ UserId Repair: Already running, skipping duplicate repair")
+      return
+    }
+    
+    RepairLock.isRunning = true
+    defer { RepairLock.isRunning = false }
+    
+    do {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      let currentUserId = await CurrentUser().idOrGuest
+      
+      logger.info("🔧 UserId Repair: Current userId: '\(currentUserId.isEmpty ? "EMPTY (guest)" : currentUserId.prefix(8))...'")
+      
+      // Step 1: Find all HabitData for current user
+      let habitPredicate = #Predicate<HabitData> { habit in
+        habit.userId == currentUserId
+      }
+      let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+      let userHabits = try modelContext.fetch(habitDescriptor)
+      let userHabitIds = Set(userHabits.map { $0.id })
+      
+      logger.info("🔧 UserId Repair: Found \(userHabits.count) habits for current user")
+      
+      // Step 2: Find all CompletionRecords for these habits with mismatched userId
+      let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
+      let allRecords = try modelContext.fetch(allRecordsDescriptor)
+      
+      var recordsFixed = 0
+      for record in allRecords {
+        // Check if this record belongs to one of the user's habits
+        if userHabitIds.contains(record.habitId) && record.userId != currentUserId {
+          let oldUserId = record.userId.isEmpty ? "EMPTY" : record.userId.prefix(8)
+          logger.info("🔧 UserId Repair: Fixing CompletionRecord - habitId: \(record.habitId.uuidString.prefix(8))..., dateKey: \(record.dateKey), old userId: '\(oldUserId)...', new userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8))...'")
+          
+          record.userId = currentUserId
+          record.userIdHabitIdDateKey = "\(currentUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
+          recordsFixed += 1
+        }
+      }
+      
+      logger.info("🔧 UserId Repair: Fixed \(recordsFixed) CompletionRecords")
+      
+      // Step 3: Find all DailyAward records with mismatched userId
+      // Strategy: If user has habits with completions on a date, and there's a DailyAward for that date
+      // with wrong userId, it's likely the user's award
+      let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+      let allAwards = try modelContext.fetch(allAwardsDescriptor)
+      
+      // Get all dateKeys where user has completed habits
+      var userCompletionDates = Set<String>()
+      for record in allRecords {
+        if userHabitIds.contains(record.habitId) && record.isCompleted {
+          userCompletionDates.insert(record.dateKey)
+        }
+      }
+      
+      logger.info("🔧 UserId Repair: Found \(userCompletionDates.count) dates where user has completions")
+      
+      var awardsFixed = 0
+      for award in allAwards {
+        if award.userId != currentUserId {
+          // Check if this award date matches one of the user's completion dates
+          if userCompletionDates.contains(award.dateKey) {
+            // This award is for a date where the user has completions, so it's likely the user's award
+            let oldUserId = award.userId.isEmpty ? "EMPTY" : award.userId.prefix(8)
+            logger.info("🔧 UserId Repair: Fixing DailyAward - dateKey: \(award.dateKey), old userId: '\(oldUserId)...', new userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8))...'")
+            
+            award.userId = currentUserId
+            award.userIdDateKey = "\(currentUserId)#\(award.dateKey)"
+            awardsFixed += 1
+          } else if currentUserId.isEmpty && award.userId.isEmpty {
+            // Both are guest - ensure they use consistent empty string
+            // (no change needed, but ensure userIdDateKey is correct)
+            award.userIdDateKey = "\(currentUserId)#\(award.dateKey)"
+          }
+        }
+      }
+      
+      logger.info("🔧 UserId Repair: Fixed \(awardsFixed) DailyAwards")
+      
+      // Step 4: Save all changes
+      if recordsFixed > 0 || awardsFixed > 0 {
+        try modelContext.save()
+        logger.info("✅ UserId Repair: Successfully repaired \(recordsFixed) CompletionRecords and \(awardsFixed) DailyAwards")
+        
+        // Refresh XP state to reflect the fixes
+        await DailyAwardService.shared.refreshXPState()
+        
+        // Refresh habits to show the fixed completion records
+        Task {
+          await habitRepository.loadHabits()
+        }
+      } else {
+        logger.info("✅ UserId Repair: No userId mismatches found - all records are correct")
+      }
+      
+    } catch {
+      logger.error("❌ UserId Repair: Failed to repair userId mismatches: \(error.localizedDescription)")
+      logger.error("   Error details: \(error)")
+    }
+    
+    logger.info("✅ UserId Repair: Completed")
+  }
   
   /// Perform XP integrity check and auto-repair on app launch
   ///

@@ -230,8 +230,9 @@ class XPManager {
       
       print("🔍 [XP_LOAD] Predicate query (userId='\(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...') returned: \(awards.count) awards")
 
-      // ✅ FALLBACK: If predicate returns 0 but we have awards with this userId, use code filter
+      // ✅ FALLBACK: If predicate returns 0 but we have awards, check for userId mismatches
       if awards.isEmpty && !allAwards.isEmpty {
+        // First try code filter with exact userId match
         let filtered = allAwards.filter { $0.userId == userId }
         if !filtered.isEmpty {
           print("⚠️ [XP_LOAD] Predicate returned 0, but found \(filtered.count) awards with code filter - using filtered results")
@@ -246,6 +247,26 @@ class XPManager {
           saveUserProgress()
           print("✅ [XP_LOAD] Loaded XP from filtered awards: Total=\(totalXP), Level=\(userProgress.currentLevel)")
           return
+        } else if userId.isEmpty {
+          // Current user is guest - check for any awards with empty userId
+          let guestAwards = allAwards.filter { $0.userId.isEmpty }
+          if !guestAwards.isEmpty {
+            print("⚠️ [XP_LOAD] Found \(guestAwards.count) awards with empty userId (guest) - using them")
+            let totalXP = guestAwards.reduce(0) { $0 + $1.xpGranted }
+            self.totalXP = totalXP
+            self.dailyXP = 0
+            var updatedProgress = userProgress
+            updatedProgress.totalXP = totalXP
+            updatedProgress.dailyXP = 0
+            userProgress = updatedProgress
+            updateLevelFromXP()
+            saveUserProgress()
+            print("✅ [XP_LOAD] Loaded XP from guest awards: Total=\(totalXP), Level=\(userProgress.currentLevel)")
+            return
+          }
+        } else {
+          // Current user is authenticated but no awards found - may need userId repair
+          print("⚠️ [XP_LOAD] No awards found for authenticated userId - may need userId repair")
         }
       }
 

@@ -336,11 +336,13 @@ final class HabitData {
     let allRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: allRecordsPredicate)
     
     let completionRecords: [CompletionRecord]
+    var allRecords: [CompletionRecord] = []
+    
     do {
       let context = SwiftDataContainer.shared.modelContext
       
       // Query ALL CompletionRecords for this habitId
-      let allRecords = try context.fetch(allRecordsDescriptor)
+      allRecords = try context.fetch(allRecordsDescriptor)
       
       // ✅ DIAGNOSTIC: Log what records were found
       if !allRecords.isEmpty {
@@ -397,16 +399,20 @@ final class HabitData {
       completionRecords = completionHistory
     }
 
-    // ✅ FILTER: Only include records for the current userId to avoid cross-user duplicates
-    // ✅ CRITICAL FIX: Handle guest userId inconsistencies ("", "guest" both mean guest)
-    let filteredRecords = completionRecords.filter { record in
-      if self.userId.isEmpty || self.userId == "guest" {
-        // For guest habits, accept both "" and "guest" userIds (legacy compatibility)
-        return record.userId.isEmpty || record.userId == "guest" || record.userId == self.userId
-      } else {
-        // For authenticated users, exact match required
-        return record.userId == self.userId
-      }
+    // ✅ CRITICAL FIX: Use ALL records found for this habitId, regardless of userId mismatch
+    // This prevents data loss when records were saved with different userId (e.g., guest -> authenticated)
+    // We'll fix the userId later via repair function, but for now we need to show the data
+    let filteredRecords: [CompletionRecord]
+    if completionRecords.isEmpty && !allRecords.isEmpty {
+      // If no records matched userId but records exist, use all records (userId mismatch)
+      print("⚠️ [HABIT_TO_HABIT] Using ALL \(allRecords.count) records due to userId mismatch - will repair userId later")
+      filteredRecords = allRecords
+    } else if !completionRecords.isEmpty {
+      // Use records that matched userId
+      filteredRecords = completionRecords
+    } else {
+      // No records found at all - use empty array
+      filteredRecords = []
     }
     
     
