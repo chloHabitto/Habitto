@@ -371,12 +371,13 @@ struct HabittoApp: App {
               }
               
               // ✅ RESTORE - Try to restore progress from Firestore if CompletionRecords have progress=0
-              let restoreKey = "progressRestoredFromFirestore_\(authManager.currentUser?.uid ?? "guest")"
-              if !UserDefaults.standard.bool(forKey: restoreKey) {
+              // Check if we need to restore by checking if any CompletionRecords have progress=0
+              let needsRestore = await checkIfNeedsProgressRestore()
+              if needsRestore {
+                print("🔧 [RESTORE] CompletionRecords with progress=0 detected - attempting restore from Firestore")
                 await restoreProgressFromFirestore()
-                UserDefaults.standard.set(true, forKey: restoreKey)
               } else {
-                print("ℹ️ [RESTORE] Progress restoration already attempted - skipping")
+                print("ℹ️ [RESTORE] All CompletionRecords have progress > 0 - no restore needed")
               }
             }
             
@@ -1241,6 +1242,34 @@ struct HabittoApp: App {
     print(String(repeating: "=", count: 80))
   }
   
+  /// Check if progress restoration is needed by checking for CompletionRecords with progress=0
+  @MainActor
+  private func checkIfNeedsProgressRestore() async -> Bool {
+    let context = SwiftDataContainer.shared.modelContext
+    let userId = await CurrentUser().idOrGuest
+    
+    do {
+      // Check if any CompletionRecords have progress=0
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.userId == userId && record.progress == 0
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      let recordsWithZeroProgress = try context.fetch(descriptor)
+      
+      if !recordsWithZeroProgress.isEmpty {
+        print("🔍 [RESTORE_CHECK] Found \(recordsWithZeroProgress.count) CompletionRecords with progress=0 - restore needed")
+        return true
+      } else {
+        print("✅ [RESTORE_CHECK] All CompletionRecords have progress > 0 - no restore needed")
+        return false
+      }
+    } catch {
+      print("⚠️ [RESTORE_CHECK] Failed to check CompletionRecords: \(error.localizedDescription)")
+      // If check fails, assume restore is needed (safe default)
+      return true
+    }
+  }
+  
   /// Restore progress data from Firestore backups
   /// This repairs CompletionRecords that have progress=0 by restoring from Firestore
   @MainActor
@@ -1311,8 +1340,13 @@ struct HabittoApp: App {
             // Update existing record if progress is 0
             if record.progress == 0 && progress > 0 {
               record.progress = progress
-              // Parse goal amount from goal string
-              let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+              // ✅ FIX: Use goalAmount from habit.goalAmount(for:) which considers goalHistory
+              let habit = habitData.toHabit()
+              guard let date = DateUtils.date(from: dateKey) else {
+                print("⚠️ [RESTORE] Failed to parse dateKey '\(dateKey)' - skipping")
+                continue
+              }
+              let goalAmount = habit.goalAmount(for: date)
               record.isCompleted = progress >= goalAmount
               totalRestored += 1
               print("✅ [RESTORE] Restored progress for '\(firestoreHabit.name)' on \(dateKey): \(progress) (goal: \(goalAmount), completed: \(record.isCompleted))")
@@ -1322,8 +1356,9 @@ struct HabittoApp: App {
           } else {
             // Create new record if it doesn't exist
             if let date = DateUtils.date(from: dateKey) {
-              // Parse goal amount from goal string
-              let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+              // ✅ FIX: Use goalAmount from habit.goalAmount(for:) which considers goalHistory
+              let habit = habitData.toHabit()
+              let goalAmount = habit.goalAmount(for: date)
               let isCompleted = progress >= goalAmount
               
               let record = CompletionRecord(
