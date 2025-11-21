@@ -456,6 +456,13 @@ struct HabittoApp: App {
             // Removed redundant call to migrationService.checkAndExecuteMigrations()
             // to prevent "Migration already in progress" warnings
 
+            // ✅ PRIORITY 0: Diagnose and migrate data from old anonymous users
+            // This handles cases where Firebase created a new anonymous user, leaving old data inaccessible
+            Task.detached { @MainActor in
+              try? await Task.sleep(nanoseconds: 500_000_000) // Wait for auth to complete
+              await diagnoseAndMigrateOldUserData()
+            }
+            
             // ✅ PRIORITY 1: Fix userId mismatches FIRST to ensure data is visible
             // This fixes cases where CompletionRecords/DailyAwards were saved with wrong userId
             Task.detached { @MainActor in
@@ -512,6 +519,122 @@ struct HabittoApp: App {
   /// Algorithm:
   /// 1. Get current userId
   /// 2. Find all CompletionRecords for current user's habits with mismatched userId
+  /// Diagnoses all userIds in the database and migrates data from old anonymous users to the current user.
+  /// This handles cases where Firebase creates a new anonymous user, leaving old data inaccessible.
+  @MainActor
+  private func diagnoseAndMigrateOldUserData() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "UserDataMigration")
+    logger.info("🔍 User Data Migration: Starting diagnosis and migration...")
+    
+    do {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      let currentUserId = await CurrentUser().idOrGuest
+      logger.info("🔍 User Data Migration: Current userId: '\(currentUserId.isEmpty ? "guest" : currentUserId)'")
+      
+      // STEP 1: Diagnose all userIds in the database
+      let allHabits = try modelContext.fetch(FetchDescriptor<HabitData>())
+      let allCompletionRecords = try modelContext.fetch(FetchDescriptor<CompletionRecord>())
+      let allDailyAwards = try modelContext.fetch(FetchDescriptor<DailyAward>())
+      
+      let habitUserIds = Set(allHabits.map { $0.userId })
+      let recordUserIds = Set(allCompletionRecords.map { $0.userId })
+      let awardUserIds = Set(allDailyAwards.map { $0.userId })
+      let allUserIds = habitUserIds.union(recordUserIds).union(awardUserIds)
+      
+      print("📊 [USER_MIGRATION] All userIds in database: \(Array(allUserIds).map { $0.isEmpty ? "EMPTY_STRING" : String($0.prefix(8)) + "..." })")
+      
+      for userId in allUserIds {
+        let habitsForUser = allHabits.filter { $0.userId == userId }
+        let recordsForUser = allCompletionRecords.filter { $0.userId == userId }
+        let awardsForUser = allDailyAwards.filter { $0.userId == userId }
+        
+        let userIdDisplay = userId.isEmpty ? "EMPTY_STRING" : String(userId.prefix(8)) + "..."
+        print("   📊 User \(userIdDisplay):")
+        print("      - \(habitsForUser.count) habits")
+        print("      - \(recordsForUser.count) CompletionRecords")
+        print("      - \(awardsForUser.count) DailyAwards")
+        
+        // Check if this user has any progress data
+        let recordsWithProgress = recordsForUser.filter { $0.progress > 0 }
+        if recordsWithProgress.count > 0 {
+          print("      - ⚠️ \(recordsWithProgress.count) CompletionRecords with progress > 0")
+        }
+      }
+      
+      // STEP 2: Identify old userIds that need migration
+      let oldUserIds = allUserIds.filter { $0 != currentUserId && !$0.isEmpty }
+      
+      if oldUserIds.isEmpty {
+        logger.info("✅ User Data Migration: No old userIds found - all data belongs to current user")
+        return
+      }
+      
+      logger.warning("⚠️ User Data Migration: Found \(oldUserIds.count) old userId(s) that need migration")
+      for oldUserId in oldUserIds {
+        logger.info("   Old userId: '\(oldUserId.prefix(8))...'")
+      }
+      
+      // STEP 3: Migrate data from old userIds to current userId
+      var totalMigrated = 0
+      
+      for oldUserId in oldUserIds {
+        logger.info("🔄 User Data Migration: Migrating data from '\(oldUserId.prefix(8))...' to '\(currentUserId.isEmpty ? "guest" : currentUserId.prefix(8))...'")
+        
+        // Migrate HabitData
+        let oldHabits = allHabits.filter { $0.userId == oldUserId }
+        for habit in oldHabits {
+          logger.info("   Migrating habit '\(habit.name)' (id: \(habit.id.uuidString.prefix(8))...)")
+          habit.userId = currentUserId
+          totalMigrated += 1
+        }
+        
+        // Migrate CompletionRecords
+        let oldRecords = allCompletionRecords.filter { $0.userId == oldUserId }
+        for record in oldRecords {
+          record.userId = currentUserId
+          record.userIdHabitIdDateKey = "\(currentUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
+          totalMigrated += 1
+        }
+        
+        // Migrate DailyAwards
+        let oldAwards = allDailyAwards.filter { $0.userId == oldUserId }
+        for award in oldAwards {
+          award.userId = currentUserId
+          award.userIdDateKey = "\(currentUserId)#\(award.dateKey)"
+          totalMigrated += 1
+        }
+        
+        logger.info("   ✅ Migrated \(oldHabits.count) habits, \(oldRecords.count) records, \(oldAwards.count) awards")
+      }
+      
+      // STEP 4: Save all changes
+      if totalMigrated > 0 {
+        try modelContext.save()
+        logger.info("✅ User Data Migration: Successfully migrated \(totalMigrated) records to current user")
+        
+        // Refresh data to show migrated records
+        await DailyAwardService.shared.refreshXPState()
+        await habitRepository.loadHabits(force: true)
+        
+        logger.info("✅ User Data Migration: Data refreshed - migrated data should now be visible")
+      } else {
+        logger.info("✅ User Data Migration: No data needed migration")
+      }
+      
+    } catch {
+      logger.error("❌ User Data Migration: Failed to migrate old user data: \(error.localizedDescription)")
+      logger.error("   Error details: \(error)")
+    }
+    
+    logger.info("✅ User Data Migration: Completed")
+  }
+  
+  /// Repairs userId mismatches across HabitData, CompletionRecord, and DailyAward records.
+  /// This is crucial for ensuring data visibility and integrity, especially after migrations or authentication changes.
+  /// 
+  /// Steps:
+  /// 1. Find all HabitData records for current user
+  /// 2. Find all CompletionRecords with mismatched userId but correct habitId
   /// 3. Find all DailyAward records with mismatched userId
   /// 4. Update userId and unique constraint keys to match current user
   /// 5. Save changes
