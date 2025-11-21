@@ -4,7 +4,6 @@ import Foundation
 
 enum StorageType {
   case userDefaults
-  case coreData
   case swiftData
   case cloudKit
   case firestore
@@ -31,8 +30,6 @@ class StorageFactory {
     switch type {
     case .userDefaults:
       UserDefaultsStorage()
-    case .coreData:
-      CoreDataStorage()
     case .swiftData:
       SwiftDataStorage()
     case .cloudKit:
@@ -90,8 +87,6 @@ class StorageFactory {
     switch type {
     case .userDefaults:
       true // UserDefaults is always available
-    case .coreData:
-      CoreDataManager.shared.checkCoreDataHealth()
     case .swiftData:
       true // SwiftData is available on iOS 17+
     case .cloudKit:
@@ -161,8 +156,6 @@ extension StorageType: CaseIterable {
     switch rawValue {
     case "userDefaults":
       self = .userDefaults
-    case "coreData":
-      self = .coreData
     case "swiftData":
       self = .swiftData
     case "cloudKit":
@@ -182,8 +175,6 @@ extension StorageType: CaseIterable {
     switch self {
     case .userDefaults:
       "userDefaults"
-    case .coreData:
-      "coreData"
     case .swiftData:
       "swiftData"
     case .cloudKit:
@@ -199,8 +190,6 @@ extension StorageType: CaseIterable {
     switch self {
     case .userDefaults:
       "UserDefaults"
-    case .coreData:
-      "Core Data"
     case .swiftData:
       "SwiftData"
     case .cloudKit:
@@ -216,8 +205,6 @@ extension StorageType: CaseIterable {
     switch self {
     case .userDefaults:
       "Simple key-value storage, good for small amounts of data"
-    case .coreData:
-      "Advanced object graph persistence, good for complex relationships"
     case .swiftData:
       "Modern Swift-native persistence framework with type safety"
     case .cloudKit:

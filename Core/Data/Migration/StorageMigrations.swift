@@ -27,15 +27,15 @@ class UserDefaultsToCoreDataMigration: MigrationStep {
 
     print("📊 UserDefaultsToCoreDataMigration: Found \(habits.count) habits to migrate")
 
-    // Migrate to Core Data
-    let coreDataStorage = CoreDataStorage()
-    try await coreDataStorage.saveHabits(habits, immediate: true)
-
-    // Mark migration as completed
+    // Core Data storage is disabled - migration is no longer needed
+    // App now uses SwiftData instead of CoreData
+    print("⚠️ UserDefaultsToCoreDataMigration: Core Data storage is disabled, skipping migration")
+    
+    // Mark migration as completed (no-op since CoreData is not used)
     UserDefaults.standard.set(true, forKey: "UserDefaultsToCoreDataMigrationCompleted")
 
-    print("✅ UserDefaultsToCoreDataMigration: Successfully migrated \(habits.count) habits")
-    return .success
+    print("✅ UserDefaultsToCoreDataMigration: Migration skipped (CoreData disabled)")
+    return .skipped(reason: "CoreData storage is disabled, app uses SwiftData")
   }
 
   func canRollback() -> Bool {
@@ -45,11 +45,8 @@ class UserDefaultsToCoreDataMigration: MigrationStep {
   func rollback() async throws {
     print("🔄 UserDefaultsToCoreDataMigration: Rolling back...")
 
-    // Clear Core Data storage
-    _ = CoreDataStorage()
-    // Note: CoreDataStorage doesn't have deleteAllHabits method yet
-    // For now, we'll just log that rollback was attempted
-    print("⚠️ UserDefaultsToCoreDataMigration: Core Data rollback not fully implemented")
+    // Core Data storage is disabled - rollback is not applicable
+    print("⚠️ UserDefaultsToCoreDataMigration: Core Data storage is disabled, rollback skipped")
 
     // Remove migration flag
     UserDefaults.standard.removeObject(forKey: "UserDefaultsToCoreDataMigrationCompleted")
