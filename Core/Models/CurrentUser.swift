@@ -98,9 +98,9 @@ struct CurrentUser {
     guard let user else { return nil }
 
     if let firebaseUser = user as? User {
-      if firebaseUser.isAnonymous {
-        return Self.guestId
-      }
+      // ✅ FIX: Anonymous users have a real UID - return it!
+      // Anonymous users are authenticated, just not signed in with email/password
+      // They should use their UID for data isolation, not the guest ID
       let uid = firebaseUser.uid
       return uid.isEmpty ? Self.guestId : uid
     }
