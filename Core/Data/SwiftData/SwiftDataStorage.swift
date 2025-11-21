@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import SwiftData
 import FirebaseAuth
+import FirebaseCore
 
 // MARK: - SwiftData Storage Implementation
 
