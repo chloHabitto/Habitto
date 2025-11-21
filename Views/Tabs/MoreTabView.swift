@@ -833,7 +833,7 @@ struct MoreTabView: View {
         let awardService = DailyAwardService.shared
         let xpStateBefore = awardService.xpState?.totalXP ?? 0
         
-        let wasValid = try await awardService.checkAndRepairIntegrity()
+        _ = try await awardService.checkAndRepairIntegrity()
         
         let xpStateAfter = awardService.xpState?.totalXP ?? 0
         
