@@ -436,6 +436,20 @@ struct MoreTabView: View {
         )
         
         debugButton(
+          title: "🔄 Force Guest Data Migration",
+          subtitle: "Re-run complete guest-to-anonymous migration",
+          action: {
+            Task { @MainActor in
+              guard let userId = AuthenticationManager.shared.currentUser?.uid else {
+                print("❌ [GUEST_MIGRATION] Cannot force migration: No authenticated user")
+                return
+              }
+              await GuestDataMigrationHelper.forceMigration(userId: userId)
+            }
+          }
+        )
+        
+        debugButton(
           title: "✅ Verify Migration",
           subtitle: "Check migration results",
           action: {

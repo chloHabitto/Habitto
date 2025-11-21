@@ -565,29 +565,41 @@ struct HabittoApp: App {
     // Check if user is authenticated (anonymous or otherwise)
     guard let currentUser = authManager.currentUser else {
       logger.debug("⏭️ GuestMigration: No authenticated user, skipping migration")
+      print("⏭️ [GUEST_MIGRATION] No authenticated user, skipping migration")
       return
     }
     
     let newUserId = currentUser.uid
     
-    // Check if migration already completed
-    let migrationKey = "guest_to_anonymous_migrated_\(newUserId)"
-    if UserDefaults.standard.bool(forKey: migrationKey) {
-      logger.debug("⏭️ GuestMigration: Already migrated for user \(newUserId.prefix(8))...")
+    // ✅ NEW: Use a new migration flag for the complete migration
+    // OLD flag: "guest_to_anonymous_migrated_{userId}" (habits only - legacy)
+    // NEW flag: "guest_to_anonymous_complete_migrated_{userId}" (all data)
+    let oldMigrationKey = "guest_to_anonymous_migrated_\(newUserId)"
+    let newMigrationKey = "guest_to_anonymous_complete_migrated_\(newUserId)"
+    
+    // ✅ DIAGNOSTIC: Log migration status BEFORE checking flags
+    print("🔍 [GUEST_MIGRATION] Checking migration status for user: \(newUserId.prefix(8))...")
+    logger.info("🔍 GuestMigration: Checking migration status for user \(newUserId.prefix(8))...")
+    
+    let oldFlagSet = UserDefaults.standard.bool(forKey: oldMigrationKey)
+    let newFlagSet = UserDefaults.standard.bool(forKey: newMigrationKey)
+    
+    print("   Old migration flag (habits only): \(oldFlagSet ? "✅ TRUE" : "❌ FALSE")")
+    print("   New migration flag (complete): \(newFlagSet ? "✅ TRUE" : "❌ FALSE")")
+    logger.info("   Old migration flag: \(oldFlagSet), New migration flag: \(newFlagSet)")
+    
+    // Check if complete migration already completed
+    if newFlagSet {
+      logger.debug("⏭️ GuestMigration: Complete migration already done for user \(newUserId.prefix(8))...")
+      print("⏭️ [GUEST_MIGRATION] Complete migration already done, skipping")
       return
     }
     
-    print("🔄 [GUEST_MIGRATION] Starting migration to anonymous user")
-    print("   Target User ID: \(newUserId)")
-    logger.info("🔄 GuestMigration: Starting migration to anonymous user \(newUserId.prefix(8))...")
-    
+    // ✅ DIAGNOSTIC: Check for guest data BEFORE migration
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
-      var totalMigratedXP = 0
-      var completionRecordsMigrated = 0
-      var dailyAwardsMigrated = 0
       
-      // 1. Migrate HabitData
+      // Count guest data
       let guestHabitsDescriptor = FetchDescriptor<HabitData>(
         predicate: #Predicate<HabitData> { habit in
           habit.userId == ""
@@ -595,28 +607,6 @@ struct HabittoApp: App {
       )
       let guestHabits = try modelContext.fetch(guestHabitsDescriptor)
       
-      if !guestHabits.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestHabits.count) guest habits to migrate")
-        logger.info("🔄 GuestMigration: Migrating \(guestHabits.count) habits...")
-        
-        for habitData in guestHabits {
-          habitData.userId = newUserId
-          
-          // Update CompletionRecords linked via relationship
-          for record in habitData.completionHistory {
-            record.userId = newUserId
-            record.userIdHabitIdDateKey = "\(newUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
-          }
-        }
-        
-        try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated \(guestHabits.count) habits successfully")
-        logger.info("✅ GuestMigration: Migrated \(guestHabits.count) habits")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest habits found to migrate")
-      }
-      
-      // 2. Migrate ALL CompletionRecords (including standalone ones not linked via relationship)
       let guestCompletionRecordsDescriptor = FetchDescriptor<CompletionRecord>(
         predicate: #Predicate<CompletionRecord> { record in
           record.userId == ""
@@ -624,24 +614,6 @@ struct HabittoApp: App {
       )
       let guestCompletionRecords = try modelContext.fetch(guestCompletionRecordsDescriptor)
       
-      if !guestCompletionRecords.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestCompletionRecords.count) guest completion records to migrate")
-        logger.info("🔄 GuestMigration: Migrating \(guestCompletionRecords.count) completion records...")
-        
-        for record in guestCompletionRecords {
-          record.userId = newUserId
-          record.userIdHabitIdDateKey = "\(newUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
-          completionRecordsMigrated += 1
-        }
-        
-        try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated \(completionRecordsMigrated) completion records successfully")
-        logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest completion records found to migrate")
-      }
-      
-      // 3. Migrate DailyAwards
       let guestAwardsDescriptor = FetchDescriptor<DailyAward>(
         predicate: #Predicate<DailyAward> { award in
           award.userId == ""
@@ -649,76 +621,47 @@ struct HabittoApp: App {
       )
       let guestAwards = try modelContext.fetch(guestAwardsDescriptor)
       
-      if !guestAwards.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestAwards.count) guest daily awards to migrate")
-        logger.info("🔄 GuestMigration: Migrating \(guestAwards.count) daily awards...")
-        
-        for award in guestAwards {
-          award.userId = newUserId
-          award.userIdDateKey = "\(newUserId)#\(award.dateKey)"
-          totalMigratedXP += award.xpGranted
-          dailyAwardsMigrated += 1
-        }
-        
-        try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated \(dailyAwardsMigrated) daily awards successfully")
-        print("   Total XP from migrated awards: \(totalMigratedXP)")
-        logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest daily awards found to migrate")
-      }
-      
-      // 4. Migrate UserProgressData
       let guestProgressDescriptor = FetchDescriptor<UserProgressData>(
         predicate: #Predicate<UserProgressData> { progress in
           progress.userId == ""
         }
       )
-      let guestProgress = try modelContext.fetch(guestProgressDescriptor).first
+      let guestProgress = try modelContext.fetch(guestProgressDescriptor)
       
-      if let progress = guestProgress {
-        print("🔄 [GUEST_MIGRATION] Found user progress to migrate")
-        print("   Current XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
-        logger.info("🔄 GuestMigration: Migrating user progress (XP: \(progress.xpTotal), Level: \(progress.level))...")
-        progress.userId = newUserId
-        try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
-        print("   Migrated XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
-        logger.info("✅ GuestMigration: Migrated user progress (XP: \(progress.xpTotal), Level: \(progress.level))")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest user progress found to migrate")
+      print("📊 [GUEST_MIGRATION] Found guest data to migrate:")
+      print("   Guest Habits: \(guestHabits.count)")
+      print("   Guest Completion Records: \(guestCompletionRecords.count)")
+      print("   Guest Daily Awards: \(guestAwards.count)")
+      print("   Guest User Progress: \(guestProgress.count)")
+      logger.info("📊 GuestMigration: Found \(guestHabits.count) habits, \(guestCompletionRecords.count) completions, \(guestAwards.count) awards, \(guestProgress.count) progress records")
+      
+      // If no guest data exists, mark migration as complete and return
+      if guestHabits.isEmpty && guestCompletionRecords.isEmpty && guestAwards.isEmpty && guestProgress.isEmpty {
+        print("ℹ️ [GUEST_MIGRATION] No guest data found, marking migration as complete")
+        UserDefaults.standard.set(true, forKey: newMigrationKey)
+        return
       }
-      
-      // Summary log
-      print("📊 [GUEST_MIGRATION] Migration Summary:")
-      print("   ✅ Habits: \(guestHabits.count)")
-      print("   ✅ Completion Records: \(completionRecordsMigrated)")
-      print("   ✅ Daily Awards: \(dailyAwardsMigrated)")
-      print("   ✅ Total XP from Awards: \(totalMigratedXP)")
-      if let progress = guestProgress {
-        print("   ✅ User Progress XP: \(progress.xpTotal)")
-      }
-      logger.info("📊 GuestMigration: Summary - \(guestHabits.count) habits, \(completionRecordsMigrated) completions, \(dailyAwardsMigrated) awards, \(totalMigratedXP) XP")
-      
-      // Mark migration as complete
-      UserDefaults.standard.set(true, forKey: migrationKey)
-      print("✅ [GUEST_MIGRATION] Migration complete for user \(newUserId.prefix(8))...")
-      logger.info("✅ GuestMigration: Migration complete for user \(newUserId.prefix(8))...")
-      
-      // Trigger backup of migrated data
-      print("🔄 [GUEST_MIGRATION] Starting backup of migrated data to Firestore...")
-      Task.detached {
-        await self.backupMigratedGuestData(userId: newUserId)
-      }
-      
     } catch {
-      print("❌ [GUEST_MIGRATION] FAILED: \(error.localizedDescription)")
-      logger.error("❌ GuestMigration: Failed to migrate guest data: \(error.localizedDescription)")
-      // Don't throw - app continues working
+      print("⚠️ [GUEST_MIGRATION] Error checking for guest data: \(error.localizedDescription)")
+      logger.warning("⚠️ GuestMigration: Error checking for guest data: \(error.localizedDescription)")
+    }
+    
+    print("🔄 [GUEST_MIGRATION] Starting COMPLETE migration to anonymous user")
+    print("   Target User ID: \(newUserId)")
+    logger.info("🔄 GuestMigration: Starting COMPLETE migration to anonymous user \(newUserId.prefix(8))...")
+    
+    // Delegate to the helper class for the actual migration logic
+    await GuestDataMigrationHelper.runCompleteMigration(userId: newUserId)
+    
+    // The helper already sets the migration flag, so trigger backup
+    print("🔄 [GUEST_MIGRATION] Starting backup of migrated data to Firestore...")
+    Task.detached { @MainActor in
+      await backupMigratedGuestData(userId: newUserId)
     }
   }
   
   /// Backup migrated guest data to Firestore
+  @MainActor
   private func backupMigratedGuestData(userId: String) async {
     let logger = Logger(subsystem: "com.habitto.app", category: "GuestMigration")
     print("🔄 [GUEST_MIGRATION] Backing up migrated data to Firestore...")
@@ -740,101 +683,103 @@ struct HabittoApp: App {
       logger.warning("⚠️ GuestMigration: Failed to backup habits: \(error.localizedDescription)")
     }
   }
-}
+  
+  // MARK: - Helper Functions
+  
+  private func setupCoreData() {
+    // Check if migration is needed
+    let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataMigrationCompleted")
 
-private func setupCoreData() {
-  // Check if migration is needed
-  let hasMigrated = UserDefaults.standard.bool(forKey: "CoreDataMigrationCompleted")
+    if !hasMigrated {
+      UserDefaults.standard.set(true, forKey: "CoreDataMigrationCompleted")
+    }
 
-  if !hasMigrated {
-    UserDefaults.standard.set(true, forKey: "CoreDataMigrationCompleted")
-  }
+    // Monitor app lifecycle to reload data when app becomes active
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didBecomeActiveNotification,
+      object: nil,
+      queue: .main)
+    { _ in
+      Task.detached { @MainActor in
+        await HabitRepository.shared.loadHabits()
+        Task.detached(priority: .background) {
+          try? await Task.sleep(nanoseconds: 1_000_000_000)
+          await HabitRepository.shared.postLaunchWarmup()
+        }
+      }
+    }
 
-  // Monitor app lifecycle to reload data when app becomes active
-  NotificationCenter.default.addObserver(
-    forName: UIApplication.didBecomeActiveNotification,
-    object: nil,
-    queue: .main)
-  { _ in
-    Task.detached { @MainActor in
-      await HabitRepository.shared.loadHabits()
-      Task.detached(priority: .background) {
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        await HabitRepository.shared.postLaunchWarmup()
+    // Monitor app lifecycle to save data when app goes to background
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willResignActiveNotification,
+      object: nil,
+      queue: .main)
+    { _ in
+      Task.detached { @MainActor in
+        let habits = HabitRepository.shared.habits
+        HabitStorageManager.shared.saveHabits(habits, immediate: true)
+      }
+    }
+
+    // Monitor app lifecycle to save data when app terminates
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willTerminateNotification,
+      object: nil,
+      queue: .main)
+    { _ in
+      Task.detached { @MainActor in
+        let habits = HabitRepository.shared.habits
+        HabitStorageManager.shared.saveHabits(habits, immediate: true)
+      }
+    }
+
+    // Monitor app lifecycle to save data when app enters background
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification,
+      object: nil,
+      queue: .main)
+    { _ in
+      Task.detached { @MainActor in
+        let habits = HabitRepository.shared.habits
+        HabitStorageManager.shared.saveHabits(habits, immediate: true)
+      }
+    }
+
+    // Monitor app lifecycle to save data when app enters foreground
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willEnterForegroundNotification,
+      object: nil,
+      queue: .main)
+    { _ in
+      Task.detached { @MainActor in
+        let habits = HabitRepository.shared.habits
+        HabitStorageManager.shared.saveHabits(habits, immediate: true)
       }
     }
   }
+  
+  private func handleAuthStateChange(
+    oldState: AuthenticationState,
+    newState: AuthenticationState)
+  {
+    switch newState {
+    case .authenticated(let user):
+      // Load user-specific XP from SwiftData
+      // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
+      Task.detached { @MainActor in
+        let modelContext = SwiftDataContainer.shared.modelContext
+        XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
+      }
 
-  // Monitor app lifecycle to save data when app goes to background
-  NotificationCenter.default.addObserver(
-    forName: UIApplication.willResignActiveNotification,
-    object: nil,
-    queue: .main)
-  { _ in
-    Task.detached { @MainActor in
-      let habits = HabitRepository.shared.habits
-      HabitStorageManager.shared.saveHabits(habits, immediate: true)
+    case .unauthenticated:
+      // XP clearing is already handled in AuthenticationManager.signOut()
+      break
+
+    case .authenticating:
+      break
+
+    case .error(let error):
+      debugLog("❌ Authentication error: \(error)")
     }
-  }
-
-  // Monitor app lifecycle to save data when app terminates
-  NotificationCenter.default.addObserver(
-    forName: UIApplication.willTerminateNotification,
-    object: nil,
-    queue: .main)
-  { _ in
-    Task.detached { @MainActor in
-      let habits = HabitRepository.shared.habits
-      HabitStorageManager.shared.saveHabits(habits, immediate: true)
-    }
-  }
-
-  // Monitor app lifecycle to save data when app enters background
-  NotificationCenter.default.addObserver(
-    forName: UIApplication.didEnterBackgroundNotification,
-    object: nil,
-    queue: .main)
-  { _ in
-    Task.detached { @MainActor in
-      let habits = HabitRepository.shared.habits
-      HabitStorageManager.shared.saveHabits(habits, immediate: true)
-    }
-  }
-
-  // Monitor app lifecycle to save data when app enters foreground
-  NotificationCenter.default.addObserver(
-    forName: UIApplication.willEnterForegroundNotification,
-    object: nil,
-    queue: .main)
-  { _ in
-    Task.detached { @MainActor in
-      let habits = HabitRepository.shared.habits
-      HabitStorageManager.shared.saveHabits(habits, immediate: true)
-    }
-  }
-}
-
-private func handleAuthStateChange(
-  oldState: AuthenticationState,
-  newState: AuthenticationState)
-{
-  switch newState {
-  case .authenticated(let user):
-    // Load user-specific XP from SwiftData
-    // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
-    Task.detached { @MainActor in
-      let modelContext = SwiftDataContainer.shared.modelContext
-      XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
-    }
-
-  case .unauthenticated:
-    // XP clearing is already handled in AuthenticationManager.signOut()
-    break
-
-  case .authenticating:
-    break
-
-  case .error(let error):
-    debugLog("❌ Authentication error: \(error)")
   }
 }
