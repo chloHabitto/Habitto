@@ -4,6 +4,9 @@ import SwiftData
 import SwiftUI
 import FirebaseAuth
 
+// ✅ MIGRATION SYSTEM: Import migration infrastructure
+// This enables versioned schema and migration plan support
+
 // MARK: - SwiftData Container Manager
 
 @MainActor
@@ -12,24 +15,13 @@ final class SwiftDataContainer: ObservableObject {
 
   private init() {
     do {
-      // Create the model container with comprehensive entities
-      let schema = Schema([
-        HabitData.self,
-        CompletionRecord.self,
-        ProgressEvent.self, // ✅ EVENT SOURCING: Added ProgressEvent model for event sourcing
-        DailyAward.self, // ✅ PHASE 5: Added DailyAward model
-        UserProgressData.self, // ✅ PHASE 5: Added UserProgressData model
-        AchievementData.self, // ✅ PHASE 5: Added AchievementData model
-        DifficultyRecord.self,
-        UsageRecord.self,
-        HabitNote.self,
-        StorageHeader.self,
-        MigrationRecord.self,
-        MigrationState.self, // ✅ PHASE 5: Added MigrationState model
-        GlobalStreakModel.self // ✅ FIX: Added GlobalStreakModel for global streak tracking
-      ])
+      // ✅ MIGRATION SYSTEM: Use versioned schema with migration plan
+      // This ensures safe schema migrations in future updates
+      let migrationPlan = HabittoMigrationPlan.self
+      let schema = Schema(versionedSchema: HabittoSchemaV1.self)
 
-      logger.info("🔧 SwiftData: Creating model configuration...")
+      logger.info("🔧 SwiftData: Creating model configuration with migration plan...")
+      logger.info("🔧 SwiftData: Schema version: \(HabittoSchemaV1.versionIdentifier)")
       logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
 
       // ✅ CRITICAL FIX: Check for and remove corrupted database
@@ -77,10 +69,14 @@ final class SwiftDataContainer: ObservableObject {
         if !forceReset {
           // Deep corruption check: verify all critical tables exist and are accessible
           do {
-            // Create a minimal test to see if database is accessible  
-            let testContainer = try ModelContainer(for: schema, configurations: [
-              ModelConfiguration(url: databaseURL)
-            ])
+            // Create a minimal test to see if database is accessible
+            // Use migration plan for test container to match production setup
+            let testContainer = try ModelContainer(
+              for: schema,
+              migrationPlan: migrationPlan,
+              configurations: [
+                ModelConfiguration(url: databaseURL)
+              ])
             let testContext = ModelContext(testContainer)
             
             logger.info("🔧 SwiftData: Performing deep integrity check on all tables...")
@@ -209,7 +205,10 @@ final class SwiftDataContainer: ObservableObject {
         // Create a dummy in-memory container to satisfy the non-optional property
         // This container won't actually be used - all operations will fall back to UserDefaults
         let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        self.modelContainer = try ModelContainer(for: schema, configurations: [inMemoryConfig])
+        self.modelContainer = try ModelContainer(
+          for: schema,
+          migrationPlan: migrationPlan,
+          configurations: [inMemoryConfig])
         self.modelContext = ModelContext(modelContainer)
         
         logger.info("✅ SwiftData: Created temporary in-memory container (fallback mode)")
@@ -224,9 +223,10 @@ final class SwiftDataContainer: ObservableObject {
         isStoredInMemoryOnly: false,
         cloudKitDatabase: .none)  // Disable automatic CloudKit sync
 
-      logger.info("🔧 SwiftData: Creating ModelContainer (CloudKit sync: DISABLED)...")
+      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: DISABLED)...")
       self.modelContainer = try ModelContainer(
         for: schema,
+        migrationPlan: migrationPlan,
         configurations: [modelConfiguration])
 
       logger.info("🔧 SwiftData: Creating ModelContext...")
@@ -458,21 +458,9 @@ final class SwiftDataContainer: ObservableObject {
     // First, clean up the corrupted database
     resetCorruptedDatabase()
 
-    // Create a new schema
-    let schema = Schema([
-      HabitData.self,
-      CompletionRecord.self,
-      ProgressEvent.self,
-      DailyAward.self,
-      UserProgressData.self,
-      AchievementData.self,
-      DifficultyRecord.self,
-      UsageRecord.self,
-      HabitNote.self,
-      StorageHeader.self,
-      MigrationRecord.self,
-      MigrationState.self
-    ])
+    // ✅ MIGRATION SYSTEM: Use versioned schema with migration plan
+    let migrationPlan = HabittoMigrationPlan.self
+    let schema = Schema(versionedSchema: HabittoSchemaV1.self)
 
     do {
       // Create new model configuration (explicitly disable CloudKit)
@@ -484,6 +472,7 @@ final class SwiftDataContainer: ObservableObject {
       // ✅ FIX: Use _ to indicate intentionally unused value
       _ = try ModelContainer(
         for: schema,
+        migrationPlan: migrationPlan,
         configurations: [modelConfiguration])
 
       // Replace the existing container and context
