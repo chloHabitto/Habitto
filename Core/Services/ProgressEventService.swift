@@ -238,10 +238,22 @@ final class ProgressEventService {
                 return result
             }
             
-            // No events exist, fall back to legacy completionHistory
-            // This handles habits that haven't been migrated yet or don't have events
+            // No events exist, fall back to CompletionRecord.progress (source of truth)
+            // ✅ FIX: Query CompletionRecord directly instead of using legacyProgress
+            // This ensures we use actual progress values even if completionHistory is empty
+            let completionRecordPredicate = #Predicate<CompletionRecord> { record in
+                record.habitId == habitId && record.dateKey == dateKey
+            }
+            let completionRecordDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionRecordPredicate)
+            if let completionRecord = try? modelContext.fetch(completionRecordDescriptor).first {
+                let progress = Int(completionRecord.progress)
+                logger.info("⚠️ calculateProgressFromEvents: No events found, using CompletionRecord.progress: \(progress)")
+                return (progress, completionRecord.isCompleted)
+            }
+            
+            // Final fallback to legacy completionHistory
             let progress = legacyProgress ?? 0
-            logger.info("⚠️ calculateProgressFromEvents: No events found, falling back to legacy progress: \(progress)")
+            logger.info("⚠️ calculateProgressFromEvents: No events or CompletionRecord found, falling back to legacy progress: \(progress)")
             return (progress, progress >= goalAmount)
             
         } catch {
