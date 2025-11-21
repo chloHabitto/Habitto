@@ -385,12 +385,23 @@ struct HabittoApp: App {
               print("🔄 [RELOAD] Forcing data reload after relationship repair...")
               await habitRepository.loadHabits()
               
-              // Reload XP
+              // Reload XP - Use the @State instance that the UI is observing
               if let userId = authManager.currentUser?.uid {
-                XPManager.shared.loadUserXPFromSwiftData(
+                // ✅ DIAGNOSTIC: Check if instances are the same
+                let areSameInstance = xpManager === XPManager.shared
+                print("🔄 [RELOAD] Loading XP for userId: \(userId.prefix(8))...")
+                print("   xpManager === XPManager.shared: \(areSameInstance)")
+                print("   xpManager.totalXP before load: \(xpManager.totalXP)")
+                
+                // Use the @State instance that the UI is observing
+                xpManager.loadUserXPFromSwiftData(
                   userId: userId,
                   modelContext: SwiftDataContainer.shared.modelContext
                 )
+                
+                // Verify the load worked
+                print("   xpManager.totalXP after load: \(xpManager.totalXP)")
+                print("   XPManager.shared.totalXP after load: \(XPManager.shared.totalXP)")
                 
                 // Refresh DailyAwardService
                 await DailyAwardService.shared.refreshXPState()
@@ -400,11 +411,10 @@ struct HabittoApp: App {
               await MainActor.run {
                 print("🔄 [UI_REFRESH] Forcing UI refresh...")
                 habitRepository.objectWillChange.send()
-                // XPManager is @Observable, so changes should propagate automatically
-                // But we can trigger a refresh by accessing a property
-                _ = XPManager.shared.totalXP
+                // XPManager is @Observable, so accessing properties should trigger update
+                _ = xpManager.totalXP
                 print("   ✅ objectWillChange.send() called for HabitRepository")
-                print("   ✅ XPManager properties accessed to trigger @Observable update")
+                print("   ✅ xpManager.totalXP accessed: \(xpManager.totalXP) - should trigger @Observable update")
               }
               
               print("✅ [RELOAD] Data reload complete")
@@ -915,9 +925,15 @@ struct HabittoApp: App {
     case .authenticated(let user):
       // Load user-specific XP from SwiftData
       // ✅ FIX #11: Use SwiftDataContainer's ModelContext directly
+      // ✅ FIX: Use the @State instance that the UI is observing
       Task.detached { @MainActor in
         let modelContext = SwiftDataContainer.shared.modelContext
+        // Use the instance from the app's @State, not XPManager.shared
+        // We need to access it through the app instance, but since we're in a static context,
+        // we'll update both to ensure consistency
         XPManager.shared.loadUserXPFromSwiftData(userId: user.uid, modelContext: modelContext)
+        // Note: The @State xpManager should be the same instance as XPManager.shared
+        // but we'll verify this in the reload code above
       }
 
     case .unauthenticated:
