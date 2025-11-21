@@ -369,6 +369,15 @@ struct HabittoApp: App {
               } else {
                 print("ℹ️ [REPAIR] Relationship repair already completed - skipping")
               }
+              
+              // ✅ RESTORE - Try to restore progress from Firestore if CompletionRecords have progress=0
+              let restoreKey = "progressRestoredFromFirestore_\(authManager.currentUser?.uid ?? "guest")"
+              if !UserDefaults.standard.bool(forKey: restoreKey) {
+                await restoreProgressFromFirestore()
+                UserDefaults.standard.set(true, forKey: restoreKey)
+              } else {
+                print("ℹ️ [RESTORE] Progress restoration already attempted - skipping")
+              }
             }
             
             setupCoreData()
@@ -1096,6 +1105,142 @@ struct HabittoApp: App {
     print("\n" + String(repeating: "=", count: 80))
     print("📊 DIAGNOSIS COMPLETE")
     print(String(repeating: "=", count: 80))
+  }
+  
+  /// Restore progress data from Firestore backups
+  /// This repairs CompletionRecords that have progress=0 by restoring from Firestore
+  @MainActor
+  private func restoreProgressFromFirestore() async {
+    print("🔧 [RESTORE] Starting progress restoration from Firestore...")
+    
+    guard let userId = authManager.currentUser?.uid else {
+      print("⚠️ [RESTORE] No authenticated user - cannot restore from Firestore")
+      return
+    }
+    
+    guard FirebaseApp.app() != nil else {
+      print("⚠️ [RESTORE] Firebase not configured - cannot restore from Firestore")
+      return
+    }
+    
+    do {
+      // Fetch habits from Firestore
+      print("🔧 [RESTORE] Fetching habits from Firestore...")
+      try await FirestoreService.shared.fetchHabits()
+      let firestoreHabits = FirestoreService.shared.habits
+      
+      if firestoreHabits.isEmpty {
+        print("ℹ️ [RESTORE] No habits found in Firestore - nothing to restore")
+        print("   💡 If you had progress data, it may have been lost during migration")
+        print("   💡 CompletionRecords exist but all have progress=0")
+        return
+      }
+      
+      print("✅ [RESTORE] Found \(firestoreHabits.count) habits in Firestore")
+      
+      let context = SwiftDataContainer.shared.modelContext
+      var totalRestored = 0
+      var totalSkipped = 0
+      
+      // For each habit from Firestore, restore progress to CompletionRecords
+      for firestoreHabit in firestoreHabits {
+        // Find the corresponding HabitData in SwiftData
+        let habitId = firestoreHabit.id
+        let habitPredicate = #Predicate<HabitData> { habit in
+          habit.id == habitId && habit.userId == userId
+        }
+        let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+        
+        guard let habitData = try? context.fetch(habitDescriptor).first else {
+          print("⚠️ [RESTORE] Habit '\(firestoreHabit.name)' not found in SwiftData - skipping")
+          continue
+        }
+        
+        print("🔧 [RESTORE] Processing habit '\(firestoreHabit.name)' - \(firestoreHabit.completionHistory.count) entries in Firestore")
+        
+        // Restore progress from Firestore completionHistory
+        for (dateKey, progress) in firestoreHabit.completionHistory {
+          guard progress > 0 else {
+            totalSkipped += 1
+            continue // Skip 0 progress entries
+          }
+          
+          // Find or create CompletionRecord
+          // ✅ FIX: Capture habitId in a local variable to avoid predicate cross-reference issues
+          let recordHabitId = habitData.id
+          let recordPredicate = #Predicate<CompletionRecord> { record in
+            record.habitId == recordHabitId && record.dateKey == dateKey && record.userId == userId
+          }
+          let recordDescriptor = FetchDescriptor<CompletionRecord>(predicate: recordPredicate)
+          
+          if let record = try? context.fetch(recordDescriptor).first {
+            // Update existing record if progress is 0
+            if record.progress == 0 && progress > 0 {
+              record.progress = progress
+              // Parse goal amount from goal string
+              let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+              record.isCompleted = progress >= goalAmount
+              totalRestored += 1
+              print("✅ [RESTORE] Restored progress for '\(firestoreHabit.name)' on \(dateKey): \(progress) (goal: \(goalAmount), completed: \(record.isCompleted))")
+            } else if record.progress > 0 {
+              print("ℹ️ [RESTORE] Record for '\(firestoreHabit.name)' on \(dateKey) already has progress=\(record.progress) - skipping")
+            }
+          } else {
+            // Create new record if it doesn't exist
+            if let date = DateUtils.date(from: dateKey) {
+              // Parse goal amount from goal string
+              let goalAmount = StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+              let isCompleted = progress >= goalAmount
+              
+              let record = CompletionRecord(
+                userId: userId,
+                habitId: habitData.id,
+                date: date,
+                dateKey: dateKey,
+                isCompleted: isCompleted,
+                progress: progress
+              )
+              context.insert(record)
+              habitData.completionHistory.append(record)
+              totalRestored += 1
+              print("✅ [RESTORE] Created CompletionRecord for '\(firestoreHabit.name)' on \(dateKey): \(progress) (goal: \(goalAmount), completed: \(isCompleted))")
+            } else {
+              print("⚠️ [RESTORE] Failed to parse dateKey '\(dateKey)' for habit '\(firestoreHabit.name)'")
+            }
+          }
+        }
+      }
+      
+      // Save all changes
+      if totalRestored > 0 {
+        try context.save()
+        print("✅ [RESTORE] Successfully restored \(totalRestored) completion records from Firestore")
+        print("   Skipped \(totalSkipped) entries (progress=0 or already restored)")
+        
+        // Force reload habits to show restored progress
+        await habitRepository.loadHabits()
+        
+        // Reload XP after restoring progress
+        if let userId = authManager.currentUser?.uid {
+          xpManager.loadUserXPFromSwiftData(
+            userId: userId,
+            modelContext: SwiftDataContainer.shared.modelContext
+          )
+          await DailyAwardService.shared.refreshXPState()
+        }
+        
+        print("✅ [RESTORE] Habits and XP reloaded - restored progress should now be visible")
+      } else {
+        print("ℹ️ [RESTORE] No progress data to restore")
+        print("   💡 All CompletionRecords already have progress > 0, or Firestore has no progress data")
+        print("   💡 If your progress is still missing, the data may have been lost during migration")
+      }
+      
+    } catch {
+      print("❌ [RESTORE] Failed to restore from Firestore: \(error.localizedDescription)")
+      print("   Error details: \(error)")
+      print("   💡 Your progress data may be lost if it wasn't backed up to Firestore")
+    }
   }
   
   /// Repair broken CompletionRecord relationships
