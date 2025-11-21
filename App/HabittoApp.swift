@@ -381,6 +381,12 @@ struct HabittoApp: App {
               Task.detached(priority: .background) { @MainActor in
                 await performXPIntegrityCheck()
               }
+              
+              // ✅ PRIORITY 3: Run CompletionRecord reconciliation after XP check
+              // This ensures CompletionRecord.progress matches ProgressEvents (source of truth)
+              Task.detached(priority: .background) { @MainActor in
+                await performCompletionRecordReconciliation()
+              }
             }
             
             // Defer heavy work until after the first frame renders
@@ -487,6 +493,56 @@ struct HabittoApp: App {
     }
     
     logger.info("✅ XP Integrity Check: Completed")
+  }
+  
+  /// Perform CompletionRecord reconciliation on app launch
+  ///
+  /// ✅ PRIORITY 3: Ensures CompletionRecord.progress matches ProgressEvents.
+  /// Runs in background to avoid blocking app startup.
+  @MainActor
+  private func performCompletionRecordReconciliation() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "CompletionRecordReconciliation")
+    
+    logger.info("🔧 CompletionRecord Reconciliation: Starting automatic reconciliation on app launch...")
+    
+    // Prevent multiple simultaneous reconciliations
+    struct ReconciliationLock {
+      static var isRunning = false
+    }
+    
+    guard !ReconciliationLock.isRunning else {
+      logger.info("⏭️ CompletionRecord Reconciliation: Already running, skipping duplicate reconciliation")
+      return
+    }
+    
+    ReconciliationLock.isRunning = true
+    defer { ReconciliationLock.isRunning = false }
+    
+    do {
+      let result = try await DailyAwardService.shared.reconcileCompletionRecords()
+      
+      if result.mismatchesFixed > 0 {
+        logger.info("✅ CompletionRecord Reconciliation: Fixed \(result.mismatchesFixed) mismatches")
+        logger.info("   Total checked: \(result.totalRecords), Mismatches found: \(result.mismatchesFound), Errors: \(result.errors)")
+      } else {
+        logger.info("✅ CompletionRecord Reconciliation: All records are consistent (no repairs needed)")
+        logger.info("   Total checked: \(result.totalRecords), Errors: \(result.errors)")
+      }
+      
+    } catch {
+      // Handle errors gracefully - don't crash app
+      logger.error("❌ CompletionRecord Reconciliation: Failed to reconcile: \(error.localizedDescription)")
+      logger.error("   Error details: \(error)")
+      
+      // Log error to Crashlytics for monitoring (if available)
+      #if canImport(FirebaseCrashlytics)
+      Crashlytics.crashlytics().record(error: error)
+      #endif
+      
+      // Continue app launch even if reconciliation fails
+    }
+    
+    logger.info("✅ CompletionRecord Reconciliation: Completed")
   }
 }
 

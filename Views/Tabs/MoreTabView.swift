@@ -126,6 +126,11 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingSubscriptionView) {
         SubscriptionView()
       }
+      .alert("Data Repair", isPresented: $showingRepairAlert) {
+        Button("OK", role: .cancel) { }
+      } message: {
+        Text(repairMessage)
+      }
       #if DEBUG
       .sheet(isPresented: $showingSyncHealth) {
         SyncHealthView()
@@ -185,6 +190,9 @@ struct MoreTabView: View {
   @State private var showingSignOutAlert = false
   @State private var showingMigrationStatus = false
   @State private var showingSubscriptionView = false
+  @State private var showingRepairAlert = false
+  @State private var repairMessage = ""
+  @State private var isRepairing = false
   
   // ✅ DEBUG: Habit Investigation
   #if DEBUG
@@ -282,6 +290,9 @@ struct MoreTabView: View {
         items: [
           SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
             showingDataPrivacy = true
+          }),
+          SettingItem(title: "Repair Data", value: nil, hasChevron: false, action: {
+            performDataRepair()
           }),
           syncStatusItem
         ])
@@ -801,6 +812,59 @@ struct MoreTabView: View {
     case .error(let error):
       let errorMessage = error.localizedDescription
       return ("Sync Status", "Error: \(errorMessage)", nil)
+    }
+  }
+  
+  // MARK: - Data Repair
+  
+  /// Perform manual data repair (XP integrity + CompletionRecord reconciliation)
+  private func performDataRepair() {
+    guard !isRepairing else { return }
+    
+    isRepairing = true
+    repairMessage = "Repairing data... Please wait."
+    showingRepairAlert = true
+    
+    Task { @MainActor in
+      var messages: [String] = []
+      
+      // 1. XP Integrity Check
+      do {
+        let awardService = DailyAwardService.shared
+        let xpStateBefore = awardService.xpState?.totalXP ?? 0
+        
+        let wasValid = try await awardService.checkAndRepairIntegrity()
+        
+        let xpStateAfter = awardService.xpState?.totalXP ?? 0
+        
+        if xpStateBefore != xpStateAfter {
+          messages.append("✅ XP Integrity: Fixed mismatch (\(xpStateBefore) → \(xpStateAfter) XP)")
+        } else {
+          messages.append("✅ XP Integrity: No issues found")
+        }
+      } catch {
+        messages.append("❌ XP Integrity: Failed - \(error.localizedDescription)")
+      }
+      
+      // 2. CompletionRecord Reconciliation
+      do {
+        let result = try await DailyAwardService.shared.reconcileCompletionRecords()
+        
+        if result.mismatchesFixed > 0 {
+          messages.append("✅ Completion Records: Fixed \(result.mismatchesFixed) mismatches out of \(result.totalRecords) checked")
+        } else {
+          messages.append("✅ Completion Records: All \(result.totalRecords) records are consistent")
+        }
+        
+        if result.errors > 0 {
+          messages.append("⚠️ Completion Records: \(result.errors) errors encountered")
+        }
+      } catch {
+        messages.append("❌ Completion Records: Failed - \(error.localizedDescription)")
+      }
+      
+      repairMessage = messages.joined(separator: "\n\n")
+      isRepairing = false
     }
   }
   
