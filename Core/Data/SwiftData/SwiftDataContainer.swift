@@ -202,15 +202,19 @@ final class SwiftDataContainer: ObservableObject {
         return // Skip normal database creation
       }
 
-      // ✅ iCLOUD SYNC: Enable automatic CloudKit sync via SwiftData
-      // This provides seamless cross-device sync without requiring sign-in
-      // iCloud automatically handles user scoping and data isolation
+      // ⚠️ CLOUDKIT SYNC: Disabled until models are CloudKit-compliant
+      // CloudKit requires:
+      // 1. All relationships must have inverses (missing: notes, usageHistory, achievements)
+      // 2. All attributes must be optional or have default values
+      // 3. All relationships must be optional
+      // 4. No unique constraints (@Attribute(.unique) not supported)
+      // TODO: Refactor models to be CloudKit-compliant, then enable cloudKitDatabase: .automatic
       let modelConfiguration = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: false,
-        cloudKitDatabase: .automatic)  // Enable automatic CloudKit/iCloud sync
+        cloudKitDatabase: .none)  // Disabled - models need refactoring for CloudKit
 
-      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: ENABLED)...")
+      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: DISABLED - models need refactoring)...")
       self.modelContainer = try ModelContainer(
         for: schema,
         migrationPlan: migrationPlan,
@@ -450,11 +454,11 @@ final class SwiftDataContainer: ObservableObject {
     let schema = Schema(versionedSchema: HabittoSchemaV1.self)
 
     do {
-      // Create new model configuration (enable CloudKit for iCloud sync)
+      // Create new model configuration (CloudKit disabled until models are compliant)
       let modelConfiguration = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: false,
-        cloudKitDatabase: .automatic)  // Enable automatic CloudKit/iCloud sync
+        cloudKitDatabase: .none)  // Disabled - models need refactoring for CloudKit
 
       // ✅ FIX: Use _ to indicate intentionally unused value
       _ = try ModelContainer(
