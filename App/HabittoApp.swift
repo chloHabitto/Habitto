@@ -1000,6 +1000,13 @@ struct HabittoApp: App {
       for (userId, records) in recordsByUserId.sorted(by: { $0.key < $1.key }) {
         let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
         print("   userId '\(userIdDisplay)': \(records.count) records")
+        // ✅ CRITICAL: Show actual progress values to diagnose why habits show 0 progress
+        for record in records.prefix(10) {
+          print("      - \(record.dateKey): progress=\(record.progress), isCompleted=\(record.isCompleted), habitId=\(record.habitId.uuidString.prefix(8))...")
+        }
+        if records.count > 10 {
+          print("      ... and \(records.count - 10) more records")
+        }
       }
       
       // 3. Check if records are linked to habits via relationship
