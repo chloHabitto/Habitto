@@ -251,33 +251,52 @@ class XPManager {
 
       // Calculate total XP from all awards
       let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+      
+      print("🔧 [XP_SET] Calculated totalXP from awards: \(totalXP)")
+      print("🔧 [XP_SET] self.totalXP BEFORE setting: \(self.totalXP)")
 
       // Update XPManager with the calculated XP
-      // ✅ Update @Published properties directly (triggers instant UI update)
+      // ✅ Update @Observable properties directly (triggers instant UI update)
+      print("🔧 [XP_SET] About to set self.totalXP = \(totalXP)")
       self.totalXP = totalXP
+      print("🔧 [XP_SET] self.totalXP AFTER setting: \(self.totalXP)")
+      
+      print("🔧 [XP_SET] About to set self.dailyXP = 0")
       self.dailyXP = 0
+      print("🔧 [XP_SET] self.dailyXP AFTER setting: \(self.dailyXP)")
       
       // Keep userProgress in sync
+      print("🔧 [XP_SET] About to update userProgress")
       var updatedProgress = userProgress
+      print("🔧 [XP_SET] userProgress.totalXP BEFORE: \(updatedProgress.totalXP)")
       updatedProgress.totalXP = totalXP
       updatedProgress.dailyXP = 0 // Reset daily XP
+      print("🔧 [XP_SET] userProgress.totalXP AFTER: \(updatedProgress.totalXP)")
       userProgress = updatedProgress
+      print("🔧 [XP_SET] self.userProgress.totalXP AFTER assignment: \(self.userProgress.totalXP)")
 
       // Recalculate level based on total XP
+      print("🔧 [XP_SET] About to call updateLevelFromXP()")
+      let levelBefore = self.currentLevel
       updateLevelFromXP()
+      print("🔧 [XP_SET] Level BEFORE: \(levelBefore), AFTER: \(self.currentLevel)")
 
       // Save to UserDefaults
+      print("🔧 [XP_SET] About to save to UserDefaults")
       saveUserProgress()
+      print("🔧 [XP_SET] Save complete")
       
       print("✅ [XP_LOAD] Loaded XP successfully: Total=\(totalXP), Level=\(userProgress.currentLevel), Daily=\(userProgress.dailyXP)")
       
       // ✅ DIAGNOSTIC: Log what XPManager actually has after loading
       print("🎯 [UI_STATE] XPManager after load:")
       print("   self.totalXP: \(self.totalXP)")
+      print("   self.dailyXP: \(self.dailyXP)")
+      print("   self.currentLevel: \(self.currentLevel)")
       print("   self.userProgress.totalXP: \(self.userProgress.totalXP)")
       print("   self.userProgress.currentLevel: \(self.userProgress.currentLevel)")
       print("   self.userProgress.streakDays: \(self.userProgress.streakDays)")
-      print("   ✅ @Published properties updated - UI should update")
+      print("   ✅ @Observable properties updated - UI should update")
 
     } catch {
       print("❌ [XP_LOAD] Error loading user XP from SwiftData: \(error.localizedDescription)")
@@ -731,6 +750,16 @@ class XPManager {
   }
   
   private func applyXPState(_ state: XPState) {
+    print("🔧 [APPLY_STATE] applyXPState called with: totalXP=\(state.totalXP), level=\(state.level)")
+    print("🔧 [APPLY_STATE] self.totalXP BEFORE apply: \(self.totalXP)")
+    
+    // ✅ FIX: Only apply state if it has valid XP (not 0 or negative)
+    // This prevents the observer from overwriting loaded XP with 0
+    guard state.totalXP > 0 || self.totalXP == 0 else {
+      print("⚠️ [APPLY_STATE] Skipping apply - state has 0 XP but current XP is \(self.totalXP)")
+      return
+    }
+    
     totalXP = state.totalXP
     currentLevel = max(1, state.level)
     
@@ -742,5 +771,7 @@ class XPManager {
     
     updateLevelProgress()
     saveUserProgress()
+    
+    print("🔧 [APPLY_STATE] self.totalXP AFTER apply: \(self.totalXP)")
   }
 }
