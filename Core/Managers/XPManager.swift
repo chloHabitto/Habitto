@@ -205,13 +205,49 @@ class XPManager {
 
   /// Load user-specific XP from SwiftData (call this from a view with ModelContext)
   func loadUserXPFromSwiftData(userId: String, modelContext: ModelContext) {
+    print("🔍 [XP_LOAD] Loading XP for userId: \(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...")
+    
     do {
+      // ✅ DIAGNOSTIC: Query ALL DailyAwards first to see what exists
+      let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+      let allAwards = try modelContext.fetch(allAwardsDescriptor)
+      print("🔍 [XP_LOAD] Total DailyAwards in database: \(allAwards.count)")
+      
+      // Group by userId
+      let awardsByUserId = Dictionary(grouping: allAwards) { $0.userId }
+      for (awardUserId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
+        let userIdDisplay = awardUserId.isEmpty ? "EMPTY STRING" : "\(awardUserId.prefix(8))..."
+        let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+        print("   DailyAwards with userId '\(userIdDisplay)': \(awards.count) awards, Total XP: \(totalXP)")
+      }
+      
       // Query all DailyAward records for this user
       let predicate = #Predicate<DailyAward> { award in
         award.userId == userId
       }
       let request = FetchDescriptor<DailyAward>(predicate: predicate)
       let awards = try modelContext.fetch(request)
+      
+      print("🔍 [XP_LOAD] Predicate query (userId='\(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...') returned: \(awards.count) awards")
+
+      // ✅ FALLBACK: If predicate returns 0 but we have awards with this userId, use code filter
+      if awards.isEmpty && !allAwards.isEmpty {
+        let filtered = allAwards.filter { $0.userId == userId }
+        if !filtered.isEmpty {
+          print("⚠️ [XP_LOAD] Predicate returned 0, but found \(filtered.count) awards with code filter - using filtered results")
+          let totalXP = filtered.reduce(0) { $0 + $1.xpGranted }
+          self.totalXP = totalXP
+          self.dailyXP = 0
+          var updatedProgress = userProgress
+          updatedProgress.totalXP = totalXP
+          updatedProgress.dailyXP = 0
+          userProgress = updatedProgress
+          updateLevelFromXP()
+          saveUserProgress()
+          print("✅ [XP_LOAD] Loaded XP from filtered awards: Total=\(totalXP), Level=\(userProgress.currentLevel)")
+          return
+        }
+      }
 
       // Calculate total XP from all awards
       let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
@@ -232,9 +268,11 @@ class XPManager {
 
       // Save to UserDefaults
       saveUserProgress()
+      
+      print("✅ [XP_LOAD] Loaded XP successfully: Total=\(totalXP), Level=\(userProgress.currentLevel), Daily=\(userProgress.dailyXP)")
 
     } catch {
-      print("❌ Error loading user XP from SwiftData: \(error)")
+      print("❌ [XP_LOAD] Error loading user XP from SwiftData: \(error.localizedDescription)")
     }
   }
 

@@ -490,6 +490,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
           "Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
       
       // ✅ DIAGNOSTIC: Log detailed information about loaded habits
+      print("🔍 [HABIT_LOAD] Loading habits for userId: \(currentUserId ?? "nil (guest)")")
+      print("🔍 [HABIT_LOAD] Found \(habits.count) habits")
+      
       if habits.isEmpty {
         print("⚠️ [HABIT_LOAD] No habits found for userId: \(currentUserId ?? "guest")")
         // Check if habits exist with different userIds
@@ -498,6 +501,26 @@ final class SwiftDataStorage: HabitStorageProtocol {
         print("✅ [HABIT_LOAD] Loaded \(habits.count) habits successfully")
         print("   User ID: \(currentUserId ?? "guest")")
         print("   Habit names: \(habits.map { $0.name }.joined(separator: ", "))")
+        
+        // ✅ DIAGNOSTIC: Log completion records per habit
+        for habit in habits {
+          let completions = habit.completionHistory.count
+          let completionStatusCount = habit.completionStatus.count
+          let todayKey = DateUtils.dateKey(for: Date())
+          let isCompletedToday = habit.completionStatus[todayKey] ?? false
+          let todayProgress = habit.completionHistory[todayKey] ?? 0
+          
+          print("   🔍 Habit: '\(habit.name)'")
+          print("      Completion Records: \(completions)")
+          print("      Completion Status entries: \(completionStatusCount)")
+          print("      Today completed: \(isCompletedToday), progress: \(todayProgress)")
+          
+          // Show recent completion dates
+          let recentDates = Array(habit.completionHistory.keys.sorted().suffix(5))
+          if !recentDates.isEmpty {
+            print("      Recent completion dates: \(recentDates.joined(separator: ", "))")
+          }
+        }
       }
 
       return habits
