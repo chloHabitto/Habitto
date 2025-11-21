@@ -111,10 +111,19 @@ class FirebaseBackupService {
       print("   User ID: \(userId.prefix(8))...")
       logger.info("✅ FirebaseBackupService: Backed up habit '\(habit.name)' to Firestore")
     } catch {
+      // ✅ IMPROVED: Better error handling for permission errors
+      let errorDesc = error.localizedDescription.lowercased()
+      if errorDesc.contains("permission") || errorDesc.contains("insufficient") {
+        print("⚠️ [CLOUD_BACKUP] Permission denied - Firestore security rules need configuration")
+        print("   Habit: '\(habit.name)'")
+        print("   💡 See FIREBASE_SECURITY_RULES.md for setup instructions")
+        logger.warning("⚠️ FirebaseBackupService: Permission denied for habit '\(habit.name)' - check Firestore security rules")
+      } else {
+        print("⚠️ [CLOUD_BACKUP] Habit backup failed: \(error.localizedDescription)")
+        print("   Habit: '\(habit.name)'")
+        logger.warning("⚠️ FirebaseBackupService: Failed to backup habit '\(habit.name)': \(error.localizedDescription)")
+      }
       // Fail silently - don't interrupt user experience
-      print("⚠️ [CLOUD_BACKUP] Habit backup failed: \(error.localizedDescription)")
-      print("   Habit: '\(habit.name)'")
-      logger.warning("⚠️ FirebaseBackupService: Failed to backup habit '\(habit.name)': \(error.localizedDescription)")
     }
   }
 
@@ -168,9 +177,15 @@ class FirebaseBackupService {
       print("   Completed: \(isCompleted)")
       logger.debug("✅ FirebaseBackupService: Backed up completion record for habit \(habitId.uuidString.prefix(8))... on \(dateKey)")
     } catch {
-      print("⚠️ [CLOUD_BACKUP] Completion backup failed: \(error.localizedDescription)")
-      print("   Habit ID: \(habitId.uuidString.prefix(8))..., Date: \(dateKey)")
-      logger.warning("⚠️ FirebaseBackupService: Failed to backup completion record: \(error.localizedDescription)")
+      // ✅ IMPROVED: Better error handling for permission errors
+      let errorDesc = error.localizedDescription.lowercased()
+      if errorDesc.contains("permission") || errorDesc.contains("insufficient") {
+        logger.debug("⚠️ FirebaseBackupService: Permission denied for completion record - check Firestore security rules")
+      } else {
+        print("⚠️ [CLOUD_BACKUP] Completion backup failed: \(error.localizedDescription)")
+        print("   Habit ID: \(habitId.uuidString.prefix(8))..., Date: \(dateKey)")
+        logger.warning("⚠️ FirebaseBackupService: Failed to backup completion record: \(error.localizedDescription)")
+      }
     }
   }
 
@@ -209,9 +224,15 @@ class FirebaseBackupService {
       print("   All Habits Completed: \(allHabitsCompleted)")
       logger.debug("✅ FirebaseBackupService: Backed up daily award for \(dateKey)")
     } catch {
-      print("⚠️ [CLOUD_BACKUP] Daily award backup failed: \(error.localizedDescription)")
-      print("   Date: \(dateKey)")
-      logger.warning("⚠️ FirebaseBackupService: Failed to backup daily award: \(error.localizedDescription)")
+      // ✅ IMPROVED: Better error handling for permission errors
+      let errorDesc = error.localizedDescription.lowercased()
+      if errorDesc.contains("permission") || errorDesc.contains("insufficient") {
+        logger.debug("⚠️ FirebaseBackupService: Permission denied for daily award - check Firestore security rules")
+      } else {
+        print("⚠️ [CLOUD_BACKUP] Daily award backup failed: \(error.localizedDescription)")
+        print("   Date: \(dateKey)")
+        logger.warning("⚠️ FirebaseBackupService: Failed to backup daily award: \(error.localizedDescription)")
+      }
     }
   }
 
