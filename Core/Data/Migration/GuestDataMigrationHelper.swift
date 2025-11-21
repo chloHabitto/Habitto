@@ -76,12 +76,27 @@ final class GuestDataMigrationHelper {
       }
       
       // 2. Migrate ALL CompletionRecords (including standalone ones not linked via relationship)
+      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
+      let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
+      
+      // Try predicate first
       let guestCompletionRecordsDescriptor = FetchDescriptor<CompletionRecord>(
         predicate: #Predicate<CompletionRecord> { record in
           record.userId == ""
         }
       )
-      let guestCompletionRecords = try modelContext.fetch(guestCompletionRecordsDescriptor)
+      var guestCompletionRecords = try modelContext.fetch(guestCompletionRecordsDescriptor)
+      
+      // Fallback to code-based filtering if predicate returns 0 but we have data
+      if guestCompletionRecords.isEmpty && !allCompletions.isEmpty {
+        let filtered = allCompletions.filter { $0.userId.isEmpty }
+        if !filtered.isEmpty {
+          print("⚠️ [GUEST_MIGRATION] Predicate returned 0, but found \(filtered.count) records with empty userId using code filter")
+          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found \(filtered.count) records")
+          guestCompletionRecords = filtered
+        }
+      }
       
       if !guestCompletionRecords.isEmpty {
         print("🔄 [GUEST_MIGRATION] Found \(guestCompletionRecords.count) guest completion records to migrate")
@@ -101,12 +116,27 @@ final class GuestDataMigrationHelper {
       }
       
       // 3. Migrate DailyAwards
+      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+      let allAwards = try modelContext.fetch(allAwardsDescriptor)
+      
+      // Try predicate first
       let guestAwardsDescriptor = FetchDescriptor<DailyAward>(
         predicate: #Predicate<DailyAward> { award in
           award.userId == ""
         }
       )
-      let guestAwards = try modelContext.fetch(guestAwardsDescriptor)
+      var guestAwards = try modelContext.fetch(guestAwardsDescriptor)
+      
+      // Fallback to code-based filtering if predicate returns 0 but we have data
+      if guestAwards.isEmpty && !allAwards.isEmpty {
+        let filtered = allAwards.filter { $0.userId.isEmpty }
+        if !filtered.isEmpty {
+          print("⚠️ [GUEST_MIGRATION] Predicate returned 0, but found \(filtered.count) awards with empty userId using code filter")
+          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found \(filtered.count) awards")
+          guestAwards = filtered
+        }
+      }
       
       if !guestAwards.isEmpty {
         print("🔄 [GUEST_MIGRATION] Found \(guestAwards.count) guest daily awards to migrate")
@@ -128,12 +158,27 @@ final class GuestDataMigrationHelper {
       }
       
       // 4. Migrate UserProgressData
+      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      let allProgressDescriptor = FetchDescriptor<UserProgressData>()
+      let allProgress = try modelContext.fetch(allProgressDescriptor)
+      
+      // Try predicate first
       let guestProgressDescriptor = FetchDescriptor<UserProgressData>(
         predicate: #Predicate<UserProgressData> { progress in
           progress.userId == ""
         }
       )
-      let guestProgress = try modelContext.fetch(guestProgressDescriptor).first
+      var guestProgress = try modelContext.fetch(guestProgressDescriptor).first
+      
+      // Fallback to code-based filtering if predicate returns nil but we have data
+      if guestProgress == nil && !allProgress.isEmpty {
+        let filtered = allProgress.filter { $0.userId.isEmpty }
+        if let first = filtered.first {
+          print("⚠️ [GUEST_MIGRATION] Predicate returned nil, but found progress with empty userId using code filter")
+          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found progress data")
+          guestProgress = first
+        }
+      }
       
       if let progress = guestProgress {
         print("🔄 [GUEST_MIGRATION] Found user progress to migrate")

@@ -595,11 +595,77 @@ struct HabittoApp: App {
       return
     }
     
-    // ✅ DIAGNOSTIC: Check for guest data BEFORE migration
+    // ✅ DIAGNOSTIC: Check ALL data in database BEFORE migration
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
       
-      // Count guest data
+      print("🔍 [DIAGNOSTIC] Starting comprehensive data audit...")
+      logger.info("🔍 GuestMigration: Starting comprehensive data audit...")
+      
+      // Query ALL CompletionRecords regardless of userId
+      let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
+      let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
+      print("🔍 [DIAGNOSTIC] Total CompletionRecords in database: \(allCompletions.count)")
+      logger.info("🔍 GuestMigration: Total CompletionRecords: \(allCompletions.count)")
+      
+      // Group by userId
+      let completionsByUserId = Dictionary(grouping: allCompletions) { $0.userId }
+      print("🔍 [DIAGNOSTIC] CompletionRecords grouped by userId:")
+      for (userId, records) in completionsByUserId.sorted(by: { $0.key < $1.key }) {
+        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
+        print("   UserId: '\(userIdDisplay)' - \(records.count) records")
+        logger.info("   CompletionRecords - UserId: '\(userIdDisplay)': \(records.count) records")
+      }
+      
+      // Query ALL DailyAwards regardless of userId
+      let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+      let allAwards = try modelContext.fetch(allAwardsDescriptor)
+      print("🔍 [DIAGNOSTIC] Total DailyAwards in database: \(allAwards.count)")
+      logger.info("🔍 GuestMigration: Total DailyAwards: \(allAwards.count)")
+      
+      // Group by userId
+      let awardsByUserId = Dictionary(grouping: allAwards) { $0.userId }
+      print("🔍 [DIAGNOSTIC] DailyAwards grouped by userId:")
+      for (userId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
+        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
+        var totalXP = 0
+        for award in awards {
+          totalXP += award.xpGranted
+        }
+        print("   UserId: '\(userIdDisplay)' - \(awards.count) awards (Total XP: \(totalXP))")
+        logger.info("   DailyAwards - UserId: '\(userIdDisplay)': \(awards.count) awards, \(totalXP) XP")
+      }
+      
+      // Query ALL UserProgressData regardless of userId
+      let allProgressDescriptor = FetchDescriptor<UserProgressData>()
+      let allProgress = try modelContext.fetch(allProgressDescriptor)
+      print("🔍 [DIAGNOSTIC] Total UserProgressData in database: \(allProgress.count)")
+      logger.info("🔍 GuestMigration: Total UserProgressData: \(allProgress.count)")
+      
+      for progress in allProgress {
+        let userIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
+        print("   UserId: '\(userIdDisplay)' - XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
+        logger.info("   UserProgressData - UserId: '\(userIdDisplay)': XP=\(progress.xpTotal), Level=\(progress.level), Streak=\(progress.streakDays)")
+      }
+      
+      // Query ALL HabitData regardless of userId
+      let allHabitsDescriptor = FetchDescriptor<HabitData>()
+      let allHabits = try modelContext.fetch(allHabitsDescriptor)
+      print("🔍 [DIAGNOSTIC] Total HabitData in database: \(allHabits.count)")
+      logger.info("🔍 GuestMigration: Total HabitData: \(allHabits.count)")
+      
+      // Group by userId
+      let habitsByUserId = Dictionary(grouping: allHabits) { $0.userId }
+      print("🔍 [DIAGNOSTIC] HabitData grouped by userId:")
+      for (userId, habits) in habitsByUserId.sorted(by: { $0.key < $1.key }) {
+        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
+        print("   UserId: '\(userIdDisplay)' - \(habits.count) habits")
+        logger.info("   HabitData - UserId: '\(userIdDisplay)': \(habits.count) habits")
+      }
+      
+      // Now try predicate-based queries
+      print("🔍 [DIAGNOSTIC] Testing predicate-based queries for userId = \"\"...")
+      
       let guestHabitsDescriptor = FetchDescriptor<HabitData>(
         predicate: #Predicate<HabitData> { habit in
           habit.userId == ""
@@ -628,19 +694,60 @@ struct HabittoApp: App {
       )
       let guestProgress = try modelContext.fetch(guestProgressDescriptor)
       
-      print("📊 [GUEST_MIGRATION] Found guest data to migrate:")
+      print("📊 [GUEST_MIGRATION] Predicate query results (userId = \"\"):")
       print("   Guest Habits: \(guestHabits.count)")
       print("   Guest Completion Records: \(guestCompletionRecords.count)")
       print("   Guest Daily Awards: \(guestAwards.count)")
       print("   Guest User Progress: \(guestProgress.count)")
-      logger.info("📊 GuestMigration: Found \(guestHabits.count) habits, \(guestCompletionRecords.count) completions, \(guestAwards.count) awards, \(guestProgress.count) progress records")
+      logger.info("📊 GuestMigration: Predicate results - \(guestHabits.count) habits, \(guestCompletionRecords.count) completions, \(guestAwards.count) awards, \(guestProgress.count) progress")
+      
+      // ✅ FALLBACK: Use code-based filtering if predicate returns 0 but we know data exists
+      let guestCompletionsFiltered = allCompletions.filter { $0.userId.isEmpty }
+      let guestAwardsFiltered = allAwards.filter { $0.userId.isEmpty }
+      let guestProgressFiltered = allProgress.filter { $0.userId.isEmpty }
+      let guestHabitsFiltered = allHabits.filter { $0.userId.isEmpty }
+      
+      if guestCompletionsFiltered.count != guestCompletionRecords.count ||
+         guestAwardsFiltered.count != guestAwards.count ||
+         guestProgressFiltered.count != guestProgress.count ||
+         guestHabitsFiltered.count != guestHabits.count {
+        print("⚠️ [DIAGNOSTIC] PREDICATE MISMATCH DETECTED!")
+        print("   Predicate vs Filtered results:")
+        print("   Completions: \(guestCompletionRecords.count) (predicate) vs \(guestCompletionsFiltered.count) (filtered)")
+        print("   Awards: \(guestAwards.count) (predicate) vs \(guestAwardsFiltered.count) (filtered)")
+        print("   Progress: \(guestProgress.count) (predicate) vs \(guestProgressFiltered.count) (filtered)")
+        print("   Habits: \(guestHabits.count) (predicate) vs \(guestHabitsFiltered.count) (filtered)")
+        logger.warning("⚠️ GuestMigration: Predicate mismatch detected - using filtered results")
+      }
+      
+      // Use filtered results if they differ from predicate results
+      let finalGuestCompletions = guestCompletionsFiltered.isEmpty ? guestCompletionRecords : guestCompletionsFiltered
+      let finalGuestAwards = guestAwardsFiltered.isEmpty ? guestAwards : guestAwardsFiltered
+      let finalGuestProgress = guestProgressFiltered.isEmpty ? guestProgress : guestProgressFiltered
+      let finalGuestHabits = guestHabitsFiltered.isEmpty ? guestHabits : guestHabitsFiltered
+      
+      print("📊 [GUEST_MIGRATION] Final guest data to migrate:")
+      print("   Guest Habits: \(finalGuestHabits.count)")
+      print("   Guest Completion Records: \(finalGuestCompletions.count)")
+      print("   Guest Daily Awards: \(finalGuestAwards.count)")
+      print("   Guest User Progress: \(finalGuestProgress.count)")
       
       // If no guest data exists, mark migration as complete and return
-      if guestHabits.isEmpty && guestCompletionRecords.isEmpty && guestAwards.isEmpty && guestProgress.isEmpty {
+      if finalGuestHabits.isEmpty && finalGuestCompletions.isEmpty && finalGuestAwards.isEmpty && finalGuestProgress.isEmpty {
         print("ℹ️ [GUEST_MIGRATION] No guest data found, marking migration as complete")
         UserDefaults.standard.set(true, forKey: newMigrationKey)
         return
       }
+      
+      // Store filtered results for use in migration
+      // We'll pass these to the helper if predicate failed
+      if finalGuestCompletions.count > guestCompletionRecords.count ||
+         finalGuestAwards.count > guestAwards.count ||
+         finalGuestProgress.count > guestProgress.count {
+        print("⚠️ [GUEST_MIGRATION] Using code-filtered results instead of predicate results")
+        logger.warning("⚠️ GuestMigration: Using code-filtered results due to predicate mismatch")
+      }
+      
     } catch {
       print("⚠️ [GUEST_MIGRATION] Error checking for guest data: \(error.localizedDescription)")
       logger.warning("⚠️ GuestMigration: Error checking for guest data: \(error.localizedDescription)")
