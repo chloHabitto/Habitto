@@ -147,17 +147,17 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
 
   func create(_ habit: Habit) async throws {
     // TODO: Implement habit creation
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func update(_ habit: Habit) async throws {
     // TODO: Implement habit update
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func delete(_: UUID) async throws {
     // TODO: Implement habit deletion
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func exists(_ id: UUID) async throws -> Bool {
@@ -212,7 +212,7 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
 
   func updateHabitCompletion(habitId _: UUID, date _: Date, progress _: Double) async throws {
     // TODO: Implement habit completion update
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func getHabitCompletion(habitId _: UUID, date _: Date) async throws -> Double {
@@ -266,14 +266,14 @@ final class LegacyHabitRepository: HabitRepositoryProtocol {
 
   func delete(id: String) async throws {
     guard let uuid = UUID(uuidString: id) else {
-      throw DataStorageError.operationNotSupported("Invalid habit ID")
+      throw PersistenceError(type: .unknown, message: "Invalid habit ID")
     }
     try await delete(uuid)
   }
 
   func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
     // TODO: Implement habit completion
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func getCompletionCount(habitId: String, date: Date) async throws -> Int {
@@ -317,17 +317,17 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
 
   func create(_ habit: Habit) async throws {
     // TODO: Implement habit creation
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func update(_ habit: Habit) async throws {
     // TODO: Implement habit update
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func delete(_: UUID) async throws {
     // TODO: Implement habit deletion
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func exists(_ id: UUID) async throws -> Bool {
@@ -372,7 +372,7 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
 
   func updateHabitCompletion(habitId _: UUID, date _: Date, progress _: Double) async throws {
     // TODO: Implement habit completion update
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func getHabitCompletion(habitId _: UUID, date _: Date) async throws -> Double {
@@ -426,14 +426,14 @@ final class NormalizedHabitRepository: HabitRepositoryProtocol {
 
   func delete(id: String) async throws {
     guard let uuid = UUID(uuidString: id) else {
-      throw DataStorageError.operationNotSupported("Invalid habit ID")
+      throw PersistenceError(type: .unknown, message: "Invalid habit ID")
     }
     try await delete(uuid)
   }
 
   func markComplete(habitId: String, date: Date, count: Int) async throws -> Int {
     // TODO: Implement habit completion
-    throw DataStorageError.operationNotSupported("Method not implemented")
+    throw PersistenceError(type: .unknown, message: "Method not implemented")
   }
 
   func getCompletionCount(habitId: String, date: Date) async throws -> Int {
