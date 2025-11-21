@@ -357,6 +357,12 @@ struct HabittoApp: App {
             // ✅ DIAGNOSTIC - Run this FIRST before anything else
             Task { @MainActor in
               await diagnoseDataIssue()
+              
+              // ✅ FIX - Repair broken relationships
+              await repairCompletionRecordRelationships()
+              
+              // ✅ VERIFY - Check that the fix worked
+              await diagnoseDataIssue()
             }
             
             setupCoreData()
@@ -1028,5 +1034,66 @@ struct HabittoApp: App {
     print("\n" + String(repeating: "=", count: 80))
     print("📊 DIAGNOSIS COMPLETE")
     print(String(repeating: "=", count: 80))
+  }
+  
+  /// Repair broken CompletionRecord relationships
+  /// The migration updated userId on CompletionRecords but broke the SwiftData relationship links
+  @MainActor
+  private func repairCompletionRecordRelationships() async {
+    print("🔧 [REPAIR] Starting relationship repair...")
+    
+    let context = SwiftDataContainer.shared.modelContext
+    
+    do {
+      // Get all habits
+      let habitsDesc = FetchDescriptor<HabitData>()
+      let allHabits = try context.fetch(habitsDesc)
+      
+      // Get all completion records
+      let recordsDesc = FetchDescriptor<CompletionRecord>()
+      let allRecords = try context.fetch(recordsDesc)
+      
+      print("🔧 [REPAIR] Found \(allHabits.count) habits and \(allRecords.count) completion records")
+      
+      // Group records by habitId
+      let recordsByHabit = Dictionary(grouping: allRecords, by: { $0.habitId })
+      
+      var totalRepaired = 0
+      
+      // For each habit, reconnect its completion records
+      for habit in allHabits {
+        let recordsForThisHabit = recordsByHabit[habit.id] ?? []
+        
+        // Only repair if there's a mismatch
+        if recordsForThisHabit.count != habit.completionHistory.count {
+          print("🔧 [REPAIR] Habit '\(habit.name)': Found \(recordsForThisHabit.count) records, but only \(habit.completionHistory.count) linked")
+          
+          // Clear existing relationship (which is empty anyway)
+          habit.completionHistory.removeAll()
+          
+          // Add all matching records back to the relationship
+          for record in recordsForThisHabit {
+            habit.completionHistory.append(record)
+          }
+          
+          print("🔧 [REPAIR] Habit '\(habit.name)': Linked \(recordsForThisHabit.count) completion records")
+          totalRepaired += recordsForThisHabit.count
+        } else {
+          print("✅ [REPAIR] Habit '\(habit.name)': Already correctly linked (\(recordsForThisHabit.count) records)")
+        }
+      }
+      
+      // Save the changes
+      if totalRepaired > 0 {
+        try context.save()
+        print("✅ [REPAIR] Successfully repaired \(totalRepaired) completion record relationships")
+      } else {
+        print("ℹ️ [REPAIR] No relationships needed repair - all relationships are correct")
+      }
+      
+    } catch {
+      print("❌ [REPAIR] Failed to repair relationships: \(error.localizedDescription)")
+      print("   Error details: \(error)")
+    }
   }
 }
