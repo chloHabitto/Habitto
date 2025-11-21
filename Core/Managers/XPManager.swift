@@ -42,12 +42,21 @@ class XPManager {
     loadDailyAwards()
     observeXPState()
     
+    // ✅ CRITICAL: Always refresh XP from SwiftData first (source of truth)
+    // This ensures we show the correct XP even if UserDefaults is stale
+    Task {
+      await self.awardService.refreshXPState()
+      // After refresh, apply the state if it exists
+      if let xpState = self.awardService.xpState {
+        await MainActor.run {
+          self.applyXPState(xpState)
+        }
+      }
+    }
+    
+    // If xpState is already available, apply it immediately
     if let xpState = resolvedService.xpState {
       applyXPState(xpState)
-    } else {
-      Task {
-        await self.awardService.refreshXPState()
-      }
     }
     
     logger
