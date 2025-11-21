@@ -98,13 +98,16 @@ class AuthenticationManager: ObservableObject {
     
     // Check if user is already authenticated (anonymous or otherwise)
     if let currentUser = Auth.auth().currentUser {
-      print("✅ AuthenticationManager: User already authenticated: \(currentUser.uid) (anonymous: \(currentUser.isAnonymous))")
+      print("✅ [ANONYMOUS_AUTH] User already authenticated")
+      print("   User ID: \(currentUser.uid)")
+      print("   Is Anonymous: \(currentUser.isAnonymous)")
       
       // Store userId in Keychain for persistence across reinstalls
       if KeychainManager.shared.storeUserID(currentUser.uid) {
-        print("✅ AuthenticationManager: Stored userId in Keychain")
+        print("✅ [ANONYMOUS_AUTH] Stored userId in Keychain")
       }
       
+      print("✅ [ANONYMOUS_AUTH] Cloud backup ready")
       return
     }
     
@@ -117,24 +120,28 @@ class AuthenticationManager: ObservableObject {
     
     // Sign in anonymously
     do {
-      print("🔐 AuthenticationManager: Signing in anonymously...")
+      print("🔐 [ANONYMOUS_AUTH] Starting anonymous authentication...")
       let result = try await Auth.auth().signInAnonymously()
       let userId = result.user.uid
       
-      print("✅ AuthenticationManager: Anonymous sign-in successful: \(userId)")
+      print("✅ [ANONYMOUS_AUTH] SUCCESS - User authenticated anonymously")
+      print("   User ID: \(userId)")
+      print("   Is Anonymous: \(result.user.isAnonymous)")
       
       // Store userId in Keychain for persistence
       if KeychainManager.shared.storeUserID(userId) {
-        print("✅ AuthenticationManager: Stored anonymous userId in Keychain")
+        print("✅ [ANONYMOUS_AUTH] Stored userId in Keychain for persistence")
       }
       
       // Update auth state (listener will also handle this, but we update immediately)
       authState = .authenticated(result.user)
       currentUser = result.user
       
+      print("✅ [ANONYMOUS_AUTH] Anonymous authentication complete - cloud backup enabled")
+      
     } catch {
-      print("❌ AuthenticationManager: Anonymous sign-in failed: \(error.localizedDescription)")
-      print("⚠️ AuthenticationManager: Falling back to guest mode (offline-only)")
+      print("❌ [ANONYMOUS_AUTH] FAILED: \(error.localizedDescription)")
+      print("⚠️ [ANONYMOUS_AUTH] Falling back to guest mode (offline-only)")
       // Don't throw - app continues in guest mode
       authState = .unauthenticated
       currentUser = nil
