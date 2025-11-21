@@ -270,6 +270,14 @@ class XPManager {
       saveUserProgress()
       
       print("✅ [XP_LOAD] Loaded XP successfully: Total=\(totalXP), Level=\(userProgress.currentLevel), Daily=\(userProgress.dailyXP)")
+      
+      // ✅ DIAGNOSTIC: Log what XPManager actually has after loading
+      print("🎯 [UI_STATE] XPManager after load:")
+      print("   self.totalXP: \(self.totalXP)")
+      print("   self.userProgress.totalXP: \(self.userProgress.totalXP)")
+      print("   self.userProgress.currentLevel: \(self.userProgress.currentLevel)")
+      print("   self.userProgress.streakDays: \(self.userProgress.streakDays)")
+      print("   ✅ @Published properties updated - UI should update")
 
     } catch {
       print("❌ [XP_LOAD] Error loading user XP from SwiftData: \(error.localizedDescription)")

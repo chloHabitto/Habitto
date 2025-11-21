@@ -541,6 +541,17 @@ class HabitRepository: ObservableObject {
         hasLoggedStartupState = true
       }
       debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
+      
+      // ✅ DIAGNOSTIC: Log what was actually loaded
+      print("🎯 [UI_STATE] HabitRepository after load:")
+      print("   habits.count: \(loadedHabits.count)")
+      for habit in loadedHabits {
+        print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
+        let todayKey = Habit.dateKey(for: Date())
+        let todayProgress = habit.completionHistory[todayKey] ?? 0
+        let isCompletedToday = habit.completionStatus[todayKey] ?? false
+        print("      Today: progress=\(todayProgress), completed=\(isCompletedToday)")
+      }
 
       // Debug each loaded habit with progress for today
       let todayKey = Habit.dateKey(for: Date())
@@ -569,6 +580,18 @@ class HabitRepository: ObservableObject {
       await MainActor.run {
         self.habits = uniqueHabits
         self.objectWillChange.send()
+        
+        // ✅ DIAGNOSTIC: Log what HabitRepository actually has after assignment
+        print("🎯 [UI_STATE] HabitRepository after assignment:")
+        print("   self.habits.count: \(self.habits.count)")
+        for habit in self.habits {
+          print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
+          let todayKey = Habit.dateKey(for: Date())
+          let todayProgress = habit.completionHistory[todayKey] ?? 0
+          let isCompletedToday = habit.completionStatus[todayKey] ?? false
+          print("      Today: progress=\(todayProgress), completed=\(isCompletedToday)")
+        }
+        print("   ✅ objectWillChange.send() called - UI should update")
       }
 
     } catch {

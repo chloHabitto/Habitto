@@ -396,6 +396,17 @@ struct HabittoApp: App {
                 await DailyAwardService.shared.refreshXPState()
               }
               
+              // ✅ FORCE UI REFRESH - Ensure SwiftUI sees the updated data
+              await MainActor.run {
+                print("🔄 [UI_REFRESH] Forcing UI refresh...")
+                habitRepository.objectWillChange.send()
+                // XPManager is @Observable, so changes should propagate automatically
+                // But we can trigger a refresh by accessing a property
+                _ = XPManager.shared.totalXP
+                print("   ✅ objectWillChange.send() called for HabitRepository")
+                print("   ✅ XPManager properties accessed to trigger @Observable update")
+              }
+              
               print("✅ [RELOAD] Data reload complete")
             }
 
