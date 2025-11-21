@@ -583,6 +583,9 @@ struct HabittoApp: App {
     
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
+      var totalMigratedXP = 0
+      var completionRecordsMigrated = 0
+      var dailyAwardsMigrated = 0
       
       // 1. Migrate HabitData
       let guestHabitsDescriptor = FetchDescriptor<HabitData>(
@@ -599,7 +602,7 @@ struct HabittoApp: App {
         for habitData in guestHabits {
           habitData.userId = newUserId
           
-          // Update CompletionRecords
+          // Update CompletionRecords linked via relationship
           for record in habitData.completionHistory {
             record.userId = newUserId
             record.userIdHabitIdDateKey = "\(newUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
@@ -613,7 +616,32 @@ struct HabittoApp: App {
         print("ℹ️ [GUEST_MIGRATION] No guest habits found to migrate")
       }
       
-      // 2. Migrate DailyAwards
+      // 2. Migrate ALL CompletionRecords (including standalone ones not linked via relationship)
+      let guestCompletionRecordsDescriptor = FetchDescriptor<CompletionRecord>(
+        predicate: #Predicate<CompletionRecord> { record in
+          record.userId == ""
+        }
+      )
+      let guestCompletionRecords = try modelContext.fetch(guestCompletionRecordsDescriptor)
+      
+      if !guestCompletionRecords.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(guestCompletionRecords.count) guest completion records to migrate")
+        logger.info("🔄 GuestMigration: Migrating \(guestCompletionRecords.count) completion records...")
+        
+        for record in guestCompletionRecords {
+          record.userId = newUserId
+          record.userIdHabitIdDateKey = "\(newUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
+          completionRecordsMigrated += 1
+        }
+        
+        try modelContext.save()
+        print("✅ [GUEST_MIGRATION] Migrated \(completionRecordsMigrated) completion records successfully")
+        logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records")
+      } else {
+        print("ℹ️ [GUEST_MIGRATION] No guest completion records found to migrate")
+      }
+      
+      // 3. Migrate DailyAwards
       let guestAwardsDescriptor = FetchDescriptor<DailyAward>(
         predicate: #Predicate<DailyAward> { award in
           award.userId == ""
@@ -628,16 +656,19 @@ struct HabittoApp: App {
         for award in guestAwards {
           award.userId = newUserId
           award.userIdDateKey = "\(newUserId)#\(award.dateKey)"
+          totalMigratedXP += award.xpGranted
+          dailyAwardsMigrated += 1
         }
         
         try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated \(guestAwards.count) daily awards successfully")
-        logger.info("✅ GuestMigration: Migrated \(guestAwards.count) daily awards")
+        print("✅ [GUEST_MIGRATION] Migrated \(dailyAwardsMigrated) daily awards successfully")
+        print("   Total XP from migrated awards: \(totalMigratedXP)")
+        logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP")
       } else {
         print("ℹ️ [GUEST_MIGRATION] No guest daily awards found to migrate")
       }
       
-      // 3. Migrate UserProgressData
+      // 4. Migrate UserProgressData
       let guestProgressDescriptor = FetchDescriptor<UserProgressData>(
         predicate: #Predicate<UserProgressData> { progress in
           progress.userId == ""
@@ -647,14 +678,27 @@ struct HabittoApp: App {
       
       if let progress = guestProgress {
         print("🔄 [GUEST_MIGRATION] Found user progress to migrate")
-        logger.info("🔄 GuestMigration: Migrating user progress...")
+        print("   Current XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
+        logger.info("🔄 GuestMigration: Migrating user progress (XP: \(progress.xpTotal), Level: \(progress.level))...")
         progress.userId = newUserId
         try modelContext.save()
         print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
-        logger.info("✅ GuestMigration: Migrated user progress")
+        print("   Migrated XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
+        logger.info("✅ GuestMigration: Migrated user progress (XP: \(progress.xpTotal), Level: \(progress.level))")
       } else {
         print("ℹ️ [GUEST_MIGRATION] No guest user progress found to migrate")
       }
+      
+      // Summary log
+      print("📊 [GUEST_MIGRATION] Migration Summary:")
+      print("   ✅ Habits: \(guestHabits.count)")
+      print("   ✅ Completion Records: \(completionRecordsMigrated)")
+      print("   ✅ Daily Awards: \(dailyAwardsMigrated)")
+      print("   ✅ Total XP from Awards: \(totalMigratedXP)")
+      if let progress = guestProgress {
+        print("   ✅ User Progress XP: \(progress.xpTotal)")
+      }
+      logger.info("📊 GuestMigration: Summary - \(guestHabits.count) habits, \(completionRecordsMigrated) completions, \(dailyAwardsMigrated) awards, \(totalMigratedXP) XP")
       
       // Mark migration as complete
       UserDefaults.standard.set(true, forKey: migrationKey)
