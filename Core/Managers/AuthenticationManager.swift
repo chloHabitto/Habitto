@@ -82,9 +82,63 @@ class AuthenticationManager: ObservableObject {
   // MARK: - Anonymous Authentication
   
   /// Check if current user is anonymous
-  /// Note: Anonymous sign-in functionality has been removed - can be restored from git history if needed
   var isAnonymous: Bool {
     Auth.auth().currentUser?.isAnonymous ?? false
+  }
+  
+  /// Ensure user is signed in anonymously for cloud backup
+  /// This runs automatically on app launch to enable invisible cloud backup
+  /// Falls back to guest mode if Firebase is not available
+  func ensureAnonymousAuth() async {
+    // Check if Firebase is configured
+    guard FirebaseApp.app() != nil else {
+      print("⚠️ AuthenticationManager: Firebase not configured, skipping anonymous auth")
+      return
+    }
+    
+    // Check if user is already authenticated (anonymous or otherwise)
+    if let currentUser = Auth.auth().currentUser {
+      print("✅ AuthenticationManager: User already authenticated: \(currentUser.uid) (anonymous: \(currentUser.isAnonymous))")
+      
+      // Store userId in Keychain for persistence across reinstalls
+      if KeychainManager.shared.storeUserID(currentUser.uid) {
+        print("✅ AuthenticationManager: Stored userId in Keychain")
+      }
+      
+      return
+    }
+    
+    // Try to restore from Keychain first (for app reinstalls)
+    if let storedUserId = KeychainManager.shared.retrieveUserID(),
+       !storedUserId.isEmpty {
+      print("🔍 AuthenticationManager: Found stored userId in Keychain: \(storedUserId)")
+      // Note: We can't restore the session, but we'll sign in anonymously and migrate data
+    }
+    
+    // Sign in anonymously
+    do {
+      print("🔐 AuthenticationManager: Signing in anonymously...")
+      let result = try await Auth.auth().signInAnonymously()
+      let userId = result.user.uid
+      
+      print("✅ AuthenticationManager: Anonymous sign-in successful: \(userId)")
+      
+      // Store userId in Keychain for persistence
+      if KeychainManager.shared.storeUserID(userId) {
+        print("✅ AuthenticationManager: Stored anonymous userId in Keychain")
+      }
+      
+      // Update auth state (listener will also handle this, but we update immediately)
+      authState = .authenticated(result.user)
+      currentUser = result.user
+      
+    } catch {
+      print("❌ AuthenticationManager: Anonymous sign-in failed: \(error.localizedDescription)")
+      print("⚠️ AuthenticationManager: Falling back to guest mode (offline-only)")
+      // Don't throw - app continues in guest mode
+      authState = .unauthenticated
+      currentUser = nil
+    }
   }
 
   // MARK: - Email/Password Authentication

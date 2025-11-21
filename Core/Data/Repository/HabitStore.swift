@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseAuth
+import FirebaseCore
 import OSLog
 import SwiftData
 import SwiftUI
@@ -221,6 +222,14 @@ final actor HabitStore {
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
     logger
       .info("Successfully saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+    
+    // ✅ CLOUD BACKUP: Backup habits to Firestore (non-blocking)
+    // Only backup if user is authenticated (anonymous or otherwise)
+    await MainActor.run {
+      for habit in sanitizedHabits {
+        FirebaseBackupService.shared.backupHabit(habit)
+      }
+    }
 
     // Record performance metrics
     let metrics = await performanceMetrics
@@ -365,6 +374,11 @@ final actor HabitStore {
 
     // Also delete the individual habit item from active storage
     try await activeStorage.deleteHabit(id: habit.id)
+    
+    // ✅ CLOUD BACKUP: Delete habit from Firestore backup (non-blocking)
+    await MainActor.run {
+      FirebaseBackupService.shared.deleteHabitBackup(habitId: habit.id)
+    }
 
     logger.info("Successfully deleted habit: \(habit.name)")
   }
@@ -468,6 +482,9 @@ final actor HabitStore {
       let isComplete = progress >= goalAmount
       currentHabits[index].completionStatus[dateKey] = isComplete
       
+      // Store completion status for backup call
+      let completionStatusForBackup = isComplete
+      
       // Logging with habit type info
       if habitType == .breaking {
         logger.info("🔍 BREAKING HABIT - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isComplete)")
@@ -509,6 +526,17 @@ final actor HabitStore {
 
       try await saveHabits(currentHabits)
       logger.info("Successfully updated progress for habit '\(habit.name)' on \(dateKey)")
+      
+      // ✅ CLOUD BACKUP: Backup completion record to Firestore (non-blocking)
+      await MainActor.run {
+        FirebaseBackupService.shared.backupCompletionRecord(
+          habitId: habit.id,
+          date: date,
+          dateKey: dateKey,
+          isCompleted: completionStatusForBackup,
+          progress: progress
+        )
+      }
 
       // ✅ PRIORITY 2: Check daily completion and award/revoke XP atomically
       // ✅ STEP 3: Enhanced logging for manual testing workflow
@@ -1234,6 +1262,15 @@ final actor HabitStore {
           reason: awardReason
         )
         logger.info("🎯 XP_CHECK: ✅ Awarded \(xpAmount) XP - DailyAward created, XP recalculated from ledger")
+        
+        // ✅ CLOUD BACKUP: Backup daily award to Firestore (non-blocking)
+        await MainActor.run {
+          FirebaseBackupService.shared.backupDailyAward(
+            dateKey: dateKey,
+            xpGranted: xpAmount,
+            allHabitsCompleted: true
+          )
+        }
       } catch {
         logger.error("❌ XP_CHECK: Failed to award XP: \(error.localizedDescription)")
         // XP award failed - don't proceed (maintain consistency)
@@ -1255,6 +1292,9 @@ final actor HabitStore {
           reason: reversalReason
         )
         logger.info("🎯 XP_CHECK: ✅ Reversed \(xpToReverse) XP - DailyAward deleted, XP recalculated from ledger")
+        
+        // ✅ CLOUD BACKUP: Delete daily award from Firestore (non-blocking)
+        // Note: We don't backup deletions, just let Firestore handle it via merge
       } catch {
         logger.error("❌ XP_CHECK: Failed to reverse XP: \(error.localizedDescription)")
         // XP reversal failed - log but don't block (better than losing both)
