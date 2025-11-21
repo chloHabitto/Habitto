@@ -449,11 +449,23 @@ final class HabitData {
     // The relationship should be loaded when HabitData is fetched
     let difficultyRecords = difficultyHistory
     
-    let difficultyHistoryDict: [String: Int] = Dictionary(uniqueKeysWithValues: difficultyRecords
-      .map {
-        let key = $0.dateKey.isEmpty ? DateUtils.dateKey(for: $0.date) : $0.dateKey
-        return (key, $0.difficulty)
-      })
+    // ✅ FIX: Handle duplicate dateKeys by keeping the most recent record
+    // Similar to completionHistoryDict, use reduce to deduplicate
+    let reducedDifficultyByDate: [String: DifficultyRecord] = difficultyRecords
+      .reduce(into: [String: DifficultyRecord]()) { acc, record in
+        let key = record.dateKey.isEmpty ? DateUtils.dateKey(for: record.date) : record.dateKey
+        if let existing = acc[key] {
+          // Keep the most recent record if duplicates exist
+          if record.createdAt > existing.createdAt {
+            acc[key] = record
+          }
+        } else {
+          acc[key] = record
+        }
+      }
+    
+    let difficultyHistoryDict: [String: Int] = reducedDifficultyByDate
+      .mapValues { $0.difficulty }
 
     let actualUsageDict: [String: Int] = Dictionary(uniqueKeysWithValues: usageHistory.map {
       ($0.key, $0.value)
