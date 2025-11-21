@@ -33,9 +33,7 @@ final class SwiftDataContainer: ObservableObject {
       let databaseExists = FileManager.default.fileExists(atPath: databaseURL.path)
       
       // ✅ NOTE: CloudKit is now enabled for iCloud sync
-      // Old migration keys are no longer needed as we're migrating TO CloudKit
-      let cloudKitMigrationKey = "SwiftData_CloudKit_Enabled_Migration_v1"
-      let needsCloudKitMigration = false // No migration needed - CloudKit is enabled going forward
+      // No migration needed - CloudKit is enabled going forward
       
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
@@ -46,11 +44,7 @@ final class SwiftDataContainer: ObservableObject {
       let oneTimeSchemaFixKey = "SwiftData_Schema_Corruption_Fix_v1"
       let needsOneTimeFix = databaseExists && !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
       
-      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsCloudKitMigration || needsOneTimeFix
-      
-      if needsCloudKitMigration {
-        logger.warning("🔧 SwiftData: CloudKit migration needed - will recreate database with CloudKit enabled")
-      }
+      let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsOneTimeFix
       
       if needsOneTimeFix {
         logger.warning("🔧 SwiftData: One-time schema fix needed - will recreate database with proper schema")
@@ -154,12 +148,6 @@ final class SwiftDataContainer: ObservableObject {
             // Clear the corruption flag - we've fixed it
             UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
             
-            // Mark CloudKit migration as complete
-            if needsCloudKitMigration {
-              UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
-              logger.info("✅ SwiftData: CloudKit migration flag set")
-            }
-            
             // Mark one-time schema fix as complete
             if needsOneTimeFix {
               UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
@@ -185,11 +173,10 @@ final class SwiftDataContainer: ObservableObject {
         // Clear corruption flag if no database exists
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
         
-        // Mark migration flags as complete immediately on fresh install
-        // These should never trigger on fresh installs anyway (due to databaseExists check above)
-        UserDefaults.standard.set(true, forKey: cloudKitMigrationKey)
+        // Mark migration flag as complete immediately on fresh install
+        // This should never trigger on fresh installs anyway (due to databaseExists check above)
         UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
-        logger.info("✅ SwiftData: Fresh install - marking all migration flags as complete")
+        logger.info("✅ SwiftData: Fresh install - marking migration flag as complete")
       }
 
       // ✅ FIX #5: Check if we should skip database creation this session
