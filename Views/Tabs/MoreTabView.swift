@@ -792,7 +792,7 @@ struct MoreTabView: View {
       badgeCount: nil,
       action: {
         // Refresh iCloud status when tapped
-        Task {
+          Task {
           await icloudStatus.checkStatus()
         }
       }

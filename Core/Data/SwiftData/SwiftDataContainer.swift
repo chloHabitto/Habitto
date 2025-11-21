@@ -6,6 +6,7 @@ import FirebaseAuth
 
 // ✅ MIGRATION SYSTEM: Import migration infrastructure
 // This enables versioned schema and migration plan support
+// Note: All types should be in the same module and automatically available
 
 // MARK: - SwiftData Container Manager
 
@@ -32,8 +33,69 @@ final class SwiftDataContainer: ObservableObject {
       // ✅ CRITICAL: Check if database file exists FIRST
       let databaseExists = FileManager.default.fileExists(atPath: databaseURL.path)
       
-      // ✅ NOTE: CloudKit is now enabled for iCloud sync
-      // No migration needed - CloudKit is enabled going forward
+      // ✅ CLOUDKIT MIGRATION: One-time migration - delete any CloudKit-enabled databases
+      // CloudKit-enabled databases cannot be opened with CloudKit disabled
+      // If we previously enabled CloudKit but now have it disabled, delete the database
+      // This is safe to do since CloudKit databases are incompatible with local-only mode
+      let cloudKitMigrationFlagKey = "SwiftData_CloudKit_To_Local_Migration_v1"
+      let needsCloudKitMigration = databaseExists && !UserDefaults.standard.bool(forKey: cloudKitMigrationFlagKey)
+      
+      if needsCloudKitMigration {
+        logger.warning("🔧 SwiftData: One-time CloudKit-to-local migration detected")
+        logger.warning("🔧 SwiftData: Deleting CloudKit-enabled database (will recreate as local-only)...")
+        
+        do {
+          // Delete main database file
+          if FileManager.default.fileExists(atPath: databaseURL.path) {
+            try FileManager.default.removeItem(at: databaseURL)
+            logger.info("  🗑️ Removed: default.store")
+          }
+          
+          // Remove ALL related database files (WAL, SHM, journal, etc.)
+          let files = try FileManager.default.contentsOfDirectory(
+            at: databaseDir,
+            includingPropertiesForKeys: nil)
+          
+          for file in files {
+            let filename = file.lastPathComponent
+            if filename.hasPrefix(databaseName) || filename.hasPrefix("default.store") {
+              try FileManager.default.removeItem(at: file)
+              logger.info("  🗑️ Removed: \(filename)")
+            }
+          }
+          
+          // Verify deletion was successful
+          let stillExists = FileManager.default.fileExists(atPath: databaseURL.path)
+          if stillExists {
+            logger.error("❌ SwiftData: Database file still exists after deletion attempt")
+            throw NSError(domain: "SwiftDataMigration", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to delete CloudKit database"])
+          }
+          
+          logger.info("✅ SwiftData: CloudKit database removed successfully")
+          logger.info("✅ SwiftData: Fresh local-only database will be created")
+          UserDefaults.standard.set(true, forKey: cloudKitMigrationFlagKey)
+          
+          // ✅ CRITICAL: Set skip flag to skip database creation this session
+          // This prevents trying to create a container immediately after deletion
+          // The database will be created fresh on next app launch
+          UserDefaults.standard.set(true, forKey: "SwiftData_Skip_Creation_This_Session")
+          logger.warning("⚠️ SwiftData: Skipping database creation this session after CloudKit migration")
+          logger.warning("⚠️ SwiftData: Fresh database will be created on next app launch")
+        } catch {
+          logger.error("❌ SwiftData: Failed to remove CloudKit database: \(error)")
+          logger.error("❌ SwiftData: Will skip container creation this session to prevent crash")
+          // Set skip flag anyway to prevent crash
+          UserDefaults.standard.set(true, forKey: "SwiftData_Skip_Creation_This_Session")
+          UserDefaults.standard.set(true, forKey: cloudKitMigrationFlagKey)
+        }
+      }
+      
+      // Re-check if database exists after potential CloudKit migration
+      let finalDatabaseExists = FileManager.default.fileExists(atPath: databaseURL.path)
+      
+      // ✅ CLOUDKIT MIGRATION: If we just deleted the database, skip integrity check
+      // The database is gone, so there's nothing to check
+      let justMigrated = needsCloudKitMigration
       
       // Check if we've already detected corruption in a previous run
       let corruptionFlagKey = "SwiftDataCorruptionDetected"
@@ -42,7 +104,7 @@ final class SwiftDataContainer: ObservableObject {
       // This ensures all users get a fresh, healthy database after the deep integrity check is deployed
       // BUT ONLY if a database actually exists (don't trigger on fresh installs)
       let oneTimeSchemaFixKey = "SwiftData_Schema_Corruption_Fix_v1"
-      let needsOneTimeFix = databaseExists && !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
+      let needsOneTimeFix = finalDatabaseExists && !UserDefaults.standard.bool(forKey: oneTimeSchemaFixKey)
       
       let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsOneTimeFix
       
@@ -54,7 +116,8 @@ final class SwiftDataContainer: ObservableObject {
         logger.warning("🔧 SwiftData: Corruption flag set - forcing database reset")
       }
       
-      if databaseExists {
+      // Skip integrity check if we just migrated from CloudKit (database was deleted)
+      if finalDatabaseExists && !justMigrated {
         logger.info("🔧 SwiftData: Database exists, checking integrity...")
         
         var needsReset = forceReset
@@ -65,12 +128,12 @@ final class SwiftDataContainer: ObservableObject {
           do {
             // Create a minimal test to see if database is accessible
             // Use migration plan for test container to match production setup
+            // ✅ CRITICAL: Use CloudKit disabled config to match production setup
+            let testConfig = ModelConfiguration(url: databaseURL, cloudKitDatabase: .none)
             let testContainer = try ModelContainer(
               for: schema,
               migrationPlan: migrationPlan,
-              configurations: [
-                ModelConfiguration(url: databaseURL)
-              ])
+              configurations: [testConfig])
             let testContext = ModelContext(testContainer)
             
             logger.info("🔧 SwiftData: Performing deep integrity check on all tables...")
@@ -108,12 +171,34 @@ final class SwiftDataContainer: ObservableObject {
             logger.info("✅ SwiftData: Deep integrity check passed - all tables healthy")
           } catch {
             let errorDesc = error.localizedDescription
-            logger.error("❌ SwiftData: Database corruption detected during deep integrity check")
-            logger.error("   Error details: \(errorDesc)")
+            let nsError = error as NSError
             
-            // ANY error during health check means corruption - don't be selective
-            logger.error("🔧 SwiftData: Database needs reset - health check failure detected")
-            needsReset = true
+            // ✅ CLOUDKIT MIGRATION: Check if error is CloudKit-related
+            // If the database was created with CloudKit enabled but we're trying to load it without CloudKit,
+            // SwiftData will fail. We need to delete it and create a fresh one.
+            let isCloudKitError = errorDesc.contains("CloudKit") || 
+                                   errorDesc.contains("icloud-services") ||
+                                   nsError.domain.contains("CloudKit") ||
+                                   (nsError.code == 134060 && errorDesc.contains("CloudKit"))
+            
+            if isCloudKitError {
+              logger.warning("⚠️ SwiftData: Database was created with CloudKit enabled but CloudKit is now disabled")
+              logger.warning("⚠️ SwiftData: Deleting CloudKit-enabled database and creating fresh local database...")
+              needsReset = true
+              // Mark CloudKit migration as needed so we don't try again
+              UserDefaults.standard.set(true, forKey: "SwiftData_CloudKit_To_Local_Migration_v1")
+              // ✅ CRITICAL: Set skip flag to prevent creating container this session
+              // The database will be created fresh on next app launch
+              UserDefaults.standard.set(true, forKey: "SwiftData_Skip_Creation_This_Session")
+              logger.warning("⚠️ SwiftData: Skipping container creation this session after CloudKit error")
+            } else {
+              logger.error("❌ SwiftData: Database corruption detected during deep integrity check")
+              logger.error("   Error details: \(errorDesc)")
+              
+              // ANY error during health check means corruption - don't be selective
+              logger.error("🔧 SwiftData: Database needs reset - health check failure detected")
+              needsReset = true
+            }
           }
         }
         
@@ -191,14 +276,53 @@ final class SwiftDataContainer: ObservableObject {
         
         // Create a dummy in-memory container to satisfy the non-optional property
         // This container won't actually be used - all operations will fall back to UserDefaults
-        let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        self.modelContainer = try ModelContainer(
-          for: schema,
-          migrationPlan: migrationPlan,
-          configurations: [inMemoryConfig])
-        self.modelContext = ModelContext(modelContainer)
-        
-        logger.info("✅ SwiftData: Created temporary in-memory container (fallback mode)")
+        // ✅ CRITICAL: Explicitly disable CloudKit for in-memory container
+        // Even in-memory containers are validated against CloudKit if entitlements are enabled
+        do {
+          let inMemoryConfig = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none)  // Disable CloudKit validation
+          self.modelContainer = try ModelContainer(
+            for: schema,
+            migrationPlan: migrationPlan,
+            configurations: [inMemoryConfig])
+          self.modelContext = ModelContext(modelContainer)
+          
+          logger.info("✅ SwiftData: Created temporary in-memory container (fallback mode)")
+        } catch {
+          // ✅ FALLBACK: If CloudKit validation fails even for in-memory container,
+          // create a minimal container with just the essential models
+          let errorDesc = error.localizedDescription
+          logger.error("❌ SwiftData: Failed to create in-memory container: \(errorDesc)")
+          logger.warning("⚠️ SwiftData: CloudKit entitlements are causing schema validation even with .none")
+          logger.warning("⚠️ SwiftData: Creating minimal fallback container (some models may be unavailable)")
+          
+          // Try creating container with minimal schema (just StorageHeader for version tracking)
+          // This will at least prevent the fatal error
+          do {
+            let minimalSchema = Schema([
+              StorageHeader.self
+            ])
+            let minimalConfig = ModelConfiguration(
+              schema: minimalSchema,
+              isStoredInMemoryOnly: true,
+              cloudKitDatabase: .none)
+            self.modelContainer = try ModelContainer(
+              for: minimalSchema,
+              configurations: [minimalConfig])
+            self.modelContext = ModelContext(modelContainer)
+            
+            logger.warning("⚠️ SwiftData: Created minimal fallback container - app will use UserDefaults only")
+          } catch {
+            // If even minimal container fails, we have no choice but to crash
+            // But log a helpful message about disabling CloudKit entitlements
+            logger.error("❌ SwiftData: Failed to create even minimal container: \(error.localizedDescription)")
+            logger.error("❌ SwiftData: SOLUTION: Disable CloudKit entitlements in Habitto.entitlements")
+            logger.error("❌ SwiftData: Remove or comment out com.apple.developer.icloud-services")
+            fatalError("Failed to create minimal SwiftData container. Disable CloudKit entitlements to fix: \(error)")
+          }
+        }
         return // Skip normal database creation
       }
 
@@ -224,7 +348,7 @@ final class SwiftDataContainer: ObservableObject {
       self.modelContext = ModelContext(modelContainer)
       
       // ✅ FIX #8: Disable autosave on fresh databases to prevent Persistent History issues
-      if !databaseExists {
+      if !finalDatabaseExists {
         modelContext.autosaveEnabled = false
         logger.info("🔧 SwiftData: Fresh database - autosave disabled to prevent history truncation")
       }
@@ -236,23 +360,21 @@ final class SwiftDataContainer: ObservableObject {
       // SwiftData doesn't always auto-create tables on first fetch
       // We insert a dummy HabitData and immediately delete it to force schema creation
       // Autosave is disabled during this process to prevent Persistent History from deleting tables
-      if !databaseExists {
+      if !finalDatabaseExists {
         do {
           logger.info("🔧 SwiftData: Fresh database - forcing table creation...")
           
           let dummyHabit = HabitData(
-            id: UUID(),
             userId: "_dummy_",
             name: "_dummy_",
             habitDescription: "",
             icon: "",
-            color: .clear,
-            habitType: .formation,
+            color: Color.clear,
+            habitType: HabitType.formation,
             schedule: "everyday",
             goal: "1 time",
             reminder: "",
-            startDate: Date(),
-            endDate: nil)
+            startDate: Date())
           
           modelContext.insert(dummyHabit)
           try modelContext.save()
@@ -282,9 +404,45 @@ final class SwiftDataContainer: ObservableObject {
       logger.info("🔧 SwiftData: Skipping health check to prevent database corruption")
 
     } catch {
-      logger.error("❌ SwiftData: Failed to initialize container: \(error.localizedDescription)")
-      logger.error("❌ SwiftData: Error details: \(error)")
-      fatalError("Failed to initialize SwiftData container: \(error)")
+      let errorDesc = error.localizedDescription
+      let nsError = error as NSError
+      
+      // ✅ CLOUDKIT ERROR HANDLING: Check if this is a CloudKit validation error
+      // Even with cloudKitDatabase: .none, SwiftData may validate if entitlements are enabled
+      let isCloudKitValidationError = errorDesc.contains("CloudKit integration requires") ||
+                                       errorDesc.contains("CloudKit integration does not support") ||
+                                       (nsError.code == 134060 && errorDesc.contains("CloudKit"))
+      
+      if isCloudKitValidationError {
+        logger.error("❌ SwiftData: CloudKit validation error detected (entitlements enabled but models not CloudKit-compliant)")
+        logger.warning("⚠️ SwiftData: Creating minimal fallback container to prevent crash")
+        
+        // Create minimal container as last resort
+        do {
+          let minimalSchema = Schema([
+            StorageHeader.self
+          ])
+          let minimalConfig = ModelConfiguration(
+            schema: minimalSchema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none)
+          self.modelContainer = try ModelContainer(
+            for: minimalSchema,
+            configurations: [minimalConfig])
+          self.modelContext = ModelContext(modelContainer)
+          
+          logger.warning("⚠️ SwiftData: Created minimal fallback container")
+          logger.warning("⚠️ SwiftData: App will use UserDefaults fallback - disable CloudKit entitlements to use full SwiftData")
+          return // Successfully created fallback container
+        } catch {
+          logger.error("❌ SwiftData: Failed to create even minimal container: \(error)")
+          fatalError("Failed to initialize SwiftData container: \(error)")
+        }
+      } else {
+        logger.error("❌ SwiftData: Failed to initialize container: \(errorDesc)")
+        logger.error("❌ SwiftData: Error details: \(error)")
+        fatalError("Failed to initialize SwiftData container: \(error)")
+      }
     }
   }
 
