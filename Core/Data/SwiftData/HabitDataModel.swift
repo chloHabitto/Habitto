@@ -342,6 +342,18 @@ final class HabitData {
       // Query ALL CompletionRecords for this habitId
       let allRecords = try context.fetch(allRecordsDescriptor)
       
+      // ✅ DIAGNOSTIC: Log what records were found
+      if !allRecords.isEmpty {
+        let recordsByUserId = Dictionary(grouping: allRecords) { $0.userId }
+        print("🔍 [HABIT_TO_HABIT] Habit '\(self.name)' (id: \(habitId.uuidString.prefix(8))...)")
+        print("   Habit userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...'")
+        print("   Total CompletionRecords found: \(allRecords.count)")
+        for (recordUserId, records) in recordsByUserId {
+          let userIdDisplay = recordUserId.isEmpty ? "EMPTY STRING" : "\(recordUserId.prefix(8))..."
+          print("     Records with userId '\(userIdDisplay)': \(records.count)")
+        }
+      }
+      
       // Now filter by userId with fallback logic
       var fetchedRecords: [CompletionRecord]
       
@@ -366,12 +378,20 @@ final class HabitData {
       // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them with fallback logic
       // This handles cases where CompletionRecord was saved with different userId due to timing issues
       if fetchedRecords.isEmpty && !allRecords.isEmpty {
+        print("⚠️ [HABIT_TO_HABIT] No records found with userId '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...', but \(allRecords.count) records exist - using all records as fallback")
         // ✅ FIX: For authenticated users, still use records if they exist (likely userId mismatch)
         // This prevents data loss when userId doesn't match exactly
         fetchedRecords = allRecords
       }
       
       completionRecords = fetchedRecords
+      
+      // ✅ DIAGNOSTIC: Log final filtered records
+      if !completionRecords.isEmpty {
+        print("✅ [HABIT_TO_HABIT] Habit '\(self.name)' - Using \(completionRecords.count) completion records after filtering")
+      } else if !allRecords.isEmpty {
+        print("⚠️ [HABIT_TO_HABIT] Habit '\(self.name)' - Filtered out all \(allRecords.count) records (userId mismatch?)")
+      }
     } catch {
       // Fallback to relationship if query fails
       completionRecords = completionHistory

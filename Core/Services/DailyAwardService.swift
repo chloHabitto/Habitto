@@ -419,33 +419,75 @@ class DailyAwardService: ObservableObject {
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
         
+        print("🔍 [XP_REFRESH] Refreshing XP state for userId: \(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...")
+        
         do {
+            // ✅ DIAGNOSTIC: Query ALL DailyAwards first
+            let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+            let allAwards = try modelContext.fetch(allAwardsDescriptor)
+            print("🔍 [XP_REFRESH] Total DailyAwards in database: \(allAwards.count)")
+            
             // Calculate XP from DailyAward records (source of truth)
             let awardPredicate = #Predicate<DailyAward> { award in
                 award.userId == userId
             }
             let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
             let awards = try modelContext.fetch(awardDescriptor)
-            let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
+            print("🔍 [XP_REFRESH] Predicate query returned: \(awards.count) awards")
+            
+            // ✅ FALLBACK: If predicate returns 0 but we have awards, use code filter
+            var finalAwards = awards
+            if awards.isEmpty && !allAwards.isEmpty {
+                let filtered = allAwards.filter { $0.userId == userId }
+                if !filtered.isEmpty {
+                    print("⚠️ [XP_REFRESH] Predicate returned 0, but found \(filtered.count) awards with code filter - using filtered results")
+                    finalAwards = filtered
+                }
+            }
+            
+            let totalXP = finalAwards.reduce(0) { $0 + $1.xpGranted }
+            print("🔍 [XP_REFRESH] Calculated total XP: \(totalXP) from \(finalAwards.count) awards")
             
             // Get level from UserProgressData or calculate from XP
+            // ✅ DIAGNOSTIC: Query ALL UserProgressData first
+            let allProgressDescriptor = FetchDescriptor<UserProgressData>()
+            let allProgress = try modelContext.fetch(allProgressDescriptor)
+            print("🔍 [XP_REFRESH] Total UserProgressData in database: \(allProgress.count)")
+            for progress in allProgress {
+                let userIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
+                print("   UserProgressData - userId: '\(userIdDisplay)', XP: \(progress.xpTotal), Level: \(progress.level)")
+            }
+            
             let progressPredicate = #Predicate<UserProgressData> { progress in
                 progress.userId == userId
             }
             let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
             let progressRecords = try modelContext.fetch(progressDescriptor)
+            print("🔍 [XP_REFRESH] Predicate query for UserProgressData returned: \(progressRecords.count) records")
+            
+            // ✅ FALLBACK: If predicate returns 0 but we have progress, use code filter
+            var finalProgress: UserProgressData? = progressRecords.first
+            if finalProgress == nil && !allProgress.isEmpty {
+                let filtered = allProgress.filter { $0.userId == userId }
+                if let first = filtered.first {
+                    print("⚠️ [XP_REFRESH] Predicate returned 0, but found progress with code filter - using filtered result")
+                    finalProgress = first
+                }
+            }
             
             let level: Int
             let currentLevelXP: Int
-            if let progress = progressRecords.first, progress.xpTotal == totalXP {
+            if let progress = finalProgress, progress.xpTotal == totalXP {
                 // UserProgressData is in sync, use its level
                 level = progress.level
                 currentLevelXP = progress.xpForCurrentLevel
+                print("✅ [XP_REFRESH] Using UserProgressData level: \(level), currentLevelXP: \(currentLevelXP)")
             } else {
                 // Calculate level from XP
                 let levelInfo = calculateLevel(totalXP: totalXP)
                 level = levelInfo.level
                 currentLevelXP = levelInfo.currentLevelXP
+                print("✅ [XP_REFRESH] Calculated level from XP: \(level), currentLevelXP: \(currentLevelXP)")
                 
                 // Update UserProgressData if it exists but is out of sync
                 if let progress = progressRecords.first {
