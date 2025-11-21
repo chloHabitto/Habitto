@@ -4,6 +4,7 @@ import FirebaseCrashlytics
 import FirebaseRemoteConfig
 import GoogleSignIn
 import MijickPopups
+import OSLog
 import SwiftData
 import SwiftUI
 import UIKit
@@ -374,6 +375,12 @@ struct HabittoApp: App {
             Task.detached { @MainActor in
               try? await Task.sleep(nanoseconds: 500_000_000)
               await habitRepository.loadHabits()
+              
+              // ✅ PRIORITY 2: Run XP integrity check after data is loaded
+              // This ensures XP data is consistent on every app launch
+              Task.detached(priority: .background) { @MainActor in
+                await performXPIntegrityCheck()
+              }
             }
             
             // Defer heavy work until after the first frame renders
@@ -400,6 +407,87 @@ struct HabittoApp: App {
   @StateObject private var themeManager: ThemeManager
   @State private var xpManager: XPManager
   @State private var showSplash = true
+  
+  // MARK: - Integrity Checks
+  
+  /// Perform XP integrity check and auto-repair on app launch
+  ///
+  /// ✅ PRIORITY 2: Ensures XP data integrity by verifying that
+  /// UserProgressData.totalXP == sum(DailyAward.xpGranted).
+  ///
+  /// Runs in background to avoid blocking app startup.
+  /// Automatically repairs any mismatches found.
+  @MainActor
+  private func performXPIntegrityCheck() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "XPIntegrityCheck")
+    
+    logger.info("🔍 XP Integrity Check: Starting automatic integrity check on app launch...")
+    
+    // Prevent multiple simultaneous checks
+    struct IntegrityCheckLock {
+      static var isRunning = false
+    }
+    
+    guard !IntegrityCheckLock.isRunning else {
+      logger.info("⏭️ XP Integrity Check: Already running, skipping duplicate check")
+      return
+    }
+    
+    IntegrityCheckLock.isRunning = true
+    defer { IntegrityCheckLock.isRunning = false }
+    
+    do {
+      // Get current XP state before check (for comparison if repair is needed)
+      let awardService = DailyAwardService.shared
+      let xpStateBefore = awardService.xpState
+      let totalXPBefore = xpStateBefore?.totalXP ?? 0
+      
+      logger.info("🔍 XP Integrity Check: Current XP state - Total: \(totalXPBefore), Level: \(xpStateBefore?.level ?? 1)")
+      
+      // Perform integrity check and auto-repair
+      let wasValid = try await awardService.checkAndRepairIntegrity()
+      
+      if wasValid {
+        // Get XP state after check
+        let xpStateAfter = awardService.xpState
+        let totalXPAfter = xpStateAfter?.totalXP ?? 0
+        
+        if totalXPBefore != totalXPAfter {
+          // Repair was performed
+          logger.info("✅ XP Integrity Check: Integrity repaired successfully")
+          logger.info("   Before: Total XP = \(totalXPBefore), Level = \(xpStateBefore?.level ?? 1)")
+          logger.info("   After:  Total XP = \(totalXPAfter), Level = \(xpStateAfter?.level ?? 1)")
+          logger.info("   Delta:  \(totalXPAfter - totalXPBefore) XP")
+          
+          // TODO: Consider adding user notification if repair was significant
+          // if abs(totalXPAfter - totalXPBefore) > 50 {
+          //   // Notify user of significant repair
+          // }
+        } else {
+          // Integrity was already valid
+          logger.info("✅ XP Integrity Check: Integrity verified - no repair needed")
+          logger.info("   Total XP: \(totalXPAfter), Level: \(xpStateAfter?.level ?? 1)")
+        }
+      } else {
+        logger.warning("⚠️ XP Integrity Check: Integrity check returned false (unexpected)")
+      }
+      
+    } catch {
+      // Handle errors gracefully - don't crash app
+      logger.error("❌ XP Integrity Check: Failed to perform integrity check: \(error.localizedDescription)")
+      logger.error("   Error details: \(error)")
+      
+      // Log error to Crashlytics for monitoring (if available)
+      #if canImport(FirebaseCrashlytics)
+      Crashlytics.crashlytics().record(error: error)
+      #endif
+      
+      // Continue app launch even if integrity check fails
+      // User can manually trigger repair if needed
+    }
+    
+    logger.info("✅ XP Integrity Check: Completed")
+  }
 }
 
 private func setupCoreData() {

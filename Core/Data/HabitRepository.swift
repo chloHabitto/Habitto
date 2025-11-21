@@ -1058,8 +1058,6 @@ class HabitRepository: ObservableObject {
       return
     }
 
-    let userId = await CurrentUser().idOrGuest
-
     Task.detached(priority: .background) { [snapshotHabits] in
       guard !snapshotHabits.isEmpty else { return }
       let notificationManager = NotificationManager.shared
