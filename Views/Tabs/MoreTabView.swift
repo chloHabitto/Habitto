@@ -160,8 +160,9 @@ struct MoreTabView: View {
       }
       */
       .task {
-        // Check iCloud status when view appears
-        await icloudStatus.checkStatus()
+        // Note: iCloud status check is disabled until CloudKit entitlement is configured
+        // Uncomment below after enabling CloudKit in Xcode entitlements
+        // await icloudStatus.checkStatus()
       }
       .onAppear {
         // 🔍 DEBUG: Log XP when tab appears

@@ -22,8 +22,13 @@ final class ICloudStatusManager: ObservableObject {
   // MARK: - Lifecycle
   
   private init() {
-    Task {
-      await checkStatus()
+    // Don't check status automatically on init to prevent crashes
+    // CloudKit APIs may crash if entitlement is not configured
+    // Status will be checked when explicitly requested (e.g., user taps sync status)
+    // For now, show default message
+    Task { @MainActor in
+      self.statusMessage = "Local only"
+      self.isAvailable = false
     }
   }
   
@@ -33,6 +38,19 @@ final class ICloudStatusManager: ObservableObject {
   func checkStatus() async {
     let logger = Logger(subsystem: "com.habitto.app", category: "ICloudStatus")
     
+    // First check if iCloud Drive is available (prerequisite for CloudKit)
+    guard FileManager.default.ubiquityIdentityToken != nil else {
+      await MainActor.run {
+        self.accountStatus = .couldNotDetermine
+        self.isAvailable = false
+        self.statusMessage = "Local only"
+        logger.info("⚠️ iCloud: iCloud Drive not available - using local storage")
+      }
+      return
+    }
+    
+    // Try to check CloudKit status - this may fail if entitlement is not configured
+    // We'll catch the error and handle it gracefully
     do {
       let container = CKContainer.default()
       let status = try await container.accountStatus()
@@ -73,10 +91,28 @@ final class ICloudStatusManager: ObservableObject {
         }
       }
     } catch {
+      // Handle CloudKit errors gracefully
+      // The error might be due to missing entitlement or other CloudKit issues
+      let errorDescription = error.localizedDescription
+      let nsError = error as NSError
+      
+      // Check if this is an entitlement-related error
+      let isEntitlementError = errorDescription.contains("icloud-services entitlement") ||
+                               errorDescription.contains("entitlement") ||
+                               nsError.domain.contains("CloudKit")
+      
       await MainActor.run {
-        self.isAvailable = false
-        self.statusMessage = "Error checking iCloud: \(error.localizedDescription)"
-        logger.error("❌ iCloud: Failed to check account status - \(error.localizedDescription)")
+        if isEntitlementError {
+          self.accountStatus = .couldNotDetermine
+          self.isAvailable = false
+          self.statusMessage = "Local only (iCloud not configured)"
+          logger.warning("⚠️ iCloud: CloudKit entitlement not configured - using local storage")
+        } else {
+          self.accountStatus = .couldNotDetermine
+          self.isAvailable = false
+          self.statusMessage = "Unable to check iCloud status"
+          logger.error("❌ iCloud: Error checking status - \(errorDescription)")
+        }
       }
     }
   }
