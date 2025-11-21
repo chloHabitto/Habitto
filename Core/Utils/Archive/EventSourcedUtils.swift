@@ -151,15 +151,11 @@ enum EventSourcedUtils {
   // MARK: - User ID Utilities
   
   /// Get the current user ID for sync operations
+  /// ✅ GUEST MODE ONLY: Always returns empty string (guest mode)
   /// This is thread-safe and can be called from any context
   static func getCurrentUserId() -> String {
-    // Use FirebaseAuth directly (thread-safe)
-    if let currentUser = Auth.auth().currentUser {
-      return currentUser.uid
-    }
-    
-    // Fallback to guest user
-    return "guest"
+    // Always return empty string (guest mode) - no anonymous auth
+    return ""
   }
 }
 

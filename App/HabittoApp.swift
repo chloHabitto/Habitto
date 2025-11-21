@@ -384,48 +384,42 @@ struct HabittoApp: App {
             
             setupCoreData()
 
-            // ✅ STEP 1: Ensure anonymous authentication for cloud backup
-            // This runs silently in the background - no UI changes
+            // ✅ GUEST MODE ONLY: No anonymous authentication
+            // All users use userId = "" (guest mode)
             Task { @MainActor in
-              await authManager.ensureAnonymousAuth()
-              
-              // After anonymous auth, migrate guest data if needed
-              await migrateGuestDataToAnonymousUser()
-              
               // ✅ FORCE RELOAD - Reload data after repair to ensure UI sees fixed relationships
               print("🔄 [RELOAD] Forcing data reload after relationship repair...")
               await habitRepository.loadHabits()
               
               // Reload XP - Use the @State instance that the UI is observing
-              if let userId = authManager.currentUser?.uid {
-                // ✅ DIAGNOSTIC: Check if instances are the same
-                let areSameInstance = xpManager === XPManager.shared
-                print("🔄 [RELOAD] Loading XP for userId: \(userId.prefix(8))...")
-                print("   xpManager === XPManager.shared: \(areSameInstance)")
-                print("   xpManager.totalXP before load: \(xpManager.totalXP)")
-                
-                // ✅ FIX: Refresh DailyAwardService FIRST to ensure xpState is correct
-                // This way the observer won't overwrite the loaded value
-                print("🔄 [RELOAD] Refreshing DailyAwardService state first...")
-                await DailyAwardService.shared.refreshXPState()
-                
-                // If DailyAwardService has the correct state, use it
-                if let xpState = DailyAwardService.shared.xpState, xpState.totalXP > 0 {
-                  print("✅ [RELOAD] DailyAwardService has correct XP state: \(xpState.totalXP) - using it")
-                  // The observer will automatically apply this state
-                } else {
-                  print("⚠️ [RELOAD] DailyAwardService state is nil or 0 - loading directly from SwiftData")
-                  // Use the @State instance that the UI is observing
-                  xpManager.loadUserXPFromSwiftData(
-                    userId: userId,
-                    modelContext: SwiftDataContainer.shared.modelContext
-                  )
-                }
-                
-                // Verify the load worked
-                print("   xpManager.totalXP after load: \(xpManager.totalXP)")
-                print("   XPManager.shared.totalXP after load: \(XPManager.shared.totalXP)")
+              let userId = await CurrentUser().idOrGuest // Always "" in guest mode
+              // ✅ DIAGNOSTIC: Check if instances are the same
+              let areSameInstance = xpManager === XPManager.shared
+              print("🔄 [RELOAD] Loading XP for userId: '\(userId.isEmpty ? "EMPTY_STRING" : userId.prefix(8))...'")
+              print("   xpManager === XPManager.shared: \(areSameInstance)")
+              print("   xpManager.totalXP before load: \(xpManager.totalXP)")
+              
+              // ✅ FIX: Refresh DailyAwardService FIRST to ensure xpState is correct
+              // This way the observer won't overwrite the loaded value
+              print("🔄 [RELOAD] Refreshing DailyAwardService state first...")
+              await DailyAwardService.shared.refreshXPState()
+              
+              // If DailyAwardService has the correct state, use it
+              if let xpState = DailyAwardService.shared.xpState, xpState.totalXP > 0 {
+                print("✅ [RELOAD] DailyAwardService has correct XP state: \(xpState.totalXP) - using it")
+                // The observer will automatically apply this state
+              } else {
+                print("⚠️ [RELOAD] DailyAwardService state is nil or 0 - loading directly from SwiftData")
+                // Use the @State instance that the UI is observing
+                xpManager.loadUserXPFromSwiftData(
+                  userId: userId,
+                  modelContext: SwiftDataContainer.shared.modelContext
+                )
               }
+              
+              // Verify the load worked
+              print("   xpManager.totalXP after load: \(xpManager.totalXP)")
+              print("   XPManager.shared.totalXP after load: \(XPManager.shared.totalXP)")
               
               // ✅ FORCE UI REFRESH - Ensure SwiftUI sees the updated data
               await MainActor.run {
@@ -1235,9 +1229,9 @@ struct HabittoApp: App {
     print(String(repeating: "=", count: 80))
     
     let context = SwiftDataContainer.shared.modelContext
-    let currentUserId = Auth.auth().currentUser?.uid ?? "nil"
+    let currentUserId = await CurrentUser().idOrGuest // Always "" in guest mode
     
-    print("\n🔍 Current authenticated userId: \(currentUserId)")
+    print("\n🔍 Current userId (guest mode): '\(currentUserId.isEmpty ? "EMPTY_STRING" : currentUserId)'")
     
     // 1. Check habits
     do {
@@ -1400,11 +1394,14 @@ struct HabittoApp: App {
   private func restoreProgressFromFirestore() async {
     print("🔧 [RESTORE] Starting progress restoration from Firestore...")
     
-    guard let userId = authManager.currentUser?.uid else {
-      print("⚠️ [RESTORE] No authenticated user - cannot restore from Firestore")
-      return
-    }
+    let userId = await CurrentUser().idOrGuest // Always "" in guest mode
     
+    // ✅ GUEST MODE: Firestore restore requires authentication
+    // In guest mode, we can't restore from Firestore, so skip it
+    print("ℹ️ [RESTORE] Guest mode - Firestore restore requires authentication, skipping")
+    return
+    
+    // Note: The code below is unreachable in guest mode, but kept for reference
     guard FirebaseApp.app() != nil else {
       print("⚠️ [RESTORE] Firebase not configured - cannot restore from Firestore")
       return
@@ -1547,13 +1544,12 @@ struct HabittoApp: App {
         await habitRepository.loadHabits()
         
         // Reload XP after restoring progress
-        if let userId = authManager.currentUser?.uid {
-          xpManager.loadUserXPFromSwiftData(
-            userId: userId,
-            modelContext: SwiftDataContainer.shared.modelContext
-          )
-          await DailyAwardService.shared.refreshXPState()
-        }
+        let userId = await CurrentUser().idOrGuest // Always "" in guest mode
+        xpManager.loadUserXPFromSwiftData(
+          userId: userId,
+          modelContext: SwiftDataContainer.shared.modelContext
+        )
+        await DailyAwardService.shared.refreshXPState()
         
         print("✅ [RESTORE] Habits and XP reloaded - restored progress should now be visible")
       } else {

@@ -13,22 +13,11 @@ struct CurrentUser {
   static let guestId = ""
 
   /// Get the current user ID, or guest identifier if not authenticated
+  /// ✅ GUEST MODE ONLY: Always returns empty string (guest mode)
   var id: String {
     get async {
-      await MainActor.run {
-        if let resolvedId = resolveUserId(from: AuthenticationManager.shared.currentUser) {
-          return resolvedId
-        }
-        
-        // ✅ FALLBACK: Auth.auth().currentUser is available before AuthenticationManager finishes setup
-        if let authUser = Auth.auth().currentUser,
-           let fallbackId = resolveUserId(from: authUser)
-        {
-          return fallbackId
-        }
-        
-        return Self.guestId
-      }
+      // Always return guest ID (empty string) - no anonymous auth
+      return Self.guestId
     }
   }
 
@@ -40,14 +29,10 @@ struct CurrentUser {
   }
 
   /// Check if current user is authenticated
+  /// ✅ GUEST MODE ONLY: Always returns false (no auth)
   var isAuthenticated: Bool {
     get async {
-      await MainActor.run {
-        if AuthenticationManager.shared.currentUser != nil {
-          return true
-        }
-        return Auth.auth().currentUser != nil
-      }
+      return false // Always guest mode - no authentication
     }
   }
 
