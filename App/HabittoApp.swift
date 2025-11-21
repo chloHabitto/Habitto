@@ -577,6 +577,8 @@ struct HabittoApp: App {
       return
     }
     
+    print("🔄 [GUEST_MIGRATION] Starting migration to anonymous user")
+    print("   Target User ID: \(newUserId)")
     logger.info("🔄 GuestMigration: Starting migration to anonymous user \(newUserId.prefix(8))...")
     
     do {
@@ -591,6 +593,7 @@ struct HabittoApp: App {
       let guestHabits = try modelContext.fetch(guestHabitsDescriptor)
       
       if !guestHabits.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(guestHabits.count) guest habits to migrate")
         logger.info("🔄 GuestMigration: Migrating \(guestHabits.count) habits...")
         
         for habitData in guestHabits {
@@ -604,7 +607,10 @@ struct HabittoApp: App {
         }
         
         try modelContext.save()
+        print("✅ [GUEST_MIGRATION] Migrated \(guestHabits.count) habits successfully")
         logger.info("✅ GuestMigration: Migrated \(guestHabits.count) habits")
+      } else {
+        print("ℹ️ [GUEST_MIGRATION] No guest habits found to migrate")
       }
       
       // 2. Migrate DailyAwards
@@ -616,6 +622,7 @@ struct HabittoApp: App {
       let guestAwards = try modelContext.fetch(guestAwardsDescriptor)
       
       if !guestAwards.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(guestAwards.count) guest daily awards to migrate")
         logger.info("🔄 GuestMigration: Migrating \(guestAwards.count) daily awards...")
         
         for award in guestAwards {
@@ -624,7 +631,10 @@ struct HabittoApp: App {
         }
         
         try modelContext.save()
+        print("✅ [GUEST_MIGRATION] Migrated \(guestAwards.count) daily awards successfully")
         logger.info("✅ GuestMigration: Migrated \(guestAwards.count) daily awards")
+      } else {
+        print("ℹ️ [GUEST_MIGRATION] No guest daily awards found to migrate")
       }
       
       // 3. Migrate UserProgressData
@@ -636,22 +646,29 @@ struct HabittoApp: App {
       let guestProgress = try modelContext.fetch(guestProgressDescriptor).first
       
       if let progress = guestProgress {
+        print("🔄 [GUEST_MIGRATION] Found user progress to migrate")
         logger.info("🔄 GuestMigration: Migrating user progress...")
         progress.userId = newUserId
         try modelContext.save()
+        print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
         logger.info("✅ GuestMigration: Migrated user progress")
+      } else {
+        print("ℹ️ [GUEST_MIGRATION] No guest user progress found to migrate")
       }
       
       // Mark migration as complete
       UserDefaults.standard.set(true, forKey: migrationKey)
+      print("✅ [GUEST_MIGRATION] Migration complete for user \(newUserId.prefix(8))...")
       logger.info("✅ GuestMigration: Migration complete for user \(newUserId.prefix(8))...")
       
       // Trigger backup of migrated data
+      print("🔄 [GUEST_MIGRATION] Starting backup of migrated data to Firestore...")
       Task.detached {
         await self.backupMigratedGuestData(userId: newUserId)
       }
       
     } catch {
+      print("❌ [GUEST_MIGRATION] FAILED: \(error.localizedDescription)")
       logger.error("❌ GuestMigration: Failed to migrate guest data: \(error.localizedDescription)")
       // Don't throw - app continues working
     }
@@ -660,18 +677,22 @@ struct HabittoApp: App {
   /// Backup migrated guest data to Firestore
   private func backupMigratedGuestData(userId: String) async {
     let logger = Logger(subsystem: "com.habitto.app", category: "GuestMigration")
+    print("🔄 [GUEST_MIGRATION] Backing up migrated data to Firestore...")
     logger.info("🔄 GuestMigration: Starting backup of migrated data...")
     
     // Load habits and backup them
     do {
       let habits = try await HabitStore.shared.loadHabits()
+      print("🔄 [GUEST_MIGRATION] Backing up \(habits.count) migrated habits...")
       for habit in habits {
         await MainActor.run {
           FirebaseBackupService.shared.backupHabit(habit)
         }
       }
+      print("✅ [GUEST_MIGRATION] Backup complete - \(habits.count) habits queued for backup")
       logger.info("✅ GuestMigration: Backed up \(habits.count) habits to Firestore")
     } catch {
+      print("❌ [GUEST_MIGRATION] Backup failed: \(error.localizedDescription)")
       logger.warning("⚠️ GuestMigration: Failed to backup habits: \(error.localizedDescription)")
     }
   }

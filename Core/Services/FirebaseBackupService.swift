@@ -105,9 +105,15 @@ class FirebaseBackupService {
 
       try await docRef.setData(dataWithTimestamp, merge: true)
       
+      print("☁️ [CLOUD_BACKUP] Habit backed up successfully")
+      print("   Habit: '\(habit.name)'")
+      print("   Habit ID: \(habit.id.uuidString.prefix(8))...")
+      print("   User ID: \(userId.prefix(8))...")
       logger.info("✅ FirebaseBackupService: Backed up habit '\(habit.name)' to Firestore")
     } catch {
       // Fail silently - don't interrupt user experience
+      print("⚠️ [CLOUD_BACKUP] Habit backup failed: \(error.localizedDescription)")
+      print("   Habit: '\(habit.name)'")
       logger.warning("⚠️ FirebaseBackupService: Failed to backup habit '\(habit.name)': \(error.localizedDescription)")
     }
   }
@@ -155,8 +161,15 @@ class FirebaseBackupService {
 
       try await docRef.setData(completionData, merge: true)
       
+      print("☁️ [CLOUD_BACKUP] Completion record backed up successfully")
+      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
+      print("   Date: \(dateKey)")
+      print("   Progress: \(progress)")
+      print("   Completed: \(isCompleted)")
       logger.debug("✅ FirebaseBackupService: Backed up completion record for habit \(habitId.uuidString.prefix(8))... on \(dateKey)")
     } catch {
+      print("⚠️ [CLOUD_BACKUP] Completion backup failed: \(error.localizedDescription)")
+      print("   Habit ID: \(habitId.uuidString.prefix(8))..., Date: \(dateKey)")
       logger.warning("⚠️ FirebaseBackupService: Failed to backup completion record: \(error.localizedDescription)")
     }
   }
@@ -190,8 +203,14 @@ class FirebaseBackupService {
 
       try await docRef.setData(awardData, merge: true)
       
+      print("☁️ [CLOUD_BACKUP] Daily award backed up successfully")
+      print("   Date: \(dateKey)")
+      print("   XP Granted: \(xpGranted)")
+      print("   All Habits Completed: \(allHabitsCompleted)")
       logger.debug("✅ FirebaseBackupService: Backed up daily award for \(dateKey)")
     } catch {
+      print("⚠️ [CLOUD_BACKUP] Daily award backup failed: \(error.localizedDescription)")
+      print("   Date: \(dateKey)")
       logger.warning("⚠️ FirebaseBackupService: Failed to backup daily award: \(error.localizedDescription)")
     }
   }
@@ -213,8 +232,12 @@ class FirebaseBackupService {
 
       try await docRef.delete()
       
+      print("☁️ [CLOUD_BACKUP] Habit deleted from Firestore")
+      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.info("✅ FirebaseBackupService: Deleted habit backup \(habitId.uuidString.prefix(8))... from Firestore")
     } catch {
+      print("⚠️ [CLOUD_BACKUP] Habit deletion failed: \(error.localizedDescription)")
+      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.warning("⚠️ FirebaseBackupService: Failed to delete habit backup: \(error.localizedDescription)")
     }
   }
