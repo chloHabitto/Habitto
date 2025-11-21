@@ -480,6 +480,158 @@ class DailyAwardService: ObservableObject {
     func stopListening() {
         logger.info("🛑 DailyAwardService: stopListening() called (no-op in guest-only mode)")
     }
+    
+    // MARK: - CompletionRecord Reconciliation
+    
+    /// Result of CompletionRecord reconciliation
+    struct ReconciliationResult {
+        let totalRecords: Int
+        let mismatchesFound: Int
+        let mismatchesFixed: Int
+        let errors: Int
+    }
+    
+    /// Reconcile all CompletionRecords from ProgressEvents (source of truth)
+    ///
+    /// ✅ PRIORITY 3: Ensures CompletionRecord.progress matches ProgressEvents.
+    /// This fixes any drift that may occur if one operation fails.
+    ///
+    /// Algorithm:
+    /// 1. Query all CompletionRecords for current user
+    /// 2. For each CompletionRecord:
+    ///    - Calculate progress from ProgressEvents (source of truth)
+    ///    - Compare with CompletionRecord.progress
+    ///    - Update if mismatch detected
+    /// 3. Save all changes in batch
+    ///
+    /// - Returns: ReconciliationResult with statistics
+    /// - Note: Safe to run multiple times (idempotent)
+    func reconcileCompletionRecords() async throws -> ReconciliationResult {
+        logger.info("🔧 DailyAwardService: Starting CompletionRecord reconciliation...")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let userId = await CurrentUser().idOrGuest
+        
+        // Query all CompletionRecords for current user
+        let recordPredicate = #Predicate<CompletionRecord> { record in
+            record.userId == userId
+        }
+        let recordDescriptor = FetchDescriptor<CompletionRecord>(predicate: recordPredicate)
+        let allRecords = try modelContext.fetch(recordDescriptor)
+        
+        logger.info("🔧 DailyAwardService: Found \(allRecords.count) CompletionRecords to reconcile")
+        
+        let totalRecords = allRecords.count
+        var mismatchesFound = 0
+        var mismatchesFixed = 0
+        var errors = 0
+        
+        // Cache HabitData lookups to avoid repeated queries
+        var habitDataCache: [UUID: HabitData] = [:]
+        
+        // Helper to get HabitData (with caching)
+        func getHabitData(habitId: UUID) -> HabitData? {
+            if let cached = habitDataCache[habitId] {
+                return cached
+            }
+            
+            let habitPredicate = #Predicate<HabitData> { habit in
+                habit.id == habitId && habit.userId == userId
+            }
+            let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+            
+            if let habitData = try? modelContext.fetch(habitDescriptor).first {
+                habitDataCache[habitId] = habitData
+                return habitData
+            }
+            
+            return nil
+        }
+        
+        // Helper to get goalAmount for a specific date
+        func getGoalAmount(habitData: HabitData, dateKey: String) -> Int {
+            // Parse dateKey to Date
+            guard let date = DateUtils.date(from: dateKey) else {
+                // Fallback: use current goal string
+                return StreakDataCalculator.parseGoalAmount(from: habitData.goal)
+            }
+            
+            // Convert HabitData to Habit to use goalAmount(for:) which considers goalHistory
+            // This is @MainActor, but we're already on MainActor
+            let habit = habitData.toHabit()
+            return habit.goalAmount(for: date)
+        }
+        
+        // Process each CompletionRecord
+        for record in allRecords {
+            let habitId = record.habitId
+            let dateKey = record.dateKey
+            let currentProgress = record.progress
+            let recordIdentifier = "habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)"
+            
+            // Get HabitData to determine goalAmount
+            guard let habitData = getHabitData(habitId: habitId) else {
+                logger.warning("⚠️ DailyAwardService: HabitData not found for \(recordIdentifier) (skipping CompletionRecord)")
+                errors += 1
+                continue
+            }
+            
+            // Get goalAmount for this date (considers goalHistory)
+            let goalAmount = getGoalAmount(habitData: habitData, dateKey: dateKey)
+            
+            // Calculate progress from ProgressEvents (source of truth)
+            // Note: calculateProgressFromEvents is async but doesn't throw
+            let eventResult = await ProgressEventService.shared.calculateProgressFromEvents(
+                habitId: habitId,
+                dateKey: dateKey,
+                goalAmount: goalAmount,
+                legacyProgress: nil  // Don't use legacy, we want pure event calculation
+            )
+            
+            let calculatedProgress = eventResult.progress
+            
+            // Compare with CompletionRecord.progress
+            if calculatedProgress != currentProgress {
+                mismatchesFound += 1
+                
+                logger.info("🔧 DailyAwardService: Mismatch detected for \(recordIdentifier)")
+                logger.info("   CompletionRecord.progress: \(currentProgress)")
+                logger.info("   Calculated from ProgressEvents: \(calculatedProgress)")
+                logger.info("   Delta: \(calculatedProgress - currentProgress)")
+                
+                // Update CompletionRecord to match ProgressEvents
+                record.progress = calculatedProgress
+                
+                // Update isCompleted based on calculated progress
+                record.isCompleted = calculatedProgress >= goalAmount
+                
+                mismatchesFixed += 1
+                
+                logger.info("✅ DailyAwardService: Updated CompletionRecord - progress: \(calculatedProgress), isCompleted: \(calculatedProgress >= goalAmount)")
+            }
+        }
+        
+        // Save all changes in batch
+        if mismatchesFixed > 0 {
+            try modelContext.save()
+            logger.info("✅ DailyAwardService: Saved \(mismatchesFixed) CompletionRecord updates")
+        }
+        
+        let result = ReconciliationResult(
+            totalRecords: totalRecords,
+            mismatchesFound: mismatchesFound,
+            mismatchesFixed: mismatchesFixed,
+            errors: errors
+        )
+        
+        logger.info("✅ DailyAwardService: Reconciliation complete")
+        logger.info("   Total records checked: \(totalRecords)")
+        logger.info("   Mismatches found: \(mismatchesFound)")
+        logger.info("   Mismatches fixed: \(mismatchesFixed)")
+        logger.info("   Errors: \(errors)")
+        
+        return result
+    }
 }
 
 // MARK: - Errors
