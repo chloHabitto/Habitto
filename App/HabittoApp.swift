@@ -1,5 +1,6 @@
 import FirebaseCore
 import FirebaseAuth
+import FirebaseFirestore
 // Note: Add these imports after adding packages in Xcode:
 import FirebaseCrashlytics
 import FirebaseRemoteConfig
@@ -1287,28 +1288,47 @@ struct HabittoApp: App {
     }
     
     do {
-      // Fetch habits from Firestore
-      print("🔧 [RESTORE] Fetching habits from Firestore...")
-      try await FirestoreService.shared.fetchHabits()
-      let firestoreHabits = FirestoreService.shared.habits
+      // ✅ CRITICAL FIX: Fetch RAW Firestore data directly, not through toHabit()
+      // toHabit() prioritizes SwiftData CompletionRecords (which have progress=0),
+      // so we need to read the raw Firestore completionHistory before it gets overridden
+      print("🔧 [RESTORE] Fetching RAW habits from Firestore (bypassing toHabit())...")
       
-      if firestoreHabits.isEmpty {
+      let db = Firestore.firestore()
+      let snapshot = try await db.collection("users")
+        .document(userId)
+        .collection("habits")
+        .whereField("isActive", isEqualTo: true)
+        .getDocuments()
+      
+      if snapshot.documents.isEmpty {
         print("ℹ️ [RESTORE] No habits found in Firestore - nothing to restore")
         print("   💡 If you had progress data, it may have been lost during migration")
         print("   💡 CompletionRecords exist but all have progress=0")
         return
       }
       
-      print("✅ [RESTORE] Found \(firestoreHabits.count) habits in Firestore")
+      print("✅ [RESTORE] Found \(snapshot.documents.count) habits in Firestore")
       
       let context = SwiftDataContainer.shared.modelContext
       var totalRestored = 0
       var totalSkipped = 0
       
       // For each habit from Firestore, restore progress to CompletionRecords
-      for firestoreHabit in firestoreHabits {
+      for doc in snapshot.documents {
+        // ✅ CRITICAL: Read RAW Firestore data, not through toHabit()
+        let firestoreHabit: FirestoreHabit
+        do {
+          firestoreHabit = try doc.data(as: FirestoreHabit.self)
+        } catch {
+          print("⚠️ [RESTORE] Failed to decode habit document \(doc.documentID): \(error) - skipping")
+          continue
+        }
         // Find the corresponding HabitData in SwiftData
-        let habitId = firestoreHabit.id
+        guard let habitIdString = firestoreHabit.id,
+              let habitId = UUID(uuidString: habitIdString) else {
+          print("⚠️ [RESTORE] Invalid habit ID in Firestore document \(doc.documentID) - skipping")
+          continue
+        }
         let habitPredicate = #Predicate<HabitData> { habit in
           habit.id == habitId && habit.userId == userId
         }
@@ -1320,23 +1340,37 @@ struct HabittoApp: App {
         }
         
         print("🔧 [RESTORE] Processing habit '\(firestoreHabit.name)' - \(firestoreHabit.completionHistory.count) entries in Firestore")
+        print("   🔍 [RESTORE] Raw Firestore completionHistory: \(firestoreHabit.completionHistory)")
+        print("   🔍 [RESTORE] Raw Firestore completionStatus: \(firestoreHabit.completionStatus)")
         
-        // Restore progress from Firestore completionHistory
+        // ✅ CRITICAL: Restore progress from RAW Firestore completionHistory (not from toHabit())
+        // This is the actual data stored in Firestore, before it gets overridden by SwiftData CompletionRecords
         for (dateKey, progress) in firestoreHabit.completionHistory {
           guard progress > 0 else {
             totalSkipped += 1
+            print("   ⏭️ [RESTORE] Skipping \(dateKey): progress=\(progress) (0 or negative)")
             continue // Skip 0 progress entries
           }
           
           // Find or create CompletionRecord
           // ✅ FIX: Capture habitId in a local variable to avoid predicate cross-reference issues
           let recordHabitId = habitData.id
+          let recordDateKey = dateKey
+          let recordUserId = userId
           let recordPredicate = #Predicate<CompletionRecord> { record in
-            record.habitId == recordHabitId && record.dateKey == dateKey && record.userId == userId
+            record.habitId == recordHabitId && record.dateKey == recordDateKey && record.userId == recordUserId
           }
           let recordDescriptor = FetchDescriptor<CompletionRecord>(predicate: recordPredicate)
           
-          if let record = try? context.fetch(recordDescriptor).first {
+          let existingRecord: CompletionRecord?
+          do {
+            existingRecord = try context.fetch(recordDescriptor).first
+          } catch {
+            print("⚠️ [RESTORE] Failed to fetch CompletionRecord: \(error) - skipping")
+            continue
+          }
+          
+          if let record = existingRecord {
             // Update existing record if progress is 0
             if record.progress == 0 && progress > 0 {
               record.progress = progress
@@ -1400,9 +1434,15 @@ struct HabittoApp: App {
         
         print("✅ [RESTORE] Habits and XP reloaded - restored progress should now be visible")
       } else {
-        print("ℹ️ [RESTORE] No progress data to restore")
-        print("   💡 All CompletionRecords already have progress > 0, or Firestore has no progress data")
-        print("   💡 If your progress is still missing, the data may have been lost during migration")
+        print("❌ [RESTORE] No progress data to restore")
+        print("   💡 Firestore completionHistory has \(totalSkipped) entries, but all have progress=0")
+        print("   💡 This means the data was lost before it was backed up to Firestore")
+        print("   💡 OR the corrupted data (progress=0) was synced to Firestore, overwriting the good data")
+        print("   💡 Your progress data appears to be permanently lost")
+        print("   💡 You will need to manually mark habits as completed again")
+        
+        // Check if there's any data in UserDefaults as a last resort
+        await checkUserDefaultsForRecovery()
       }
       
     } catch {
@@ -1410,6 +1450,53 @@ struct HabittoApp: App {
       print("   Error details: \(error)")
       print("   💡 Your progress data may be lost if it wasn't backed up to Firestore")
     }
+  }
+  
+  /// Check UserDefaults for any backup data that might help recover progress
+  @MainActor
+  private func checkUserDefaultsForRecovery() async {
+    print("🔍 [RECOVERY] Checking UserDefaults for backup data...")
+    
+    // Check common UserDefaults keys
+    let possibleKeys = ["SavedHabits", "guest_habits", "habits", "user_progress"]
+    
+    for key in possibleKeys {
+      if let data = UserDefaults.standard.data(forKey: key) {
+        print("   ✅ Found data in UserDefaults key: \(key) (size: \(data.count) bytes)")
+        
+        if key == "user_progress" {
+          // Try to decode as UserProgress
+          if let progress = try? JSONDecoder().decode(UserProgress.self, from: data) {
+            print("   📊 UserProgress found: totalXP=\(progress.totalXP), level=\(progress.currentLevel)")
+            if progress.totalXP > 0 {
+              print("   ⚠️ UserProgress has XP but CompletionRecords don't - data mismatch detected")
+            }
+          }
+        } else {
+          // Try to decode as habits
+          if let habits = try? JSONDecoder().decode([Habit].self, from: data) {
+            print("   📊 Found \(habits.count) habits in UserDefaults")
+            var totalProgressEntries = 0
+            var totalNonZeroProgress = 0
+            for habit in habits {
+              for (_, progress) in habit.completionHistory {
+                totalProgressEntries += 1
+                if progress > 0 {
+                  totalNonZeroProgress += 1
+                }
+              }
+            }
+            print("   📊 Total progress entries: \(totalProgressEntries), Non-zero: \(totalNonZeroProgress)")
+            if totalNonZeroProgress > 0 {
+              print("   ⚠️ UserDefaults has progress data but SwiftData doesn't - potential recovery source")
+              print("   💡 However, UserDefaults data may be outdated - use with caution")
+            }
+          }
+        }
+      }
+    }
+    
+    print("🔍 [RECOVERY] UserDefaults check complete")
   }
   
   /// Repair broken CompletionRecord relationships
