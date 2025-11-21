@@ -435,13 +435,29 @@ class DailyAwardService: ObservableObject {
             let awards = try modelContext.fetch(awardDescriptor)
             print("🔍 [XP_REFRESH] Predicate query returned: \(awards.count) awards")
             
-            // ✅ FALLBACK: If predicate returns 0 but we have awards, use code filter
+            // ✅ FALLBACK: If predicate returns 0 but we have awards, check for userId mismatches
             var finalAwards = awards
             if awards.isEmpty && !allAwards.isEmpty {
+                // First try code filter with exact userId match
                 let filtered = allAwards.filter { $0.userId == userId }
                 if !filtered.isEmpty {
                     print("⚠️ [XP_REFRESH] Predicate returned 0, but found \(filtered.count) awards with code filter - using filtered results")
                     finalAwards = filtered
+                } else {
+                    // If still empty, check for guest/empty string mismatches
+                    // This handles cases where awards were saved with "" but user is now authenticated (or vice versa)
+                    if userId.isEmpty {
+                        // Current user is guest - check for any awards with empty userId
+                        let guestAwards = allAwards.filter { $0.userId.isEmpty }
+                        if !guestAwards.isEmpty {
+                            print("⚠️ [XP_REFRESH] Found \(guestAwards.count) awards with empty userId (guest) - using them")
+                            finalAwards = guestAwards
+                        }
+                    } else {
+                        // Current user is authenticated - check if there are awards with empty userId that should be migrated
+                        // For now, we'll use empty array and let the repair function fix it
+                        print("⚠️ [XP_REFRESH] No awards found for authenticated userId - may need userId repair")
+                    }
                 }
             }
             
