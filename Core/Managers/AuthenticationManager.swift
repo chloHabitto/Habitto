@@ -90,9 +90,17 @@ class AuthenticationManager: ObservableObject {
   /// This runs automatically on app launch to enable invisible cloud backup
   /// Falls back to guest mode if Firebase is not available
   func ensureAnonymousAuth() async {
-    // Check if Firebase is configured
+    // ✅ CRITICAL: Check if Firebase is configured AND GoogleService-Info.plist exists
+    guard AppEnvironment.isFirebaseConfigured else {
+      print("⚠️ [ANONYMOUS_AUTH] Firebase not configured - GoogleService-Info.plist missing")
+      print("ℹ️ [ANONYMOUS_AUTH] App will run in guest mode (offline-only)")
+      print("ℹ️ [ANONYMOUS_AUTH] Your existing habits will still be visible")
+      return
+    }
+    
     guard FirebaseApp.app() != nil else {
-      print("⚠️ AuthenticationManager: Firebase not configured, skipping anonymous auth")
+      print("⚠️ [ANONYMOUS_AUTH] Firebase not initialized, skipping anonymous auth")
+      print("ℹ️ [ANONYMOUS_AUTH] App will run in guest mode (offline-only)")
       return
     }
     

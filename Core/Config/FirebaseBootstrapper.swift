@@ -1,6 +1,8 @@
 import FirebaseCore
 import Foundation
 
+// AppEnvironment is in Config/Env.swift - accessible from same module
+
 enum FirebaseBootstrapper {
   private static var didConfigure = false
   private static let lock = NSLock()
@@ -19,6 +21,14 @@ enum FirebaseBootstrapper {
       return
     }
     lock.unlock()
+
+    // ✅ CRITICAL: Check if GoogleService-Info.plist exists before configuring
+    guard AppEnvironment.isFirebaseConfigured else {
+      debugLog("⚠️ FirebaseBootstrapper (\(source)): GoogleService-Info.plist not found")
+      debugLog("📝 App will run in guest mode (offline-only)")
+      debugLog("📝 Add GoogleService-Info.plist to enable Firebase features")
+      return
+    }
 
     debugLog("🔥 FirebaseBootstrapper (\(source)): Configuring Firebase")
     FirebaseApp.configure()
