@@ -188,80 +188,6 @@ struct ProfileView: View {
             .padding(.bottom, 20)
           }
 
-          // DISABLED: Sign-in functionality commented out for future use
-          /*
-          // Guest mode overlay with gradient blur and sign-in prompt
-          if !isLoggedIn {
-            ZStack {
-              // Gradient overlay that blurs the background
-              LinearGradient(
-                gradient: Gradient(colors: [
-                  Color.surface2.opacity(0.3),
-                  Color.surface2.opacity(0.6),
-                  Color.surface2.opacity(0.85),
-                  Color.surface2.opacity(0.95),
-                  Color.surface2.opacity(1.0)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom)
-                .ignoresSafeArea()
-                .blur(radius: 0.5)
-              
-              // Sign-in message and button on top
-              VStack(spacing: 20) {
-                Spacer()
-                
-                VStack(spacing: 16) {
-                  Text("Sign in to edit your profile")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
-
-                  HabittoButton(
-                    size: .large,
-                    style: .fillPrimary,
-                    content: .text("Sign In"),
-                    hugging: false)
-                  {
-                    showingSignIn = true
-                  }
-                  .padding(.horizontal, 20)
-                }
-                .padding(.bottom, 40)
-              }
-            }
-          }
-          */
-          // DISABLED: Guest mode overlay - profile editing unavailable (commented out)
-          /*
-          // Guest mode overlay - profile editing unavailable
-          if !isLoggedIn {
-            ZStack {
-              // Gradient overlay that blurs the background
-              LinearGradient(
-                gradient: Gradient(colors: [
-                  Color.surface2.opacity(0.3),
-                  Color.surface2.opacity(0.6),
-                  Color.surface2.opacity(0.85),
-                  Color.surface2.opacity(0.95),
-                  Color.surface2.opacity(1.0)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom)
-                .ignoresSafeArea()
-                .blur(radius: 0.5)
-              
-              // Message on top
-              VStack(spacing: 20) {
-                Spacer()
-                
-                VStack(spacing: 16) {
-                  Text("Profile editing is currently unavailable")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 40)
               }
@@ -357,12 +283,6 @@ struct ProfileView: View {
         avatarManager.selectCustomPhoto(image)
       }
     }
-    // DISABLED: Sign-in functionality commented out for future use
-    /*
-    .sheet(isPresented: $showingSignIn) {
-      LoginView()
-    }
-    */
     .alert("Welcome!", isPresented: $showingMigrationAlert) {
       Button("Start Fresh") {
         avatarManager.clearGuestData()
@@ -394,7 +314,6 @@ struct ProfileView: View {
   @State private var showingAvatarSelection = false
   @State private var showingCamera = false
   @State private var showingPhotoLibrary = false
-  @State private var showingSignIn = false
   @State private var showingMigrationAlert = false
   @State private var hasGuestData = false
 

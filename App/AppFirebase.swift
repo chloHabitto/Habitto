@@ -96,28 +96,7 @@ enum FirebaseConfiguration {
     debugLog("✅ FirebaseConfiguration: Firebase Auth configured")
   }
   
-  // DISABLED: Sign-in functionality commented out for future use
-  /*
-  /// Ensure user is authenticated (sign in anonymously if needed)
-  @MainActor
-  static func ensureAuthenticated() async throws -> String {
-    debugLog("🔐 FirebaseConfiguration: Ensuring user authentication...")
-    
-    // Check if user is already signed in
-    if let currentUser = Auth.auth().currentUser {
-      debugLog("✅ FirebaseConfiguration: User already signed in: \(currentUser.uid)")
-      return currentUser.uid
-    }
-    
-    // Sign in anonymously
-    debugLog("🔐 FirebaseConfiguration: No user signed in, signing in anonymously...")
-    let result = try await Auth.auth().signInAnonymously()
-    let uid = result.user.uid
-    
-    debugLog("✅ FirebaseConfiguration: Anonymous sign-in successful: \(uid)")
-    return uid
-  }
-  */
+  // Note: Anonymous authentication functionality has been removed - can be restored from git history if needed
   
   /// Get current user ID (nil if not authenticated)
   @MainActor

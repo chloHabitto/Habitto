@@ -25,21 +25,6 @@ struct AccountView: View {
                   .padding(.horizontal, 20)
                   .padding(.top, 8)
                 
-                // DISABLED: Sign-in functionality commented out for future use
-                /*
-                // Personal Information Section
-                VStack(spacing: 0) {
-                  AccountOptionRow(
-                    icon: "Icon-Profile_Filled",
-                    title: "Personal Information",
-                    subtitle: "Manage your personal details",
-                    hasChevron: true,
-                    iconColor: .navy200)
-                  {
-                    showingPersonalInformation = true
-                  }
-                }
-                */
                 .background(Color.surface)
                 .cornerRadius(16)
                 .padding(.horizontal, 20)
@@ -121,30 +106,6 @@ struct AccountView: View {
             .background(Color.surface2)
           }
         } else {
-          // DISABLED: Sign-in functionality commented out for future use
-          /*
-          // Guest mode - simple text prompt with sign in button
-            VStack(spacing: 24) {
-            Spacer()
-            
-            Text("Sign in to access your account")
-              .font(.appBodyLarge)
-                  .foregroundColor(.text01)
-                  .multilineTextAlignment(.center)
-              .padding(.horizontal, 40)
-
-              HabittoButton(
-                size: .large,
-                style: .fillPrimary,
-                content: .text("Sign In"),
-                action: {
-                  showingLoginView = true
-                })
-                .padding(.horizontal, 20)
-
-            Spacer()
-          }
-          */
           // Guest mode - empty state
           VStack(spacing: 24) {
             Spacer()
@@ -176,15 +137,6 @@ struct AccountView: View {
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
     }
-    // DISABLED: Sign-in functionality commented out for future use
-    /*
-    .sheet(isPresented: $showingLoginView) {
-      LoginView()
-    }
-    .sheet(isPresented: $showingPersonalInformation) {
-      PersonalInformationView()
-    }
-    */
     .sheet(isPresented: $showingDeleteAccountConfirmation) {
       AccountDeletionConfirmationView()
     }
@@ -220,8 +172,6 @@ struct AccountView: View {
 
   // State variables for showing different screens
   @State private var showingDataPrivacy = false
-  @State private var showingLoginView = false
-  @State private var showingPersonalInformation = false
   @State private var showingSignOutAlert = false
   @State private var showingDeleteAccountConfirmation = false
   @State private var showingDebugAlert = false

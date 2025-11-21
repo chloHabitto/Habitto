@@ -13,7 +13,6 @@ struct HeaderView: View {
   @EnvironmentObject var vacationManager: VacationManager
   @ObservedObject private var avatarManager = AvatarManager.shared
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
-  @State private var showingLoginView = false
   @State private var showingProfileView = false
   @State private var showingSubscriptionView = false
 
@@ -132,20 +131,7 @@ struct HeaderView: View {
       Spacer()
 
       if showProfile {
-        // DISABLED: Sign-in functionality commented out for future use
-        /*
-        // Only show Sign In button when user is not signed in
-        if !isLoggedIn {
-          HabittoButton(
-            size: .small,
-            style: .fillNeutral,
-            content: .text("Sign In"),
-            hugging: true)
-          {
-            showingLoginView = true
-          }
-        }
-        */
+        // Profile button - sign-in functionality removed
       } else {
         // Crown button and Add button with advanced glass effect
         HStack(spacing: 12) {
@@ -219,12 +205,6 @@ struct HeaderView: View {
     .padding(.trailing, 16)
     .padding(.top, 16)
     .padding(.bottom, 24)
-    // DISABLED: Sign-in functionality commented out for future use
-    /*
-    .sheet(isPresented: $showingLoginView) {
-      LoginView()
-    }
-    */
     .sheet(isPresented: $showingProfileView) {
       ProfileView()
     }
