@@ -134,41 +134,28 @@ final class GuestToAuthMigration {
     logger.info("   To: \(authUserId)")
     
     var migratedCount = 0
-    var errorCount = 0
     
     for event in guestEvents {
-      do {
-        let oldUserId = event.userId
-        
-        // Update userId
-        event.userId = authUserId
-        
-        // ✅ NOTE: operationId doesn't need to be updated
-        // operationId format: "{deviceId}_{timestamp}_{uuid}"
-        // It's already unique per device+timestamp+uuid, so no userId needed
-        // The ProgressEvent.id also doesn't contain userId, so it's fine as-is
-        // Format: "evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}"
-        
-        migratedCount += 1
-        
-        if migratedCount % 100 == 0 {
-          logger.debug("  📊 Migrated \(migratedCount) of \(guestEvents.count) ProgressEvents...")
-        }
-      } catch {
-        errorCount += 1
-        logger.error("❌ Failed to migrate ProgressEvent \(event.id.prefix(20))...: \(error.localizedDescription)")
-        // Continue with other events even if one fails
+      // Update userId
+      event.userId = authUserId
+      
+      // ✅ NOTE: operationId doesn't need to be updated
+      // operationId format: "{deviceId}_{timestamp}_{uuid}"
+      // It's already unique per device+timestamp+uuid, so no userId needed
+      // The ProgressEvent.id also doesn't contain userId, so it's fine as-is
+      // Format: "evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}"
+      
+      migratedCount += 1
+      
+      if migratedCount % 100 == 0 {
+        logger.debug("  📊 Migrated \(migratedCount) of \(guestEvents.count) ProgressEvents...")
       }
     }
     
     // Save all changes atomically
     try context.save()
     
-    logger.info("✅ Migrated \(migratedCount) ProgressEvents (errors: \(errorCount))")
-    
-    if errorCount > 0 {
-      logger.warning("⚠️ Some ProgressEvents failed to migrate - check logs above")
-    }
+    logger.info("✅ Migrated \(migratedCount) ProgressEvents")
     
     // ✅ VERIFICATION: Verify that all events were migrated
     let verifyDescriptor = FetchDescriptor<ProgressEvent>(
