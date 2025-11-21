@@ -75,6 +75,10 @@ final class GuestToAuthMigration {
     // Save changes
     try context.save()
     
+    // ✅ PRIORITY 1: Migrate ProgressEvents (event-sourcing source of truth)
+    // Must migrate before other data to ensure event-sourcing integrity
+    try await migrateProgressEvents(from: guestUserId, to: authUserId, context: context)
+    
     // Migrate related data (DailyAwards, etc.)
     try await migrateDailyAwards(from: guestUserId, to: authUserId, context: context)
     try await migrateUserProgress(from: guestUserId, to: authUserId, context: context)
@@ -95,6 +99,92 @@ final class GuestToAuthMigration {
   }
   
   // MARK: Private
+  
+  /// Migrate ProgressEvents from guest to authenticated user
+  ///
+  /// ✅ PRIORITY 1: ProgressEvents are the source of truth for event-sourcing.
+  /// Without this migration, event replay would fail for migrated habits.
+  ///
+  /// - Parameters:
+  ///   - guestUserId: The guest user ID (empty string for true guest)
+  ///   - authUserId: The authenticated user ID to migrate to
+  ///   - context: The SwiftData ModelContext
+  private func migrateProgressEvents(from guestUserId: String, to authUserId: String, context: ModelContext) async throws {
+    var descriptor = FetchDescriptor<ProgressEvent>()
+    
+    if guestUserId.isEmpty {
+      descriptor.predicate = #Predicate<ProgressEvent> { event in
+        event.userId == ""
+      }
+    } else {
+      descriptor.predicate = #Predicate<ProgressEvent> { event in
+        event.userId == guestUserId
+      }
+    }
+    
+    let guestEvents = try context.fetch(descriptor)
+    
+    guard !guestEvents.isEmpty else {
+      logger.info("ℹ️ No guest ProgressEvents to migrate")
+      return
+    }
+    
+    logger.info("📦 Migrating \(guestEvents.count) ProgressEvents...")
+    logger.info("   From: \(guestUserId.isEmpty ? "guest (empty)" : guestUserId)")
+    logger.info("   To: \(authUserId)")
+    
+    var migratedCount = 0
+    var errorCount = 0
+    
+    for event in guestEvents {
+      do {
+        let oldUserId = event.userId
+        
+        // Update userId
+        event.userId = authUserId
+        
+        // ✅ NOTE: operationId doesn't need to be updated
+        // operationId format: "{deviceId}_{timestamp}_{uuid}"
+        // It's already unique per device+timestamp+uuid, so no userId needed
+        // The ProgressEvent.id also doesn't contain userId, so it's fine as-is
+        // Format: "evt_{habitId}_{dateKey}_{deviceId}_{sequenceNumber}"
+        
+        migratedCount += 1
+        
+        if migratedCount % 100 == 0 {
+          logger.debug("  📊 Migrated \(migratedCount) of \(guestEvents.count) ProgressEvents...")
+        }
+      } catch {
+        errorCount += 1
+        logger.error("❌ Failed to migrate ProgressEvent \(event.id.prefix(20))...: \(error.localizedDescription)")
+        // Continue with other events even if one fails
+      }
+    }
+    
+    // Save all changes atomically
+    try context.save()
+    
+    logger.info("✅ Migrated \(migratedCount) ProgressEvents (errors: \(errorCount))")
+    
+    if errorCount > 0 {
+      logger.warning("⚠️ Some ProgressEvents failed to migrate - check logs above")
+    }
+    
+    // ✅ VERIFICATION: Verify that all events were migrated
+    let verifyDescriptor = FetchDescriptor<ProgressEvent>(
+      predicate: #Predicate<ProgressEvent> { event in
+        event.userId == (guestUserId.isEmpty ? "" : guestUserId)
+      }
+    )
+    let remainingEvents = try context.fetch(verifyDescriptor)
+    
+    if !remainingEvents.isEmpty {
+      logger.warning("⚠️ WARNING: \(remainingEvents.count) ProgressEvents still have guest userId after migration!")
+      logger.warning("   This indicates a migration issue - some events may not have been migrated")
+    } else {
+      logger.info("✅ VERIFIED: All ProgressEvents successfully migrated (0 remaining with guest userId)")
+    }
+  }
   
   private func migrateDailyAwards(from guestUserId: String, to authUserId: String, context: ModelContext) async throws {
     var descriptor = FetchDescriptor<DailyAward>()
