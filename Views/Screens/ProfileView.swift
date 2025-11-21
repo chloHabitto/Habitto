@@ -212,7 +212,7 @@ struct ProfileView: View {
                 Spacer()
                 
                 VStack(spacing: 16) {
-                  Text("Sign in or Sign up to edit your profile")
+                  Text("Sign in to edit your profile")
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
                     .multilineTextAlignment(.center)
