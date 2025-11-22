@@ -301,18 +301,26 @@ extension GlobalStreakModel {
 // MARK: - Computed Statistics
 
 extension GlobalStreakModel {
-    /// Calculate average streak length from completed streaks
+    /// Calculate average streak length from all streaks (completed + current)
     /// **Logic:**
-    /// - Only includes completed streaks from streakHistory
-    /// - Does NOT include current ongoing streak (only completed ones)
-    /// - Returns 0 if no streak history exists
-    /// **Example:** streakHistory = [5, 3, 7, 1] → average = 4.0 → displayed as "4 days"
+    /// - Includes both completed streaks (streakHistory) and current ongoing streak
+    /// - Provides a more accurate and intuitive average that includes all streak activity
+    /// - Returns 0 only if no streaks exist at all
+    /// **Example:** streakHistory = [5, 3, 7], currentStreak = 2 → average = (5+3+7+2)/4 = 4.25 ≈ 4 days
+    /// **Example:** streakHistory = [], currentStreak = 2 → average = 2 (first streak)
     var averageStreak: Int {
-        guard !streakHistory.isEmpty else { return 0 }
+        var allStreaks = streakHistory
         
-        let total = streakHistory.reduce(0, +)
-        let average = Double(total) / Double(streakHistory.count)
+        // Include current streak if it exists
+        if currentStreak > 0 {
+            allStreaks.append(currentStreak)
+        }
         
+        guard !allStreaks.isEmpty else { return 0 }
+        
+        // Calculate average from all streaks (completed + current)
+        let total = allStreaks.reduce(0, +)
+        let average = Double(total) / Double(allStreaks.count)
         return Int(average.rounded())
     }
 }
