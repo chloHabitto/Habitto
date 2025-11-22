@@ -387,16 +387,8 @@ class HomeViewState: ObservableObject {
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
     Task { @MainActor in
       do {
-        // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
-        let currentUser = AuthenticationManager.shared.currentUser
-        let userId: String
-        if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
-          userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
-        } else if let uid = currentUser?.uid {
-          userId = uid // Authenticated non-anonymous user
-        } else {
-          userId = "" // No user = guest
-        }
+        // ✅ GUEST MODE ONLY: Always use empty string for userId
+        let userId = await CurrentUser().idOrGuest // Always "" in guest mode
         
         let modelContext = SwiftDataContainer.shared.modelContext
         

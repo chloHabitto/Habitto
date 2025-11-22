@@ -144,7 +144,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           existingHabitData.usageHistory.removeAll()
           for (key, value) in habit.actualUsage {
             let usageRecord = await UsageRecord(
-              userId: getCurrentUserId() ?? "",
+              userId: await getCurrentUserId() ?? "",
               habitId: existingHabitData.id,
               key: key,
               value: value)
@@ -154,7 +154,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           // Create new habit with user ID
           let habitData = await HabitData(
             id: habit.id,
-            userId: getCurrentUserId() ?? "", // Use current user ID or empty string for guest
+            userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
             name: habit.name,
             habitDescription: habit.description,
             icon: habit.icon,
@@ -217,7 +217,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           // Add usage history
           for (key, value) in habit.actualUsage {
             let usageRecord = await UsageRecord(
-              userId: getCurrentUserId() ?? "",
+              userId: await getCurrentUserId() ?? "",
               habitId: habitData.id,
               key: key,
               value: value)
@@ -589,7 +589,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         existingHabitData.usageHistory.removeAll()
         for (key, value) in habit.actualUsage {
           let usageRecord = await UsageRecord(
-            userId: getCurrentUserId() ?? "",
+            userId: await getCurrentUserId() ?? "",
             habitId: existingHabitData.id,
             key: key,
             value: value)
@@ -599,7 +599,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // Create new habit
         let habitData = await HabitData(
           id: habit.id,
-          userId: getCurrentUserId() ?? "", // Use current user ID or empty string for guest
+          userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
           name: habit.name,
           habitDescription: habit.description,
           icon: habit.icon,
@@ -662,7 +662,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // Add usage history
         for (key, value) in habit.actualUsage {
           let usageRecord = await UsageRecord(
-            userId: getCurrentUserId() ?? "",
+            userId: await getCurrentUserId() ?? "",
             habitId: habitData.id,
             key: key,
             value: value)
@@ -844,35 +844,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   /// Helper method to get current user ID for data isolation
-  /// Returns nil for guest users (empty string when used with ?? "")
-  /// ✅ FIX: Use Auth.auth().currentUser directly to avoid timing issues with AuthenticationManager
+  /// ✅ GUEST MODE ONLY: Always returns nil (empty string when used with ?? "")
+  /// This ensures all data is stored with userId = "" for guest mode
   private func getCurrentUserId() async -> String? {
     await MainActor.run {
-      // ✅ CRITICAL: Check if Firebase is configured before accessing Auth
-      // If Firebase isn't configured, return nil (guest mode)
-      guard FirebaseApp.app() != nil else {
-        logger.info("🔍 getCurrentUserId: Firebase not configured, returning nil (guest mode)")
-        return nil // Guest mode - will use "" when used with ?? ""
-      }
-      
-      // Use Firebase Auth directly - it's synchronous and doesn't depend on AuthenticationManager initialization
-      guard let firebaseUser = Auth.auth().currentUser else {
-        logger.info("🔍 getCurrentUserId: No Firebase user found, returning nil (guest)")
-        return nil // Guest user - will use "" when used with ?? ""
-      }
-      
-      // ✅ CRITICAL FIX: Anonymous users should use their Firebase UID (not nil)
-      // This ensures habits migrated to anonymous userId are found
-      // Anonymous users are NOT guests - they have a real Firebase UID for cloud backup
-      if firebaseUser.isAnonymous {
-        logger.info("🔍 getCurrentUserId: Anonymous user detected, returning UID: \(firebaseUser.uid)")
-        print("✅ [USER_ID] Anonymous user UID: \(firebaseUser.uid)")
-        return firebaseUser.uid // Anonymous users have a real UID for data isolation
-      }
-      
-      logger.info("🔍 getCurrentUserId: Authenticated user found: \(firebaseUser.uid)")
-      print("✅ [USER_ID] Authenticated user UID: \(firebaseUser.uid)")
-      return firebaseUser.uid // Authenticated non-anonymous user
+      // ✅ GUEST MODE ONLY: Always return nil (which becomes "" with ?? "")
+      // No anonymous authentication - pure guest mode
+      logger.info("🔍 getCurrentUserId: Guest mode - returning nil (will use empty string)")
+      return nil // Guest mode - will use "" when used with ?? ""
     }
   }
 
