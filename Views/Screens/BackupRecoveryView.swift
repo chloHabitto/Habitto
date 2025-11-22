@@ -388,7 +388,7 @@ struct BackupRecoveryView: View {
   @MainActor
   private func checkFirestoreSyncStatus() {
     // Check if user is authenticated
-    guard let firebaseUser = Auth.auth().currentUser else {
+    guard Auth.auth().currentUser != nil else {
       firestoreSyncStatus = .inactive
       return
     }
