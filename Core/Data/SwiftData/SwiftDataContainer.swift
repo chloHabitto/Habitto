@@ -747,19 +747,13 @@ final class SwiftDataContainer: ObservableObject {
   // MARK: - Helper Methods
 
   private func getCurrentUserId() -> String {
-    // Get user ID from authentication system
-    guard let currentUser = AuthenticationManager.shared.currentUser else {
-      // ✅ FIX: Use empty string for guest (consistent with CurrentUser.guestId)
-      // This ensures CompletionRecords match HabitData userId filtering
-      return ""
+    // ✅ PRIORITY: Firebase Auth UID first (including anonymous), then fallback to ""
+    // Anonymous users ARE authenticated users with real UIDs
+    if let firebaseUser = Auth.auth().currentUser {
+      return firebaseUser.uid // Use UID for ALL authenticated users (including anonymous)
     }
     
-    // ✅ CRITICAL FIX: Treat anonymous Firebase users as guests
-    // Anonymous users should use "" as userId for consistency with guest mode
-    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
-      return "" // Anonymous = guest, use "" as userId
-    }
-    
-    return currentUser.uid // Authenticated non-anonymous user
+    // Only return empty string if no Firebase Auth user exists
+    return ""
   }
 }

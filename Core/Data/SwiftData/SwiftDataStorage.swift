@@ -455,12 +455,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
             
             // Try one more time to get the authenticated user ID directly from Firebase Auth
             // This handles the case where Auth.auth().currentUser is available but getCurrentUserId() returned nil
+            // ✅ FIX: Include anonymous users - they have real UIDs
             let firebaseUserId: String? = await MainActor.run {
-              guard let firebaseUser = Auth.auth().currentUser, !firebaseUser.isAnonymous else {
+              guard let firebaseUser = Auth.auth().currentUser else {
                 return nil
               }
-              logger.info("🔍 Firebase Auth shows authenticated user: \(firebaseUser.uid)")
-              return firebaseUser.uid
+              logger.info("🔍 Firebase Auth shows authenticated user: \(firebaseUser.uid) (anonymous: \(firebaseUser.isAnonymous))")
+              return firebaseUser.uid // Return UID for ALL users including anonymous
             }
             
             if let firebaseUserId = firebaseUserId {

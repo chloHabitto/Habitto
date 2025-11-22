@@ -1002,14 +1002,13 @@ struct HomeTabView: View {
   /// This is the single source of truth for XP calculation
   @MainActor
   private func countCompletedDays() -> Int {
-    let currentUser = AuthenticationManager.shared.currentUser
+    // ✅ PRIORITY: Firebase Auth UID first (including anonymous), then fallback to ""
+    // Anonymous users ARE authenticated users with real Firebase UIDs
     let userId: String
-    if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
-      userId = ""
-    } else if let uid = currentUser?.uid {
-      userId = uid
+    if let firebaseUser = Auth.auth().currentUser {
+      userId = firebaseUser.uid // Use UID for ALL authenticated users (including anonymous)
     } else {
-      userId = ""
+      userId = "" // Only use empty string if no Firebase Auth user exists
     }
 
     guard !habits.isEmpty else { return 0 }

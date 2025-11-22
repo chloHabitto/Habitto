@@ -179,15 +179,13 @@ struct OverviewView: View {
         
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
-        let currentUser = AuthenticationManager.shared.currentUser
+        // ✅ PRIORITY: Firebase Auth UID first (including anonymous), then fallback to ""
+        // Anonymous users ARE authenticated users with real Firebase UIDs
         let userId: String
-        if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
-          userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
-        } else if let uid = currentUser?.uid {
-          userId = uid // Authenticated non-anonymous user
+        if let firebaseUser = Auth.auth().currentUser {
+          userId = firebaseUser.uid // Use UID for ALL authenticated users (including anonymous)
         } else {
-          userId = "" // No user = guest
+          userId = "" // Only use empty string if no Firebase Auth user exists
         }
         
         print("🔍 OVERVIEW_STREAK: Fetching streak for userId: '\(userId)' (isEmpty: \(userId.isEmpty))")
