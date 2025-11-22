@@ -322,22 +322,43 @@ actor SyncEngine {
     /// Performs an immediate sync on start, then continues periodically
     /// - Parameter userId: The authenticated user ID (must not be guest). If nil, will fetch from CurrentUser.
     func startPeriodicSync(userId: String? = nil, forceRestart: Bool = false) {
+        // ✅ CRITICAL LOG: Entry point for startPeriodicSync
+        logger.info("🚀 SYNC_START: startPeriodicSync called - userId: \(userId ?? "nil"), forceRestart: \(forceRestart)")
+        debugLog("🚀 SYNC_START: startPeriodicSync called - userId: \(userId ?? "nil"), forceRestart: \(forceRestart)")
+        NSLog("🚀 SYNC_START: startPeriodicSync called - userId: %@, forceRestart: %@", userId ?? "nil", forceRestart ? "YES" : "NO")
+        fflush(stdout)
+        
         if let providedUserId = userId {
             if !forceRestart, periodicSyncUserId == providedUserId, syncTask != nil {
                 logger.info("⏭️ Periodic sync already running for user \(providedUserId), skipping restart")
                 debugLog("⏭️ SyncEngine: Periodic sync already running for user \(providedUserId), skipping restart")
+                NSLog("⏭️ SYNC_START: Periodic sync already running for user %@, skipping restart", providedUserId)
+                fflush(stdout)
                 return
             }
             periodicSyncUserId = providedUserId
         }
         logger.info("🔄 Starting periodic sync (every \(self.syncInterval)s)")
         debugLog("🔄 SyncEngine: Starting periodic sync (every \(self.syncInterval)s)")
-        NSLog("🔄 SyncEngine: Starting periodic sync (every %.0fs)", self.syncInterval)
+        NSLog("🔄 SYNC_START: Starting periodic sync (every %.0fs)", self.syncInterval)
         fflush(stdout)
         
         syncTask?.cancel()
         
         syncTask = Task {
+            // ✅ CRITICAL LOG: Task block started executing
+            logger.info("🚀 SYNC_TASK: Task block started executing")
+            debugLog("🚀 SYNC_TASK: Task block started executing")
+            NSLog("🚀 SYNC_TASK: Task block started executing")
+            fflush(stdout)
+            
+            // ✅ LOG: Feature flag status (for debugging)
+            let featureFlagStatus = FeatureFlags.enableFirestoreSync
+            logger.info("🔍 SYNC_TASK: FeatureFlags.enableFirestoreSync = \(featureFlagStatus)")
+            debugLog("🔍 SYNC_TASK: FeatureFlags.enableFirestoreSync = \(featureFlagStatus)")
+            NSLog("🔍 SYNC_TASK: FeatureFlags.enableFirestoreSync = %@", featureFlagStatus ? "YES" : "NO")
+            fflush(stdout)
+            
             // Use provided userId or fetch it (for backward compatibility)
             let initialUserId: String
             if let providedUserId = userId {
@@ -445,16 +466,27 @@ actor SyncEngine {
     /// This orchestrates all sync operations in the correct order
     /// - Parameter userId: The authenticated user ID (must not be guest)
     func performFullSyncCycle(userId: String) async throws {
+        // ✅ CRITICAL LOG: Entry point for performFullSyncCycle
+        logger.info("🚀 SYNC_CYCLE: performFullSyncCycle called - userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...'")
+        debugLog("🚀 SYNC_CYCLE: performFullSyncCycle called - userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...'")
+        NSLog("🚀 SYNC_CYCLE: performFullSyncCycle called - userId: '%@'", userId)
+        fflush(stdout)
+        
         // ✅ Skip sync only for users with userId = "" (no Firebase auth)
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
             logger.info("⏭️ Skipping full sync cycle for guest user (userId = \"\")")
-            debugLog("⏭️ SyncEngine: Skipping full sync cycle for guest user (userId: '\(userId)')")
+            logger.warning("⚠️ SYNC_CYCLE: BLOCKED - userId is guest: '\(userId)'")
+            debugLog("⏭️ SYNC_CYCLE: BLOCKED - userId is guest: '\(userId)'")
+            NSLog("⚠️ SYNC_CYCLE: BLOCKED - userId is guest: '%@'", userId)
+            fflush(stdout)
             return
         }
         
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
-        debugLog("🔄 SyncEngine: Starting full sync cycle for user: \(userId)")
+        debugLog("🔄 SYNC_CYCLE: Starting full sync cycle for user: \(userId)")
+        NSLog("🔄 SYNC_CYCLE: Starting full sync cycle for user: %@", userId)
+        fflush(stdout)
         
         // Notify HabitRepository that sync started
         Task { @MainActor in
@@ -494,6 +526,11 @@ actor SyncEngine {
         }
         
         // Step 1: Pull remote changes first (to get latest data from server)
+        logger.info("🔄 SYNC_CYCLE: Step 1 - Starting pullRemoteChanges for userId: \(userId)")
+        debugLog("🔄 SYNC_CYCLE: Step 1 - Starting pullRemoteChanges for userId: \(userId)")
+        NSLog("🔄 SYNC_CYCLE: Step 1 - Starting pullRemoteChanges for userId: %@", userId)
+        fflush(stdout)
+        
         do {
             let pullStartTime = Date()
             let summary = try await pullRemoteChanges(userId: userId)
@@ -526,28 +563,67 @@ actor SyncEngine {
         
         // Step 2: Sync local changes to server (in order of dependency)
         // Events first (they affect completions), then completions, then awards
+        logger.info("🔄 SYNC_CYCLE: Step 2 - Starting syncEvents")
+        debugLog("🔄 SYNC_CYCLE: Step 2 - Starting syncEvents")
+        NSLog("🔄 SYNC_CYCLE: Step 2 - Starting syncEvents")
+        fflush(stdout)
+        
         do {
             try await syncEvents()
+            logger.info("✅ SYNC_CYCLE: syncEvents completed successfully")
+            debugLog("✅ SYNC_CYCLE: syncEvents completed successfully")
+            NSLog("✅ SYNC_CYCLE: syncEvents completed successfully")
+            fflush(stdout)
         } catch {
             eventsError = error
             logger.error("❌ Failed to sync events: \(error.localizedDescription)")
+            debugLog("❌ SYNC_CYCLE: syncEvents failed: \(error.localizedDescription)")
+            NSLog("❌ SYNC_CYCLE: syncEvents failed: %@", error.localizedDescription)
+            fflush(stdout)
         }
+        
+        logger.info("🔄 SYNC_CYCLE: Step 3 - Starting syncCompletions")
+        debugLog("🔄 SYNC_CYCLE: Step 3 - Starting syncCompletions")
+        NSLog("🔄 SYNC_CYCLE: Step 3 - Starting syncCompletions")
+        fflush(stdout)
         
         do {
             try await syncCompletions()
+            logger.info("✅ SYNC_CYCLE: syncCompletions completed successfully")
+            debugLog("✅ SYNC_CYCLE: syncCompletions completed successfully")
+            NSLog("✅ SYNC_CYCLE: syncCompletions completed successfully")
+            fflush(stdout)
         } catch {
             completionsError = error
             logger.error("❌ Failed to sync completions: \(error.localizedDescription)")
+            debugLog("❌ SYNC_CYCLE: syncCompletions failed: \(error.localizedDescription)")
+            NSLog("❌ SYNC_CYCLE: syncCompletions failed: %@", error.localizedDescription)
+            fflush(stdout)
         }
+        
+        logger.info("🔄 SYNC_CYCLE: Step 4 - Starting syncAwards")
+        debugLog("🔄 SYNC_CYCLE: Step 4 - Starting syncAwards")
+        NSLog("🔄 SYNC_CYCLE: Step 4 - Starting syncAwards")
+        fflush(stdout)
         
         do {
             try await syncAwards()
+            logger.info("✅ SYNC_CYCLE: syncAwards completed successfully")
+            debugLog("✅ SYNC_CYCLE: syncAwards completed successfully")
+            NSLog("✅ SYNC_CYCLE: syncAwards completed successfully")
+            fflush(stdout)
         } catch {
             awardsError = error
             logger.error("❌ Failed to sync awards: \(error.localizedDescription)")
+            debugLog("❌ SYNC_CYCLE: syncAwards failed: \(error.localizedDescription)")
+            NSLog("❌ SYNC_CYCLE: syncAwards failed: %@", error.localizedDescription)
+            fflush(stdout)
         }
         
-        logger.info("✅ Full sync cycle completed")
+        logger.info("✅ SYNC_CYCLE: Full sync cycle completed")
+        debugLog("✅ SYNC_CYCLE: Full sync cycle completed")
+        NSLog("✅ SYNC_CYCLE: Full sync cycle completed")
+        fflush(stdout)
     }
     
     /// Stop periodic sync
