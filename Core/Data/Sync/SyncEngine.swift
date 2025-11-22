@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 import FirebaseFirestore
 import SwiftData
 import SwiftUI
@@ -80,10 +81,24 @@ actor SyncEngine {
         
         let userId = await CurrentUser().idOrGuest
         
+        // ✅ DEBUG: Check Firebase Auth state directly
+        let firebaseAuthState = await MainActor.run {
+            let currentUser = Auth.auth().currentUser
+            return (uid: currentUser?.uid ?? "nil", isAnonymous: currentUser?.isAnonymous ?? false, exists: currentUser != nil)
+        }
+        
+        // ✅ DEBUG: Log userId and isGuestId check
+        logger.info("🔍 SYNC_DEBUG: Event sync check - userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...', isEmpty: \(userId.isEmpty), isGuestId: \(CurrentUser.isGuestId(userId))")
+        logger.info("🔍 SYNC_DEBUG: Firebase Auth - uid: '\(firebaseAuthState.uid.prefix(8))...', isAnonymous: \(firebaseAuthState.isAnonymous), exists: \(firebaseAuthState.exists)")
+        debugLog("🔍 SYNC_DEBUG: Event sync check - userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...', isEmpty: \(userId.isEmpty), isGuestId: \(CurrentUser.isGuestId(userId))")
+        debugLog("🔍 SYNC_DEBUG: Firebase Auth - uid: '\(firebaseAuthState.uid.prefix(8))...', isAnonymous: \(firebaseAuthState.isAnonymous), exists: \(firebaseAuthState.exists)")
+        
         // ✅ Skip sync only for users with userId = "" (no Firebase auth)
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
             logger.info("⏭️ Skipping event sync for guest user (userId = \"\")")
+            logger.warning("⚠️ SYNC_DEBUG: Event sync BLOCKED - userId: '\(userId)', isEmpty: \(userId.isEmpty), isGuestId: \(CurrentUser.isGuestId(userId)), Firebase Auth uid: '\(firebaseAuthState.uid)', exists: \(firebaseAuthState.exists)")
+            debugLog("⏭️ SYNC_DEBUG: Event sync BLOCKED - userId: '\(userId)', isEmpty: \(userId.isEmpty), isGuestId: \(CurrentUser.isGuestId(userId)), Firebase Auth uid: '\(firebaseAuthState.uid)', exists: \(firebaseAuthState.exists)")
             return
         }
         
@@ -336,12 +351,26 @@ actor SyncEngine {
             }
             fflush(stdout)
             
+            // ✅ DEBUG: Check Firebase Auth state directly
+            let firebaseAuthState = await MainActor.run {
+                let currentUser = Auth.auth().currentUser
+                return (uid: currentUser?.uid ?? "nil", isAnonymous: currentUser?.isAnonymous ?? false, exists: currentUser != nil)
+            }
+            
+            // ✅ DEBUG: Log userId and isGuestId check
+            logger.info("🔍 SYNC_DEBUG: Periodic sync check - userId: '\(initialUserId.isEmpty ? "EMPTY" : initialUserId.prefix(8))...', isEmpty: \(initialUserId.isEmpty), isGuestId: \(CurrentUser.isGuestId(initialUserId))")
+            logger.info("🔍 SYNC_DEBUG: Firebase Auth - uid: '\(firebaseAuthState.uid.prefix(8))...', isAnonymous: \(firebaseAuthState.isAnonymous), exists: \(firebaseAuthState.exists)")
+            debugLog("🔍 SYNC_DEBUG: Periodic sync check - userId: '\(initialUserId.isEmpty ? "EMPTY" : initialUserId.prefix(8))...', isEmpty: \(initialUserId.isEmpty), isGuestId: \(CurrentUser.isGuestId(initialUserId))")
+            debugLog("🔍 SYNC_DEBUG: Firebase Auth - uid: '\(firebaseAuthState.uid.prefix(8))...', isAnonymous: \(firebaseAuthState.isAnonymous), exists: \(firebaseAuthState.exists)")
+            NSLog("🔍 SYNC_DEBUG: Periodic sync check - userId: '%@', isEmpty: %@, isGuestId: %@, Firebase Auth uid: '%@', exists: %@", initialUserId, initialUserId.isEmpty ? "YES" : "NO", CurrentUser.isGuestId(initialUserId) ? "YES" : "NO", firebaseAuthState.uid, firebaseAuthState.exists ? "YES" : "NO")
+            
             // ✅ Skip sync only for users with userId = "" (no Firebase auth)
             // Anonymous users (with Firebase UID) ARE synced to Firestore
             guard !CurrentUser.isGuestId(initialUserId) else {
                 logger.info("⏭️ Skipping periodic sync for guest user (userId = \"\")")
-                debugLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
-                NSLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '%@')", initialUserId)
+                logger.warning("⚠️ SYNC_DEBUG: Periodic sync BLOCKED - userId: '\(initialUserId)', isEmpty: \(initialUserId.isEmpty), isGuestId: \(CurrentUser.isGuestId(initialUserId)), Firebase Auth uid: '\(firebaseAuthState.uid)', exists: \(firebaseAuthState.exists)")
+                debugLog("⏭️ SYNC_DEBUG: Periodic sync BLOCKED - userId: '\(initialUserId)', isEmpty: \(initialUserId.isEmpty), isGuestId: \(CurrentUser.isGuestId(initialUserId)), Firebase Auth uid: '\(firebaseAuthState.uid)', exists: \(firebaseAuthState.exists)")
+                NSLog("⏭️ SYNC_DEBUG: Periodic sync BLOCKED - userId: '%@', isEmpty: %@, isGuestId: %@, Firebase Auth uid: '%@', exists: %@", initialUserId, initialUserId.isEmpty ? "YES" : "NO", CurrentUser.isGuestId(initialUserId) ? "YES" : "NO", firebaseAuthState.uid, firebaseAuthState.exists ? "YES" : "NO")
                 fflush(stdout)
                 self.stopPeriodicSync(reason: "guest user")
                 return
