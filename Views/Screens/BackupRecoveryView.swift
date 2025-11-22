@@ -35,7 +35,7 @@ struct BackupRecoveryView: View {
           ScrollView {
             VStack(spacing: 24) {
               // Description text
-              Text("Configure your backup settings and manage your data")
+              Text("Your data automatically syncs to Firestore. Enable iCloud backup for additional protection.")
                 .font(.appBodyMedium)
                 .foregroundColor(.text05)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,25 +44,31 @@ struct BackupRecoveryView: View {
               // Firestore Sync Status Banner
               firestoreSyncBanner
 
-              // Backup Settings
-              VStack(spacing: 16) {
-                // Automatic Backup Toggle
-                HStack {
-                  Image("Icon-CloudDownload_Filled")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(.navy200)
+              // iCloud Backup Settings
+              VStack(alignment: .leading, spacing: 12) {
+                Text("iCloud Backup")
+                  .font(.system(size: 18, weight: .semibold))
+                  .foregroundColor(.text01)
+                  .padding(.top, 8)
+                
+                VStack(spacing: 16) {
+                  // iCloud Backup Toggle
+                  HStack {
+                    Image(systemName: "icloud.fill")
+                      .renderingMode(.template)
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
+                      .frame(width: 24, height: 24)
+                      .foregroundColor(.navy200)
 
-                  VStack(alignment: .leading, spacing: 2) {
-                    Text("Automatic Backup")
-                      .font(.system(size: 16, weight: .medium))
-                      .foregroundColor(.text01)
-                    Text("Automatically backup your data")
-                      .font(.system(size: 14, weight: .regular))
-                      .foregroundColor(.text03)
-                  }
+                    VStack(alignment: .leading, spacing: 2) {
+                      Text("iCloud Backup")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.text01)
+                      Text("Create backup snapshots in iCloud Drive")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.text03)
+                    }
 
                   Spacer()
 
@@ -94,7 +100,7 @@ struct BackupRecoveryView: View {
                       Text("Backup Frequency")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.text01)
-                      Text("How often to backup your data")
+                      Text("How often to create iCloud backup snapshots")
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.text03)
                     }
@@ -133,7 +139,7 @@ struct BackupRecoveryView: View {
                       Text("WiFi Only")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.text01)
-                      Text("Only backup when connected to WiFi")
+                      Text("Only create iCloud backups when connected to WiFi")
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.text03)
                     }
@@ -154,38 +160,46 @@ struct BackupRecoveryView: View {
                   .cornerRadius(16)
                 }
               }
+              }
 
-              // Backup Status Section
-              VStack(spacing: 16) {
-                HStack {
-                  Image("Icon-Archive_Filled")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
+              // iCloud Backup Status Section
+              VStack(alignment: .leading, spacing: 12) {
+                Text("iCloud Backup History")
+                  .font(.system(size: 18, weight: .semibold))
+                  .foregroundColor(.text01)
+                  .padding(.top, 8)
+                
+                VStack(spacing: 16) {
+                  HStack {
+                    Image(systemName: "clock.fill")
+                      .renderingMode(.template)
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
+                      .frame(width: 24, height: 24)
+                      .foregroundColor(.navy200)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                      Text("Last iCloud Backup")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.text01)
+                      Text(backupManager.lastBackupDate?.formatted() ?? "Never")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.text03)
+                    }
+
+                    Spacer()
+
+                    Button("View All") {
+                      showingBackupList = true
+                    }
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.navy200)
-
-                  VStack(alignment: .leading, spacing: 2) {
-                    Text("Last Backup")
-                      .font(.system(size: 16, weight: .medium))
-                      .foregroundColor(.text01)
-                    Text(backupManager.lastBackupDate?.formatted() ?? "Never")
-                      .font(.system(size: 14, weight: .regular))
-                      .foregroundColor(.text03)
                   }
-
-                  Spacer()
-
-                  Button("View All") {
-                    showingBackupList = true
-                  }
-                  .font(.system(size: 14, weight: .medium))
-                  .foregroundColor(.navy200)
+                  .padding(.horizontal, 20)
+                  .padding(.vertical, 16)
+                  .background(Color.surface)
+                  .cornerRadius(16)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(Color.surface)
-                .cornerRadius(16)
               }
             }
             .padding(.horizontal, 20)
@@ -223,7 +237,7 @@ struct BackupRecoveryView: View {
                       .foregroundColor(.white)
                   }
 
-                  Text(isBackingUp ? "Backing Up..." : "Backup Now")
+                  Text(isBackingUp ? "Creating iCloud Backup..." : "Create iCloud Backup")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                 }
