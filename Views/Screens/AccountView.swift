@@ -106,14 +106,35 @@ struct AccountView: View {
             .background(Color.surface2)
           }
         } else {
-          // Guest mode - empty state
+          // Guest mode - Sign in with Apple
           VStack(spacing: 24) {
             Spacer()
-            Text("Account features are currently unavailable")
-              .font(.appBodyLarge)
-              .foregroundColor(.text01)
-              .multilineTextAlignment(.center)
-              .padding(.horizontal, 40)
+            
+            VStack(spacing: 16) {
+              // Icon
+              Image(systemName: "person.circle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.text04)
+              
+              // Title
+              Text("Sign in to sync across devices")
+                .font(.appTitleLarge)
+                .foregroundColor(.text01)
+                .multilineTextAlignment(.center)
+              
+              // Description
+              Text("Sign in with Apple to enable cross-device sync and keep your habits safe in the cloud.")
+                .font(.appBodyMedium)
+                .foregroundColor(.text03)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+              
+              // Sign in with Apple button
+              SignInWithAppleButton()
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
+            }
+            
             Spacer()
           }
         }
