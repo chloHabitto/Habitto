@@ -298,9 +298,6 @@ struct MoreTabView: View {
           SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
             showingDataPrivacy = true
           }),
-          SettingItem(title: "Repair Data", value: nil, hasChevron: false, action: {
-            performDataRepair()
-          }),
           syncStatusItem
         ])
 
