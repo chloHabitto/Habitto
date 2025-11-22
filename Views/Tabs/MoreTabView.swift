@@ -276,10 +276,9 @@ struct MoreTabView: View {
             action: {
               showingVacationMode = true
             }),
-          // DISABLED: Account row hidden
-          // SettingItem(title: "Account", value: nil, hasChevron: true, action: {
-          //   showingAccountView = true
-          // }),
+          SettingItem(title: "Account", value: nil, hasChevron: true, action: {
+            showingAccountView = true
+          }),
           // SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
           //     showingDataPrivacy = true
           // }),
