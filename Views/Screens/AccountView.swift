@@ -20,6 +20,9 @@ struct AccountView: View {
                 // ✅ TEMPORARY DEBUG: Sign-in verification info (remove after testing)
                 debugSignInInfo
                 
+                // ✅ TEMPORARY DEBUG: Force sync button (remove after testing)
+                forceSyncButton
+                
                 // Description text
                 Text("Manage your account preferences")
                   .font(.appBodyMedium)
@@ -188,6 +191,11 @@ struct AccountView: View {
         FeatureFlagsDebugView()
       }
     }
+    .alert("Sync Status", isPresented: $showingSyncAlert) {
+      Button("OK", role: .cancel) { }
+    } message: {
+      Text(syncStatusMessage.isEmpty ? "Sync completed" : syncStatusMessage)
+    }
   }
 
   // MARK: Private
@@ -201,6 +209,99 @@ struct AccountView: View {
   @State private var showingDebugAlert = false
   @State private var showingMigrationDebug = false
   @State private var showingFeatureFlags = false
+  @State private var isSyncing = false
+  @State private var syncStatusMessage = ""
+  @State private var showingSyncAlert = false
+
+  // ✅ TEMPORARY DEBUG: Force sync button (remove after testing)
+  private var forceSyncButton: some View {
+    VStack(spacing: 12) {
+      Button(action: {
+        Task {
+          await performForceSync()
+        }
+      }) {
+        HStack {
+          if isSyncing {
+            ProgressView()
+              .progressViewStyle(CircularProgressViewStyle(tint: .white))
+              .scaleEffect(0.8)
+          } else {
+            Image(systemName: "arrow.clockwise")
+              .font(.system(size: 16, weight: .semibold))
+          }
+          
+          Text(isSyncing ? "Syncing..." : "Force Sync Now")
+            .font(.system(size: 16, weight: .semibold))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
+        .background(isSyncing ? Color.gray : Color.blue)
+        .cornerRadius(12)
+      }
+      .disabled(isSyncing)
+      
+      if !syncStatusMessage.isEmpty {
+        Text(syncStatusMessage)
+          .font(.system(size: 12, weight: .regular))
+          .foregroundColor(.text03)
+          .multilineTextAlignment(.center)
+      }
+    }
+    .padding(.horizontal, 20)
+  }
+  
+  // ✅ TEMPORARY DEBUG: Force sync function (remove after testing)
+  private func performForceSync() async {
+    guard let userId = Auth.auth().currentUser?.uid else {
+      syncStatusMessage = "Error: No authenticated user"
+      showingSyncAlert = true
+      return
+    }
+    
+    isSyncing = true
+    syncStatusMessage = "Starting sync..."
+    
+    do {
+      // Force pull all data by resetting last sync timestamp first
+      await resetLastSyncTimestamp(userId: userId)
+      
+      // Perform full sync cycle
+      try await SyncEngine.shared.performFullSyncCycle(userId: userId)
+      
+      // Get pull summary to show what was synced
+      let summary = try await SyncEngine.shared.pullRemoteChanges(userId: userId)
+      
+      syncStatusMessage = """
+        ✅ Sync Complete!
+        Habits: \(summary.habitsPulled)
+        Completions: \(summary.completionsPulled)
+        Awards: \(summary.awardsPulled)
+        Events: \(summary.eventsPulled)
+        """
+      
+      if !summary.errors.isEmpty {
+        syncStatusMessage += "\n⚠️ Errors: \(summary.errors.joined(separator: ", "))"
+      }
+      
+      showingSyncAlert = true
+      
+      // Reload habits to show synced data
+      await HabitRepository.shared.loadHabits(force: true)
+      
+    } catch {
+      syncStatusMessage = "❌ Sync failed: \(error.localizedDescription)"
+      showingSyncAlert = true
+    }
+    
+    isSyncing = false
+  }
+  
+  // ✅ TEMPORARY DEBUG: Reset last sync timestamp to force pull all data (remove after testing)
+  private func resetLastSyncTimestamp(userId: String) async {
+    await SyncEngine.shared.resetLastSyncTimestamp(userId: userId)
+  }
 
   // ✅ TEMPORARY DEBUG: Sign-in verification info view (remove after testing)
   private var debugSignInInfo: some View {

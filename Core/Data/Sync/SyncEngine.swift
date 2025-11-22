@@ -1366,6 +1366,14 @@ actor SyncEngine {
     }
     
     /// Get last sync timestamp for user (stored in UserDefaults)
+    /// ✅ TEMPORARY DEBUG: Reset last sync timestamp to force pull all data (remove after testing)
+    func resetLastSyncTimestamp(userId: String) {
+        let key = "lastSyncTimestamp_\(userId)"
+        UserDefaults.standard.removeObject(forKey: key)
+        logger.info("🔄 Reset lastSyncTimestamp for userId: \(userId.prefix(8))...")
+        debugLog("🔄 [FORCE_SYNC] Reset lastSyncTimestamp for userId: \(userId.prefix(8))...")
+    }
+    
     private func getLastSyncTimestamp(userId: String) -> Date? {
         let key = "lastSyncTimestamp_\(userId)"
         return UserDefaults.standard.object(forKey: key) as? Date
