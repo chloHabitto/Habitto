@@ -1305,11 +1305,12 @@ class HabitRepository: ObservableObject {
         "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
       // ✅ CRITICAL FIX: Only show migration UI if user is NOT anonymous
-      // Anonymous users shouldn't see migration UI - they're still in guest mode
+      // Note: Anonymous users are authenticated but migration UI is only shown for email/password users
+      // Guest data migration for anonymous users is handled automatically in Step 3
       let isAnonymous = (user as? User)?.isAnonymous ?? false
       
       if isAnonymous {
-        debugLog("ℹ️ HabitRepository: User is anonymous - skipping migration UI (still in guest mode)")
+        debugLog("ℹ️ HabitRepository: User is anonymous - skipping migration UI (migration handled automatically)")
         shouldShowMigrationView = false
         await loadHabits(force: true)
         return
