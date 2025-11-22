@@ -8,6 +8,8 @@ struct SignInWithAppleButton: View {
 
   @EnvironmentObject var authManager: AuthenticationManager
   @State private var authorizationController: ASAuthorizationController?
+  @State private var delegate: SignInWithAppleDelegate?
+  @State private var presentationContextProvider: PresentationContextProvider?
 
   var body: some View {
     Button(action: {
@@ -36,10 +38,18 @@ struct SignInWithAppleButton: View {
     // Get the authorization request from AuthenticationManager
     let request = authManager.startSignInWithApple()
     
+    // Create and store delegate and presentation context provider to prevent deallocation
+    let newDelegate = SignInWithAppleDelegate(authManager: authManager)
+    let newPresentationContextProvider = PresentationContextProvider()
+    
+    // Store them as state to prevent deallocation
+    delegate = newDelegate
+    presentationContextProvider = newPresentationContextProvider
+    
     // Create authorization controller
     let controller = ASAuthorizationController(authorizationRequests: [request])
-    controller.delegate = SignInWithAppleDelegate(authManager: authManager)
-    controller.presentationContextProvider = PresentationContextProvider()
+    controller.delegate = newDelegate
+    controller.presentationContextProvider = newPresentationContextProvider
     
     // Store controller to prevent deallocation
     authorizationController = controller
