@@ -297,8 +297,7 @@ struct MoreTabView: View {
         items: [
           SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
             showingDataPrivacy = true
-          }),
-          syncStatusItem
+          })
         ])
 
       // Support/Legal Group
