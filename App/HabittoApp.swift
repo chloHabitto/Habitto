@@ -79,6 +79,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       NSLog("🚀 AppDelegate: Task block started executing...")
       fflush(stdout)
       
+      // ✅ CRITICAL: Ensure user is authenticated (anonymous if not signed in)
+      // This must happen before any data operations
+      // Firebase Auth is already configured by FirebaseBootstrapper.configureIfNeeded()
+      do {
+        debugLog("🔐 AppDelegate: Ensuring user authentication...")
+        let uid = try await FirebaseConfiguration.ensureAuthenticated()
+        debugLog("✅ AppDelegate: User authenticated - uid: \(uid)")
+        NSLog("✅ AppDelegate: User authenticated - uid: %@", uid)
+      } catch {
+        debugLog("❌ AppDelegate: Failed to authenticate user: \(error.localizedDescription)")
+        NSLog("❌ AppDelegate: Failed to authenticate user: %@", error.localizedDescription)
+        // Continue app launch even if authentication fails
+        // User can still use the app in guest mode
+      }
+      
       // DISABLED: Sign-in functionality commented out for future use
       /*
       // ✅ FIX: Firestore already configured synchronously above
