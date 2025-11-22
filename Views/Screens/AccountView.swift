@@ -17,6 +17,9 @@ struct AccountView: View {
           VStack(spacing: 0) {
             ScrollView {
               VStack(spacing: 24) {
+                // ✅ TEMPORARY DEBUG: Sign-in verification info (remove after testing)
+                debugSignInInfo
+                
                 // Description text
                 Text("Manage your account preferences")
                   .font(.appBodyMedium)
@@ -198,6 +201,82 @@ struct AccountView: View {
   @State private var showingDebugAlert = false
   @State private var showingMigrationDebug = false
   @State private var showingFeatureFlags = false
+
+  // ✅ TEMPORARY DEBUG: Sign-in verification info view (remove after testing)
+  private var debugSignInInfo: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("DEBUG INFO:")
+        .font(.system(size: 14, weight: .bold))
+        .foregroundColor(.orange)
+      
+      if let firebaseUser = Auth.auth().currentUser {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Text("User ID:")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.text03)
+            Spacer()
+            Text("\(firebaseUser.uid.prefix(8))...")
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(.text01)
+          }
+          
+          HStack {
+            Text("Anonymous:")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.text03)
+            Spacer()
+            Text(firebaseUser.isAnonymous ? "true" : "false")
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(firebaseUser.isAnonymous ? .orange : .green)
+          }
+          
+          HStack {
+            Text("Email:")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.text03)
+            Spacer()
+            Text(firebaseUser.email ?? "Not provided")
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(.text01)
+          }
+          
+          HStack {
+            Text("Provider:")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.text03)
+            Spacer()
+            Text(providerName(for: firebaseUser))
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(.text01)
+          }
+        }
+      } else {
+        Text("No Firebase user found")
+          .font(.system(size: 12, weight: .regular))
+          .foregroundColor(.red)
+      }
+    }
+    .padding(16)
+    .background(Color.orange.opacity(0.1))
+    .cornerRadius(12)
+    .padding(.horizontal, 20)
+    .padding(.top, 8)
+  }
+  
+  // ✅ TEMPORARY DEBUG: Helper to get provider name (remove after testing)
+  private func providerName(for user: User) -> String {
+    guard !user.providerData.isEmpty else {
+      return user.isAnonymous ? "anonymous" : "unknown"
+    }
+    
+    // Get the first provider (usually the main one)
+    if let provider = user.providerData.first {
+      return provider.providerID
+    }
+    
+    return "unknown"
+  }
 
   private var isLoggedIn: Bool {
     switch authManager.authState {
