@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import FirebaseAuth
 
 struct OverviewView: View {
   @Environment(\.dismiss) private var dismiss
@@ -86,6 +87,8 @@ struct OverviewView: View {
     }
     .onAppear {
       setupNotificationObserver()
+      // ✅ FIX: Always reload streak statistics on appear to match HomeView
+      loadStreakStatistics()
       loadData()
     }
     .onDisappear {
@@ -171,18 +174,35 @@ struct OverviewView: View {
   private func loadStreakStatistics() {
     Task { @MainActor in
       do {
+        // ✅ FIX: Add small delay to ensure SwiftData context sees the newly saved streak
+        try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 second
+        
         let modelContext = SwiftDataContainer.shared.modelContext
-        let userId = AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
         
-        print("🔍 OVERVIEW_STREAK: Fetching streak for userId: \(userId)")
+        // ✅ CRITICAL FIX: Use same userId logic as CompletionRecords (empty string for guest/anonymous)
+        let currentUser = AuthenticationManager.shared.currentUser
+        let userId: String
+        if let firebaseUser = currentUser as? User, firebaseUser.isAnonymous {
+          userId = "" // Anonymous = guest, use "" as userId (matches CompletionRecord storage)
+        } else if let uid = currentUser?.uid {
+          userId = uid // Authenticated non-anonymous user
+        } else {
+          userId = "" // No user = guest
+        }
         
-        let descriptor = FetchDescriptor<GlobalStreakModel>(
+        print("🔍 OVERVIEW_STREAK: Fetching streak for userId: '\(userId)' (isEmpty: \(userId.isEmpty))")
+        
+        var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
             streak.userId == userId
           }
         )
+        // ✅ FIX: Include newly inserted objects in the fetch
+        descriptor.includePendingChanges = true
         
-        if let streak = try modelContext.fetch(descriptor).first {
+        let allStreaks = try modelContext.fetch(descriptor)
+        
+        if let streak = allStreaks.first {
           streakStatistics = StreakStatistics(
             currentStreak: streak.currentStreak,
             longestStreak: streak.longestStreak,
@@ -198,7 +218,7 @@ struct OverviewView: View {
             totalCompletionDays: 0
           )
           averageStreak = 0
-          print("ℹ️ OVERVIEW_STREAK: No GlobalStreakModel found for userId: \(userId)")
+          print("ℹ️ OVERVIEW_STREAK: No GlobalStreakModel found for userId: '\(userId)' (isEmpty: \(userId.isEmpty))")
         }
       } catch {
         print("❌ OVERVIEW_STREAK: Failed to load: \(error)")
