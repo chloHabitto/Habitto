@@ -80,9 +80,10 @@ actor SyncEngine {
         
         let userId = await CurrentUser().idOrGuest
         
-        // Skip sync for guest users (no cloud sync)
+        // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+        // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping sync for guest user")
+            logger.info("⏭️ Skipping event sync for guest user (userId = \"\")")
             return
         }
         
@@ -288,8 +289,10 @@ actor SyncEngine {
             do {
                 // Perform full sync cycle (includes all sync operations)
                 let userId = await CurrentUser().idOrGuest
+                // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+                // Anonymous users (with Firebase UID) ARE synced to Firestore
                 guard !CurrentUser.isGuestId(userId) else {
-                    logger.info("⏭️ Skipping background sync for guest user")
+                    logger.info("⏭️ Skipping background sync for guest user (userId = \"\")")
                     return
                 }
                 try await self.performFullSyncCycle(userId: userId)
@@ -333,9 +336,10 @@ actor SyncEngine {
             }
             fflush(stdout)
             
-            // Skip sync for guest users
+            // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+            // Anonymous users (with Firebase UID) ARE synced to Firestore
             guard !CurrentUser.isGuestId(initialUserId) else {
-                logger.info("⏭️ Skipping periodic sync for guest user")
+                logger.info("⏭️ Skipping periodic sync for guest user (userId = \"\")")
                 debugLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '\(initialUserId)')")
                 NSLog("⏭️ SyncEngine: Skipping periodic sync for guest user (userId: '%@')", initialUserId)
                 fflush(stdout)
@@ -375,9 +379,11 @@ actor SyncEngine {
                 
                 // Re-check userId in case user signed out
                 let currentUserId = await CurrentUser().idOrGuest
+                // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+                // Anonymous users (with Firebase UID) continue syncing
                 guard !CurrentUser.isGuestId(currentUserId) else {
-                    logger.info("⏭️ User is now guest, stopping periodic sync")
-                    debugLog("⏭️ SyncEngine: User is now guest, stopping periodic sync")
+                    logger.info("⏭️ User is now guest (userId = \"\"), stopping periodic sync")
+                    debugLog("⏭️ SyncEngine: User is now guest (userId = \"\"), stopping periodic sync")
                     break
                 }
                 
@@ -410,9 +416,10 @@ actor SyncEngine {
     /// This orchestrates all sync operations in the correct order
     /// - Parameter userId: The authenticated user ID (must not be guest)
     func performFullSyncCycle(userId: String) async throws {
-        // Double-check userId is not guest (safety check)
+        // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+        // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping full sync cycle for guest user")
+            logger.info("⏭️ Skipping full sync cycle for guest user (userId = \"\")")
             debugLog("⏭️ SyncEngine: Skipping full sync cycle for guest user (userId: '\(userId)')")
             return
         }
@@ -540,9 +547,10 @@ actor SyncEngine {
         
         let userId = await CurrentUser().idOrGuest
         
-        // Skip sync for guest users (no cloud sync)
+        // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+        // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping sync for guest user")
+            logger.info("⏭️ Skipping award sync for guest user (userId = \"\")")
             return
         }
         
@@ -746,9 +754,10 @@ actor SyncEngine {
         
         let userId = await CurrentUser().idOrGuest
         
-        // Skip sync for guest users (no cloud sync)
+        // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+        // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping sync for guest user")
+            logger.info("⏭️ Skipping completion sync for guest user (userId = \"\")")
             return
         }
         
@@ -932,9 +941,10 @@ actor SyncEngine {
             actualUserId = await CurrentUser().idOrGuest
         }
         
-        // Skip sync for guest users (no cloud sync)
+        // ✅ Skip sync only for users with userId = "" (no Firebase auth)
+        // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(actualUserId) else {
-            logger.info("⏭️ Skipping pull for guest user")
+            logger.info("⏭️ Skipping pull for guest user (userId = \"\")")
             debugLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '\(actualUserId)')")
             NSLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '%@')", actualUserId)
             fflush(stdout)
