@@ -96,6 +96,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         await GuestDataMigrationHelper.runCompleteMigration(userId: uid)
         debugLog("✅ AppDelegate: Guest data migration completed")
         
+        // ✅ CRITICAL: Start periodic sync for anonymous users
+        // This ensures data syncs to Firestore automatically in the background
+        debugLog("🔄 AppDelegate: Starting periodic sync for user: \(uid)")
+        NSLog("🔄 AppDelegate: Starting periodic sync for user: %@", uid)
+        await SyncEngine.shared.startPeriodicSync(userId: uid)
+        debugLog("✅ AppDelegate: Periodic sync started")
+        NSLog("✅ AppDelegate: Periodic sync started")
+        
       } catch {
         debugLog("❌ AppDelegate: Failed to authenticate user: \(error.localizedDescription)")
         NSLog("❌ AppDelegate: Failed to authenticate user: %@", error.localizedDescription)
