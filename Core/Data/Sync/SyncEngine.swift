@@ -1098,12 +1098,33 @@ actor SyncEngine {
                 debugLog("🔵 SYNC_PULL_DATA: habitId=\(habitId), dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
                 
                 // Merge completion into SwiftData
-                try await mergeCompletionFromFirestore(data: data, userId: userId)
-                pulledCount += 1
+                do {
+                    try await mergeCompletionFromFirestore(data: data, userId: userId)
+                    pulledCount += 1
+                } catch {
+                    logger.error("❌ [PULL_COMPLETIONS] Failed to merge completion: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), error=\(error.localizedDescription)")
+                    // Continue with next completion even if this one fails
+                }
             }
         }
         
-        logger.info("✅ [PULL_COMPLETIONS] Successfully pulled \(pulledCount) completions")
+        // ✅ VERIFICATION: Count how many records were actually saved to SwiftData
+        let savedCount = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId
+            }
+            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).count) ?? 0
+        }
+        
+        logger.info("✅ [PULL_COMPLETIONS] Successfully pulled \(pulledCount) completions from Firestore")
+        logger.info("✅ [PULL_COMPLETIONS] Verification: \(savedCount) CompletionRecords now in SwiftData for userId: \(userId.prefix(8))...")
+        
+        if pulledCount > 0 && savedCount == 0 {
+            logger.error("⚠️ [PULL_COMPLETIONS] WARNING: Pulled \(pulledCount) completions but 0 were saved to SwiftData! This indicates a save failure.")
+        }
+        
         return pulledCount
     }
     
@@ -1146,12 +1167,33 @@ actor SyncEngine {
                 logger.info("🔵 [PULL_ALL_COMPLETIONS] Processing: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
                 
                 // Merge completion into SwiftData
-                try await mergeCompletionFromFirestore(data: data, userId: userId)
-                totalPulled += 1
+                do {
+                    try await mergeCompletionFromFirestore(data: data, userId: userId)
+                    totalPulled += 1
+                } catch {
+                    logger.error("❌ [PULL_ALL_COMPLETIONS] Failed to merge completion: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), error=\(error.localizedDescription)")
+                    // Continue with next completion even if this one fails
+                }
             }
         }
         
+        // ✅ VERIFICATION: Count how many records were actually saved to SwiftData
+        let savedCount = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId
+            }
+            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).count) ?? 0
+        }
+        
         logger.info("✅ [PULL_ALL_COMPLETIONS] Successfully pulled \(totalPulled) completions from all months")
+        logger.info("✅ [PULL_ALL_COMPLETIONS] Verification: \(savedCount) CompletionRecords now in SwiftData for userId: \(userId.prefix(8))...")
+        
+        if totalPulled > 0 && savedCount == 0 {
+            logger.error("⚠️ [PULL_ALL_COMPLETIONS] WARNING: Pulled \(totalPulled) completions but 0 were saved to SwiftData! This indicates a save failure.")
+        }
+        
         return totalPulled
     }
     
@@ -1189,6 +1231,23 @@ actor SyncEngine {
         }
         
         logger.info("✅ [PULL_AWARDS] Pulled \(pulledCount) awards, skipped \(skippedCount) (too old)")
+        
+        // ✅ VERIFICATION: Count how many awards were actually saved to SwiftData
+        let savedCount = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).count) ?? 0
+        }
+        
+        logger.info("✅ [PULL_AWARDS] Verification: \(savedCount) DailyAwards now in SwiftData for userId: \(userId.prefix(8))...")
+        
+        if pulledCount > 0 && savedCount == 0 {
+            logger.error("⚠️ [PULL_AWARDS] WARNING: Pulled \(pulledCount) awards but 0 were saved to SwiftData! This indicates a save failure.")
+        }
+        
         return pulledCount
     }
     
@@ -1219,6 +1278,23 @@ actor SyncEngine {
         }
         
         logger.info("✅ [PULL_ALL_AWARDS] Successfully pulled \(pulledCount) awards")
+        
+        // ✅ VERIFICATION: Count how many awards were actually saved to SwiftData
+        let savedCount = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<DailyAward> { award in
+                award.userId == userId
+            }
+            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).count) ?? 0
+        }
+        
+        logger.info("✅ [PULL_ALL_AWARDS] Verification: \(savedCount) DailyAwards now in SwiftData for userId: \(userId.prefix(8))...")
+        
+        if pulledCount > 0 && savedCount == 0 {
+            logger.error("⚠️ [PULL_ALL_AWARDS] WARNING: Pulled \(pulledCount) awards but 0 were saved to SwiftData! This indicates a save failure.")
+        }
+        
         return pulledCount
     }
     
@@ -1286,14 +1362,32 @@ actor SyncEngine {
     
     /// Merge completion from Firestore into SwiftData
     private func mergeCompletionFromFirestore(data: [String: Any], userId: String) async throws {
-        guard let habitIdString = data["habitId"] as? String,
-              let habitId = UUID(uuidString: habitIdString),
-              let dateKey = data["dateKey"] as? String else {
+        logger.info("🔵 [MERGE] Starting merge for completion: userId=\(userId.prefix(8))...")
+        
+        // Parse required fields with detailed error logging
+        guard let habitIdString = data["habitId"] as? String else {
+            logger.error("❌ [MERGE] Missing habitId in Firestore data: \(data)")
+            debugLog("❌ [MERGE] Missing habitId in Firestore data")
             return
         }
         
+        guard let habitId = UUID(uuidString: habitIdString) else {
+            logger.error("❌ [MERGE] Invalid habitId format: '\(habitIdString)'")
+            debugLog("❌ [MERGE] Invalid habitId format: '\(habitIdString)'")
+            return
+        }
+        
+        guard let dateKey = data["dateKey"] as? String else {
+            logger.error("❌ [MERGE] Missing dateKey in Firestore data for habitId: \(habitIdString)")
+            debugLog("❌ [MERGE] Missing dateKey in Firestore data")
+            return
+        }
+        
+        logger.info("🔵 [MERGE] Parsed: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
+        
         // If there are pending local events for this habit/date, skip remote overwrite
         if await hasPendingLocalEvents(habitId: habitId, dateKey: dateKey) {
+            logger.info("⏭️ [MERGE] Skipping merge - has pending local events: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
             debugLog("⏭️ SYNC_PULL_SKIP: habitId=\(habitId), dateKey=\(dateKey) has pending local events – keeping local completion")
             return
         }
@@ -1304,59 +1398,114 @@ actor SyncEngine {
         let remoteUpdatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
         let remoteTimestamp = remoteUpdatedAt ?? remoteCreatedAt ?? .distantPast
         
+        logger.info("🔵 [MERGE] Remote data: progress=\(remoteProgress), isCompleted=\(remoteIsCompleted), timestamp=\(remoteTimestamp.ISO8601Format())")
+        
+        var mergeResult: (success: Bool, action: String, error: String?) = (false, "unknown", nil)
+        
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
             // Check if completion exists (using deterministic ID)
             let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
+            logger.info("🔵 [MERGE] Looking for existing record with key: \(uniqueKey)")
             
             let predicate = #Predicate<CompletionRecord> { record in
                 record.userIdHabitIdDateKey == uniqueKey
             }
             let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
             
-            if let existingRecord = try? modelContext.fetch(descriptor).first {
-                let localUpdatedAt = existingRecord.updatedAt ?? existingRecord.createdAt
-                // Only overwrite if remote data is newer than local
-                guard remoteTimestamp > localUpdatedAt else {
-                    debugLog("⏭️ SYNC_PULL_KEEP_LOCAL: habitId=\(habitId), dateKey=\(dateKey) local updatedAt=\(localUpdatedAt) remote=\(remoteTimestamp)")
-                    return
+            do {
+                if let existingRecord = try modelContext.fetch(descriptor).first {
+                    logger.info("🔵 [MERGE] Found existing record: progress=\(existingRecord.progress), isCompleted=\(existingRecord.isCompleted)")
+                    
+                    let localUpdatedAt = existingRecord.updatedAt ?? existingRecord.createdAt
+                    // Only overwrite if remote data is newer than local
+                    guard remoteTimestamp > localUpdatedAt else {
+                        logger.info("⏭️ [MERGE] Keeping local (newer): local=\(localUpdatedAt.ISO8601Format()), remote=\(remoteTimestamp.ISO8601Format())")
+                        debugLog("⏭️ SYNC_PULL_KEEP_LOCAL: habitId=\(habitId), dateKey=\(dateKey) local updatedAt=\(localUpdatedAt) remote=\(remoteTimestamp)")
+                        mergeResult = (true, "kept_local", nil)
+                        return
+                    }
+                    
+                    logger.info("🔄 [MERGE] Updating existing record: old progress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
+                    
+                    let previousProgress = existingRecord.progress
+                    let previousCompleted = existingRecord.isCompleted
+                    existingRecord.isCompleted = remoteIsCompleted
+                    existingRecord.progress = remoteProgress
+                    if let createdAt = remoteCreatedAt {
+                        existingRecord.createdAt = createdAt
+                    }
+                    existingRecord.updatedAt = remoteTimestamp
+                    
+                    do {
+                        try modelContext.save()
+                        logger.info("✅ [MERGE] Successfully updated existing record: new progress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
+                        debugLog("🔵 SYNC_PULL_OVERWRITE: habitId=\(habitId), dateKey=\(dateKey), oldProgress=\(previousProgress)/\(previousCompleted), newProgress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
+                        mergeResult = (true, "updated", nil)
+                    } catch {
+                        let errorMsg = "Failed to save updated record: \(error.localizedDescription)"
+                        logger.error("❌ [MERGE] \(errorMsg)")
+                        debugLog("❌ [MERGE] \(errorMsg)")
+                        mergeResult = (false, "update_failed", errorMsg)
+                    }
+                } else {
+                    // Create new record
+                    logger.info("🔵 [MERGE] No existing record found, creating new one")
+                    
+                    guard let date = DateUtils.date(from: dateKey) else {
+                        let errorMsg = "Failed to parse dateKey: '\(dateKey)'"
+                        logger.error("❌ [MERGE] \(errorMsg)")
+                        debugLog("❌ [MERGE] \(errorMsg)")
+                        mergeResult = (false, "date_parse_failed", errorMsg)
+                        return
+                    }
+                    
+                    logger.info("🔵 [MERGE] Creating CompletionRecord: date=\(date), progress=\(remoteProgress), isCompleted=\(remoteIsCompleted)")
+                    
+                    let record = CompletionRecord(
+                        userId: userId,
+                        habitId: habitId,
+                        date: date,
+                        dateKey: dateKey,
+                        isCompleted: remoteIsCompleted,
+                        progress: remoteProgress
+                    )
+                    
+                    if let createdAt = remoteCreatedAt {
+                        record.createdAt = createdAt
+                    }
+                    record.updatedAt = remoteTimestamp
+                    
+                    logger.info("🔵 [MERGE] Inserting record into ModelContext")
+                    modelContext.insert(record)
+                    
+                    do {
+                        try modelContext.save()
+                        logger.info("✅ [MERGE] Successfully created and saved new record: progress=\(record.progress), isCompleted=\(record.isCompleted)")
+                        debugLog("🔵 SYNC_PULL_CREATE: habitId=\(habitId), dateKey=\(dateKey), progress=\(record.progress), isCompleted=\(record.isCompleted)")
+                        mergeResult = (true, "created", nil)
+                    } catch {
+                        let errorMsg = "Failed to save new record: \(error.localizedDescription)"
+                        logger.error("❌ [MERGE] \(errorMsg)")
+                        debugLog("❌ [MERGE] \(errorMsg)")
+                        mergeResult = (false, "save_failed", errorMsg)
+                    }
                 }
-                
-                let previousProgress = existingRecord.progress
-                let previousCompleted = existingRecord.isCompleted
-                existingRecord.isCompleted = remoteIsCompleted
-                existingRecord.progress = remoteProgress
-                if let createdAt = remoteCreatedAt {
-                    existingRecord.createdAt = createdAt
-                }
-                existingRecord.updatedAt = remoteTimestamp
-                try? modelContext.save()
-                debugLog("🔵 SYNC_PULL_OVERWRITE: habitId=\(habitId), dateKey=\(dateKey), oldProgress=\(previousProgress)/\(previousCompleted), newProgress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
-            } else {
-                // Create new record
-                guard let date = DateUtils.date(from: dateKey) else {
-                    return
-                }
-                
-                let record = CompletionRecord(
-                    userId: userId,
-                    habitId: habitId,
-                    date: date,
-                    dateKey: dateKey,
-                    isCompleted: remoteIsCompleted,
-                    progress: remoteProgress
-                )
-                
-                if let createdAt = remoteCreatedAt {
-                    record.createdAt = createdAt
-                }
-                record.updatedAt = remoteTimestamp
-                
-                modelContext.insert(record)
-                try? modelContext.save()
-                debugLog("🔵 SYNC_PULL_CREATE: habitId=\(habitId), dateKey=\(dateKey), progress=\(record.progress), isCompleted=\(record.isCompleted)")
+            } catch {
+                let errorMsg = "Failed to fetch existing record: \(error.localizedDescription)"
+                logger.error("❌ [MERGE] \(errorMsg)")
+                debugLog("❌ [MERGE] \(errorMsg)")
+                mergeResult = (false, "fetch_failed", errorMsg)
             }
+        }
+        
+        // Log final result
+        if mergeResult.success {
+            logger.info("✅ [MERGE] Merge completed successfully: action=\(mergeResult.action), habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
+        } else {
+            logger.error("❌ [MERGE] Merge failed: action=\(mergeResult.action), error=\(mergeResult.error ?? "unknown"), habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
+            throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: mergeResult.error ?? "Unknown merge error"])
         }
     }
 
