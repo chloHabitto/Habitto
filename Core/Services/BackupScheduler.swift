@@ -65,7 +65,7 @@ struct BackupScheduleConfig: Codable {
   // MARK: Lifecycle
 
   init(
-    isEnabled: Bool = false,
+    isEnabled: Bool = true,
     frequency: BackupFrequency = .daily,
     networkCondition: NetworkCondition = .wifiOnly,
     preferredTime: Date = Calendar.current

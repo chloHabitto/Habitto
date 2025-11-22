@@ -23,7 +23,7 @@ final class BackupSettingsManager: ObservableObject {
 
   // MARK: - Published Properties
 
-  @Published var automaticBackupEnabled = false
+  @Published var automaticBackupEnabled = true
   @Published var backupFrequency: BackupFrequency = .weekly
   @Published var wifiOnlyBackup = false
   @Published var preferredStorageProvider: StorageProvider = .automatic

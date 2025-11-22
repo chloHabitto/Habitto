@@ -9,7 +9,7 @@ struct BackupRecoveryView: View {
   @StateObject private var notificationService = BackupNotificationService.shared
   @StateObject private var settingsManager = BackupSettingsManager.shared
 
-  @State private var isAutomaticBackupEnabled = false
+  @State private var isAutomaticBackupEnabled = true
   @State private var backupFrequency = "Daily"
   @State private var wifiOnlyBackup = true
   @State private var isBackingUp = false
