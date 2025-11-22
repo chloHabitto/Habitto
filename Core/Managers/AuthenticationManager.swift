@@ -196,7 +196,194 @@ class AuthenticationManager: ObservableObject {
 
   // MARK: - Apple Sign In
 
-  // Note: Apple Sign-In functionality has been removed - can be restored from git history if needed
+  /// Start Sign in with Apple flow
+  /// Generates a nonce and returns a configured ASAuthorizationAppleIDRequest
+  /// - Returns: Configured ASAuthorizationAppleIDRequest ready to use
+  func startSignInWithApple() -> ASAuthorizationAppleIDRequest {
+    print("🍎 [APPLE_SIGN_IN] Starting Sign in with Apple flow...")
+    
+    // Generate nonce for security
+    let nonce = generateNonce()
+    let nonceHash = sha256(nonce)
+    
+    print("🍎 [APPLE_SIGN_IN] Generated nonce: \(nonce.prefix(8))...")
+    
+    // Create and configure the request
+    let appleIDProvider = ASAuthorizationAppleIDProvider()
+    let request = appleIDProvider.createRequest()
+    request.requestedScopes = [.email, .fullName]
+    request.nonce = nonceHash
+    
+    print("🍎 [APPLE_SIGN_IN] Request configured with email and fullName scopes")
+    
+    return request
+  }
+
+  /// Handle Sign in with Apple result
+  /// This method processes the authorization result and either links to an anonymous account
+  /// or signs in normally, preserving user data when linking.
+  /// - Parameter result: The authorization result from ASAuthorizationController
+  func handleSignInWithApple(result: Result<ASAuthorization, Error>) async {
+    print("🍎 [APPLE_SIGN_IN] Handling authorization result...")
+    
+    // Set authenticating state
+    authState = .authenticating
+    
+    switch result {
+    case .success(let authorization):
+      guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+        let error = "Invalid credential type"
+        print("❌ [APPLE_SIGN_IN] \(error)")
+        authState = .error(error)
+        return
+      }
+      
+      // Extract identity token
+      guard let identityToken = appleIDCredential.identityToken,
+            let idTokenString = String(data: identityToken, encoding: .utf8) else {
+        let error = "Unable to extract identity token"
+        print("❌ [APPLE_SIGN_IN] \(error)")
+        authState = .error(error)
+        return
+      }
+      
+      // Verify nonce
+      guard let nonce = currentNonce else {
+        let error = "Nonce not found - security check failed"
+        print("❌ [APPLE_SIGN_IN] \(error)")
+        authState = .error(error)
+        return
+      }
+      
+      // Extract full name if available (only provided on first sign-in)
+      let fullName = appleIDCredential.fullName
+      
+      // Create Firebase credential using the static method
+      let credential = OAuthProvider.appleCredential(
+        withIDToken: idTokenString,
+        rawNonce: nonce,
+        fullName: fullName
+      )
+      
+      print("🍎 [APPLE_SIGN_IN] Firebase credential created successfully")
+      
+      // Check if current user is anonymous
+      guard let currentUser = Auth.auth().currentUser else {
+        // No current user - perform regular sign in
+        print("ℹ️ [APPLE_SIGN_IN] No current user - performing regular sign in")
+        await performRegularSignIn(with: credential)
+        return
+      }
+      
+      if currentUser.isAnonymous {
+        // User is anonymous - link the account to preserve data
+        print("📦 [APPLE_SIGN_IN] Attempting to link anonymous account: \(currentUser.uid)")
+        await linkAnonymousAccount(currentUser: currentUser, credential: credential)
+      } else {
+        // User is already signed in with another provider - perform regular sign in
+        print("ℹ️ [APPLE_SIGN_IN] Regular sign-in (no anonymous account to link)")
+        await performRegularSignIn(with: credential)
+      }
+      
+      // Clear nonce after use
+      currentNonce = nil
+      
+    case .failure(let error):
+      print("❌ [APPLE_SIGN_IN] Sign in with Apple failed: \(error.localizedDescription)")
+      authState = .error(error.localizedDescription)
+      currentNonce = nil
+    }
+  }
+  
+  // MARK: - Private Apple Sign In Helpers
+  
+  /// Link anonymous account to Apple credential
+  /// This preserves all user data by linking the anonymous account to the Apple account
+  private func linkAnonymousAccount(currentUser: User, credential: AuthCredential) async {
+    do {
+      print("📦 [APPLE_SIGN_IN] Linking anonymous account to Apple credential...")
+      
+      let result = try await currentUser.link(with: credential)
+      
+      print("✅ [APPLE_SIGN_IN] Account linked successfully - all data preserved!")
+      print("   User ID: \(result.user.uid)")
+      print("   Email: \(result.user.email ?? "Not provided")")
+      print("   Display Name: \(result.user.displayName ?? "Not provided")")
+      
+      // Update auth state
+      authState = .authenticated(result.user)
+      self.currentUser = result.user
+      
+      // Store userId in Keychain
+      if KeychainManager.shared.storeUserID(result.user.uid) {
+        print("✅ [APPLE_SIGN_IN] Stored userId in Keychain")
+      }
+      
+    } catch {
+      // Handle credential already in use error
+      if let authError = error as NSError?,
+         let errorCode = AuthErrorCode(rawValue: authError.code),
+         errorCode == .credentialAlreadyInUse {
+        
+        print("⚠️ [APPLE_SIGN_IN] Credential already in use - attempting to sign in with existing account")
+        
+        // Extract the existing user's credential from the error
+        if let existingCredential = authError.userInfo[AuthErrorUserInfoUpdatedCredentialKey] as? AuthCredential {
+          // Sign in with the existing credential
+          do {
+            let result = try await Auth.auth().signIn(with: existingCredential)
+            print("✅ [APPLE_SIGN_IN] Signed in with existing Apple account")
+            print("   User ID: \(result.user.uid)")
+            
+            authState = .authenticated(result.user)
+            self.currentUser = result.user
+            
+            // Store userId in Keychain
+            if KeychainManager.shared.storeUserID(result.user.uid) {
+              print("✅ [APPLE_SIGN_IN] Stored userId in Keychain")
+            }
+          } catch {
+            print("❌ [APPLE_SIGN_IN] Failed to sign in with existing credential: \(error.localizedDescription)")
+            authState = .error("This Apple ID is already associated with another account. Please sign in with that account.")
+          }
+        } else {
+          print("❌ [APPLE_SIGN_IN] Credential already in use, but unable to retrieve existing credential")
+          authState = .error("This Apple ID is already associated with another account. Please sign in with that account.")
+        }
+      } else {
+        print("❌ [APPLE_SIGN_IN] Failed to link account: \(error.localizedDescription)")
+        authState = .error(error.localizedDescription)
+      }
+    }
+  }
+  
+  /// Perform regular sign in with Apple credential
+  /// Used when there's no anonymous account to link
+  private func performRegularSignIn(with credential: AuthCredential) async {
+    do {
+      print("🍎 [APPLE_SIGN_IN] Signing in with Apple credential...")
+      
+      let result = try await Auth.auth().signIn(with: credential)
+      
+      print("✅ [APPLE_SIGN_IN] Sign in successful")
+      print("   User ID: \(result.user.uid)")
+      print("   Email: \(result.user.email ?? "Not provided")")
+      print("   Display Name: \(result.user.displayName ?? "Not provided")")
+      
+      // Update auth state
+      authState = .authenticated(result.user)
+      self.currentUser = result.user
+      
+      // Store userId in Keychain
+      if KeychainManager.shared.storeUserID(result.user.uid) {
+        print("✅ [APPLE_SIGN_IN] Stored userId in Keychain")
+      }
+      
+    } catch {
+      print("❌ [APPLE_SIGN_IN] Failed to sign in: \(error.localizedDescription)")
+      authState = .error(error.localizedDescription)
+    }
+  }
 
   // MARK: - User Profile Management
 
