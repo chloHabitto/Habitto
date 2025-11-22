@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import FirebaseAuth
 
 struct BackupRecoveryView: View {
   @Environment(\.dismiss) private var dismiss
@@ -8,15 +9,23 @@ struct BackupRecoveryView: View {
   @StateObject private var backupCoordinator = BackupStorageCoordinator.shared
   @StateObject private var notificationService = BackupNotificationService.shared
   @StateObject private var settingsManager = BackupSettingsManager.shared
+  @ObservedObject var habitRepository = HabitRepository.shared
 
   @State private var isAutomaticBackupEnabled = true
   @State private var backupFrequency = "Daily"
   @State private var wifiOnlyBackup = true
   @State private var isBackingUp = false
   @State private var showingBackupList = false
+  @State private var firestoreSyncStatus: FirestoreSyncStatus = .checking
 
   let backupFrequencies = ["Daily", "Weekly", "Monthly", "Manual Only"]
   @State private var showingTestingView = false
+  
+  enum FirestoreSyncStatus {
+    case checking
+    case active
+    case inactive
+  }
 
   var body: some View {
     NavigationView {
@@ -31,6 +40,9 @@ struct BackupRecoveryView: View {
                 .foregroundColor(.text05)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 8)
+              
+              // Firestore Sync Status Banner
+              firestoreSyncBanner
 
               // Backup Settings
               VStack(spacing: 16) {
@@ -56,6 +68,7 @@ struct BackupRecoveryView: View {
 
                   Toggle("", isOn: $isAutomaticBackupEnabled)
                     .fixedSize(horizontal: true, vertical: false)
+                    .disabled(firestoreSyncStatus != .active)
                     .onChange(of: isAutomaticBackupEnabled) {
                       Task {
                         await saveBackupSettings()
@@ -243,6 +256,7 @@ struct BackupRecoveryView: View {
       }
       .onAppear {
         loadBackupSettings()
+        checkFirestoreSyncStatus()
       }
       .sheet(isPresented: $showingBackupList) {
         BackupListView()
@@ -294,6 +308,98 @@ struct BackupRecoveryView: View {
 
     await MainActor.run {
       isBackingUp = false
+    }
+  }
+  
+  // MARK: - Firestore Sync Status
+  
+  @MainActor
+  private var firestoreSyncBanner: some View {
+    Group {
+      switch firestoreSyncStatus {
+      case .checking:
+        HStack {
+          ProgressView()
+            .scaleEffect(0.8)
+          Text("Checking Firestore sync status...")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text03)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.surface)
+        .cornerRadius(12)
+        
+      case .active:
+        HStack {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.green)
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Firestore Sync Active")
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundColor(.text01)
+            Text("Your data is automatically syncing to the cloud. iCloud backup is optional.")
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(.text03)
+          }
+          Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.surface)
+        .cornerRadius(12)
+        
+      case .inactive:
+        HStack {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .foregroundColor(.orange)
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Firestore Sync Not Active")
+              .font(.system(size: 14, weight: .semibold))
+              .foregroundColor(.text01)
+            Text("Please ensure you're signed in. Firestore sync must be active before enabling iCloud backup.")
+              .font(.system(size: 12, weight: .regular))
+              .foregroundColor(.text03)
+          }
+          Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.surface)
+        .cornerRadius(12)
+      }
+    }
+  }
+  
+  @MainActor
+  private func checkFirestoreSyncStatus() {
+    // Check if user is authenticated
+    guard let firebaseUser = Auth.auth().currentUser else {
+      firestoreSyncStatus = .inactive
+      return
+    }
+    
+    // Check if sync is running (periodicSyncUserId is set)
+    Task {
+      let syncEngine = SyncEngine.shared
+      let hasActiveSync = await syncEngine.hasActiveSync()
+      
+      await MainActor.run {
+        if hasActiveSync {
+          firestoreSyncStatus = .active
+        } else {
+          // If user is authenticated but sync isn't running, it might be starting
+          // Wait a moment and check again
+          Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            let syncEngine = SyncEngine.shared
+            let hasActiveSync = await syncEngine.hasActiveSync()
+            await MainActor.run {
+              firestoreSyncStatus = hasActiveSync ? .active : .inactive
+            }
+          }
+        }
+      }
     }
   }
 }

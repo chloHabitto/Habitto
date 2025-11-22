@@ -388,6 +388,11 @@ actor SyncEngine {
         periodicSyncUserId = nil
     }
     
+    /// Check if periodic sync is currently active
+    func hasActiveSync() -> Bool {
+        return periodicSyncUserId != nil && syncTask != nil && !Task.isCancelled
+    }
+    
     /// Perform a full sync cycle: pull remote changes, then sync local changes
     /// This orchestrates all sync operations in the correct order
     /// - Parameter userId: The authenticated user ID (must not be guest)
