@@ -143,7 +143,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           // ✅ CRITICAL FIX: Sync usage history from habit.actualUsage
           existingHabitData.usageHistory.removeAll()
           for (key, value) in habit.actualUsage {
-            let usageRecord = await UsageRecord(
+            let usageRecord = UsageRecord(
               userId: await getCurrentUserId() ?? "",
               habitId: existingHabitData.id,
               key: key,
@@ -152,7 +152,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           }
         } else {
           // Create new habit with user ID
-          let habitData = await HabitData(
+          let habitData = HabitData(
             id: habit.id,
             userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
             name: habit.name,
@@ -216,7 +216,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
           // Add usage history
           for (key, value) in habit.actualUsage {
-            let usageRecord = await UsageRecord(
+            let usageRecord = UsageRecord(
               userId: await getCurrentUserId() ?? "",
               habitId: habitData.id,
               key: key,
@@ -588,7 +588,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // Update usage history
         existingHabitData.usageHistory.removeAll()
         for (key, value) in habit.actualUsage {
-          let usageRecord = await UsageRecord(
+          let usageRecord = UsageRecord(
             userId: await getCurrentUserId() ?? "",
             habitId: existingHabitData.id,
             key: key,
@@ -597,7 +597,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         }
       } else {
         // Create new habit
-        let habitData = await HabitData(
+        let habitData = HabitData(
           id: habit.id,
           userId: await getCurrentUserId() ?? "", // Use current user ID or empty string for guest
           name: habit.name,
@@ -661,7 +661,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
         // Add usage history
         for (key, value) in habit.actualUsage {
-          let usageRecord = await UsageRecord(
+          let usageRecord = UsageRecord(
             userId: await getCurrentUserId() ?? "",
             habitId: habitData.id,
             key: key,
