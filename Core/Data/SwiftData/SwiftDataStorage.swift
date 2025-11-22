@@ -126,7 +126,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           for (dateString, difficulty) in habit.difficultyHistory {
             let normalized = normalizedDifficultyDate(from: dateString)
             let difficultyRecord = DifficultyRecord(
-              userId: "",
+              userId: await getCurrentUserId() ?? "",
               habitId: UUID(),
               dateKey: normalized.key,
               difficulty: difficulty)
@@ -200,7 +200,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           for (dateString, difficulty) in habit.difficultyHistory {
             let normalized = normalizedDifficultyDate(from: dateString)
             let difficultyRecord = DifficultyRecord(
-              userId: "",
+              userId: await getCurrentUserId() ?? "",
               habitId: UUID(),
               dateKey: normalized.key,
               difficulty: difficulty)
@@ -571,7 +571,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         for (dateString, difficulty) in habit.difficultyHistory {
           let normalized = normalizedDifficultyDate(from: dateString)
           let difficultyRecord = DifficultyRecord(
-            userId: "",
+            userId: await getCurrentUserId() ?? "",
             habitId: UUID(),
             dateKey: normalized.key,
             difficulty: difficulty)
@@ -645,7 +645,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         for (dateString, difficulty) in habit.difficultyHistory {
           let normalized = normalizedDifficultyDate(from: dateString)
           let difficultyRecord = DifficultyRecord(
-            userId: "",
+            userId: await getCurrentUserId() ?? "",
             habitId: UUID(),
             dateKey: normalized.key,
             difficulty: difficulty)
@@ -844,14 +844,18 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   /// Helper method to get current user ID for data isolation
-  /// ✅ GUEST MODE ONLY: Always returns nil (empty string when used with ?? "")
-  /// This ensures all data is stored with userId = "" for guest mode
+  /// ✅ PRIORITY: Firebase Auth UID first, then fallback to nil (empty string when used with ?? "")
   private func getCurrentUserId() async -> String? {
     await MainActor.run {
-      // ✅ GUEST MODE ONLY: Always return nil (which becomes "" with ?? "")
-      // No anonymous authentication - pure guest mode
-      logger.info("🔍 getCurrentUserId: Guest mode - returning nil (will use empty string)")
-      return nil // Guest mode - will use "" when used with ?? ""
+      // ✅ PRIORITY: Firebase Auth UID first, then fallback to nil (which becomes "" with ?? "")
+      if let firebaseUser = Auth.auth().currentUser {
+        let uid = firebaseUser.uid
+        logger.info("🔍 getCurrentUserId: Firebase Auth UID found - returning: \(uid.prefix(8))...")
+        return uid
+      }
+      // Fallback to nil (which becomes "" with ?? "") if Firebase Auth is nil
+      logger.info("🔍 getCurrentUserId: No Firebase Auth user - returning nil (guest mode)")
+      return nil
     }
   }
 

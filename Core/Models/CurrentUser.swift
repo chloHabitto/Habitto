@@ -13,11 +13,17 @@ struct CurrentUser {
   static let guestId = ""
 
   /// Get the current user ID, or guest identifier if not authenticated
-  /// ✅ GUEST MODE ONLY: Always returns empty string (guest mode)
+  /// ✅ PRIORITY: Firebase Auth UID first, then fallback to guest ID
   var id: String {
     get async {
-      // Always return guest ID (empty string) - no anonymous auth
-      return Self.guestId
+      // ✅ PRIORITY: Firebase Auth UID first, then fallback to guest ID
+      await MainActor.run {
+        if let firebaseUser = Auth.auth().currentUser {
+          return firebaseUser.uid
+        }
+        // Fallback to guest ID if Firebase Auth is nil
+        return Self.guestId
+      }
     }
   }
 
@@ -29,10 +35,12 @@ struct CurrentUser {
   }
 
   /// Check if current user is authenticated
-  /// ✅ GUEST MODE ONLY: Always returns false (no auth)
+  /// Returns true if Firebase Auth has a current user (including anonymous)
   var isAuthenticated: Bool {
     get async {
-      return false // Always guest mode - no authentication
+      await MainActor.run {
+        return Auth.auth().currentUser != nil
+      }
     }
   }
 
