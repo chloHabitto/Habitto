@@ -87,6 +87,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         debugLog("✅ AppDelegate: User authenticated - uid: \(uid)")
         NSLog("✅ AppDelegate: User authenticated - uid: %@", uid)
+        
+        // ✅ CRITICAL: Migrate guest data to anonymous user
+        // This runs once per app launch after anonymous auth is established
+        // Migration is idempotent - safe to run multiple times
+        // Note: runCompleteMigration handles errors internally and logs them
+        debugLog("🔄 AppDelegate: Starting guest data migration...")
+        await GuestDataMigrationHelper.runCompleteMigration(userId: uid)
+        debugLog("✅ AppDelegate: Guest data migration completed")
+        
       } catch {
         debugLog("❌ AppDelegate: Failed to authenticate user: \(error.localizedDescription)")
         NSLog("❌ AppDelegate: Failed to authenticate user: %@", error.localizedDescription)
