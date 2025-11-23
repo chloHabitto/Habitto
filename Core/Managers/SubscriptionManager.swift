@@ -357,6 +357,37 @@ class SubscriptionManager: ObservableObject {
     print("   Step 1 → Step 2: \(isPremiumAfterStep1) → \(isPremiumAfterStep2)")
     print("   Step 2 → Step 3: \(isPremiumAfterStep2) → \(isPremiumAfterStep3)")
     print("   Step 3 → Final: \(isPremiumAfterStep3) → \(finalPremiumStatus)")
+    
+    // Force UI refresh to ensure all observers are notified
+    if foundOurProduct || foundActiveEntitlement {
+      await MainActor.run {
+        // Ensure premium is set
+        if !self.isPremium {
+          self.isPremium = true
+        }
+        
+        // Explicitly notify all observers
+        self.objectWillChange.send()
+        
+        print("🔄 Premium status confirmed and UI notified")
+        print("   isPremium: \(self.isPremium)")
+        print("   UI observers should now see the updated state")
+      }
+    }
+  }
+  
+  /// Verify subscription state is visible to UI
+  func verifyUIState() {
+    print("🔍 Verifying UI State:")
+    print("   isPremium: \(isPremium)")
+    print("   Type: \(type(of: self))")
+    print("   Singleton: \(self === SubscriptionManager.shared)")
+    
+    Task { @MainActor in
+      print("   On Main Thread: \(Thread.isMainThread)")
+      print("   isPremium (MainActor): \(self.isPremium)")
+      print("   ObjectWillChangePublisher exists: \(self.objectWillChange != nil)")
+    }
   }
   
   /// Verify current subscription status with detailed logging
