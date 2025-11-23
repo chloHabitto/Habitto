@@ -473,6 +473,14 @@ struct MoreTabView: View {
         )
         
         debugButton(
+          title: "🔄 Reset Premium Status",
+          subtitle: "Reset to FREE before testing fresh purchase",
+          action: {
+            subscriptionManager.resetPremiumStatusForDebug()
+          }
+        )
+        
+        debugButton(
           title: "🔍 Verify Purchase Status",
           subtitle: "Check all StoreKit transactions and entitlements",
           action: {
