@@ -42,6 +42,9 @@ struct SubscriptionView: View {
         VStack(spacing: 12) {
           ctaButton
           restorePurchaseButton
+          #if DEBUG
+          verifyPurchaseButton
+          #endif
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 8)
@@ -598,6 +601,21 @@ struct SubscriptionView: View {
       }
     }
   }
+  
+  #if DEBUG
+  private var verifyPurchaseButton: some View {
+    HabittoButton(
+      size: .medium,
+      style: .tertiary,
+      content: .text("🔍 Verify Purchase (Debug)"),
+      state: .default
+    ) {
+      Task {
+        await subscriptionManager.verifyPurchaseStatus()
+      }
+    }
+  }
+  #endif
   
   /// Purchase the selected subscription
   private func purchaseSubscription() async {

@@ -327,6 +327,11 @@ struct MoreTabView: View {
           })
         ])
       
+      #if DEBUG
+      // Debug Section
+      debugXPSyncSection
+      #endif
+      
       // Version Information
       VStack(spacing: 0) {
         Spacer()
@@ -463,6 +468,16 @@ struct MoreTabView: View {
               subscriptionManager.disablePremiumForTesting()
             } else {
               subscriptionManager.enablePremiumForTesting()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "🔍 Verify Purchase Status",
+          subtitle: "Check all StoreKit transactions and entitlements",
+          action: {
+            Task {
+              await subscriptionManager.verifyPurchaseStatus()
             }
           }
         )
