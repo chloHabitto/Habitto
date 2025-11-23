@@ -438,36 +438,72 @@ struct ProfileView: View {
     originalEmail = email
   }
 
-  // DISABLED: Sign-in functionality commented out for future use
-  /*
   private func saveChanges() {
+    guard isLoggedIn, let user = Auth.auth().currentUser else {
+      print("❌ Cannot save profile: User not logged in")
+      return
+    }
+    
     // Update the user's display name in Firebase
+    // Only use first name for the greeting, but store full name in displayName
     let newDisplayName = [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " ")
-
-    // Update display name only (email is no longer editable)
-    authManager.updateUserProfile(
-      displayName: newDisplayName.isEmpty ? nil : newDisplayName,
-      photoURL: nil)
-    { result in
+    
+    // Capture current values before async operations
+    let savedFirstName = firstName
+    let savedLastName = lastName
+    
+    // Update display name using Firebase Auth
+    let changeRequest = user.createProfileChangeRequest()
+    changeRequest.displayName = newDisplayName.isEmpty ? nil : newDisplayName
+    
+    changeRequest.commitChanges { error in
       DispatchQueue.main.async {
-        switch result {
-        case .success:
-          // Update original values to reflect saved state
-          originalFirstName = firstName
-          originalLastName = lastName
-          print("✅ Profile updated successfully")
-
-        case .failure(let error):
+        if let error = error {
           print("❌ Failed to update profile: \(error.localizedDescription)")
+        } else {
+          // Reload the user to get updated profile information
+          user.reload { reloadError in
+            DispatchQueue.main.async {
+              if let reloadError = reloadError {
+                print("⚠️ Profile updated but failed to reload user: \(reloadError.localizedDescription)")
+              } else {
+                print("✅ Profile updated and user reloaded successfully")
+              }
+              
+              // Update original values to reflect saved state
+              originalFirstName = savedFirstName
+              originalLastName = savedLastName
+              
+              // Reload user data to reflect changes (this will get the updated displayName)
+              // Inline the logic since we can't call methods from closures in structs
+              if isLoggedIn, let updatedUser = authManager.currentUser {
+                // Load display name
+                if let displayName = updatedUser.displayName,
+                   !displayName.isEmpty
+                {
+                  // Split the display name into first and last name
+                  let nameComponents = displayName.components(separatedBy: " ")
+                  if nameComponents.count >= 2 {
+                    firstName = nameComponents[0]
+                    lastName = nameComponents[1...].joined(separator: " ")
+                  } else if nameComponents.count == 1 {
+                    firstName = nameComponents[0]
+                    lastName = ""
+                  }
+                } else {
+                  firstName = ""
+                  lastName = ""
+                }
+                
+                // Update original values to match current values
+                originalFirstName = firstName
+                originalLastName = lastName
+              }
+            }
+          }
         }
       }
     }
-  }
-  */
-  
-  // Placeholder method since profile saving is disabled
-  private func saveChanges() {
-    print("⚠️ Profile saving is currently disabled")
   }
 }
 

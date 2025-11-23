@@ -237,14 +237,13 @@ struct HeaderView: View {
       if let displayName = user.displayName, !displayName.isEmpty {
         // Extract first name from display name
         let firstName = displayName.components(separatedBy: " ").first ?? displayName
-        return "Hi \(firstName),"
-      } else if let email = user.email, !email.isEmpty {
-        // If no display name, use email prefix (capitalize first letter)
-        let emailPrefix = email.components(separatedBy: "@").first ?? email
-        let capitalizedPrefix = emailPrefix.prefix(1).uppercased() + emailPrefix.dropFirst()
-          .lowercased()
-        return "Hi \(capitalizedPrefix),"
+        // Only show first name if it's not empty (user has entered a name)
+        if !firstName.isEmpty && firstName.trimmingCharacters(in: .whitespaces) != "" {
+          return "Hi \(firstName),"
+        }
       }
+      // For signed-in users without a first name, show "Hi there,"
+      return "Hi there,"
     }
     // Default greeting for guest users
     return "Hi there,"
