@@ -157,7 +157,11 @@ class HomeViewState: ObservableObject {
   func handleCreateHabitRequest() {
     let currentHabitCount = habits.count
     
-    if subscriptionManager.canCreateHabit(currentHabitCount: currentHabitCount) {
+    let canCreate = subscriptionManager.canCreateHabit(currentHabitCount: currentHabitCount)
+    #if DEBUG
+    print("🔍 HomeView - Can create habit: \(canCreate), isPremium: \(subscriptionManager.isPremium), habitCount: \(currentHabitCount)")
+    #endif
+    if canCreate {
       // User can create habit, show create flow
       showingCreateHabit = true
     } else {
