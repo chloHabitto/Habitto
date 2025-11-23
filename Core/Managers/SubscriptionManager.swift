@@ -18,6 +18,11 @@ class SubscriptionManager: ObservableObject {
   /// Transaction listener for cross-device sync
   private var transactionListener: Task<Void, Error>?
   
+  #if DEBUG
+  /// Periodic sync check timer (DEBUG only - for testing sandbox sync)
+  private var syncCheckTimer: Timer?
+  #endif
+  
   /// Maximum number of habits for free users
   static let freeUserHabitLimit = 5
   
@@ -258,6 +263,62 @@ class SubscriptionManager: ObservableObject {
     print("   Current isPremium status: \(isPremium)")
   }
   
+  /// Force StoreKit to sync purchases from other devices
+  /// This can help speed up sandbox sync for testing
+  func forceSyncFromCloud() async {
+    print("🔄 SubscriptionManager: Forcing StoreKit sync check...")
+    print("🔄 This will check for synced purchases from other devices")
+    
+    // Method 1: Re-check subscription status (checks currentEntitlements)
+    print("🔄 Step 1: Re-checking subscription status...")
+    await checkSubscriptionStatus()
+    
+    // Method 2: Manually iterate all transactions (forces StoreKit refresh)
+    print("🔄 Step 2: Manually checking all transactions...")
+    var allTransactionCount = 0
+    var foundOurProduct = false
+    for await result in Transaction.all {
+      allTransactionCount += 1
+      if case .verified(let transaction) = result {
+        if ProductID.all.contains(transaction.productID) {
+          print("✅ Found synced transaction in Transaction.all: \(transaction.productID)")
+          foundOurProduct = true
+          // Process it through the handler
+          await handleTransactionUpdate(result)
+        }
+      }
+    }
+    print("🔄 Step 2 complete - found \(allTransactionCount) total transaction(s)")
+    
+    // Method 3: Double-check currentEntitlements after processing
+    print("🔄 Step 3: Final check of current entitlements...")
+    var entitlementCount = 0
+    for await result in Transaction.currentEntitlements {
+      entitlementCount += 1
+      if case .verified(let transaction) = result {
+        if ProductID.all.contains(transaction.productID) {
+          print("✅ Found active entitlement: \(transaction.productID)")
+          foundOurProduct = true
+        }
+      }
+    }
+    print("🔄 Step 3 complete - found \(entitlementCount) current entitlement(s)")
+    
+    if foundOurProduct {
+      print("✅ Synced transaction detected and processed!")
+      print("✅ Premium status should now be enabled")
+    } else {
+      print("ℹ️ No synced transactions found yet")
+      print("ℹ️ Sandbox sync may still be pending (can take 10-30+ minutes)")
+      print("ℹ️ Verify:")
+      print("   - Same Apple ID on both devices (Settings → App Store)")
+      print("   - Same Apple ID in iCloud (Settings → [Your Name])")
+      print("   - Both devices connected to internet")
+    }
+    
+    print("🔄 Force sync complete - Current isPremium status: \(isPremium)")
+  }
+  
   /// Verify current subscription status with detailed logging
   /// Use this on the device that made the purchase
   func verifyPurchaseStatus() async {
@@ -490,6 +551,31 @@ class SubscriptionManager: ObservableObject {
     print("✅ Premium status reset to: \(isPremium)")
     print("ℹ️ Note: This only resets the in-memory status.")
     print("ℹ️ If you have a real StoreKit purchase, it will be restored on next check.")
+  }
+  
+  /// Start periodic sync checking (DEBUG ONLY - for testing sandbox sync)
+  /// This will check for synced purchases every N seconds
+  func startPeriodicSyncCheck(interval: TimeInterval = 30) {
+    print("🔄 Starting periodic sync check (every \(interval) seconds)")
+    
+    syncCheckTimer?.invalidate()
+    syncCheckTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+      Task { @MainActor [weak self] in
+        print("🔄 Periodic sync check...")
+        await self?.checkSubscriptionStatus()
+        if let isPremium = self?.isPremium, isPremium {
+          print("✅ Periodic check: Premium status detected! Stopping periodic checks.")
+          self?.stopPeriodicSyncCheck()
+        }
+      }
+    }
+  }
+  
+  /// Stop periodic sync checking
+  func stopPeriodicSyncCheck() {
+    syncCheckTimer?.invalidate()
+    syncCheckTimer = nil
+    print("⏹️ Stopped periodic sync check")
   }
   #endif
 }

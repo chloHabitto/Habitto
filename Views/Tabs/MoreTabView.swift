@@ -491,6 +491,32 @@ struct MoreTabView: View {
         )
         
         debugButton(
+          title: "🔄 Force Sync from Cloud",
+          subtitle: "Force StoreKit to check for synced purchases",
+          action: {
+            Task {
+              await subscriptionManager.forceSyncFromCloud()
+            }
+          }
+        )
+        
+        debugButton(
+          title: "🔄 Start Periodic Sync Check",
+          subtitle: "Check for sync every 30 seconds (auto-stops when found)",
+          action: {
+            subscriptionManager.startPeriodicSyncCheck(interval: 30)
+          }
+        )
+        
+        debugButton(
+          title: "⏹️ Stop Periodic Sync Check",
+          subtitle: "Stop automatic sync checking",
+          action: {
+            subscriptionManager.stopPeriodicSyncCheck()
+          }
+        )
+        
+        debugButton(
           title: "🧪 Test Event Sourcing",
           subtitle: "Automated test of event creation & XP",
           action: {
