@@ -20,53 +20,6 @@ struct AccountView: View {
                 // Signed in status section
                 signedInStatusSection
 
-                // Developer Tools Section (DEBUG only)
-                #if DEBUG
-                VStack(spacing: 0) {
-                  AccountOptionRow(
-                    icon: "ant.circle.fill",
-                    title: "Debug User Statistics",
-                    subtitle: "View database and user state analysis",
-                    hasChevron: true,
-                    iconColor: .orange)
-                  {
-                    Task {
-                      await HabitRepository.shared.debugUserStats()
-                      showingDebugAlert = true
-                    }
-                  }
-                  
-                  Divider()
-                    .padding(.leading, 56)
-                  
-                  AccountOptionRow(
-                    icon: "arrow.triangle.2.circlepath",
-                    title: "Migration Debug",
-                    subtitle: "Test data migration system",
-                    hasChevron: true,
-                    iconColor: .blue)
-                  {
-                    showingMigrationDebug = true
-                  }
-                  
-                  Divider()
-                    .padding(.leading, 56)
-                  
-                  AccountOptionRow(
-                    icon: "flag.fill",
-                    title: "Feature Flags",
-                    subtitle: "Toggle new architecture features",
-                    hasChevron: true,
-                    iconColor: .green)
-                  {
-                    showingFeatureFlags = true
-                  }
-                }
-                .background(Color.surface)
-                .cornerRadius(16)
-                .padding(.horizontal, 20)
-                #endif
-
                 Spacer(minLength: 40)
               }
               .padding(.bottom, 20)
@@ -161,21 +114,6 @@ struct AccountView: View {
     } message: {
       Text("Are you sure you want to sign out?")
     }
-    .alert("Debug Report Generated", isPresented: $showingDebugAlert) {
-      Button("OK", role: .cancel) { }
-    } message: {
-      Text("Check the Xcode console to see the detailed user statistics report.")
-    }
-    .sheet(isPresented: $showingMigrationDebug) {
-      NavigationStack {
-        MigrationDebugView()
-      }
-    }
-    .sheet(isPresented: $showingFeatureFlags) {
-      NavigationStack {
-        FeatureFlagsDebugView()
-      }
-    }
   }
 
   // MARK: Private
@@ -186,9 +124,6 @@ struct AccountView: View {
   @State private var showingDataPrivacy = false
   @State private var showingSignOutAlert = false
   @State private var showingDeleteAccountConfirmation = false
-  @State private var showingDebugAlert = false
-  @State private var showingMigrationDebug = false
-  @State private var showingFeatureFlags = false
 
   // Signed in status section
   private var signedInStatusSection: some View {
