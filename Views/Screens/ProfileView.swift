@@ -468,6 +468,13 @@ struct ProfileView: View {
                 print("⚠️ Profile updated but failed to reload user: \(reloadError.localizedDescription)")
               } else {
                 print("✅ Profile updated and user reloaded successfully")
+                
+                // ✅ CRITICAL: Update authManager's currentUser to reflect the reloaded user
+                // This ensures HeaderView and other views see the updated displayName
+                if let reloadedUser = Auth.auth().currentUser {
+                  authManager.currentUser = reloadedUser
+                  print("✅ Updated authManager.currentUser with reloaded user (displayName: \(reloadedUser.displayName ?? "nil"))")
+                }
               }
               
               // Update original values to reflect saved state

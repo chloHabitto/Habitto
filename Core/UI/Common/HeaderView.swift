@@ -45,6 +45,7 @@ struct HeaderView: View {
               Text(greetingText)
                 .font(.appHeadlineMediumEmphasised)
                 .foregroundColor(.white)
+                .id("greeting-\(authManager.currentUser?.displayName ?? "none")") // Force refresh when displayName changes
 
               // View Profile button with chevron
               Button(action: {
