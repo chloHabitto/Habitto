@@ -84,7 +84,7 @@ class HomeViewState: ObservableObject {
   let habitRepository = HabitRepository.shared
   
   /// Subscription manager
-  let subscriptionManager = SubscriptionManager.shared
+  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
   /// ✅ CRASH FIX: Cache streak as @Published instead of computed property
   /// Computed properties that access @Published cause infinite loops!

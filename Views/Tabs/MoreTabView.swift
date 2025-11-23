@@ -38,8 +38,15 @@ struct MoreTabView: View {
             VStack(spacing: 20) {
               // Trial Banner (now scrollable) - only show for free users
               if !subscriptionManager.isPremium {
+                #if DEBUG
+                let _ = print("🔍 MoreTabView: Showing free banner - isPremium = \(subscriptionManager.isPremium)")
+                #endif
                 trialBanner
                   .entranceAnimation(delay: 0.0)
+              } else {
+                #if DEBUG
+                let _ = print("🔍 MoreTabView: Hiding free banner - isPremium = \(subscriptionManager.isPremium)")
+                #endif
               }
 
               // XP Level Display (now scrollable)
@@ -496,7 +503,22 @@ struct MoreTabView: View {
           action: {
             Task {
               await subscriptionManager.forceSyncFromCloud()
+              
+              // Show status after sync
+              await MainActor.run {
+                let status = subscriptionManager.isPremium ? "Premium" : "Free"
+                print("🎉 Sync complete! Status: \(status)")
+                print("🔍 MoreTabView sees isPremium: \(subscriptionManager.isPremium)")
+              }
             }
+          }
+        )
+        
+        debugButton(
+          title: "🔍 Verify UI State",
+          subtitle: "Check if UI can see subscription state",
+          action: {
+            subscriptionManager.verifyUIState()
           }
         )
         
