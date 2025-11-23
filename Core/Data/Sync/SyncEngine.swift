@@ -800,14 +800,6 @@ actor SyncEngine {
         }
         
         logger.info("📤 Found \(completionDataArray.count) completions to sync")
-        debugLog("📤 [SYNC_COMPLETIONS] Found \(completionDataArray.count) completions to sync")
-        
-        // Log date range of completions being synced
-        let dateKeys = completionDataArray.map { $0.dateKey }.sorted()
-        if let firstDate = dateKeys.first, let lastDate = dateKeys.last {
-            logger.info("📤 [SYNC_COMPLETIONS] Date range: \(firstDate) to \(lastDate)")
-            debugLog("📤 [SYNC_COMPLETIONS] Date range: \(firstDate) to \(lastDate)")
-        }
         
         // Sync completions in batches
         let batchSize = 50
@@ -815,24 +807,16 @@ actor SyncEngine {
             let batchEnd = min(batchStart + batchSize, completionDataArray.count)
             let batch = Array(completionDataArray[batchStart..<batchEnd])
             
-            // Log batch details
-            let batchDateKeys = batch.map { $0.dateKey }.sorted()
-            logger.info("📤 [SYNC_COMPLETIONS] Uploading batch \(batchStart/batchSize + 1): \(batch.count) completions for dates: \(batchDateKeys.joined(separator: ", "))")
-            debugLog("📤 [SYNC_COMPLETIONS] Uploading batch: \(batch.count) completions for dates: \(batchDateKeys.joined(separator: ", "))")
-            
             do {
                 let result = try await syncCompletionsBatch(completions: batch, userId: userId)
                 syncedCount += result.synced
                 alreadySyncedCount += result.alreadySynced
-                logger.info("✅ Synced batch: \(result.synced) completions (\(syncedCount + alreadySyncedCount)/\(completionDataArray.count))")
-                debugLog("✅ [SYNC_COMPLETIONS] Synced batch: \(result.synced) new, \(result.alreadySynced) already synced")
             } catch {
                 failedCount += batch.count
                 if syncError == nil {
                     syncError = error
                 }
                 logger.error("❌ Failed to sync batch: \(error.localizedDescription)")
-                debugLog("❌ [SYNC_COMPLETIONS] Failed to sync batch: \(error.localizedDescription)")
                 // Continue with next batch even if this one failed
             }
         }
@@ -863,8 +847,6 @@ actor SyncEngine {
                 .collection("completions")
                 .document(completion.completionId)
             
-            logger.info("📤 [SYNC_BATCH] Uploading completion: dateKey=\(completion.dateKey), yearMonth=\(yearMonth), habitId=\(completion.habitId.prefix(8))..., progress=\(completion.progress), isCompleted=\(completion.isCompleted)")
-            
             var shouldWriteRemote = true
             
             if let existingDoc = try? await completionRef.getDocument(), existingDoc.exists {
@@ -874,11 +856,8 @@ actor SyncEngine {
                 
                 if remoteProgress == completion.progress && remoteCompleted == completion.isCompleted {
                     // Remote already matches local state, skip write
-                    logger.info("⏭️ [SYNC_BATCH] Completion already synced: dateKey=\(completion.dateKey), progress=\(completion.progress)")
                     alreadySyncedCount += 1
                     shouldWriteRemote = false
-                } else {
-                    logger.info("🔄 [SYNC_BATCH] Updating existing completion: dateKey=\(completion.dateKey), local progress=\(completion.progress), remote progress=\(remoteProgress ?? -1)")
                 }
             }
             
@@ -900,19 +879,15 @@ actor SyncEngine {
             
             batch.setData(completionData, forDocument: completionRef, merge: true)
             syncedCount += 1
-            logger.info("✅ [SYNC_BATCH] Queued completion for upload: dateKey=\(completion.dateKey), path=users/\(userId.prefix(8)).../completions/\(yearMonth)/completions/\(completion.completionId)")
         }
         
         // Only commit if there are completions to sync
         guard syncedCount > 0 else {
-            logger.info("⏭️ [SYNC_BATCH] No new completions to upload (all already synced)")
             return (synced: 0, alreadySynced: alreadySyncedCount)
         }
         
         // Commit batch
-        logger.info("💾 [SYNC_BATCH] Committing batch of \(syncedCount) completions to Firestore...")
         try await batch.commit()
-        logger.info("✅ [SYNC_BATCH] Successfully committed \(syncedCount) completions to Firestore")
         
         return (synced: syncedCount, alreadySynced: alreadySyncedCount)
     }
@@ -1065,8 +1040,6 @@ actor SyncEngine {
     /// Pull completions from recent months
     private func pullCompletions(userId: String, recentMonths: Int) async throws -> Int {
         let yearMonths = getRecentYearMonths(count: recentMonths)
-        logger.info("🔵 [PULL_COMPLETIONS] Querying completions for yearMonths: \(yearMonths.joined(separator: ", "))")
-        debugLog("🔵 [PULL_COMPLETIONS] Querying completions for yearMonths: \(yearMonths.joined(separator: ", "))")
         var pulledCount = 0
         
         for yearMonth in yearMonths {
@@ -1076,64 +1049,35 @@ actor SyncEngine {
                 .document(yearMonth)
                 .collection("completions")
             
-            logger.info("🔵 [PULL_COMPLETIONS] Querying Firestore path: users/\(userId.prefix(8)).../completions/\(yearMonth)/completions/")
-            debugLog("🔵 [PULL_COMPLETIONS] Querying Firestore path: users/\(userId.prefix(8)).../completions/\(yearMonth)/completions/")
-            
             let snapshot = try? await completionsRef.getDocuments()
             guard let snapshot = snapshot else {
-                logger.info("⚠️ [PULL_COMPLETIONS] No snapshot returned for yearMonth: \(yearMonth)")
                 continue
             }
             
-            logger.info("🔵 [PULL_COMPLETIONS] Found \(snapshot.documents.count) completion documents in yearMonth: \(yearMonth)")
-            debugLog("🔵 SYNC_PULL_COMPS: yearMonth=\(yearMonth), remoteCount=\(snapshot.documents.count)")
-            
             for document in snapshot.documents {
                 let data = document.data()
-                let habitId = data["habitId"] as? String ?? "unknown"
-                let dateKey = data["dateKey"] as? String ?? "unknown"
-                let progress = data["progress"] as? Int ?? -1
-                let isCompleted = data["isCompleted"] as? Bool ?? false
-                logger.info("🔵 [PULL_COMPLETIONS] Processing: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
-                debugLog("🔵 SYNC_PULL_DATA: habitId=\(habitId), dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
                 
                 // Merge completion into SwiftData
                 do {
                     try await mergeCompletionFromFirestore(data: data, userId: userId)
                     pulledCount += 1
                 } catch {
-                    logger.error("❌ [PULL_COMPLETIONS] Failed to merge completion: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), error=\(error.localizedDescription)")
+                    logger.error("❌ Failed to merge completion: \(error.localizedDescription)")
                     // Continue with next completion even if this one fails
                 }
             }
         }
         
-        // ✅ VERIFICATION: Count how many records were actually saved to SwiftData
-        let savedCount = await MainActor.run {
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let predicate = #Predicate<CompletionRecord> { record in
-                record.userId == userId
-            }
-            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
-            return (try? modelContext.fetch(descriptor).count) ?? 0
-        }
-        
-        logger.info("✅ [PULL_COMPLETIONS] Successfully pulled \(pulledCount) completions from Firestore")
-        logger.info("✅ [PULL_COMPLETIONS] Verification: \(savedCount) CompletionRecords now in SwiftData for userId: \(userId.prefix(8))...")
-        
-        if pulledCount > 0 && savedCount == 0 {
-            logger.error("⚠️ [PULL_COMPLETIONS] WARNING: Pulled \(pulledCount) completions but 0 were saved to SwiftData! This indicates a save failure.")
+        if pulledCount > 0 {
+            logger.info("✅ Pulled \(pulledCount) completions")
         }
         
         return pulledCount
     }
     
-    /// ✅ FIX: Pull ALL completions from all year-months (not just recent)
+    /// Pull ALL completions from all year-months (not just recent)
     /// This is used when recent months return 0 results
     private func pullAllCompletions(userId: String) async throws -> Int {
-        logger.info("🔵 [PULL_ALL_COMPLETIONS] Starting pull of ALL completions for userId: \(userId.prefix(8))...")
-        debugLog("🔵 [PULL_ALL_COMPLETIONS] Starting pull of ALL completions")
-        
         // Get all year-month subcollections by listing documents in completions collection
         let completionsRef = firestore.collection("users")
             .document(userId)
@@ -1141,13 +1085,10 @@ actor SyncEngine {
         
         // List all year-month documents
         let yearMonthDocs = try await completionsRef.getDocuments()
-        logger.info("🔵 [PULL_ALL_COMPLETIONS] Found \(yearMonthDocs.documents.count) year-month collections")
-        
         var totalPulled = 0
         
         for yearMonthDoc in yearMonthDocs.documents {
             let yearMonth = yearMonthDoc.documentID
-            logger.info("🔵 [PULL_ALL_COMPLETIONS] Processing yearMonth: \(yearMonth)")
             
             let completionsSubRef = completionsRef
                 .document(yearMonth)
@@ -1156,42 +1097,22 @@ actor SyncEngine {
             let snapshot = try? await completionsSubRef.getDocuments()
             guard let snapshot = snapshot else { continue }
             
-            logger.info("🔵 [PULL_ALL_COMPLETIONS] Found \(snapshot.documents.count) completions in \(yearMonth)")
-            
             for document in snapshot.documents {
                 let data = document.data()
-                let habitId = data["habitId"] as? String ?? "unknown"
-                let dateKey = data["dateKey"] as? String ?? "unknown"
-                let progress = data["progress"] as? Int ?? -1
-                let isCompleted = data["isCompleted"] as? Bool ?? false
-                logger.info("🔵 [PULL_ALL_COMPLETIONS] Processing: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), progress=\(progress), isCompleted=\(isCompleted)")
                 
                 // Merge completion into SwiftData
                 do {
                     try await mergeCompletionFromFirestore(data: data, userId: userId)
                     totalPulled += 1
                 } catch {
-                    logger.error("❌ [PULL_ALL_COMPLETIONS] Failed to merge completion: habitId=\(habitId.prefix(8))..., dateKey=\(dateKey), error=\(error.localizedDescription)")
+                    logger.error("❌ Failed to merge completion: \(error.localizedDescription)")
                     // Continue with next completion even if this one fails
                 }
             }
         }
         
-        // ✅ VERIFICATION: Count how many records were actually saved to SwiftData
-        let savedCount = await MainActor.run {
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let predicate = #Predicate<CompletionRecord> { record in
-                record.userId == userId
-            }
-            let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
-            return (try? modelContext.fetch(descriptor).count) ?? 0
-        }
-        
-        logger.info("✅ [PULL_ALL_COMPLETIONS] Successfully pulled \(totalPulled) completions from all months")
-        logger.info("✅ [PULL_ALL_COMPLETIONS] Verification: \(savedCount) CompletionRecords now in SwiftData for userId: \(userId.prefix(8))...")
-        
-        if totalPulled > 0 && savedCount == 0 {
-            logger.error("⚠️ [PULL_ALL_COMPLETIONS] WARNING: Pulled \(totalPulled) completions but 0 were saved to SwiftData! This indicates a save failure.")
+        if totalPulled > 0 {
+            logger.info("✅ Pulled \(totalPulled) completions from all months")
         }
         
         return totalPulled
@@ -1203,96 +1124,57 @@ actor SyncEngine {
             .document(userId)
             .collection("daily_awards")
         
-        logger.info("🔵 [PULL_AWARDS] Querying awards since: \(since.ISO8601Format())")
-        debugLog("🔵 [PULL_AWARDS] Querying awards since: \(since.ISO8601Format())")
-        
         let snapshot = try await awardsRef.getDocuments()
-        logger.info("🔵 [PULL_AWARDS] Found \(snapshot.documents.count) total award documents in Firestore")
-        
         var pulledCount = 0
-        var skippedCount = 0
         
         for document in snapshot.documents {
             let data = document.data()
-            let dateKey = data["dateKey"] as? String ?? "unknown"
             
             // Check if award was created since last sync
             let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             
             if createdAt > since {
-                logger.info("🔵 [PULL_AWARDS] Pulling award: dateKey=\(dateKey), createdAt=\(createdAt.ISO8601Format())")
                 // Merge award into SwiftData (idempotent - won't create duplicates)
-                try await mergeAwardFromFirestore(data: data, userId: userId)
-                pulledCount += 1
-            } else {
-                skippedCount += 1
-                logger.info("⏭️ [PULL_AWARDS] Skipping award (too old): dateKey=\(dateKey), createdAt=\(createdAt.ISO8601Format()), since=\(since.ISO8601Format())")
+                do {
+                    try await mergeAwardFromFirestore(data: data, userId: userId)
+                    pulledCount += 1
+                } catch {
+                    logger.error("❌ Failed to merge award: \(error.localizedDescription)")
+                }
             }
         }
         
-        logger.info("✅ [PULL_AWARDS] Pulled \(pulledCount) awards, skipped \(skippedCount) (too old)")
-        
-        // ✅ VERIFICATION: Count how many awards were actually saved to SwiftData
-        let savedCount = await MainActor.run {
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let predicate = #Predicate<DailyAward> { award in
-                award.userId == userId
-            }
-            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
-            return (try? modelContext.fetch(descriptor).count) ?? 0
-        }
-        
-        logger.info("✅ [PULL_AWARDS] Verification: \(savedCount) DailyAwards now in SwiftData for userId: \(userId.prefix(8))...")
-        
-        if pulledCount > 0 && savedCount == 0 {
-            logger.error("⚠️ [PULL_AWARDS] WARNING: Pulled \(pulledCount) awards but 0 were saved to SwiftData! This indicates a save failure.")
+        if pulledCount > 0 {
+            logger.info("✅ Pulled \(pulledCount) awards")
         }
         
         return pulledCount
     }
     
-    /// ✅ FIX: Pull ALL awards (ignore timestamp filter)
+    /// Pull ALL awards (ignore timestamp filter)
     /// This is used when timestamp-filtered pull returns 0 results
     private func pullAllAwards(userId: String) async throws -> Int {
         let awardsRef = firestore.collection("users")
             .document(userId)
             .collection("daily_awards")
         
-        logger.info("🔵 [PULL_ALL_AWARDS] Pulling ALL awards for userId: \(userId.prefix(8))...")
-        debugLog("🔵 [PULL_ALL_AWARDS] Pulling ALL awards (ignoring timestamp)")
-        
         let snapshot = try await awardsRef.getDocuments()
-        logger.info("🔵 [PULL_ALL_AWARDS] Found \(snapshot.documents.count) total award documents")
-        
         var pulledCount = 0
         
         for document in snapshot.documents {
             let data = document.data()
-            let dateKey = data["dateKey"] as? String ?? "unknown"
-            let xpGranted = data["xpGranted"] as? Int ?? 0
-            logger.info("🔵 [PULL_ALL_AWARDS] Processing award: dateKey=\(dateKey), xpGranted=\(xpGranted)")
             
             // Merge award into SwiftData (idempotent - won't create duplicates)
-            try await mergeAwardFromFirestore(data: data, userId: userId)
-            pulledCount += 1
-        }
-        
-        logger.info("✅ [PULL_ALL_AWARDS] Successfully pulled \(pulledCount) awards")
-        
-        // ✅ VERIFICATION: Count how many awards were actually saved to SwiftData
-        let savedCount = await MainActor.run {
-            let modelContext = SwiftDataContainer.shared.modelContext
-            let predicate = #Predicate<DailyAward> { award in
-                award.userId == userId
+            do {
+                try await mergeAwardFromFirestore(data: data, userId: userId)
+                pulledCount += 1
+            } catch {
+                logger.error("❌ Failed to merge award: \(error.localizedDescription)")
             }
-            let descriptor = FetchDescriptor<DailyAward>(predicate: predicate)
-            return (try? modelContext.fetch(descriptor).count) ?? 0
         }
         
-        logger.info("✅ [PULL_ALL_AWARDS] Verification: \(savedCount) DailyAwards now in SwiftData for userId: \(userId.prefix(8))...")
-        
-        if pulledCount > 0 && savedCount == 0 {
-            logger.error("⚠️ [PULL_ALL_AWARDS] WARNING: Pulled \(pulledCount) awards but 0 were saved to SwiftData! This indicates a save failure.")
+        if pulledCount > 0 {
+            logger.info("✅ Pulled \(pulledCount) awards from all time")
         }
         
         return pulledCount
@@ -1362,33 +1244,16 @@ actor SyncEngine {
     
     /// Merge completion from Firestore into SwiftData
     private func mergeCompletionFromFirestore(data: [String: Any], userId: String) async throws {
-        logger.info("🔵 [MERGE] Starting merge for completion: userId=\(userId.prefix(8))...")
-        
-        // Parse required fields with detailed error logging
-        guard let habitIdString = data["habitId"] as? String else {
-            logger.error("❌ [MERGE] Missing habitId in Firestore data: \(data)")
-            debugLog("❌ [MERGE] Missing habitId in Firestore data")
+        // Parse required fields
+        guard let habitIdString = data["habitId"] as? String,
+              let habitId = UUID(uuidString: habitIdString),
+              let dateKey = data["dateKey"] as? String else {
+            logger.error("❌ Failed to parse completion data from Firestore")
             return
         }
-        
-        guard let habitId = UUID(uuidString: habitIdString) else {
-            logger.error("❌ [MERGE] Invalid habitId format: '\(habitIdString)'")
-            debugLog("❌ [MERGE] Invalid habitId format: '\(habitIdString)'")
-            return
-        }
-        
-        guard let dateKey = data["dateKey"] as? String else {
-            logger.error("❌ [MERGE] Missing dateKey in Firestore data for habitId: \(habitIdString)")
-            debugLog("❌ [MERGE] Missing dateKey in Firestore data")
-            return
-        }
-        
-        logger.info("🔵 [MERGE] Parsed: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
         
         // If there are pending local events for this habit/date, skip remote overwrite
         if await hasPendingLocalEvents(habitId: habitId, dateKey: dateKey) {
-            logger.info("⏭️ [MERGE] Skipping merge - has pending local events: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
-            debugLog("⏭️ SYNC_PULL_SKIP: habitId=\(habitId), dateKey=\(dateKey) has pending local events – keeping local completion")
             return
         }
         
@@ -1398,16 +1263,12 @@ actor SyncEngine {
         let remoteUpdatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
         let remoteTimestamp = remoteUpdatedAt ?? remoteCreatedAt ?? .distantPast
         
-        logger.info("🔵 [MERGE] Remote data: progress=\(remoteProgress), isCompleted=\(remoteIsCompleted), timestamp=\(remoteTimestamp.ISO8601Format())")
-        
-        var mergeResult: (success: Bool, action: String, error: String?) = (false, "unknown", nil)
-        
-        await MainActor.run {
+        // Merge into SwiftData on MainActor
+        try await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
             // Check if completion exists (using deterministic ID)
             let uniqueKey = "\(userId)#\(habitId.uuidString)#\(dateKey)"
-            logger.info("🔵 [MERGE] Looking for existing record with key: \(uniqueKey)")
             
             let predicate = #Predicate<CompletionRecord> { record in
                 record.userIdHabitIdDateKey == uniqueKey
@@ -1416,21 +1277,12 @@ actor SyncEngine {
             
             do {
                 if let existingRecord = try modelContext.fetch(descriptor).first {
-                    logger.info("🔵 [MERGE] Found existing record: progress=\(existingRecord.progress), isCompleted=\(existingRecord.isCompleted)")
-                    
                     let localUpdatedAt = existingRecord.updatedAt ?? existingRecord.createdAt
                     // Only overwrite if remote data is newer than local
                     guard remoteTimestamp > localUpdatedAt else {
-                        logger.info("⏭️ [MERGE] Keeping local (newer): local=\(localUpdatedAt.ISO8601Format()), remote=\(remoteTimestamp.ISO8601Format())")
-                        debugLog("⏭️ SYNC_PULL_KEEP_LOCAL: habitId=\(habitId), dateKey=\(dateKey) local updatedAt=\(localUpdatedAt) remote=\(remoteTimestamp)")
-                        mergeResult = (true, "kept_local", nil)
                         return
                     }
                     
-                    logger.info("🔄 [MERGE] Updating existing record: old progress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
-                    
-                    let previousProgress = existingRecord.progress
-                    let previousCompleted = existingRecord.isCompleted
                     existingRecord.isCompleted = remoteIsCompleted
                     existingRecord.progress = remoteProgress
                     if let createdAt = remoteCreatedAt {
@@ -1438,30 +1290,13 @@ actor SyncEngine {
                     }
                     existingRecord.updatedAt = remoteTimestamp
                     
-                    do {
-                        try modelContext.save()
-                        logger.info("✅ [MERGE] Successfully updated existing record: new progress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
-                        debugLog("🔵 SYNC_PULL_OVERWRITE: habitId=\(habitId), dateKey=\(dateKey), oldProgress=\(previousProgress)/\(previousCompleted), newProgress=\(existingRecord.progress)/\(existingRecord.isCompleted)")
-                        mergeResult = (true, "updated", nil)
-                    } catch {
-                        let errorMsg = "Failed to save updated record: \(error.localizedDescription)"
-                        logger.error("❌ [MERGE] \(errorMsg)")
-                        debugLog("❌ [MERGE] \(errorMsg)")
-                        mergeResult = (false, "update_failed", errorMsg)
-                    }
+                    try modelContext.save()
                 } else {
                     // Create new record
-                    logger.info("🔵 [MERGE] No existing record found, creating new one")
-                    
                     guard let date = DateUtils.date(from: dateKey) else {
-                        let errorMsg = "Failed to parse dateKey: '\(dateKey)'"
-                        logger.error("❌ [MERGE] \(errorMsg)")
-                        debugLog("❌ [MERGE] \(errorMsg)")
-                        mergeResult = (false, "date_parse_failed", errorMsg)
-                        return
+                        logger.error("❌ Failed to parse dateKey: '\(dateKey)'")
+                        throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid dateKey format"])
                     }
-                    
-                    logger.info("🔵 [MERGE] Creating CompletionRecord: date=\(date), progress=\(remoteProgress), isCompleted=\(remoteIsCompleted)")
                     
                     let record = CompletionRecord(
                         userId: userId,
@@ -1477,35 +1312,13 @@ actor SyncEngine {
                     }
                     record.updatedAt = remoteTimestamp
                     
-                    logger.info("🔵 [MERGE] Inserting record into ModelContext")
                     modelContext.insert(record)
-                    
-                    do {
-                        try modelContext.save()
-                        logger.info("✅ [MERGE] Successfully created and saved new record: progress=\(record.progress), isCompleted=\(record.isCompleted)")
-                        debugLog("🔵 SYNC_PULL_CREATE: habitId=\(habitId), dateKey=\(dateKey), progress=\(record.progress), isCompleted=\(record.isCompleted)")
-                        mergeResult = (true, "created", nil)
-                    } catch {
-                        let errorMsg = "Failed to save new record: \(error.localizedDescription)"
-                        logger.error("❌ [MERGE] \(errorMsg)")
-                        debugLog("❌ [MERGE] \(errorMsg)")
-                        mergeResult = (false, "save_failed", errorMsg)
-                    }
+                    try modelContext.save()
                 }
             } catch {
-                let errorMsg = "Failed to fetch existing record: \(error.localizedDescription)"
-                logger.error("❌ [MERGE] \(errorMsg)")
-                debugLog("❌ [MERGE] \(errorMsg)")
-                mergeResult = (false, "fetch_failed", errorMsg)
+                logger.error("❌ Failed to merge completion: \(error.localizedDescription)")
+                throw error
             }
-        }
-        
-        // Log final result
-        if mergeResult.success {
-            logger.info("✅ [MERGE] Merge completed successfully: action=\(mergeResult.action), habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
-        } else {
-            logger.error("❌ [MERGE] Merge failed: action=\(mergeResult.action), error=\(mergeResult.error ?? "unknown"), habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
-            throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: mergeResult.error ?? "Unknown merge error"])
         }
     }
 
@@ -1659,13 +1472,6 @@ actor SyncEngine {
     }
     
     /// Get last sync timestamp for user (stored in UserDefaults)
-    /// ✅ TEMPORARY DEBUG: Reset last sync timestamp to force pull all data (remove after testing)
-    func resetLastSyncTimestamp(userId: String) {
-        let key = "lastSyncTimestamp_\(userId)"
-        UserDefaults.standard.removeObject(forKey: key)
-        logger.info("🔄 Reset lastSyncTimestamp for userId: \(userId.prefix(8))...")
-        debugLog("🔄 [FORCE_SYNC] Reset lastSyncTimestamp for userId: \(userId.prefix(8))...")
-    }
     
     private func getLastSyncTimestamp(userId: String) -> Date? {
         let key = "lastSyncTimestamp_\(userId)"
