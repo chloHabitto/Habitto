@@ -89,9 +89,6 @@ class SubscriptionManager: ObservableObject {
   
   /// Load subscription status from StoreKit
   private func loadSubscriptionStatus() {
-    // TODO: Implement StoreKit subscription checking
-    // For now, default to false (free user)
-    // This will be implemented when StoreKit integration is added
     Task {
       // Check for active subscriptions
       await checkSubscriptionStatus()
