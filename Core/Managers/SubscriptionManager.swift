@@ -268,10 +268,13 @@ class SubscriptionManager: ObservableObject {
   func forceSyncFromCloud() async {
     print("🔄 SubscriptionManager: Forcing StoreKit sync check...")
     print("🔄 This will check for synced purchases from other devices")
+    print("🔄 Starting isPremium status: \(isPremium)")
     
     // Method 1: Re-check subscription status (checks currentEntitlements)
     print("🔄 Step 1: Re-checking subscription status...")
     await checkSubscriptionStatus()
+    let isPremiumAfterStep1 = await MainActor.run { self.isPremium }
+    print("🔄 After Step 1: isPremium = \(isPremiumAfterStep1)")
     
     // Method 2: Manually iterate all transactions (forces StoreKit refresh)
     print("🔄 Step 2: Manually checking all transactions...")
@@ -289,24 +292,54 @@ class SubscriptionManager: ObservableObject {
       }
     }
     print("🔄 Step 2 complete - found \(allTransactionCount) total transaction(s)")
+    let isPremiumAfterStep2 = await MainActor.run { self.isPremium }
+    print("🔄 After Step 2: isPremium = \(isPremiumAfterStep2)")
     
     // Method 3: Double-check currentEntitlements after processing
     print("🔄 Step 3: Final check of current entitlements...")
     var entitlementCount = 0
+    var foundActiveEntitlement = false
     for await result in Transaction.currentEntitlements {
       entitlementCount += 1
       if case .verified(let transaction) = result {
         if ProductID.all.contains(transaction.productID) {
           print("✅ Found active entitlement: \(transaction.productID)")
           foundOurProduct = true
+          foundActiveEntitlement = true
+          // Don't call handleTransactionUpdate again - it was already processed in Step 2
         }
       }
     }
     print("🔄 Step 3 complete - found \(entitlementCount) current entitlement(s)")
+    let isPremiumAfterStep3 = await MainActor.run { self.isPremium }
+    print("🔄 After Step 3: isPremium = \(isPremiumAfterStep3)")
     
-    if foundOurProduct {
+    // CRITICAL FIX: If we found entitlements, ensure premium is enabled
+    if entitlementCount > 0 && !foundActiveEntitlement {
+      // This shouldn't happen, but if we found entitlements, we should have found our product
+      print("⚠️ WARNING: Found \(entitlementCount) entitlement(s) but none match our products")
+    }
+    
+    // Final verification: If we found our product OR found active entitlements matching our products, ensure premium is enabled
+    if foundOurProduct || foundActiveEntitlement {
+      let currentPremiumStatus = await MainActor.run { self.isPremium }
+      if !currentPremiumStatus {
+        print("⚠️ CRITICAL FIX: Found transaction/entitlement but isPremium is false - forcing true")
+        print("⚠️ This indicates something reset isPremium after it was set to true")
+        await MainActor.run {
+          self.isPremium = true
+        }
+        print("✅ Premium status forced to true")
+      } else {
+        print("✅ Premium status already enabled - no fix needed")
+      }
+      
       print("✅ Synced transaction detected and processed!")
       print("✅ Premium status should now be enabled")
+    } else if entitlementCount > 0 {
+      // Found entitlements but they don't match our products - this is unusual
+      print("⚠️ Found \(entitlementCount) entitlement(s) but none match our product IDs")
+      print("⚠️ This might indicate a product ID mismatch")
     } else {
       print("ℹ️ No synced transactions found yet")
       print("ℹ️ Sandbox sync may still be pending (can take 10-30+ minutes)")
@@ -316,7 +349,14 @@ class SubscriptionManager: ObservableObject {
       print("   - Both devices connected to internet")
     }
     
-    print("🔄 Force sync complete - Current isPremium status: \(isPremium)")
+    let finalPremiumStatus = await MainActor.run { self.isPremium }
+    print("🔄 Force sync complete - Final isPremium status: \(finalPremiumStatus)")
+    
+    // Summary of state changes
+    print("📊 State Change Summary:")
+    print("   Step 1 → Step 2: \(isPremiumAfterStep1) → \(isPremiumAfterStep2)")
+    print("   Step 2 → Step 3: \(isPremiumAfterStep2) → \(isPremiumAfterStep3)")
+    print("   Step 3 → Final: \(isPremiumAfterStep3) → \(finalPremiumStatus)")
   }
   
   /// Verify current subscription status with detailed logging
