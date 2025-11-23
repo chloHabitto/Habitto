@@ -38,8 +38,14 @@ class SubscriptionManager: ObservableObject {
     // For now, default to false (free user)
     // In the future, this will check StoreKit subscription status
     self.isPremium = false
-    loadSubscriptionStatus()
+    
+    // Start transaction listener first (it will check existing transactions)
     startTransactionListener()
+    
+    // Check subscription status (this runs async)
+    loadSubscriptionStatus()
+    
+    print("📱 SubscriptionManager: Initialized - checking subscription status...")
   }
   
   deinit {
@@ -77,6 +83,7 @@ class SubscriptionManager: ObservableObject {
     Task {
       // Check for active subscriptions
       await checkSubscriptionStatus()
+      print("📱 SubscriptionManager: Initial subscription check complete - isPremium: \(isPremium)")
     }
   }
   
@@ -85,9 +92,21 @@ class SubscriptionManager: ObservableObject {
     print("🔔 SubscriptionManager: Starting transaction listener for cross-device sync")
     
     transactionListener = Task.detached { [weak self] in
-      // Listen for ALL transaction updates (purchases, restores, and cross-device syncs)
+      guard let self = self else { return }
+      
+      // FIRST: Check for any existing transactions when listener starts
+      print("🔔 Transaction Listener: Checking for existing transactions on startup...")
+      var existingCount = 0
+      for await result in Transaction.currentEntitlements {
+        existingCount += 1
+        await self.handleTransactionUpdate(result)
+      }
+      print("🔔 Transaction Listener: Finished checking existing transactions (found \(existingCount))")
+      
+      // THEN: Continue listening for new transaction updates
+      print("🔔 Transaction Listener: Now listening for new transaction updates...")
       for await result in Transaction.updates {
-        await self?.handleTransactionUpdate(result)
+        await self.handleTransactionUpdate(result)
       }
     }
   }
