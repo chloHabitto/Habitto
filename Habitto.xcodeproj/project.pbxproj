@@ -135,6 +135,7 @@
 		89F196012ECF79D10034041F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		89F1DB952ECB58F2000CA910 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F1FF7A2E76CBB30024AC3B /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89F3C4232ED374DE0075907D /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F590442E76EBC300007BFB /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F644942E8BC3C3009417BE /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F79B1F2E7833C000E7F316 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -145,8 +146,10 @@
 		8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				.gitignore,
 				"Config/App-Info.plist",
-				"Habitto.xcodeproj",
+				firebase.json,
+				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
@@ -733,6 +736,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		89F3C4322ED374DE0075907D /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		89F590492E76EBC300007BFB /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -1038,6 +1046,10 @@
 				{
 					ProductGroup = 89E8B6992E913DA60039BCF8 /* Products */;
 					ProjectRef = 89E8B68A2E913DA60039BCF8 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89F3C4322ED374DE0075907D /* Products */;
+					ProjectRef = 89F3C4232ED374DE0075907D /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 890C407D2E9A71F300E954EC /* Products */;
@@ -1395,7 +1407,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Habitto;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1443,7 +1455,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Habitto;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
