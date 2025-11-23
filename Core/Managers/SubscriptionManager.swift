@@ -239,6 +239,69 @@ class SubscriptionManager: ObservableObject {
     print("   Current isPremium status: \(isPremium)")
   }
   
+  /// Verify current subscription status with detailed logging
+  /// Use this on the device that made the purchase
+  func verifyPurchaseStatus() async {
+    print("🔍 ============================================")
+    print("🔍 PURCHASE VERIFICATION - Detailed Check")
+    print("🔍 ============================================")
+    
+    print("\n📱 Device Info:")
+    print("   Model: \(UIDevice.current.model)")
+    print("   System: \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)")
+    
+    print("\n🎫 Checking ALL transactions (not just current entitlements)...")
+    
+    // Check ALL transactions (including finished ones)
+    var allTransactionCount = 0
+    for await result in Transaction.all {
+      allTransactionCount += 1
+      
+      if case .verified(let transaction) = result {
+        print("\n   Transaction #\(allTransactionCount):")
+        print("   Product ID: \(transaction.productID)")
+        print("   Transaction ID: \(transaction.id)")
+        print("   Purchase Date: \(transaction.purchaseDate)")
+        print("   Revoked: \(transaction.revocationDate != nil)")
+        print("   Is Our Product: \(ProductID.all.contains(transaction.productID))")
+        
+        if ProductID.all.contains(transaction.productID) {
+          print("   ⭐ THIS IS A HABITTO SUBSCRIPTION!")
+        }
+      }
+    }
+    
+    print("\n📊 Total transactions found: \(allTransactionCount)")
+    
+    print("\n🎫 Checking CURRENT entitlements (active subscriptions)...")
+    
+    var entitlementCount = 0
+    for await result in Transaction.currentEntitlements {
+      entitlementCount += 1
+      
+      if case .verified(let transaction) = result {
+        print("\n   Entitlement #\(entitlementCount):")
+        print("   Product ID: \(transaction.productID)")
+        print("   Transaction ID: \(transaction.id)")
+        print("   Purchase Date: \(transaction.purchaseDate)")
+        print("   Revoked: \(transaction.revocationDate != nil)")
+      }
+    }
+    
+    print("\n📊 Total current entitlements: \(entitlementCount)")
+    
+    if entitlementCount == 0 {
+      print("\n⚠️ WARNING: No current entitlements found!")
+      print("   This means:")
+      print("   1. Purchase may not have been completed")
+      print("   2. Transaction may have been revoked")
+      print("   3. Subscription may have expired (if using sandbox tester)")
+    }
+    
+    print("\n💎 Current Premium Status: \(isPremium ? "PREMIUM" : "FREE")")
+    print("🔍 ============================================\n")
+  }
+  
   /// Purchase a subscription product
   /// - Parameter productID: The product ID to purchase
   /// - Returns: A result indicating success or failure with a message
@@ -295,6 +358,9 @@ class SubscriptionManager: ObservableObject {
           
           // Finish the transaction
           await transaction.finish()
+          print("✅ SubscriptionManager: Transaction finished and acknowledged")
+          print("   Transaction ID: \(transaction.id)")
+          print("   Product ID: \(transaction.productID)")
           
           // Verify subscription status (this will double-check and handle any edge cases)
           // Add a small delay to allow StoreKit to update entitlements
