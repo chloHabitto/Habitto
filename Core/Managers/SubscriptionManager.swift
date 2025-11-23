@@ -350,24 +350,52 @@ class SubscriptionManager: ObservableObject {
         case .verified(let transaction):
           print("✅ SubscriptionManager: Purchase successful for \(productID)")
           
-          // Immediately set premium status since purchase was successful
-          await MainActor.run {
-            self.isPremium = true
-            print("✅ SubscriptionManager: Premium status enabled immediately after purchase")
-          }
-          
-          // Finish the transaction
+          // Finish the transaction FIRST
           await transaction.finish()
-          print("✅ SubscriptionManager: Transaction finished and acknowledged")
-          print("   Transaction ID: \(transaction.id)")
+          print("✅ SubscriptionManager: Transaction finished - ID: \(transaction.id)")
           print("   Product ID: \(transaction.productID)")
           
-          // Verify subscription status (this will double-check and handle any edge cases)
-          // Add a small delay to allow StoreKit to update entitlements
+          // Small delay to let StoreKit process
           try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-          await checkSubscriptionStatus()
           
-          return (true, "Purchase successful! Premium features are now unlocked.")
+          // VERIFY the transaction is now in currentEntitlements
+          print("🔍 Verifying transaction was recorded in StoreKit...")
+          var foundInEntitlements = false
+          for await result in Transaction.currentEntitlements {
+            if case .verified(let entitlement) = result,
+               entitlement.productID == productID {
+              foundInEntitlements = true
+              print("✅ VERIFIED: Transaction found in currentEntitlements")
+              print("   Entitlement Transaction ID: \(entitlement.id)")
+              break
+            }
+          }
+          
+          if !foundInEntitlements {
+            print("⚠️ WARNING: Transaction NOT found in currentEntitlements after purchase!")
+            print("⚠️ This indicates a StoreKit issue - purchase may not persist")
+            print("⚠️ Premium status will NOT be enabled until transaction appears in entitlements")
+          }
+          
+          // Only set premium if verified
+          if foundInEntitlements {
+            await MainActor.run {
+              self.isPremium = true
+              print("✅ SubscriptionManager: Premium status enabled (verified in StoreKit)")
+            }
+            
+            return (true, "Purchase successful! Premium features are now unlocked.")
+          } else {
+            // Transaction not found - don't set premium
+            print("❌ SubscriptionManager: Purchase completed but verification failed")
+            print("❌ Transaction not found in currentEntitlements - this is unusual")
+            print("❌ Please try restarting the app or contact support")
+            
+            // Re-check subscription status to see if it appears later
+            await checkSubscriptionStatus()
+            
+            return (false, "Purchase completed but verification failed. Please restart the app or try restoring purchases.")
+          }
           
         case .unverified(_, let error):
           print("⚠️ SubscriptionManager: Unverified transaction: \(error.localizedDescription)")
@@ -432,6 +460,17 @@ class SubscriptionManager: ObservableObject {
     print("🧪 DEBUG: Forcing premium status for testing")
     self.isPremium = true
     print("✅ DEBUG: Premium status forced to true")
+  }
+  
+  /// Reset premium status to FREE for debugging
+  /// Use this before testing a fresh purchase
+  func resetPremiumStatusForDebug() {
+    print("🔄 DEBUG: Resetting premium status to FREE")
+    print("🔄 This will allow testing a fresh purchase")
+    self.isPremium = false
+    print("✅ Premium status reset to: \(isPremium)")
+    print("ℹ️ Note: This only resets the in-memory status.")
+    print("ℹ️ If you have a real StoreKit purchase, it will be restored on next check.")
   }
   #endif
 }
