@@ -13,7 +13,27 @@ class SubscriptionManager: ObservableObject {
   // MARK: - Properties
   
   /// Whether the user has an active premium subscription
-  @Published var isPremium: Bool = false
+  /// CRITICAL: Custom setter ensures UI updates when changed in async contexts
+  private var _isPremium: Bool = false
+  
+  @MainActor
+  var isPremium: Bool {
+    get { _isPremium }
+    set {
+      print("🔄 isPremium changing: \(_isPremium) → \(newValue)")
+      
+      guard _isPremium != newValue else {
+        print("   No change needed")
+        return
+      }
+      
+      // CRITICAL: Update on main thread and notify observers
+      objectWillChange.send()
+      _isPremium = newValue
+      
+      print("   ✅ Changed and UI notified")
+    }
+  }
   
   /// Transaction listener for cross-device sync
   private var transactionListener: Task<Void, Error>?
@@ -391,9 +411,10 @@ class SubscriptionManager: ObservableObject {
     print("   Singleton: \(self === SubscriptionManager.shared)")
     
     Task { @MainActor in
-      print("   On Main Thread: \(Thread.isMainThread)")
+      // Since we're in @MainActor context, we're guaranteed to be on the main thread
+      print("   On Main Actor: true (guaranteed by @MainActor)")
       print("   isPremium (MainActor): \(self.isPremium)")
-      print("   ObjectWillChangePublisher exists: \(self.objectWillChange != nil)")
+      print("   ObjectWillChangePublisher: \(type(of: self.objectWillChange))")
     }
   }
   
