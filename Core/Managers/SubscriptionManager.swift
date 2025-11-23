@@ -246,17 +246,103 @@ class SubscriptionManager: ObservableObject {
   /// Restore previous purchases
   /// - Returns: A result indicating success or failure with a message
   func restorePurchases() async -> (success: Bool, message: String) {
-    print("🔄 SubscriptionManager: Starting restore purchases...")
+    print("🔄 ============================================")
+    print("🔄 RESTORE PURCHASES - Starting...")
+    print("🔄 ============================================")
+    print("🔄 Initial isPremium status: \(isPremium)")
     
-    // Re-check subscription status (this will update isPremium)
+    print("\n🔄 Step 1: Checking Transaction.currentEntitlements...")
     await checkSubscriptionStatus()
+    let isPremiumAfterStep1 = await MainActor.run { self.isPremium }
+    print("🔄 After Step 1: isPremium = \(isPremiumAfterStep1)")
     
-    if isPremium {
-      print("✅ SubscriptionManager: Restore successful - active subscription found")
+    print("\n🔄 Step 2: Checking Transaction.all (all transactions, including finished)...")
+    var allTransactionCount = 0
+    var foundOurProduct = false
+    for await result in Transaction.all {
+      allTransactionCount += 1
+      if case .verified(let transaction) = result {
+        print("   Transaction #\(allTransactionCount):")
+        print("      Product ID: \(transaction.productID)")
+        print("      Transaction ID: \(transaction.id)")
+        print("      Purchase Date: \(transaction.purchaseDate)")
+        print("      Revoked: \(transaction.revocationDate != nil)")
+        
+        if ProductID.all.contains(transaction.productID) {
+          print("      ✅ Found our product!")
+          foundOurProduct = true
+          // Process it through the handler to update isPremium
+          await handleTransactionUpdate(result)
+        } else {
+          print("      ℹ️ Not our product (skipping)")
+        }
+      } else {
+        print("   Transaction #\(allTransactionCount): ⚠️ Unverified (skipped)")
+      }
+    }
+    print("🔄 Checked \(allTransactionCount) total transactions")
+    let isPremiumAfterStep2 = await MainActor.run { self.isPremium }
+    print("🔄 After Step 2: isPremium = \(isPremiumAfterStep2)")
+    
+    print("\n🔄 Step 3: Final check of Transaction.currentEntitlements...")
+    var entitlementCount = 0
+    var foundActiveEntitlement = false
+    for await result in Transaction.currentEntitlements {
+      entitlementCount += 1
+      if case .verified(let transaction) = result {
+        print("   Entitlement #\(entitlementCount):")
+        print("      Product ID: \(transaction.productID)")
+        print("      Transaction ID: \(transaction.id)")
+        
+        if ProductID.all.contains(transaction.productID) {
+          print("      ✅ Found active entitlement for our product!")
+          foundActiveEntitlement = true
+        }
+      }
+    }
+    print("🔄 Found \(entitlementCount) current entitlement(s)")
+    
+    print("\n🔄 Step 4: Final status check...")
+    let finalPremiumStatus = await MainActor.run { self.isPremium }
+    print("   Final isPremium: \(finalPremiumStatus)")
+    
+    // Summary
+    print("\n📊 ============================================")
+    print("📊 RESTORE SUMMARY")
+    print("📊 ============================================")
+    print("   Total transactions found: \(allTransactionCount)")
+    print("   Our products found: \(foundOurProduct ? "YES" : "NO")")
+    print("   Current entitlements: \(entitlementCount)")
+    print("   Active entitlement for our product: \(foundActiveEntitlement ? "YES" : "NO")")
+    print("   Final isPremium: \(finalPremiumStatus)")
+    print("📊 ============================================")
+    
+    if finalPremiumStatus {
+      print("\n✅ ============================================")
+      print("✅ RESTORE SUCCESS - Premium enabled!")
+      print("✅ ============================================")
       return (true, "Your subscription has been restored successfully!")
     } else {
-      print("ℹ️ SubscriptionManager: No active subscriptions found")
-      return (false, "No active subscription found. If you've purchased a subscription, make sure you're signed in with the same Apple ID used for the purchase.")
+      print("\n❌ ============================================")
+      print("❌ RESTORE FAILED - No purchases found")
+      print("❌ ============================================")
+      print("ℹ️ This could mean:")
+      print("   1. Purchase hasn't synced yet (sandbox can take hours)")
+      print("   2. Different Apple ID was used for purchase")
+      print("   3. Purchase was made on different app/bundle ID")
+      print("   4. Purchase was refunded or expired")
+      
+      var message = "No active subscription found."
+      if allTransactionCount == 0 {
+        message += " No transactions found at all. This may indicate a StoreKit sync delay."
+      } else if !foundOurProduct {
+        message += " Found \(allTransactionCount) transaction(s) but none match your subscription products."
+      } else if !foundActiveEntitlement {
+        message += " Found transaction but it's not currently active (may be expired or revoked)."
+      }
+      message += " If you purchased on another device, it may take time to sync. Make sure you're signed in with the same Apple ID."
+      
+      return (false, message)
     }
   }
   
