@@ -26,7 +26,7 @@ struct HeaderView: View {
     return VStack(spacing: 0) {
       // DEBUG: Visual indicator of isPremium state
       #if DEBUG
-      Text("DEBUG: isPremium = \(subscriptionManager.isPremium)")
+      Text("DEBUG: isPremium = \(String(describing: subscriptionManager.isPremium))")
         .foregroundColor(.red)
         .font(.caption)
         .padding(.top, 4)
