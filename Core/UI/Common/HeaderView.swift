@@ -23,7 +23,16 @@ struct HeaderView: View {
       #endif
     }()
     
-    return HStack(spacing: 0) {
+    return VStack(spacing: 0) {
+      // DEBUG: Visual indicator of isPremium state
+      #if DEBUG
+      Text("DEBUG: isPremium = \(subscriptionManager.isPremium)")
+        .foregroundColor(.red)
+        .font(.caption)
+        .padding(.top, 4)
+      #endif
+      
+      HStack(spacing: 0) {
       if showProfile {
         // Profile section for More tab
         HStack(spacing: 12) {
@@ -143,6 +152,7 @@ struct HeaderView: View {
         // Crown button and Add button with advanced glass effect
         HStack(spacing: 12) {
           // Crown button for subscription - only show for free users
+          // CRITICAL: Use .id() to force view recreation when isPremium changes
           if !subscriptionManager.isPremium {
             #if DEBUG
             let _ = print("🔍 HeaderView: Showing crown icon - isPremium: \(subscriptionManager.isPremium)")
@@ -178,6 +188,7 @@ struct HeaderView: View {
                     )
                 }
             }
+            .id("crown-\(subscriptionManager.isPremium)") // Force recreation when isPremium changes
           }
           
           // Add icon with advanced glass effect
@@ -210,11 +221,14 @@ struct HeaderView: View {
           }
         }
       }
+      }
     }
     .padding(.leading, 20)
     .padding(.trailing, 16)
     .padding(.top, 16)
     .padding(.bottom, 24)
+    // CRITICAL: Force view to observe isPremium changes by using it in .id()
+    .id("header-premium-\(subscriptionManager.isPremium)")
     .sheet(isPresented: $showingProfileView) {
       ProfileView()
     }

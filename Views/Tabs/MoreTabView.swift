@@ -34,14 +34,24 @@ struct MoreTabView: View {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
+            // DEBUG: Visual indicator of isPremium state
+            #if DEBUG
+            Text("DEBUG: isPremium = \(subscriptionManager.isPremium)")
+              .foregroundColor(.red)
+              .font(.caption)
+              .padding(.top, 4)
+            #endif
+            
             // Container for Banner and XP
             VStack(spacing: 20) {
               // Trial Banner (now scrollable) - only show for free users
+              // CRITICAL: Use .id() to force view recreation when isPremium changes
               if !subscriptionManager.isPremium {
                 #if DEBUG
                 let _ = print("🔍 MoreTabView: Showing free banner - isPremium = \(subscriptionManager.isPremium)")
                 #endif
                 trialBanner
+                  .id("banner-\(subscriptionManager.isPremium)") // Force recreation when isPremium changes
                   .entranceAnimation(delay: 0.0)
               } else {
                 #if DEBUG
@@ -63,6 +73,8 @@ struct MoreTabView: View {
           .padding(.top, 20)
           .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
         }
+        // CRITICAL: Force view to observe isPremium changes by using it in .id()
+        .id("moretab-premium-\(subscriptionManager.isPremium)")
       }
       .sheet(isPresented: $showingProfileView) {
         ProfileView()
