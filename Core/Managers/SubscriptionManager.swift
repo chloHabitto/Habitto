@@ -103,11 +103,11 @@ class SubscriptionManager: ObservableObject {
   private func startTransactionListener() {
     print("🔔 SubscriptionManager: Starting transaction listener for cross-device sync")
     
-    // Use @MainActor Task since the class is @MainActor
-    transactionListener = Task { @MainActor [weak self] in
+    // CRITICAL: Use Task.detached because Transaction async sequences MUST run on background thread
+    transactionListener = Task.detached { [weak self] in
       guard let self = self else { return }
       
-      // FIRST: Check for any existing transactions when listener starts
+      // FIRST: Check for any existing transactions when listener starts (background thread)
       print("🔔 Transaction Listener: Checking for existing transactions on startup...")
       var existingCount = 0
       for await result in Transaction.currentEntitlements {
@@ -116,7 +116,7 @@ class SubscriptionManager: ObservableObject {
       }
       print("🔔 Transaction Listener: Finished checking existing transactions (found \(existingCount))")
       
-      // THEN: Continue listening for new transaction updates
+      // THEN: Continue listening for new transaction updates (background thread)
       print("🔔 Transaction Listener: Now listening for new transaction updates...")
       for await result in Transaction.updates {
         await self.handleTransactionUpdate(result)
@@ -142,8 +142,10 @@ class SubscriptionManager: ObservableObject {
       if transaction.revocationDate == nil {
         print("✅ SubscriptionManager: Active subscription detected - enabling premium")
         
-        // Direct assignment - class is @MainActor so this is already on main thread
-        self.isPremium = true
+        // Update on MainActor since we're called from Task.detached (background thread)
+        await MainActor.run {
+          self.isPremium = true
+        }
         
         // Finish the transaction to acknowledge receipt
         await transaction.finish()
@@ -151,8 +153,10 @@ class SubscriptionManager: ObservableObject {
         print("✅ SubscriptionManager: Premium status enabled via transaction listener")
       } else {
         print("⚠️ SubscriptionManager: Transaction was revoked")
-        // Direct assignment - class is @MainActor so this is already on main thread
-        self.isPremium = false
+        // Update on MainActor since we're called from Task.detached (background thread)
+        await MainActor.run {
+          self.isPremium = false
+        }
         // Finish revoked transactions too to acknowledge we've processed them
         await transaction.finish()
       }
