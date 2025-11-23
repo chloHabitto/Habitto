@@ -1,5 +1,7 @@
 import Foundation
 import StoreKit
+import UIKit
+import FirebaseAuth
 
 /// Manages subscription status and premium features
 @MainActor
@@ -133,6 +135,33 @@ class SubscriptionManager: ObservableObject {
   /// Check subscription status using StoreKit
   private func checkSubscriptionStatus() async {
     print("🔍 SubscriptionManager: Checking subscription status...")
+    
+    // Check if user is signed into App Store
+    #if DEBUG
+    print("📱 Device Info:")
+    print("   Model: \(UIDevice.current.model)")
+    print("   System: \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)")
+    if let currentUser = Auth.auth().currentUser {
+      print("   Firebase User: \(currentUser.uid)")
+      print("   Is Anonymous: \(currentUser.isAnonymous)")
+    } else {
+      print("   Firebase User: Not signed in")
+    }
+    #endif
+    
+    // First verify StoreKit can fetch products (basic connectivity check)
+    do {
+      print("🔍 Testing StoreKit connectivity...")
+      let testProducts = try await Product.products(for: ProductID.all)
+      print("✅ StoreKit connectivity OK - found \(testProducts.count) product(s)")
+      for product in testProducts {
+        print("   - \(product.id)")
+      }
+    } catch {
+      print("❌ StoreKit connectivity FAILED: \(error.localizedDescription)")
+      print("   This may indicate network issues or StoreKit not ready")
+    }
+    
     print("🔍 SubscriptionManager: Iterating through Transaction.currentEntitlements...")
     
     var hasActiveSubscription = false
@@ -196,6 +225,18 @@ class SubscriptionManager: ObservableObject {
       print("ℹ️ SubscriptionManager: No active subscriptions found")
       return (false, "No active subscription found. If you've purchased a subscription, make sure you're signed in with the same Apple ID used for the purchase.")
     }
+  }
+  
+  /// Force a sync check - useful for debugging
+  /// Call this from UI when testing cross-device sync
+  func forceSyncCheck() async {
+    print("🔄 SubscriptionManager: FORCE SYNC CHECK requested")
+    print("🔄 This will re-check StoreKit for any synced purchases...")
+    
+    await checkSubscriptionStatus()
+    
+    print("🔄 Force sync check complete")
+    print("   Current isPremium status: \(isPremium)")
   }
   
   /// Purchase a subscription product
@@ -318,6 +359,13 @@ class SubscriptionManager: ObservableObject {
     print("🧪 SubscriptionManager: DEBUG - Manually disabling premium for testing")
     self.isPremium = false
     print("ℹ️ SubscriptionManager: Premium disabled (DEBUG MODE)")
+  }
+  
+  /// Force enable premium for debugging (independent of StoreKit)
+  func forceEnablePremiumForDebug() {
+    print("🧪 DEBUG: Forcing premium status for testing")
+    self.isPremium = true
+    print("✅ DEBUG: Premium status forced to true")
   }
   #endif
 }
