@@ -13,6 +13,9 @@ class SubscriptionManager: ObservableObject {
   /// Whether the user has an active premium subscription
   @Published var isPremium: Bool = false
   
+  /// Transaction listener for cross-device sync
+  private var transactionListener: Task<Void, Error>?
+  
   /// Maximum number of habits for free users
   static let freeUserHabitLimit = 5
   
@@ -34,6 +37,12 @@ class SubscriptionManager: ObservableObject {
     // In the future, this will check StoreKit subscription status
     self.isPremium = false
     loadSubscriptionStatus()
+    startTransactionListener()
+  }
+  
+  deinit {
+    transactionListener?.cancel()
+    print("🔔 SubscriptionManager: Transaction listener cancelled")
   }
   
   // MARK: - Public Methods
@@ -69,13 +78,77 @@ class SubscriptionManager: ObservableObject {
     }
   }
   
+  /// Start listening for transaction updates (purchases, restores, cross-device syncs)
+  private func startTransactionListener() {
+    print("🔔 SubscriptionManager: Starting transaction listener for cross-device sync")
+    
+    transactionListener = Task.detached { [weak self] in
+      // Listen for ALL transaction updates (purchases, restores, and cross-device syncs)
+      for await result in Transaction.updates {
+        await self?.handleTransactionUpdate(result)
+      }
+    }
+  }
+  
+  /// Handle transaction updates from StoreKit
+  /// - Parameter result: The verification result for the transaction
+  private func handleTransactionUpdate(_ result: VerificationResult<Transaction>) async {
+    guard case .verified(let transaction) = result else {
+      print("⚠️ SubscriptionManager: Unverified transaction received")
+      return
+    }
+    
+    print("🔔 SubscriptionManager: Transaction update received")
+    print("   Product ID: \(transaction.productID)")
+    print("   Transaction ID: \(transaction.id)")
+    print("   Purchase Date: \(transaction.purchaseDate)")
+    
+    // Check if this is one of our subscription products
+    if ProductID.all.contains(transaction.productID) {
+      if transaction.revocationDate == nil {
+        print("✅ SubscriptionManager: Active subscription detected - enabling premium")
+        
+        await MainActor.run {
+          self.isPremium = true
+        }
+        
+        // Finish the transaction to acknowledge receipt
+        await transaction.finish()
+        
+        print("✅ SubscriptionManager: Premium status enabled via transaction listener")
+      } else {
+        print("⚠️ SubscriptionManager: Transaction was revoked")
+        await MainActor.run {
+          self.isPremium = false
+        }
+        // Finish revoked transactions too to acknowledge we've processed them
+        await transaction.finish()
+      }
+    } else {
+      // Finish transactions for other products to prevent StoreKit from resending them
+      await transaction.finish()
+    }
+  }
+  
   /// Check subscription status using StoreKit
   private func checkSubscriptionStatus() async {
+    print("🔍 SubscriptionManager: Checking subscription status...")
+    print("🔍 SubscriptionManager: Iterating through Transaction.currentEntitlements...")
+    
     var hasActiveSubscription = false
+    var checkedCount = 0
     
     // Check for active entitlements (subscriptions and non-consumables)
     for await result in Transaction.currentEntitlements {
+      checkedCount += 1
+      print("🔍 SubscriptionManager: Checking entitlement #\(checkedCount)")
+      
       if case .verified(let transaction) = result {
+        print("   ✓ Verified transaction found")
+        print("   Product ID: \(transaction.productID)")
+        print("   Purchase Date: \(transaction.purchaseDate)")
+        print("   Revoked: \(transaction.revocationDate != nil)")
+        
         // Check if it's one of our subscription products
         let productIDs = ProductID.all
         if productIDs.contains(transaction.productID) {
@@ -86,8 +159,12 @@ class SubscriptionManager: ObservableObject {
             break
           }
         }
+      } else {
+        print("   ⚠️ Unverified transaction (skipped)")
       }
     }
+    
+    print("🔍 SubscriptionManager: Checked \(checkedCount) entitlement(s)")
     
     await MainActor.run {
       self.isPremium = hasActiveSubscription
