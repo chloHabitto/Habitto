@@ -17,7 +17,13 @@ struct HeaderView: View {
   @State private var showingSubscriptionView = false
 
   var body: some View {
-    HStack(spacing: 0) {
+    let _ = {
+      #if DEBUG
+      print("🔍 HeaderView rendering - isPremium: \(subscriptionManager.isPremium)")
+      #endif
+    }()
+    
+    return HStack(spacing: 0) {
       if showProfile {
         // Profile section for More tab
         HStack(spacing: 12) {
@@ -138,6 +144,9 @@ struct HeaderView: View {
         HStack(spacing: 12) {
           // Crown button for subscription - only show for free users
           if !subscriptionManager.isPremium {
+            #if DEBUG
+            let _ = print("🔍 HeaderView: Showing crown icon - isPremium: \(subscriptionManager.isPremium)")
+            #endif
             Button(action: {
               showingSubscriptionView = true
             }) {

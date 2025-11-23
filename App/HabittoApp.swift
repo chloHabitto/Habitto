@@ -387,6 +387,17 @@ struct HabittoApp: App {
               }
           }
           .onAppear {
+            // App startup logging
+            print("🚀 App Launched")
+            print("   isPremium: \(SubscriptionManager.shared.isPremium)")
+            
+            // Give transaction listener time to check
+            Task { @MainActor in
+              try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+              print("🚀 App Launched +2s")
+              print("   isPremium: \(SubscriptionManager.shared.isPremium)")
+            }
+            
             // ✅ DIAGNOSTIC - Run this FIRST before anything else
             Task { @MainActor in
               await diagnoseDataIssue()
