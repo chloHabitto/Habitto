@@ -78,5 +78,15 @@
       buildConfiguration = "Release"
       customArchiveName = "Habitto"
       revealArchiveInOrganizer = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "89C17A362DF73D8A00B2480F"
+            BuildableName = "Habitto.app"
+            BlueprintName = "Habitto"
+            ReferencedContainer = "container:Habitto.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
    </ArchiveAction>
 </Scheme>
