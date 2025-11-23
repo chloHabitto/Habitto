@@ -13,27 +13,7 @@ class SubscriptionManager: ObservableObject {
   // MARK: - Properties
   
   /// Whether the user has an active premium subscription
-  /// CRITICAL: Custom setter ensures UI updates when changed in async contexts
-  private var _isPremium: Bool = false
-  
-  @MainActor
-  var isPremium: Bool {
-    get { _isPremium }
-    set {
-      print("🔄 isPremium changing: \(_isPremium) → \(newValue)")
-      
-      guard _isPremium != newValue else {
-        print("   No change needed")
-        return
-      }
-      
-      // CRITICAL: Update on main thread and notify observers
-      objectWillChange.send()
-      _isPremium = newValue
-      
-      print("   ✅ Changed and UI notified")
-    }
-  }
+  @Published var isPremium: Bool = false
   
   /// Transaction listener for cross-device sync
   private var transactionListener: Task<Void, Error>?
@@ -123,7 +103,8 @@ class SubscriptionManager: ObservableObject {
   private func startTransactionListener() {
     print("🔔 SubscriptionManager: Starting transaction listener for cross-device sync")
     
-    transactionListener = Task.detached { [weak self] in
+    // Use @MainActor Task since the class is @MainActor
+    transactionListener = Task { @MainActor [weak self] in
       guard let self = self else { return }
       
       // FIRST: Check for any existing transactions when listener starts
@@ -161,9 +142,8 @@ class SubscriptionManager: ObservableObject {
       if transaction.revocationDate == nil {
         print("✅ SubscriptionManager: Active subscription detected - enabling premium")
         
-        await MainActor.run {
-          self.isPremium = true
-        }
+        // Direct assignment - class is @MainActor so this is already on main thread
+        self.isPremium = true
         
         // Finish the transaction to acknowledge receipt
         await transaction.finish()
@@ -171,9 +151,8 @@ class SubscriptionManager: ObservableObject {
         print("✅ SubscriptionManager: Premium status enabled via transaction listener")
       } else {
         print("⚠️ SubscriptionManager: Transaction was revoked")
-        await MainActor.run {
-          self.isPremium = false
-        }
+        // Direct assignment - class is @MainActor so this is already on main thread
+        self.isPremium = false
         // Finish revoked transactions too to acknowledge we've processed them
         await transaction.finish()
       }
@@ -246,13 +225,12 @@ class SubscriptionManager: ObservableObject {
     
     print("🔍 SubscriptionManager: Checked \(checkedCount) entitlement(s)")
     
-    await MainActor.run {
-      self.isPremium = hasActiveSubscription
-      if hasActiveSubscription {
-        print("✅ SubscriptionManager: Premium status enabled")
-      } else {
-        print("ℹ️ SubscriptionManager: No active subscription found - free user")
-      }
+    // Direct assignment - class is @MainActor so this is already on main thread
+    self.isPremium = hasActiveSubscription
+    if hasActiveSubscription {
+      print("✅ SubscriptionManager: Premium status enabled")
+    } else {
+      print("ℹ️ SubscriptionManager: No active subscription found - free user")
     }
   }
   
@@ -300,7 +278,7 @@ class SubscriptionManager: ObservableObject {
     // Method 1: Re-check subscription status (checks currentEntitlements)
     print("🔄 Step 1: Re-checking subscription status...")
     await checkSubscriptionStatus()
-    let isPremiumAfterStep1 = await MainActor.run { self.isPremium }
+    let isPremiumAfterStep1 = self.isPremium
     print("🔄 After Step 1: isPremium = \(isPremiumAfterStep1)")
     
     // Method 2: Manually iterate all transactions (forces StoreKit refresh)
@@ -319,7 +297,7 @@ class SubscriptionManager: ObservableObject {
       }
     }
     print("🔄 Step 2 complete - found \(allTransactionCount) total transaction(s)")
-    let isPremiumAfterStep2 = await MainActor.run { self.isPremium }
+    let isPremiumAfterStep2 = self.isPremium
     print("🔄 After Step 2: isPremium = \(isPremiumAfterStep2)")
     
     // Method 3: Double-check currentEntitlements after processing
@@ -338,7 +316,7 @@ class SubscriptionManager: ObservableObject {
       }
     }
     print("🔄 Step 3 complete - found \(entitlementCount) current entitlement(s)")
-    let isPremiumAfterStep3 = await MainActor.run { self.isPremium }
+    let isPremiumAfterStep3 = self.isPremium
     print("🔄 After Step 3: isPremium = \(isPremiumAfterStep3)")
     
     // CRITICAL FIX: If we found entitlements, ensure premium is enabled
@@ -349,13 +327,12 @@ class SubscriptionManager: ObservableObject {
     
     // Final verification: If we found our product OR found active entitlements matching our products, ensure premium is enabled
     if foundOurProduct || foundActiveEntitlement {
-      let currentPremiumStatus = await MainActor.run { self.isPremium }
+      let currentPremiumStatus = self.isPremium
       if !currentPremiumStatus {
         print("⚠️ CRITICAL FIX: Found transaction/entitlement but isPremium is false - forcing true")
         print("⚠️ This indicates something reset isPremium after it was set to true")
-        await MainActor.run {
-          self.isPremium = true
-        }
+        // Direct assignment - class is @MainActor so this is already on main thread
+        self.isPremium = true
         print("✅ Premium status forced to true")
       } else {
         print("✅ Premium status already enabled - no fix needed")
@@ -376,7 +353,7 @@ class SubscriptionManager: ObservableObject {
       print("   - Both devices connected to internet")
     }
     
-    let finalPremiumStatus = await MainActor.run { self.isPremium }
+    let finalPremiumStatus = self.isPremium
     print("🔄 Force sync complete - Final isPremium status: \(finalPremiumStatus)")
     
     // Summary of state changes
@@ -387,19 +364,17 @@ class SubscriptionManager: ObservableObject {
     
     // Force UI refresh to ensure all observers are notified
     if foundOurProduct || foundActiveEntitlement {
-      await MainActor.run {
-        // Ensure premium is set
-        if !self.isPremium {
-          self.isPremium = true
-        }
-        
-        // Explicitly notify all observers
-        self.objectWillChange.send()
-        
-        print("🔄 Premium status confirmed and UI notified")
-        print("   isPremium: \(self.isPremium)")
-        print("   UI observers should now see the updated state")
+      // Ensure premium is set
+      if !self.isPremium {
+        self.isPremium = true
       }
+      
+      // Explicitly notify all observers (though @Published should handle this)
+      self.objectWillChange.send()
+      
+      print("🔄 Premium status confirmed and UI notified")
+      print("   isPremium: \(self.isPremium)")
+      print("   UI observers should now see the updated state")
     }
   }
   
@@ -558,10 +533,9 @@ class SubscriptionManager: ObservableObject {
           
           // Only set premium if verified
           if foundInEntitlements {
-            await MainActor.run {
-              self.isPremium = true
-              print("✅ SubscriptionManager: Premium status enabled (verified in StoreKit)")
-            }
+            // Direct assignment - class is @MainActor so this is already on main thread
+            self.isPremium = true
+            print("✅ SubscriptionManager: Premium status enabled (verified in StoreKit)")
             
             return (true, "Purchase successful! Premium features are now unlocked.")
           } else {
