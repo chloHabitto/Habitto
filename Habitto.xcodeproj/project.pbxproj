@@ -1422,6 +1422,7 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_TYPE = "com.apple.product-type.application";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SEPARATE_DSYM = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
@@ -1470,6 +1471,7 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_TYPE = "com.apple.product-type.application";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SEPARATE_DSYM = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
