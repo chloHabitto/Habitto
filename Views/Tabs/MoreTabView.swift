@@ -34,14 +34,6 @@ struct MoreTabView: View {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
-            // DEBUG: Visual indicator of isPremium state
-            #if DEBUG
-            Text("DEBUG: isPremium = \(String(describing: subscriptionManager.isPremium))")
-              .foregroundColor(.red)
-              .font(.caption)
-              .padding(.top, 4)
-            #endif
-            
             // Container for Banner and XP
             VStack(spacing: 20) {
               // Trial Banner (now scrollable) - only show for free users
