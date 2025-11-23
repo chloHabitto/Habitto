@@ -146,6 +146,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"Config/App-Info.plist",
+				"Habitto.xcodeproj",
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
