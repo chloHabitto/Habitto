@@ -77,23 +77,5 @@
    <ArchiveAction
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES">
-      <PostActions>
-         <ExecutionAction
-            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
-            <ActionContent
-               title = "Fix Archive Info.plist"
-               scriptText = "${PROJECT_DIR}/Scripts/fix-archive.sh &quot;${ARCHIVE_PATH}&quot;">
-               <EnvironmentBuildable>
-                  <BuildableReference
-                     BuildableIdentifier = "primary"
-                     BlueprintIdentifier = "89C17A362DF73D8A00B2480F"
-                     BuildableName = "Habitto.app"
-                     BlueprintName = "Habitto"
-                     ReferencedContainer = "container:Habitto.xcodeproj">
-                  </BuildableReference>
-               </EnvironmentBuildable>
-            </ActionContent>
-         </ExecutionAction>
-      </PostActions>
    </ArchiveAction>
 </Scheme>

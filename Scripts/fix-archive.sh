@@ -3,6 +3,12 @@
 # This script fixes the archive Info.plist by adding ApplicationProperties
 # Required because Xcode 26 beta doesn't add this automatically
 
+# Log to a file to verify the script runs
+LOG_FILE=~/Library/Logs/fix-archive.log
+echo "$(date): Script started" >> "$LOG_FILE"
+echo "ARCHIVE_PATH env: ${ARCHIVE_PATH:-not set}" >> "$LOG_FILE"
+echo "First arg: ${1:-not set}" >> "$LOG_FILE"
+
 # Try multiple ways to get the archive path
 ARCHIVE_PATH="${ARCHIVE_PATH:-$1}"
 
@@ -12,12 +18,14 @@ if [ -z "$ARCHIVE_PATH" ]; then
     LATEST_ARCHIVE=$(find ~/Library/Developer/Xcode/Archives -type d -name "*.xcarchive" -maxdepth 2 -mtime -1 | sort -r | head -1)
     if [ -n "$LATEST_ARCHIVE" ]; then
         ARCHIVE_PATH="$LATEST_ARCHIVE"
-        echo "Found archive: $ARCHIVE_PATH"
+        echo "Found archive: $ARCHIVE_PATH" >> "$LOG_FILE"
     else
-        echo "Error: No archive path provided and could not find recent archive"
+        echo "Error: No archive path provided and could not find recent archive" >> "$LOG_FILE"
         exit 1
     fi
 fi
+
+echo "Using archive path: $ARCHIVE_PATH" >> "$LOG_FILE"
 
 APP_PATH="$ARCHIVE_PATH/Products/Applications/Habitto.app"
 ARCHIVE_PLIST="$ARCHIVE_PATH/Info.plist"
