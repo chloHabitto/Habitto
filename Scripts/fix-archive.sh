@@ -3,11 +3,20 @@
 # This script fixes the archive Info.plist by adding ApplicationProperties
 # Required because Xcode 26 beta doesn't add this automatically
 
+# Try multiple ways to get the archive path
 ARCHIVE_PATH="${ARCHIVE_PATH:-$1}"
 
+# If ARCHIVE_PATH is not set, try to find the most recent archive
 if [ -z "$ARCHIVE_PATH" ]; then
-    echo "Error: No archive path provided"
-    exit 1
+    # Look for the most recently created archive in the default location
+    LATEST_ARCHIVE=$(find ~/Library/Developer/Xcode/Archives -type d -name "*.xcarchive" -maxdepth 2 -mtime -1 | sort -r | head -1)
+    if [ -n "$LATEST_ARCHIVE" ]; then
+        ARCHIVE_PATH="$LATEST_ARCHIVE"
+        echo "Found archive: $ARCHIVE_PATH"
+    else
+        echo "Error: No archive path provided and could not find recent archive"
+        exit 1
+    fi
 fi
 
 APP_PATH="$ARCHIVE_PATH/Products/Applications/Habitto.app"
@@ -30,23 +39,43 @@ SIGNING_ID=$(codesign -dv "$APP_PATH" 2>&1 | grep "Authority=" | head -1 | sed '
 # Get team ID from provisioning profile
 TEAM_ID=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null | plutil -extract TeamIdentifier.0 raw -)
 
-echo "Adding ApplicationProperties to archive..."
+echo "Adding ApplicationProperties to archive (root level)..."
 echo "  Bundle ID: $BUNDLE_ID"
 echo "  Version: $VERSION"
 echo "  Build: $BUILD"
 echo "  Signing Identity: $SIGNING_ID"
 echo "  Team: $TEAM_ID"
 
-# Add ApplicationProperties to archive Info.plist
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties dict" "$ARCHIVE_PLIST" 2>/dev/null || true
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:ApplicationPath string 'Applications/Habitto.app'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:Architectures array" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:Architectures:0 string 'arm64'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:CFBundleIdentifier string '$BUNDLE_ID'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:CFBundleShortVersionString string '$VERSION'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:CFBundleVersion string '$BUILD'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:SigningIdentity string '$SIGNING_ID'" "$ARCHIVE_PLIST"
-/usr/libexec/PlistBuddy -c "Add :ApplicationProperties:Team string '$TEAM_ID'" "$ARCHIVE_PLIST"
+# Remove nested ApplicationProperties if it exists (from previous incorrect runs)
+/usr/libexec/PlistBuddy -c "Delete :ApplicationProperties" "$ARCHIVE_PLIST" 2>/dev/null || true
+
+# Add ApplicationProperties at ROOT level (not nested)
+# This matches the structure of working archives from Xcode 16
+/usr/libexec/PlistBuddy -c "Add :ApplicationPath string 'Applications/Habitto.app'" "$ARCHIVE_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :ApplicationPath 'Applications/Habitto.app'" "$ARCHIVE_PLIST"
+
+/usr/libexec/PlistBuddy -c "Add :Architectures array" "$ARCHIVE_PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :Architectures:0 string 'arm64'" "$ARCHIVE_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :Architectures:0 'arm64'" "$ARCHIVE_PLIST"
+
+/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string '$BUNDLE_ID'" "$ARCHIVE_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier '$BUNDLE_ID'" "$ARCHIVE_PLIST"
+
+/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string '$VERSION'" "$ARCHIVE_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '$VERSION'" "$ARCHIVE_PLIST"
+
+/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string '$BUILD'" "$ARCHIVE_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion '$BUILD'" "$ARCHIVE_PLIST"
+
+if [ -n "$SIGNING_ID" ]; then
+  /usr/libexec/PlistBuddy -c "Add :SigningIdentity string '$SIGNING_ID'" "$ARCHIVE_PLIST" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Set :SigningIdentity '$SIGNING_ID'" "$ARCHIVE_PLIST"
+fi
+
+if [ -n "$TEAM_ID" ]; then
+  /usr/libexec/PlistBuddy -c "Add :Team string '$TEAM_ID'" "$ARCHIVE_PLIST" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Set :Team '$TEAM_ID'" "$ARCHIVE_PLIST"
+fi
 
 echo "✅ Archive fixed successfully!"
 
