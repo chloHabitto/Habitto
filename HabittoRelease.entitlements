@@ -11,11 +11,11 @@
 	<!-- CloudKit enabled for automatic cross-device sync via iCloud -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
-		<string>iCloud.$(CFBundleIdentifier)</string>
+		<string>iCloud.com.chloe-lee.Habitto</string>
 	</array>
 	<key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>
-		<string>iCloud.$(CFBundleIdentifier)</string>
+		<string>iCloud.com.chloe-lee.Habitto</string>
 	</array>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
