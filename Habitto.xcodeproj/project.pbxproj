@@ -7,15 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8935E7842E7C21DB004BF684 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7832E7C21DB004BF684 /* Algorithms */; };
 		8935E7872E7C2204004BF684 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7862E7C2204004BF684 /* Lottie */; };
 		8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E78B2E7C2260004BF684 /* FirebaseAuth */; };
 		8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E78D2E7C2260004BF684 /* FirebaseCore */; };
 		8935E7932E7C2278004BF684 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7922E7C2278004BF684 /* GoogleSignIn */; };
-		8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7942E7C2278004BF684 /* GoogleSignInSwift */; };
 		89383AAB2E919C8800AF39E5 /* MijickPopups in Frameworks */ = {isa = PBXBuildFile; productRef = 89383AAA2E919C8800AF39E5 /* MijickPopups */; };
-		8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70C2E8A680E00E7B437 /* MCEmojiPicker */; };
-		8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */; };
 		8980C1512E9AA91C00E491FB /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */; };
 		8980C1532E9AA92400E491FB /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1522E9AA92400E491FB /* FirebaseRemoteConfig */; };
 		8980C2172E9F880500E491FB /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C2162E9F880500E491FB /* FirebaseFirestore */; };
@@ -60,6 +56,7 @@
 		8940C3E62E8856E300E7B437 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894347AD2E90021C0048EBE6 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8944BBC72ECB355B008FD4F2 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		8949A95D2ED5D9AC00BF658A /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894AC2A52E76ED1C0090008F /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		894D1C6E2E7C1C9E00C599CA /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8958CA932E92813400AC3DB8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -173,18 +170,14 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				8980C1532E9AA92400E491FB /* FirebaseRemoteConfig in Frameworks */,
-				8935E7842E7C21DB004BF684 /* Algorithms in Frameworks */,
 				8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */,
-				8935E7952E7C2278004BF684 /* GoogleSignInSwift in Frameworks */,
 				8935E7872E7C2204004BF684 /* Lottie in Frameworks */,
 				8980C2172E9F880500E491FB /* FirebaseFirestore in Frameworks */,
 				89383AAB2E919C8800AF39E5 /* MijickPopups in Frameworks */,
 				8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */,
-				8940C70F2E8A680E00E7B437 /* MCEmojiPickerJSON in Frameworks */,
 				8980C1512E9AA91C00E491FB /* FirebaseCrashlytics in Frameworks */,
 				8935E7932E7C2278004BF684 /* GoogleSignIn in Frameworks */,
 				89F196022ECF79D10034041F /* StoreKit.framework in Frameworks */,
-				8940C70D2E8A680E00E7B437 /* MCEmojiPicker in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -322,6 +315,11 @@
 			sourceTree = "<group>";
 		};
 		8944BBD62ECB355B008FD4F2 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8949A96C2ED5D9AC00BF658A /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -794,14 +792,10 @@
 			);
 			name = Habitto;
 			packageProductDependencies = (
-				8935E7832E7C21DB004BF684 /* Algorithms */,
 				8935E7862E7C2204004BF684 /* Lottie */,
 				8935E78B2E7C2260004BF684 /* FirebaseAuth */,
 				8935E78D2E7C2260004BF684 /* FirebaseCore */,
 				8935E7922E7C2278004BF684 /* GoogleSignIn */,
-				8935E7942E7C2278004BF684 /* GoogleSignInSwift */,
-				8940C70C2E8A680E00E7B437 /* MCEmojiPicker */,
-				8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */,
 				89383AAA2E919C8800AF39E5 /* MijickPopups */,
 				8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */,
 				8980C1522E9AA92400E491FB /* FirebaseRemoteConfig */,
@@ -836,11 +830,9 @@
 			mainGroup = 89C17A2E2DF73D8A00B2480F;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8935E7822E7C21DB004BF684 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
 				8935E7852E7C2204004BF684 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				8935E7882E7C2260004BF684 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
-				8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
 				89383AA92E919C8800AF39E5 /* XCRemoteSwiftPackageReference "Popups" */,
 			);
 			preferredProjectObjectVersion = 90;
@@ -1014,6 +1006,10 @@
 				{
 					ProductGroup = 89F1792F2ECF746D0034041F /* Products */;
 					ProjectRef = 89F1790E2ECF746D0034041F /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 8949A96C2ED5D9AC00BF658A /* Products */;
+					ProjectRef = 8949A95D2ED5D9AC00BF658A /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89F192312ECF780F0034041F /* Products */;
@@ -1528,14 +1524,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8935E7822E7C21DB004BF684 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-algorithms.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.1;
-			};
-		};
 		8935E7852E7C2204004BF684 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
@@ -1568,22 +1556,9 @@
 				minimumVersion = 4.0.2;
 			};
 		};
-		8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/izyumkin/MCEmojiPicker.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.5;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8935E7832E7C21DB004BF684 /* Algorithms */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8935E7822E7C21DB004BF684 /* XCRemoteSwiftPackageReference "swift-algorithms" */;
-			productName = Algorithms;
-		};
 		8935E7862E7C2204004BF684 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8935E7852E7C2204004BF684 /* XCRemoteSwiftPackageReference "lottie-spm" */;
@@ -1604,25 +1579,10 @@
 			package = 8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
 		};
-		8935E7942E7C2278004BF684 /* GoogleSignInSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8935E7912E7C2278004BF684 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
-			productName = GoogleSignInSwift;
-		};
 		89383AAA2E919C8800AF39E5 /* MijickPopups */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 89383AA92E919C8800AF39E5 /* XCRemoteSwiftPackageReference "Popups" */;
 			productName = MijickPopups;
-		};
-		8940C70C2E8A680E00E7B437 /* MCEmojiPicker */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
-			productName = MCEmojiPicker;
-		};
-		8940C70E2E8A680E00E7B437 /* MCEmojiPickerJSON */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8940C70B2E8A680E00E7B437 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
-			productName = MCEmojiPickerJSON;
 		};
 		8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */ = {
 			isa = XCSwiftPackageProductDependency;
