@@ -10,9 +10,7 @@
 	<array>
 		<string>Default</string>
 	</array>
-	<!-- CloudKit disabled - infrastructure exists but not actively used -->
-	<!-- Uncomment below when ready to enable CloudKit sync -->
-	<!--
+	<!-- CloudKit enabled for automatic cross-device sync via iCloud -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.chloe-lee.Habitto</string>
@@ -26,6 +24,5 @@
 		<string>CloudKit</string>
 		<string>CloudDocuments</string>
 	</array>
-	-->
 </dict>
 </plist>
