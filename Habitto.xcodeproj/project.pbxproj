@@ -424,7 +424,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PRODUCT_TYPE = "com.apple.product-type.application";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SEPARATE_DSYM = NO;
+				SEPARATE_DSYM = YES;
 				SKIP_INSTALL = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
