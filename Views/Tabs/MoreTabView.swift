@@ -39,16 +39,9 @@ struct MoreTabView: View {
               // Trial Banner (now scrollable) - only show for free users
               // CRITICAL: Use .id() to force view recreation when isPremium changes
               if !subscriptionManager.isPremium {
-                #if DEBUG
-                let _ = print("🔍 MoreTabView: Showing free banner - isPremium = \(subscriptionManager.isPremium)")
-                #endif
                 trialBanner
                   .id("banner-\(subscriptionManager.isPremium)") // Force recreation when isPremium changes
                   .entranceAnimation(delay: 0.0)
-              } else {
-                #if DEBUG
-                let _ = print("🔍 MoreTabView: Hiding free banner - isPremium = \(subscriptionManager.isPremium)")
-                #endif
               }
 
               // XP Level Display (now scrollable)
@@ -178,6 +171,15 @@ struct MoreTabView: View {
         // 🔍 DEBUG: Log XP when tab appears
         print("🟣 MoreTabView.onAppear | XP: \(xpManager.totalXP) | Level: \(xpManager.currentLevel) | instance: \(ObjectIdentifier(xpManager))")
       }
+      #if DEBUG
+      .onChange(of: subscriptionManager.isPremium) { oldValue, newValue in
+        if newValue {
+          print("🔍 MoreTabView: Hiding free banner - isPremium changed from \(oldValue) to \(newValue)")
+        } else {
+          print("🔍 MoreTabView: Showing free banner - isPremium changed from \(oldValue) to \(newValue)")
+        }
+      }
+      #endif
   }
 
   // MARK: Private
