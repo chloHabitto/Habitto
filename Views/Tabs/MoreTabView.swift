@@ -191,6 +191,9 @@ struct MoreTabView: View {
   @State private var showingFAQ = false
   @State private var showingContactUs = false
   @State private var showingSendFeedback = false
+  #if DEBUG
+  @State private var showDebugTools = false
+  #endif
   @State private var showingCustomRating = false
   @State private var showingTermsConditions = false
   @State private var showingVacationMode = false
@@ -341,8 +344,10 @@ struct MoreTabView: View {
         ])
       
       #if DEBUG
-      // Debug Section
-      debugXPSyncSection
+      // Debug Section - Only visible when enabled via hidden gesture
+      if showDebugTools {
+        debugXPSyncSection
+      }
       #endif
       
       // Version Information
@@ -353,6 +358,11 @@ struct MoreTabView: View {
           .font(.system(size: 12, weight: .regular))
           .foregroundColor(.text04)
           .padding(.bottom, 20)
+          .onTapGesture(count: 5) {
+            #if DEBUG
+            showDebugTools.toggle()
+            #endif
+          }
       }
     }
   }
@@ -373,7 +383,7 @@ struct MoreTabView: View {
       .padding(.top, 20)
       .padding(.bottom, 12)
       
-      // Essential Debug Buttons
+      // Essential Debug Buttons Only
       VStack(spacing: 12) {
         debugButton(
           title: "🔍 Investigate Habits",
@@ -394,163 +404,10 @@ struct MoreTabView: View {
         )
         
         debugButton(
-          title: "📊 Audit Firestore",
-          subtitle: "Check cloud sync state",
-          action: {
-            Task {
-              await auditFirestore()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "📊 Audit Memory",
-          subtitle: "Check current in-memory state",
-          action: {
-            auditMemory()
-          }
-        )
-        
-        debugButton(
           title: "📈 Sync Health Monitor",
           subtitle: "View sync metrics and health status",
           action: {
             showingSyncHealth = true
-          }
-        )
-        
-        // Migration Testing Buttons
-        debugButton(
-          title: "🔍 Check Migration Status",
-          subtitle: "View migration and ProgressEvent status",
-          action: {
-            Task { @MainActor in
-              try? await MigrationTestHelper.shared.printMigrationStatus()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "📋 Migration Status UI",
-          subtitle: "Visual migration status dashboard",
-          action: {
-            showingMigrationStatus = true
-          }
-        )
-        
-        debugButton(
-          title: "🚀 Trigger Migration (Force)",
-          subtitle: "Run migration with force mode",
-          action: {
-            Task { @MainActor in
-              try? await MigrationTestHelper.shared.triggerMigration(force: true)
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔄 Force Guest Data Migration",
-          subtitle: "Re-run complete guest-to-anonymous migration",
-          action: {
-            Task { @MainActor in
-              guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-                print("❌ [GUEST_MIGRATION] Cannot force migration: No authenticated user")
-                return
-              }
-              await GuestDataMigrationHelper.forceMigration(userId: userId)
-            }
-          }
-        )
-        
-        debugButton(
-          title: "✅ Verify Migration",
-          subtitle: "Check migration results",
-          action: {
-            Task { @MainActor in
-              try? await MigrationTestHelper.shared.printVerification()
-            }
-          }
-        )
-        
-        // Premium Testing Button
-        debugButton(
-          title: subscriptionManager.isPremium ? "🔓 Disable Premium (Debug)" : "🔒 Enable Premium (Debug)",
-          subtitle: subscriptionManager.isPremium ? "Turn off premium for testing" : "Turn on premium for testing",
-          action: {
-            if subscriptionManager.isPremium {
-              subscriptionManager.disablePremiumForTesting()
-            } else {
-              subscriptionManager.enablePremiumForTesting()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔄 Reset Premium Status",
-          subtitle: "Reset to FREE before testing fresh purchase",
-          action: {
-            subscriptionManager.resetPremiumStatusForDebug()
-          }
-        )
-        
-        debugButton(
-          title: "🔍 Verify Purchase Status",
-          subtitle: "Check all StoreKit transactions and entitlements",
-          action: {
-            Task {
-              await subscriptionManager.verifyPurchaseStatus()
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔄 Force Sync from Cloud",
-          subtitle: "Force StoreKit to check for synced purchases",
-          action: {
-            Task {
-              await subscriptionManager.forceSyncFromCloud()
-              
-              // Show status after sync
-              await MainActor.run {
-                let status = subscriptionManager.isPremium ? "Premium" : "Free"
-                print("🎉 Sync complete! Status: \(status)")
-                print("🔍 MoreTabView sees isPremium: \(subscriptionManager.isPremium)")
-              }
-            }
-          }
-        )
-        
-        debugButton(
-          title: "🔍 Verify UI State",
-          subtitle: "Check if UI can see subscription state",
-          action: {
-            subscriptionManager.verifyUIState()
-          }
-        )
-        
-        debugButton(
-          title: "🔄 Start Periodic Sync Check",
-          subtitle: "Check for sync every 30 seconds (auto-stops when found)",
-          action: {
-            subscriptionManager.startPeriodicSyncCheck(interval: 30)
-          }
-        )
-        
-        debugButton(
-          title: "⏹️ Stop Periodic Sync Check",
-          subtitle: "Stop automatic sync checking",
-          action: {
-            subscriptionManager.stopPeriodicSyncCheck()
-          }
-        )
-        
-        debugButton(
-          title: "🧪 Test Event Sourcing",
-          subtitle: "Automated test of event creation & XP",
-          action: {
-            Task { @MainActor in
-              try? await MigrationTestHelper.shared.runAutomatedEventSourcingTest()
-            }
           }
         )
       }
@@ -630,128 +487,6 @@ struct MoreTabView: View {
     }
   }
   
-  private func auditFirestore() async {
-    print("📊 ========== FIRESTORE AUDIT ==========")
-    
-    guard let userId = AuthenticationManager.shared.currentUser?.uid else {
-      print("❌ No authenticated user")
-      return
-    }
-    
-    print("📊 User ID: \(userId)")
-    
-    let db = Firestore.firestore()
-    
-    do {
-      // Check habits collection
-      print("\n📊 Fetching habits from Firestore...")
-      let habitsSnapshot = try await db.collection("users").document(userId).collection("habits").getDocuments()
-      print("📊 Firestore Habits: \(habitsSnapshot.documents.count)")
-      
-      for (i, doc) in habitsSnapshot.documents.enumerated() {
-        let data = doc.data()
-        let name = data["name"] as? String ?? "Unknown"
-        let completionStatus = data["completionStatus"] as? [String: Bool] ?? [:]
-        let completionHistory = data["completionHistory"] as? [String: Int] ?? [:]
-        let baseline = data["baseline"] as? Int ?? 0
-        let target = data["target"] as? Int ?? 0
-        
-        print("   [\(i)] '\(name)' (id: \(doc.documentID.prefix(8)))")
-        print("      → completionStatus count: \(completionStatus.count)")
-        print("      → completionHistory count: \(completionHistory.count)")
-        print("      → baseline: \(baseline), target: \(target)")
-        
-        if !completionStatus.isEmpty {
-          print("      → Recent completionStatus entries:")
-          for (dateKey, isComplete) in completionStatus.sorted(by: { $0.key > $1.key }).prefix(3) {
-            print("         \(dateKey): \(isComplete ? "✅" : "❌")")
-          }
-        }
-        
-        if !completionHistory.isEmpty {
-          print("      → Recent completionHistory entries:")
-          for (dateKey, progress) in completionHistory.sorted(by: { $0.key > $1.key }).prefix(3) {
-            print("         \(dateKey): \(progress)")
-          }
-        }
-      }
-      
-      // Check progress document
-      print("\n📊 Fetching XP state from Firestore...")
-      let progressDoc = try await db.collection("users").document(userId).collection("xp").document("state").getDocument()
-      if progressDoc.exists {
-        let data = progressDoc.data() ?? [:]
-        let totalXP = data["totalXP"] as? Int ?? 0
-        let level = data["level"] as? Int ?? 1
-        let dailyXP = data["dailyXP"] as? Int ?? 0
-        print("📊 XP State:")
-        print("   → totalXP: \(totalXP)")
-        print("   → level: \(level)")
-        print("   → dailyXP: \(dailyXP)")
-      } else {
-        print("❌ No XP state document found")
-      }
-      
-      // Check migration status
-      print("\n📊 Checking migration status...")
-      let migrationDoc = try await db.collection("users").document(userId).collection("meta").document("migration").getDocument()
-      if migrationDoc.exists {
-        let data = migrationDoc.data() ?? [:]
-        let status = data["status"] as? String ?? "unknown"
-        print("📊 Migration status: \(status)")
-      } else {
-        print("📊 No migration document (not started)")
-      }
-      
-    } catch {
-      print("❌ FIRESTORE AUDIT FAILED: \(error)")
-    }
-    
-    print("📊 ===================================")
-  }
-  
-  private func auditMemory() {
-    print("📊 ========== MEMORY AUDIT ==========")
-    
-    let habits = HabitRepository.shared.habits
-    print("📊 HabitRepository.habits count: \(habits.count)")
-    
-    for (i, habit) in habits.enumerated() {
-      print("\n   [\(i)] '\(habit.name)' (id: \(habit.id.uuidString.prefix(8)))")
-      print("      → habitType: \(habit.habitType.rawValue)")
-      print("      → baseline: \(habit.baseline), target: \(habit.target)")
-      print("      → syncStatus: \(habit.syncStatus.rawValue)")
-      print("      → lastSyncedAt: \(habit.lastSyncedAt?.description ?? "nil")")
-      print("      → completionStatus count: \(habit.completionStatus.count)")
-      print("      → completionHistory count: \(habit.completionHistory.count)")
-      print("      → completionTimestamps count: \(habit.completionTimestamps.count)")
-      
-      if !habit.completionStatus.isEmpty {
-        print("      → Recent completionStatus:")
-        for (dateKey, isComplete) in habit.completionStatus.sorted(by: { $0.key > $1.key }).prefix(3) {
-          print("         \(dateKey): \(isComplete ? "✅" : "❌")")
-        }
-      } else {
-        print("      → ⚠️ completionStatus is EMPTY!")
-      }
-      
-      if !habit.completionHistory.isEmpty {
-        print("      → Recent completionHistory:")
-        for (dateKey, progress) in habit.completionHistory.sorted(by: { $0.key > $1.key }).prefix(3) {
-          print("         \(dateKey): \(progress)")
-        }
-      } else {
-        print("      → ⚠️ completionHistory is EMPTY!")
-      }
-    }
-    
-    print("\n📊 XPManager state:")
-    print("   → totalXP: \(xpManager.totalXP)")
-    print("   → currentLevel: \(xpManager.currentLevel)")
-    print("   → dailyXP: \(xpManager.dailyXP)")
-    
-    print("\n📊 ===================================")
-  }
   #endif
   
   // MARK: - Settings Group Helper
