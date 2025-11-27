@@ -638,15 +638,25 @@ struct SubscriptionView: View {
     await MainActor.run {
       isPurchasing = false
       purchaseMessage = result.message
-      showingPurchaseAlert = true
       
-      // If purchase was successful and user is now premium, dismiss the view
+      // If purchase was successful and user is now premium, dismiss the sheet first
       if result.success && subscriptionManager.isPremium {
         showingSubscriptionOptions = false
-        // Small delay to show success message before dismissing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-          dismiss()
+        // Wait for sheet dismissal animation to complete (iOS sheet animations are ~0.3-0.4s)
+        // Add extra buffer to ensure all view transitions complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+          // Ensure we're still on main thread and view is still present
+          Task { @MainActor in
+            showingPurchaseAlert = true
+            // Then dismiss the entire view after showing success message
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+              dismiss()
+            }
+          }
         }
+      } else {
+        // For errors, show alert immediately (sheet stays open)
+        showingPurchaseAlert = true
       }
     }
   }
@@ -661,14 +671,17 @@ struct SubscriptionView: View {
     await MainActor.run {
       isRestoring = false
       restoreMessage = result.message
-      showingRestoreAlert = true
       
       // If restore was successful and user is now premium, dismiss the view
       if result.success && subscriptionManager.isPremium {
-        // Small delay to show success message before dismissing
+        // Show alert first, then dismiss after showing success message
+        showingRestoreAlert = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
           dismiss()
         }
+      } else {
+        // For errors, show alert immediately
+        showingRestoreAlert = true
       }
     }
   }
