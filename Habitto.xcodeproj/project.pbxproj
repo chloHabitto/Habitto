@@ -365,6 +365,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PRODUCT_TYPE = "com.apple.product-type.application";
+				SKIP_INSTALL = NO;
+				INSTALL_PATH = "$(LOCAL_APPS_DIR)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SEPARATE_DSYM = NO;
 				STRIP_DEBUG_SYMBOLS_DURING_COPY = NO;
