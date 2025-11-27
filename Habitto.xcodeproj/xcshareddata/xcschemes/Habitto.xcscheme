@@ -51,7 +51,7 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../HabittoPremium.storekit">
+         identifier = "container:HabittoPremium.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
