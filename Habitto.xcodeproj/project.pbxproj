@@ -397,7 +397,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -449,7 +449,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
