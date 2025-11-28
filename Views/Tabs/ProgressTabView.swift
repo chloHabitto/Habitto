@@ -610,6 +610,9 @@ struct ProgressTabView: View {
     .sheet(isPresented: $showingPaywall) {
       SubscriptionView()
     }
+    .sheet(isPresented: $showingDifficultyExplanation) {
+      difficultyExplanationSheet
+    }
     .onAppear {
       // Calculate streak statistics when view appears
       updateStreakStatistics()
@@ -2651,6 +2654,106 @@ struct ProgressTabView: View {
       "You're building strength! 💎"
     }
   }
+  
+  // MARK: - Difficulty Explanation Sheet
+  
+  private var difficultyExplanationSheet: some View {
+    VStack(spacing: 24) {
+      // Header
+      HStack {
+        Text("Difficulty Stat")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        
+        Spacer()
+        
+        Button(action: {
+          showingDifficultyExplanation = false
+        }) {
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text02)
+            .frame(width: 32, height: 32)
+            .background(Color.surface2)
+            .clipShape(Circle())
+        }
+      }
+      .padding(.horizontal, 24)
+      .padding(.top, 24)
+      
+      // Content
+      VStack(alignment: .leading, spacing: 16) {
+        Text("What is Difficulty?")
+          .font(.appTitleSmallEmphasised)
+          .foregroundColor(.text01)
+        
+        Text("Difficulty measures how challenging your habits felt when you completed them. After completing a habit, you rate it from Very Easy (1) to Very Hard (5).")
+          .font(.appBodyMedium)
+          .foregroundColor(.text02)
+          .fixedSize(horizontal: false, vertical: true)
+        
+        Text("The stat shown here is the average difficulty of all your scheduled habits for this day.")
+          .font(.appBodyMedium)
+          .foregroundColor(.text02)
+          .fixedSize(horizontal: false, vertical: true)
+        
+        VStack(alignment: .leading, spacing: 12) {
+          Text("Difficulty Levels:")
+            .font(.appTitleSmallEmphasised)
+            .foregroundColor(.text01)
+            .padding(.top, 8)
+          
+          difficultyLevelRow(level: "Very Easy", color: .green, description: "Effortless to complete")
+          difficultyLevelRow(level: "Easy", color: .mint, description: "Slightly challenging")
+          difficultyLevelRow(level: "Medium", color: .orange, description: "Moderately challenging")
+          difficultyLevelRow(level: "Hard", color: .red, description: "Quite difficult")
+          difficultyLevelRow(level: "Very Hard", color: .purple, description: "Extremely challenging")
+        }
+      }
+      .padding(.horizontal, 24)
+      
+      Spacer()
+      
+      // Close button
+      Button(action: {
+        showingDifficultyExplanation = false
+      }) {
+        Text("Got it")
+          .font(.appButtonText1)
+          .foregroundColor(.onPrimary)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 16)
+          .background(Color.primary)
+          .cornerRadius(30)
+      }
+      .padding(.horizontal, 24)
+      .padding(.bottom, 24)
+    }
+    .background(Color.surface)
+    .presentationDetents([.medium, .large])
+    .presentationDragIndicator(.visible)
+    .presentationCornerRadius(32)
+  }
+  
+  private func difficultyLevelRow(level: String, color: Color, description: String) -> some View {
+    HStack(spacing: 12) {
+      Circle()
+        .fill(color)
+        .frame(width: 12, height: 12)
+      
+      VStack(alignment: .leading, spacing: 2) {
+        Text(level)
+          .font(.appBodyMedium)
+          .foregroundColor(.text01)
+        
+        Text(description)
+          .font(.appBodySmall)
+          .foregroundColor(.text02)
+      }
+      
+      Spacer()
+    }
+  }
 
   // MARK: - Individual Habit Difficulty Data
 
@@ -2788,7 +2891,7 @@ struct ProgressTabView: View {
 
               // "What does this stat mean?" link (centered)
               Button(action: {
-                // Show explanation sheet or alert
+                showingDifficultyExplanation = true
               }) {
                 Text("What does this stat mean?")
                   .font(.appBodySmall)
