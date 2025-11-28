@@ -147,6 +147,9 @@ struct ProgressTabView: View {
 
   /// Per-date reminder states: [dateKey: [reminderId: isEnabled]]
   @State private var reminderStates: [String: [UUID: Bool]] = [:]
+  
+  /// Refresh ID to force views to update when habits change
+  @State private var refreshID = UUID()
 
   // MARK: - Environment
 
@@ -296,6 +299,7 @@ struct ProgressTabView: View {
         MonthlyCalendarGridView(
           userHabits: getActiveHabitsForSelectedMonth(),
           selectedMonth: selectedProgressDate)
+          .id("monthly-\(refreshID)")
       }
       .padding(.horizontal, 20)
     }
@@ -335,6 +339,7 @@ struct ProgressTabView: View {
           isDataLoaded: isDataLoaded,
           isLoadingProgress: isLoadingProgress,
           selectedYear: selectedYear)
+          .id("yearly-\(refreshID)")
       }
       .padding(.horizontal, 20)
     }
@@ -625,6 +630,9 @@ struct ProgressTabView: View {
         selectedHabit = updatedHabit
       }
       
+      // Force view refresh by updating refresh ID
+      refreshID = UUID()
+      
       // Update streak statistics when habits change (e.g., when past dates are completed)
       updateStreakStatistics()
       // Reload yearly data when habits change
@@ -649,6 +657,8 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
     }
     .onChange(of: selectedProgressDate) { _, _ in
+      // Force view refresh when month changes
+      refreshID = UUID()
       // Update difficulty data when month changes
       updateDifficultyData()
       // Update time base completion data when month changes
