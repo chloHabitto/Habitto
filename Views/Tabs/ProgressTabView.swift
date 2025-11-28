@@ -318,7 +318,7 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var yearlyAllHabitsContent: some View {
-    if getActiveHabits().isEmpty {
+    if getActiveHabitsForSelectedYear().isEmpty {
       // Show empty state when no habits exist
       VStack(spacing: 20) {
         // Empty state for yearly view
@@ -333,7 +333,7 @@ struct ProgressTabView: View {
       VStack(spacing: 20) {
         // Yearly Calendar Grid
         YearlyCalendarGridView(
-          userHabits: getActiveHabits(),
+          userHabits: getActiveHabitsForSelectedYear(),
           selectedWeekStartDate: selectedWeekStartDate,
           yearlyHeatmapData: yearlyHeatmapData,
           isDataLoaded: isDataLoaded,
@@ -1321,18 +1321,55 @@ struct ProgressTabView: View {
       return today >= startDate && today <= endDate
     }
   }
+  
+  /// Get habits that are active on at least one date in the selected year
+  private func getActiveHabitsForSelectedYear() -> [Habit] {
+    let calendar = Calendar.current
+    var components = DateComponents()
+    components.year = selectedYear
+    components.month = 1
+    components.day = 1
+    guard let yearStart = calendar.date(from: components) else {
+      return []
+    }
+    let yearEnd = calendar.dateInterval(of: .year, for: yearStart)?.end ?? yearStart
+    let yearStartDay = calendar.startOfDay(for: yearStart)
+    let yearEndDay = calendar.startOfDay(for: yearEnd)
+
+    return habitRepository.habits.filter { habit in
+      // Check if habit is active on at least one date in the selected year
+      var currentDate = yearStartDay
+      while currentDate <= yearEndDay {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          return true
+        }
+        guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+          break
+        }
+        currentDate = nextDate
+      }
+      return false
+    }
+  }
 
   private func getActiveHabitsForSelectedWeek() -> [Habit] {
     let calendar = AppDateFormatter.shared.getUserCalendar()
-    let weekStart = selectedWeekStartDate
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
     let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
 
     return habitRepository.habits.filter { habit in
-      let habitStart = calendar.startOfDay(for: habit.startDate)
-      let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-
-      // Habit is active if it overlaps with the selected week
-      return habitStart <= weekEnd && habitEnd >= weekStart
+      // Check if habit is active on at least one date in the selected week
+      var currentDate = weekStart
+      while currentDate <= weekEnd {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          return true
+        }
+        guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+          break
+        }
+        currentDate = nextDate
+      }
+      return false
     }
   }
 
@@ -1342,13 +1379,22 @@ struct ProgressTabView: View {
       .start ?? selectedProgressDate
     let monthEnd = calendar.dateInterval(of: .month, for: selectedProgressDate)?
       .end ?? selectedProgressDate
+    let monthStartDay = calendar.startOfDay(for: monthStart)
+    let monthEndDay = calendar.startOfDay(for: monthEnd)
 
     return habitRepository.habits.filter { habit in
-      let habitStart = calendar.startOfDay(for: habit.startDate)
-      let habitEnd = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
-
-      // Habit is active if it overlaps with the selected month
-      return habitStart <= monthEnd && habitEnd >= monthStart
+      // Check if habit is active on at least one date in the selected month
+      var currentDate = monthStartDay
+      while currentDate <= monthEndDay {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          return true
+        }
+        guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+          break
+        }
+        currentDate = nextDate
+      }
+      return false
     }
   }
 
@@ -1524,7 +1570,8 @@ struct ProgressTabView: View {
   // MARK: - Yearly Data Management
 
   private func loadYearlyData() {
-    guard !habitRepository.habits.isEmpty else {
+    let activeHabitsForYear = getActiveHabitsForSelectedYear()
+    guard !activeHabitsForYear.isEmpty else {
       yearlyHeatmapData = []
       isDataLoaded = true
       return
@@ -1536,9 +1583,9 @@ struct ProgressTabView: View {
     // Calculate yearly heatmap data asynchronously
     Task {
       let data = await StreakDataCalculator.generateYearlyDataFromHabitsAsync(
-        habitRepository.habits,
+        activeHabitsForYear,
         startIndex: 0,
-        itemsPerPage: habitRepository.habits.count,
+        itemsPerPage: activeHabitsForYear.count,
         forYear: selectedYear)
       { progress in
         // Update UI on main thread
