@@ -2732,11 +2732,11 @@ struct ProgressTabView: View {
                 .foregroundColor(.onPrimaryContainer)
                 .multilineTextAlignment(.center)
 
-              // "What these stats mean?" link (centered)
+              // "What does this stat mean?" link (centered)
               Button(action: {
                 // Show explanation sheet or alert
               }) {
-                Text("What these stats mean?")
+                Text("What does this stat mean?")
                   .font(.appBodySmall)
                   .foregroundColor(.text02)
               }
