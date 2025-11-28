@@ -625,6 +625,8 @@ struct ProgressTabView: View {
         selectedHabit = updatedHabit
       }
       
+      // Update streak statistics when habits change (e.g., when past dates are completed)
+      updateStreakStatistics()
       // Reload yearly data when habits change
       loadYearlyData()
       // Update difficulty data when habits change
@@ -639,6 +641,8 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
     }
     .onChange(of: selectedWeekStartDate) {
+      // Update streak statistics when week changes (for weekly view)
+      updateStreakStatistics()
       // Update difficulty data when week changes
       updateDifficultyData()
       // Update time base completion data when week changes
