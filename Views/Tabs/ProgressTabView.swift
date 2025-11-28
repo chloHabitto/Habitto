@@ -785,9 +785,34 @@ struct ProgressTabView: View {
         habitIcon(for: habit)
 
         VStack(alignment: .leading, spacing: 4) {
-          Text(habit.name)
-            .font(.appTitleMedium)
-            .foregroundColor(.onPrimaryContainer)
+          HStack(spacing: 8) {
+            Text(habit.name)
+              .font(.appTitleMedium)
+              .foregroundColor(.onPrimaryContainer)
+            
+            // Active/Inactive badge
+            if isHabitActive(habit) {
+              Text("Active")
+                .font(.appLabelSmall)
+                .foregroundColor(.success)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                  RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.success.opacity(0.1))
+                )
+            } else {
+              Text("Inactive")
+                .font(.appLabelSmall)
+                .foregroundColor(.text02)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                  RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.text02.opacity(0.1))
+                )
+            }
+          }
 
           Text("View progress for this habit")
             .font(.appBodySmall)
@@ -825,6 +850,16 @@ struct ProgressTabView: View {
               : Color.outline3.opacity(0.3),
             lineWidth: 1))
     }
+  }
+  
+  /// Check if a habit is currently active
+  private func isHabitActive(_ habit: Habit) -> Bool {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let startDate = calendar.startOfDay(for: habit.startDate)
+    let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
+    
+    return today >= startDate && today <= endDate
   }
 
   private func habitIcon(for habit: Habit) -> some View {
