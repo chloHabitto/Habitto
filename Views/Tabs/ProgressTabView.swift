@@ -767,11 +767,30 @@ struct ProgressTabView: View {
   private var habitList: some View {
     ScrollView {
       LazyVStack(spacing: 12) {
-        ForEach(habits, id: \.id) { habit in
+        ForEach(sortedHabits, id: \.id) { habit in
           habitOption(habit: habit)
         }
       }
       .padding(.horizontal, 20)
+    }
+  }
+  
+  /// Habits sorted with active habits first, then inactive habits
+  private var sortedHabits: [Habit] {
+    habits.sorted { habit1, habit2 in
+      let habit1Active = isHabitActive(habit1)
+      let habit2Active = isHabitActive(habit2)
+      
+      // Active habits come first
+      if habit1Active && !habit2Active {
+        return true
+      }
+      if !habit1Active && habit2Active {
+        return false
+      }
+      
+      // If both have the same status, sort alphabetically by name
+      return habit1.name < habit2.name
     }
   }
 
