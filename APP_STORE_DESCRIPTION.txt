@@ -1,0 +1,103 @@
+Transform your life one habit at a time with Habitto—the comprehensive habit tracking app that helps you build positive habits and break negative ones through gamification, smart scheduling, and beautiful design.
+
+
+
+🎯 BUILD GOOD HABITS & BREAK BAD ONES
+
+Whether you want to exercise more, meditate daily, read regularly, or reduce screen time, Habitto supports both habit formation and habit breaking. Track your progress with flexible goal types—time-based, count-based, or simple completion.
+
+
+
+📅 FLEXIBLE SCHEDULING THAT FITS YOUR LIFE
+
+• Daily habits
+
+• Weekdays or weekends only
+
+• Specific days of the week
+
+• Frequency-based (e.g., "3 times per week")
+
+• Monthly goals (e.g., "5 days a month")
+
+• Custom intervals (e.g., "Every 3 days")
+
+
+
+🎮 GAMIFICATION THAT KEEPS YOU MOTIVATED
+
+Earn Experience Points (XP) for completing your habits, level up as you progress, and maintain streaks to build consistency. Celebrate your wins with beautiful animations when you complete all habits for the day.
+
+
+
+🔥 STREAKS & PROGRESS TRACKING
+
+• Automatic streak calculation
+
+• Best streak tracking
+
+• Vacation mode—take breaks without losing your streak
+
+• Historical progress visualization
+
+• Difficulty rating after completion
+
+
+
+🔔 SMART REMINDERS
+
+Set custom notifications for each habit so you never miss a day. Reminders adapt to your schedule and respect your vacation mode.
+
+
+
+📊 BEAUTIFUL STATISTICS
+
+View your progress at a glance with comprehensive stats:
+
+• Daily completion rates
+
+• Weekly and monthly overviews
+
+• Streak history
+
+• XP and level progression
+
+• Habit performance insights
+
+
+
+✨ KEY FEATURES
+
+• Dual habit types—build good habits or break bad ones
+
+• Flexible scheduling options for any routine
+
+• XP and leveling system for motivation
+
+• Streak tracking with vacation mode
+
+• Smart notifications and reminders
+
+• Beautiful, modern SwiftUI design
+
+• Offline-capable—no internet required
+
+• Guest mode or account sync
+
+• Data persistence—never lose your progress
+
+• Calendar view for easy date navigation
+
+• Swipe actions for quick editing
+
+• Difficulty rating system
+
+
+
+🚀 CONTINUOUS IMPROVEMENT
+
+We're committed to making Habitto better every day. We listen to your feedback and regularly release updates with new features, improvements, and bug fixes. Your journey to better habits is our priority, and we'll keep evolving the app to support you every step of the way.
+
+
+
+Download Habitto today and start your journey toward a better you.
