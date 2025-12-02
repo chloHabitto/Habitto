@@ -171,8 +171,8 @@ struct AccountDeletionConfirmationView: View {
     } message: {
       Text(deletionService.deletionError ?? "An unknown error occurred")
     }
-    .onChange(of: deletionService.deletionError) { error in
-      showingErrorAlert = error != nil
+    .onChange(of: deletionService.deletionError) { _, newValue in
+      showingErrorAlert = newValue != nil
     }
     .alert("Account Deleted Successfully", isPresented: $deletionSuccessful) {
       Button("OK") {
