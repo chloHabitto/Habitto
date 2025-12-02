@@ -29,7 +29,11 @@ struct SubscriptionView: View {
             
             // Review carousel
             reviewCarousel
-              .padding(.bottom, 100) // Space for button
+              .padding(.bottom, 32)
+            
+            // Legal links (Privacy Policy and Terms of Use)
+            mainLegalLinks
+              .padding(.bottom, 40)
             
             // Benefits list (commented out for future use)
             // benefitsList
@@ -62,6 +66,9 @@ struct SubscriptionView: View {
       }
       .sheet(isPresented: $showingSubscriptionOptions) {
         subscriptionOptionsSheet
+      }
+      .sheet(isPresented: $showingTermsConditions) {
+        TermsConditionsView()
       }
       .alert("Restore Purchase", isPresented: $showingRestoreAlert) {
         Button("OK", role: .cancel) {
@@ -130,6 +137,7 @@ struct SubscriptionView: View {
   @State private var isPurchasing = false
   @State private var purchaseMessage: String?
   @State private var showingPurchaseAlert = false
+  @State private var showingTermsConditions = false
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   
   private let reviews: [Review] = [
@@ -279,6 +287,9 @@ struct SubscriptionView: View {
               .clipShape(Circle())
             
             subscriptionOptions
+            
+            // Privacy Policy and Terms of Use links
+            legalLinks
           }
           .padding(.horizontal, 20)
           .padding(.top, 20)
@@ -324,6 +335,7 @@ struct SubscriptionView: View {
         option: .lifetime,
         emoji: "",
         title: "Lifetime Access",
+        length: "Lifetime",
         price: "€24.99",
         badge: "Popular",
         showBadge: true,
@@ -335,6 +347,7 @@ struct SubscriptionView: View {
         option: .annual,
         emoji: "",
         title: "Annual",
+        length: "1 year",
         price: "€12.99/year",
         originalPrice: "€23.88",
         badge: "50% off",
@@ -347,6 +360,7 @@ struct SubscriptionView: View {
         option: .monthly,
         emoji: "",
         title: "Monthly",
+        length: "1 month",
         price: "€1.99/month",
         badge: nil,
         showBadge: false,
@@ -359,6 +373,7 @@ struct SubscriptionView: View {
     option: SubscriptionOption,
     emoji: String,
     title: String,
+    length: String,
     price: String,
     originalPrice: String? = nil,
     badge: String?,
@@ -390,6 +405,10 @@ struct SubscriptionView: View {
           Text(title)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(.text02)
+          
+          Text(length)
+            .font(.appBodySmall)
+            .foregroundColor(.text03)
           
           HStack(spacing: 8) {
             if showCrossedPrice, let originalPrice = originalPrice {
@@ -597,6 +616,83 @@ struct SubscriptionView: View {
         await restorePurchases()
       }
     }
+  }
+  
+  // MARK: - Legal Links
+  
+  private var legalLinks: some View {
+    VStack(spacing: 12) {
+      // Terms of Use (EULA) link
+      Button(action: {
+        showingTermsConditions = true
+      }) {
+        HStack {
+          Text("Terms of Use (EULA)")
+            .font(.appBodySmall)
+            .foregroundColor(.primary)
+          
+          Spacer()
+          
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.text03)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(Color.surface)
+        .cornerRadius(12)
+      }
+      
+      // Privacy Policy link
+      Button(action: {
+        showingTermsConditions = true
+      }) {
+        HStack {
+          Text("Privacy Policy")
+            .font(.appBodySmall)
+            .foregroundColor(.primary)
+          
+          Spacer()
+          
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.text03)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(Color.surface)
+        .cornerRadius(12)
+      }
+    }
+  }
+  
+  private var mainLegalLinks: some View {
+    HStack(spacing: 20) {
+      // Terms of Use (EULA) link
+      Button(action: {
+        showingTermsConditions = true
+      }) {
+        Text("Terms of Use (EULA)")
+          .font(.appBodySmall)
+          .foregroundColor(.primary)
+          .underline()
+      }
+      
+      Text("•")
+        .font(.appBodySmall)
+        .foregroundColor(.text04)
+      
+      // Privacy Policy link
+      Button(action: {
+        showingTermsConditions = true
+      }) {
+        Text("Privacy Policy")
+          .font(.appBodySmall)
+          .foregroundColor(.primary)
+          .underline()
+      }
+    }
+    .frame(maxWidth: .infinity)
   }
   
   
