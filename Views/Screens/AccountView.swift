@@ -42,8 +42,9 @@ struct AccountView: View {
                 style: .fillDestructive,
                 content: .text("Delete Account"),
                 action: {
-                  showingDeleteAccountConfirmation = true
+                  showingDeleteAccountAlert = true
                 })
+                .disabled(isDeletingAccount)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
@@ -102,9 +103,6 @@ struct AccountView: View {
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
     }
-    .sheet(isPresented: $showingDeleteAccountConfirmation) {
-      AccountDeletionConfirmationView()
-    }
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) { }
       Button("Sign Out", role: .destructive) {
@@ -113,6 +111,31 @@ struct AccountView: View {
       }
     } message: {
       Text("Are you sure you want to sign out?")
+    }
+    .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
+      Button("Cancel", role: .cancel) { }
+      Button("Delete Account", role: .destructive) {
+        Task {
+          await performAccountDeletion()
+        }
+      }
+    } message: {
+      Text("Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
+    }
+    .alert("Deletion Error", isPresented: $showingDeletionError) {
+      Button("OK") {
+        deletionError = nil
+        showingDeletionError = false
+      }
+    } message: {
+      Text(deletionError ?? "An unknown error occurred")
+    }
+    .alert("Account Deleted", isPresented: $showingDeletionSuccess) {
+      Button("OK") {
+        dismiss()
+      }
+    } message: {
+      Text("Your account has been deleted successfully. You have been signed out.")
     }
   }
 
@@ -123,7 +146,13 @@ struct AccountView: View {
   // State variables for showing different screens
   @State private var showingDataPrivacy = false
   @State private var showingSignOutAlert = false
-  @State private var showingDeleteAccountConfirmation = false
+  @State private var showingDeleteAccountAlert = false
+  @State private var isDeletingAccount = false
+  @State private var deletionError: String?
+  @State private var showingDeletionError = false
+  @State private var showingDeletionSuccess = false
+  
+  @StateObject private var deletionService = AccountDeletionService()
 
   // Signed in status section
   private var signedInStatusSection: some View {
@@ -168,6 +197,46 @@ struct AccountView: View {
          .error,
          .unauthenticated:
       return false
+    }
+  }
+  
+  private func performAccountDeletion() async {
+    isDeletingAccount = true
+    deletionError = nil
+    
+    // Check if re-authentication is needed
+    let isAuthFresh = await deletionService.checkAuthenticationFreshness()
+    if !isAuthFresh {
+      await MainActor.run {
+        deletionError = "Your authentication session has expired. Please sign out and sign in again, then try deleting your account."
+        showingDeletionError = true
+        isDeletingAccount = false
+      }
+      return
+    }
+    
+    do {
+      try await deletionService.deleteAccount()
+      
+      // Mark deletion as successful
+      await MainActor.run {
+        isDeletingAccount = false
+        showingDeletionSuccess = true
+      }
+      
+      // Sign out after successful deletion
+      await MainActor.run {
+        authManager.signOut()
+      }
+      
+    } catch {
+      print("❌ AccountView: Account deletion failed: \(error)")
+      
+      await MainActor.run {
+        deletionError = error.localizedDescription
+        showingDeletionError = true
+        isDeletingAccount = false
+      }
     }
   }
 }

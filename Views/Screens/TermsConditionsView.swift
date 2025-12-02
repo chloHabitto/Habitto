@@ -53,8 +53,12 @@ struct TermsConditionsView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
-  @State private var selectedTab = 0
+  @State private var selectedTab: Int
   @State private var expandedSections: Set<String> = []
+  
+  init(initialTab: Int = 0) {
+    _selectedTab = State(initialValue: initialTab)
+  }
 
   /// Terms & Conditions data
   private let termsData = [

@@ -189,7 +189,28 @@ final class HabitData {
     }
     let habitRecordsDescriptor = FetchDescriptor<CompletionRecord>(predicate: habitRecordsPredicate)
     let existingRecords = (try? context.fetch(habitRecordsDescriptor)) ?? []
-    let existingRecordsByDate = Dictionary(uniqueKeysWithValues: existingRecords.map { ($0.dateKey, $0) })
+    
+    // ✅ FIX: Handle duplicate dateKeys by keeping the most recent record
+    // Dictionary(uniqueKeysWithValues:) crashes if there are duplicate keys
+    var duplicateCount = 0
+    let existingRecordsByDate: [String: CompletionRecord] = existingRecords
+      .reduce(into: [String: CompletionRecord]()) { acc, record in
+        let key = record.dateKey
+        if let existing = acc[key] {
+          // Keep the most recent record if duplicates exist
+          duplicateCount += 1
+          if record.createdAt > existing.createdAt {
+            acc[key] = record
+          }
+        } else {
+          acc[key] = record
+        }
+      }
+    
+    // Log warning if duplicates were found
+    if duplicateCount > 0 {
+      print("⚠️ syncCompletionRecordsFromHabit: Found \(duplicateCount) duplicate dateKey(s) for habit '\(habit.name)' - kept most recent records")
+    }
     
     var parsedEntries: [(date: Date, dateKey: String, progress: Int, isCompleted: Bool)] = []
     for (dateString, progress) in habit.completionHistory {

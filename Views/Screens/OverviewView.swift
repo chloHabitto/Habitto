@@ -23,7 +23,9 @@ struct OverviewView: View {
 
   private var userHabits: [Habit] {
     let habits = homeViewState.habits
+    #if DEBUG
     print("🔍 OVERVIEW VIEW: userHabits computed property called - count: \(habits.count)")
+    #endif
     return habits
   }
 
@@ -97,22 +99,28 @@ struct OverviewView: View {
     .onReceive(NotificationCenter.default
       .publisher(for: NSNotification.Name("HabitProgressUpdated")))
     { _ in
+      #if DEBUG
       print(
         "🔍 OVERVIEW VIEW DEBUG - Received HabitProgressUpdated notification via onReceive, refreshing data...")
+      #endif
       // Force refresh the data when habit progress changes
       isDataLoaded = false
       loadData()
     }
     .onChange(of: userHabits) { oldHabits, newHabits in
+      #if DEBUG
       print(
         "🔍 OVERVIEW VIEW DEBUG - userHabits changed - Old count: \(oldHabits.count), New count: \(newHabits.count)")
+      #endif
       // Force refresh when habits change
       isDataLoaded = false
       loadData()
     }
     .onChange(of: selectedYear) { oldYear, newYear in
+      #if DEBUG
       print(
         "🔍 OVERVIEW VIEW DEBUG - selectedYear changed - Old year: \(oldYear), New year: \(newYear)")
+      #endif
       // Force refresh yearly data when year changes
       if selectedProgressTab == 2 {
         isDataLoaded = false
@@ -153,6 +161,7 @@ struct OverviewView: View {
   private func loadData() {
     guard !isDataLoaded else { return }
 
+    #if DEBUG
     print("🔍 OVERVIEW VIEW DEBUG - loadData() called with isDataLoaded: \(isDataLoaded)")
 
     // Debug: Print current habit data for troubleshooting
@@ -163,6 +172,7 @@ struct OverviewView: View {
       print(
         "🔍 OVERVIEW VIEW DEBUG - Habit: '\(habit.name)' | Schedule: '\(habit.schedule)' | StartDate: \(DateUtils.dateKey(for: habit.startDate)) | Today(\(todayKey)) Progress: \(todayProgress) | CompletionHistory keys: \(habit.completionHistory.keys.sorted())")
     }
+    #endif
 
     // ✅ FIX: Load streak statistics from GlobalStreakModel instead of old calculator
     loadStreakStatistics()
@@ -188,7 +198,9 @@ struct OverviewView: View {
           userId = "" // Only use empty string if no Firebase Auth user exists
         }
         
+        #if DEBUG
         print("🔍 OVERVIEW_STREAK: Fetching streak for userId: '\(userId)' (isEmpty: \(userId.isEmpty))")
+        #endif
         
         var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
@@ -207,8 +219,10 @@ struct OverviewView: View {
             totalCompletionDays: streak.totalCompleteDays
           )
           averageStreak = streak.averageStreak
+          #if DEBUG
           print("✅ OVERVIEW_STREAK: Loaded from GlobalStreakModel - current: \(streak.currentStreak), longest: \(streak.longestStreak), average: \(streak.averageStreak), total: \(streak.totalCompleteDays)")
           print("📊 OVERVIEW_STREAK: Streak history: \(streak.streakHistory)")
+          #endif
         } else {
           streakStatistics = StreakStatistics(
             currentStreak: 0,
@@ -216,10 +230,14 @@ struct OverviewView: View {
             totalCompletionDays: 0
           )
           averageStreak = 0
+          #if DEBUG
           print("ℹ️ OVERVIEW_STREAK: No GlobalStreakModel found for userId: '\(userId)' (isEmpty: \(userId.isEmpty))")
+          #endif
         }
       } catch {
+        #if DEBUG
         print("❌ OVERVIEW_STREAK: Failed to load: \(error)")
+        #endif
         streakStatistics = StreakStatistics(
           currentStreak: 0,
           longestStreak: 0,
@@ -238,8 +256,10 @@ struct OverviewView: View {
       object: nil,
       queue: .main)
     { _ in
+      #if DEBUG
       print(
         "🔍 OVERVIEW VIEW DEBUG - Received HabitProgressUpdated notification, refreshing data...")
+      #endif
       // Force refresh the data when habit progress changes
       isDataLoaded = false
       loadData()
@@ -251,7 +271,9 @@ struct OverviewView: View {
       object: nil,
       queue: .main)
     { _ in
+      #if DEBUG
       print("📢 OVERVIEW_STREAK: Received StreakUpdated notification, refreshing streak statistics...")
+      #endif
       // Reload streak statistics immediately
       loadStreakStatistics()
     }
@@ -283,11 +305,13 @@ struct OverviewView: View {
         isLoadingProgress = 0.0
 
         // Debug: Print data structure
+        #if DEBUG
         print(
           "🔍 YEARLY DATA LOADED - Habits: \(userHabits.count), Data arrays: \(yearlyData.count)")
         for (index, habitData) in yearlyData.enumerated() {
           print("🔍 YEARLY DATA DEBUG - Habit \(index): \(habitData.count) days")
         }
+        #endif
       }
     }
   }
