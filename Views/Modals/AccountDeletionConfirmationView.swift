@@ -163,12 +163,16 @@ struct AccountDeletionConfirmationView: View {
       Text(
         "Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
     }
-    .alert("Deletion Error", isPresented: .constant(deletionService.deletionError != nil)) {
+    .alert("Deletion Error", isPresented: $showingErrorAlert) {
       Button("OK") {
         deletionService.deletionError = nil
+        showingErrorAlert = false
       }
     } message: {
       Text(deletionService.deletionError ?? "An unknown error occurred")
+    }
+    .onChange(of: deletionService.deletionError) { error in
+      showingErrorAlert = error != nil
     }
     .alert("Account Deleted Successfully", isPresented: $deletionSuccessful) {
       Button("OK") {
@@ -191,8 +195,15 @@ struct AccountDeletionConfirmationView: View {
   @State private var showingFinalConfirmation = false
   @State private var isDeleting = false
   @State private var deletionSuccessful = false
+  @State private var showingErrorAlert = false
 
   private func performAccountDeletion() async {
+    // Clear any previous errors
+    DispatchQueue.main.async {
+      deletionService.deletionError = nil
+      showingErrorAlert = false
+    }
+    
     isDeleting = true
 
     // Check if re-authentication is needed
