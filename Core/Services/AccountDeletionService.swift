@@ -215,30 +215,26 @@ final class AccountDeletionService: ObservableObject {
     print("✅ AccountDeletionService: App data cleared")
   }
 
-  // DISABLED: Sign-in functionality commented out for future use
-  /*
   private func deleteFirebaseAccount() async throws {
     print("🗑️ AccountDeletionService: Deleting Firebase account")
 
-    return try await withCheckedThrowingContinuation { continuation in
-      authManager.deleteAccount { result in
-        switch result {
-        case .success:
-          print("✅ AccountDeletionService: Firebase account deleted")
-          continuation.resume()
-
-        case .failure(let error):
-          print("❌ AccountDeletionService: Failed to delete Firebase account: \(error)")
-          continuation.resume(throwing: error)
-        }
-      }
+    guard let currentUser = Auth.auth().currentUser else {
+      throw AccountDeletionError.noAuthenticatedUser
     }
-  }
-  */
-  
-  // Placeholder that throws an error since account deletion is disabled
-  private func deleteFirebaseAccount() async throws {
-    throw AccountDeletionError.deletionFailed("Account deletion is currently disabled")
+
+    do {
+      // Delete the Firebase account
+      try await currentUser.delete()
+      print("✅ AccountDeletionService: Firebase account deleted successfully")
+      
+      // Sign out after deletion
+      try Auth.auth().signOut()
+      print("✅ AccountDeletionService: User signed out after account deletion")
+      
+    } catch {
+      print("❌ AccountDeletionService: Failed to delete Firebase account: \(error)")
+      throw AccountDeletionError.deletionFailed(error.localizedDescription)
+    }
   }
 
   private func finalizeDeletion() async throws {

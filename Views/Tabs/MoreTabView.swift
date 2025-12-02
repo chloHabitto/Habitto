@@ -2,6 +2,7 @@ import StoreKit
 import SwiftUI
 import FirebaseFirestore
 import SwiftData
+import UIKit
 
 // MARK: - MoreTabView
 
@@ -85,9 +86,6 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingCustomRating) {
         CustomRatingView()
       }
-      .sheet(isPresented: $showingTermsConditions) {
-        TermsConditionsView()
-      }
       .sheet(isPresented: $showingVacationMode) {
         VacationModeView()
       }
@@ -123,9 +121,6 @@ struct MoreTabView: View {
       }
       .sheet(isPresented: $showingFAQView) {
         FAQView()
-      }
-      .sheet(isPresented: $showingTermsConditionsView) {
-        TermsConditionsView()
       }
       .sheet(isPresented: $showingAboutUsView) {
         AboutUsView()
@@ -167,11 +162,11 @@ struct MoreTabView: View {
         // Check iCloud status when view appears
         await icloudStatus.checkStatus()
       }
+      #if DEBUG
       .onAppear {
         // 🔍 DEBUG: Log XP when tab appears
         print("🟣 MoreTabView.onAppear | XP: \(xpManager.totalXP) | Level: \(xpManager.currentLevel) | instance: \(ObjectIdentifier(xpManager))")
       }
-      #if DEBUG
       .onChange(of: subscriptionManager.isPremium) { oldValue, newValue in
         if newValue {
           print("🔍 MoreTabView: Hiding free banner - isPremium changed from \(oldValue) to \(newValue)")
@@ -195,7 +190,6 @@ struct MoreTabView: View {
   @State private var showDebugTools = false
   #endif
   @State private var showingCustomRating = false
-  @State private var showingTermsConditions = false
   @State private var showingVacationMode = false
   @State private var showingSecurity = false
   @State private var showingDataPrivacy = false
@@ -208,7 +202,6 @@ struct MoreTabView: View {
   @State private var showingAccountView = false
   @State private var showingPreferencesView = false
   @State private var showingFAQView = false
-  @State private var showingTermsConditionsView = false
   @State private var showingAboutUsView = false
   @State private var showingSignOutAlert = false
   @State private var showingMigrationStatus = false
@@ -338,8 +331,11 @@ struct MoreTabView: View {
           SettingItem(title: "Rate Us", value: nil, hasChevron: true, action: {
             showingCustomRating = true
           }),
-          SettingItem(title: "Terms & Conditions", value: nil, hasChevron: true, action: {
-            showingTermsConditions = true
+          SettingItem(title: "Privacy Policy", value: nil, hasChevron: true, action: {
+            openPrivacyPolicy()
+          }),
+          SettingItem(title: "Terms of Use", value: nil, hasChevron: true, action: {
+            openTermsOfUse()
           })
         ])
       
@@ -729,7 +725,9 @@ struct MoreTabView: View {
       "Icon-Letter_Filled"
     case "Rate Us":
       "Icon-Hearts_Filled"
-    case "Terms & Conditions":
+    case "Privacy Policy":
+      "Icon-DocumentText_Filled"
+    case "Terms of Use":
       "Icon-DocumentText_Filled"
     case "About us":
       "Icon-ChatRoundLike_Filled"
@@ -759,6 +757,44 @@ struct MoreTabView: View {
 
   private func requestAppRating() {
     AppRatingManager.shared.requestRating()
+  }
+  
+  // MARK: - Legal Links
+  
+  /// Open Privacy Policy in Safari
+  private func openPrivacyPolicy() {
+    let privacyURL = "https://habittoapp.netlify.app/privacy"
+    
+    guard let url = URL(string: privacyURL) else {
+      print("❌ MoreTabView: Failed to create Privacy Policy URL")
+      return
+    }
+    
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ MoreTabView: Opened Privacy Policy")
+      } else {
+        print("❌ MoreTabView: Failed to open Privacy Policy URL")
+      }
+    }
+  }
+  
+  /// Open Apple's standard Terms of Use (EULA) in Safari
+  private func openTermsOfUse() {
+    let eulaURL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+    
+    guard let url = URL(string: eulaURL) else {
+      print("❌ MoreTabView: Failed to create Terms of Use URL")
+      return
+    }
+    
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ MoreTabView: Opened Apple's standard Terms of Use")
+      } else {
+        print("❌ MoreTabView: Failed to open Terms of Use URL")
+      }
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 // MARK: - SubscriptionView
 
@@ -33,6 +34,10 @@ struct SubscriptionView: View {
             
             // Legal links (Privacy Policy and Terms of Use)
             mainLegalLinks
+              .padding(.bottom, 16)
+            
+            // Subscription terms
+            subscriptionTerms
               .padding(.bottom, 40)
             
             // Benefits list (commented out for future use)
@@ -40,6 +45,7 @@ struct SubscriptionView: View {
             //   .padding(.bottom, 32)
           }
           .padding(.horizontal, 20)
+          .padding(.bottom, 120) // Padding to prevent content from being covered by bottom buttons
         }
         
         // Call-to-action buttons at bottom
@@ -48,7 +54,28 @@ struct SubscriptionView: View {
           restorePurchaseButton
         }
         .padding(.horizontal, 20)
+        .padding(.top, 8)
         .padding(.bottom, 8)
+        .background(
+          VStack(spacing: 0) {
+            // Gradient background starting from top (80pt total, including 16pt top padding)
+            LinearGradient(
+              gradient: Gradient(colors: [
+                Color.surface2.opacity(0),
+                Color.surface2.opacity(0.8)
+              ]),
+              startPoint: .top,
+              endPoint: .bottom
+            )
+            .frame(height: 80)
+            
+            // Solid background extending to bottom
+            Color.surface2.opacity(0.8)
+          }
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+          .padding(.top, 16)
+          .ignoresSafeArea(.container, edges: .bottom)
+        )
       }
       .navigationTitle("")
       .navigationBarTitleDisplayMode(.inline)
@@ -68,7 +95,7 @@ struct SubscriptionView: View {
         subscriptionOptionsSheet
       }
       .sheet(isPresented: $showingTermsConditions) {
-        TermsConditionsView()
+        TermsConditionsView(initialTab: selectedLegalTab)
       }
       .alert("Restore Purchase", isPresented: $showingRestoreAlert) {
         Button("OK", role: .cancel) {
@@ -138,6 +165,7 @@ struct SubscriptionView: View {
   @State private var purchaseMessage: String?
   @State private var showingPurchaseAlert = false
   @State private var showingTermsConditions = false
+  @State private var selectedLegalTab: Int = 0 // 0 = Terms, 1 = Privacy Policy
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   
   private let reviews: [Review] = [
@@ -289,7 +317,12 @@ struct SubscriptionView: View {
             subscriptionOptions
             
             // Privacy Policy and Terms of Use links
-            legalLinks
+            mainLegalLinks
+              .padding(.top, 8)
+            
+            // Subscription terms
+            subscriptionTerms
+              .padding(.top, 16)
           }
           .padding(.horizontal, 20)
           .padding(.top, 20)
@@ -622,12 +655,12 @@ struct SubscriptionView: View {
   
   private var legalLinks: some View {
     VStack(spacing: 12) {
-      // Terms of Use (EULA) link
+      // Terms of Use link (Apple's standard EULA)
       Button(action: {
-        showingTermsConditions = true
+        openAppleStandardEULA()
       }) {
         HStack {
-          Text("Terms of Use (EULA)")
+          Text("Terms of Use")
             .font(.appBodySmall)
             .foregroundColor(.primary)
           
@@ -645,7 +678,7 @@ struct SubscriptionView: View {
       
       // Privacy Policy link
       Button(action: {
-        showingTermsConditions = true
+        openPrivacyPolicy()
       }) {
         HStack {
           Text("Privacy Policy")
@@ -668,11 +701,11 @@ struct SubscriptionView: View {
   
   private var mainLegalLinks: some View {
     HStack(spacing: 20) {
-      // Terms of Use (EULA) link
+      // Terms of Use link (Apple's standard EULA)
       Button(action: {
-        showingTermsConditions = true
+        openAppleStandardEULA()
       }) {
-        Text("Terms of Use (EULA)")
+        Text("Terms of Use")
           .font(.appBodySmall)
           .foregroundColor(.primary)
           .underline()
@@ -684,7 +717,7 @@ struct SubscriptionView: View {
       
       // Privacy Policy link
       Button(action: {
-        showingTermsConditions = true
+        openPrivacyPolicy()
       }) {
         Text("Privacy Policy")
           .font(.appBodySmall)
@@ -695,6 +728,65 @@ struct SubscriptionView: View {
     .frame(maxWidth: .infinity)
   }
   
+  private var subscriptionTerms: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("- Payment will be charged to your Apple ID account at confirmation of purchase")
+        .font(.appBodySmall)
+        .foregroundColor(.text02)
+      
+      Text("- Subscription automatically renews unless canceled at least 24 hours before the end of the current period")
+        .font(.appBodySmall)
+        .foregroundColor(.text02)
+      
+      Text("- Your account will be charged for renewal within 24 hours prior to the end of the current period")
+        .font(.appBodySmall)
+        .foregroundColor(.text02)
+      
+      Text("- You can manage and cancel your subscriptions by going to your App Store account settings after purchase")
+        .font(.appBodySmall)
+        .foregroundColor(.text02)
+    }
+    .padding(16)
+    .background(Color.surface)
+    .cornerRadius(12)
+  }
+  
+  /// Open Privacy Policy in Safari
+  private func openPrivacyPolicy() {
+    let privacyURL = "https://habittoapp.netlify.app/privacy"
+    
+    guard let url = URL(string: privacyURL) else {
+      print("❌ SubscriptionView: Failed to create Privacy Policy URL")
+      return
+    }
+    
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ SubscriptionView: Opened Privacy Policy")
+      } else {
+        print("❌ SubscriptionView: Failed to open Privacy Policy URL")
+      }
+    }
+  }
+  
+  /// Open Apple's standard Terms of Use (EULA) in Safari
+  private func openAppleStandardEULA() {
+    // Apple's standard EULA URL
+    let eulaURL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+    
+    guard let url = URL(string: eulaURL) else {
+      print("❌ SubscriptionView: Failed to create EULA URL")
+      return
+    }
+    
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ SubscriptionView: Opened Apple's standard EULA")
+      } else {
+        print("❌ SubscriptionView: Failed to open EULA URL")
+      }
+    }
+  }
   
   /// Purchase the selected subscription
   private func purchaseSubscription() async {

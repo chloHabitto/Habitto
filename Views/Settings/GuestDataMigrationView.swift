@@ -7,153 +7,177 @@ struct GuestDataMigrationView: View {
   // MARK: - Body
 
   var body: some View {
-    VStack(spacing: 20) {
-      // Header
-      VStack(spacing: 8) {
-        Image(systemName: "person.badge.plus")
-          .font(.system(size: 50))
-          .foregroundColor(.blue)
-
-        Text("Welcome to Your Account!")
-          .font(.title2)
-          .fontWeight(.bold)
-
-        Text("We found some data you created while using the app. Would you like to keep it?")
-          .font(.body)
-          .foregroundColor(.secondary)
-          .multilineTextAlignment(.center)
-      }
-      .padding(.top, 20)
-
-      // Multi-Device Warning Banner
-      if migrationManager.hasGuestData() {
-        HStack(alignment: .top, spacing: 12) {
-          Image(systemName: "exclamationmark.triangle.fill")
-            .foregroundColor(.orange)
-            .font(.title3)
-
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Important: Single Device Only")
-              .font(.headline)
-              .foregroundColor(.primary)
-
-            Text(
-              "Guest mode data is stored only on this device. If you've used Habitto on multiple devices, only this device's data will be migrated to your new account.")
-              .font(.caption)
-              .foregroundColor(.secondary)
-              .fixedSize(horizontal: false, vertical: true)
-          }
-        }
-        .padding()
-        .background(Color.orange.opacity(0.1))
-        .cornerRadius(12)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(Color.orange.opacity(0.3), lineWidth: 1))
-      }
-
-      // Migration Preview
-      if migrationManager.hasGuestData() {
+    ScrollView {
+      VStack(spacing: 24) {
+        // Header
         VStack(spacing: 16) {
-          // Data Summary
-          VStack(spacing: 12) {
-            HStack {
-              Image(systemName: "list.bullet")
-                .foregroundColor(.blue)
-              Text("Habits Created")
-              Spacer()
-              Text("\(migrationManager.getGuestDataPreview()?.habitCount ?? 0)")
-                .fontWeight(.semibold)
-            }
+          Image(systemName: "person.badge.plus")
+            .font(.system(size: 64))
+            .foregroundColor(.primary)
 
-            HStack {
-              Image(systemName: "clock.arrow.circlepath")
-                .foregroundColor(.green)
-              Text("Backups Available")
-              Spacer()
-              Text("\(migrationManager.getGuestDataPreview()?.backupCount ?? 0)")
-                .fontWeight(.semibold)
-            }
-          }
-          .padding()
-          .background(Color(.systemGray6))
-          .cornerRadius(12)
-
-          // Action Buttons
-          VStack(spacing: 12) {
-            // Keep Data Button
-            Button(action: {
-              showingMultiDeviceWarning = true
-            }) {
-              HStack {
-                Image(systemName: "checkmark.circle.fill")
-                Text("Keep My Data")
-              }
-              .frame(maxWidth: .infinity)
-              .padding()
-              .background(Color.blue)
-              .foregroundColor(.white)
-              .cornerRadius(12)
-            }
-            .disabled(migrationManager.isMigrating)
-
-            // Start Fresh Button
-            Button(action: {
-              Task {
-                await startFresh()
-              }
-            }) {
-              HStack {
-                Image(systemName: "trash.circle")
-                Text("Start Fresh")
-              }
-              .frame(maxWidth: .infinity)
-              .padding()
-              .background(Color(.systemGray5))
-              .foregroundColor(.primary)
-              .cornerRadius(12)
-            }
-            .disabled(migrationManager.isMigrating)
-          }
-        }
-      } else {
-        // No guest data found
-        VStack(spacing: 16) {
-          Image(systemName: "checkmark.circle.fill")
-            .font(.system(size: 40))
-            .foregroundColor(.green)
-
-          Text("No Data Found")
-            .font(.headline)
-
-          Text("You can start creating habits right away!")
-            .font(.body)
-            .foregroundColor(.secondary)
+          Text("Welcome to Your Account!")
+            .font(.appHeadlineMediumEmphasised)
+            .foregroundColor(.text01)
             .multilineTextAlignment(.center)
+
+          Text("We found some data you created while using the app. Would you like to keep it?")
+            .font(.appBodyMedium)
+            .foregroundColor(.text03)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-      }
+        .padding(.top, 40)
 
-      // Migration Progress
-      if migrationManager.isMigrating {
-        VStack(spacing: 12) {
-          ProgressView(value: migrationManager.migrationProgress)
-            .progressViewStyle(LinearProgressViewStyle())
+        // Multi-Device Warning Banner
+        if migrationManager.hasGuestData() {
+          HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+              .foregroundColor(.warning)
+              .font(.system(size: 20))
+              .frame(width: 24)
 
-          Text(migrationManager.migrationStatus)
-            .font(.caption)
-            .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Important: Single Device Only")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.text01)
+
+              Text(
+                "Guest mode data is stored only on this device. If you've used Habitto on multiple devices, only this device's data will be migrated to your new account.")
+                .font(.appBodySmall)
+                .foregroundColor(.text03)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+          .padding(16)
+          .background(Color.errorBackground)
+          .cornerRadius(16)
+          .overlay(
+            RoundedRectangle(cornerRadius: 16)
+              .stroke(Color.warning.opacity(0.3), lineWidth: 1))
+          .padding(.horizontal, 20)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-      }
 
-      Spacer()
+        // Migration Preview
+        if migrationManager.hasGuestData() {
+          VStack(spacing: 20) {
+            // Data Summary Card
+            VStack(spacing: 16) {
+              HStack(spacing: 12) {
+                Image(systemName: "list.bullet")
+                  .font(.system(size: 20))
+                  .foregroundColor(.primary)
+                  .frame(width: 24)
+                
+                Text("Habits Created")
+                  .font(.appBodyLarge)
+                  .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Text("\(migrationManager.getGuestDataPreview()?.habitCount ?? 0)")
+                  .font(.appBodyLargeEmphasised)
+                  .foregroundColor(.text01)
+              }
+
+              Divider()
+                .background(Color.outline2)
+
+              HStack(spacing: 12) {
+                Image(systemName: "clock.arrow.circlepath")
+                  .font(.system(size: 20))
+                  .foregroundColor(.success)
+                  .frame(width: 24)
+                
+                Text("Backups Available")
+                  .font(.appBodyLarge)
+                  .foregroundColor(.text01)
+                
+                Spacer()
+                
+                Text("\(migrationManager.getGuestDataPreview()?.backupCount ?? 0)")
+                  .font(.appBodyLargeEmphasised)
+                  .foregroundColor(.text01)
+              }
+            }
+            .padding(20)
+            .background(Color.surface)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+            .padding(.horizontal, 20)
+
+            // Action Buttons
+            VStack(spacing: 12) {
+              // Keep Data Button
+              HabittoButton(
+                size: .large,
+                style: .fillPrimary,
+                content: .text("Keep My Data"),
+                state: migrationManager.isMigrating ? .disabled : .default,
+                action: {
+                  showingMultiDeviceWarning = true
+                })
+                .padding(.horizontal, 20)
+
+              // Start Fresh Button
+              HabittoButton(
+                size: .large,
+                style: .fillNeutral,
+                content: .text("Start Fresh"),
+                state: migrationManager.isMigrating ? .disabled : .default,
+                action: {
+                  Task {
+                    await startFresh()
+                  }
+                })
+                .padding(.horizontal, 20)
+            }
+          }
+        } else {
+          // No guest data found
+          VStack(spacing: 16) {
+            Image(systemName: "checkmark.circle.fill")
+              .font(.system(size: 48))
+              .foregroundColor(.success)
+
+            Text("No Data Found")
+              .font(.appTitleLargeEmphasised)
+              .foregroundColor(.text01)
+
+            Text("You can start creating habits right away!")
+              .font(.appBodyMedium)
+              .foregroundColor(.text03)
+              .multilineTextAlignment(.center)
+          }
+          .padding(24)
+          .background(Color.surface)
+          .cornerRadius(16)
+          .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+          .padding(.horizontal, 20)
+        }
+
+        // Migration Progress
+        if migrationManager.isMigrating {
+          VStack(spacing: 12) {
+            ProgressView(value: migrationManager.migrationProgress)
+              .progressViewStyle(LinearProgressViewStyle())
+              .tint(.primary)
+
+            Text(migrationManager.migrationStatus)
+              .font(.appBodySmall)
+              .foregroundColor(.text03)
+          }
+          .padding(20)
+          .background(Color.surface)
+          .cornerRadius(16)
+          .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+          .padding(.horizontal, 20)
+        }
+
+        Spacer(minLength: 40)
+      }
+      .padding(.bottom, 20)
     }
-    .padding()
+    .background(Color.surface2)
     .navigationTitle("Data Migration")
     .navigationBarTitleDisplayMode(.inline)
     .alert("Migration Error", isPresented: $showingError) {
