@@ -106,7 +106,10 @@ enum StreakCalculator {
     completionRecords: [CompletionRecord],
     calendar: Calendar = .current
   ) -> Int {
-    guard !habits.isEmpty else { return 0 }
+    guard !habits.isEmpty else {
+      print("📊 LONGEST_STREAK: No habits provided, returning 0")
+      return 0
+    }
     
     let today = DateUtils.startOfDay(for: Date())
     let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
@@ -115,9 +118,17 @@ enum StreakCalculator {
       .min() ?? defaultStartDate
     let startDate = max(defaultStartDate, earliestHabitStart)
     
+    print("📊 LONGEST_STREAK: Starting calculation")
+    print("   Habits count: \(habits.count)")
+    print("   CompletionRecords count: \(completionRecords.count)")
+    print("   Date range: \(Habit.dateKey(for: startDate)) to \(Habit.dateKey(for: today))")
+    
     var longestStreak = 0
     var currentStreak = 0
     var checkDate = startDate
+    var completedDates: [String] = []
+    var longestStreakStartDate: Date?
+    var longestStreakEndDate: Date?
     
     while checkDate <= today {
       let scheduledHabits = habits.filter {
@@ -137,12 +148,37 @@ enum StreakCalculator {
       
       if allComplete {
         currentStreak += 1
-        longestStreak = max(longestStreak, currentStreak)
+        let dateKey = Habit.dateKey(for: checkDate)
+        completedDates.append(dateKey)
+        
+        if currentStreak > longestStreak {
+          longestStreak = currentStreak
+          longestStreakEndDate = checkDate
+          longestStreakStartDate = calendar.date(byAdding: .day, value: -(currentStreak - 1), to: checkDate)
+          print("   ✅ NEW_LONGEST: Found streak of \(currentStreak) days ending on \(dateKey)")
+        }
       } else {
+        if currentStreak > 0 {
+          print("   ⏸️ STREAK_BROKEN: Streak of \(currentStreak) days ended on \(Habit.dateKey(for: calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate))")
+        }
         currentStreak = 0
       }
       
       checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
+    }
+    
+    print("📊 LONGEST_STREAK: Calculation complete")
+    print("   Total completed dates found: \(completedDates.count)")
+    print("   Longest consecutive sequence: \(longestStreak) days")
+    if longestStreak > 0, let start = longestStreakStartDate, let end = longestStreakEndDate {
+      print("   Longest streak period: \(Habit.dateKey(for: start)) to \(Habit.dateKey(for: end))")
+      if longestStreak <= 10 {
+        print("   Dates in longest streak: \(completedDates.suffix(longestStreak).joined(separator: ", "))")
+      } else {
+        let streakDates = completedDates.suffix(longestStreak)
+        print("   First 5 dates: \(streakDates.prefix(5).joined(separator: ", "))")
+        print("   Last 5 dates: \(streakDates.suffix(5).joined(separator: ", "))")
+      }
     }
     
     return longestStreak
