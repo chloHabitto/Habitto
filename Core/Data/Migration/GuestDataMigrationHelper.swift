@@ -129,6 +129,9 @@ final class GuestDataMigrationHelper {
           print("   Migrating \(records.count) records from userId '\(oldUserIdDisplay)'")
         }
         
+        // Store old userIds before migration for verification
+        let oldUserIdsBeforeMigration = Set(orphanedRecords.map { $0.userId })
+        
         for record in orphanedRecords {
           record.userId = userId
           record.userIdHabitIdDateKey = "\(userId)#\(record.habitId.uuidString)#\(record.dateKey)"
@@ -136,8 +139,19 @@ final class GuestDataMigrationHelper {
         }
         
         try modelContext.save()
+        
+        // Verify migration by checking that records now have new userId
+        let verifyDescriptor = FetchDescriptor<CompletionRecord>(
+          predicate: #Predicate<CompletionRecord> { record in
+            userHabitIds.contains(record.habitId) && record.userId == userId
+          }
+        )
+        let verifiedRecords = try modelContext.fetch(verifyDescriptor)
+        
         print("✅ [GUEST_MIGRATION] Migrated \(completionRecordsMigrated) completion records successfully")
-        logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records")
+        print("   ✅ Verification: \(verifiedRecords.count) records now have userId '\(userId.prefix(8))...'")
+        print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
+        logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records (verified: \(verifiedRecords.count))")
       } else {
         print("ℹ️ [GUEST_MIGRATION] No orphaned completion records found to migrate")
       }
@@ -163,6 +177,9 @@ final class GuestDataMigrationHelper {
           print("   Migrating \(awards.count) awards from userId '\(oldUserIdDisplay)' (Total XP: \(xp))")
         }
         
+        // Store old userIds before migration for verification
+        let oldUserIdsBeforeMigration = Set(orphanedAwards.map { $0.userId })
+        
         for award in orphanedAwards {
           award.userId = userId
           award.userIdDateKey = "\(userId)#\(award.dateKey)"
@@ -171,9 +188,22 @@ final class GuestDataMigrationHelper {
         }
         
         try modelContext.save()
+        
+        // Verify migration by checking that awards now have new userId
+        let verifyAwardsDescriptor = FetchDescriptor<DailyAward>(
+          predicate: #Predicate<DailyAward> { award in
+            award.userId == userId
+          }
+        )
+        let verifiedAwards = try modelContext.fetch(verifyAwardsDescriptor)
+        let verifiedXP = verifiedAwards.reduce(0) { $0 + $1.xpGranted }
+        
         print("✅ [GUEST_MIGRATION] Migrated \(dailyAwardsMigrated) daily awards successfully")
-        print("   Total XP from migrated awards: \(totalMigratedXP)")
-        logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP")
+        print("   ✅ Total XP migrated: \(totalMigratedXP)")
+        print("   ✅ Verification: \(verifiedAwards.count) awards now have userId '\(userId.prefix(8))...'")
+        print("   ✅ Verified total XP: \(verifiedXP)")
+        print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
+        logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP (verified: \(verifiedAwards.count) awards, \(verifiedXP) XP)")
       } else {
         print("ℹ️ [GUEST_MIGRATION] No orphaned daily awards found to migrate")
       }
@@ -226,6 +256,9 @@ final class GuestDataMigrationHelper {
             }
           }
           
+          // Store old values before migration for verification
+          let oldUserIdsBeforeMigration = Set(orphanedProgress.map { $0.userId })
+          
           // Update user progress with merged values
           userProgress.xpTotal = maxXP
           userProgress.level = maxLevel
@@ -233,9 +266,23 @@ final class GuestDataMigrationHelper {
           userProgress.userId = userId
           
           try modelContext.save()
+          
+          // Verify migration by checking that progress now has new userId
+          let verifyProgressDescriptor = FetchDescriptor<UserProgressData>(
+            predicate: #Predicate<UserProgressData> { progress in
+              progress.userId == userId
+            }
+          )
+          let verifiedProgress = try modelContext.fetch(verifyProgressDescriptor).first
+          
           print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
-          print("   Migrated XP: \(maxXP), Level: \(maxLevel), Streak: \(maxStreak)")
-          logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel))")
+          print("   ✅ Migrated XP: \(maxXP), Level: \(maxLevel), Streak: \(maxStreak)")
+          if let verified = verifiedProgress {
+            print("   ✅ Verification: UserProgressData now has userId '\(userId.prefix(8))...'")
+            print("   ✅ Verified XP: \(verified.xpTotal), Level: \(verified.level)")
+          }
+          print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
+          logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel)) - verified: \(verifiedProgress != nil)")
         }
       } else {
         print("ℹ️ [GUEST_MIGRATION] No orphaned user progress found to migrate")
