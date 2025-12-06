@@ -182,15 +182,97 @@ class SubscriptionManager: ObservableObject {
     
     // First verify StoreKit can fetch products (basic connectivity check)
     do {
-      print("🔍 Testing StoreKit connectivity...")
-      let testProducts = try await Product.products(for: ProductID.all)
-      print("✅ StoreKit connectivity OK - found \(testProducts.count) product(s)")
-      for product in testProducts {
-        print("   - \(product.id)")
+      print("🔍 ============================================")
+      print("🔍 STOREKIT PRODUCT FETCH - Detailed Logging")
+      print("🔍 ============================================")
+      print("🔍 Requesting product IDs:")
+      for (index, productID) in ProductID.all.enumerated() {
+        print("   \(index + 1). \(productID)")
       }
+      print("🔍 Total product IDs requested: \(ProductID.all.count)")
+      
+      // Detect environment
+      #if DEBUG
+      print("🔍 Environment: DEBUG (Sandbox)")
+      #else
+      print("🔍 Environment: RELEASE (Production)")
+      #endif
+      
+      print("🔍 Calling Product.products(for:)...")
+      let testProducts = try await Product.products(for: ProductID.all)
+      
+      print("🔍 ============================================")
+      print("🔍 STOREKIT RESPONSE RECEIVED")
+      print("🔍 ============================================")
+      print("✅ StoreKit connectivity OK")
+      print("📊 Products found: \(testProducts.count) / \(ProductID.all.count) requested")
+      
+      if testProducts.isEmpty {
+        print("⚠️ WARNING: StoreKit returned 0 products!")
+        print("⚠️ This may indicate:")
+        print("   1. StoreKit configuration file not loaded")
+        print("   2. Product IDs don't match App Store Connect")
+        print("   3. Network connectivity issues")
+        print("   4. StoreKit not ready yet")
+      } else {
+        print("📦 Product Details:")
+        for (index, product) in testProducts.enumerated() {
+          print("   Product #\(index + 1):")
+          print("      ID: \(product.id)")
+          print("      Display Name: \(product.displayName)")
+          print("      Display Price: \(product.displayPrice)")
+          print("      Description: \(product.description)")
+          print("      Type: \(product.type)")
+          if let subscription = product.subscription {
+            print("      Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
+            print("      Introductory Offer: \(subscription.introductoryOffer != nil ? "Yes" : "No")")
+          }
+        }
+        
+        // Check for missing products
+        let foundIDs = Set(testProducts.map { $0.id })
+        let requestedIDs = Set(ProductID.all)
+        let missingIDs = requestedIDs.subtracting(foundIDs)
+        
+        if !missingIDs.isEmpty {
+          print("⚠️ MISSING PRODUCTS (requested but not found):")
+          for missingID in missingIDs {
+            print("   - \(missingID)")
+          }
+        }
+      }
+      print("🔍 ============================================")
     } catch {
-      print("❌ StoreKit connectivity FAILED: \(error.localizedDescription)")
-      print("   This may indicate network issues or StoreKit not ready")
+      print("❌ ============================================")
+      print("❌ STOREKIT ERROR")
+      print("❌ ============================================")
+      print("❌ StoreKit connectivity FAILED")
+      print("❌ Error Type: \(type(of: error))")
+      print("❌ Error Description: \(error.localizedDescription)")
+      print("❌ Full Error: \(error)")
+      
+      // Log error details if available
+      if let storeKitError = error as? StoreKitError {
+        print("❌ StoreKit Error Code: \(storeKitError)")
+      }
+      
+      // Check for underlying errors
+      let nsError = error as NSError
+      print("❌ NSError Domain: \(nsError.domain)")
+      print("❌ NSError Code: \(nsError.code)")
+      if let userInfo = nsError.userInfo as? [String: Any], !userInfo.isEmpty {
+        print("❌ Error UserInfo:")
+        for (key, value) in userInfo {
+          print("   \(key): \(value)")
+        }
+      }
+      
+      print("❌ This may indicate:")
+      print("   1. Network connectivity issues")
+      print("   2. StoreKit not ready")
+      print("   3. Invalid product IDs")
+      print("   4. App Store Connect configuration issues")
+      print("❌ ============================================")
     }
     
     print("🔍 SubscriptionManager: Iterating through Transaction.currentEntitlements...")
@@ -551,33 +633,76 @@ class SubscriptionManager: ObservableObject {
     
     do {
       // First, try to fetch ALL products to see if StoreKit is working at all
-      print("🔍 SubscriptionManager: Testing StoreKit - fetching all products...")
+      print("🛒 ============================================")
+      print("🛒 PURCHASE FLOW - Product Fetch")
+      print("🛒 ============================================")
+      print("🛒 Requesting product ID: \(productID)")
+      print("🛒 All product IDs being requested:")
+      for (index, id) in ProductID.all.enumerated() {
+        print("   \(index + 1). \(id)")
+      }
+      
+      // Detect environment
+      #if DEBUG
+      print("🛒 Environment: DEBUG (Sandbox)")
+      #else
+      print("🛒 Environment: RELEASE (Production)")
+      #endif
+      
+      print("🛒 Step 1: Fetching all products for connectivity test...")
       let allProducts = try await Product.products(for: ProductID.all)
-      print("🔍 SubscriptionManager: StoreKit test - found \(allProducts.count) total product(s)")
+      
+      print("🛒 ============================================")
+      print("🛒 ALL PRODUCTS RESPONSE")
+      print("🛒 ============================================")
+      print("📊 Found \(allProducts.count) / \(ProductID.all.count) total product(s)")
+      
       if allProducts.isEmpty {
-        print("⚠️ SubscriptionManager: StoreKit returned 0 products. This means StoreKit configuration is NOT loaded.")
-        print("⚠️ SubscriptionManager: Verify:")
+        print("⚠️ WARNING: StoreKit returned 0 products!")
+        print("⚠️ This means StoreKit configuration is NOT loaded or product IDs don't match.")
+        print("⚠️ Verify:")
         print("   1. Scheme → Run → Options → StoreKit Configuration File is set")
         print("   2. File is in Xcode project with correct target membership")
-        print("   3. Clean build folder and restart Xcode")
-        print("   4. Testing on iOS 15+ simulator/device")
+        print("   3. Product IDs match App Store Connect exactly")
+        print("   4. Clean build folder and restart Xcode")
+        print("   5. Testing on iOS 15+ simulator/device")
       } else {
-        print("✅ SubscriptionManager: StoreKit is working! Available products:")
-        for product in allProducts {
-          print("   - \(product.id): \(product.displayName) (\(product.displayPrice))")
+        print("✅ StoreKit is working! Available products:")
+        for (index, product) in allProducts.enumerated() {
+          print("   Product #\(index + 1):")
+          print("      ID: \(product.id)")
+          print("      Display Name: \(product.displayName)")
+          print("      Display Price: \(product.displayPrice)")
+          print("      Type: \(product.type)")
         }
       }
       
       // Fetch the specific product
-      print("🔍 SubscriptionManager: Fetching specific product: \(productID)...")
+      print("🛒 Step 2: Fetching specific product: \(productID)...")
       let products = try await Product.products(for: [productID])
-      print("🔍 SubscriptionManager: Fetched \(products.count) product(s) for \(productID)")
+      
+      print("🛒 ============================================")
+      print("🛒 SPECIFIC PRODUCT RESPONSE")
+      print("🛒 ============================================")
+      print("📊 Fetched \(products.count) product(s) for \(productID)")
+      
       guard let product = products.first else {
-        print("❌ SubscriptionManager: Product '\(productID)' not found in StoreKit.")
-        print("❌ SubscriptionManager: Available product IDs: \(allProducts.map { $0.id })")
+        print("❌ Product '\(productID)' not found in StoreKit.")
+        print("❌ Available product IDs from previous fetch: \(allProducts.map { $0.id })")
+        print("❌ Requested product ID: \(productID)")
+        print("❌ This indicates a product ID mismatch or StoreKit configuration issue")
         return (false, "Product not found. Please make sure StoreKit configuration is set up in Xcode.")
       }
-      print("✅ SubscriptionManager: Product found: \(product.displayName) - \(product.displayPrice)")
+      
+      print("✅ Product found:")
+      print("   ID: \(product.id)")
+      print("   Display Name: \(product.displayName)")
+      print("   Display Price: \(product.displayPrice)")
+      print("   Description: \(product.description)")
+      if let subscription = product.subscription {
+        print("   Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
+      }
+      print("🛒 ============================================")
       
       // Purchase the product
       print("🛒 SubscriptionManager: Initiating purchase...")
@@ -666,12 +791,86 @@ class SubscriptionManager: ObservableObject {
   /// Get available subscription products
   /// - Returns: Array of Product objects
   func getAvailableProducts() async -> [Product] {
+    print("🔍 ============================================")
+    print("🔍 GET AVAILABLE PRODUCTS - Detailed Logging")
+    print("🔍 ============================================")
+    print("🔍 Requesting product IDs:")
+    for (index, productID) in ProductID.all.enumerated() {
+      print("   \(index + 1). \(productID)")
+    }
+    
+    // Detect environment
+    #if DEBUG
+    print("🔍 Environment: DEBUG (Sandbox)")
+    #else
+    print("🔍 Environment: RELEASE (Production)")
+    #endif
+    
     do {
+      print("🔍 Calling Product.products(for:)...")
       let products = try await Product.products(for: ProductID.all)
-      print("✅ SubscriptionManager: Loaded \(products.count) products")
+      
+      print("🔍 ============================================")
+      print("🔍 PRODUCTS RESPONSE")
+      print("🔍 ============================================")
+      print("✅ Loaded \(products.count) / \(ProductID.all.count) requested products")
+      
+      if products.isEmpty {
+        print("⚠️ WARNING: No products returned!")
+        print("⚠️ This may indicate:")
+        print("   1. StoreKit configuration not loaded")
+        print("   2. Product IDs don't match App Store Connect")
+        print("   3. Network issues")
+      } else {
+        print("📦 Product Details:")
+        for (index, product) in products.enumerated() {
+          print("   Product #\(index + 1):")
+          print("      ID: \(product.id)")
+          print("      Display Name: \(product.displayName)")
+          print("      Display Price: \(product.displayPrice)")
+          print("      Description: \(product.description)")
+          print("      Type: \(product.type)")
+          if let subscription = product.subscription {
+            print("      Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
+          }
+        }
+        
+        // Check for missing products
+        let foundIDs = Set(products.map { $0.id })
+        let requestedIDs = Set(ProductID.all)
+        let missingIDs = requestedIDs.subtracting(foundIDs)
+        
+        if !missingIDs.isEmpty {
+          print("⚠️ MISSING PRODUCTS:")
+          for missingID in missingIDs {
+            print("   - \(missingID)")
+          }
+        }
+      }
+      print("🔍 ============================================")
+      
       return products
     } catch {
-      print("❌ SubscriptionManager: Failed to load products: \(error.localizedDescription)")
+      print("❌ ============================================")
+      print("❌ GET PRODUCTS ERROR")
+      print("❌ ============================================")
+      print("❌ Failed to load products")
+      print("❌ Error Type: \(type(of: error))")
+      print("❌ Error Description: \(error.localizedDescription)")
+      print("❌ Full Error: \(error)")
+      
+      // Log error details if available
+      let nsError = error as NSError
+      print("❌ NSError Domain: \(nsError.domain)")
+      print("❌ NSError Code: \(nsError.code)")
+      if let userInfo = nsError.userInfo as? [String: Any], !userInfo.isEmpty {
+        print("❌ Error UserInfo:")
+        for (key, value) in userInfo {
+          print("   \(key): \(value)")
+        }
+      }
+      print("❌ ============================================")
+      
       return []
     }
   }
@@ -738,5 +937,25 @@ class SubscriptionManager: ObservableObject {
     print("⏹️ Stopped periodic sync check")
   }
   #endif
+  
+  // MARK: - Helper Methods
+  
+  /// Format subscription period for logging
+  private func formatSubscriptionPeriod(_ period: Product.SubscriptionPeriod) -> String {
+    let unit: String
+    switch period.unit {
+    case .day:
+      unit = "day"
+    case .week:
+      unit = "week"
+    case .month:
+      unit = "month"
+    case .year:
+      unit = "year"
+    @unknown default:
+      unit = "unknown"
+    }
+    return "\(period.value) \(unit)\(period.value == 1 ? "" : "s")"
+  }
 }
 
