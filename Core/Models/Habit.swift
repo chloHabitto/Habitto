@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 // MARK: - HabitStorageManager
 
@@ -838,12 +839,55 @@ struct Habit: Identifiable, Codable, Equatable {
   /// Internal completion check that doesn't consider vacation days
   private func isCompletedInternal(for date: Date) -> Bool {
     let dateKey = Self.dateKey(for: date)
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let normalizedDate = calendar.startOfDay(for: date)
+    
+    // ✅ FIX: For historical dates, query CompletionRecords from SwiftData
+    // The in-memory dictionary only has today's data, not historical data
+    let isHistoricalDate = normalizedDate < today
+    
+    if isHistoricalDate {
+      // For historical dates, query CompletionRecords from SwiftData
+      if let completionRecord = queryCompletionRecordFromSwiftData(for: date) {
+        let historicalGoal = goalString(for: date)
+        let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
+        let isComplete = goalAmount > 0 ? (completionRecord.progress >= goalAmount) : (completionRecord.progress > 0)
+        
+        print("📊 COMPLETE_HISTORICAL: isCompleted(\(dateKey)) from CompletionRecord")
+        print("  - Source: SwiftData CompletionRecord")
+        print("  - progress: \(completionRecord.progress)")
+        print("  - historicalGoal: '\(historicalGoal)'")
+        print("  - goalAmount: \(goalAmount)")
+        print("  - isCompleted: \(isComplete)")
+        
+        return isComplete
+      } else {
+        // No CompletionRecord found - check dictionary as fallback
+        let progress = completionHistory[dateKey] ?? 0
+        let historicalGoal = goalString(for: date)
+        let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
+        let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
+        
+        print("📊 COMPLETE_HISTORICAL: isCompleted(\(dateKey)) from dictionary (no CompletionRecord found)")
+        print("  - Source: in-memory dictionary (fallback)")
+        print("  - progress: \(progress)")
+        print("  - historicalGoal: '\(historicalGoal)'")
+        print("  - goalAmount: \(goalAmount)")
+        print("  - isCompleted: \(calculatedCompleted)")
+        
+        return calculatedCompleted
+      }
+    }
+    
+    // For today, use the in-memory dictionary (which has today's data)
     let progress = completionHistory[dateKey] ?? 0
     let historicalGoal = goalString(for: date)
     let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
     let storedStatus = completionStatus[dateKey]
 
-    print("🔍 COMPLETE_DEBUG: isCompleted(\(dateKey))")
+    print("📊 COMPLETE_TODAY: isCompleted(\(dateKey))")
+    print("  - Source: in-memory dictionary")
     print("  - progress: \(progress)")
     print("  - historicalGoal: '\(historicalGoal)'")
     print("  - goalAmount: \(goalAmount)")
@@ -863,6 +907,36 @@ struct Habit: Identifiable, Codable, Equatable {
 
     // No stored status – use the calculated value.
     return calculatedCompleted
+  }
+  
+  /// Query CompletionRecord from SwiftData for a specific date
+  /// Returns nil if no record is found or if query fails
+  private func queryCompletionRecordFromSwiftData(for date: Date) -> CompletionRecord? {
+    // ✅ FIX: SwiftDataContainer requires MainActor, so check if we're on main thread
+    guard Thread.isMainThread else {
+      // Not on main thread - can't query SwiftData, fall back to dictionary
+      return nil
+    }
+    
+    do {
+      // Use MainActor.assumeIsolated since we're on the main thread
+      let context = MainActor.assumeIsolated { SwiftDataContainer.shared.modelContext }
+      let dateKey = Self.dateKey(for: date)
+      
+      // Query for CompletionRecord matching this habit ID and date
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.habitId == self.id && record.dateKey == dateKey && record.isCompleted == true
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      let records = try context.fetch(descriptor)
+      
+      // Return the first matching record (should be unique per habit+date)
+      return records.first
+    } catch {
+      // If query fails, return nil to fall back to dictionary
+      print("⚠️ queryCompletionRecordFromSwiftData: Failed to query for \(Self.dateKey(for: date)): \(error.localizedDescription)")
+      return nil
+    }
   }
 
   /// Helper method to parse goal amount from goal string
