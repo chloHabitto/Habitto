@@ -955,10 +955,61 @@ struct HabittoApp: App {
     logger.info("   Old migration flag: \(oldFlagSet), New migration flag: \(newFlagSet)")
     
     // Check if complete migration already completed
+    // ✅ CRITICAL FIX: Even if flag is set, check for orphaned data and repair if needed
     if newFlagSet {
-      logger.debug("⏭️ GuestMigration: Complete migration already done for user \(newUserId.prefix(8))...")
-      print("⏭️ [GUEST_MIGRATION] Complete migration already done, skipping")
-      return
+      // Check if there's orphaned data that needs repair
+      do {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        
+        // Get user's habits
+        let userHabitsDescriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate<HabitData> { habit in
+            habit.userId == newUserId
+          }
+        )
+        let userHabits = try modelContext.fetch(userHabitsDescriptor)
+        let userHabitIds = Set(userHabits.map { $0.id })
+        
+        // Check for orphaned CompletionRecords
+        let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
+        let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
+        let orphanedCompletions = allCompletions.filter { record in
+          userHabitIds.contains(record.habitId) && record.userId != newUserId
+        }
+        
+        // Check for orphaned DailyAwards
+        let allAwardsDescriptor = FetchDescriptor<DailyAward>()
+        let allAwards = try modelContext.fetch(allAwardsDescriptor)
+        let orphanedAwards = allAwards.filter { $0.userId != newUserId }
+        
+        // Check for orphaned UserProgressData
+        let allProgressDescriptor = FetchDescriptor<UserProgressData>()
+        let allProgress = try modelContext.fetch(allProgressDescriptor)
+        let orphanedProgress = allProgress.filter { $0.userId != newUserId }
+        
+        // If orphaned data exists, run repair migration
+        if !orphanedCompletions.isEmpty || !orphanedAwards.isEmpty || !orphanedProgress.isEmpty {
+          print("⚠️ [GUEST_MIGRATION] Migration flag set but orphaned data detected!")
+          print("   Orphaned CompletionRecords: \(orphanedCompletions.count)")
+          print("   Orphaned DailyAwards: \(orphanedAwards.count)")
+          print("   Orphaned UserProgressData: \(orphanedProgress.count)")
+          print("   Running repair migration...")
+          logger.warning("⚠️ GuestMigration: Orphaned data detected, running repair migration")
+          
+          // Run repair migration (it will only migrate orphaned data, not re-migrate everything)
+          await GuestDataMigrationHelper.runCompleteMigration(userId: newUserId)
+          return
+        } else {
+          logger.debug("⏭️ GuestMigration: Complete migration already done for user \(newUserId.prefix(8))...")
+          print("⏭️ [GUEST_MIGRATION] Complete migration already done, skipping")
+          return
+        }
+      } catch {
+        // If check fails, log and skip (don't block app startup)
+        logger.warning("⚠️ GuestMigration: Error checking for orphaned data: \(error.localizedDescription)")
+        print("⚠️ [GUEST_MIGRATION] Error checking for orphaned data, skipping migration check")
+        return
+      }
     }
     
     // ✅ DIAGNOSTIC: Check ALL data in database BEFORE migration
