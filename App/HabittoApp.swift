@@ -961,6 +961,9 @@ struct HabittoApp: App {
       do {
         let modelContext = SwiftDataContainer.shared.modelContext
         
+        print("🔍 [ORPHANED_DATA_CHECK] Checking for orphaned data (migration flag already set)...")
+        logger.info("🔍 GuestMigration: Checking for orphaned data (migration flag already set)")
+        
         // Get user's habits
         let userHabitsDescriptor = FetchDescriptor<HabitData>(
           predicate: #Predicate<HabitData> { habit in
@@ -970,6 +973,10 @@ struct HabittoApp: App {
         let userHabits = try modelContext.fetch(userHabitsDescriptor)
         let userHabitIds = Set(userHabits.map { $0.id })
         
+        print("🔍 [ORPHANED_DATA_CHECK] Found \(userHabits.count) habits for current user")
+        print("   User ID: \(newUserId.prefix(8))...")
+        logger.info("🔍 GuestMigration: Found \(userHabits.count) habits for user \(newUserId.prefix(8))...")
+        
         // Check for orphaned CompletionRecords
         let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
         let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
@@ -977,29 +984,60 @@ struct HabittoApp: App {
           userHabitIds.contains(record.habitId) && record.userId != newUserId
         }
         
+        // Group orphaned completions by old userId for logging
+        let completionsByOldUserId = Dictionary(grouping: orphanedCompletions) { $0.userId }
+        print("📊 [ORPHANED_DATA_CHECK] Orphaned CompletionRecords: \(orphanedCompletions.count)")
+        for (oldUserId, records) in completionsByOldUserId.sorted(by: { $0.key < $1.key }) {
+          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
+          print("   → \(records.count) records with userId '\(oldUserIdDisplay)'")
+        }
+        logger.info("📊 GuestMigration: Found \(orphanedCompletions.count) orphaned CompletionRecords")
+        
         // Check for orphaned DailyAwards
         let allAwardsDescriptor = FetchDescriptor<DailyAward>()
         let allAwards = try modelContext.fetch(allAwardsDescriptor)
         let orphanedAwards = allAwards.filter { $0.userId != newUserId }
+        
+        // Calculate total XP from orphaned awards
+        let totalOrphanedXP = orphanedAwards.reduce(0) { $0 + $1.xpGranted }
+        
+        // Group orphaned awards by old userId for logging
+        let awardsByOldUserId = Dictionary(grouping: orphanedAwards) { $0.userId }
+        print("📊 [ORPHANED_DATA_CHECK] Orphaned DailyAwards: \(orphanedAwards.count)")
+        print("   Total XP from orphaned awards: \(totalOrphanedXP)")
+        for (oldUserId, awards) in awardsByOldUserId.sorted(by: { $0.key < $1.key }) {
+          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
+          let xp = awards.reduce(0) { $0 + $1.xpGranted }
+          print("   → \(awards.count) awards with userId '\(oldUserIdDisplay)' (XP: \(xp))")
+        }
+        logger.info("📊 GuestMigration: Found \(orphanedAwards.count) orphaned DailyAwards with \(totalOrphanedXP) total XP")
         
         // Check for orphaned UserProgressData
         let allProgressDescriptor = FetchDescriptor<UserProgressData>()
         let allProgress = try modelContext.fetch(allProgressDescriptor)
         let orphanedProgress = allProgress.filter { $0.userId != newUserId }
         
+        print("📊 [ORPHANED_DATA_CHECK] Orphaned UserProgressData: \(orphanedProgress.count)")
+        for progress in orphanedProgress {
+          let oldUserIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
+          print("   → Progress with userId '\(oldUserIdDisplay)' (XP: \(progress.xpTotal), Level: \(progress.level))")
+        }
+        logger.info("📊 GuestMigration: Found \(orphanedProgress.count) orphaned UserProgressData records")
+        
         // If orphaned data exists, run repair migration
         if !orphanedCompletions.isEmpty || !orphanedAwards.isEmpty || !orphanedProgress.isEmpty {
-          print("⚠️ [GUEST_MIGRATION] Migration flag set but orphaned data detected!")
-          print("   Orphaned CompletionRecords: \(orphanedCompletions.count)")
-          print("   Orphaned DailyAwards: \(orphanedAwards.count)")
-          print("   Orphaned UserProgressData: \(orphanedProgress.count)")
-          print("   Running repair migration...")
-          logger.warning("⚠️ GuestMigration: Orphaned data detected, running repair migration")
+          print("⚠️ [ORPHANED_DATA_CHECK] Orphaned data detected! Summary:")
+          print("   ✅ Orphaned CompletionRecords: \(orphanedCompletions.count)")
+          print("   ✅ Orphaned DailyAwards: \(orphanedAwards.count) (Total XP: \(totalOrphanedXP))")
+          print("   ✅ Orphaned UserProgressData: \(orphanedProgress.count)")
+          print("   🔄 Running repair migration...")
+          logger.warning("⚠️ GuestMigration: Orphaned data detected - \(orphanedCompletions.count) completions, \(orphanedAwards.count) awards (\(totalOrphanedXP) XP), \(orphanedProgress.count) progress")
           
           // Run repair migration (it will only migrate orphaned data, not re-migrate everything)
           await GuestDataMigrationHelper.runCompleteMigration(userId: newUserId)
           return
         } else {
+          print("✅ [ORPHANED_DATA_CHECK] No orphaned data found - migration complete")
           logger.debug("⏭️ GuestMigration: Complete migration already done for user \(newUserId.prefix(8))...")
           print("⏭️ [GUEST_MIGRATION] Complete migration already done, skipping")
           return
@@ -1007,6 +1045,7 @@ struct HabittoApp: App {
       } catch {
         // If check fails, log and skip (don't block app startup)
         logger.warning("⚠️ GuestMigration: Error checking for orphaned data: \(error.localizedDescription)")
+        print("⚠️ [ORPHANED_DATA_CHECK] Error checking for orphaned data: \(error.localizedDescription)")
         print("⚠️ [GUEST_MIGRATION] Error checking for orphaned data, skipping migration check")
         return
       }
