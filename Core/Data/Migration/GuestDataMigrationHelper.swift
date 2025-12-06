@@ -47,18 +47,38 @@ final class GuestDataMigrationHelper {
       var dailyAwardsMigrated = 0
       
       // 1. Migrate HabitData
-      let guestHabitsDescriptor = FetchDescriptor<HabitData>(
+      // ✅ CRITICAL FIX: Find habits that don't have the new userId
+      // This handles both empty userId and old anonymous user IDs
+      
+      // First, get all habits that already belong to the current user
+      let userHabitsDescriptor = FetchDescriptor<HabitData>(
         predicate: #Predicate<HabitData> { habit in
-          habit.userId == ""
+          habit.userId == userId
         }
       )
-      let guestHabits = try modelContext.fetch(guestHabitsDescriptor)
+      let existingUserHabits = try modelContext.fetch(userHabitsDescriptor)
+      
+      // Find habits that need migration (not already migrated)
+      let allHabitsDescriptor = FetchDescriptor<HabitData>()
+      let allHabits = try modelContext.fetch(allHabitsDescriptor)
+      let existingUserHabitIds = Set(existingUserHabits.map { $0.id })
+      
+      // Filter: habits that don't belong to current user
+      let guestHabits = allHabits.filter { !existingUserHabitIds.contains($0.id) && $0.userId != userId }
       
       if !guestHabits.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestHabits.count) guest habits to migrate")
+        print("🔄 [GUEST_MIGRATION] Found \(guestHabits.count) habits to migrate")
         logger.info("🔄 GuestMigration: Migrating \(guestHabits.count) habits...")
         
+        // Group by old userId for logging
+        let byOldUserId = Dictionary(grouping: guestHabits) { $0.userId }
+        for (oldUserId, habits) in byOldUserId {
+          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
+          print("   Migrating \(habits.count) habits from userId '\(oldUserIdDisplay)'")
+        }
+        
         for habitData in guestHabits {
+          let oldUserId = habitData.userId
           habitData.userId = userId
           
           // Update CompletionRecords linked via relationship
@@ -72,37 +92,45 @@ final class GuestDataMigrationHelper {
         print("✅ [GUEST_MIGRATION] Migrated \(guestHabits.count) habits successfully")
         logger.info("✅ GuestMigration: Migrated \(guestHabits.count) habits")
       } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest habits found to migrate")
+        print("ℹ️ [GUEST_MIGRATION] No habits found to migrate (all habits already belong to current user)")
       }
       
+      // Get all user habits (including newly migrated ones) for later steps
+      let allUserHabits = try modelContext.fetch(userHabitsDescriptor)
+      
       // 2. Migrate ALL CompletionRecords (including standalone ones not linked via relationship)
-      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      // ✅ CRITICAL FIX: Find records where userId != newUserId but habitId matches user's habits
+      // This handles cases where habits were migrated but records still have old userId
+      
+      // Use the user habits we already fetched (or fetch again if needed)
+      let userHabits = allUserHabits.isEmpty ? try modelContext.fetch(userHabitsDescriptor) : allUserHabits
+      let userHabitIds = Set(userHabits.map { $0.id })
+      
+      print("🔍 [GUEST_MIGRATION] Found \(userHabits.count) habits for current user")
+      print("   Habit IDs: \(userHabitIds.map { $0.uuidString.prefix(8) }.joined(separator: ", "))...")
+      
+      // Find all CompletionRecords that match user's habits but have different userId
       let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
       let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
       
-      // Try predicate first
-      let guestCompletionRecordsDescriptor = FetchDescriptor<CompletionRecord>(
-        predicate: #Predicate<CompletionRecord> { record in
-          record.userId == ""
-        }
-      )
-      var guestCompletionRecords = try modelContext.fetch(guestCompletionRecordsDescriptor)
-      
-      // Fallback to code-based filtering if predicate returns 0 but we have data
-      if guestCompletionRecords.isEmpty && !allCompletions.isEmpty {
-        let filtered = allCompletions.filter { $0.userId.isEmpty }
-        if !filtered.isEmpty {
-          print("⚠️ [GUEST_MIGRATION] Predicate returned 0, but found \(filtered.count) records with empty userId using code filter")
-          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found \(filtered.count) records")
-          guestCompletionRecords = filtered
-        }
+      // Filter: records where habitId matches user's habits AND userId != newUserId
+      let orphanedRecords = allCompletions.filter { record in
+        userHabitIds.contains(record.habitId) && record.userId != userId
       }
       
-      if !guestCompletionRecords.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestCompletionRecords.count) guest completion records to migrate")
-        logger.info("🔄 GuestMigration: Migrating \(guestCompletionRecords.count) completion records...")
+      if !orphanedRecords.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(orphanedRecords.count) orphaned completion records to migrate")
+        print("   Records have userId != '\(userId.prefix(8))...' but match user's habits")
+        logger.info("🔄 GuestMigration: Migrating \(orphanedRecords.count) orphaned completion records...")
         
-        for record in guestCompletionRecords {
+        // Group by old userId for logging
+        let byOldUserId = Dictionary(grouping: orphanedRecords) { $0.userId }
+        for (oldUserId, records) in byOldUserId {
+          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
+          print("   Migrating \(records.count) records from userId '\(oldUserIdDisplay)'")
+        }
+        
+        for record in orphanedRecords {
           record.userId = userId
           record.userIdHabitIdDateKey = "\(userId)#\(record.habitId.uuidString)#\(record.dateKey)"
           completionRecordsMigrated += 1
@@ -112,37 +140,31 @@ final class GuestDataMigrationHelper {
         print("✅ [GUEST_MIGRATION] Migrated \(completionRecordsMigrated) completion records successfully")
         logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records")
       } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest completion records found to migrate")
+        print("ℹ️ [GUEST_MIGRATION] No orphaned completion records found to migrate")
       }
       
       // 3. Migrate DailyAwards
-      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      // ✅ CRITICAL FIX: Find awards where userId != newUserId (orphaned awards)
       let allAwardsDescriptor = FetchDescriptor<DailyAward>()
       let allAwards = try modelContext.fetch(allAwardsDescriptor)
       
-      // Try predicate first
-      let guestAwardsDescriptor = FetchDescriptor<DailyAward>(
-        predicate: #Predicate<DailyAward> { award in
-          award.userId == ""
-        }
-      )
-      var guestAwards = try modelContext.fetch(guestAwardsDescriptor)
+      // Filter: awards where userId != newUserId
+      let orphanedAwards = allAwards.filter { $0.userId != userId }
       
-      // Fallback to code-based filtering if predicate returns 0 but we have data
-      if guestAwards.isEmpty && !allAwards.isEmpty {
-        let filtered = allAwards.filter { $0.userId.isEmpty }
-        if !filtered.isEmpty {
-          print("⚠️ [GUEST_MIGRATION] Predicate returned 0, but found \(filtered.count) awards with empty userId using code filter")
-          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found \(filtered.count) awards")
-          guestAwards = filtered
-        }
-      }
-      
-      if !guestAwards.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestAwards.count) guest daily awards to migrate")
-        logger.info("🔄 GuestMigration: Migrating \(guestAwards.count) daily awards...")
+      if !orphanedAwards.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(orphanedAwards.count) orphaned daily awards to migrate")
+        print("   Awards have userId != '\(userId.prefix(8))...'")
+        logger.info("🔄 GuestMigration: Migrating \(orphanedAwards.count) orphaned daily awards...")
         
-        for award in guestAwards {
+        // Group by old userId for logging
+        let byOldUserId = Dictionary(grouping: orphanedAwards) { $0.userId }
+        for (oldUserId, awards) in byOldUserId {
+          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
+          let xp = awards.reduce(0) { $0 + $1.xpGranted }
+          print("   Migrating \(awards.count) awards from userId '\(oldUserIdDisplay)' (Total XP: \(xp))")
+        }
+        
+        for award in orphanedAwards {
           award.userId = userId
           award.userIdDateKey = "\(userId)#\(award.dateKey)"
           totalMigratedXP += award.xpGranted
@@ -154,43 +176,106 @@ final class GuestDataMigrationHelper {
         print("   Total XP from migrated awards: \(totalMigratedXP)")
         logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP")
       } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest daily awards found to migrate")
+        print("ℹ️ [GUEST_MIGRATION] No orphaned daily awards found to migrate")
       }
       
       // 4. Migrate UserProgressData
-      // ✅ FIX: Use code-based filtering as fallback if predicate doesn't work
+      // ✅ CRITICAL FIX: Find progress where userId != newUserId (orphaned progress)
       let allProgressDescriptor = FetchDescriptor<UserProgressData>()
       let allProgress = try modelContext.fetch(allProgressDescriptor)
       
-      // Try predicate first
-      let guestProgressDescriptor = FetchDescriptor<UserProgressData>(
-        predicate: #Predicate<UserProgressData> { progress in
-          progress.userId == ""
-        }
-      )
-      var guestProgress = try modelContext.fetch(guestProgressDescriptor).first
+      // Filter: progress where userId != newUserId
+      let orphanedProgress = allProgress.filter { $0.userId != userId }
       
-      // Fallback to code-based filtering if predicate returns nil but we have data
-      if guestProgress == nil && !allProgress.isEmpty {
-        let filtered = allProgress.filter { $0.userId.isEmpty }
-        if let first = filtered.first {
-          print("⚠️ [GUEST_MIGRATION] Predicate returned nil, but found progress with empty userId using code filter")
-          logger.warning("⚠️ GuestMigration: Predicate failed, using code filter - found progress data")
-          guestProgress = first
+      // If there are multiple orphaned progress records, merge them into one
+      if !orphanedProgress.isEmpty {
+        print("🔄 [GUEST_MIGRATION] Found \(orphanedProgress.count) orphaned user progress records to migrate")
+        logger.info("🔄 GuestMigration: Migrating \(orphanedProgress.count) orphaned user progress records...")
+        
+        // Find or create progress for current user
+        let userProgressDescriptor = FetchDescriptor<UserProgressData>(
+          predicate: #Predicate<UserProgressData> { progress in
+            progress.userId == userId
+          }
+        )
+        var userProgress = try modelContext.fetch(userProgressDescriptor).first
+        
+        // If no user progress exists, use the first orphaned one
+        if userProgress == nil, let firstOrphaned = orphanedProgress.first {
+          userProgress = firstOrphaned
+          print("   Using orphaned progress as base: XP=\(firstOrphaned.xpTotal), Level=\(firstOrphaned.level)")
+        }
+        
+        // Merge all orphaned progress into user progress
+        if let userProgress = userProgress {
+          var maxXP = userProgress.xpTotal
+          var maxLevel = userProgress.level
+          var maxStreak = userProgress.streakDays
+          
+          for orphaned in orphanedProgress {
+            if orphaned.xpTotal > maxXP {
+              maxXP = orphaned.xpTotal
+              maxLevel = orphaned.level
+            }
+            if orphaned.streakDays > maxStreak {
+              maxStreak = orphaned.streakDays
+            }
+            
+            // If this is not the one we're keeping, delete it
+            if orphaned != userProgress {
+              modelContext.delete(orphaned)
+            }
+          }
+          
+          // Update user progress with merged values
+          userProgress.xpTotal = maxXP
+          userProgress.level = maxLevel
+          userProgress.streakDays = maxStreak
+          userProgress.userId = userId
+          
+          try modelContext.save()
+          print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
+          print("   Migrated XP: \(maxXP), Level: \(maxLevel), Streak: \(maxStreak)")
+          logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel))")
+        }
+      } else {
+        print("ℹ️ [GUEST_MIGRATION] No orphaned user progress found to migrate")
+      }
+      
+      // 5. Re-establish completionHistory relationships
+      // ✅ CRITICAL FIX: After migrating CompletionRecords, re-link them to HabitData
+      print("🔄 [GUEST_MIGRATION] Re-establishing completionHistory relationships...")
+      logger.info("🔄 GuestMigration: Re-establishing completionHistory relationships...")
+      
+      var relationshipsFixed = 0
+      for habitData in userHabits {
+        // Find all CompletionRecords for this habit with the new userId
+        let habitId = habitData.id
+        let recordsDescriptor = FetchDescriptor<CompletionRecord>(
+          predicate: #Predicate<CompletionRecord> { record in
+            record.habitId == habitId && record.userId == userId
+          }
+        )
+        let records = try modelContext.fetch(recordsDescriptor)
+        
+        // Clear existing relationship and re-add all records
+        habitData.completionHistory.removeAll()
+        for record in records {
+          habitData.completionHistory.append(record)
+        }
+        
+        if !records.isEmpty {
+          relationshipsFixed += 1
+          print("   ✅ Linked \(records.count) CompletionRecords to habit '\(habitData.name)'")
         }
       }
       
-      if let progress = guestProgress {
-        print("🔄 [GUEST_MIGRATION] Found user progress to migrate")
-        print("   Current XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
-        logger.info("🔄 GuestMigration: Migrating user progress (XP: \(progress.xpTotal), Level: \(progress.level))...")
-        progress.userId = userId
+      if relationshipsFixed > 0 {
         try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
-        print("   Migrated XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
-        logger.info("✅ GuestMigration: Migrated user progress (XP: \(progress.xpTotal), Level: \(progress.level))")
+        print("✅ [GUEST_MIGRATION] Re-established relationships for \(relationshipsFixed) habits")
+        logger.info("✅ GuestMigration: Re-established relationships for \(relationshipsFixed) habits")
       } else {
-        print("ℹ️ [GUEST_MIGRATION] No guest user progress found to migrate")
+        print("ℹ️ [GUEST_MIGRATION] No relationships needed to be re-established")
       }
       
       // Summary log
@@ -199,7 +284,10 @@ final class GuestDataMigrationHelper {
       print("   ✅ Completion Records: \(completionRecordsMigrated)")
       print("   ✅ Daily Awards: \(dailyAwardsMigrated)")
       print("   ✅ Total XP from Awards: \(totalMigratedXP)")
-      if let progress = guestProgress {
+      print("   ✅ Relationships Fixed: \(relationshipsFixed)")
+      if let progress = try modelContext.fetch(FetchDescriptor<UserProgressData>(
+        predicate: #Predicate<UserProgressData> { $0.userId == userId }
+      )).first {
         print("   ✅ User Progress XP: \(progress.xpTotal)")
       }
       logger.info("📊 GuestMigration: Summary - \(guestHabits.count) habits, \(completionRecordsMigrated) completions, \(dailyAwardsMigrated) awards, \(totalMigratedXP) XP")

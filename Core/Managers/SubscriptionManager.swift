@@ -260,9 +260,9 @@ class SubscriptionManager: ObservableObject {
       let nsError = error as NSError
       print("❌ NSError Domain: \(nsError.domain)")
       print("❌ NSError Code: \(nsError.code)")
-      if let userInfo = nsError.userInfo as? [String: Any], !userInfo.isEmpty {
+      if !nsError.userInfo.isEmpty {
         print("❌ Error UserInfo:")
-        for (key, value) in userInfo {
+        for (key, value) in nsError.userInfo {
           print("   \(key): \(value)")
         }
       }
@@ -863,9 +863,9 @@ class SubscriptionManager: ObservableObject {
       let nsError = error as NSError
       print("❌ NSError Domain: \(nsError.domain)")
       print("❌ NSError Code: \(nsError.code)")
-      if let userInfo = nsError.userInfo as? [String: Any], !userInfo.isEmpty {
+      if !nsError.userInfo.isEmpty {
         print("❌ Error UserInfo:")
-        for (key, value) in userInfo {
+        for (key, value) in nsError.userInfo {
           print("   \(key): \(value)")
         }
       }
