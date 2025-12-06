@@ -72,6 +72,12 @@ final class HabitData {
   // Breaking habit fields (CRITICAL: Must be stored!)
   var baseline: Int = 0  // Current usage level (for breaking habits)
   var target: Int = 1    // Goal usage level (for breaking habits)
+  
+  // Streak tracking
+  /// Best streak ever achieved for this habit
+  /// ✅ PERSISTENT: Only increases, never decreases, survives data loss
+  /// Updated when current calculated streak exceeds it
+  var bestStreakEver: Int = 0
 
   // Relationships
   @Relationship(deleteRule: .cascade) var completionHistory: [CompletionRecord]
@@ -97,6 +103,12 @@ final class HabitData {
   /// Computed property for current streak
   var streak: Int {
     calculateTrueStreak()
+  }
+  
+  /// Get best streak ever achieved
+  /// Returns the persistent bestStreakEver value, which never decreases
+  var bestStreak: Int {
+    bestStreakEver
   }
 
   static func decodeColor(_ data: Data) -> Color {
@@ -163,6 +175,14 @@ final class HabitData {
     // to prevent data loss when habits are reloaded
     // ✅ CRITICAL FIX: Await sync to prevent race conditions where habit is saved before CompletionRecords are synced
     await syncCompletionRecordsFromHabit(habit)
+    
+    // ✅ PERSISTENT BEST STREAK: Update bestStreakEver when habit is saved
+    // This ensures best streak is preserved even if completion records are lost
+    // Only update if current calculated streak exceeds bestStreakEver
+    let currentStreak = calculateTrueStreak()
+    if currentStreak > bestStreakEver {
+      bestStreakEver = currentStreak
+    }
   }
   
   /// Sync CompletionRecords from habit's completionHistory to ensure all dates have records
@@ -320,6 +340,7 @@ final class HabitData {
 
   /// Calculate true streak from completionHistory (source of truth)
   /// ✅ CRITICAL FIX: Includes today if completed, then counts backwards
+  /// ✅ PERSISTENT BEST STREAK: Updates bestStreakEver if current streak exceeds it
   func calculateTrueStreak() -> Int {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
@@ -338,8 +359,58 @@ final class HabitData {
         break
       }
     }
+    
+    // ✅ PERSISTENT BEST STREAK: Update bestStreakEver if current streak exceeds it
+    // This ensures best streak survives even if completion records are lost
+    if streak > bestStreakEver {
+      bestStreakEver = streak
+      // Note: We don't save here to avoid performance issues
+      // The save will happen when the habit is saved elsewhere
+    }
 
     return streak
+  }
+  
+  /// Calculate best streak from all history and update bestStreakEver
+  /// This method iterates through all dates to find the longest consecutive streak
+  /// ✅ PERSISTENT BEST STREAK: Updates bestStreakEver if found streak exceeds it
+  func calculateAndUpdateBestStreak() -> Int {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let startDate = calendar.startOfDay(for: self.startDate)
+    let vacationManager = VacationManager.shared
+    
+    var maxStreak = 0
+    var currentStreak = 0
+    var currentDate = startDate
+    
+    // Iterate through all dates from habit start to today
+    while currentDate <= today {
+      // Skip vacation days during active vacation - they don't count toward or break streaks
+      if vacationManager.isActive, vacationManager.isVacationDay(currentDate) {
+        // Move to next day without affecting streak
+        currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        continue
+      }
+      
+      if isCompletedForDate(currentDate) {
+        currentStreak += 1
+        maxStreak = max(maxStreak, currentStreak)
+      } else {
+        currentStreak = 0
+      }
+      
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+    
+    // ✅ PERSISTENT BEST STREAK: Update bestStreakEver if calculated streak exceeds it
+    // This ensures best streak survives even if completion records are lost
+    if maxStreak > bestStreakEver {
+      bestStreakEver = maxStreak
+    }
+    
+    // Always return bestStreakEver (the persistent value) to ensure it never decreases
+    return bestStreakEver
   }
 
   @MainActor

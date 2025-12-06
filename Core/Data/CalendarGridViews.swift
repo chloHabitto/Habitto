@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 // MARK: - Helper Functions
 
@@ -668,6 +669,16 @@ struct MonthlyCalendarGridView: View {
   }
 
   private func calculateHabitBestStreak(for habit: Habit) -> Int {
+    // ✅ PERSISTENT BEST STREAK: Use bestStreakEver from HabitData if available
+    // This ensures best streak survives even if completion records are lost
+    if let habitData = getHabitData(for: habit.id) {
+      // For calendar view, we still calculate from the selected month range
+      // but we ensure bestStreakEver is updated and use it as a minimum
+      let calculatedBest = habitData.calculateAndUpdateBestStreak()
+      return calculatedBest
+    }
+    
+    // Fallback: Calculate from selected month range if HabitData not available
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
 
@@ -695,6 +706,19 @@ struct MonthlyCalendarGridView: View {
     }
 
     return maxStreak
+  }
+  
+  /// Helper to get HabitData for a habit ID
+  private func getHabitData(for habitId: UUID) -> HabitData? {
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { $0.id == habitId }
+      )
+      return try context.fetch(descriptor).first
+    } catch {
+      return nil
+    }
   }
 }
 
@@ -970,7 +994,28 @@ struct YearlyCalendarGridView: View {
   }
 
   private func calculateHabitBestStreak(for habit: Habit) -> Int {
-    habit.calculateTrueStreak()
+    // ✅ PERSISTENT BEST STREAK: Use bestStreakEver from HabitData if available
+    if let habitData = getHabitData(for: habit.id) {
+      // Update bestStreakEver by calculating from history, then return the persistent value
+      let calculatedBest = habitData.calculateAndUpdateBestStreak()
+      return calculatedBest
+    }
+    
+    // Fallback: Use StreakDataCalculator if HabitData not available
+    return StreakDataCalculator.calculateBestStreakFromHistory(for: habit)
+  }
+  
+  /// Helper to get HabitData for a habit ID
+  private func getHabitData(for habitId: UUID) -> HabitData? {
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { $0.id == habitId }
+      )
+      return try context.fetch(descriptor).first
+    } catch {
+      return nil
+    }
   }
 }
 
