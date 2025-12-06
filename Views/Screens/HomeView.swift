@@ -396,6 +396,17 @@ class HomeViewState: ObservableObject {
         
         debugLog("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
         
+        // ✅ ONE-TIME BACKFILL: Calculate and restore historical longestStreak for existing users
+        let backfillKey = "longest_streak_backfill_completed_\(userId)"
+        let hasBackfilled = UserDefaults.standard.bool(forKey: backfillKey)
+        
+        if !hasBackfilled {
+          debugLog("🔄 STREAK_BACKFILL: Running one-time backfill to restore historical longestStreak")
+          await backfillHistoricalLongestStreak(userId: userId, modelContext: modelContext)
+          UserDefaults.standard.set(true, forKey: backfillKey)
+          debugLog("✅ STREAK_BACKFILL: Backfill completed and marked as done")
+        }
+        
         // Get or create GlobalStreakModel
         let streakDescriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
@@ -409,7 +420,7 @@ class HomeViewState: ObservableObject {
           modelContext.insert(newStreak)
           return newStreak
         }()
-        debugLog("🔍 STREAK_START: GlobalStreakModel.currentStreak = \(streak.currentStreak)")
+        debugLog("🔍 STREAK_START: GlobalStreakModel.currentStreak = \(streak.currentStreak), longestStreak = \(streak.longestStreak)")
         
         // Fetch all habits for this user
         var habitsDescriptor = FetchDescriptor<HabitData>(
@@ -527,6 +538,84 @@ class HomeViewState: ObservableObject {
         TelemetryService.shared.logError("streak.update.failed", error: error)
         debugLog("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
       }
+    }
+  }
+  
+  /// One-time backfill to calculate and restore historical longestStreak for existing users
+  /// This runs once per user to restore their historical best streak that was never persisted before
+  @MainActor
+  private func backfillHistoricalLongestStreak(userId: String, modelContext: ModelContext) async {
+    debugLog("🔄 STREAK_BACKFILL: Starting historical longestStreak backfill for user '\(userId.isEmpty ? "guest" : userId)'")
+    
+    do {
+      // Fetch all habits for this user
+      var habitsDescriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { habit in
+          habit.userId == userId
+        }
+      )
+      habitsDescriptor.includePendingChanges = true
+      let habitDataList = try modelContext.fetch(habitsDescriptor)
+      let habits = habitDataList.map { $0.toHabit() }
+      
+      guard !habits.isEmpty else {
+        debugLog("ℹ️ STREAK_BACKFILL: No habits found, skipping backfill")
+        return
+      }
+      
+      // Fetch all completion records for this user
+      var completionDescriptor = FetchDescriptor<CompletionRecord>()
+      completionDescriptor.includePendingChanges = true
+      let allCompletionRecords = try modelContext.fetch(completionDescriptor)
+      let filteredCompletionRecords = allCompletionRecords.filter { record in
+        guard record.isCompleted else { return false }
+        if userId.isEmpty || userId == "guest" {
+          return record.userId.isEmpty || record.userId == "guest" || record.userId == userId
+        } else {
+          return record.userId == userId
+        }
+      }
+      
+      debugLog("📊 STREAK_BACKFILL: Found \(habits.count) habits and \(filteredCompletionRecords.count) completion records")
+      
+      // Calculate the true longest streak from all completion records in history
+      let calendar = Calendar.current
+      let calculatedLongestStreak = StreakCalculator.computeLongestStreakFromHistory(
+        habits: habits,
+        completionRecords: filteredCompletionRecords,
+        calendar: calendar
+      )
+      
+      debugLog("📊 STREAK_BACKFILL: Calculated longest streak from history: \(calculatedLongestStreak)")
+      
+      // Get or create GlobalStreakModel
+      let streakDescriptor = FetchDescriptor<GlobalStreakModel>(
+        predicate: #Predicate { streak in
+          streak.userId == userId
+        }
+      )
+      
+      let existingStreaks = try modelContext.fetch(streakDescriptor)
+      let streak = existingStreaks.first ?? {
+        let newStreak = GlobalStreakModel(userId: userId)
+        modelContext.insert(newStreak)
+        return newStreak
+      }()
+      
+      let storedLongestBefore = streak.longestStreak
+      
+      // Update longestStreak if the calculated value is greater
+      if calculatedLongestStreak > storedLongestBefore {
+        streak.longestStreak = calculatedLongestStreak
+        try modelContext.save()
+        debugLog("✅ STREAK_BACKFILL: Updated longestStreak from \(storedLongestBefore) to \(calculatedLongestStreak)")
+      } else {
+        debugLog("ℹ️ STREAK_BACKFILL: Kept longestStreak at \(storedLongestBefore) (calculated: \(calculatedLongestStreak))")
+      }
+      
+    } catch {
+      debugLog("❌ STREAK_BACKFILL: Failed to backfill historical longestStreak: \(error.localizedDescription)")
+      // Don't throw - backfill failure shouldn't block app launch
     }
   }
 
