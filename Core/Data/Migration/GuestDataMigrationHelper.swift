@@ -78,7 +78,6 @@ final class GuestDataMigrationHelper {
         }
         
         for habitData in guestHabits {
-          let oldUserId = habitData.userId
           habitData.userId = userId
           
           // Update CompletionRecords linked via relationship
