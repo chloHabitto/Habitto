@@ -231,14 +231,25 @@ final class GlobalStreakModel {
             // If vacation day, skip (don't increment or break streak)
         }
         
+        // ✅ HIGH-WATER MARK: Preserve longestStreak as a high-water mark that never decreases
+        let storedLongestBefore = self.longestStreak
+        let newlyCalculatedLongest = longest
+        
         // Update all fields
         self.currentStreak = streak
-        self.longestStreak = longest
+        // Only update longestStreak if the newly calculated value is GREATER than the stored value
+        // This ensures longestStreak never decreases, even if historical data has issues
+        if newlyCalculatedLongest > storedLongestBefore {
+            self.longestStreak = newlyCalculatedLongest
+            print("📈 STREAK_HIGH_WATER: Updated longestStreak \(storedLongestBefore) → \(newlyCalculatedLongest)")
+        } else {
+            print("📊 STREAK_HIGH_WATER: Kept longestStreak at \(storedLongestBefore) (calculated: \(newlyCalculatedLongest))")
+        }
         self.totalCompleteDays = totalComplete
         self.lastCompleteDate = lastComplete
         self.lastUpdated = Date()
         
-        print("✅ Streak recalculated: current=\(streak), longest=\(longest), total=\(totalComplete)")
+        print("✅ Streak recalculated: current=\(streak), longest=\(self.longestStreak) (stored: \(storedLongestBefore), calculated: \(newlyCalculatedLongest)), total=\(totalComplete)")
     }
     
     /// Check if only vacation days exist between two dates

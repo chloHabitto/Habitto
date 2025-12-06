@@ -224,6 +224,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
             habitData.usageHistory.append(usageRecord)
           }
 
+          // ✅ PERSISTENT BEST STREAK: Initialize bestStreakEver for new habits
+          // Calculate best streak from history to initialize the persistent value
+          // This ensures best streak is preserved even if completion records are lost later
+          let _ = habitData.calculateAndUpdateBestStreak()
+          
           container.modelContext.insert(habitData)
         }
       }
@@ -481,6 +486,26 @@ final class SwiftDataStorage: HabitStorageProtocol {
             }
           }
         }
+      }
+      
+      // ✅ PERSISTENT BEST STREAK: One-time initialization for existing habits
+      // Calculate bestStreakEver for habits that don't have it set yet
+      let bestStreakInitializationKey = "bestStreakEver_initialized_\(currentUserId ?? "guest")"
+      if !UserDefaults.standard.bool(forKey: bestStreakInitializationKey) {
+        logger.info("🔄 Initializing bestStreakEver for existing habits...")
+        var initializedCount = 0
+        for habitData in habitDataArray {
+          // Only initialize if bestStreakEver is 0 (default value)
+          if habitData.bestStreakEver == 0 {
+            let _ = habitData.calculateAndUpdateBestStreak()
+            initializedCount += 1
+          }
+        }
+        if initializedCount > 0 {
+          try container.modelContext.save()
+          logger.info("✅ Initialized bestStreakEver for \(initializedCount) habits")
+        }
+        UserDefaults.standard.set(true, forKey: bestStreakInitializationKey)
       }
       
       let habits = habitDataArray.map { $0.toHabit() }

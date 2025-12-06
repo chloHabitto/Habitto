@@ -99,6 +99,55 @@ enum StreakCalculator {
       todayWasComplete: todayWasComplete)
   }
 
+  /// Calculates the longest streak from all completion records in history
+  /// This finds the maximum consecutive days where all scheduled habits were completed
+  static func computeLongestStreakFromHistory(
+    habits: [Habit],
+    completionRecords: [CompletionRecord],
+    calendar: Calendar = .current
+  ) -> Int {
+    guard !habits.isEmpty else { return 0 }
+    
+    let today = DateUtils.startOfDay(for: Date())
+    let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
+    let earliestHabitStart = habits
+      .map { calendar.startOfDay(for: $0.startDate) }
+      .min() ?? defaultStartDate
+    let startDate = max(defaultStartDate, earliestHabitStart)
+    
+    var longestStreak = 0
+    var currentStreak = 0
+    var checkDate = startDate
+    
+    while checkDate <= today {
+      let scheduledHabits = habits.filter {
+        HabitSchedulingLogic.shouldShowHabitOnDate($0, date: checkDate, habits: habits)
+      }
+      
+      guard !scheduledHabits.isEmpty else {
+        // No habits scheduled - doesn't break streak, but doesn't count either
+        checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
+        continue
+      }
+      
+      // Check if all scheduled habits are complete
+      let allComplete = scheduledHabits.allSatisfy { habit in
+        habit.isCompleted(for: checkDate)
+      }
+      
+      if allComplete {
+        currentStreak += 1
+        longestStreak = max(longestStreak, currentStreak)
+      } else {
+        currentStreak = 0
+      }
+      
+      checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
+    }
+    
+    return longestStreak
+  }
+  
   /// Produces a deterministic checksum for the supplied completion records so we can
   /// detect data drift between streak computations.
   static func checksum(for records: [CompletionRecord]) -> String {

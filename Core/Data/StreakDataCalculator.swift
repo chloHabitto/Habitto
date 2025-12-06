@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 // MARK: - Calendar Extension for Leap Year
 
@@ -18,7 +19,23 @@ class StreakDataCalculator {
   // MARK: - Best Streak Calculation
 
   /// Calculates the best streak from habit history, excluding vacation days
+  /// ✅ PERSISTENT BEST STREAK: If habit has HabitData, uses bestStreakEver instead of recalculating
   static func calculateBestStreakFromHistory(for habit: Habit) -> Int {
+    // ✅ PERSISTENT BEST STREAK: Try to get bestStreakEver from HabitData if available
+    // This avoids recalculating and ensures best streak survives data loss
+    // Note: Accessing SwiftDataContainer requires MainActor, so we check if we can access it synchronously
+    // If we're on MainActor, try to get the persistent value; otherwise fall back to calculating from history
+    if Thread.isMainThread {
+      // We're on MainActor, so we can safely access SwiftDataContainer
+      // Use MainActor.assumeIsolated to access the MainActor-isolated function
+      if let habitData = MainActor.assumeIsolated({ getHabitDataSync(for: habit.id) }) {
+        // Update bestStreakEver by calculating from history, then return the persistent value
+        let calculatedBest = habitData.calculateAndUpdateBestStreak()
+        return calculatedBest
+      }
+    }
+    
+    // Fallback: Calculate from history if HabitData not available
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let startDate = habit.startDate
@@ -48,6 +65,20 @@ class StreakDataCalculator {
     }
 
     return maxStreak
+  }
+  
+  /// Helper to get HabitData for a habit ID (synchronous, must be called from MainActor)
+  @MainActor
+  private static func getHabitDataSync(for habitId: UUID) -> HabitData? {
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { $0.id == habitId }
+      )
+      return try context.fetch(descriptor).first
+    } catch {
+      return nil
+    }
   }
 
   // MARK: - Streak Statistics

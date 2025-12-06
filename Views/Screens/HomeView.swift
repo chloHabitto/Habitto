@@ -453,12 +453,28 @@ class HomeViewState: ObservableObject {
           today: today,
           calendar: calendar)
 
+        // ✅ HIGH-WATER MARK: Calculate longest streak from entire history
+        let calculatedLongestStreak = StreakCalculator.computeLongestStreakFromHistory(
+          habits: habits,
+          completionRecords: filteredCompletionRecords,
+          calendar: calendar)
+
         let oldStreak = streak.currentStreak
+        let storedLongestBefore = streak.longestStreak
         let mismatchDetected = oldStreak != computation.currentStreak
 
         debugLog("🔍 STREAK_END: Calculated streak = \(computation.currentStreak), saving to GlobalStreakModel")
+        debugLog("📊 STREAK_LONGEST: Stored longestStreak before: \(storedLongestBefore), calculated from history: \(calculatedLongestStreak)")
+        
         streak.currentStreak = computation.currentStreak
-        streak.longestStreak = max(streak.longestStreak, computation.currentStreak)
+        // ✅ HIGH-WATER MARK: Only update longestStreak if the newly calculated value is GREATER
+        // This ensures longestStreak never decreases, even if historical data has issues
+        if calculatedLongestStreak > storedLongestBefore {
+          streak.longestStreak = calculatedLongestStreak
+          debugLog("📈 STREAK_HIGH_WATER: Updated longestStreak \(storedLongestBefore) → \(calculatedLongestStreak)")
+        } else {
+          debugLog("📊 STREAK_HIGH_WATER: Kept longestStreak at \(storedLongestBefore) (calculated: \(calculatedLongestStreak))")
+        }
         streak.lastCompleteDate = computation.lastCompleteDate
         streak.lastUpdated = Date()
 
@@ -470,7 +486,7 @@ class HomeViewState: ObservableObject {
         debugLog("   Old streak: \(oldStreak) day(s)")
         debugLog("   New streak: \(computation.currentStreak) day(s)")
         debugLog("   Last complete date: \(computation.lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
-        debugLog("   Longest streak: \(streak.longestStreak) day(s)")
+        debugLog("   Longest streak: \(streak.longestStreak) day(s) (stored: \(storedLongestBefore), calculated: \(calculatedLongestStreak))")
         debugLog("   ✅ GLOBAL_STREAK_FINAL: Saved to GlobalStreakModel and UI: \(computation.currentStreak)")
         debugLog(String(repeating: "=", count: 60))
         debugLog("")
