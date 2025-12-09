@@ -15,6 +15,7 @@ struct HeaderView: View {
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   @State private var showingProfileView = false
   @State private var showingSubscriptionView = false
+  @State private var guestName: String = ""
 
   var body: some View {
     let _ = {
@@ -69,10 +70,11 @@ struct HeaderView: View {
                 }
               }
             } else {
-              // User is not logged in - show login prompt
-              Text("Hi there,")
+              // User is not logged in - show greeting with name if available
+              Text(greetingText)
                 .font(.appHeadlineMediumEmphasised)
                 .foregroundColor(.white)
+                .id("greeting-guest-\(guestName)") // Force refresh when guest name changes
 
               // View Profile button with chevron (leads to profile)
               Button(action: {
@@ -224,6 +226,15 @@ struct HeaderView: View {
     .sheet(isPresented: $showingProfileView) {
       ProfileView()
     }
+    .onAppear {
+      loadGuestName()
+    }
+    .onChange(of: showingProfileView) { _, isShowing in
+      // Reload guest name when profile view is dismissed
+      if !isShowing {
+        loadGuestName()
+      }
+    }
     .sheet(isPresented: $showingSubscriptionView) {
       SubscriptionView()
     }
@@ -261,11 +272,28 @@ struct HeaderView: View {
       // For signed-in users without a first name, show "Hi there,"
       return "Hi there,"
     }
-    // Default greeting for guest users
+    // For guest users, check if they have a saved name
+    if !guestName.isEmpty {
+      let firstName = guestName.components(separatedBy: " ").first ?? guestName
+      if !firstName.isEmpty && firstName.trimmingCharacters(in: .whitespaces) != "" {
+        return "Hi \(firstName),"
+      }
+    }
+    // Default greeting for guest users without a name
     return "Hi there,"
   }
 
   // MARK: - Helper Methods
+
+  private func loadGuestName() {
+    if let savedName = UserDefaults.standard.string(forKey: "GuestName"),
+       !savedName.isEmpty
+    {
+      guestName = savedName
+    } else {
+      guestName = ""
+    }
+  }
 
   private func pluralizeStreak(_ streak: Int) -> String {
     if streak == 0 {
