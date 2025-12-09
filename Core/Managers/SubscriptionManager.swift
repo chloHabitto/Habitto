@@ -15,6 +15,9 @@ class SubscriptionManager: ObservableObject {
   /// Whether the user has an active premium subscription
   @Published var isPremium: Bool = false
   
+  /// The current active subscription product ID, if any
+  @Published var currentSubscriptionProductID: String? = nil
+  
   /// Transaction listener for cross-device sync
   private var transactionListener: Task<Void, Error>?
   
@@ -142,6 +145,7 @@ class SubscriptionManager: ObservableObject {
         // Update on MainActor since we're called from Task.detached (background thread)
         await MainActor.run {
           self.isPremium = true
+          self.currentSubscriptionProductID = transaction.productID
         }
         
         // Finish the transaction to acknowledge receipt
@@ -153,6 +157,7 @@ class SubscriptionManager: ObservableObject {
         // Update on MainActor since we're called from Task.detached (background thread)
         await MainActor.run {
           self.isPremium = false
+          self.currentSubscriptionProductID = nil
         }
         // Finish revoked transactions too to acknowledge we've processed them
         await transaction.finish()
@@ -278,6 +283,7 @@ class SubscriptionManager: ObservableObject {
     print("🔍 SubscriptionManager: Iterating through Transaction.currentEntitlements...")
     
     var hasActiveSubscription = false
+    var activeProductID: String? = nil
     var checkedCount = 0
     
     // Check for active entitlements (subscriptions and non-consumables)
@@ -298,6 +304,7 @@ class SubscriptionManager: ObservableObject {
           if transaction.revocationDate == nil {
             print("✅ SubscriptionManager: Found active subscription/product: \(transaction.productID)")
             hasActiveSubscription = true
+            activeProductID = transaction.productID
             break
           }
         }
@@ -310,8 +317,12 @@ class SubscriptionManager: ObservableObject {
     
     // Direct assignment - class is @MainActor so this is already on main thread
     self.isPremium = hasActiveSubscription
+    self.currentSubscriptionProductID = activeProductID
     if hasActiveSubscription {
       print("✅ SubscriptionManager: Premium status enabled")
+      if let productID = activeProductID {
+        print("✅ SubscriptionManager: Current subscription: \(productID)")
+      }
     } else {
       print("ℹ️ SubscriptionManager: No active subscription found - free user")
     }
@@ -320,6 +331,12 @@ class SubscriptionManager: ObservableObject {
   /// Update subscription status (call this after purchase)
   func updateSubscriptionStatus(_ isPremium: Bool) {
     self.isPremium = isPremium
+  }
+  
+  /// Get the current subscription product ID
+  /// - Returns: The product ID of the current subscription, or nil if none
+  var currentSubscriptionID: String? {
+    return currentSubscriptionProductID
   }
   
   /// Restore previous purchases
@@ -747,7 +764,9 @@ class SubscriptionManager: ObservableObject {
           if foundInEntitlements {
             // Direct assignment - class is @MainActor so this is already on main thread
             self.isPremium = true
+            self.currentSubscriptionProductID = productID
             print("✅ SubscriptionManager: Premium status enabled (verified in StoreKit)")
+            print("✅ SubscriptionManager: Current subscription set to: \(productID)")
             
             return (true, "Purchase successful! Premium features are now unlocked.")
           } else {
