@@ -41,8 +41,7 @@ struct TutorialSlideView: View {
       // Image
       Image(slide.imageName)
         .resizable()
-        .aspectRatio(contentMode: (slide.id == TutorialSlide.tutorialSlides[2].id || slide
-            .id == TutorialSlide.tutorialSlides[3].id)
+        .aspectRatio(contentMode: slide.id == TutorialSlide.tutorialSlides.last?.id
           ? .fit
           : .fill)
           .frame(maxWidth: .infinity)
