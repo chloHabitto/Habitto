@@ -168,6 +168,24 @@ struct SubscriptionView: View {
   @State private var selectedLegalTab: Int = 0 // 0 = Terms, 1 = Privacy Policy
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   
+  /// Get the current subscription option based on active subscription
+  private var currentSubscriptionOption: SubscriptionOption? {
+    guard let productID = subscriptionManager.currentSubscriptionProductID else {
+      return nil
+    }
+    
+    switch productID {
+    case SubscriptionManager.ProductID.lifetime:
+      return .lifetime
+    case SubscriptionManager.ProductID.annual:
+      return .annual
+    case SubscriptionManager.ProductID.monthly:
+      return .monthly
+    default:
+      return nil
+    }
+  }
+  
   private let reviews: [Review] = [
     Review(id: "1", text: "This app transformed my daily routine. Premium features are worth it!"),
     Review(id: "2", text: "Best habit tracker I've used. The insights are incredible."),
@@ -400,6 +418,12 @@ struct SubscriptionView: View {
         showCrossedPrice: false
       )
     }
+    .onAppear {
+      // Set initial selected option to current subscription if available, otherwise default to lifetime
+      if let currentOption = currentSubscriptionOption {
+        selectedOption = currentOption
+      }
+    }
   }
   
   private func subscriptionOptionCard(
@@ -413,35 +437,54 @@ struct SubscriptionView: View {
     showBadge: Bool,
     showCrossedPrice: Bool
   ) -> some View {
-    Button(action: {
-      withAnimation(.easeInOut(duration: 0.2)) {
-        selectedOption = option
+    let isCurrentPlan = currentSubscriptionOption == option
+    let isSelected = selectedOption == option
+    
+    return Button(action: {
+      // Don't allow selection of current plan
+      if !isCurrentPlan {
+        withAnimation(.easeInOut(duration: 0.2)) {
+          selectedOption = option
+        }
       }
     }) {
       HStack(spacing: 16) {
         if !emoji.isEmpty {
           Text(emoji)
             .font(.system(size: 24))
+            .opacity(isCurrentPlan ? 0.5 : 1.0)
         }
         
         VStack(alignment: .leading, spacing: 4) {
-          if showBadge, let badge = badge {
-            Text(badge)
-              .font(.system(size: 10, weight: .semibold))
-              .foregroundColor(Color("navy900"))
-              .padding(.horizontal, 8)
-              .padding(.vertical, 4)
-              .background(Color("pastelBlue300"))
-              .cornerRadius(8)
+          HStack(spacing: 8) {
+            if showBadge, let badge = badge {
+              Text(badge)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color("navy900"))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color("pastelBlue300"))
+                .cornerRadius(8)
+            }
+            
+            if isCurrentPlan {
+              Text("Current Plan")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(.text02)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.text04.opacity(0.2))
+                .cornerRadius(8)
+            }
           }
           
           Text(title)
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.text02)
+            .foregroundColor(isCurrentPlan ? .text03 : .text02)
           
           Text(length)
             .font(.appBodySmall)
-            .foregroundColor(.text03)
+            .foregroundColor(isCurrentPlan ? .text04 : .text03)
           
           HStack(spacing: 8) {
             if showCrossedPrice, let originalPrice = originalPrice {
@@ -453,7 +496,7 @@ struct SubscriptionView: View {
             
             Text(price)
               .font(.appBodySmallEmphasised)
-              .foregroundColor(.text05)
+              .foregroundColor(isCurrentPlan ? .text04 : .text05)
           }
         }
         
@@ -462,32 +505,35 @@ struct SubscriptionView: View {
         // Radio button circle
         ZStack {
           Circle()
-            .fill(selectedOption == option ? Color.primary : Color.clear)
+            .fill(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.3) : Color.primary) : Color.clear)
             .frame(width: 24, height: 24)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
           
           Circle()
-            .stroke(selectedOption == option ? Color.primary : Color.outline3, lineWidth: 2)
+            .stroke(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.5) : Color.primary) : Color.outline3, lineWidth: 2)
             .frame(width: 24, height: 24)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
+            .opacity(isCurrentPlan ? 0.5 : 1.0)
           
-          if selectedOption == option {
+          if isSelected {
             Circle()
-              .fill(Color.white)
+              .fill(isCurrentPlan ? Color.text04.opacity(0.6) : Color.white)
               .frame(width: 8, height: 8)
               .animation(.easeInOut(duration: 0.2), value: selectedOption)
           }
         }
       }
       .padding(16)
-      .background(selectedOption == option ? Color.primary.opacity(0.05) : Color.surface)
+      .background(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.05) : Color.primary.opacity(0.05)) : Color.surface)
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .stroke(selectedOption == option ? Color.primary : Color.outline3, lineWidth: 2)
+          .stroke(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.3) : Color.primary) : Color.outline3, lineWidth: 2)
       )
+      .opacity(isCurrentPlan ? 0.7 : 1.0)
     }
     .buttonStyle(PlainButtonStyle())
+    .disabled(isCurrentPlan)
   }
   
   // MARK: - Comparison Table
