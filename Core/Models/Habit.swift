@@ -849,14 +849,14 @@ struct Habit: Identifiable, Codable, Equatable {
     
     if isHistoricalDate {
       // For historical dates, query CompletionRecords from SwiftData
-      if let completionRecord = queryCompletionRecordFromSwiftData(for: date) {
+      if let progress = queryCompletionRecordFromSwiftData(for: date) {
         let historicalGoal = goalString(for: date)
         let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
-        let isComplete = goalAmount > 0 ? (completionRecord.progress >= goalAmount) : (completionRecord.progress > 0)
+        let isComplete = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
         
         print("📊 COMPLETE_HISTORICAL: isCompleted(\(dateKey)) from CompletionRecord")
         print("  - Source: SwiftData CompletionRecord")
-        print("  - progress: \(completionRecord.progress)")
+        print("  - progress: \(progress)")
         print("  - historicalGoal: '\(historicalGoal)'")
         print("  - goalAmount: \(goalAmount)")
         print("  - isCompleted: \(isComplete)")
@@ -909,33 +909,38 @@ struct Habit: Identifiable, Codable, Equatable {
     return calculatedCompleted
   }
   
-  /// Query CompletionRecord from SwiftData for a specific date
-  /// Returns nil if no record is found or if query fails
-  private func queryCompletionRecordFromSwiftData(for date: Date) -> CompletionRecord? {
+  /// Query CompletionRecord progress from SwiftData for a specific date
+  /// Returns the progress value (Int) if a completed record is found, nil otherwise
+  private func queryCompletionRecordFromSwiftData(for date: Date) -> Int? {
     // ✅ FIX: SwiftDataContainer requires MainActor, so check if we're on main thread
     guard Thread.isMainThread else {
       // Not on main thread - can't query SwiftData, fall back to dictionary
       return nil
     }
     
-    do {
-      // Use MainActor.assumeIsolated since we're on the main thread
-      let context = MainActor.assumeIsolated { SwiftDataContainer.shared.modelContext }
-      let dateKey = Self.dateKey(for: date)
-      
-      // Query for CompletionRecord matching this habit ID and date
-      let predicate = #Predicate<CompletionRecord> { record in
-        record.habitId == self.id && record.dateKey == dateKey && record.isCompleted == true
+    let dateKey = Self.dateKey(for: date)
+    let habitId = self.id
+    
+    // Move all SwiftData operations inside MainActor.assumeIsolated closure
+    // Extract only the primitive progress value to avoid Sendable issues
+    return MainActor.assumeIsolated {
+      do {
+        let context = SwiftDataContainer.shared.modelContext
+        
+        // Query for CompletionRecord matching this habit ID and date
+        let predicate = #Predicate<CompletionRecord> { record in
+          record.habitId == habitId && record.dateKey == dateKey && record.isCompleted == true
+        }
+        let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+        let records = try context.fetch(descriptor)
+        
+        // Return the progress value from the first matching record (should be unique per habit+date)
+        return records.first?.progress
+      } catch {
+        // If query fails, return nil to fall back to dictionary
+        print("⚠️ queryCompletionRecordFromSwiftData: Failed to query for \(dateKey): \(error.localizedDescription)")
+        return nil
       }
-      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
-      let records = try context.fetch(descriptor)
-      
-      // Return the first matching record (should be unique per habit+date)
-      return records.first
-    } catch {
-      // If query fails, return nil to fall back to dictionary
-      print("⚠️ queryCompletionRecordFromSwiftData: Failed to query for \(Self.dateKey(for: date)): \(error.localizedDescription)")
-      return nil
     }
   }
 
