@@ -378,65 +378,76 @@ struct ProfileView: View {
   }
 
   private func saveChanges() {
-    guard isLoggedIn, let user = Auth.auth().currentUser else {
-      print("❌ Cannot save profile: User not logged in")
-      return
-    }
+    // Dismiss keyboard when Save button is tapped
+    UIApplication.shared.sendAction(
+      #selector(UIResponder.resignFirstResponder),
+      to: nil,
+      from: nil,
+      for: nil)
     
-    // Update the user's display name in Firebase
-    // Use the name directly as displayName
-    let newDisplayName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
-    
-    // Capture current values before async operations
-    let savedFirstName = firstName
-    
-    // Update display name using Firebase Auth
-    let changeRequest = user.createProfileChangeRequest()
-    changeRequest.displayName = newDisplayName.isEmpty ? nil : newDisplayName
-    
-    changeRequest.commitChanges { error in
-      DispatchQueue.main.async {
-        if let error = error {
-          print("❌ Failed to update profile: \(error.localizedDescription)")
-        } else {
-          // Reload the user to get updated profile information
-          user.reload { reloadError in
-            DispatchQueue.main.async {
-              if let reloadError = reloadError {
-                print("⚠️ Profile updated but failed to reload user: \(reloadError.localizedDescription)")
-              } else {
-                print("✅ Profile updated and user reloaded successfully")
-                
-                // ✅ CRITICAL: Update authManager's currentUser to reflect the reloaded user
-                // This ensures HeaderView and other views see the updated displayName
-                if let reloadedUser = Auth.auth().currentUser {
-                  authManager.currentUser = reloadedUser
-                  print("✅ Updated authManager.currentUser with reloaded user (displayName: \(reloadedUser.displayName ?? "nil"))")
-                }
-              }
-              
-              // Update original values to reflect saved state
-              originalFirstName = savedFirstName
-              
-              // Reload user data to reflect changes (this will get the updated displayName)
-              // Inline the logic since we can't call methods from closures in structs
-              if isLoggedIn, let updatedUser = authManager.currentUser {
-                // Load display name directly as the name
-                if let displayName = updatedUser.displayName,
-                   !displayName.isEmpty
-                {
-                  firstName = displayName
+    if isLoggedIn, let user = Auth.auth().currentUser {
+      // Save for logged-in user - update Firebase display name
+      let newDisplayName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+      
+      // Capture current values before async operations
+      let savedFirstName = firstName
+      
+      // Update display name using Firebase Auth
+      let changeRequest = user.createProfileChangeRequest()
+      changeRequest.displayName = newDisplayName.isEmpty ? nil : newDisplayName
+      
+      changeRequest.commitChanges { error in
+        DispatchQueue.main.async {
+          if let error = error {
+            print("❌ Failed to update profile: \(error.localizedDescription)")
+          } else {
+            // Reload the user to get updated profile information
+            user.reload { reloadError in
+              DispatchQueue.main.async {
+                if let reloadError = reloadError {
+                  print("⚠️ Profile updated but failed to reload user: \(reloadError.localizedDescription)")
                 } else {
-                  firstName = ""
+                  print("✅ Profile updated and user reloaded successfully")
+                  
+                  // ✅ CRITICAL: Update authManager's currentUser to reflect the reloaded user
+                  // This ensures HeaderView and other views see the updated displayName
+                  if let reloadedUser = Auth.auth().currentUser {
+                    authManager.currentUser = reloadedUser
+                    print("✅ Updated authManager.currentUser with reloaded user (displayName: \(reloadedUser.displayName ?? "nil"))")
+                  }
                 }
                 
-                // Update original values to match current values
-                originalFirstName = firstName
+                // Update original values to reflect saved state
+                originalFirstName = savedFirstName
+                
+                // Reload user data to reflect changes (this will get the updated displayName)
+                // Inline the logic since we can't call methods from closures in structs
+                if isLoggedIn, let updatedUser = authManager.currentUser {
+                  // Load display name directly as the name
+                  if let displayName = updatedUser.displayName,
+                     !displayName.isEmpty
+                  {
+                    firstName = displayName
+                  } else {
+                    firstName = ""
+                  }
+                  
+                  // Update original values to match current values
+                  originalFirstName = firstName
+                }
               }
             }
           }
         }
       }
+    } else {
+      // Save for guest user - store in UserDefaults
+      let guestName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+      UserDefaults.standard.set(guestName, forKey: "GuestName")
+      print("✅ Guest name saved: \(guestName)")
+      
+      // Update original value to reflect saved state
+      originalFirstName = firstName
     }
   }
 }
