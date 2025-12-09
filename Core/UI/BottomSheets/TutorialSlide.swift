@@ -22,12 +22,8 @@ extension TutorialSlide {
       title: "Track Progress",
       description: "Swipe left or right on your habits to update your daily progress and stay motivated."),
     TutorialSlide(
-      imageName: "IMG_6696",
-      title: "How to share a feedback",
-      description: "Screenshot -> Share -> Share Beta Feedback"),
-    TutorialSlide(
-      imageName: "IMG_6720",
-      title: "Thank you 🩷",
-      description: "The app is still a work in progress, so it might not be fully functional or look perfect yet, but I'm continuing to build it, your feedback is really valuable!")
+      imageName: "Sticker-Exciting",
+      title: "We're here to help 🩷",
+      description: "We're constantly working to improve Habitto and help you build better habits. Your feedback means the world to us!")
   ]
 }
