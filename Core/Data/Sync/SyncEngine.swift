@@ -1384,10 +1384,73 @@ actor SyncEngine {
             logger.info("✅ Imported DailyAward for \(dateKey) (\(xpGranted) XP)")
         }
         
+        // ✅ VALIDATION: Verify the imported award is valid (non-blocking)
+        // This logs warnings if invalid awards are imported but doesn't block sync
+        // The DailyAwardIntegrityService can be used to clean up invalid awards later
+        Task {
+            await validateImportedAward(dateKey: dateKey, userId: userId)
+        }
+        
         // CRITICAL: Sync XP from Firestore to ensure consistency across devices
         // The XP state stream should handle this, but we explicitly sync here to ensure
         // immediate consistency when importing remote awards
         await syncXPStateFromFirestore(userId: userId)
+    }
+    
+    /// Validate an imported award to check if it's valid (non-blocking)
+    /// This logs warnings if invalid awards are detected but doesn't block sync
+    /// The DailyAwardIntegrityService can be used to clean up invalid awards later
+    private func validateImportedAward(dateKey: String, userId: String) async {
+        // Parse dateKey to Date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone.current
+        guard let date = dateFormatter.date(from: dateKey) else {
+            logger.warning("⚠️ Invalid dateKey format in imported award: \(dateKey)")
+            return
+        }
+        
+        // Get scheduled habits for this date
+        guard let scheduledHabits = try? await HabitStore.shared.scheduledHabits(for: date) else {
+            logger.warning("⚠️ Failed to load scheduled habits for validation of imported award: \(dateKey)")
+            return
+        }
+        
+        // If no habits were scheduled, award should not exist
+        if scheduledHabits.isEmpty {
+            logger.warning("⚠️ INVALID AWARD IMPORTED: No habits scheduled for \(dateKey) - award should not exist")
+            return
+        }
+        
+        // Check completion records for this date
+        let scheduledHabitIds: Set<UUID> = Set(scheduledHabits.map { $0.id })
+        
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            let completionPredicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId && record.dateKey == dateKey && record.isCompleted == true
+            }
+            let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+            let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
+            let completedIds = Set(completionRecords.map(\.habitId))
+            
+            // Check if all scheduled habits were completed
+            let missingHabitIds = scheduledHabitIds.subtracting(completedIds)
+            
+            if !missingHabitIds.isEmpty {
+                let missingHabits = scheduledHabits
+                    .filter { missingHabitIds.contains($0.id) }
+                    .map(\.name)
+                
+                logger.warning("⚠️ INVALID AWARD IMPORTED: Not all habits completed for \(dateKey)")
+                logger.warning("   Scheduled: \(scheduledHabits.count), Completed: \(completedIds.count)")
+                logger.warning("   Missing habits: \(missingHabits.joined(separator: ", "))")
+                logger.warning("   Use DailyAwardIntegrityService to clean up invalid awards")
+            } else {
+                logger.info("✅ Imported award for \(dateKey) is valid (all \(scheduledHabits.count) habits completed)")
+            }
+        }
     }
     
     /// Sync XP state from Firestore's xp/state document

@@ -383,7 +383,7 @@ final actor HabitStore {
     logger.info("Successfully deleted habit: \(habit.name)")
   }
 
-  private func scheduledHabits(for date: Date) async throws -> [Habit] {
+  func scheduledHabits(for date: Date) async throws -> [Habit] {
     let dateKey = CoreDataManager.dateKey(for: date)
     if let cache = scheduledHabitsCache, cache.dateKey == dateKey {
       return cache.habits

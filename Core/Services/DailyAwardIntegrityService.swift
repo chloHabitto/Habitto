@@ -1,0 +1,317 @@
+import Foundation
+import OSLog
+import SwiftData
+
+/// Service for investigating and fixing DailyAward integrity issues
+///
+/// This service validates that DailyAward records match actual completion data:
+/// - A DailyAward should only exist if ALL scheduled habits were completed on that date
+/// - Invalid awards are identified and can be removed
+@MainActor
+class DailyAwardIntegrityService {
+    
+    // MARK: - Singleton
+    
+    static let shared = DailyAwardIntegrityService()
+    
+    private init() {}
+    
+    // MARK: - Dependencies
+    
+    private let logger = Logger(subsystem: "com.habitto.app", category: "DailyAwardIntegrity")
+    
+    // MARK: - Investigation Results
+    
+    struct InvestigationResult {
+        let totalAwards: Int
+        let validAwards: Int
+        let invalidAwards: [InvalidAward]
+        let totalXPFromAwards: Int
+        let validXP: Int
+        let invalidXP: Int
+        
+        struct InvalidAward {
+            let dateKey: String
+            let xpGranted: Int
+            let reason: String
+            let scheduledHabitsCount: Int
+            let completedHabitsCount: Int
+            let missingHabits: [String]
+        }
+    }
+    
+    // MARK: - Investigation
+    
+    /// Investigate all DailyAwards and validate them against actual completion data
+    ///
+    /// This checks each DailyAward to ensure:
+    /// 1. All scheduled habits for that date were actually completed
+    /// 2. The award wasn't created incorrectly
+    ///
+    /// - Returns: InvestigationResult with details about valid and invalid awards
+    func investigateDailyAwards(userId: String) async throws -> InvestigationResult {
+        logger.info("🔍 DailyAwardIntegrityService: Starting investigation for userId: '\(userId.isEmpty ? "guest" : userId.prefix(8))...'")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        
+        // Fetch all DailyAwards for this user
+        let awardPredicate = #Predicate<DailyAward> { award in
+            award.userId == userId
+        }
+        let awardDescriptor = FetchDescriptor<DailyAward>(
+            predicate: awardPredicate,
+            sortBy: [SortDescriptor(\.dateKey, order: .forward)]
+        )
+        let allAwards = try modelContext.fetch(awardDescriptor)
+        
+        logger.info("🔍 Found \(allAwards.count) DailyAwards to investigate")
+        
+        var validAwards: [DailyAward] = []
+        var invalidAwards: [InvestigationResult.InvalidAward] = []
+        var totalXP = 0
+        var validXP = 0
+        var invalidXP = 0
+        
+        // Validate each award
+        for award in allAwards {
+            totalXP += award.xpGranted
+            
+            // Parse dateKey to Date
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone.current
+            guard let date = dateFormatter.date(from: award.dateKey) else {
+                logger.warning("⚠️ Invalid dateKey format: \(award.dateKey)")
+                invalidAwards.append(InvestigationResult.InvalidAward(
+                    dateKey: award.dateKey,
+                    xpGranted: award.xpGranted,
+                    reason: "Invalid dateKey format",
+                    scheduledHabitsCount: 0,
+                    completedHabitsCount: 0,
+                    missingHabits: []
+                ))
+                invalidXP += award.xpGranted
+                continue
+            }
+            
+            // Check if all scheduled habits were completed on this date
+            let validationResult = await validateAward(award: award, date: date, userId: userId, modelContext: modelContext)
+            
+            if validationResult.isValid {
+                validAwards.append(award)
+                validXP += award.xpGranted
+                logger.info("✅ Award for \(award.dateKey) is VALID (\(award.xpGranted) XP)")
+            } else {
+                invalidAwards.append(InvestigationResult.InvalidAward(
+                    dateKey: award.dateKey,
+                    xpGranted: award.xpGranted,
+                    reason: validationResult.reason,
+                    scheduledHabitsCount: validationResult.scheduledHabitsCount,
+                    completedHabitsCount: validationResult.completedHabitsCount,
+                    missingHabits: validationResult.missingHabits
+                ))
+                invalidXP += award.xpGranted
+                logger.warning("❌ Award for \(award.dateKey) is INVALID: \(validationResult.reason)")
+                logger.warning("   Scheduled: \(validationResult.scheduledHabitsCount), Completed: \(validationResult.completedHabitsCount)")
+                if !validationResult.missingHabits.isEmpty {
+                    logger.warning("   Missing habits: \(validationResult.missingHabits.joined(separator: ", "))")
+                }
+            }
+        }
+        
+        let result = InvestigationResult(
+            totalAwards: allAwards.count,
+            validAwards: validAwards.count,
+            invalidAwards: invalidAwards,
+            totalXPFromAwards: totalXP,
+            validXP: validXP,
+            invalidXP: invalidXP
+        )
+        
+        logger.info("✅ Investigation complete:")
+        logger.info("   Total awards: \(result.totalAwards)")
+        logger.info("   Valid awards: \(result.validAwards)")
+        logger.info("   Invalid awards: \(result.invalidAwards.count)")
+        logger.info("   Total XP: \(result.totalXPFromAwards)")
+        logger.info("   Valid XP: \(result.validXP)")
+        logger.info("   Invalid XP: \(result.invalidXP)")
+        
+        return result
+    }
+    
+    // MARK: - Validation
+    
+    private struct ValidationResult {
+        let isValid: Bool
+        let reason: String
+        let scheduledHabitsCount: Int
+        let completedHabitsCount: Int
+        let missingHabits: [String]
+    }
+    
+    /// Validate a single DailyAward against actual completion data
+    private func validateAward(
+        award: DailyAward,
+        date: Date,
+        userId: String,
+        modelContext: ModelContext
+    ) async -> ValidationResult {
+        // Get scheduled habits for this date
+        let scheduledHabits = try? await HabitStore.shared.scheduledHabits(for: date)
+        guard let scheduledHabits = scheduledHabits else {
+            return ValidationResult(
+                isValid: false,
+                reason: "Failed to load scheduled habits",
+                scheduledHabitsCount: 0,
+                completedHabitsCount: 0,
+                missingHabits: []
+            )
+        }
+        
+        // If no habits were scheduled, award should not exist
+        if scheduledHabits.isEmpty {
+            return ValidationResult(
+                isValid: false,
+                reason: "No habits scheduled for this date",
+                scheduledHabitsCount: 0,
+                completedHabitsCount: 0,
+                missingHabits: []
+            )
+        }
+        
+        // Check completion records for this date
+        let scheduledHabitIds: Set<UUID> = Set(scheduledHabits.map { $0.id })
+        
+        // Extract to local constant for #Predicate macro
+        let awardDateKey = award.dateKey
+        let completionPredicate = #Predicate<CompletionRecord> { record in
+            record.userId == userId && record.dateKey == awardDateKey && record.isCompleted == true
+        }
+        let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+        let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
+        let completedIds = Set(completionRecords.map(\.habitId))
+        
+        // Check if all scheduled habits were completed
+        let missingHabitIds = scheduledHabitIds.subtracting(completedIds)
+        let allCompleted = missingHabitIds.isEmpty
+        
+        if allCompleted {
+            return ValidationResult(
+                isValid: true,
+                reason: "All scheduled habits completed",
+                scheduledHabitsCount: scheduledHabits.count,
+                completedHabitsCount: completedIds.count,
+                missingHabits: []
+            )
+        } else {
+            let missingHabits = scheduledHabits
+                .filter { missingHabitIds.contains($0.id) }
+                .map(\.name)
+            
+            return ValidationResult(
+                isValid: false,
+                reason: "Not all scheduled habits were completed",
+                scheduledHabitsCount: scheduledHabits.count,
+                completedHabitsCount: completedIds.count,
+                missingHabits: missingHabits
+            )
+        }
+    }
+    
+    // MARK: - Cleanup
+    
+    /// Remove invalid DailyAwards and recalculate XP
+    ///
+    /// This will:
+    /// 1. Investigate all awards
+    /// 2. Delete invalid awards
+    /// 3. Recalculate total XP from remaining valid awards
+    /// 4. Update UserProgressData
+    ///
+    /// - Returns: Number of invalid awards removed
+    func cleanupInvalidAwards(userId: String) async throws -> Int {
+        logger.info("🔧 DailyAwardIntegrityService: Starting cleanup for userId: '\(userId.isEmpty ? "guest" : userId.prefix(8))...'")
+        
+        // Investigate first
+        let investigation = try await investigateDailyAwards(userId: userId)
+        
+        if investigation.invalidAwards.isEmpty {
+            logger.info("✅ No invalid awards found - nothing to clean up")
+            return 0
+        }
+        
+        logger.info("🔧 Removing \(investigation.invalidAwards.count) invalid awards...")
+        
+        let modelContext = SwiftDataContainer.shared.modelContext
+        
+        // Delete invalid awards
+        var removedCount = 0
+        for invalidAward in investigation.invalidAwards {
+            // Extract to local constant for #Predicate macro
+            let invalidDateKey = invalidAward.dateKey
+            let deletePredicate = #Predicate<DailyAward> { award in
+                award.userId == userId && award.dateKey == invalidDateKey
+            }
+            let deleteDescriptor = FetchDescriptor<DailyAward>(predicate: deletePredicate)
+            let awardsToDelete = (try? modelContext.fetch(deleteDescriptor)) ?? []
+            
+            for award in awardsToDelete {
+                modelContext.delete(award)
+                removedCount += 1
+                logger.info("🗑️ Deleted invalid award for \(invalidAward.dateKey) (\(award.xpGranted) XP) - Reason: \(invalidAward.reason)")
+            }
+        }
+        
+        // Save deletions
+        try modelContext.save()
+        logger.info("✅ Deleted \(removedCount) invalid awards")
+        
+        // Recalculate XP from remaining valid awards
+        try await DailyAwardService.shared.repairIntegrity()
+        
+        logger.info("✅ Cleanup complete - Removed \(removedCount) invalid awards, XP recalculated")
+        
+        return removedCount
+    }
+    
+    // MARK: - Diagnostic Logging
+    
+    /// Print detailed investigation report to console
+    func printInvestigationReport(_ result: InvestigationResult) {
+        print("")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("📊 DAILY AWARD INTEGRITY INVESTIGATION REPORT")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("")
+        print("Total Awards: \(result.totalAwards)")
+        print("Valid Awards: \(result.validAwards)")
+        print("Invalid Awards: \(result.invalidAwards.count)")
+        print("")
+        print("Total XP from Awards: \(result.totalXPFromAwards)")
+        print("Valid XP: \(result.validXP)")
+        print("Invalid XP: \(result.invalidXP)")
+        print("")
+        
+        if !result.invalidAwards.isEmpty {
+            print("❌ INVALID AWARDS:")
+            print("")
+            for (index, invalid) in result.invalidAwards.enumerated() {
+                print("  \(index + 1). Date: \(invalid.dateKey)")
+                print("     XP: \(invalid.xpGranted)")
+                print("     Reason: \(invalid.reason)")
+                print("     Scheduled Habits: \(invalid.scheduledHabitsCount)")
+                print("     Completed Habits: \(invalid.completedHabitsCount)")
+                if !invalid.missingHabits.isEmpty {
+                    print("     Missing: \(invalid.missingHabits.joined(separator: ", "))")
+                }
+                print("")
+            }
+        } else {
+            print("✅ All awards are valid!")
+        }
+        
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("")
+    }
+}
+
