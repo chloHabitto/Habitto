@@ -75,39 +75,13 @@ struct ProfileView: View {
             // Name Fields
             if isLoggedIn {
               VStack(spacing: 16) {
-                // First Name Field
+                // Name Field
                 VStack(alignment: .leading, spacing: 8) {
-                  Text("First Name")
+                  Text("Name")
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
 
-                  TextField("Enter first name", text: $firstName)
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text01)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .background(Color.surface)
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline3, lineWidth: 1.5))
-                    .cornerRadius(12)
-                    .submitLabel(.done)
-                    .onSubmit {
-                      UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder),
-                        to: nil,
-                        from: nil,
-                        for: nil)
-                    }
-                }
-
-                // Last Name Field
-                VStack(alignment: .leading, spacing: 8) {
-                  Text("Last Name")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-
-                  TextField("Enter last name", text: $lastName)
+                  TextField("Enter name", text: $firstName)
                     .font(.appBodyLarge)
                     .foregroundColor(.text01)
                     .padding(.horizontal, 16)
@@ -132,29 +106,11 @@ struct ProfileView: View {
               // Guest mode: Show sign-in message and button
               VStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                  Text("First Name")
+                  Text("Name")
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
 
-                  TextField("Enter first name", text: .constant(""))
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text03)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .background(Color.surface.opacity(0.5))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline3.opacity(0.5), lineWidth: 1.5))
-                    .cornerRadius(12)
-                    .disabled(true)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                  Text("Last Name")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-
-                  TextField("Enter last name", text: .constant(""))
+                  TextField("Enter name", text: .constant(""))
                     .font(.appBodyLarge)
                     .foregroundColor(.text03)
                     .padding(.horizontal, 16)
@@ -296,11 +252,9 @@ struct ProfileView: View {
   @ObservedObject private var permissionManager = PermissionManager.shared
 
   @State private var firstName = ""
-  @State private var lastName = ""
   @State private var email = ""
   @State private var isEditingProfile = false
   @State private var originalFirstName = ""
-  @State private var originalLastName = ""
   @State private var originalEmail = ""
   @State private var showingPhotoOptions = false
   @State private var showingAvatarSelection = false
@@ -325,7 +279,7 @@ struct ProfileView: View {
   }
 
   private var hasChanges: Bool {
-    firstName != originalFirstName || lastName != originalLastName
+    firstName != originalFirstName
     // Email is no longer editable, so we don't check for email changes
   }
 
@@ -364,10 +318,8 @@ struct ProfileView: View {
         // Anonymous user = guest mode - clear fields
         print("👤 ProfileView: Anonymous user detected, clearing fields")
         firstName = ""
-        lastName = ""
         email = ""
         originalFirstName = ""
-        originalLastName = ""
         originalEmail = ""
       } else {
         // User logged in - check for guest data and show migration alert
@@ -382,10 +334,8 @@ struct ProfileView: View {
       // User logged out - clear all fields for guest mode
       print("👤 ProfileView: User not authenticated, clearing fields")
       firstName = ""
-      lastName = ""
       email = ""
       originalFirstName = ""
-      originalLastName = ""
       originalEmail = ""
     }
   }
@@ -405,22 +355,13 @@ struct ProfileView: View {
   private func loadUserData() {
     // Check if user is actually logged in (not anonymous/guest)
     if isLoggedIn, let user = authManager.currentUser {
-      // Load display name
+      // Load display name directly as the name
       if let displayName = user.displayName,
          !displayName.isEmpty
       {
-        // Split the display name into first and last name
-        let nameComponents = displayName.components(separatedBy: " ")
-        if nameComponents.count >= 2 {
-          firstName = nameComponents[0]
-          lastName = nameComponents[1...].joined(separator: " ")
-        } else if nameComponents.count == 1 {
-          firstName = nameComponents[0]
-          lastName = ""
-        }
+        firstName = displayName
       } else {
         firstName = ""
-        lastName = ""
       }
 
       // Load email
@@ -428,13 +369,11 @@ struct ProfileView: View {
     } else {
       // User not logged in or is anonymous/guest - clear all fields
       firstName = ""
-      lastName = ""
       email = ""
     }
 
     // Store original values for change detection
     originalFirstName = firstName
-    originalLastName = lastName
     originalEmail = email
   }
 
@@ -445,12 +384,11 @@ struct ProfileView: View {
     }
     
     // Update the user's display name in Firebase
-    // Only use first name for the greeting, but store full name in displayName
-    let newDisplayName = [firstName, lastName].filter { !$0.isEmpty }.joined(separator: " ")
+    // Use the name directly as displayName
+    let newDisplayName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
     
     // Capture current values before async operations
     let savedFirstName = firstName
-    let savedLastName = lastName
     
     // Update display name using Firebase Auth
     let changeRequest = user.createProfileChangeRequest()
@@ -479,32 +417,21 @@ struct ProfileView: View {
               
               // Update original values to reflect saved state
               originalFirstName = savedFirstName
-              originalLastName = savedLastName
               
               // Reload user data to reflect changes (this will get the updated displayName)
               // Inline the logic since we can't call methods from closures in structs
               if isLoggedIn, let updatedUser = authManager.currentUser {
-                // Load display name
+                // Load display name directly as the name
                 if let displayName = updatedUser.displayName,
                    !displayName.isEmpty
                 {
-                  // Split the display name into first and last name
-                  let nameComponents = displayName.components(separatedBy: " ")
-                  if nameComponents.count >= 2 {
-                    firstName = nameComponents[0]
-                    lastName = nameComponents[1...].joined(separator: " ")
-                  } else if nameComponents.count == 1 {
-                    firstName = nameComponents[0]
-                    lastName = ""
-                  }
+                  firstName = displayName
                 } else {
                   firstName = ""
-                  lastName = ""
                 }
                 
                 // Update original values to match current values
                 originalFirstName = firstName
-                originalLastName = lastName
               }
             }
           }
