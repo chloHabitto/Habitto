@@ -73,58 +73,34 @@ struct ProfileView: View {
             .padding(.top, 20)
 
             // Name Fields
-            if isLoggedIn {
-              VStack(spacing: 16) {
-                // Name Field
-                VStack(alignment: .leading, spacing: 8) {
-                  Text("Name")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
+            VStack(spacing: 16) {
+              // Name Field
+              VStack(alignment: .leading, spacing: 8) {
+                Text("Name")
+                  .font(.appBodyMedium)
+                  .foregroundColor(.text01)
 
-                  TextField("Enter name", text: $firstName)
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text01)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .background(Color.surface)
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline3, lineWidth: 1.5))
-                    .cornerRadius(12)
-                    .submitLabel(.done)
-                    .onSubmit {
-                      UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder),
-                        to: nil,
-                        from: nil,
-                        for: nil)
-                    }
-                }
+                TextField("Enter name", text: $firstName)
+                  .font(.appBodyLarge)
+                  .foregroundColor(.text01)
+                  .padding(.horizontal, 16)
+                  .padding(.vertical, 16)
+                  .background(Color.surface)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                      .stroke(Color.outline3, lineWidth: 1.5))
+                  .cornerRadius(12)
+                  .submitLabel(.done)
+                  .onSubmit {
+                    UIApplication.shared.sendAction(
+                      #selector(UIResponder.resignFirstResponder),
+                      to: nil,
+                      from: nil,
+                      for: nil)
+                  }
               }
-              .padding(.horizontal, 20)
-            } else {
-              // Guest mode: Show sign-in message and button
-              VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                  Text("Name")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-
-                  TextField("Enter name", text: .constant(""))
-                    .font(.appBodyLarge)
-                    .foregroundColor(.text03)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .background(Color.surface.opacity(0.5))
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.outline3.opacity(0.5), lineWidth: 1.5))
-                    .cornerRadius(12)
-                    .disabled(true)
-                }
-              }
-              .padding(.horizontal, 20)
             }
+            .padding(.horizontal, 20)
 
             Spacer()
 
@@ -138,7 +114,7 @@ struct ProfileView: View {
               {
                 saveChanges()
               }
-              .disabled(!hasChanges || !isLoggedIn)
+              .disabled(!hasChanges)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
@@ -367,8 +343,14 @@ struct ProfileView: View {
       // Load email
       email = user.email ?? ""
     } else {
-      // User not logged in or is anonymous/guest - clear all fields
-      firstName = ""
+      // User not logged in or is anonymous/guest - load guest name from UserDefaults
+      if let guestName = UserDefaults.standard.string(forKey: "GuestName"),
+         !guestName.isEmpty
+      {
+        firstName = guestName
+      } else {
+        firstName = ""
+      }
       email = ""
     }
 
