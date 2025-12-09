@@ -28,9 +28,11 @@ class StreakDataCalculator {
     if Thread.isMainThread {
       // We're on MainActor, so we can safely access SwiftDataContainer
       // Use MainActor.assumeIsolated to access the MainActor-isolated function
-      if let habitData = MainActor.assumeIsolated({ getHabitDataSync(for: habit.id) }) {
-        // Update bestStreakEver by calculating from history, then return the persistent value
-        let calculatedBest = habitData.calculateAndUpdateBestStreak()
+      // Extract the Int value directly instead of returning HabitData (which is not Sendable)
+      if let calculatedBest = MainActor.assumeIsolated({ () -> Int? in
+        guard let habitData = getHabitDataSync(for: habit.id) else { return nil }
+        return habitData.calculateAndUpdateBestStreak()
+      }) {
         return calculatedBest
       }
     }
