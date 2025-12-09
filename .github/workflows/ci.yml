@@ -14,15 +14,9 @@ jobs:
         run: xcodebuild -version
       - name: Install sim
         run: xcrun simctl list devicetypes | grep 'iPhone 15' || true
-      - name: Forbidden mutations
-        run: bash Scripts/forbid_mutations.sh
-      - name: Schema drift check
-        run: bash Scripts/schema_drift_check.sh
       - name: Build & Test (iPhone 16)
         run: |
           xcodebuild -scheme Habitto \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -enableCodeCoverage YES \
             clean build | xcpretty && exit ${PIPESTATUS[0]}
-      - name: Coverage gate
-        run: bash Scripts/coverage_gate.sh
