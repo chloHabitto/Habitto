@@ -18,12 +18,7 @@ struct HeaderView: View {
   @State private var guestName: String = ""
 
   var body: some View {
-    let _ = {
-      #if DEBUG
-      print("🔍 HeaderView rendering - isPremium: \(subscriptionManager.isPremium)")
-      #endif
-    }()
-    
+    // Removed verbose debug logging - HeaderView renders frequently
     return VStack(spacing: 0) {
       HStack(spacing: 0) {
       if showProfile {
