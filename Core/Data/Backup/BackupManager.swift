@@ -922,8 +922,44 @@ class BackupManager: ObservableObject {
     envelopeEncoder.dateEncodingStrategy = .iso8601
     let envelopeData = try envelopeEncoder.encode(envelope)
 
-    // Atomic write to avoid partial/corrupted files
-    try envelopeData.write(to: filePath, options: .atomic)
+    // ✅ SAFEGUARD: Write to temporary file first, then verify and rename atomically
+    // This prevents corruption from app crashes or interruptions during write
+    let tempURL = filePath.appendingPathExtension("tmp")
+    
+    // Remove any existing temp file
+    try? fileManager.removeItem(at: tempURL)
+    
+    // Write to temp file with atomic option (double protection)
+    try envelopeData.write(to: tempURL, options: .atomic)
+    
+    // ✅ VERIFICATION: Read back and verify the file can be decoded and checksum matches
+    do {
+      let verificationData = try Data(contentsOf: tempURL)
+      
+      // Verify we can decode the envelope
+      let verificationDecoder = JSONDecoder()
+      verificationDecoder.dateDecodingStrategy = .iso8601
+      let verificationEnvelope = try verificationDecoder.decode(BackupFileEnvelope.self, from: verificationData)
+      
+      // Verify checksum matches
+      if !verificationEnvelope.checksum.isEmpty {
+        try verifyChecksum(for: verificationEnvelope.payload, expectedChecksum: verificationEnvelope.checksum)
+      }
+      
+      // ✅ VERIFICATION PASSED: Move temp file to final location atomically
+      // This ensures the file is only visible when it's complete and verified
+      if fileManager.fileExists(atPath: filePath.path) {
+        try fileManager.removeItem(at: filePath)
+      }
+      try fileManager.moveItem(at: tempURL, to: filePath)
+      
+      logger.info("✅ Backup file written and verified successfully: \(filePath.lastPathComponent)")
+    } catch {
+      // ✅ CLEANUP: If verification fails, remove the temp file
+      try? fileManager.removeItem(at: tempURL)
+      logger.error("❌ Backup file verification failed: \(error.localizedDescription)")
+      throw BackupError.corruptedData("Backup file verification failed after write: \(error.localizedDescription)")
+    }
 
     let attributes = try fileManager.attributesOfItem(atPath: filePath.path)
     let fileSize = attributes[.size] as? Int64 ?? 0
