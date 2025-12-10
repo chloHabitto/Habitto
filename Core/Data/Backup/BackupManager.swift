@@ -740,8 +740,9 @@ class BackupManager: ObservableObject {
     let habits = try await habitStore.loadHabits()
 
     // Create comprehensive backup data
+    // ✅ FIX: Pass snapshotId so BackupData.id matches the filename
     let metadata = BackupMetadata(userId: currentUser.uid)
-    let backupData = try await createComprehensiveBackupData(metadata: metadata, habits: habits)
+    let backupData = try await createComprehensiveBackupData(metadata: metadata, habits: habits, backupId: snapshotId)
 
     // Save backup to file with compression
     let backupURL = backupDirectory.appendingPathComponent(snapshotId.uuidString)
@@ -761,7 +762,8 @@ class BackupManager: ObservableObject {
   /// Create comprehensive backup data from SwiftData
   private func createComprehensiveBackupData(
     metadata: BackupMetadata,
-    habits: [Habit]) async throws -> BackupData
+    habits: [Habit],
+    backupId: UUID? = nil) async throws -> BackupData
   {
     let context = SwiftDataContainer.shared.modelContext
     let userId = metadata.userId
@@ -845,6 +847,7 @@ class BackupManager: ObservableObject {
       habitNotes: backupHabitNotes,
       userSettings: userSettings,
       legacyData: legacyData,
+      id: backupId ?? UUID(), // ✅ FIX: Use provided backupId to match filename
       habitsLegacy: habits)
   }
 
