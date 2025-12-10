@@ -539,8 +539,23 @@ struct HabittoApp: App {
                   
                   if !result.invalidAwards.isEmpty {
                     print("⚠️ [DAILY_AWARD_INTEGRITY] Found \(result.invalidAwards.count) invalid awards!")
-                    print("   Use DailyAwardIntegrityView to clean them up, or call:")
-                    print("   DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)")
+                    
+                    // Check if cleanup has already been run (one-time only)
+                    let cleanupKey = "dailyAwardIntegrityCleanupCompleted_\(userId)"
+                    let hasRunCleanup = UserDefaults.standard.bool(forKey: cleanupKey)
+                    
+                    if !hasRunCleanup {
+                      print("🧹 [DAILY_AWARD_INTEGRITY] Cleaning up \(result.invalidAwards.count) invalid awards...")
+                      let removedCount = try await DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)
+                      print("✅ [DAILY_AWARD_INTEGRITY] Removed \(removedCount) invalid awards. XP has been recalculated.")
+                      
+                      // Mark cleanup as completed (one-time only)
+                      UserDefaults.standard.set(true, forKey: cleanupKey)
+                      print("✅ [DAILY_AWARD_INTEGRITY] Cleanup completed and marked as done (won't run again)")
+                    } else {
+                      print("ℹ️ [DAILY_AWARD_INTEGRITY] Cleanup already completed previously - skipping automatic cleanup")
+                      print("   Use DailyAwardIntegrityView to manually clean up if needed")
+                    }
                   } else {
                     print("✅ [DAILY_AWARD_INTEGRITY] All awards are valid!")
                   }
