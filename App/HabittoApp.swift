@@ -519,6 +519,36 @@ struct HabittoApp: App {
               Task.detached(priority: .background) { @MainActor in
                 await performCompletionRecordReconciliation()
               }
+              
+              // ✅ DEBUG: Run DailyAward integrity investigation on app launch
+              #if DEBUG
+              Task.detached { @MainActor in
+                // Wait for data to load
+                try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+                
+                let userId = await CurrentUser().idOrGuest
+                guard !CurrentUser.isGuestId(userId) else {
+                  print("⏭️ [DAILY_AWARD_INTEGRITY] Skipping investigation for guest user")
+                  return
+                }
+                
+                print("🔍 [DAILY_AWARD_INTEGRITY] Running DailyAward integrity investigation...")
+                do {
+                  let result = try await DailyAwardIntegrityService.shared.investigateDailyAwards(userId: userId)
+                  DailyAwardIntegrityService.shared.printInvestigationReport(result)
+                  
+                  if !result.invalidAwards.isEmpty {
+                    print("⚠️ [DAILY_AWARD_INTEGRITY] Found \(result.invalidAwards.count) invalid awards!")
+                    print("   Use DailyAwardIntegrityView to clean them up, or call:")
+                    print("   DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)")
+                  } else {
+                    print("✅ [DAILY_AWARD_INTEGRITY] All awards are valid!")
+                  }
+                } catch {
+                  print("❌ [DAILY_AWARD_INTEGRITY] Investigation failed: \(error.localizedDescription)")
+                }
+              }
+              #endif
             }
             
             // Defer heavy work until after the first frame renders
