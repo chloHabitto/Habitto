@@ -7,21 +7,14 @@ struct SendFeedbackView: View {
     NavigationView {
       ScrollView {
         VStack(alignment: .leading, spacing: 24) {
-          // Description text
-          Text("Help us improve Habitto with your suggestions")
-            .font(.appBodyMedium)
-            .foregroundColor(.text05)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-
           // Feedback Content
         VStack(alignment: .leading, spacing: 24) {
           // Icon and description
           VStack(spacing: 16) {
-            Image(systemName: "envelope.fill")
-              .font(.system(size: 48))
-              .foregroundColor(.primary)
+            Image("Sticker-Exciting")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 48, height: 48)
 
             Text("We'd love to hear from you!")
               .font(.appTitleMedium)
