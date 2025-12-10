@@ -1779,15 +1779,21 @@ struct BackupMetadataTracker: Codable {
 extension Data {
   func compressed(algorithm: compression_algorithm) throws -> Data {
     try withUnsafeBytes { bytes in
-      let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.count)
+      // ✅ FIX: Allocate buffer with some headroom for compression overhead
+      // Compression can sometimes produce slightly larger output than input
+      let bufferCapacity = self.count + (self.count / 8) // Add 12.5% headroom
+      let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferCapacity)
       defer { buffer.deallocate() }
 
       let compressedSize = compression_encode_buffer(
-        buffer, self.count,
+        buffer, bufferCapacity,
         bytes.bindMemory(to: UInt8.self).baseAddress!, self.count,
         nil, algorithm)
 
-      guard compressedSize > 0 else {
+      guard compressedSize > 0 && compressedSize <= bufferCapacity else {
+        if compressedSize > bufferCapacity {
+          throw BackupError.compressionFailed("Compression buffer too small (needed: \(compressedSize), capacity: \(bufferCapacity))")
+        }
         throw BackupError.compressionFailed("Compression failed")
       }
 
@@ -1797,19 +1803,36 @@ extension Data {
 
   func decompressed(algorithm: compression_algorithm) throws -> Data {
     try withUnsafeBytes { bytes in
-      let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.count * 4) // Estimate
-      defer { buffer.deallocate() }
+      // ✅ FIX: Use dynamic buffer that grows if needed
+      // Start with a larger multiplier (10x) for JSON which compresses well
+      var bufferCapacity = Swift.max(self.count * 10, 1024 * 1024) // At least 1MB
+      var buffer: UnsafeMutablePointer<UInt8>? = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferCapacity)
+      defer { buffer?.deallocate() }
 
-      let decompressedSize = compression_decode_buffer(
-        buffer, self.count * 4,
+      var decompressedSize = compression_decode_buffer(
+        buffer!, bufferCapacity,
         bytes.bindMemory(to: UInt8.self).baseAddress!, self.count,
         nil, algorithm)
 
-      guard decompressedSize > 0 else {
-        throw BackupError.compressionFailed("Decompression failed")
+      // ✅ FIX: If buffer is too small, grow it and retry
+      // compression_decode_buffer returns the actual size needed if buffer is insufficient
+      if decompressedSize > bufferCapacity {
+        // Buffer was too small - allocate a larger one
+        buffer?.deallocate()
+        bufferCapacity = decompressedSize + (decompressedSize / 4) // Add 25% padding
+        buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferCapacity)
+        
+        decompressedSize = compression_decode_buffer(
+          buffer!, bufferCapacity,
+          bytes.bindMemory(to: UInt8.self).baseAddress!, self.count,
+          nil, algorithm)
       }
 
-      return Data(bytes: buffer, count: decompressedSize)
+      guard decompressedSize > 0 && decompressedSize <= bufferCapacity, let finalBuffer = buffer else {
+        throw BackupError.compressionFailed("Decompression failed: buffer size mismatch (needed: \(decompressedSize), capacity: \(bufferCapacity))")
+      }
+
+      return Data(bytes: finalBuffer, count: decompressedSize)
     }
   }
 }
