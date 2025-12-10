@@ -520,7 +520,7 @@ struct HabittoApp: App {
                 await performCompletionRecordReconciliation()
               }
               
-              // ✅ DEBUG: Run DailyAward integrity investigation on app launch
+              // ✅ DEBUG: Run DailyAward integrity investigation on app launch (silent unless issues found)
               #if DEBUG
               Task.detached { @MainActor in
                 // Wait for data to load
@@ -528,17 +528,17 @@ struct HabittoApp: App {
                 
                 let userId = await CurrentUser().idOrGuest
                 guard !CurrentUser.isGuestId(userId) else {
-                  print("⏭️ [DAILY_AWARD_INTEGRITY] Skipping investigation for guest user")
-                  return
+                  return // Silent skip for guest users
                 }
                 
-                print("🔍 [DAILY_AWARD_INTEGRITY] Running DailyAward integrity investigation...")
+                // Run investigation silently
                 do {
                   let result = try await DailyAwardIntegrityService.shared.investigateDailyAwards(userId: userId)
-                  DailyAwardIntegrityService.shared.printInvestigationReport(result)
                   
+                  // Only log if issues are found
                   if !result.invalidAwards.isEmpty {
                     print("⚠️ [DAILY_AWARD_INTEGRITY] Found \(result.invalidAwards.count) invalid awards!")
+                    DailyAwardIntegrityService.shared.printInvestigationReport(result)
                     
                     // Check if cleanup has already been run (one-time only)
                     let cleanupKey = "dailyAwardIntegrityCleanupCompleted_\(userId)"
@@ -556,10 +556,10 @@ struct HabittoApp: App {
                       print("ℹ️ [DAILY_AWARD_INTEGRITY] Cleanup already completed previously - skipping automatic cleanup")
                       print("   Use DailyAwardIntegrityView to manually clean up if needed")
                     }
-                  } else {
-                    print("✅ [DAILY_AWARD_INTEGRITY] All awards are valid!")
                   }
+                  // Silent success - no logging if all awards are valid
                 } catch {
+                  // Only log errors
                   print("❌ [DAILY_AWARD_INTEGRITY] Investigation failed: \(error.localizedDescription)")
                 }
               }
