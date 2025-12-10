@@ -932,19 +932,18 @@ class BackupManager: ObservableObject {
     // Write to temp file with atomic option (double protection)
     try envelopeData.write(to: tempURL, options: .atomic)
     
-    // ✅ VERIFICATION: Read back and verify the file can be decoded and checksum matches
+    // ✅ VERIFICATION: Read back and verify the file can be decoded completely
+    // This must match exactly what loadAvailableBackups() does
     do {
       let verificationData = try Data(contentsOf: tempURL)
       
-      // Verify we can decode the envelope
-      let verificationDecoder = JSONDecoder()
-      verificationDecoder.dateDecodingStrategy = .iso8601
-      let verificationEnvelope = try verificationDecoder.decode(BackupFileEnvelope.self, from: verificationData)
+      // ✅ CRITICAL: Use the same decodeBackupPayload function that loadAvailableBackups uses
+      // This ensures we verify the exact same way the file will be loaded
+      let (verifiedBackupData, _) = try decodeBackupPayload(from: verificationData)
       
-      // Verify checksum matches
-      if !verificationEnvelope.checksum.isEmpty {
-        try verifyChecksum(for: verificationEnvelope.payload, expectedChecksum: verificationEnvelope.checksum)
-      }
+      // ✅ ADDITIONAL: Verify the backup data structure is valid
+      // This catches issues that might not be caught by decoding alone
+      try await validateBackupData(verifiedBackupData, fileSize: verificationData.count)
       
       // ✅ VERIFICATION PASSED: Move temp file to final location atomically
       // This ensures the file is only visible when it's complete and verified
@@ -958,6 +957,7 @@ class BackupManager: ObservableObject {
       // ✅ CLEANUP: If verification fails, remove the temp file
       try? fileManager.removeItem(at: tempURL)
       logger.error("❌ Backup file verification failed: \(error.localizedDescription)")
+      logger.error("   Verification error details: \(error)")
       throw BackupError.corruptedData("Backup file verification failed after write: \(error.localizedDescription)")
     }
 
@@ -1128,10 +1128,33 @@ class BackupManager: ObservableObject {
         includingPropertiesForKeys: [.creationDateKey])
 
       var backups: [BackupSnapshot] = []
+      var filesToDelete: [URL] = []
 
       for fileURL in backupFiles {
+        // Skip temp files
+        if fileURL.pathExtension == "tmp" {
+          logger.info("⏭️ Skipping temp file: \(fileURL.lastPathComponent)")
+          filesToDelete.append(fileURL)
+          continue
+        }
+        
         do {
+          // Check if file actually exists and is readable
+          guard fileManager.fileExists(atPath: fileURL.path) else {
+            logger.warning("⚠️ Backup file doesn't exist: \(fileURL.lastPathComponent) - will remove from metadata")
+            filesToDelete.append(fileURL)
+            continue
+          }
+          
           let data = try Data(contentsOf: fileURL)
+          
+          // Check if file is empty
+          guard !data.isEmpty else {
+            logger.warning("⚠️ Backup file is empty: \(fileURL.lastPathComponent) - deleting")
+            filesToDelete.append(fileURL)
+            continue
+          }
+          
           let (backupData, _) = try decodeBackupPayload(from: data)
 
           let snapshot = BackupSnapshot(
@@ -1149,16 +1172,41 @@ class BackupManager: ObservableObject {
               "Failed to load backup file \(fileURL.lastPathComponent): \(error.localizedDescription) - Deleting corrupted file")
           let rawData = try? Data(contentsOf: fileURL)
           recordCorruptedBackupTelemetry(for: fileURL, error: error, rawData: rawData)
-          do {
-            try fileManager.removeItem(at: fileURL)
-            logger.info("✅ Deleted corrupted backup file: \(fileURL.lastPathComponent)")
-          } catch {
-            logger.error("❌ Failed to delete corrupted backup file: \(error.localizedDescription)")
-          }
+          filesToDelete.append(fileURL)
+        }
+      }
+      
+      // ✅ CLEANUP: Delete corrupted/missing files
+      for fileURL in filesToDelete {
+        do {
+          try fileManager.removeItem(at: fileURL)
+          logger.info("✅ Deleted backup file: \(fileURL.lastPathComponent)")
+        } catch {
+          logger.error("❌ Failed to delete backup file \(fileURL.lastPathComponent): \(error.localizedDescription)")
         }
       }
 
       availableBackups = backups.sorted { $0.createdAt > $1.createdAt }
+      
+      // ✅ CLEANUP: Remove backup metadata entries for files that don't exist
+      // This fixes the issue where 50+ metadata entries exist for non-existent files
+      let existingFileIds = Set(backups.map { $0.id.uuidString })
+      let allBackupFiles = try fileManager.contentsOfDirectory(
+        at: backupDirectory,
+        includingPropertiesForKeys: [.creationDateKey])
+      
+      for fileURL in allBackupFiles {
+        let fileName = fileURL.lastPathComponent
+        // If it's a UUID and not in our valid backups, it's orphaned
+        if UUID(uuidString: fileName) != nil,
+           !existingFileIds.contains(fileName),
+           !fileName.hasSuffix(".tmp") {
+          logger.warning("⚠️ Found orphaned backup file: \(fileName) - deleting")
+          try? fileManager.removeItem(at: fileURL)
+        }
+      }
+      
+      logger.info("✅ Loaded \(backups.count) valid backups, cleaned up \(filesToDelete.count) corrupted/missing files")
     } catch {
       logger.error("Failed to load available backups: \(error.localizedDescription)")
       availableBackups = []
