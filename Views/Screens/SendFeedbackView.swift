@@ -5,30 +5,43 @@ struct SendFeedbackView: View {
 
   var body: some View {
     NavigationView {
-      ScrollView {
-        VStack(alignment: .leading, spacing: 24) {
-          // Feedback Content
-        VStack(alignment: .leading, spacing: 24) {
-          // Icon and description
-          VStack(spacing: 16) {
-            Image("Sticker-Exciting")
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: 48, height: 48)
+      ZStack {
+        Color.surface2
+          .ignoresSafeArea()
 
-            Text("We'd love to hear from you!")
-              .font(.appTitleMedium)
-              .foregroundColor(.text01)
+        VStack(spacing: 0) {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+              // Feedback Content
+              VStack(alignment: .leading, spacing: 24) {
+                // Icon and description
+                VStack(spacing: 16) {
+                  Image("Sticker-Exciting")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 180, height: 180)
 
-            Text(
-              "Share your thoughts, suggestions, or report any issues. You can use Gmail, Mail, or any other email app you prefer.")
-              .font(.appBodyMedium)
-              .foregroundColor(.text02)
-              .multilineTextAlignment(.leading)
+                  Text("We'd love to hear from you!")
+                    .font(.appTitleMedium)
+                    .foregroundColor(.text01)
+
+                  Text(
+                    "Share your thoughts, suggestions, or report any issues. You can use Gmail, Mail, or any other email app you prefer.")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text02)
+                    .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+              }
+              .padding(.horizontal, 20)
+              .padding(.top, 24)
+              .padding(.bottom, 24)
+            }
           }
-          .frame(maxWidth: .infinity, alignment: .leading)
 
-          // Send Feedback Button
+          Spacer()
+
+          // Send Feedback Button at bottom of screen
           VStack(spacing: 12) {
             HabittoButton(
               size: .large,
@@ -43,13 +56,11 @@ struct SendFeedbackView: View {
               .font(.appCaptionMedium)
               .foregroundColor(.text03)
           }
-        }
-        .padding(.horizontal, 20)
-
-          Spacer(minLength: 24)
+          .padding(.horizontal, 20)
+          .padding(.bottom, 20)
+          .background(Color.surface2)
         }
       }
-      .background(Color.surface2)
       .navigationTitle("Send Feedback")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
