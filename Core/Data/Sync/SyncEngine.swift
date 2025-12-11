@@ -1415,7 +1415,9 @@ actor SyncEngine {
             logger.warning("⚠️ INVALID AWARD: Not all habits completed for \(dateKey) - skipping import and deleting from Firestore")
             logger.warning("   Scheduled: \(scheduledHabits.count), Completed: \(scheduledHabitIds.count - missingHabits.count)")
             logger.warning("   Missing habits: \(missingHabits.joined(separator: ", "))")
+            logger.info("🔄 SYNC: Deleting invalid award from Firestore to prevent re-import...")
             await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+            logger.info("✅ SYNC: Invalid award prevented from being imported - XP integrity maintained")
             return
         }
         
