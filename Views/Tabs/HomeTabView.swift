@@ -1244,26 +1244,18 @@ struct HomeTabView: View {
     if lastHabitJustCompleted {
       // ✅ FIX: Separate celebration logic from XP award logic
       // Celebration should show EVERY time all habits are complete, regardless of DailyAward status
+      // Trust lastHabitJustCompleted flag - it's already set correctly when last habit completes
       
-      // Step 1: Check if all habits are complete (for celebration)
-      let habitsForDate = baseHabitsForSelectedDate
-      let allHabitsComplete = habitsForDate.allSatisfy { habit in
-        completionStatusMap[habit.id] ?? false
+      // Step 1: Always trigger celebration if lastHabitJustCompleted is true
+      // The flag is only set when the last habit needed to complete the day is finished
+      debugLog("🎉 COMPLETION_FLOW: Last habit completed for \(dateKey) - triggering celebration!")
+      // Delay celebration to ensure sheet is fully dismissed
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        showCelebration = true
+        debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
       }
       
-      // Step 2: Always trigger celebration if all habits are complete
-      if allHabitsComplete {
-        debugLog("🎉 COMPLETION_FLOW: All habits complete for \(dateKey) - triggering celebration!")
-        // Delay celebration to ensure sheet is fully dismissed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-          showCelebration = true
-          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
-        }
-      } else {
-        debugLog("ℹ️ COMPLETION_FLOW: Not all habits complete - skipping celebration")
-      }
-      
-      // Step 3: Only award XP if DailyAward doesn't already exist
+      // Step 2: Only award XP if DailyAward doesn't already exist
       if awardedDateKeys.contains(dateKey) {
         debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate XP award")
         debugLog("✅ COMPLETION_FLOW: Celebration already triggered above (separate from XP award)")
