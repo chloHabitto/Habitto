@@ -513,14 +513,28 @@ class DailyAwardService: ObservableObject {
             }
             
             // Update XPState
+            let refreshTimestamp = Date()
+            let oldState = xpState
+            let oldXP = oldState?.totalXP ?? 0
+            
+            print("💰 [XP_TRACE] \(refreshTimestamp) refreshXPState() - Updating xpState")
+            print("   Source: DailyAwardService.refreshXPState()")
+            print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+            if oldXP != totalXP {
+                print("   XP changing from \(oldXP) to \(totalXP)")
+            } else {
+                print("   XP unchanged: \(totalXP)")
+            }
+            
             xpState = XPState(
                 totalXP: totalXP,
                 level: level,
                 currentLevelXP: currentLevelXP,
-                lastUpdated: Date()
+                lastUpdated: refreshTimestamp
             )
             
             logger.info("✅ DailyAwardService: XP state refreshed - Total: \(totalXP), Level: \(level)")
+            print("💰 [XP_TRACE] \(Date()) refreshXPState() - xpState updated (will trigger observer)")
             
         } catch {
             logger.error("❌ DailyAwardService: Failed to refresh XP state: \(error.localizedDescription)")
