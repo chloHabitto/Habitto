@@ -210,22 +210,45 @@ struct GuestDataMigrationView: View {
   private let habitRepository = HabitRepository.shared
 
   private func migrateGuestData() async {
+    let timestamp = Date()
+    print("🔄 [MIGRATION_VIEW] \(timestamp) migrateGuestData() - START")
+    
     do {
+      print("🔄 [MIGRATION_VIEW] \(timestamp) Calling migrationManager.migrateGuestData()...")
       try await migrationManager.migrateGuestData()
-      // Migration completed successfully
-      habitRepository.handleMigrationCompleted()
+      
+      let migrationCompleteTimestamp = Date()
+      let migrationDuration = migrationCompleteTimestamp.timeIntervalSince(timestamp)
+      print("✅ [MIGRATION_VIEW] \(migrationCompleteTimestamp) Migration completed successfully (took \(String(format: "%.2f", migrationDuration))s)")
+      
+      // ✅ CRITICAL FIX: Await handleMigrationCompleted() to ensure data is loaded before UI updates
+      print("🔄 [MIGRATION_VIEW] \(migrationCompleteTimestamp) Calling habitRepository.handleMigrationCompleted()...")
+      await habitRepository.handleMigrationCompleted()
+      
+      let handlerCompleteTimestamp = Date()
+      let handlerDuration = handlerCompleteTimestamp.timeIntervalSince(migrationCompleteTimestamp)
+      print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) handleMigrationCompleted() finished (took \(String(format: "%.2f", handlerDuration))s)")
+      print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) Migration flow complete - UI should now show migrated habits")
+      
     } catch {
+      let errorTimestamp = Date()
+      print("❌ [MIGRATION_VIEW] \(errorTimestamp) Migration failed: \(error.localizedDescription)")
       migrationError = error.localizedDescription
       showingError = true
     }
   }
 
   private func startFresh() async {
-    // Clear guest data without migrating
-    // This will allow the user to start with a clean slate
-    // The guest data will remain in storage but won't be migrated
+    let timestamp = Date()
+    print("🔄 [MIGRATION_VIEW] \(timestamp) startFresh() - START")
     print("🔄 GuestDataMigrationView: User chose to start fresh")
-    habitRepository.handleStartFresh()
+    
+    // ✅ CRITICAL FIX: Await handleStartFresh() to ensure data is loaded before UI updates
+    await habitRepository.handleStartFresh()
+    
+    let endTimestamp = Date()
+    let duration = endTimestamp.timeIntervalSince(timestamp)
+    print("✅ [MIGRATION_VIEW] \(endTimestamp) startFresh() - COMPLETE (took \(String(format: "%.2f", duration))s)")
   }
 }
 

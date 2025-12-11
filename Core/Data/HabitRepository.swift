@@ -244,19 +244,59 @@ class HabitRepository: ObservableObject {
   // MARK: - Guest Data Migration
 
   /// Handle guest data migration completion
-  func handleMigrationCompleted() {
+  /// ✅ CRITICAL FIX: Made async to ensure data is loaded before UI dismisses
+  func handleMigrationCompleted() async {
+    let timestamp = Date()
+    print("🔄 [MIGRATION] \(timestamp) handleMigrationCompleted() - START")
+    
+    // Hide migration view first
     shouldShowMigrationView = false
-    Task {
-      await loadHabits(force: true)
+    print("🔄 [MIGRATION] \(timestamp) Migration view hidden")
+    
+    // ✅ CRITICAL FIX: Await loadHabits() to ensure data is loaded before returning
+    print("🔄 [MIGRATION] \(timestamp) Starting loadHabits(force: true)...")
+    await loadHabits(force: true)
+    
+    // ✅ CRITICAL FIX: Explicitly trigger UI update after habits are loaded
+    let loadTimestamp = Date()
+    print("🔄 [MIGRATION] \(loadTimestamp) loadHabits() completed - habits.count: \(habits.count)")
+    
+    // Force UI refresh
+    objectWillChange.send()
+    print("🔄 [MIGRATION] \(loadTimestamp) objectWillChange.send() called - UI should refresh")
+    
+    // ✅ VERIFICATION: Log what was actually loaded
+    print("🎯 [MIGRATION] \(loadTimestamp) Verification - HabitRepository state after migration:")
+    print("   habits.count: \(habits.count)")
+    for (index, habit) in habits.enumerated() {
+      print("   [\(index)] '\(habit.name)' (ID: \(habit.id))")
     }
+    
+    let endTimestamp = Date()
+    let duration = endTimestamp.timeIntervalSince(timestamp)
+    print("✅ [MIGRATION] \(endTimestamp) handleMigrationCompleted() - COMPLETE (took \(String(format: "%.2f", duration))s)")
   }
 
   /// Handle starting fresh (no migration)
-  func handleStartFresh() {
+  /// ✅ CRITICAL FIX: Made async to ensure data is loaded before UI dismisses
+  func handleStartFresh() async {
+    let timestamp = Date()
+    print("🔄 [MIGRATION] \(timestamp) handleStartFresh() - START")
+    
     shouldShowMigrationView = false
-    Task {
-      await loadHabits(force: true)
-    }
+    print("🔄 [MIGRATION] \(timestamp) Migration view hidden")
+    
+    // ✅ CRITICAL FIX: Await loadHabits() to ensure data is loaded before returning
+    print("🔄 [MIGRATION] \(timestamp) Starting loadHabits(force: true)...")
+    await loadHabits(force: true)
+    
+    // Force UI refresh
+    objectWillChange.send()
+    print("🔄 [MIGRATION] \(Date()) objectWillChange.send() called - UI should refresh")
+    
+    let endTimestamp = Date()
+    let duration = endTimestamp.timeIntervalSince(timestamp)
+    print("✅ [MIGRATION] \(endTimestamp) handleStartFresh() - COMPLETE (took \(String(format: "%.2f", duration))s)")
   }
 
   /// Emergency fix for repeated migration screen - clears stale guest data
@@ -578,11 +618,18 @@ class HabitRepository: ObservableObject {
 
       // Update on main thread and notify observers
       await MainActor.run {
+        let beforeCount = self.habits.count
         self.habits = uniqueHabits
+        let afterCount = self.habits.count
+        
+        // ✅ CRITICAL FIX: Always call objectWillChange.send() to ensure UI updates
+        // This is especially important after migration when userId changes
         self.objectWillChange.send()
         
         // ✅ DIAGNOSTIC: Log what HabitRepository actually has after assignment
-        print("🎯 [UI_STATE] HabitRepository after assignment:")
+        let timestamp = Date()
+        print("🎯 [UI_STATE] \(timestamp) HabitRepository after assignment:")
+        print("   habits.count: \(beforeCount) → \(afterCount)")
         print("   self.habits.count: \(self.habits.count)")
         for habit in self.habits {
           print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
