@@ -802,6 +802,21 @@ class HabitRepository: ObservableObject {
       debugLog("  → HabitStore.createHabit completed")
       #endif
 
+      // ✅ FIX: Check if today's DailyAward should be updated after habit creation
+      // If new habit makes today incomplete, revoke today's XP award
+      let today = Date()
+      let todayDateKey = Habit.dateKey(for: today)
+      let currentUserId = await CurrentUser().idOrGuest
+      
+      debugLog("🎯 XP_CHECK: Checking today's DailyAward after habit creation (dateKey: \(todayDateKey))")
+      do {
+        try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
+        debugLog("✅ XP_CHECK: DailyAward check completed for today")
+      } catch {
+        debugLog("⚠️ XP_CHECK: Failed to check DailyAward: \(error.localizedDescription)")
+        // Don't fail habit creation if XP check fails
+      }
+
       // Reload habits to get the updated list
       #if DEBUG
       debugLog("  → Reloading habits from storage")
@@ -836,6 +851,21 @@ class HabitRepository: ObservableObject {
       debugLog("🔄 HabitRepository: Calling habitStore.updateHabit...")
       try await habitStore.updateHabit(habit)
       debugLog("✅ HabitRepository: habitStore.updateHabit completed successfully")
+
+      // ✅ FIX: Check if today's DailyAward should be updated after habit update
+      // If habit update (e.g., start date change) makes today incomplete, revoke today's XP award
+      let today = Date()
+      let todayDateKey = Habit.dateKey(for: today)
+      let currentUserId = await CurrentUser().idOrGuest
+      
+      debugLog("🎯 XP_CHECK: Checking today's DailyAward after habit update (dateKey: \(todayDateKey))")
+      do {
+        try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
+        debugLog("✅ XP_CHECK: DailyAward check completed for today")
+      } catch {
+        debugLog("⚠️ XP_CHECK: Failed to check DailyAward: \(error.localizedDescription)")
+        // Don't fail habit update if XP check fails
+      }
 
       // Reload habits to get the updated list
       debugLog("🔄 HabitRepository: Reloading habits...")
