@@ -1,5 +1,6 @@
 import Combine
 import FirebaseAuth
+import FirebaseFirestore
 import Foundation
 import SwiftData
 
@@ -121,6 +122,7 @@ final class GuestDataMigration: ObservableObject {
   }
 
   /// Migrate guest data to the current authenticated user
+  /// This replaces cloud data with local guest data (used for "Keep Local Data" option)
   func migrateGuestData() async throws {
     let timestamp = Date()
     print("🔄 [MIGRATION] \(timestamp) GuestDataMigration.migrateGuestData() - START")
@@ -146,56 +148,64 @@ final class GuestDataMigration: ObservableObject {
     print("🔄 [MIGRATION] \(timestamp) Migration started - isMigrating = true")
 
     do {
-      // Step 0: Create pre-migration safety backup
+      // Step 0: Delete existing cloud data (for "Keep Local Data" option)
       let step0Timestamp = Date()
-      migrationStatus = "Creating safety backup..."
+      migrationStatus = "Replacing account data..."
       migrationProgress = 0.1
-      print("🔄 [MIGRATION] \(step0Timestamp) Step 0: Creating safety backup...")
-      try await createPreMigrationBackup(for: currentUser.uid)
-      print("✅ [MIGRATION] \(Date()) Step 0: Safety backup created")
+      print("🔄 [MIGRATION] \(step0Timestamp) Step 0: Deleting existing cloud data...")
+      try await deleteCloudHabits(for: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 0: Cloud data deleted")
 
-      // Step 1: Migrate SwiftData (habits, CompletionRecords, streaks, etc.)
+      // Step 1: Create pre-migration safety backup
       let step1Timestamp = Date()
-      migrationStatus = "Migrating habits and progress..."
-      migrationProgress = 0.3
-      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Migrating SwiftData...")
-      try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(from: "", to: currentUser.uid)
-      print("✅ [MIGRATION] \(Date()) Step 1: SwiftData migration completed")
-      
-      // Step 2: Migrate legacy UserDefaults habits (for backward compatibility)
+      migrationStatus = "Creating safety backup..."
+      migrationProgress = 0.2
+      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Creating safety backup...")
+      try await createPreMigrationBackup(for: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 1: Safety backup created")
+
+      // Step 2: Migrate SwiftData (habits, CompletionRecords, streaks, etc.)
       let step2Timestamp = Date()
-      migrationStatus = "Migrating legacy data..."
+      migrationStatus = "Migrating habits and progress..."
       migrationProgress = 0.4
-      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Migrating legacy UserDefaults...")
-      let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
-      print("✅ [MIGRATION] \(Date()) Step 2: Legacy data migration completed - \(migratedHabits.count) habits")
-
-      // Step 3: Migrate backup files
+      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Migrating SwiftData...")
+      try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(from: "", to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 2: SwiftData migration completed")
+      
+      // Step 3: Migrate legacy UserDefaults habits (for backward compatibility)
       let step3Timestamp = Date()
-      migrationStatus = "Migrating backups..."
-      migrationProgress = 0.6
-      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Migrating backup files...")
-      try await migrateGuestBackups(to: currentUser.uid)
-      print("✅ [MIGRATION] \(Date()) Step 3: Backup migration completed")
+      migrationStatus = "Migrating legacy data..."
+      migrationProgress = 0.5
+      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Migrating legacy UserDefaults...")
+      let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 3: Legacy data migration completed - \(migratedHabits.count) habits")
 
-      // Step 4: Save to cloud storage for cross-device sync
+      // Step 4: Migrate backup files
       let step4Timestamp = Date()
-      migrationStatus = "Syncing to cloud..."
-      migrationProgress = 0.8
-      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Syncing to cloud...")
-      try await syncMigratedDataToCloud(migratedHabits)
-      print("✅ [MIGRATION] \(Date()) Step 4: Cloud sync completed")
+      migrationStatus = "Migrating backups..."
+      migrationProgress = 0.7
+      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Migrating backup files...")
+      try await migrateGuestBackups(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 4: Backup migration completed")
 
-      // Step 5: Mark migration as complete
+      // Step 5: Save to cloud storage for cross-device sync
       let step5Timestamp = Date()
-      migrationStatus = "Finalizing migration..."
+      migrationStatus = "Syncing to cloud..."
       migrationProgress = 0.9
-      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Finalizing migration...")
+      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Syncing to cloud...")
+      try await syncMigratedDataToCloud(migratedHabits)
+      print("✅ [MIGRATION] \(Date()) Step 5: Cloud sync completed")
+
+      // Step 6: Mark migration as complete
+      let step6Timestamp = Date()
+      migrationStatus = "Finalizing migration..."
+      migrationProgress = 0.95
+      print("🔄 [MIGRATION] \(step6Timestamp) Step 6: Finalizing migration...")
       let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
       userDefaults.set(true, forKey: migrationKey)
-      print("✅ [MIGRATION] \(Date()) Step 5: Migration marked as complete in UserDefaults")
+      print("✅ [MIGRATION] \(Date()) Step 6: Migration marked as complete in UserDefaults")
 
-      // Step 6: Migration complete
+      // Step 7: Migration complete
       migrationStatus = "Migration complete!"
       migrationProgress = 1.0
 
@@ -272,6 +282,53 @@ final class GuestDataMigration: ObservableObject {
       habits: guestHabits)
   }
 
+  /// Get a preview of cloud data from Firestore
+  func getCloudDataPreview() async -> CloudDataPreview? {
+    guard let currentUser = authManager.currentUser else {
+      print("🔍 GuestDataMigration: No authenticated user for cloud preview")
+      return nil
+    }
+
+    let db = Firestore.firestore()
+    
+    do {
+      // Fetch habits from Firestore
+      let habitsSnapshot = try await db.collection("users")
+        .document(currentUser.uid)
+        .collection("habits")
+        .whereField("isActive", isEqualTo: true)
+        .getDocuments()
+      
+      let habitCount = habitsSnapshot.documents.count
+      
+      // Fetch user progress (XP, level) from Firestore
+      let progressDoc = try await db.collection("users")
+        .document(currentUser.uid)
+        .collection("xp")
+        .document("state")
+        .getDocument()
+      
+      var totalXP = 0
+      var level = 1
+      
+      if progressDoc.exists, let data = progressDoc.data() {
+        totalXP = data["totalXP"] as? Int ?? 0
+        level = data["level"] as? Int ?? 1
+      }
+      
+      print("🔍 GuestDataMigration: Cloud preview - \(habitCount) habits, Level \(level), \(totalXP) XP")
+      
+      return CloudDataPreview(
+        habitCount: habitCount,
+        totalXP: totalXP,
+        level: level)
+    } catch {
+      print("❌ GuestDataMigration: Error fetching cloud data preview: \(error.localizedDescription)")
+      // If error, assume no cloud data exists
+      return nil
+    }
+  }
+
   /// Clear stale guest data that might be causing repeated migration prompts
   func clearStaleGuestData() {
     print("🧹 GuestDataMigration: Clearing stale guest data...")
@@ -309,6 +366,183 @@ final class GuestDataMigration: ObservableObject {
     let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
     userDefaults.set(true, forKey: migrationKey)
     print("✅ GuestDataMigration: Force marked migration as completed for user: \(currentUser.uid)")
+  }
+
+  /// Merge guest data with cloud data (Keep Both option)
+  /// This keeps cloud data and adds local guest data to the account
+  func mergeGuestDataWithCloud() async throws {
+    let timestamp = Date()
+    print("🔄 [MIGRATION] \(timestamp) GuestDataMigration.mergeGuestDataWithCloud() - START")
+    
+    guard let currentUser = authManager.currentUser else {
+      print("❌ [MIGRATION] \(timestamp) No authenticated user")
+      throw GuestDataMigrationError.noAuthenticatedUser
+    }
+
+    guard hasGuestData() else {
+      print("❌ [MIGRATION] \(timestamp) No guest data found")
+      throw GuestDataMigrationError.noGuestData
+    }
+
+    isMigrating = true
+    migrationProgress = 0.0
+    migrationStatus = "Merging your data..."
+    print("🔄 [MIGRATION] \(timestamp) Merge started - isMigrating = true")
+
+    do {
+      // Step 1: Migrate SwiftData (habits, CompletionRecords, streaks, etc.)
+      // This will add guest habits to the authenticated user without replacing cloud data
+      let step1Timestamp = Date()
+      migrationStatus = "Adding your local habits..."
+      migrationProgress = 0.3
+      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Migrating SwiftData...")
+      try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(from: "", to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 1: SwiftData migration completed")
+      
+      // Step 2: Migrate legacy UserDefaults habits (for backward compatibility)
+      // For merge, keep all habits even if names match
+      let step2Timestamp = Date()
+      migrationStatus = "Adding legacy data..."
+      migrationProgress = 0.5
+      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Migrating legacy UserDefaults...")
+      let migratedHabits = try await migrateGuestHabits(to: currentUser.uid, keepDuplicates: true)
+      print("✅ [MIGRATION] \(Date()) Step 2: Legacy data migration completed - \(migratedHabits.count) habits")
+
+      // Step 3: Migrate backup files
+      let step3Timestamp = Date()
+      migrationStatus = "Migrating backups..."
+      migrationProgress = 0.7
+      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Migrating backup files...")
+      try await migrateGuestBackups(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 3: Backup migration completed")
+
+      // Step 4: Save to cloud storage for cross-device sync
+      let step4Timestamp = Date()
+      migrationStatus = "Syncing to cloud..."
+      migrationProgress = 0.9
+      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Syncing to cloud...")
+      try await syncMigratedDataToCloud(migratedHabits)
+      print("✅ [MIGRATION] \(Date()) Step 4: Cloud sync completed")
+
+      // Step 5: Mark migration as complete
+      let step5Timestamp = Date()
+      migrationStatus = "Finalizing..."
+      migrationProgress = 1.0
+      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Finalizing...")
+      let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
+      userDefaults.set(true, forKey: migrationKey)
+      print("✅ [MIGRATION] \(Date()) Step 5: Migration marked as complete in UserDefaults")
+
+      migrationStatus = "Merge complete!"
+      
+      let completeTimestamp = Date()
+      let totalDuration = completeTimestamp.timeIntervalSince(timestamp)
+      print("✅ [MIGRATION] \(completeTimestamp) GuestDataMigration.mergeGuestDataWithCloud() - COMPLETE")
+      print("   Successfully merged guest data with cloud data for user \(currentUser.uid)")
+      print("   Total duration: \(String(format: "%.2f", totalDuration))s")
+
+    } catch {
+      let errorTimestamp = Date()
+      migrationStatus = "Merge failed: \(error.localizedDescription)"
+      print("❌ [MIGRATION] \(errorTimestamp) Merge failed: \(error.localizedDescription)")
+
+      isMigrating = false
+      throw error
+    }
+
+    isMigrating = false
+    print("🔄 [MIGRATION] \(Date()) Merge state reset - isMigrating = false")
+  }
+
+  /// Clear guest data only (Keep Account Data option)
+  /// This keeps cloud data and removes local guest data
+  func clearGuestDataOnly() async throws {
+    let timestamp = Date()
+    print("🔄 [MIGRATION] \(timestamp) GuestDataMigration.clearGuestDataOnly() - START")
+    
+    guard let currentUser = authManager.currentUser else {
+      print("❌ [MIGRATION] \(timestamp) No authenticated user")
+      throw GuestDataMigrationError.noAuthenticatedUser
+    }
+
+    isMigrating = true
+    migrationProgress = 0.0
+    migrationStatus = "Clearing local data..."
+    print("🔄 [MIGRATION] \(timestamp) Clear started - isMigrating = true")
+
+    do {
+      // Step 1: Clear SwiftData guest habits
+      let step1Timestamp = Date()
+      migrationProgress = 0.3
+      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Clearing SwiftData guest habits...")
+      
+      let container = SwiftDataContainer.shared.modelContainer
+      let context = container.mainContext
+      
+      do {
+        let descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate<HabitData> { habit in
+            habit.userId == "" || habit.userId == "guest"
+          }
+        )
+        let guestHabits = try context.fetch(descriptor)
+        for habit in guestHabits {
+          context.delete(habit)
+        }
+        try context.save()
+        print("✅ [MIGRATION] \(Date()) Step 1: Cleared \(guestHabits.count) guest habits from SwiftData")
+      } catch {
+        print("⚠️ [MIGRATION] Error clearing SwiftData guest habits: \(error)")
+      }
+
+      // Step 2: Clear UserDefaults guest data
+      let step2Timestamp = Date()
+      migrationProgress = 0.6
+      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Clearing UserDefaults guest data...")
+      userDefaults.removeObject(forKey: guestHabitsKey)
+      userDefaults.removeObject(forKey: guestBackupKey)
+      print("✅ [MIGRATION] \(Date()) Step 2: Cleared UserDefaults guest data")
+
+      // Step 3: Clear guest backup directory
+      let step3Timestamp = Date()
+      migrationProgress = 0.8
+      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Clearing guest backup directory...")
+      let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+      let guestBackupDir = documentsPath.appendingPathComponent("Backups")
+        .appendingPathComponent("guest_user")
+
+      if fileManager.fileExists(atPath: guestBackupDir.path) {
+        try? fileManager.removeItem(at: guestBackupDir)
+        print("✅ [MIGRATION] \(Date()) Step 3: Cleared guest backup directory")
+      }
+
+      // Step 4: Mark migration as complete (so we don't prompt again)
+      let step4Timestamp = Date()
+      migrationProgress = 1.0
+      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Finalizing...")
+      let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
+      userDefaults.set(true, forKey: migrationKey)
+      print("✅ [MIGRATION] \(Date()) Step 4: Migration marked as complete")
+
+      migrationStatus = "Complete!"
+      
+      let completeTimestamp = Date()
+      let totalDuration = completeTimestamp.timeIntervalSince(timestamp)
+      print("✅ [MIGRATION] \(completeTimestamp) GuestDataMigration.clearGuestDataOnly() - COMPLETE")
+      print("   Successfully cleared guest data for user \(currentUser.uid)")
+      print("   Total duration: \(String(format: "%.2f", totalDuration))s")
+
+    } catch {
+      let errorTimestamp = Date()
+      migrationStatus = "Clear failed: \(error.localizedDescription)"
+      print("❌ [MIGRATION] \(errorTimestamp) Clear failed: \(error.localizedDescription)")
+
+      isMigrating = false
+      throw error
+    }
+
+    isMigrating = false
+    print("🔄 [MIGRATION] \(Date()) Clear state reset - isMigrating = false")
   }
 
   // MARK: Private
@@ -390,7 +624,7 @@ final class GuestDataMigration: ObservableObject {
     print("   Backup can be restored if migration fails")
   }
 
-  private func migrateGuestHabits(to userId: String) async throws -> [Habit] {
+  private func migrateGuestHabits(to userId: String, keepDuplicates: Bool = false) async throws -> [Habit] {
     guard let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
           let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData) else
     {
@@ -398,7 +632,7 @@ final class GuestDataMigration: ObservableObject {
       return []
     }
 
-    print("🔄 GuestDataMigration: Migrating \(guestHabits.count) guest habits to user \(userId)")
+    print("🔄 GuestDataMigration: Migrating \(guestHabits.count) guest habits to user \(userId) (keepDuplicates: \(keepDuplicates))")
 
     // Load existing user habits
     let userHabitsKey = "\(userId)_habits"
@@ -412,23 +646,27 @@ final class GuestDataMigration: ObservableObject {
     }()
 
     // Merge guest habits with existing user habits
-    // We'll add guest habits that don't conflict with existing ones
     var mergedHabits = existingHabits
     var migratedCount = 0
 
     for guestHabit in guestHabits {
-      // Check if a habit with the same name already exists
-      let existingHabit = existingHabits
-        .first { $0.name.lowercased() == guestHabit.name.lowercased() }
-
-      if existingHabit == nil {
-        // No conflict, add the guest habit
+      if keepDuplicates {
+        // For merge scenario: keep all habits even if names match
         mergedHabits.append(guestHabit)
         migratedCount += 1
       } else {
-        // Conflict exists, we could either skip or merge data
-        // For now, we'll skip conflicting habits to avoid data loss
-        print("⚠️ GuestDataMigration: Skipping conflicting habit: \(guestHabit.name)")
+        // For replace scenario: skip habits with duplicate names
+        let existingHabit = existingHabits
+          .first { $0.name.lowercased() == guestHabit.name.lowercased() }
+
+        if existingHabit == nil {
+          // No conflict, add the guest habit
+          mergedHabits.append(guestHabit)
+          migratedCount += 1
+        } else {
+          // Conflict exists, skip to avoid data loss
+          print("⚠️ GuestDataMigration: Skipping conflicting habit: \(guestHabit.name)")
+        }
       }
     }
 
@@ -490,6 +728,48 @@ final class GuestDataMigration: ObservableObject {
     print("✅ GuestDataMigration: Migrated guest backups to user \(userId)")
   }
 
+  /// Delete all cloud habits from Firestore for the given user
+  private func deleteCloudHabits(for userId: String) async throws {
+    let db = Firestore.firestore()
+    
+    do {
+      print("🔄 GuestDataMigration: Deleting cloud habits for user \(userId)...")
+      
+      // Get all habits for the user from Firestore
+      let snapshot = try await db.collection("users")
+        .document(userId)
+        .collection("habits")
+        .getDocuments()
+      
+      if snapshot.documents.isEmpty {
+        print("ℹ️ GuestDataMigration: No cloud habits to delete")
+        return
+      }
+      
+      // Delete in batches
+      let batch = db.batch()
+      for document in snapshot.documents {
+        batch.deleteDocument(document.reference)
+      }
+      
+      try await batch.commit()
+      print("✅ GuestDataMigration: Deleted \(snapshot.documents.count) cloud habits")
+      
+      // Also delete XP state if it exists
+      let xpStateRef = db.collection("users")
+        .document(userId)
+        .collection("xp")
+        .document("state")
+      
+      try? await xpStateRef.delete()
+      print("✅ GuestDataMigration: Deleted XP state")
+      
+    } catch {
+      print("❌ GuestDataMigration: Error deleting cloud habits: \(error.localizedDescription)")
+      throw error
+    }
+  }
+
   /// Sync migrated habits to cloud storage for cross-device access
   private func syncMigratedDataToCloud(_ migratedHabits: [Habit]) async throws {
     guard !migratedHabits.isEmpty else {
@@ -514,6 +794,14 @@ struct GuestDataPreview {
   let habitCount: Int
   let backupCount: Int
   let habits: [Habit]
+}
+
+// MARK: - CloudDataPreview
+
+struct CloudDataPreview {
+  let habitCount: Int
+  let totalXP: Int
+  let level: Int
 }
 
 // MARK: - GuestDataMigrationError
