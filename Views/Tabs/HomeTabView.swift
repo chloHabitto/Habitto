@@ -1242,13 +1242,37 @@ struct HomeTabView: View {
 
     // Check if the last habit was just completed
     if lastHabitJustCompleted {
+      // ✅ FIX: Separate celebration logic from XP award logic
+      // Celebration should show EVERY time all habits are complete, regardless of DailyAward status
+      
+      // Step 1: Check if all habits are complete (for celebration)
+      let habitsForDate = baseHabitsForSelectedDate
+      let allHabitsComplete = habitsForDate.allSatisfy { habit in
+        completionStatusMap[habit.id] ?? false
+      }
+      
+      // Step 2: Always trigger celebration if all habits are complete
+      if allHabitsComplete {
+        debugLog("🎉 COMPLETION_FLOW: All habits complete for \(dateKey) - triggering celebration!")
+        // Delay celebration to ensure sheet is fully dismissed
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+          showCelebration = true
+          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
+        }
+      } else {
+        debugLog("ℹ️ COMPLETION_FLOW: Not all habits complete - skipping celebration")
+      }
+      
+      // Step 3: Only award XP if DailyAward doesn't already exist
       if awardedDateKeys.contains(dateKey) {
-        debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate grant")
+        debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate XP award")
+        debugLog("✅ COMPLETION_FLOW: Celebration already triggered above (separate from XP award)")
         lastHabitJustCompleted = false
         onCompletionDismiss?()
         return
       }
       
+      // Step 4: Award XP (only if not already awarded)
       awardedDateKeys.insert(dateKey)
       // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
       // This is the ONLY place where XP should be awarded for habit completion
@@ -1294,8 +1318,7 @@ struct HomeTabView: View {
           try modelContext.save()
           debugLog("✅ COMPLETION_FLOW: DailyAward record created for history")
           debugLog("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
-          showCelebration = true
-          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
+          // Note: Celebration already triggered above (separate from XP award)
           debugLog("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
         } catch {
           awardedDateKeys.remove(dateKey)
