@@ -662,6 +662,22 @@ class HabitRepository: ObservableObject {
         debugLog("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
       }
 
+      // ✅ FIX: Validate today's DailyAward after habits are loaded
+      // This ensures XP is correct from app startup, preventing flickering
+      // Run in background Task to not block UI
+      // Reuse todayKey that was already declared above
+      let currentUserId = await CurrentUser().idOrGuest
+      Task { @MainActor in
+        do {
+          debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after habit load (dateKey: \(todayKey))")
+          try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayKey, userId: currentUserId)
+          debugLog("✅ XP_VALIDATION: Today's DailyAward validated - XP should now be correct")
+        } catch {
+          debugLog("⚠️ XP_VALIDATION: Failed to validate DailyAward: \(error.localizedDescription)")
+          // Don't fail habit loading if XP validation fails
+        }
+      }
+
       // Deduplicate habits by ID to prevent duplicates
       var uniqueHabits: [Habit] = []
       var seenIds: Set<UUID> = []
