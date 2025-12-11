@@ -22,13 +22,13 @@ struct GuestDataMigrationView: View {
         } else {
           // Determine scenario and show appropriate UI
           switch migrationScenario {
-          case .both:
+          case .bothCloudAndLocal:
             bothDataScenarioView
           case .cloudOnly:
             cloudOnlyScenarioView
           case .localOnly:
             localOnlyScenarioView
-          case .neither:
+          case .noData:
             neitherScenarioView
           }
         }
@@ -73,7 +73,7 @@ struct GuestDataMigrationView: View {
   @State private var isLoading = true
   @State private var cloudDataPreview: CloudDataPreview?
   @State private var guestDataPreview: GuestDataPreview?
-  @State private var migrationScenario: MigrationScenario = .neither
+  @State private var migrationScenario: MigrationScenario = .noData
 
   /// Repository for handling migration completion
   private let habitRepository = HabitRepository.shared
@@ -81,10 +81,10 @@ struct GuestDataMigrationView: View {
   // MARK: - Migration Scenarios
 
   enum MigrationScenario {
-    case both // Has both cloud and local data
-    case cloudOnly // Has only cloud data
-    case localOnly // Has only local guest data
-    case neither // Has no data at all
+    case bothCloudAndLocal    // User has cloud data AND local guest data
+    case cloudOnly            // User has cloud data but NO local guest data
+    case localOnly            // User has local guest data but NO cloud data (new account)
+    case noData               // No data anywhere (skip migration entirely)
   }
 
   // MARK: - Scenario Views
@@ -155,11 +155,11 @@ struct GuestDataMigrationView: View {
           })
           .padding(.horizontal, 20)
 
-        // Keep Account Data
+        // Keep Account Data Only
         HabittoButton(
           size: .large,
           style: .fillNeutral,
-          content: .text("Keep Account Data"),
+          content: .text("Keep Account Data Only"),
           state: migrationManager.isMigrating ? .disabled : .default,
           action: {
             Task {
@@ -168,11 +168,11 @@ struct GuestDataMigrationView: View {
           })
           .padding(.horizontal, 20)
 
-        // Keep Local Data (needs confirmation)
+        // Keep Local Data Only (needs confirmation)
         HabittoButton(
           size: .large,
           style: .fillTertiary,
-          content: .text("Keep Local Data"),
+          content: .text("Keep Local Data Only"),
           state: migrationManager.isMigrating ? .disabled : .default,
           action: {
             showingReplaceConfirmation = true
@@ -432,13 +432,13 @@ struct GuestDataMigrationView: View {
     let hasLocal = guestDataPreview != nil && (guestDataPreview?.habitCount ?? 0) > 0
 
     if hasCloud && hasLocal {
-      migrationScenario = .both
+      migrationScenario = .bothCloudAndLocal
     } else if hasCloud {
       migrationScenario = .cloudOnly
     } else if hasLocal {
       migrationScenario = .localOnly
     } else {
-      migrationScenario = .neither
+      migrationScenario = .noData
     }
 
     isLoading = false
