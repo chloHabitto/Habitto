@@ -431,14 +431,21 @@ struct GuestDataMigrationView: View {
     let hasCloud = cloudDataPreview != nil && (cloudDataPreview?.habitCount ?? 0) > 0
     let hasLocal = guestDataPreview != nil && (guestDataPreview?.habitCount ?? 0) > 0
 
+    let cloudHabitCount = cloudDataPreview?.habitCount ?? 0
+    let localHabitCount = guestDataPreview?.habitCount ?? 0
+
     if hasCloud && hasLocal {
       migrationScenario = .bothCloudAndLocal
+      print("🔍 [MIGRATION_SCENARIO] Detected: bothCloudAndLocal (\(localHabitCount) guest habit\(localHabitCount == 1 ? "" : "s"), \(cloudHabitCount) cloud habit\(cloudHabitCount == 1 ? "" : "s"))")
     } else if hasCloud {
       migrationScenario = .cloudOnly
+      print("🔍 [MIGRATION_SCENARIO] Detected: cloudOnly (\(cloudHabitCount) cloud habit\(cloudHabitCount == 1 ? "" : "s"))")
     } else if hasLocal {
       migrationScenario = .localOnly
+      print("🔍 [MIGRATION_SCENARIO] Detected: localOnly (\(localHabitCount) guest habit\(localHabitCount == 1 ? "" : "s"))")
     } else {
       migrationScenario = .noData
+      print("🔍 [MIGRATION_SCENARIO] Detected: noData (no guest or cloud data)")
     }
 
     isLoading = false
@@ -449,6 +456,7 @@ struct GuestDataMigrationView: View {
   private func mergeGuestDataWithCloud() async {
     let timestamp = Date()
     print("🔄 [MIGRATION_VIEW] \(timestamp) mergeGuestDataWithCloud() - START")
+    print("   User chose: Keep Both (merging guest data with cloud data)")
 
     do {
       print("🔄 [MIGRATION_VIEW] \(timestamp) Calling migrationManager.mergeGuestDataWithCloud()...")
@@ -457,6 +465,7 @@ struct GuestDataMigrationView: View {
       let migrationCompleteTimestamp = Date()
       let migrationDuration = migrationCompleteTimestamp.timeIntervalSince(timestamp)
       print("✅ [MIGRATION_VIEW] \(migrationCompleteTimestamp) Merge completed successfully (took \(String(format: "%.2f", migrationDuration))s)")
+      print("   Guest data merged with cloud data (all habits preserved)")
 
       print("🔄 [MIGRATION_VIEW] \(migrationCompleteTimestamp) Calling habitRepository.handleMigrationCompleted()...")
       await habitRepository.handleMigrationCompleted()
@@ -465,6 +474,7 @@ struct GuestDataMigrationView: View {
       let handlerDuration = handlerCompleteTimestamp.timeIntervalSince(migrationCompleteTimestamp)
       print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) handleMigrationCompleted() finished (took \(String(format: "%.2f", handlerDuration))s)")
       print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) Merge flow complete - UI should now show merged habits")
+      print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) Migration view should now be dismissed")
 
     } catch {
       let errorTimestamp = Date()
@@ -477,6 +487,7 @@ struct GuestDataMigrationView: View {
   private func keepAccountData() async {
     let timestamp = Date()
     print("🔄 [MIGRATION_VIEW] \(timestamp) keepAccountData() - START")
+    print("   User chose: Keep Account Data Only (clearing guest data, keeping cloud data)")
 
     do {
       print("🔄 [MIGRATION_VIEW] \(timestamp) Calling migrationManager.clearGuestDataOnly()...")
@@ -485,9 +496,11 @@ struct GuestDataMigrationView: View {
       let completeTimestamp = Date()
       let duration = completeTimestamp.timeIntervalSince(timestamp)
       print("✅ [MIGRATION_VIEW] \(completeTimestamp) keepAccountData() - COMPLETE (took \(String(format: "%.2f", duration))s)")
+      print("   Guest data cleared, cloud data preserved")
 
       print("🔄 [MIGRATION_VIEW] \(completeTimestamp) Calling habitRepository.handleStartFresh()...")
       await habitRepository.handleStartFresh()
+      print("✅ [MIGRATION_VIEW] \(Date()) Migration view should now be dismissed")
 
     } catch {
       let errorTimestamp = Date()
@@ -500,14 +513,17 @@ struct GuestDataMigrationView: View {
   private func migrateGuestData() async {
     let timestamp = Date()
     print("🔄 [MIGRATION_VIEW] \(timestamp) migrateGuestData() - START")
+    print("   User chose: Keep Local Data Only (replacing cloud data with local data)")
 
     do {
       print("🔄 [MIGRATION_VIEW] \(timestamp) Calling migrationManager.migrateGuestData()...")
+      print("   This will delete cloud data and migrate local guest data to account")
       try await migrationManager.migrateGuestData()
 
       let migrationCompleteTimestamp = Date()
       let migrationDuration = migrationCompleteTimestamp.timeIntervalSince(timestamp)
       print("✅ [MIGRATION_VIEW] \(migrationCompleteTimestamp) Migration completed successfully (took \(String(format: "%.2f", migrationDuration))s)")
+      print("   Cloud data replaced with local data")
 
       print("🔄 [MIGRATION_VIEW] \(migrationCompleteTimestamp) Calling habitRepository.handleMigrationCompleted()...")
       await habitRepository.handleMigrationCompleted()
@@ -516,6 +532,7 @@ struct GuestDataMigrationView: View {
       let handlerDuration = handlerCompleteTimestamp.timeIntervalSince(migrationCompleteTimestamp)
       print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) handleMigrationCompleted() finished (took \(String(format: "%.2f", handlerDuration))s)")
       print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) Migration flow complete - UI should now show migrated habits")
+      print("✅ [MIGRATION_VIEW] \(handlerCompleteTimestamp) Migration view should now be dismissed")
 
     } catch {
       let errorTimestamp = Date()
