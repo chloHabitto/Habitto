@@ -122,63 +122,93 @@ final class GuestDataMigration: ObservableObject {
 
   /// Migrate guest data to the current authenticated user
   func migrateGuestData() async throws {
+    let timestamp = Date()
+    print("🔄 [MIGRATION] \(timestamp) GuestDataMigration.migrateGuestData() - START")
+    
     guard let currentUser = authManager.currentUser else {
+      print("❌ [MIGRATION] \(timestamp) No authenticated user")
       throw GuestDataMigrationError.noAuthenticatedUser
     }
 
     guard hasGuestData() else {
+      print("❌ [MIGRATION] \(timestamp) No guest data found")
       throw GuestDataMigrationError.noGuestData
     }
 
     guard !hasMigratedGuestData() else {
-      print("ℹ️ GuestDataMigration: Guest data already migrated for user \(currentUser.uid)")
+      print("ℹ️ [MIGRATION] \(timestamp) Guest data already migrated for user \(currentUser.uid)")
       return
     }
 
     isMigrating = true
     migrationProgress = 0.0
     migrationStatus = "Starting migration..."
+    print("🔄 [MIGRATION] \(timestamp) Migration started - isMigrating = true")
 
     do {
       // Step 0: Create pre-migration safety backup
+      let step0Timestamp = Date()
       migrationStatus = "Creating safety backup..."
       migrationProgress = 0.1
+      print("🔄 [MIGRATION] \(step0Timestamp) Step 0: Creating safety backup...")
       try await createPreMigrationBackup(for: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 0: Safety backup created")
 
       // Step 1: Migrate SwiftData (habits, CompletionRecords, streaks, etc.)
+      let step1Timestamp = Date()
       migrationStatus = "Migrating habits and progress..."
       migrationProgress = 0.3
+      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Migrating SwiftData...")
       try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(from: "", to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 1: SwiftData migration completed")
       
       // Step 2: Migrate legacy UserDefaults habits (for backward compatibility)
+      let step2Timestamp = Date()
       migrationStatus = "Migrating legacy data..."
       migrationProgress = 0.4
+      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Migrating legacy UserDefaults...")
       let migratedHabits = try await migrateGuestHabits(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 2: Legacy data migration completed - \(migratedHabits.count) habits")
 
       // Step 3: Migrate backup files
+      let step3Timestamp = Date()
       migrationStatus = "Migrating backups..."
       migrationProgress = 0.6
+      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Migrating backup files...")
       try await migrateGuestBackups(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 3: Backup migration completed")
 
       // Step 4: Save to cloud storage for cross-device sync
+      let step4Timestamp = Date()
       migrationStatus = "Syncing to cloud..."
       migrationProgress = 0.8
+      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Syncing to cloud...")
       try await syncMigratedDataToCloud(migratedHabits)
+      print("✅ [MIGRATION] \(Date()) Step 4: Cloud sync completed")
 
-      // Step 4: Mark migration as complete
+      // Step 5: Mark migration as complete
+      let step5Timestamp = Date()
       migrationStatus = "Finalizing migration..."
       migrationProgress = 0.9
+      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Finalizing migration...")
       let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
       userDefaults.set(true, forKey: migrationKey)
+      print("✅ [MIGRATION] \(Date()) Step 5: Migration marked as complete in UserDefaults")
 
-      // Step 5: Migration complete
+      // Step 6: Migration complete
       migrationStatus = "Migration complete!"
       migrationProgress = 1.0
 
-      print("✅ GuestDataMigration: Successfully migrated guest data for user \(currentUser.uid)")
+      let completeTimestamp = Date()
+      let totalDuration = completeTimestamp.timeIntervalSince(timestamp)
+      print("✅ [MIGRATION] \(completeTimestamp) GuestDataMigration.migrateGuestData() - COMPLETE")
+      print("   Successfully migrated guest data for user \(currentUser.uid)")
+      print("   Total duration: \(String(format: "%.2f", totalDuration))s")
 
     } catch {
+      let errorTimestamp = Date()
       migrationStatus = "Migration failed: \(error.localizedDescription)"
+      print("❌ [MIGRATION] \(errorTimestamp) Migration failed: \(error.localizedDescription)")
 
       // Inform user about safety backup location
       let backupLocationKey = "pre_migration_backup_\(currentUser.uid)"
@@ -193,6 +223,7 @@ final class GuestDataMigration: ObservableObject {
     }
 
     isMigrating = false
+    print("🔄 [MIGRATION] \(Date()) Migration state reset - isMigrating = false")
   }
 
   /// Get a preview of guest data that would be migrated
