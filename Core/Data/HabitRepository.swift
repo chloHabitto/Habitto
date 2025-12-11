@@ -1423,93 +1423,23 @@ class HabitRepository: ObservableObject {
         return
       }
       
-      // ✅ CRITICAL FIX: Check for guest data BEFORE migrating (so migration UI can show)
-      // Only check if user is authenticated with real account (not anonymous)
-      let hasGuestDataToMigrate = guestDataMigration.hasGuestData() && !guestDataMigration.hasMigratedGuestData()
+      // ✅ CRITICAL FIX: Check for CURRENT guest data (userId = "" or "guest")
+      // Show migration UI if guest data exists, regardless of previous migration flag
+      // The migration flag should only prevent showing UI if there's no guest data to handle
+      let hasCurrentGuestData = guestDataMigration.hasGuestData()
       
-      if hasGuestDataToMigrate {
+      if hasCurrentGuestData {
         debugLog("🔄 HabitRepository: Guest data detected - showing migration UI...")
+        debugLog("   Found guest data that needs user decision (regardless of previous migrations)")
         shouldShowMigrationView = true  // ✅ Show migration UI, let user choose
         debugLog("✅ Guest data found, user can choose to migrate or start fresh")
         // Don't auto-migrate - wait for user's choice in migration UI
       } else {
-        debugLog("ℹ️ HabitRepository: No guest data to migrate or already migrated")
+        debugLog("ℹ️ HabitRepository: No guest data found - skipping migration UI")
         shouldShowMigrationView = false
         
-        // ✅ CRITICAL FIX: Auto-migrate data from anonymous user to email user (silent migration)
-        // This handles the case where user was anonymous and signs up (data already in SwiftData)
-        let container = SwiftDataContainer.shared.modelContainer
-        let context = container.mainContext
-        
-        var migratedCount = 0
-        
-        // Migrate HabitData
-        let allHabitsDescriptor = FetchDescriptor<HabitData>()
-        let allHabits = (try? context.fetch(allHabitsDescriptor)) ?? []
-        let guestHabits = allHabits.filter { habitData in
-          habitData.userId != user.uid
-        }
-        
-        for habitData in guestHabits {
-          let oldUserId = habitData.userId
-          habitData.userId = user.uid
-          migratedCount += 1
-          debugLog("  ✓ Auto-migrating habit '\(habitData.name)' from userId '\(oldUserId)' to '\(user.uid)'")
-        }
-        
-        // Migrate CompletionRecords
-        let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
-        let allRecords = (try? context.fetch(allRecordsDescriptor)) ?? []
-        let guestRecords = allRecords.filter { record in
-          record.userId != user.uid
-        }
-        
-        for record in guestRecords {
-          let oldUserId = record.userId
-          record.userId = user.uid
-          debugLog("  ✓ Auto-migrating CompletionRecord from userId '\(oldUserId)' to '\(user.uid)'")
-        }
-        
-        // Migrate DailyAwards
-        let allAwardsDescriptor = FetchDescriptor<DailyAward>()
-        let allAwards = (try? context.fetch(allAwardsDescriptor)) ?? []
-        let guestAwards = allAwards.filter { award in
-          award.userId != user.uid
-        }
-        
-        for award in guestAwards {
-          let oldUserId = award.userId
-          award.userId = user.uid
-          debugLog("  ✓ Auto-migrating DailyAward from userId '\(oldUserId)' to '\(user.uid)'")
-        }
-        
-        // Migrate UserProgressData
-        let allProgressDescriptor = FetchDescriptor<UserProgressData>()
-        let allProgress = (try? context.fetch(allProgressDescriptor)) ?? []
-        let guestProgress = allProgress.filter { progress in
-          progress.userId != user.uid
-        }
-        
-        for progress in guestProgress {
-          let oldUserId = progress.userId
-          progress.userId = user.uid
-          debugLog("  ✓ Auto-migrating UserProgressData from userId '\(oldUserId)' to '\(user.uid)'")
-        }
-        
-        // Save all changes
-        if migratedCount > 0 || !guestRecords.isEmpty || !guestAwards.isEmpty || !guestProgress.isEmpty {
-          do {
-            try context.save()
-            debugLog("✅ HabitRepository: Successfully auto-migrated \(guestHabits.count) habits, \(guestRecords.count) completion records, \(guestAwards.count) awards, \(guestProgress.count) progress records")
-          } catch {
-            debugLog("❌ HabitRepository: Failed to save migrated data: \(error.localizedDescription)")
-          }
-        }
-        
-        // Mark migration as complete if no guest data exists
-        if !guestDataMigration.hasGuestData() {
-          guestDataMigration.forceMarkMigrationCompleted()
-        }
+        // No automatic migration - user must explicitly choose via migration UI
+        // If there's no guest data, there's nothing to migrate
       }
 
       // Load user data
@@ -1532,6 +1462,11 @@ class HabitRepository: ObservableObject {
         return
       }
       isUserCurrentlyAuthenticated = false
+      
+      // ✅ CRITICAL FIX: Migration flag is cleared in AuthenticationManager.signOut()
+      // before authState changes to .unauthenticated, so we don't need to clear it here
+      debugLog("🔄 HabitRepository: User signed out")
+      
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")

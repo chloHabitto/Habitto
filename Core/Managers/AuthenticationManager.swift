@@ -162,6 +162,10 @@ class AuthenticationManager: ObservableObject {
 
   func signOut() {
     print("🔐 AuthenticationManager: Starting sign out")
+    
+    // ✅ CRITICAL FIX: Capture user ID before clearing to clear migration flag
+    let userIdToClear = currentUser?.uid
+    
     do {
       try Auth.auth().signOut()
       authState = .unauthenticated
@@ -174,6 +178,14 @@ class AuthenticationManager: ObservableObject {
       // Clear XP data to prevent data leakage between users
       XPManager.shared.handleUserSignOut()
       print("✅ AuthenticationManager: Cleared XP data")
+      
+      // ✅ CRITICAL FIX: Clear migration flag on sign out
+      // This ensures if user creates new guest data and signs back in, they see the UI again
+      if let userId = userIdToClear {
+        let migrationKey = "guest_data_migrated_\(userId)"
+        UserDefaults.standard.removeObject(forKey: migrationKey)
+        print("✅ AuthenticationManager: Cleared migration flag for user: \(userId)")
+      }
 
       print("✅ AuthenticationManager: User signed out successfully")
     } catch {
