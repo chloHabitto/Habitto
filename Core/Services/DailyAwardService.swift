@@ -553,6 +553,13 @@ class DailyAwardService: ObservableObject {
         logger.info("🛑 DailyAwardService: stopListening() called (no-op in guest-only mode)")
     }
     
+    /// Reset DailyAwardService state (clears xpState)
+    func resetState() {
+        logger.info("🔄 DailyAwardService: Resetting state")
+        xpState = nil
+        logger.info("✅ DailyAwardService: State reset complete")
+    }
+    
     // MARK: - CompletionRecord Reconciliation
     
     /// Result of CompletionRecord reconciliation
