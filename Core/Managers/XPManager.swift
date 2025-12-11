@@ -129,7 +129,7 @@ class XPManager {
     
     print("💰 [XP_TRACE] \(timestamp) publishXP() - START")
     print("   Source: countCompletedDays calculation")
-    print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+    print("   Thread: MainActor")
     print("   completedDaysCount: \(completedDaysCount)")
     print("   Calculated XP: \(newXP) (completedDays * \(XPRewards.dailyCompletion))")
     print("   Current XP: \(oldXP)")
@@ -308,7 +308,7 @@ class XPManager {
       
       print("💰 [XP_TRACE] \(timestamp) loadUserXPFromSwiftData() - Setting XP")
       print("   Source: SwiftData DailyAward query")
-      print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+      print("   Thread: MainActor")
       print("   XP changing from \(oldXP) to \(totalXP)")
       
       // ✅ Update @Observable properties directly (triggers instant UI update)
@@ -811,7 +811,7 @@ class XPManager {
     
     print("💰 [XP_TRACE] \(timestamp) applyXPState() - START")
     print("   Source: DailyAwardService.xpState observer")
-    print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+    print("   Thread: MainActor")
     print("   State: totalXP=\(state.totalXP), level=\(state.level), lastUpdated=\(state.lastUpdated)")
     print("   Current: totalXP=\(oldXP), level=\(oldLevel)")
     if let lastPublish = lastPublishXPTime {
