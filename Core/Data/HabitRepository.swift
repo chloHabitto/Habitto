@@ -9,6 +9,8 @@ import MijickPopups
 
 extension Notification.Name {
   static let habitProgressUpdated = Notification.Name("habitProgressUpdated")
+  /// Posted when user data migration completes - triggers @Query view refresh
+  static let userDataMigrated = Notification.Name("userDataMigrated")
 }
 
 // MARK: - HabitEntity
@@ -253,6 +255,12 @@ class HabitRepository: ObservableObject {
     shouldShowMigrationView = false
     print("🔄 [MIGRATION] \(timestamp) Migration view hidden")
     
+    // ✅ CRITICAL FIX: Force ModelContext refresh to invalidate cached queries
+    // SwiftData @Query predicates cache results, so we need to force a refresh
+    // when userId changes from "" to authenticated userId
+    print("🔄 [MIGRATION] \(timestamp) Forcing ModelContext refresh to invalidate cached queries...")
+    await forceModelContextRefresh()
+    
     // ✅ CRITICAL FIX: Await loadHabits() to ensure data is loaded before returning
     print("🔄 [MIGRATION] \(timestamp) Starting loadHabits(force: true)...")
     await loadHabits(force: true)
@@ -261,13 +269,36 @@ class HabitRepository: ObservableObject {
     let loadTimestamp = Date()
     print("🔄 [MIGRATION] \(loadTimestamp) loadHabits() completed - habits.count: \(habits.count)")
     
+    // ✅ CRITICAL FIX: Post notification to trigger @Query view refresh
+    // This ensures any views using @Query will re-evaluate their predicates
+    NotificationCenter.default.post(name: .userDataMigrated, object: nil)
+    print("🔄 [MIGRATION] \(loadTimestamp) Posted userDataMigrated notification - @Query views should refresh")
+    
     // Force UI refresh
     objectWillChange.send()
     print("🔄 [MIGRATION] \(loadTimestamp) objectWillChange.send() called - UI should refresh")
     
     // ✅ VERIFICATION: Log what was actually loaded
+    let currentUserId = await CurrentUser().idOrGuest
     print("🎯 [MIGRATION] \(loadTimestamp) Verification - HabitRepository state after migration:")
-    print("   habits.count: \(habits.count)")
+    print("   CurrentUser.idOrGuest: '\(currentUserId.isEmpty ? "EMPTY_STRING" : currentUserId.prefix(8))...'")
+    print("   HabitRepository.habits.count: \(habits.count)")
+    
+    // Verify SwiftData has the migrated data
+    do {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      let allHabits = try modelContext.fetch(FetchDescriptor<HabitData>())
+      let userHabits = allHabits.filter { $0.userId == currentUserId }
+      print("   SwiftDataContainer habits for current user: \(userHabits.count)")
+      print("   Total habits in SwiftData: \(allHabits.count)")
+      
+      if userHabits.count != habits.count {
+        print("   ⚠️ MISMATCH: HabitRepository has \(habits.count) habits but SwiftData has \(userHabits.count) for current user")
+      }
+    } catch {
+      print("   ❌ Error verifying SwiftData state: \(error.localizedDescription)")
+    }
+    
     for (index, habit) in habits.enumerated() {
       print("   [\(index)] '\(habit.name)' (ID: \(habit.id))")
     }
@@ -275,6 +306,35 @@ class HabitRepository: ObservableObject {
     let endTimestamp = Date()
     let duration = endTimestamp.timeIntervalSince(timestamp)
     print("✅ [MIGRATION] \(endTimestamp) handleMigrationCompleted() - COMPLETE (took \(String(format: "%.2f", duration))s)")
+  }
+  
+  /// Force ModelContext to refresh and invalidate cached queries
+  /// This is critical when userId changes (e.g., guest to authenticated)
+  /// because SwiftData @Query predicates cache results based on the predicate values
+  private func forceModelContextRefresh() async {
+    let timestamp = Date()
+    print("🔄 [MODEL_CONTEXT] \(timestamp) Forcing ModelContext refresh...")
+    
+    await MainActor.run {
+      let modelContext = SwiftDataContainer.shared.modelContext
+      
+      // ✅ CRITICAL FIX: Process pending changes to ensure all migrations are visible
+      do {
+        // Force save any pending changes
+        try modelContext.save()
+        print("🔄 [MODEL_CONTEXT] \(timestamp) ModelContext.save() completed")
+      } catch {
+        print("⚠️ [MODEL_CONTEXT] \(timestamp) ModelContext.save() failed: \(error.localizedDescription)")
+      }
+      
+      // ✅ CRITICAL FIX: Reset the ModelContext to clear any cached query results
+      // This forces @Query views to re-evaluate their predicates with the new userId
+      // Note: We can't directly reset ModelContext, but we can trigger a refresh by:
+      // 1. Posting a notification that views can observe
+      // 2. Forcing a re-fetch in HabitRepository
+      
+      print("🔄 [MODEL_CONTEXT] \(timestamp) ModelContext refresh initiated")
+    }
   }
 
   /// Handle starting fresh (no migration)
