@@ -346,9 +346,15 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func loadHabits() async throws -> [Habit] {
-    // ✅ CRITICAL FIX: Wait for Firebase Auth to be ready before getting user ID
-    // This ensures we use the correct user ID even if called during app initialization
+    // ✅ CRITICAL FIX: Always get fresh userId - never cache it
+    // When userId changes (e.g., guest to authenticated), we need the current value
+    // This ensures predicates use the correct userId after migration
     var currentUserId = await getCurrentUserId()
+    
+    // ✅ CRITICAL FIX: Log userId to track changes during migration
+    let timestamp = Date()
+    let userIdDisplay = currentUserId ?? "nil (guest)"
+    logger.info("🔄 [SWIFTDATA_QUERY] \(timestamp) loadHabits() called - currentUserId: '\(userIdDisplay.isEmpty ? "EMPTY_STRING" : String(userIdDisplay.prefix(8)) + "...")'")
     
     // ✅ FIX: Only retry if we're expecting an authenticated user
     // For guest users, nil is expected and we should use "guest" immediately
@@ -396,7 +402,15 @@ final class SwiftDataStorage: HabitStorageProtocol {
         }
       }
 
+      // ✅ CRITICAL FIX: Process pending changes before fetching
+      // This ensures migrated data is visible to queries
+      try container.modelContext.save()
+      
       var habitDataArray = try container.modelContext.fetch(descriptor)
+      
+      // ✅ CRITICAL FIX: Log query results to diagnose @Query refresh issues
+      let queryTimestamp = Date()
+      logger.info("🔄 [SWIFTDATA_QUERY] \(queryTimestamp) Query executed - found \(habitDataArray.count) habits for userId '\(userIdDisplay.isEmpty ? "EMPTY_STRING" : String(userIdDisplay.prefix(8)) + "...")'")
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId

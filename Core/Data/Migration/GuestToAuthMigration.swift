@@ -74,6 +74,7 @@ final class GuestToAuthMigration {
     
     // Save changes
     try context.save()
+    logger.info("✅ Saved migrated habits to SwiftData")
     
     // ✅ PRIORITY 1: Migrate ProgressEvents (event-sourcing source of truth)
     // Must migrate before other data to ensure event-sourcing integrity
@@ -91,6 +92,17 @@ final class GuestToAuthMigration {
     
     // ✅ CRITICAL FIX: Recalculate and save XP to FirestoreUserProgress
     try await recalculateAndSaveXP(to: authUserId, context: context)
+    
+    // ✅ CRITICAL FIX: Force final save to ensure all changes are persisted
+    try context.save()
+    logger.info("✅ Final save completed - all migrated data persisted")
+    
+    // ✅ CRITICAL FIX: Post notification to trigger @Query view refresh
+    // This ensures SwiftData @Query views re-evaluate their predicates with the new userId
+    await MainActor.run {
+      NotificationCenter.default.post(name: .userDataMigrated, object: nil)
+      logger.info("✅ Posted userDataMigrated notification - @Query views should refresh")
+    }
     
     logger.info("✅ Guest to auth migration complete! Migrated \(guestHabits.count) habits")
     
