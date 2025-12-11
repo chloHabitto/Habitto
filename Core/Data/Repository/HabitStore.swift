@@ -538,9 +538,11 @@ final actor HabitStore {
         )
       }
 
+      // ✅ FIX: Check daily completion and award/revoke XP AFTER all SwiftData saves are complete
+      // This ensures checkDailyCompletionAndAwardXP queries fresh data, not stale CompletionRecords
       // ✅ PRIORITY 2: Check daily completion and award/revoke XP atomically
       // ✅ STEP 3: Enhanced logging for manual testing workflow
-      logger.info("📝 setProgress: Calling checkDailyCompletionAndAwardXP for dateKey=\(dateKey)")
+      logger.info("📝 setProgress: Calling checkDailyCompletionAndAwardXP for dateKey=\(dateKey) (AFTER all saves)")
       // Reuse userId variable declared above
       do {
         try await checkDailyCompletionAndAwardXP(dateKey: dateKey, userId: userId)
@@ -1211,10 +1213,13 @@ final actor HabitStore {
     let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       
+      // ✅ FIX: Include pending changes to see CompletionRecord that was just saved
+      // This ensures we query fresh data, not stale cached results
       let completionPredicate = #Predicate<CompletionRecord> { record in
         record.userId == userId && record.dateKey == dateKey && record.isCompleted == true
       }
-      let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+      var completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+      completionDescriptor.includePendingChanges = true  // ✅ FIX: See just-saved records
       let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
       let completedIds = Set(completionRecords.map(\.habitId))
       let missingHabits = scheduledHabits
@@ -1230,13 +1235,15 @@ final actor HabitStore {
     
     // Check if award already exists (synchronous MainActor work)
     // ✅ FIX: Only return Sendable types (Bool, Int) to avoid concurrency warnings
+    // ✅ FIX: Include pending changes to see DailyAward that was just created/deleted
     let (awardExists, xpToReverse): (Bool, Int) = await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       
       let awardPredicate = #Predicate<DailyAward> { award in
         award.userId == userId && award.dateKey == dateKey
       }
-      let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+      var awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+      awardDescriptor.includePendingChanges = true  // ✅ FIX: See just-saved/deleted awards
       let awards = (try? modelContext.fetch(awardDescriptor)) ?? []
       let exists = !awards.isEmpty
       let xpAmount = awards.first?.xpGranted ?? 50  // Extract value on MainActor
