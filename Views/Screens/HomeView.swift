@@ -1139,18 +1139,14 @@ struct HomeView: View {
       TutorialBottomSheet(tutorialManager: tutorialManager)
     }
     .onChange(of: state.habits) { oldHabits, newHabits in
-      // ✅ FIX: Reactively recalculate XP AND STREAK whenever habits change
-      // This ensures both XP and streak update immediately when habits are toggled
+      // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+      // DO NOT call publishXP() here - it overwrites the database value with calculated value
+      // When habits change, DailyAwardService will award XP via awardXP() if needed
+      // XPManager observes DailyAwardService.xpState and updates automatically
       Task { @MainActor in
-        debugLog("✅ REACTIVE_XP: Habits changed, recalculating XP...")
+        debugLog("✅ REACTIVE_XP: Habits changed - XP will update via DailyAwardService (not recalculating)")
         
-        // Count completed days from the current habit state
-        let completedDaysCount = countCompletedDays(habits: newHabits)
-        xpManager.publishXP(completedDaysCount: completedDaysCount)
-        
-        debugLog("✅ REACTIVE_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
-        
-        // ✅ CRITICAL FIX: Also recalculate streak when habits change!
+        // ✅ CRITICAL FIX: Only recalculate streak when habits change
         // But add a small delay to ensure SwiftData has finished saving CompletionRecords
         debugLog("🔄 REACTIVE_STREAK: Habits changed, scheduling streak recalculation...")
         
