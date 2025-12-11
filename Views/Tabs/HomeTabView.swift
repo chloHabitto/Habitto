@@ -1166,34 +1166,11 @@ struct HomeTabView: View {
       }
       debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
       
-      // Clean up DailyAward record if day is no longer complete
-      if !allCompleted {
-        guard let userId = AuthenticationManager.shared.currentUser?.uid else { return }
-        
-        let predicate = #Predicate<DailyAward> { award in
-          award.userId == userId && award.dateKey == dateKey
-        }
-        let request = FetchDescriptor<DailyAward>(predicate: predicate)
-        
-        do {
-          // ✅ FIX #12: Use SwiftDataContainer's context
-          let modelContext = SwiftDataContainer.shared.modelContext
-          let existingAwards = try modelContext.fetch(request)
-          for award in existingAwards {
-            modelContext.delete(award)
-          }
-          try modelContext.save()
-          debugLog("✅ UNCOMPLETE_FLOW: DailyAward removed for \(dateKey)")
-          awardedDateKeys.remove(dateKey)
-          
-          // ✅ REMOVED: No longer calling decrementGlobalStreak() here!
-          // The onStreakRecalculationNeeded() callback above handles ALL streak updates
-          // This prevents the old early-return logic from interfering with today's uncompletes
-          debugLog("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
-        } catch {
-          debugLog("❌ UNCOMPLETE_FLOW: Failed to remove DailyAward: \(error)")
-        }
-        }
+      // ✅ FIX: Remove duplicate DailyAward management from UI
+      // HabitStore.checkDailyCompletionAndAwardXP will handle ALL DailyAward creation/deletion
+      // This prevents race conditions where UI removes award but HabitStore recreates it
+      debugLog("✅ UNCOMPLETE_FLOW: DailyAward management handled by HabitStore.checkDailyCompletionAndAwardXP")
+      debugLog("✅ UNCOMPLETE_FLOW: Streak will be recalculated by callback (no manual decrement)")
       }
 
     // Resort immediately
