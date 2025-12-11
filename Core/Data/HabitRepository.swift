@@ -664,12 +664,15 @@ class HabitRepository: ObservableObject {
 
       // ✅ FIX: Validate today's DailyAward after habits are loaded
       // This ensures XP is correct from app startup, preventing flickering
-      // Run in background Task to not block UI
+      // Run validation after a short delay to allow sync to complete first
       // Reuse todayKey that was already declared above
       let currentUserId = await CurrentUser().idOrGuest
       Task { @MainActor in
+        // Wait a bit for sync to complete (if it's running)
+        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        
         do {
-          debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after habit load (dateKey: \(todayKey))")
+          debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after habit load and sync (dateKey: \(todayKey))")
           try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayKey, userId: currentUserId)
           debugLog("✅ XP_VALIDATION: Today's DailyAward validated - XP should now be correct")
         } catch {
@@ -1393,6 +1396,22 @@ class HabitRepository: ObservableObject {
   
   /// Update sync status when sync completes successfully
   func syncCompleted() {
+    // ✅ FIX: Run XP validation after sync completes to catch any invalid awards imported from Firestore
+    // This ensures XP is correct even if invalid awards were imported during sync
+    Task { @MainActor in
+      let today = Date()
+      let todayKey = Habit.dateKey(for: today)
+      let currentUserId = await CurrentUser().idOrGuest
+      
+      do {
+        debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after sync completion (dateKey: \(todayKey))")
+        try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayKey, userId: currentUserId)
+        debugLog("✅ XP_VALIDATION: Today's DailyAward validated after sync - XP should now be correct")
+      } catch {
+        debugLog("⚠️ XP_VALIDATION: Failed to validate DailyAward after sync: \(error.localizedDescription)")
+        // Don't fail sync if XP validation fails
+      }
+    }
     syncStatus = .synced
     lastSyncDate = Date()
     saveLastSyncDate()

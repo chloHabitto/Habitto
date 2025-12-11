@@ -1364,7 +1364,62 @@ actor SyncEngine {
             return
         }
         
-        // Import the award record
+        // ✅ FIX: Validate BEFORE importing to prevent invalid awards from being imported
+        // Parse dateKey to Date
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone.current
+        guard let date = dateFormatter.date(from: dateKey) else {
+            logger.warning("⚠️ Invalid dateKey format in award from Firestore: \(dateKey) - skipping import")
+            // Delete invalid award from Firestore
+            await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+            return
+        }
+        
+        // Get scheduled habits for this date
+        guard let scheduledHabits = try? await HabitStore.shared.scheduledHabits(for: date) else {
+            logger.warning("⚠️ Failed to load scheduled habits for validation - skipping award import for \(dateKey)")
+            return
+        }
+        
+        // If no habits were scheduled, award should not exist
+        if scheduledHabits.isEmpty {
+            logger.warning("⚠️ INVALID AWARD: No habits scheduled for \(dateKey) - skipping import and deleting from Firestore")
+            await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+            return
+        }
+        
+        // Check completion records for this date
+        let scheduledHabitIds: Set<UUID> = Set(scheduledHabits.map { $0.id })
+        let (allCompleted, missingHabits): (Bool, [String]) = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            let completionPredicate = #Predicate<CompletionRecord> { record in
+                record.userId == userId && record.dateKey == dateKey && record.isCompleted == true
+            }
+            let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+            let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
+            let completedIds = Set(completionRecords.map(\.habitId))
+            
+            // Check if all scheduled habits were completed
+            let missingHabitIds = scheduledHabitIds.subtracting(completedIds)
+            let missingHabits = scheduledHabits
+                .filter { missingHabitIds.contains($0.id) }
+                .map(\.name)
+            
+            return (missingHabitIds.isEmpty, missingHabits)
+        }
+        
+        // If not all habits completed, skip import and delete from Firestore
+        if !allCompleted {
+            logger.warning("⚠️ INVALID AWARD: Not all habits completed for \(dateKey) - skipping import and deleting from Firestore")
+            logger.warning("   Scheduled: \(scheduledHabits.count), Completed: \(scheduledHabitIds.count - missingHabits.count)")
+            logger.warning("   Missing habits: \(missingHabits.joined(separator: ", "))")
+            await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+            return
+        }
+        
+        // ✅ VALIDATION PASSED: Import the award record
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
@@ -1381,20 +1436,31 @@ actor SyncEngine {
             
             modelContext.insert(award)
             try? modelContext.save()
-            logger.info("✅ Imported DailyAward for \(dateKey) (\(xpGranted) XP)")
-        }
-        
-        // ✅ VALIDATION: Verify the imported award is valid (non-blocking)
-        // This logs warnings if invalid awards are imported but doesn't block sync
-        // The DailyAwardIntegrityService can be used to clean up invalid awards later
-        Task {
-            await validateImportedAward(dateKey: dateKey, userId: userId)
+            logger.info("✅ Imported DailyAward for \(dateKey) (\(xpGranted) XP) - validated: all \(scheduledHabits.count) habits completed")
         }
         
         // CRITICAL: Sync XP from Firestore to ensure consistency across devices
         // The XP state stream should handle this, but we explicitly sync here to ensure
         // immediate consistency when importing remote awards
         await syncXPStateFromFirestore(userId: userId)
+    }
+    
+    /// Delete an invalid DailyAward from Firestore
+    /// This prevents invalid awards from being re-imported on future syncs
+    private func deleteInvalidAwardFromFirestore(dateKey: String, userId: String) async {
+        let userIdDateKey = "\(userId)#\(dateKey)"
+        let awardRef = firestore.collection("users")
+            .document(userId)
+            .collection("daily_awards")
+            .document(userIdDateKey)
+        
+        do {
+            try await awardRef.delete()
+            logger.info("✅ Deleted invalid DailyAward from Firestore: \(dateKey)")
+        } catch {
+            logger.warning("⚠️ Failed to delete invalid DailyAward from Firestore: \(error.localizedDescription)")
+            // Don't throw - this is cleanup, not critical
+        }
     }
     
     /// Validate an imported award to check if it's valid (non-blocking)

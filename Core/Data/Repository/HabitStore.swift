@@ -1,6 +1,7 @@
 import Foundation
 import FirebaseAuth
 import FirebaseCore
+import FirebaseFirestore
 import OSLog
 import SwiftData
 import SwiftUI
@@ -1306,8 +1307,11 @@ final actor HabitStore {
         )
         logger.info("🎯 XP_CHECK: ✅ Reversed \(xpToReverse) XP - DailyAward deleted, XP recalculated from ledger")
         
-        // ✅ CLOUD BACKUP: Delete daily award from Firestore (non-blocking)
-        // Note: We don't backup deletions, just let Firestore handle it via merge
+        // ✅ FIX: Delete invalid award from Firestore so it doesn't get re-imported
+        // This prevents the flickering issue where invalid awards are re-imported during sync
+        Task.detached(priority: .utility) { [self] in
+          await self.deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+        }
       } catch {
         logger.error("❌ XP_CHECK: Failed to reverse XP: \(error.localizedDescription)")
         // XP reversal failed - log but don't block (better than losing both)
@@ -1318,6 +1322,30 @@ final actor HabitStore {
       
     } else {
       logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
+    }
+  }
+  
+  /// Delete an invalid DailyAward from Firestore
+  /// This prevents invalid awards from being re-imported on future syncs
+  private func deleteInvalidAwardFromFirestore(dateKey: String, userId: String) async {
+    // Skip if guest user (no Firestore)
+    guard !CurrentUser.isGuestId(userId) else {
+      return
+    }
+    
+    let userIdDateKey = "\(userId)#\(dateKey)"
+    let db = Firestore.firestore()
+    let awardRef = db.collection("users")
+      .document(userId)
+      .collection("daily_awards")
+      .document(userIdDateKey)
+    
+    do {
+      try await awardRef.delete()
+      logger.info("✅ Deleted invalid DailyAward from Firestore: \(dateKey)")
+    } catch {
+      logger.warning("⚠️ Failed to delete invalid DailyAward from Firestore: \(error.localizedDescription)")
+      // Don't throw - this is cleanup, not critical
     }
   }
 }
