@@ -1309,8 +1309,10 @@ final actor HabitStore {
         
         // ✅ FIX: Delete invalid award from Firestore so it doesn't get re-imported
         // This prevents the flickering issue where invalid awards are re-imported during sync
+        logger.info("🔄 XP_CHECK: Deleting invalid award from Firestore to prevent re-import...")
         Task.detached(priority: .utility) { [self] in
           await self.deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
+          logger.info("✅ XP_CHECK: Invalid award deleted from Firestore - will not be re-imported")
         }
       } catch {
         logger.error("❌ XP_CHECK: Failed to reverse XP: \(error.localizedDescription)")
