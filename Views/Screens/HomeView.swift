@@ -126,8 +126,19 @@ class HomeViewState: ObservableObject {
         
         if let streak = allStreaks.first {
           let loadedStreak = streak.currentStreak
+          let timestamp = Date()
+          let oldStreak = currentStreak
+          
+          print("💰 [STREAK_TRACE] \(timestamp) updateStreak() - START")
+          print("   Source: GlobalStreakModel query")
+          print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+          print("   Streak changing from \(oldStreak) to \(loadedStreak)")
+          
           debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
+          
+          print("💰 [STREAK_TRACE] \(Date()) updateStreak() - COMPLETE")
+          print("   Final: currentStreak=\(self.currentStreak)")
           
           // ✅ FIX: Also broadcast via notification for consistency
           NotificationCenter.default.post(

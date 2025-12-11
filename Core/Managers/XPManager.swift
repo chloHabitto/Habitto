@@ -117,12 +117,34 @@ class XPManager {
   
   /// ✅ IDEMPOTENT: Set XP from derived calculation
   /// Use this instead of += or -= operations
+  /// 
+  /// ⚠️ WARNING: This method calculates XP from completed days, but the source of truth
+  /// is DailyAwardService. This should only be used for immediate UI feedback.
+  /// The observer will eventually sync with the database value.
   @MainActor
   func publishXP(completedDaysCount: Int) {
+    let timestamp = Date()
+    let oldXP = totalXP
     let newXP = recalculateXP(completedDaysCount: completedDaysCount)
     
+    print("💰 [XP_TRACE] \(timestamp) publishXP() - START")
+    print("   Source: countCompletedDays calculation")
+    print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+    print("   completedDaysCount: \(completedDaysCount)")
+    print("   Calculated XP: \(newXP) (completedDays * \(XPRewards.dailyCompletion))")
+    print("   Current XP: \(oldXP)")
+    
     // Only update if changed
-    guard newXP != totalXP else { return }
+    guard newXP != totalXP else {
+      print("💰 [XP_TRACE] \(timestamp) publishXP() - SKIP (no change)")
+      return
+    }
+    
+    // ✅ CRITICAL FIX: Log the change
+    print("💰 [XP_TRACE] \(timestamp) publishXP() - XP changing from \(oldXP) to \(newXP)")
+    
+    // ✅ CRITICAL FIX: Track when publishXP() was called to prevent observer from overwriting
+    lastPublishXPTime = timestamp
     
     // ✅ Update properties directly (@Observable triggers automatic UI update)
     totalXP = newXP
@@ -134,6 +156,10 @@ class XPManager {
     
     updateLevelFromXP()
     saveUserProgress()
+    
+    let endTimestamp = Date()
+    print("💰 [XP_TRACE] \(endTimestamp) publishXP() - COMPLETE")
+    print("   Final: totalXP=\(self.totalXP), level=\(self.currentLevel)")
     
     #if DEBUG
     // ✅ INVARIANT: XP must always equal completedDays * 50
@@ -277,24 +303,25 @@ class XPManager {
       print("🔧 [XP_SET] self.totalXP BEFORE setting: \(self.totalXP)")
 
       // Update XPManager with the calculated XP
-      // ✅ Update @Observable properties directly (triggers instant UI update)
-      print("🔧 [XP_SET] About to set self.totalXP = \(totalXP)")
-      self.totalXP = totalXP
-      print("🔧 [XP_SET] self.totalXP AFTER setting: \(self.totalXP)")
+      let timestamp = Date()
+      let oldXP = self.totalXP
       
-      print("🔧 [XP_SET] About to set self.dailyXP = 0")
+      print("💰 [XP_TRACE] \(timestamp) loadUserXPFromSwiftData() - Setting XP")
+      print("   Source: SwiftData DailyAward query")
+      print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+      print("   XP changing from \(oldXP) to \(totalXP)")
+      
+      // ✅ Update @Observable properties directly (triggers instant UI update)
+      self.totalXP = totalXP
       self.dailyXP = 0
-      print("🔧 [XP_SET] self.dailyXP AFTER setting: \(self.dailyXP)")
       
       // Keep userProgress in sync
-      print("🔧 [XP_SET] About to update userProgress")
       var updatedProgress = userProgress
-      print("🔧 [XP_SET] userProgress.totalXP BEFORE: \(updatedProgress.totalXP)")
       updatedProgress.totalXP = totalXP
       updatedProgress.dailyXP = 0 // Reset daily XP
-      print("🔧 [XP_SET] userProgress.totalXP AFTER: \(updatedProgress.totalXP)")
       userProgress = updatedProgress
-      print("🔧 [XP_SET] self.userProgress.totalXP AFTER assignment: \(self.userProgress.totalXP)")
+      
+      print("💰 [XP_TRACE] \(timestamp) loadUserXPFromSwiftData() - XP set to \(self.totalXP)")
 
       // Recalculate level based on total XP
       print("🔧 [XP_SET] About to call updateLevelFromXP()")
@@ -529,6 +556,13 @@ class XPManager {
   private let dailyAwardsKey = "daily_xp_awards"
   private let awardService: DailyAwardService
   private var xpStateCancellable: AnyCancellable?
+  
+  /// Track when publishXP() was last called to prevent observer from overwriting recent calculated values
+  private var lastPublishXPTime: Date?
+  
+  /// Minimum time between publishXP() and applyXPState() to allow overwrite
+  /// This prevents observer from immediately overwriting calculated values
+  private let publishXPGracePeriod: TimeInterval = 0.5 // 500ms
 
   /// Track which habits have been awarded XP today to prevent duplicates
   private var dailyAwards: [String: Set<UUID>] = [:]
@@ -771,15 +805,46 @@ class XPManager {
   }
   
   private func applyXPState(_ state: XPState) {
-    print("🔧 [APPLY_STATE] applyXPState called with: totalXP=\(state.totalXP), level=\(state.level)")
-    print("🔧 [APPLY_STATE] self.totalXP BEFORE apply: \(self.totalXP)")
+    let timestamp = Date()
+    let oldXP = self.totalXP
+    let oldLevel = self.currentLevel
     
-    // ✅ FIX: Only apply state if it has valid XP (not 0 or negative)
-    // This prevents the observer from overwriting loaded XP with 0
-    guard state.totalXP > 0 || self.totalXP == 0 else {
-      print("⚠️ [APPLY_STATE] Skipping apply - state has 0 XP but current XP is \(self.totalXP)")
+    print("💰 [XP_TRACE] \(timestamp) applyXPState() - START")
+    print("   Source: DailyAwardService.xpState observer")
+    print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+    print("   State: totalXP=\(state.totalXP), level=\(state.level), lastUpdated=\(state.lastUpdated)")
+    print("   Current: totalXP=\(oldXP), level=\(oldLevel)")
+    if let lastPublish = lastPublishXPTime {
+      let timeSincePublish = timestamp.timeIntervalSince(lastPublish)
+      print("   Last publishXP(): \(String(format: "%.2f", timeSincePublish))s ago")
+    }
+    
+    // ✅ CRITICAL FIX: Only apply if state is different to prevent unnecessary updates
+    guard state.totalXP != oldXP || state.level != oldLevel else {
+      print("💰 [XP_TRACE] \(timestamp) applyXPState() - SKIP (no change)")
       return
     }
+    
+    // ✅ CRITICAL FIX: Don't overwrite with 0 if we have valid XP
+    // This prevents observer from overwriting loaded XP with stale 0 value
+    if state.totalXP == 0 && oldXP > 0 {
+      print("⚠️ [XP_TRACE] \(timestamp) applyXPState() - SKIP (state has 0 XP but current is \(oldXP))")
+      return
+    }
+    
+    // ✅ CRITICAL FIX: Don't overwrite if publishXP() was called recently
+    // This prevents observer from immediately overwriting calculated values
+    if let lastPublish = lastPublishXPTime {
+      let timeSincePublish = timestamp.timeIntervalSince(lastPublish)
+      if timeSincePublish < publishXPGracePeriod {
+        print("⚠️ [XP_TRACE] \(timestamp) applyXPState() - SKIP (publishXP() called \(String(format: "%.2f", timeSincePublish))s ago, within grace period)")
+        return
+      }
+    }
+    
+    // ✅ CRITICAL FIX: Log the change
+    print("💰 [XP_TRACE] \(timestamp) applyXPState() - XP changing from \(oldXP) to \(state.totalXP)")
+    print("💰 [XP_TRACE] \(timestamp) applyXPState() - Level changing from \(oldLevel) to \(state.level)")
     
     totalXP = state.totalXP
     currentLevel = max(1, state.level)
@@ -793,6 +858,8 @@ class XPManager {
     updateLevelProgress()
     saveUserProgress()
     
-    print("🔧 [APPLY_STATE] self.totalXP AFTER apply: \(self.totalXP)")
+    let endTimestamp = Date()
+    print("💰 [XP_TRACE] \(endTimestamp) applyXPState() - COMPLETE")
+    print("   Final: totalXP=\(self.totalXP), level=\(self.currentLevel)")
   }
 }
