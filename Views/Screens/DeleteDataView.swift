@@ -239,19 +239,29 @@ struct DeleteDataView: View {
     do {
       print("🔥 DELETE_ALL: Starting deletion process (includeCloud: \(includeCloud))...")
       
-      // ✅ STEP 1: Delete Firestore data FIRST (if signed in and includeCloud is true)
+      // ✅ STEP 0: Stop Firestore listeners FIRST to prevent sync-back of deleted data
+      if includeCloud && isSignedIn {
+        await MainActor.run {
+          FirestoreService.shared.stopListening()
+          print("✅ DELETE_ALL: Firestore listeners stopped")
+        }
+      }
+      
+      // ✅ STEP 1: Delete Firestore data (if signed in and includeCloud is true)
       if includeCloud && isSignedIn {
         print("🔥 DELETE_ALL: Deleting Firestore data...")
         try await FirestoreService.shared.deleteAllUserData()
         print("✅ DELETE_ALL: Firestore data deleted")
       }
       
-      // ✅ STEP 2: Clear all local SwiftData (waits for deletion)
-      let habitStore = HabitStore.shared
-      try await habitStore.clearAllHabits()
-      print("✅ DELETE_ALL: All SwiftData models cleared (HabitData, CompletionRecord, DailyAward, UserProgressData, GlobalStreakModel, ProgressEvent)")
-
-      // ✅ STEP 3: Clear XP and level data
+      // ✅ STEP 2: Clear ALL UserDefaults keys FIRST (including SavedHabits and XP cache)
+      // This prevents XPManager from loading old data if it reinitializes
+      await MainActor.run {
+        clearAllUserDataFromUserDefaults()
+        print("✅ DELETE_ALL: UserDefaults cleared (including SavedHabits, XP/Level cache, migration flags, streak/backfill keys)")
+      }
+      
+      // ✅ STEP 3: Reset XP and level data (after UserDefaults cleared, this saves clean default state)
       await MainActor.run {
         XPManager.shared.resetToDefault()
         print("✅ DELETE_ALL: XPManager reset to default (level 1, 0 XP)")
@@ -263,11 +273,10 @@ struct DeleteDataView: View {
         print("✅ DELETE_ALL: DailyAwardService state cleared")
       }
 
-      // ✅ STEP 5: Clear ALL UserDefaults keys matching patterns
-      await MainActor.run {
-        clearAllUserDataFromUserDefaults()
-        print("✅ DELETE_ALL: UserDefaults cleared (XP/Level cache, migration flags, streak/backfill keys)")
-      }
+      // ✅ STEP 5: Clear all local SwiftData (waits for deletion)
+      let habitStore = HabitStore.shared
+      try await habitStore.clearAllHabits()
+      print("✅ DELETE_ALL: All SwiftData models cleared (HabitData, CompletionRecord, DailyAward, UserProgressData, GlobalStreakModel, ProgressEvent)")
 
       // ✅ STEP 6: Clear HabitRepository habits array
       await MainActor.run {
@@ -293,6 +302,10 @@ struct DeleteDataView: View {
   private func clearAllUserDataFromUserDefaults() {
     let defaults = UserDefaults.standard
     let dictionary = defaults.dictionaryRepresentation()
+    
+    // ✅ FIX 1: Explicitly delete SavedHabits key (emergency backup from HabitStore)
+    defaults.removeObject(forKey: "SavedHabits")
+    print("🗑️ DELETE_ALL: Removed UserDefaults key: SavedHabits")
     
     // Patterns to match
     let patternsToDelete = [
