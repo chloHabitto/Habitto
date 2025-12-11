@@ -562,21 +562,36 @@ struct HabittoApp: App {
                     print("⚠️ [DAILY_AWARD_INTEGRITY] Found \(result.invalidAwards.count) invalid awards!")
                     DailyAwardIntegrityService.shared.printInvestigationReport(result)
                     
-                    // Check if cleanup has already been run (one-time only)
-                    let cleanupKey = "dailyAwardIntegrityCleanupCompleted_\(userId)"
-                    let hasRunCleanup = UserDefaults.standard.bool(forKey: cleanupKey)
+                    // ✅ FIX: Use time-based cleanup flag instead of one-time flag
+                    // This allows cleanup to run again if invalid awards are detected after the last cleanup
+                    let cleanupKey = "dailyAwardIntegrityCleanupLastRun_\(userId)"
+                    let lastCleanupTimestamp = UserDefaults.standard.double(forKey: cleanupKey)
+                    let lastCleanupDate = lastCleanupTimestamp > 0 ? Date(timeIntervalSince1970: lastCleanupTimestamp) : nil
+                    let now = Date()
                     
-                    if !hasRunCleanup {
+                    // Only skip cleanup if it ran within the last hour (to prevent excessive cleanup)
+                    let shouldSkipCleanup: Bool
+                    if let lastCleanup = lastCleanupDate {
+                      let timeSinceLastCleanup = now.timeIntervalSince(lastCleanup)
+                      shouldSkipCleanup = timeSinceLastCleanup < 3600 // 1 hour
+                    } else {
+                      shouldSkipCleanup = false
+                    }
+                    
+                    if !shouldSkipCleanup {
                       print("🧹 [DAILY_AWARD_INTEGRITY] Cleaning up \(result.invalidAwards.count) invalid awards...")
                       let removedCount = try await DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)
                       print("✅ [DAILY_AWARD_INTEGRITY] Removed \(removedCount) invalid awards. XP has been recalculated.")
                       
-                      // Mark cleanup as completed (one-time only)
-                      UserDefaults.standard.set(true, forKey: cleanupKey)
-                      print("✅ [DAILY_AWARD_INTEGRITY] Cleanup completed and marked as done (won't run again)")
+                      // Store timestamp of cleanup (time-based instead of one-time flag)
+                      UserDefaults.standard.set(now.timeIntervalSince1970, forKey: cleanupKey)
+                      print("✅ [DAILY_AWARD_INTEGRITY] Cleanup completed (timestamp stored - can run again after 1 hour if needed)")
                     } else {
-                      print("ℹ️ [DAILY_AWARD_INTEGRITY] Cleanup already completed previously - skipping automatic cleanup")
-                      print("   Use DailyAwardIntegrityView to manually clean up if needed")
+                      let timeSinceLastCleanup = now.timeIntervalSince(lastCleanupDate!)
+                      let minutesSince = Int(timeSinceLastCleanup / 60)
+                      print("ℹ️ [DAILY_AWARD_INTEGRITY] Cleanup ran \(minutesSince) minute(s) ago - skipping to prevent excessive cleanup")
+                      print("   Invalid awards detected but cleanup will run again after 1 hour if still present")
+                      print("   Use DailyAwardIntegrityView to manually clean up immediately if needed")
                     }
                   }
                   // Silent success - no logging if all awards are valid
