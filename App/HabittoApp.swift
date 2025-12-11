@@ -1724,8 +1724,8 @@ struct HabittoApp: App {
           // Sort by createdAt (most recent first)
           let sortedRecords = records.sorted { $0.createdAt > $1.createdAt }
           
-          // Keep the first (most recent) record
-          let recordToKeep = sortedRecords.first!
+          // Keep the first (most recent) record (no need to store it, we just don't delete it)
+          let _ = sortedRecords.first!
           
           // Delete all other duplicates
           for duplicateRecord in sortedRecords.dropFirst() {

@@ -1146,12 +1146,6 @@ struct HomeTabView: View {
       let dateKey = Habit.dateKey(for: selectedDate)
       debugLog("🎯 UNCOMPLETE_FLOW: Habit '\(habit.name)' uncompleted for \(dateKey)")
       
-      // Check if all habits are still completed for this date
-      let habitsForDate = baseHabitsForSelectedDate
-      let allCompleted = habitsForDate.allSatisfy { h in
-        h.id == habit.id ? false : (completionStatusMap[h.id] ?? false)
-      }
-      
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
       // When habit is uncompleted, DailyAwardService will revoke XP via awardXP(delta: -50)
       // DO NOT call publishXP() here - it overwrites the database value with calculated value
