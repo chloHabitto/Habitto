@@ -571,6 +571,56 @@ class FirestoreService: FirebaseService, ObservableObject {
     print("🗑️ FirestoreService: XP migration marker deleted")
   }
   
+  /// Delete all user data from Firestore
+  /// This deletes all collections under users/{userId}/
+  @MainActor
+  func deleteAllUserData() async throws {
+    guard isConfigured else {
+      throw FirestoreServiceError.notConfigured
+    }
+    
+    guard let userId = currentUserId else {
+      throw FirestoreServiceError.notAuthenticated
+    }
+    
+    print("🔥 DELETE_ALL: Starting Firestore deletion for userId: \(userId)")
+    
+    let userRef = db.collection("users").document(userId)
+    
+    // Collections to delete
+    let collections = ["habits", "completions", "awards", "events", "xp", "progress", "daily_awards", "xp_ledger", "meta"]
+    
+    for collectionName in collections {
+      do {
+        let collectionRef = userRef.collection(collectionName)
+        let snapshot = try await collectionRef.getDocuments()
+        
+        print("🔥 DELETE_ALL: Found \(snapshot.documents.count) documents in \(collectionName)")
+        
+        // Delete all documents in batch
+        for document in snapshot.documents {
+          try await document.reference.delete()
+        }
+        
+        print("✅ DELETE_ALL: Deleted all documents from \(collectionName)")
+      } catch {
+        // Log error but continue with other collections
+        print("⚠️ DELETE_ALL: Error deleting \(collectionName): \(error.localizedDescription)")
+      }
+    }
+    
+    // Also delete the user document itself if it exists
+    do {
+      try await userRef.delete()
+      print("✅ DELETE_ALL: Deleted user document")
+    } catch {
+      // User document might not exist, that's okay
+      print("ℹ️ DELETE_ALL: User document doesn't exist or already deleted")
+    }
+    
+    print("✅ DELETE_ALL: Firestore deletion complete for userId: \(userId)")
+  }
+  
   // MARK: - Telemetry
   
   nonisolated private func setupTelemetry() {

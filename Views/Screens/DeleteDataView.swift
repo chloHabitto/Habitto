@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import FirebaseAuth
 
 // MARK: - DeleteDataView
 
@@ -8,6 +9,7 @@ struct DeleteDataView: View {
 
   enum DeleteOption {
     case deleteAllData
+    case deleteLocalOnly
   }
 
   var body: some View {
@@ -69,8 +71,9 @@ struct DeleteDataView: View {
             text: "Delete All Data",
             state: isDeleting ? .loading : .default)
           {
-            selectedOption = .deleteAllData
-            showingConfirmation = true
+            Task {
+              await checkAuthAndShowDialog()
+            }
           }
           .padding(.horizontal, 20)
         }
@@ -110,6 +113,39 @@ struct DeleteDataView: View {
     } message: {
       Text(getConfirmationMessage())
     }
+    .alert("Cloud Data Detected", isPresented: $showingSignedOutDialog) {
+      Button("Cancel", role: .cancel) { }
+      Button("Sign In to Delete Everything") {
+        // Navigate to sign in - for now, just show a message
+        // In a real app, you'd navigate to the sign-in screen
+        showingSignInMessage = true
+      }
+      Button("Delete Local Data Only", role: .destructive) {
+        selectedOption = .deleteLocalOnly
+        showingLocalOnlyConfirmation = true
+      }
+    } message: {
+      Text("You have data backed up in the cloud from a previous sign-in. To delete ALL your data including cloud backup, please sign in first.")
+    }
+    .alert("Sign In Required", isPresented: $showingSignInMessage) {
+      Button("OK") {
+        showingSignInMessage = false
+      }
+    } message: {
+      Text("Please sign in from the Profile screen to delete cloud data.")
+    }
+    .alert("Delete Local Data Only", isPresented: $showingLocalOnlyConfirmation) {
+      Button("Cancel", role: .cancel) {
+        selectedOption = nil
+      }
+      Button("Delete", role: .destructive) {
+        Task {
+          await performDeletion()
+        }
+      }
+    } message: {
+      Text("This will delete all local data. If you sign in later, your cloud data will return.")
+    }
     .alert("Deletion Error", isPresented: .constant(deleteError != nil)) {
       Button("OK") {
         deleteError = nil
@@ -124,18 +160,42 @@ struct DeleteDataView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+  @StateObject private var authManager = AuthenticationManager.shared
   @State private var showingConfirmation = false
+  @State private var showingSignedOutDialog = false
+  @State private var showingSignInMessage = false
+  @State private var showingLocalOnlyConfirmation = false
   @State private var isDeleting = false
   @State private var showingDeleteComplete = false
   @State private var deleteError: String?
   @State private var selectedOption: DeleteOption?
+
+  private var isSignedIn: Bool {
+    if let currentUser = Auth.auth().currentUser {
+      // Check if user is anonymous (not truly signed in)
+      return !currentUser.isAnonymous
+    }
+    return false
+  }
+
+  private func checkAuthAndShowDialog() async {
+    if isSignedIn {
+      // User is signed in - proceed with full deletion
+      selectedOption = .deleteAllData
+      showingConfirmation = true
+    } else {
+      // User is signed out - check if they have cloud data
+      // For now, always show the dialog (in a real app, you'd check Firestore)
+      showingSignedOutDialog = true
+    }
+  }
 
   private func getConfirmationTitle() -> String {
     "Delete All Data"
   }
 
   private func getConfirmationMessage() -> String {
-    "This will permanently delete all your data from this device. This action cannot be undone."
+    "This will permanently delete all your data from this device and cloud. This action cannot be undone."
   }
 
   private func performDeletion() async {
@@ -166,51 +226,60 @@ struct DeleteDataView: View {
     }
   }
 
-  private func performActualDeletion(for _: DeleteOption) async throws {
-    try await deleteAllData()
+  private func performActualDeletion(for option: DeleteOption) async throws {
+    switch option {
+    case .deleteAllData:
+      try await deleteAllData(includeCloud: true)
+    case .deleteLocalOnly:
+      try await deleteAllData(includeCloud: false)
+    }
   }
 
-  private func deleteAllData() async throws {
+  private func deleteAllData(includeCloud: Bool) async throws {
     do {
-      print("🔥 DELETE_ALL: Starting deletion process...")
+      print("🔥 DELETE_ALL: Starting deletion process (includeCloud: \(includeCloud))...")
       
-      // ✅ STEP 1: Clear all habits (waits for both local AND Firestore deletion)
+      // ✅ STEP 1: Delete Firestore data FIRST (if signed in and includeCloud is true)
+      if includeCloud && isSignedIn {
+        print("🔥 DELETE_ALL: Deleting Firestore data...")
+        try await FirestoreService.shared.deleteAllUserData()
+        print("✅ DELETE_ALL: Firestore data deleted")
+      }
+      
+      // ✅ STEP 2: Clear all local SwiftData (waits for deletion)
       let habitStore = HabitStore.shared
       try await habitStore.clearAllHabits()
-      print("✅ DELETE_ALL: Habits cleared from local and Firestore")
+      print("✅ DELETE_ALL: All SwiftData models cleared (HabitData, CompletionRecord, DailyAward, UserProgressData, GlobalStreakModel, ProgressEvent)")
 
-      // ✅ STEP 2: Clear XP and level data (waits for both local AND Firestore deletion)
-      _ = await MainActor.run {
-        Task {
-          await XPManager.shared.clearXPData()
-          print("✅ DELETE_ALL: XP and level data cleared from local and Firestore")
-        }
+      // ✅ STEP 3: Clear XP and level data
+      await MainActor.run {
+        XPManager.shared.resetToDefault()
+        print("✅ DELETE_ALL: XPManager reset to default (level 1, 0 XP)")
       }
 
-      // ✅ STEP 3: Clear UserDefaults (app settings, preferences, etc.)
-      _ = await MainActor.run {
-        let defaults = UserDefaults.standard
-        let domain = Bundle.main.bundleIdentifier!
-        defaults.removePersistentDomain(forName: domain)
-        defaults.synchronize()
-        print("✅ DELETE_ALL: UserDefaults cleared")
-
-        // Also clear HabitStorageManager cache
-        HabitStorageManager.shared.clearCache()
-        print("✅ DELETE_ALL: Cache cleared")
+      // ✅ STEP 4: Reset DailyAwardService state
+      await MainActor.run {
+        DailyAwardService.shared.resetState()
+        print("✅ DELETE_ALL: DailyAwardService state cleared")
       }
-      
-      // ✅ STEP 4: Wait a moment to ensure all Firestore operations complete
-      try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-      
-      // ✅ STEP 5: Now reload habits (should be empty since Firestore was cleared)
-      _ = await MainActor.run {
+
+      // ✅ STEP 5: Clear ALL UserDefaults keys matching patterns
+      await MainActor.run {
+        clearAllUserDataFromUserDefaults()
+        print("✅ DELETE_ALL: UserDefaults cleared (XP/Level cache, migration flags, streak/backfill keys)")
+      }
+
+      // ✅ STEP 6: Clear HabitRepository habits array
+      await MainActor.run {
+        let habitRepository = HabitRepository.shared
         Task {
-          let habitRepository = HabitRepository.shared
           await habitRepository.loadHabits(force: true)
           print("✅ DELETE_ALL: HabitRepository reloaded (should be empty)")
         }
       }
+      
+      // ✅ STEP 7: Wait a moment to ensure all operations complete
+      try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
 
       print("✅ DELETE_ALL: Completed successfully")
 
@@ -218,6 +287,43 @@ struct DeleteDataView: View {
       print("❌ DELETE_ALL failed: \(error)")
       throw DeleteError.allDataDeletionFailed
     }
+  }
+  
+  /// Clear all UserDefaults keys matching patterns
+  private func clearAllUserDataFromUserDefaults() {
+    let defaults = UserDefaults.standard
+    let dictionary = defaults.dictionaryRepresentation()
+    
+    // Patterns to match
+    let patternsToDelete = [
+      "migrat", "streak", "backfill", "xp", "level", 
+      "guest_", "completion", "award", "habit"
+    ]
+    
+    // Get current user ID for user-specific keys
+    let currentUserId = Auth.auth().currentUser?.uid ?? ""
+    
+    for key in dictionary.keys {
+      let lowercaseKey = key.lowercased()
+      
+      // Check if key matches any pattern
+      let matchesPattern = patternsToDelete.contains { pattern in
+        lowercaseKey.contains(pattern)
+      }
+      
+      // Check if key starts with user's userId
+      let startsWithUserId = !currentUserId.isEmpty && key.hasPrefix(currentUserId)
+      
+      // Check for guest_to_anonymous_complete_migrated keys
+      let isMigrationKey = key.contains("guest_to_anonymous_complete_migrated")
+      
+      if matchesPattern || startsWithUserId || isMigrationKey {
+        defaults.removeObject(forKey: key)
+        print("🗑️ DELETE_ALL: Removed UserDefaults key: \(key)")
+      }
+    }
+    
+    defaults.synchronize()
   }
 
   private func getErrorMessage(for error: Error) -> String {

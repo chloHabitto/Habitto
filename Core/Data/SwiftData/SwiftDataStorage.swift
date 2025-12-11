@@ -826,6 +826,31 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
       logger.info("  ✅ Deleted \(progressData.count) UserProgressData records")
 
+      // ✅ STEP 5: Clear ProgressEvent records
+      var eventDescriptor = FetchDescriptor<ProgressEvent>()
+      eventDescriptor.predicate = #Predicate<ProgressEvent> { event in
+        event.userId == targetUserId
+      }
+      let events = try container.modelContext.fetch(eventDescriptor)
+      for event in events {
+        container.modelContext.delete(event)
+      }
+      logger.info("  ✅ Deleted \(events.count) ProgressEvent records")
+
+      // ✅ STEP 6: Clear GlobalStreakModel records
+      var streakDescriptor = FetchDescriptor<GlobalStreakModel>()
+      streakDescriptor.predicate = #Predicate<GlobalStreakModel> { streak in
+        streak.userId == targetUserId
+      }
+      let streaks = try container.modelContext.fetch(streakDescriptor)
+      for streak in streaks {
+        container.modelContext.delete(streak)
+      }
+      logger.info("  ✅ Deleted \(streaks.count) GlobalStreakModel records")
+
+      // Note: DifficultyRecord, UsageRecord, and HabitNote are automatically deleted
+      // via cascade delete when HabitData is deleted (they're linked via relationships)
+
       // Save all deletions
       try container.modelContext.save()
       logger.info("✅ Successfully cleared all SwiftData records for user: \(targetUserId.isEmpty ? "guest" : targetUserId)")

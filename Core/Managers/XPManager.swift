@@ -417,6 +417,32 @@ class XPManager {
 
     logger.info("XP data cleared for sign-out - user will start fresh")
   }
+  
+  /// Reset XPManager to default state (level 1, 0 XP)
+  /// Clears UserDefaults AND resets in-memory state
+  func resetToDefault() {
+    logger.info("Resetting XPManager to default state")
+    
+    // Reset in-memory state
+    totalXP = 0
+    currentLevel = 1
+    dailyXP = 0
+    userProgress = UserProgress()
+    recentTransactions = []
+    dailyAwards = [:]
+    
+    // Clear UserDefaults keys
+    userDefaults.removeObject(forKey: userProgressKey)
+    userDefaults.removeObject(forKey: recentTransactionsKey)
+    userDefaults.removeObject(forKey: dailyAwardsKey)
+    
+    // Save default state
+    saveUserProgress()
+    saveRecentTransactions()
+    saveDailyAwards()
+    
+    logger.info("XPManager reset to default - Level: 1, XP: 0")
+  }
 
   /// Check daily completion for habits (used by existing system)
   func checkDailyCompletion(habits: [Habit]) async {
