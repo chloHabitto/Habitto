@@ -88,13 +88,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         debugLog("✅ AppDelegate: User authenticated - uid: \(uid)")
         NSLog("✅ AppDelegate: User authenticated - uid: %@", uid)
         
-        // ✅ CRITICAL: Migrate guest data to anonymous user
-        // This runs once per app launch after anonymous auth is established
-        // Migration is idempotent - safe to run multiple times
-        // Note: runCompleteMigration handles errors internally and logs them
-        debugLog("🔄 AppDelegate: Starting guest data migration...")
-        await GuestDataMigrationHelper.runCompleteMigration(userId: uid)
-        debugLog("✅ AppDelegate: Guest data migration completed")
+        // ✅ CRITICAL: Check if this is a scenario that needs user choice
+        // If user has BOTH guest data AND cloud data, don't auto-migrate - let UI show choice
+        let migrationManager = GuestDataMigration()
+        let hasGuestData = migrationManager.hasGuestData()
+        let cloudDataPreview = await migrationManager.getCloudDataPreview()
+        let hasCloudData = cloudDataPreview != nil && (cloudDataPreview?.habitCount ?? 0) > 0
+        
+        if hasGuestData && hasCloudData {
+          // BOTH exist - don't auto-migrate, let UI show choice
+          debugLog("🔄 AppDelegate: Guest and cloud data both exist - skipping auto-migration, UI will show choice")
+          NSLog("🔄 AppDelegate: Guest and cloud data both exist - skipping auto-migration")
+        } else if hasGuestData && !hasCloudData {
+          // Only guest data exists - safe to auto-migrate to new account
+          debugLog("🔄 AppDelegate: Only guest data exists - auto-migrating to new account...")
+          await GuestDataMigrationHelper.runCompleteMigration(userId: uid)
+          debugLog("✅ AppDelegate: Guest data migration completed")
+        } else {
+          // No guest data - nothing to migrate
+          debugLog("🔄 AppDelegate: No guest data to migrate")
+        }
         
         // ✅ CRITICAL: Start periodic sync for anonymous users
         // This ensures data syncs to Firestore automatically in the background
