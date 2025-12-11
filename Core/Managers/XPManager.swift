@@ -850,13 +850,10 @@ class XPManager {
       print("💰 [XP_TRACE] \(timestamp) applyXPState() - SKIP (no change)")
       return
     }
-    
-    // ✅ CRITICAL FIX: Don't overwrite with 0 if we have valid XP
-    // This prevents observer from overwriting loaded XP with stale 0 value
-    if state.totalXP == 0 && oldXP > 0 {
-      print("⚠️ [XP_TRACE] \(timestamp) applyXPState() - SKIP (state has 0 XP but current is \(oldXP))")
-      return
-    }
+
+    // ✅ FIX: Removed check that blocked XP revocation
+    // DailyAwardService is the source of truth - if it says XP is 0, we must show 0
+    // The previous check was blocking legitimate XP revocations when awards were deleted
     
     // ✅ CRITICAL FIX: Don't overwrite if publishXP() was called recently
     // This prevents observer from immediately overwriting calculated values
