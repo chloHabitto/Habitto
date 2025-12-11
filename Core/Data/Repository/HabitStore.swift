@@ -1060,66 +1060,72 @@ final actor HabitStore {
         
         logger.info("🎯 CREATE_RECORD: habitType=\(habitTypeStr), progress=\(progress), goal=\(goalAmount), isCompleted=\(isCompleted)")
 
-        if let existingRecord = existingRecords.first {
-          // Update existing record
-          logger.info("🎯 createCompletionRecordIfNeeded: Updating existing record...")
-          existingRecord.isCompleted = isCompleted
-          existingRecord.progress = progress  // ✅ CRITICAL FIX: Store progress count
-          logger
-            .info(
-              "✅ Updated CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
-        } else {
-          // Create new record
-          logger.info("🎯 createCompletionRecordIfNeeded: Creating new record...")
-          let completionRecord = CompletionRecord(
-            userId: userId,
-            habitId: habit.id,
-            date: date,
-            dateKey: dateKey,
-            isCompleted: isCompleted,
-            progress: progress)  // ✅ CRITICAL FIX: Store progress count
-          logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
-          
-          // ✅ CRITICAL FIX: Always insert CompletionRecord first, then link to HabitData
-          // This ensures the record exists even if HabitData lookup fails
-          modelContext.insert(completionRecord)
-          logger.info("✅ Inserted CompletionRecord into context")
-          
-          // ✅ FIX: Explicitly link CompletionRecord to HabitData for cascade delete
-          // Fetch the HabitData and append to its completionHistory
-          let habitDataPredicate = #Predicate<HabitData> { habitData in
-            habitData.id == habit.id && habitData.userId == userId
-          }
-          let habitDataRequest = FetchDescriptor<HabitData>(predicate: habitDataPredicate)
-          if let habitData = try modelContext.fetch(habitDataRequest).first {
-            // Only append if not already in the relationship (prevent duplicates)
-            if !habitData.completionHistory.contains(where: { $0.habitId == completionRecord.habitId && $0.dateKey == completionRecord.dateKey }) {
-              habitData.completionHistory.append(completionRecord)
-              logger.info("✅ Linked CompletionRecord to HabitData.completionHistory (userId: '\(userId)', habitId: \(habit.id))")
-            } else {
-              logger.info("ℹ️ CompletionRecord already linked to HabitData, skipping duplicate link")
-            }
-          } else {
-            // HabitData not found - CompletionRecord is still inserted and will be found via manual query
-            logger.warning("⚠️ HabitData not found for habitId: \(habit.id), userId: '\(userId)' - CompletionRecord inserted standalone (will be found via manual query)")
-            
-            // ✅ DEBUG: Try to find HabitData without userId filter to see if it exists with different userId
-            let debugPredicate = #Predicate<HabitData> { habitData in
-              habitData.id == habit.id
-            }
-            let debugRequest = FetchDescriptor<HabitData>(predicate: debugPredicate)
-            let debugHabits = try modelContext.fetch(debugRequest)
-            if let debugHabit = debugHabits.first {
-              logger.warning("⚠️ Found HabitData with different userId: '\(debugHabit.userId)' (expected: '\(userId)')")
-            } else {
-              logger.warning("⚠️ No HabitData found at all for habitId: \(habit.id)")
-            }
+        // ✅ FIX: Handle duplicate CompletionRecords by deleting all and creating fresh one
+        // This ensures exactly ONE CompletionRecord per habit/date/user, preventing XP calculation bugs
+        if !existingRecords.isEmpty {
+          if existingRecords.count > 1 {
+            logger.warning("⚠️ createCompletionRecordIfNeeded: Found \(existingRecords.count) duplicate CompletionRecords for habit '\(habit.name)' on \(dateKey) - deleting duplicates")
           }
           
-          logger
-            .info(
-              "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
+          // Delete ALL existing records (handles duplicates)
+          for existingRecord in existingRecords {
+            modelContext.delete(existingRecord)
+            logger.info("🗑️ Deleted duplicate CompletionRecord: habitId=\(existingRecord.habitId), dateKey=\(existingRecord.dateKey)")
+          }
+          logger.info("✅ Deleted \(existingRecords.count) existing CompletionRecord(s) - will create fresh one")
         }
+        
+        // Always create a fresh record with current state (ensures exactly one record)
+        // Create new record (or recreate after deletion)
+        logger.info("🎯 createCompletionRecordIfNeeded: Creating fresh CompletionRecord...")
+        let completionRecord = CompletionRecord(
+          userId: userId,
+          habitId: habit.id,
+          date: date,
+          dateKey: dateKey,
+          isCompleted: isCompleted,
+          progress: progress)  // ✅ CRITICAL FIX: Store progress count
+        logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
+        
+        // ✅ CRITICAL FIX: Always insert CompletionRecord first, then link to HabitData
+        // This ensures the record exists even if HabitData lookup fails
+        modelContext.insert(completionRecord)
+        logger.info("✅ Inserted CompletionRecord into context")
+        
+        // ✅ FIX: Explicitly link CompletionRecord to HabitData for cascade delete
+        // Fetch the HabitData and append to its completionHistory
+        let habitDataPredicate = #Predicate<HabitData> { habitData in
+          habitData.id == habit.id && habitData.userId == userId
+        }
+        let habitDataRequest = FetchDescriptor<HabitData>(predicate: habitDataPredicate)
+        if let habitData = try modelContext.fetch(habitDataRequest).first {
+          // Only append if not already in the relationship (prevent duplicates)
+          if !habitData.completionHistory.contains(where: { $0.habitId == completionRecord.habitId && $0.dateKey == completionRecord.dateKey }) {
+            habitData.completionHistory.append(completionRecord)
+            logger.info("✅ Linked CompletionRecord to HabitData.completionHistory (userId: '\(userId)', habitId: \(habit.id))")
+          } else {
+            logger.info("ℹ️ CompletionRecord already linked to HabitData, skipping duplicate link")
+          }
+        } else {
+          // HabitData not found - CompletionRecord is still inserted and will be found via manual query
+          logger.warning("⚠️ HabitData not found for habitId: \(habit.id), userId: '\(userId)' - CompletionRecord inserted standalone (will be found via manual query)")
+          
+          // ✅ DEBUG: Try to find HabitData without userId filter to see if it exists with different userId
+          let debugPredicate = #Predicate<HabitData> { habitData in
+            habitData.id == habit.id
+          }
+          let debugRequest = FetchDescriptor<HabitData>(predicate: debugPredicate)
+          let debugHabits = try modelContext.fetch(debugRequest)
+          if let debugHabit = debugHabits.first {
+            logger.warning("⚠️ Found HabitData with different userId: '\(debugHabit.userId)' (expected: '\(userId)')")
+          } else {
+            logger.warning("⚠️ No HabitData found at all for habitId: \(habit.id)")
+          }
+        }
+        
+        logger
+          .info(
+            "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
 
         // Save the context
         logger.info("🎯 createCompletionRecordIfNeeded: Saving context...")

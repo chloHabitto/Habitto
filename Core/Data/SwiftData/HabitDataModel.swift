@@ -269,18 +269,41 @@ final class HabitData {
       let predicate = #Predicate<CompletionRecord> { record in
         record.userIdHabitIdDateKey == uniqueKey
       }
-      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      var descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      descriptor.includePendingChanges = true  // ✅ FIX: See just-saved records
       
       do {
-        if let existingRecord = try context.fetch(descriptor).first {
-          // Update existing record (only if different to avoid unnecessary saves)
-          if existingRecord.isCompleted != isCompleted || existingRecord.progress != progress {
-            existingRecord.isCompleted = isCompleted
-            existingRecord.progress = progress
-            existingRecord.date = date
-            existingRecord.dateKey = dateKey
-            updatedCount += 1
+        let existingRecords = try context.fetch(descriptor)
+        
+        // ✅ FIX: Handle duplicates by deleting all and creating fresh one
+        // This ensures exactly ONE CompletionRecord per habit/date/user
+        if !existingRecords.isEmpty {
+          if existingRecords.count > 1 {
+            print("⚠️ syncCompletionRecordsFromHabit: Found \(existingRecords.count) duplicate CompletionRecords for habit '\(habit.name)' on \(dateKey) - deleting duplicates")
           }
+          
+          // Delete ALL existing records (handles duplicates)
+          for existingRecord in existingRecords {
+            context.delete(existingRecord)
+          }
+          
+          // Create fresh record with current state
+          let record = CompletionRecord(
+            userId: self.userId,
+            habitId: self.id,
+            date: date,
+            dateKey: dateKey,
+            isCompleted: isCompleted,
+            progress: progress
+          )
+          context.insert(record)
+          
+          // Link to HabitData if not already linked
+          if !self.completionHistory.contains(where: { $0.id == record.id }) {
+            self.completionHistory.append(record)
+          }
+          
+          updatedCount += existingRecords.count
           syncedCount += 1
         } else {
           // Create new record
