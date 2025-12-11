@@ -75,13 +75,10 @@ struct HomeTabView: View {
         Task {
           await prefetchCompletionStatus()
           
-      // ✅ FIX: Compute initial XP from persisted habit data
-          debugLog("✅ INITIAL_XP: Computing XP from loaded habits")
-      let completedDaysCount = countCompletedDays()
-      await MainActor.run {
-        xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
-      }
-          debugLog("✅ INITIAL_XP: Set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+          // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+          // DO NOT call publishXP() here - it overwrites the database value with calculated value
+          // XP will be loaded from DailyAwardService.refreshXPState() which reads from SwiftData DailyAward records
+          debugLog("✅ INITIAL_XP: Skipping XP calculation - XP will come from DailyAwardService")
         }
 
         // Subscribe to event bus
@@ -1237,13 +1234,10 @@ struct HomeTabView: View {
         h.id == habit.id ? false : (completionStatusMap[h.id] ?? false)
       }
       
-      // ✅ NEW APPROACH: Always recalculate XP from state (idempotent!)
-      debugLog("✅ DERIVED_XP: Recalculating XP after uncomplete")
-      let completedDaysCount = countCompletedDays()
-      await MainActor.run {
-        xpManager.publishXP(completedDaysCount: completedDaysCount)  // ✅ Use environment object
-      }
-      debugLog("✅ DERIVED_XP: XP recalculated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+      // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+      // When habit is uncompleted, DailyAwardService will revoke XP via awardXP(delta: -50)
+      // DO NOT call publishXP() here - it overwrites the database value with calculated value
+      debugLog("✅ DERIVED_XP: Skipping XP recalculation - XP will update via DailyAwardService when award is revoked")
       
       // ✅ CRITICAL FIX: Recalculate streak reactively (just like XP)
       // Let the callback trigger a full recalculation from HomeView.updateAllStreaks()
@@ -1359,13 +1353,10 @@ struct HomeTabView: View {
           AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
         }
         debugLog("🎯 COMPLETION_FLOW: userId = \(userId)")
-        debugLog("✅ DERIVED_XP: Recalculating XP from completed days")
-
-        let completedDaysCount = countCompletedDays()
-        await MainActor.run {
-          xpManager.publishXP(completedDaysCount: completedDaysCount)
-        }
-        debugLog("✅ DERIVED_XP: XP set to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+        // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+        // When habit is completed, DailyAwardService will award XP via awardXP(delta: 50)
+        // DO NOT call publishXP() here - it overwrites the database value with calculated value
+        debugLog("✅ DERIVED_XP: Skipping XP recalculation - XP will update via DailyAwardService when award is granted")
 
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
@@ -1423,12 +1414,11 @@ struct HomeTabView: View {
     // Set flag to trigger celebration when difficulty sheet is dismissed
     lastHabitJustCompleted = true
 
-    // ✅ FIX: Update XP immediately using fast in-memory calculation (no database query)
-    // This provides instant UI feedback - runs synchronously on MainActor (we're already on MainActor)
-    debugLog("✅ DERIVED_XP: Updating XP immediately when last habit completed (fast path)")
-    let completedDaysCount = countCompletedDaysFast() // Use fast version that doesn't query DB
-    xpManager.publishXP(completedDaysCount: completedDaysCount)
-    debugLog("✅ DERIVED_XP: XP updated to \(completedDaysCount * 50) (completedDays: \(completedDaysCount))")
+    // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+    // When last habit is completed, DailyAwardService will award XP via awardXP(delta: 50)
+    // DO NOT call publishXP() here - it overwrites the database value with calculated value
+    // The grace period mechanism will prevent observer from overwriting if needed
+    debugLog("✅ DERIVED_XP: Skipping XP update - XP will update via DailyAwardService when award is granted")
 
     debugLog("🎉 STEP 1: Last habit completed! XP updated immediately, celebration after sheet dismissal")
     debugLog("🎯 STEP 1: lastHabitJustCompleted = \(lastHabitJustCompleted)")
