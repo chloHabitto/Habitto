@@ -1159,56 +1159,6 @@ struct HomeView: View {
     }
   }
 
-  // MARK: - XP Calculation Helpers
-  
-  /// Count how many days have all habits completed
-  /// This is used for reactive XP recalculation when habits change
-  @MainActor
-  private func countCompletedDays(habits: [Habit]) -> Int {
-    guard AuthenticationManager.shared.currentUser?.uid != nil else { return 0 }
-    guard !habits.isEmpty else { return 0 }
-    
-    let calendar = Calendar.current
-    let today = LegacyDateUtils.today()
-    
-    // Find the earliest habit start date
-    guard let earliestStartDate = habits.map({ $0.startDate }).min() else { return 0 }
-    let startDate = DateUtils.startOfDay(for: earliestStartDate)
-    
-    var completedCount = 0
-    var currentDate = startDate
-    
-    // Count all days where all habits are completed
-    while currentDate <= today {
-      let habitsForDate = habits.filter { habit in
-        let selected = DateUtils.startOfDay(for: currentDate)
-        let start = DateUtils.startOfDay(for: habit.startDate)
-        let end = habit.endDate.map { DateUtils.startOfDay(for: $0) } ?? Date.distantFuture
-        
-        guard selected >= start, selected <= end else { return false }
-        return shouldShowHabitOnDate(habit, date: currentDate)
-      }
-      
-      // Check if all habits for this date are completed
-      let allCompleted = !habitsForDate.isEmpty && habitsForDate.allSatisfy { $0.isCompleted(for: currentDate) }
-      
-      if allCompleted {
-        completedCount += 1
-      }
-      
-      guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
-      currentDate = nextDate
-    }
-    
-    return completedCount
-  }
-  
-  /// Check if a habit should be shown on a specific date based on its schedule
-  private func shouldShowHabitOnDate(_ habit: Habit, date: Date) -> Bool {
-    // Use StreakDataCalculator for consistent schedule checking
-    return StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
-  }
-  
   // MARK: - Lifecycle
 
   private func loadHabits() {
