@@ -20,91 +20,35 @@ final class GuestDataMigration: ObservableObject {
   // MARK: - Public Methods
 
   /// Check if there's guest data that can be migrated
+  /// ✅ FIX: Only checks SwiftData for habits with userId = "" (real guest data)
+  /// Does NOT check UserDefaults 'SavedHabits' - that's stale backup data, not guest data
   func hasGuestData() -> Bool {
     print("🔍 GuestDataMigration.hasGuestData() - Starting check...")
 
-    // ✅ CRITICAL FIX: Check SwiftData for guest habits (current storage)
+    // ✅ CRITICAL FIX: ONLY check SwiftData for guest habits (current storage)
+    // Guest data = habits with userId == "" (empty string)
+    // Do NOT check UserDefaults 'SavedHabits' - that's a backup mechanism, not guest data detection
     let container = SwiftDataContainer.shared.modelContainer
     let context = container.mainContext
     
-    // Check for habits with empty userId or "guest" userId (from anonymous sessions)
     do {
-      let allHabitsDescriptor = FetchDescriptor<HabitData>()
-      let allHabits = try context.fetch(allHabitsDescriptor)
-      
-      // ✅ CRITICAL FIX: Detect guest/anonymous data that needs migration
-      // This includes: userId == "", "guest", or anonymous userId (different from current authenticated user)
-      let currentUserId = AuthenticationManager.shared.currentUser?.uid
-      
-      // Check if current user is anonymous (Firebase anonymous users have isAnonymous = true)
-      let isCurrentUserAnonymous: Bool = {
-        if let firebaseUser = AuthenticationManager.shared.currentUser as? User {
-          return firebaseUser.isAnonymous
+      // Only check for habits with empty userId (true guest data)
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { habit in
+          habit.userId == ""
         }
-        return false
-      }()
-      
-      let guestHabits = allHabits.filter { habitData in
-        // Guest userIds: "" or "guest"
-        let isGuestId = habitData.userId.isEmpty || habitData.userId == "guest"
-        
-        // If user is authenticated (not anonymous), detect habits that don't belong to current user
-        // This includes guest habits and anonymous habits that need migration
-        if let currentUserId = currentUserId, !currentUserId.isEmpty, !isCurrentUserAnonymous {
-          // User is authenticated with real account - detect guest/anonymous habits for migration
-          // This includes habits with guest userIds OR habits from anonymous sessions (different userId)
-          return isGuestId || (habitData.userId != currentUserId && !habitData.userId.isEmpty && habitData.userId != "guest")
-        } else {
-          // User is NOT authenticated or is anonymous - can't migrate (no target user)
-          // Only detect true guest data
-          return isGuestId
-        }
-      }
+      )
+      let guestHabits = try context.fetch(descriptor)
       
       if !guestHabits.isEmpty {
-        print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in SwiftData")
+        print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in SwiftData (userId = '')")
         return true
       }
     } catch {
       print("❌ GuestDataMigration: Error checking SwiftData: \(error.localizedDescription)")
     }
 
-    // Check if there are guest habits (new guest key) in UserDefaults
-    if let guestHabitsData = userDefaults.data(forKey: guestHabitsKey),
-       let guestHabits = try? JSONDecoder().decode([Habit].self, from: guestHabitsData),
-       !guestHabits.isEmpty
-    {
-      print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in UserDefaults")
-      return true
-    }
-
-    // Check for legacy cached habits stored under "SavedHabits"
-    if let legacyData = userDefaults.data(forKey: "SavedHabits"),
-       let legacyHabits = try? JSONDecoder().decode([Habit].self, from: legacyData),
-       !legacyHabits.isEmpty
-    {
-      print("🔍 GuestDataMigration: Found \(legacyHabits.count) legacy habits in UserDefaults key 'SavedHabits'")
-      return true
-    }
-
-    // Check if there are guest backup files
-    let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-    let guestBackupDir = documentsPath.appendingPathComponent("Backups")
-      .appendingPathComponent("guest_user")
-
-    if fileManager.fileExists(atPath: guestBackupDir.path) {
-      do {
-        let contents = try fileManager.contentsOfDirectory(atPath: guestBackupDir.path)
-        if !contents.isEmpty {
-          print("🔍 GuestDataMigration: Found \(contents.count) guest backup files")
-          return true
-        }
-      } catch {
-        print("❌ GuestDataMigration: Error checking guest backup directory: \(error)")
-      }
-    }
-
-    print("🔍 GuestDataMigration: No guest data found")
+    print("🔍 GuestDataMigration: No guest data found (no habits with userId = '')")
     return false
   }
 
@@ -237,19 +181,20 @@ final class GuestDataMigration: ObservableObject {
   }
 
   /// Get a preview of guest data that would be migrated
+  /// ✅ FIX: Only checks SwiftData for habits with userId = "" (real guest data)
   func getGuestDataPreview() -> GuestDataPreview? {
     guard hasGuestData() else { return nil }
 
-    // ✅ CRITICAL FIX: Count habits from SwiftData (current storage) instead of UserDefaults
+    // ✅ CRITICAL FIX: Count habits from SwiftData (current storage) with userId = ""
     let container = SwiftDataContainer.shared.modelContainer
     let context = container.mainContext
     
     let guestHabits: [Habit] = {
       do {
-        // Fetch guest habits from SwiftData (userId == "" or "guest")
+        // Fetch guest habits from SwiftData (userId == "" only)
         let descriptor = FetchDescriptor<HabitData>(
           predicate: #Predicate<HabitData> { habit in
-            habit.userId == "" || habit.userId == "guest"
+            habit.userId == ""
           }
         )
         let habitDataList = try context.fetch(descriptor)
@@ -330,6 +275,7 @@ final class GuestDataMigration: ObservableObject {
   }
 
   /// Clear stale guest data that might be causing repeated migration prompts
+  /// ✅ FIX: Also removes stale 'SavedHabits' UserDefaults key
   func clearStaleGuestData() {
     print("🧹 GuestDataMigration: Clearing stale guest data...")
 
@@ -338,6 +284,10 @@ final class GuestDataMigration: ObservableObject {
 
     // Remove guest backup flag
     userDefaults.removeObject(forKey: guestBackupKey)
+    
+    // ✅ FIX: Remove stale 'SavedHabits' UserDefaults key (backup mechanism, not guest data)
+    userDefaults.removeObject(forKey: "SavedHabits")
+    print("🧹 GuestDataMigration: Removed stale 'SavedHabits' UserDefaults key")
 
     // Remove guest backup directory
     let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
