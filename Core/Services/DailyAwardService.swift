@@ -519,7 +519,7 @@ class DailyAwardService: ObservableObject {
             
             print("💰 [XP_TRACE] \(refreshTimestamp) refreshXPState() - Updating xpState")
             print("   Source: DailyAwardService.refreshXPState()")
-            print("   Thread: \(Thread.isMainThread ? "Main" : "Background")")
+            print("   Thread: MainActor")
             if oldXP != totalXP {
                 print("   XP changing from \(oldXP) to \(totalXP)")
             } else {
