@@ -423,6 +423,15 @@ struct HabittoApp: App {
               } else {
                 print("ℹ️ [RESTORE] All CompletionRecords have progress > 0 - no restore needed")
               }
+              
+              // ✅ FIX - Clean up duplicate CompletionRecords (one-time only)
+              let cleanupKey = "completionRecordDuplicatesCleaned"
+              if !UserDefaults.standard.bool(forKey: cleanupKey) {
+                await cleanupDuplicateCompletionRecords()
+                UserDefaults.standard.set(true, forKey: cleanupKey)
+              } else {
+                print("ℹ️ [CLEANUP] Duplicate CompletionRecord cleanup already completed - skipping")
+              }
             }
             
             setupCoreData()
@@ -1681,6 +1690,64 @@ struct HabittoApp: App {
       
     } catch {
       print("❌ [REPAIR] Failed to repair relationships: \(error.localizedDescription)")
+      print("   Error details: \(error)")
+    }
+  }
+  
+  /// Clean up duplicate CompletionRecords - ensures exactly one record per habit/date/user
+  private func cleanupDuplicateCompletionRecords() async {
+    print("🧹 [CLEANUP] Starting duplicate CompletionRecord cleanup...")
+    
+    let context = SwiftDataContainer.shared.modelContext
+    let userId = await CurrentUser().idOrGuest
+    
+    do {
+      // Fetch all CompletionRecords for this user
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.userId == userId || (userId.isEmpty && record.userId.isEmpty)
+      }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      let allRecords = try context.fetch(descriptor)
+      
+      print("🧹 [CLEANUP] Found \(allRecords.count) CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
+      
+      // Group records by (habitId, dateKey) to find duplicates
+      let recordsByKey = Dictionary(grouping: allRecords) { record in
+        "\(record.habitId)#\(record.dateKey)"
+      }
+      
+      var duplicatesDeleted = 0
+      
+      // For each group, keep only the most recent record and delete the rest
+      for (key, records) in recordsByKey {
+        if records.count > 1 {
+          // Sort by createdAt (most recent first)
+          let sortedRecords = records.sorted { $0.createdAt > $1.createdAt }
+          
+          // Keep the first (most recent) record
+          let recordToKeep = sortedRecords.first!
+          
+          // Delete all other duplicates
+          for duplicateRecord in sortedRecords.dropFirst() {
+            context.delete(duplicateRecord)
+            duplicatesDeleted += 1
+            print("🗑️ [CLEANUP] Deleted duplicate CompletionRecord: habitId=\(duplicateRecord.habitId), dateKey=\(duplicateRecord.dateKey), createdAt=\(duplicateRecord.createdAt)")
+          }
+          
+          print("✅ [CLEANUP] Kept most recent record for key '\(key)' (deleted \(sortedRecords.count - 1) duplicates)")
+        }
+      }
+      
+      // Save the changes
+      if duplicatesDeleted > 0 {
+        try context.save()
+        print("✅ [CLEANUP] Successfully deleted \(duplicatesDeleted) duplicate CompletionRecords")
+      } else {
+        print("ℹ️ [CLEANUP] No duplicate CompletionRecords found - all records are unique")
+      }
+      
+    } catch {
+      print("❌ [CLEANUP] Failed to clean up duplicate CompletionRecords: \(error.localizedDescription)")
       print("   Error details: \(error)")
     }
   }
