@@ -420,76 +420,66 @@ final class GuestDataMigration: ObservableObject {
     migrationStatus = "Clearing local data..."
     print("🔄 [MIGRATION] \(timestamp) Clear started - isMigrating = true")
 
+    // Step 1: Clear SwiftData guest habits
+    let step1Timestamp = Date()
+    migrationProgress = 0.3
+    print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Clearing SwiftData guest habits...")
+    
+    let container = SwiftDataContainer.shared.modelContainer
+    let context = container.mainContext
+    
     do {
-      // Step 1: Clear SwiftData guest habits
-      let step1Timestamp = Date()
-      migrationProgress = 0.3
-      print("🔄 [MIGRATION] \(step1Timestamp) Step 1: Clearing SwiftData guest habits...")
-      
-      let container = SwiftDataContainer.shared.modelContainer
-      let context = container.mainContext
-      
-      do {
-        let descriptor = FetchDescriptor<HabitData>(
-          predicate: #Predicate<HabitData> { habit in
-            habit.userId == "" || habit.userId == "guest"
-          }
-        )
-        let guestHabits = try context.fetch(descriptor)
-        for habit in guestHabits {
-          context.delete(habit)
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { habit in
+          habit.userId == "" || habit.userId == "guest"
         }
-        try context.save()
-        print("✅ [MIGRATION] \(Date()) Step 1: Cleared \(guestHabits.count) guest habits from SwiftData")
-      } catch {
-        print("⚠️ [MIGRATION] Error clearing SwiftData guest habits: \(error)")
+      )
+      let guestHabits = try context.fetch(descriptor)
+      for habit in guestHabits {
+        context.delete(habit)
       }
-
-      // Step 2: Clear UserDefaults guest data
-      let step2Timestamp = Date()
-      migrationProgress = 0.6
-      print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Clearing UserDefaults guest data...")
-      userDefaults.removeObject(forKey: guestHabitsKey)
-      userDefaults.removeObject(forKey: guestBackupKey)
-      print("✅ [MIGRATION] \(Date()) Step 2: Cleared UserDefaults guest data")
-
-      // Step 3: Clear guest backup directory
-      let step3Timestamp = Date()
-      migrationProgress = 0.8
-      print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Clearing guest backup directory...")
-      let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-      let guestBackupDir = documentsPath.appendingPathComponent("Backups")
-        .appendingPathComponent("guest_user")
-
-      if fileManager.fileExists(atPath: guestBackupDir.path) {
-        try? fileManager.removeItem(at: guestBackupDir)
-        print("✅ [MIGRATION] \(Date()) Step 3: Cleared guest backup directory")
-      }
-
-      // Step 4: Mark migration as complete (so we don't prompt again)
-      let step4Timestamp = Date()
-      migrationProgress = 1.0
-      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Finalizing...")
-      let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
-      userDefaults.set(true, forKey: migrationKey)
-      print("✅ [MIGRATION] \(Date()) Step 4: Migration marked as complete")
-
-      migrationStatus = "Complete!"
-      
-      let completeTimestamp = Date()
-      let totalDuration = completeTimestamp.timeIntervalSince(timestamp)
-      print("✅ [MIGRATION] \(completeTimestamp) GuestDataMigration.clearGuestDataOnly() - COMPLETE")
-      print("   Successfully cleared guest data for user \(currentUser.uid)")
-      print("   Total duration: \(String(format: "%.2f", totalDuration))s")
-
+      try context.save()
+      print("✅ [MIGRATION] \(Date()) Step 1: Cleared \(guestHabits.count) guest habits from SwiftData")
     } catch {
-      let errorTimestamp = Date()
-      migrationStatus = "Clear failed: \(error.localizedDescription)"
-      print("❌ [MIGRATION] \(errorTimestamp) Clear failed: \(error.localizedDescription)")
-
-      isMigrating = false
-      throw error
+      print("⚠️ [MIGRATION] Error clearing SwiftData guest habits: \(error)")
     }
+
+    // Step 2: Clear UserDefaults guest data
+    let step2Timestamp = Date()
+    migrationProgress = 0.6
+    print("🔄 [MIGRATION] \(step2Timestamp) Step 2: Clearing UserDefaults guest data...")
+    userDefaults.removeObject(forKey: guestHabitsKey)
+    userDefaults.removeObject(forKey: guestBackupKey)
+    print("✅ [MIGRATION] \(Date()) Step 2: Cleared UserDefaults guest data")
+
+    // Step 3: Clear guest backup directory
+    let step3Timestamp = Date()
+    migrationProgress = 0.8
+    print("🔄 [MIGRATION] \(step3Timestamp) Step 3: Clearing guest backup directory...")
+    let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let guestBackupDir = documentsPath.appendingPathComponent("Backups")
+      .appendingPathComponent("guest_user")
+
+    if fileManager.fileExists(atPath: guestBackupDir.path) {
+      try? fileManager.removeItem(at: guestBackupDir)
+      print("✅ [MIGRATION] \(Date()) Step 3: Cleared guest backup directory")
+    }
+
+    // Step 4: Mark migration as complete (so we don't prompt again)
+    let step4Timestamp = Date()
+    migrationProgress = 1.0
+    print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Finalizing...")
+    let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
+    userDefaults.set(true, forKey: migrationKey)
+    print("✅ [MIGRATION] \(Date()) Step 4: Migration marked as complete")
+
+    migrationStatus = "Complete!"
+    
+    let completeTimestamp = Date()
+    let totalDuration = completeTimestamp.timeIntervalSince(timestamp)
+    print("✅ [MIGRATION] \(completeTimestamp) GuestDataMigration.clearGuestDataOnly() - COMPLETE")
+    print("   Successfully cleared guest data for user \(currentUser.uid)")
+    print("   Total duration: \(String(format: "%.2f", totalDuration))s")
 
     isMigrating = false
     print("🔄 [MIGRATION] \(Date()) Clear state reset - isMigrating = false")
