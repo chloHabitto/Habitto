@@ -804,17 +804,25 @@ class HabitRepository: ObservableObject {
 
       // ✅ FIX: Check if today's DailyAward should be updated after habit creation
       // If new habit makes today incomplete, revoke today's XP award
+      // Only check if this habit is scheduled for today
       let today = Date()
-      let todayDateKey = Habit.dateKey(for: today)
-      let currentUserId = await CurrentUser().idOrGuest
+      let isScheduledForToday = StreakDataCalculator.shouldShowHabitOnDate(habit, date: today)
       
-      debugLog("🎯 XP_CHECK: Checking today's DailyAward after habit creation (dateKey: \(todayDateKey))")
-      do {
-        try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
-        debugLog("✅ XP_CHECK: DailyAward check completed for today")
-      } catch {
-        debugLog("⚠️ XP_CHECK: Failed to check DailyAward: \(error.localizedDescription)")
-        // Don't fail habit creation if XP check fails
+      if isScheduledForToday {
+        let todayDateKey = Habit.dateKey(for: today)
+        let currentUserId = await CurrentUser().idOrGuest
+        
+        debugLog("🎯 XP_CHECK: New habit '\(habit.name)' is scheduled for today - checking DailyAward")
+        debugLog("   If today had an award but this habit isn't complete, the award will be revoked")
+        do {
+          try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
+          debugLog("✅ XP_CHECK: DailyAward check completed for today")
+        } catch {
+          debugLog("⚠️ XP_CHECK: Failed to check DailyAward: \(error.localizedDescription)")
+          // Don't fail habit creation if XP check fails
+        }
+      } else {
+        debugLog("ℹ️ XP_CHECK: New habit '\(habit.name)' is not scheduled for today - skipping DailyAward check")
       }
 
       // Reload habits to get the updated list
