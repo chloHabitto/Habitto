@@ -309,6 +309,13 @@ class HabitRepository: ObservableObject {
       print("   [\(index)] '\(habit.name)' (ID: \(habit.id))")
     }
     
+    // ✅ CRITICAL FIX: Refresh XP state after migration
+    // DailyAwards may have been deleted (e.g., "Keep Local Data Only"), so we need to recalculate XP
+    // from remaining awards (or 0 if all were deleted)
+    print("🔄 [MIGRATION] Refreshing XP state after migration...")
+    await DailyAwardService.shared.refreshXPState()
+    print("✅ [MIGRATION] XP state refreshed after migration")
+    
     let endTimestamp = Date()
     let duration = endTimestamp.timeIntervalSince(timestamp)
     print("✅ [MIGRATION] \(endTimestamp) handleMigrationCompleted() - COMPLETE (took \(String(format: "%.2f", duration))s)")
