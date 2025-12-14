@@ -13,6 +13,14 @@ class ThemeManager: ObservableObject {
     {
       self.selectedTheme = theme
     }
+    
+    // Load saved color scheme preference
+    if let savedColorScheme = UserDefaults.standard.string(forKey: "colorScheme"),
+       let colorScheme = ColorSchemeOption(rawValue: savedColorScheme)
+    {
+      self.selectedColorScheme = colorScheme
+    }
+    
     updateAppColors()
   }
 
@@ -24,6 +32,25 @@ class ThemeManager: ObservableObject {
     didSet {
       UserDefaults.standard.set(selectedTheme.rawValue, forKey: "selectedTheme")
       updateAppColors()
+    }
+  }
+  
+  @Published var selectedColorScheme: ColorSchemeOption = .system {
+    didSet {
+      UserDefaults.standard.set(selectedColorScheme.rawValue, forKey: "colorScheme")
+      NotificationCenter.default.post(name: .colorSchemeDidChange, object: selectedColorScheme)
+    }
+  }
+  
+  /// Get the SwiftUI ColorScheme based on the selected option
+  var colorScheme: ColorScheme? {
+    switch selectedColorScheme {
+    case .system:
+      return nil // nil means use system default
+    case .light:
+      return .light
+    case .dark:
+      return .dark
     }
   }
 
@@ -202,4 +229,46 @@ struct ThemeColorPalette {
 
 extension Notification.Name {
   static let themeDidChange = Notification.Name("themeDidChange")
+  static let colorSchemeDidChange = Notification.Name("colorSchemeDidChange")
+}
+
+// MARK: - ColorSchemeOption
+
+enum ColorSchemeOption: String {
+  case system
+  case light
+  case dark
+  
+  var title: String {
+    switch self {
+    case .system:
+      "Auto"
+    case .light:
+      "Light"
+    case .dark:
+      "Dark"
+    }
+  }
+  
+  var description: String {
+    switch self {
+    case .system:
+      "Match system appearance"
+    case .light:
+      "Always use light mode"
+    case .dark:
+      "Always use dark mode"
+    }
+  }
+  
+  var iconName: String {
+    switch self {
+    case .system:
+      "Icon-Theme_Auto"
+    case .light:
+      "Icon-lightMode_Filled"
+    case .dark:
+      "Icon-darkMode_Filled"
+    }
+  }
 }
