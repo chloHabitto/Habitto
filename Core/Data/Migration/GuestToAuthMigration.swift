@@ -28,18 +28,43 @@ final class GuestToAuthMigration {
   func migrateGuestDataIfNeeded(from guestUserId: String = "", to authUserId: String) async throws {
     let migrationKey = "GuestToAuthMigration_\(authUserId)"
     
+    let container = SwiftDataContainer.shared.modelContainer
+    let context = container.mainContext
+    
+    // ✅ CRITICAL FIX: Verify migration actually completed, not just flag set
     // Check if we've already migrated for this user
     if UserDefaults.standard.bool(forKey: migrationKey) {
-      logger.info("✅ Guest data already migrated for user: \(authUserId)")
-      return
+      // Verify: Check if any data still exists with the old userId
+      var verifyDescriptor = FetchDescriptor<HabitData>()
+      if guestUserId.isEmpty {
+        verifyDescriptor.predicate = #Predicate<HabitData> { habitData in
+          habitData.userId == ""
+        }
+      } else {
+        verifyDescriptor.predicate = #Predicate<HabitData> { habitData in
+          habitData.userId == guestUserId
+        }
+      }
+      
+      let remainingHabits = try context.fetch(verifyDescriptor)
+      
+      if remainingHabits.isEmpty {
+        // Migration actually completed - no data with old userId exists
+        logger.info("✅ Guest data already migrated for user: \(authUserId) (verified)")
+        return
+      } else {
+        // Flag was set but migration didn't complete - data still exists with old userId
+        logger.warning("⚠️ Migration flag set but data still exists with old userId!")
+        logger.warning("   Found \(remainingHabits.count) habits with userId '\(guestUserId.isEmpty ? "EMPTY" : guestUserId.prefix(8))...'")
+        logger.warning("   Re-running migration to fix incomplete migration...")
+        // Clear the flag and continue with migration
+        UserDefaults.standard.removeObject(forKey: migrationKey)
+      }
     }
     
     logger.info("🔄 Starting guest to auth migration...")
     logger.info("   From: \(guestUserId.isEmpty ? "guest (empty)" : guestUserId)")
     logger.info("   To: \(authUserId)")
-    
-    let container = SwiftDataContainer.shared.modelContainer
-    let context = container.mainContext
     
     // Fetch all guest habits
     var guestDescriptor = FetchDescriptor<HabitData>(
