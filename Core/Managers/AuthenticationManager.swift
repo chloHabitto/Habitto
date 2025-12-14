@@ -312,9 +312,13 @@ class AuthenticationManager: ObservableObject {
   /// Link anonymous account to Apple credential
   /// This preserves all user data by linking the anonymous account to the Apple account
   private func linkAnonymousAccount(currentUser: User, credential: AuthCredential) async {
+    // ✅ CRITICAL: Capture anonymous userId BEFORE attempting link
+    // If linking fails, we'll need this to migrate data to the Apple account
+    let anonymousUserId = currentUser.uid
+    print("📦 [APPLE_SIGN_IN] Linking anonymous account to Apple credential...")
+    print("   Anonymous User ID: \(anonymousUserId)")
+    
     do {
-      print("📦 [APPLE_SIGN_IN] Linking anonymous account to Apple credential...")
-      
       let result = try await currentUser.link(with: credential)
       
       print("✅ [APPLE_SIGN_IN] Account linked successfully - all data preserved!")
@@ -338,14 +342,41 @@ class AuthenticationManager: ObservableObject {
          errorCode == .credentialAlreadyInUse {
         
         print("⚠️ [APPLE_SIGN_IN] Credential already in use - attempting to sign in with existing account")
+        print("   Anonymous account has data that needs migration: \(anonymousUserId)")
         
         // Extract the existing user's credential from the error
         if let existingCredential = authError.userInfo[AuthErrorUserInfoUpdatedCredentialKey] as? AuthCredential {
           // Sign in with the existing credential
           do {
             let result = try await Auth.auth().signIn(with: existingCredential)
+            let appleUserId = result.user.uid
             print("✅ [APPLE_SIGN_IN] Signed in with existing Apple account")
-            print("   User ID: \(result.user.uid)")
+            print("   Apple User ID: \(appleUserId)")
+            print("   Anonymous User ID (with data): \(anonymousUserId)")
+            
+            // ✅ CRITICAL FIX: Migrate data from anonymous account to Apple account
+            // The anonymous account has data that needs to be migrated to the Apple account
+            if anonymousUserId != appleUserId {
+              print("🔄 [APPLE_SIGN_IN] Migrating data from anonymous account to Apple account...")
+              print("   From: \(anonymousUserId)")
+              print("   To: \(appleUserId)")
+              
+              do {
+                // Use GuestToAuthMigration to migrate all data types
+                try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(
+                  from: anonymousUserId,
+                  to: appleUserId
+                )
+                print("✅ [APPLE_SIGN_IN] Data migration completed successfully!")
+                print("   All habits, completions, awards, and streak data migrated")
+              } catch {
+                print("❌ [APPLE_SIGN_IN] Data migration failed: \(error.localizedDescription)")
+                // Don't fail sign-in if migration fails - user can still use the app
+                // Migration can be retried later if needed
+              }
+            } else {
+              print("ℹ️ [APPLE_SIGN_IN] Anonymous and Apple accounts are the same - no migration needed")
+            }
             
             authState = .authenticated(result.user)
             self.currentUser = result.user
