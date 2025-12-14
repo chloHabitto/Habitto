@@ -364,24 +364,31 @@ final class SwiftDataStorage: HabitStorageProtocol {
       let hasAuthUser = await MainActor.run { Auth.auth().currentUser != nil }
       if hasAuthUser {
         // User might be authenticating, retry a few times
-        logger.info("⚠️ getCurrentUserId returned nil, waiting for Firebase Auth...")
+        logger.info("⚠️ getCurrentUserId returned nil, but Auth.auth().currentUser exists - waiting for Firebase Auth...")
+        logger.info("   Auth.auth().currentUser.uid: \(Auth.auth().currentUser?.uid ?? "nil")")
         for attempt in 1...3 { // ✅ FIX: Reduced from 5 to 3 retries
           let delay = UInt64(200_000_000 * UInt64(attempt)) // ✅ FIX: Reduced delay: 0.2s, 0.4s, 0.6s
           try? await Task.sleep(nanoseconds: delay)
           currentUserId = await getCurrentUserId()
           if currentUserId != nil {
-            logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies)")
+            logger.info("✅ getCurrentUserId succeeded after \(attempt) retry(ies): \(currentUserId?.prefix(8) ?? "nil")...")
             break
           }
-          logger.info("⚠️ Retry \(attempt)/3: getCurrentUserId still nil")
+          logger.info("⚠️ Retry \(attempt)/3: getCurrentUserId still nil, Auth.auth().currentUser = \(Auth.auth().currentUser?.uid ?? "nil")")
         }
       } else {
         // No auth user exists, we're in guest mode - skip retries
         logger.info("ℹ️ getCurrentUserId returned nil (guest mode), skipping retries")
+        logger.info("   Auth.auth().currentUser = nil (confirmed signed out)")
       }
     }
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
+    
+    // ✅ DEBUG: Log userId being used for query
+    let userIdForQuery = currentUserId ?? ""
+    logger.info("🔄 Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
+    print("🔄 [HABIT_LOAD] Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -395,11 +402,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == userId
         }
+        logger.info("🔄 Query predicate: userId == '\(userId.prefix(8))...'")
       } else {
         // For guest users, show data with empty userId
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == ""
         }
+        logger.info("🔄 Query predicate: userId == '' (empty string)")
       }
 
       // ✅ CRITICAL FIX: Process pending changes before fetching
@@ -410,7 +419,16 @@ final class SwiftDataStorage: HabitStorageProtocol {
       
       // ✅ CRITICAL FIX: Log query results to diagnose @Query refresh issues
       let queryTimestamp = Date()
-      logger.info("🔄 [SWIFTDATA_QUERY] \(queryTimestamp) Query executed - found \(habitDataArray.count) habits for userId '\(userIdDisplay.isEmpty ? "EMPTY_STRING" : String(userIdDisplay.prefix(8)) + "...")'")
+      let finalUserId = currentUserId ?? ""
+      logger.info("🔄 [SWIFTDATA_QUERY] \(queryTimestamp) Query executed - found \(habitDataArray.count) habits for userId '\(finalUserId.isEmpty ? "EMPTY_STRING" : String(finalUserId.prefix(8)) + "...")'")
+      print("🔄 [HABIT_LOAD] Query result: Found \(habitDataArray.count) habits for userId '\(finalUserId.isEmpty ? "EMPTY" : finalUserId.prefix(8) + "...")'")
+      
+      // ✅ DEBUG: Log all habit userIds found (for debugging)
+      if !habitDataArray.isEmpty {
+        let habitUserIds = Set(habitDataArray.map { $0.userId })
+        logger.info("🔄 [HABIT_LOAD] Habit userIds in result: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
+        print("🔄 [HABIT_LOAD] Habit userIds found: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
+      }
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId

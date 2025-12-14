@@ -662,11 +662,13 @@ class HabitRepository: ObservableObject {
         debugLog("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
       }
 
+      // ✅ FIX: Get userId once at the top (reused for XP validation and UI update)
+      let currentUserId = await CurrentUser().idOrGuest
+      
       // ✅ FIX: Validate today's DailyAward after habits are loaded
       // This ensures XP is correct from app startup, preventing flickering
       // Run validation after a short delay to allow sync to complete first
       // Reuse todayKey that was already declared above
-      let currentUserId = await CurrentUser().idOrGuest
       Task { @MainActor in
         // Wait a bit for sync to complete (if it's running)
         try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
@@ -697,8 +699,15 @@ class HabitRepository: ObservableObject {
       }
 
       // Update on main thread and notify observers
+      // ✅ FIX: Reuse currentUserId from above (already declared)
+      
       await MainActor.run {
         let beforeCount = self.habits.count
+        debugLog("🔄 LOAD_HABITS: About to update habits array")
+        debugLog("   Current userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
+        debugLog("   Loaded habits count: \(uniqueHabits.count)")
+        print("🔄 [HABIT_UPDATE] Updating habits array: \(uniqueHabits.count) habits for userId '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
+        
         self.habits = uniqueHabits
         let afterCount = self.habits.count
         
@@ -711,6 +720,7 @@ class HabitRepository: ObservableObject {
         print("🎯 [UI_STATE] \(timestamp) HabitRepository after assignment:")
         print("   habits.count: \(beforeCount) → \(afterCount)")
         print("   self.habits.count: \(self.habits.count)")
+        print("   Current userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
         for habit in self.habits {
           print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
           let todayKey = Habit.dateKey(for: Date())
@@ -1542,21 +1552,35 @@ class HabitRepository: ObservableObject {
       // before authState changes to .unauthenticated, so we don't need to clear it here
       debugLog("🔄 HabitRepository: User signed out")
       
+      // ✅ DEBUG: Log userId before clearing
+      let userIdBeforeClear = await CurrentUser().idOrGuest
+      debugLog("🔐 HabitRepository: CurrentUser().idOrGuest before clear = '\(userIdBeforeClear.isEmpty ? "EMPTY" : userIdBeforeClear)'")
+      
       // ✅ OPTION B: Account data isolation - do NOT convert account data to guest
       // Account data stays with the account (userId = "abc123") and is hidden on sign-out
       // Queries filter by CurrentUser().idOrGuest which returns "" when signed out
       // This means queries return no account data, showing empty app state
       
-      // Clear in-memory caches (NOT persisted data)
+      // ✅ CRITICAL: Clear in-memory caches IMMEDIATELY (before loading)
+      // This ensures UI shows empty state right away
       self.habits = []
-      debugLog("✅ HabitRepository: Cleared in-memory habits array")
+      debugLog("✅ HabitRepository: Cleared in-memory habits array (count: \(self.habits.count))")
+      
+      // ✅ CRITICAL: Small delay to ensure Auth.auth().currentUser is fully nil
+      // This prevents race condition where loadHabits() might see old userId
+      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+      
+      // ✅ DEBUG: Verify userId after delay
+      let userIdAfterDelay = await CurrentUser().idOrGuest
+      debugLog("🔐 HabitRepository: CurrentUser().idOrGuest after delay = '\(userIdAfterDelay.isEmpty ? "EMPTY" : userIdAfterDelay)'")
+      debugLog("🔐 HabitRepository: Auth.auth().currentUser = \(Auth.auth().currentUser?.uid ?? "nil")")
       
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Load guest habits (queries will filter by userId = "" which returns no account data)
       await loadHabits(force: true)
-      debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user")
+      debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user (habits count: \(self.habits.count))")
 
     case .authenticating:
       debugLog("🔄 HabitRepository: User authenticating, keeping current data...")
