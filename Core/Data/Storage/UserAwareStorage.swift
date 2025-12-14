@@ -43,6 +43,12 @@ class UserAwareStorage: HabitStorageProtocol {
       self.currentUserId = currentUserId
     }
 
+    // ✅ CRITICAL FIX: Don't use cache when force loading (e.g., after migration)
+    // The cache might have stale data even if userId hasn't changed
+    // This ensures fresh data is loaded after migration completes
+    // Note: We can't pass a "force" parameter here, so we'll rely on the caller
+    // to clear the cache explicitly via clearCache() before calling loadHabits()
+    
     // Return cached data if available AND userId matches
     // ✅ CRITICAL FIX: Only use cache if userId hasn't changed
     if let cached = cachedHabits,
@@ -214,6 +220,13 @@ class UserAwareStorage: HabitStorageProtocol {
       try await baseStorage.delete(forKey: key)
     }
     print("🗑️ UserAwareStorage: Cleared all guest data")
+  }
+  
+  /// Force clear the cache (e.g., after migration when data changes but userId doesn't)
+  /// ✅ CRITICAL FIX: This ensures fresh data is loaded after migration completes
+  func clearCache() {
+    cachedHabits = nil
+    print("🧹 [USER_AWARE_STORAGE] Cache cleared (forced)")
   }
 
   // MARK: Private

@@ -928,6 +928,16 @@ final actor HabitStore {
 
     logger.info("All habits cleared successfully for userId: \(userId ?? "guest")")
   }
+  
+  /// Clear the storage cache (e.g., after migration when data changes but userId doesn't)
+  /// ✅ CRITICAL FIX: This ensures fresh data is loaded after migration completes
+  func clearStorageCache() {
+    // Clear UserAwareStorage cache to force fresh load
+    // Access swiftDataStorage directly since it's a UserAwareStorage wrapper
+    swiftDataStorage.clearCache()
+    logger.info("✅ HabitStore: Cleared UserAwareStorage cache")
+    print("🧹 [HABIT_STORE] Cleared UserAwareStorage cache to force fresh load after migration")
+  }
 
   // MARK: Private
 
