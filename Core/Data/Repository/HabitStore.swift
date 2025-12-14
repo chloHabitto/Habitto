@@ -76,7 +76,17 @@ final actor HabitStore {
 
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
     if habits.isEmpty {
+      // ✅ CRITICAL FIX: Skip UserDefaults migration in guest mode
+      // When signed out, we should NOT migrate account data from UserDefaults
+      // This prevents account data from being re-imported as guest data after sign-out
+      if currentUserId.isEmpty {
+        logger.info("🛑 Skipping UserDefaults migration in guest mode - account data should not be imported")
+        print("🛑 [HABIT_STORE] Skipping UserDefaults migration in guest mode - account data should not be imported")
+        return habits // Return empty array for guest mode
+      }
+      
       logger.info("No habits found in SwiftData, checking UserDefaults for migration...")
+      
       // ✅ Gate: If an authenticated user exists and guest data is present, do NOT auto-migrate here.
       //    The UI migration flow will handle it, preventing silent migrations and data duplication.
       let shouldDeferToUIMigration: Bool = await MainActor.run {
@@ -89,6 +99,33 @@ final actor HabitStore {
       if shouldDeferToUIMigration {
         logger.info("🛑 Skipping auto-migration from UserDefaults because guest data exists and user is authenticated. UI will handle migration.")
         return habits
+      }
+
+      // ✅ CRITICAL FIX: Before migrating, check if habits exist for other userIds
+      // If habits exist for authenticated users, DON'T migrate from UserDefaults
+      // This prevents importing account data when user is signed out
+      let hasHabitsForOtherUsers = await MainActor.run {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let allHabitsDescriptor = FetchDescriptor<HabitData>()
+        do {
+          let allHabits = try modelContext.fetch(allHabitsDescriptor)
+          // Check if any habits have non-empty userId (authenticated user data)
+          let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
+          if !authenticatedHabits.isEmpty {
+            let userIds = Set(authenticatedHabits.map { $0.userId })
+            logger.info("🔍 Found \(authenticatedHabits.count) habits with userIds: \(userIds.map { String($0.prefix(8)) + "..." })")
+            logger.info("🛑 Skipping UserDefaults migration - account data exists in SwiftData")
+            print("🛑 [HABIT_STORE] Skipping UserDefaults migration - found \(authenticatedHabits.count) habits for authenticated users")
+            return true
+          }
+        } catch {
+          logger.warning("⚠️ Failed to check for existing habits: \(error.localizedDescription)")
+        }
+        return false
+      }
+      
+      if hasHabitsForOtherUsers {
+        return habits // Return empty array - don't migrate from UserDefaults
       }
 
       let legacyHabits = try await checkForLegacyHabits()
