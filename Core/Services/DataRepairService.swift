@@ -193,7 +193,6 @@ struct OrphanedDataSummary {
     }
     
     let habitsText = totalHabits == 1 ? "habit" : "habits"
-    let sessionsText = orphanedUserIds.count == 1 ? "previous session" : "previous sessions"
     
     // ✅ FIX: Handle empty userId in description
     let hasGuestData = orphanedUserIds.contains("")
