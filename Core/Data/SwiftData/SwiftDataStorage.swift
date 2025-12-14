@@ -387,8 +387,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
     
     // ✅ DEBUG: Log userId being used for query
     let userIdForQuery = currentUserId ?? ""
-    logger.info("🔄 Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
-    print("🔄 [HABIT_LOAD] Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
+    logger.info("🔄 [HABIT_STORE] Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
+    print("🔄 [HABIT_STORE] Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
+    print("🔄 [HABIT_STORE] CurrentUser().idOrGuest = '\(userIdForQuery.isEmpty ? "EMPTY" : userIdForQuery)'")
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -464,6 +465,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
       // ✅ ADDITIONAL FALLBACK: If querying as guest returns 0 habits, check if there are habits with ANY userId
       // This handles the case where Firebase Auth hasn't initialized yet but habits exist with authenticated userId
       // OR when Firebase isn't configured and we should show all habits
+      // ✅ CRITICAL FIX: Only use this fallback if Firebase Auth is NOT configured OR if we're in a legitimate
+      // timing window (e.g., app startup before Auth initializes). DO NOT use this after explicit sign-out.
       if currentUserId == nil,
          habitDataArray.isEmpty {
         logger.info("⚠️ Querying as guest found 0 habits, checking if habits exist with other userIds...")
@@ -483,39 +486,41 @@ final class SwiftDataStorage: HabitStorageProtocol {
             print("ℹ️ [GUEST_MODE] No habits found with userId = \"\"")
           }
         } else {
-          // Check if any habits have non-empty userId (likely authenticated user)
-          let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
-          if !authenticatedHabits.isEmpty {
-            let userIds = Set(authenticatedHabits.map { $0.userId })
-            logger.info("🔍 Found \(authenticatedHabits.count) habits with userIds: \(userIds)")
-            logger.info("⚠️ Habits exist but query returned 0 - likely Firebase Auth timing issue")
-            
-            // Try one more time to get the authenticated user ID directly from Firebase Auth
-            // This handles the case where Auth.auth().currentUser is available but getCurrentUserId() returned nil
-            // ✅ FIX: Include anonymous users - they have real UIDs
-            let firebaseUserId: String? = await MainActor.run {
-              guard let firebaseUser = Auth.auth().currentUser else {
-                return nil
-              }
-              logger.info("🔍 Firebase Auth shows authenticated user: \(firebaseUser.uid) (anonymous: \(firebaseUser.isAnonymous))")
-              return firebaseUser.uid // Return UID for ALL users including anonymous
+          // ✅ CRITICAL FIX: Only check for authenticated habits if Firebase Auth shows a user
+          // AND we haven't explicitly signed out. After sign-out, Auth.auth().currentUser should be nil,
+          // so this branch should not execute. If it does, it means Auth hasn't fully cleared yet,
+          // but we should STILL respect the guest mode query (return empty array).
+          // 
+          // This fallback is ONLY for app startup scenarios where Auth hasn't initialized yet.
+          // After explicit sign-out, we must return empty array to respect data isolation.
+          let firebaseUserId: String? = await MainActor.run {
+            guard let firebaseUser = Auth.auth().currentUser else {
+              return nil
             }
-            
-            if let firebaseUserId = firebaseUserId {
-              // Re-query with the authenticated user ID
-              let authDescriptor = FetchDescriptor<HabitData>(
-                predicate: #Predicate<HabitData> { habitData in
-                  habitData.userId == firebaseUserId
-                },
-                sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-              let authHabits: [HabitData] = try container.modelContext.fetch(authDescriptor)
-              if !authHabits.isEmpty {
-                logger.info("✅ Found \(authHabits.count) habits for authenticated user '\(firebaseUserId)' - using them")
-                habitDataArray = authHabits
-                // Update currentUserId for logging purposes
-                currentUserId = firebaseUserId
-              }
-            }
+            logger.info("🔍 Firebase Auth shows authenticated user: \(firebaseUser.uid) (anonymous: \(firebaseUser.isAnonymous))")
+            return firebaseUser.uid
+          }
+          
+          // ✅ CRITICAL FIX: If Firebase Auth shows a user but getCurrentUserId() returned nil,
+          // this is likely a timing issue during app startup (Auth initializing).
+          // However, if we're in guest mode (currentUserId == nil), we should NOT return
+          // authenticated habits - that would break data isolation after sign-out.
+          // 
+          // Only use this fallback if we're confident it's an initialization timing issue,
+          // not a sign-out scenario. Since we can't distinguish, we'll be conservative:
+          // If getCurrentUserId() returned nil, respect that and return empty array.
+          // The authenticated user's habits will load correctly once Auth fully initializes.
+          if let firebaseUserId = firebaseUserId {
+            logger.info("⚠️ Firebase Auth shows user '\(firebaseUserId)' but getCurrentUserId() returned nil")
+            logger.info("   This might be a timing issue, but respecting guest mode query (returning empty array)")
+            logger.info("   Authenticated habits will load once Auth fully initializes")
+            // ✅ FIX: Do NOT return authenticated habits when in guest mode
+            // This ensures data isolation after sign-out
+            habitDataArray = [] // Return empty array to respect guest mode
+          } else {
+            // No Firebase Auth user - definitely guest mode, return empty array
+            logger.info("ℹ️ No Firebase Auth user - confirmed guest mode, returning empty array")
+            habitDataArray = []
           }
         }
       }
@@ -927,18 +932,18 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   /// Helper method to get current user ID for data isolation
-  /// ✅ PRIORITY: Firebase Auth UID first, then fallback to nil (empty string when used with ?? "")
+  /// ✅ CRITICAL FIX: Use CurrentUser().idOrGuest for consistency across the app
+  /// This ensures we use the same userId logic as the rest of the codebase
   private func getCurrentUserId() async -> String? {
-    await MainActor.run {
-      // ✅ PRIORITY: Firebase Auth UID first, then fallback to nil (which becomes "" with ?? "")
-      if let firebaseUser = Auth.auth().currentUser {
-        let uid = firebaseUser.uid
-        logger.info("🔍 getCurrentUserId: Firebase Auth UID found - returning: \(uid.prefix(8))...")
-        return uid
-      }
-      // Fallback to nil (which becomes "" with ?? "") if Firebase Auth is nil
-      logger.info("🔍 getCurrentUserId: No Firebase Auth user - returning nil (guest mode)")
-      return nil
+    // ✅ FIX: Use CurrentUser().idOrGuest instead of checking Auth.auth().currentUser directly
+    // This ensures consistency and proper handling of sign-out state
+    let userId = await CurrentUser().idOrGuest
+    if userId.isEmpty {
+      logger.info("🔍 getCurrentUserId: Guest mode - returning nil (empty string)")
+      return nil // Return nil for guest mode (becomes "" with ?? "")
+    } else {
+      logger.info("🔍 getCurrentUserId: Authenticated user - returning: \(userId.prefix(8))...")
+      return userId
     }
   }
 
