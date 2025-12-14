@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 // MARK: - ThemeManager
 
@@ -21,6 +22,8 @@ class ThemeManager: ObservableObject {
       self.selectedColorScheme = colorScheme
     }
     
+    // Initialize effective color scheme
+    updateEffectiveColorScheme()
     updateAppColors()
   }
 
@@ -39,18 +42,46 @@ class ThemeManager: ObservableObject {
     didSet {
       UserDefaults.standard.set(selectedColorScheme.rawValue, forKey: "colorScheme")
       NotificationCenter.default.post(name: .colorSchemeDidChange, object: selectedColorScheme)
+      // Update effective color scheme immediately
+      updateEffectiveColorScheme()
     }
   }
   
-  /// Get the SwiftUI ColorScheme based on the selected option
-  var colorScheme: ColorScheme? {
+  @Published var effectiveColorScheme: ColorScheme?
+  
+  /// Update the effective color scheme based on current selection
+  private func updateEffectiveColorScheme() {
     switch selectedColorScheme {
     case .system:
-      return nil // nil means use system default
+      // Read the current system color scheme from the main window
+      // This ensures immediate updates when "Auto" is selected
+      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+         let window = windowScene.windows.first {
+        let currentStyle = window.traitCollection.userInterfaceStyle
+        switch currentStyle {
+        case .dark:
+          effectiveColorScheme = .dark
+        case .light:
+          effectiveColorScheme = .light
+        default:
+          effectiveColorScheme = .light // Default fallback
+        }
+      } else {
+        // Fallback: use current trait collection
+        let currentStyle = UITraitCollection.current.userInterfaceStyle
+        switch currentStyle {
+        case .dark:
+          effectiveColorScheme = .dark
+        case .light:
+          effectiveColorScheme = .light
+        default:
+          effectiveColorScheme = .light // Default fallback
+        }
+      }
     case .light:
-      return .light
+      effectiveColorScheme = .light
     case .dark:
-      return .dark
+      effectiveColorScheme = .dark
     }
   }
 
