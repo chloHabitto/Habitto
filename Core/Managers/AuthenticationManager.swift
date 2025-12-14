@@ -170,6 +170,13 @@ class AuthenticationManager: ObservableObject {
       try Auth.auth().signOut()
       authState = .unauthenticated
       currentUser = nil
+      
+      // ✅ DEBUG: Log userId after sign-out
+      Task {
+        let userIdAfterSignOut = await CurrentUser().idOrGuest
+        print("🔐 Sign-out: CurrentUser().idOrGuest = '\(userIdAfterSignOut.isEmpty ? "EMPTY" : userIdAfterSignOut)'")
+        print("🔐 Sign-out: Auth.auth().currentUser = \(Auth.auth().currentUser?.uid ?? "nil")")
+      }
 
       // Clear sensitive data from Keychain
       KeychainManager.shared.clearAuthenticationData()
