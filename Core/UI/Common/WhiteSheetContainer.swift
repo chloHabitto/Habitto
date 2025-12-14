@@ -11,7 +11,7 @@ struct WhiteSheetContainer<Content: View>: View {
     headerContent: (() -> AnyView)? = nil,
     rightButton: (() -> AnyView)? = nil,
     showGrabber: Bool = false,
-    contentBackground: Color = .white,
+    contentBackground: Color? = nil,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -19,7 +19,8 @@ struct WhiteSheetContainer<Content: View>: View {
     self.headerContent = headerContent
     self.rightButton = rightButton
     self.showGrabber = showGrabber
-    self.contentBackground = contentBackground
+    // Use .surface as default (adapts to dark mode), or use provided color
+    self.contentBackground = contentBackground ?? .surface
     self.content = content()
   }
 
@@ -106,7 +107,7 @@ struct WhiteSheetContainer<Content: View>: View {
 
 extension WhiteSheetContainer {
   /// Creates a white sheet container with just a title
-  init(title: String, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+  init(title: String, contentBackground: Color? = nil, @ViewBuilder content: () -> Content) {
     self.init(
       title: title,
       subtitle: nil,
@@ -121,7 +122,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     subtitle: String,
-    contentBackground: Color = .white,
+    contentBackground: Color? = nil,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -138,7 +139,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     headerContent: @escaping () -> AnyView,
-    contentBackground: Color = .white,
+    contentBackground: Color? = nil,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -154,7 +155,7 @@ extension WhiteSheetContainer {
   /// Creates a white sheet container with only custom header content (no title)
   init(
     headerContent: @escaping () -> AnyView,
-    contentBackground: Color = .white,
+    contentBackground: Color? = nil,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -171,7 +172,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     rightButton: @escaping () -> AnyView,
-    contentBackground: Color = .white,
+    contentBackground: Color? = nil,
     @ViewBuilder content: () -> Content)
   {
     self.init(
