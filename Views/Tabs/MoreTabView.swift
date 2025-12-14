@@ -563,7 +563,7 @@ struct MoreTabView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color.white)
+        .background(Color("surface01"))
         .onTapGesture {
           if let action = item.action {
             action()
