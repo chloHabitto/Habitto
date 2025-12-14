@@ -32,7 +32,7 @@ struct ThemeView: View {
         }
       }
     }
-    .preferredColorScheme(themeManager.colorScheme) // Apply selected color scheme to the sheet itself
+    .preferredColorScheme(themeManager.effectiveColorScheme) // Apply selected color scheme to the sheet itself
   }
 
   // MARK: Private
