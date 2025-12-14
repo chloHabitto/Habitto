@@ -19,6 +19,11 @@ struct AccountView: View {
               VStack(spacing: 24) {
                 // Signed in status section
                 signedInStatusSection
+                
+                // Data Repair Section (only show if signed in)
+                if isLoggedIn {
+                  dataRepairSection
+                }
 
                 Spacer(minLength: 40)
               }
@@ -137,6 +142,33 @@ struct AccountView: View {
     } message: {
       Text("Your account has been deleted successfully. You have been signed out.")
     }
+    .alert("Repair Data", isPresented: $showingRepairAlert) {
+      Button("Cancel", role: .cancel) { }
+      Button("Repair", role: .destructive) {
+        Task {
+          await performDataRepair()
+        }
+      }
+    } message: {
+      Text(repairMessage)
+    }
+    .alert("Repair Complete", isPresented: $showingRepairSuccess) {
+      Button("OK") {
+        // Reload habits to show migrated data
+        Task {
+          await HabitRepository.shared.loadHabits(force: true)
+        }
+      }
+    } message: {
+      Text(repairSuccessMessage)
+    }
+    .alert("Repair Error", isPresented: $showingRepairError) {
+      Button("OK") {
+        repairError = nil
+      }
+    } message: {
+      Text(repairError ?? "An unknown error occurred")
+    }
   }
 
   // MARK: Private
@@ -152,7 +184,17 @@ struct AccountView: View {
   @State private var showingDeletionError = false
   @State private var showingDeletionSuccess = false
   
+  // Data Repair state
+  @State private var showingRepairAlert = false
+  @State private var repairMessage = ""
+  @State private var showingRepairSuccess = false
+  @State private var repairSuccessMessage = ""
+  @State private var showingRepairError = false
+  @State private var repairError: String?
+  @State private var isRepairing = false
+  
   @StateObject private var deletionService = AccountDeletionService()
+  private let repairService = DataRepairService.shared
 
   // Signed in status section
   private var signedInStatusSection: some View {
@@ -198,6 +240,88 @@ struct AccountView: View {
          .unauthenticated:
       return false
     }
+  }
+  
+  // Data Repair Section
+  private var dataRepairSection: some View {
+    VStack(spacing: 16) {
+      HStack(spacing: 12) {
+        Image(systemName: "wrench.and.screwdriver.fill")
+          .font(.system(size: 20))
+          .foregroundColor(.orange)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Repair Data")
+            .font(.appBodyLarge)
+            .fontWeight(.semibold)
+            .foregroundColor(.text01)
+          
+          Text("Recover habits from previous sessions")
+            .font(.appBodySmall)
+            .foregroundColor(.text03)
+        }
+        
+        Spacer()
+        
+        if isRepairing {
+          ProgressView()
+            .scaleEffect(0.8)
+        } else {
+          Button(action: {
+            Task {
+              await checkForOrphanedData()
+            }
+          }) {
+            Text("Scan")
+              .font(.appBodyMedium)
+              .foregroundColor(.orange)
+          }
+        }
+      }
+    }
+    .padding(20)
+    .background(Color.surface)
+    .cornerRadius(16)
+    .padding(.horizontal, 20)
+  }
+  
+  private func checkForOrphanedData() async {
+    do {
+      let summary = try await repairService.scanForOrphanedData()
+      
+      if summary.hasOrphanedData {
+        repairMessage = summary.description + "\n\nMigrate this data to your account?"
+        showingRepairAlert = true
+      } else {
+        repairMessage = "No orphaned data found. All your data is already in your account."
+        showingRepairAlert = true
+      }
+    } catch {
+      repairError = "Failed to scan for orphaned data: \(error.localizedDescription)"
+      showingRepairError = true
+    }
+  }
+  
+  private func performDataRepair() async {
+    isRepairing = true
+    repairError = nil
+    
+    do {
+      let result = try await repairService.migrateAllOrphanedData()
+      
+      if result.success {
+        repairSuccessMessage = result.message
+        showingRepairSuccess = true
+      } else {
+        repairError = result.message
+        showingRepairError = true
+      }
+    } catch {
+      repairError = "Failed to repair data: \(error.localizedDescription)"
+      showingRepairError = true
+    }
+    
+    isRepairing = false
   }
   
   private func performAccountDeletion() async {
