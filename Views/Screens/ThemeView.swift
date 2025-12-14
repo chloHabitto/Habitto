@@ -1,13 +1,6 @@
 import SwiftUI
 
 struct ThemeView: View {
-  // MARK: Lifecycle
-
-  init() {
-    let savedColorScheme = UserDefaults.standard.string(forKey: "colorScheme") ?? "system"
-    self._selectedColorScheme = State(initialValue: ColorSchemeOption(rawValue: savedColorScheme) ?? .system)
-  }
-
   // MARK: Internal
 
   var body: some View {
@@ -45,7 +38,6 @@ struct ThemeView: View {
 
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject var themeManager: ThemeManager
-  @State private var selectedColorScheme: ColorSchemeOption
 
   private var iconColor: Color {
     switch themeManager.selectedTheme {
@@ -76,13 +68,13 @@ struct ThemeView: View {
 
       // Options
       VStack(spacing: 0) {
-        colorSchemeRow(option: .system, isSelected: selectedColorScheme == .system)
+        colorSchemeRow(option: .system, isSelected: themeManager.selectedColorScheme == .system)
         Divider()
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
-        colorSchemeRow(option: .light, isSelected: selectedColorScheme == .light)
+        colorSchemeRow(option: .light, isSelected: themeManager.selectedColorScheme == .light)
         Divider()
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
-        colorSchemeRow(option: .dark, isSelected: selectedColorScheme == .dark)
+        colorSchemeRow(option: .dark, isSelected: themeManager.selectedColorScheme == .dark)
       }
       .background(Color.surface)
       .cornerRadius(16)
@@ -93,8 +85,7 @@ struct ThemeView: View {
 
   private func colorSchemeRow(option: ColorSchemeOption, isSelected: Bool) -> some View {
     Button(action: {
-      selectedColorScheme = option
-      UserDefaults.standard.set(option.rawValue, forKey: "colorScheme")
+      themeManager.selectedColorScheme = option
     }) {
       HStack(spacing: 16) {
         // Icon
@@ -135,47 +126,6 @@ struct ThemeView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(PlainButtonStyle())
-  }
-}
-
-// MARK: - ColorSchemeOption
-
-enum ColorSchemeOption: String {
-  case system
-  case light
-  case dark
-
-  var title: String {
-    switch self {
-    case .system:
-      "Auto"
-    case .light:
-      "Light"
-    case .dark:
-      "Dark"
-    }
-  }
-
-  var description: String {
-    switch self {
-    case .system:
-      "Match system appearance"
-    case .light:
-      "Always use light mode"
-    case .dark:
-      "Always use dark mode"
-    }
-  }
-
-  var iconName: String {
-    switch self {
-    case .system:
-      "Icon-Theme_Auto"
-    case .light:
-      "Icon-lightMode_Filled"
-    case .dark:
-      "Icon-darkMode_Filled"
-    }
   }
 }
 
