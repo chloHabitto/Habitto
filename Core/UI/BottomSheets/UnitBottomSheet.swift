@@ -25,12 +25,12 @@ struct UnitBottomSheet: View {
           // Custom unit input
           VStack(spacing: 16) {
             Text("Enter custom unit name")
-              .font(.appTitleMedium)
+              .font(Font.appTitleMedium)
               .foregroundColor(.text01)
               .frame(maxWidth: .infinity, alignment: .leading)
 
             TextField("e.g., pages, chapters, sets", text: $customUnit)
-              .font(.appBodyLarge)
+              .font(Font.appBodyLarge)
               .foregroundColor(.text01)
               .accentColor(.text01)
               .inputFieldStyle()
@@ -54,7 +54,7 @@ struct UnitBottomSheet: View {
                 onClose()
               }) {
                 Text(unit)
-                  .font(.appBodyMedium)
+                  .font(Font.appBodyMedium)
                   .foregroundColor(currentUnit == unit ? .onPrimary : .text01)
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
@@ -76,9 +76,9 @@ struct UnitBottomSheet: View {
             }) {
               HStack(spacing: 4) {
                 Image(systemName: "plus")
-                  .font(.appLabelSmall)
+                  .font(Font.appLabelSmall)
                 Text("Custom")
-                  .font(.appBodyMedium)
+                  .font(Font.appBodyMedium)
               }
               .foregroundColor(ColorTokens.primary)
               .padding(.horizontal, 16)

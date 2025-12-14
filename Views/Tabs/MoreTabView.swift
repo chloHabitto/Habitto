@@ -288,9 +288,6 @@ struct MoreTabView: View {
           SettingItem(title: "Account", value: nil, hasChevron: true, action: {
             showingAccountView = true
           }),
-          SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
-            showingPreferencesView = true
-          }),
           // SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
           //     showingDataPrivacy = true
           // }),
@@ -563,7 +560,7 @@ struct MoreTabView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color("surface01"))
+        .background(Color.white)
         .onTapGesture {
           if let action = item.action {
             action()

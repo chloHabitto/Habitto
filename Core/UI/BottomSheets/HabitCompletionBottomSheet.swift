@@ -93,13 +93,13 @@ struct HabitCompletionBottomSheet: View {
 
       // Title
       Text("Good job!")
-        .font(.appHeadlineSmallEmphasised)
+        .font(Font.appHeadlineSmallEmphasised)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .center)
 
       // Difficulty question
       Text("How difficult was this habit today?")
-        .font(.appTitleSmall)
+        .font(Font.appTitleSmall)
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -116,12 +116,12 @@ struct HabitCompletionBottomSheet: View {
 
         VStack(alignment: .leading, spacing: 4) {
           Text(habit.name)
-            .font(.appTitleMediumEmphasised)
+            .font(Font.appTitleMediumEmphasised)
             .foregroundColor(.text01)
 
           if !habit.description.isEmpty {
             Text(habit.description)
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
               .foregroundColor(.text03)
               .lineLimit(2)
           }
@@ -134,7 +134,7 @@ struct HabitCompletionBottomSheet: View {
                   .font(.caption)
                   .foregroundColor(.orange)
                 Text("\(habit.computedStreak()) day streak")
-                  .font(.appBodySmall)
+                  .font(Font.appBodySmall)
                   .foregroundColor(.text03)
               }
             }
@@ -255,7 +255,7 @@ struct HabitCompletionBottomSheet: View {
               .frame(width: 12, height: 12)
 
             Text(difficulty.displayName)
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
               .foregroundColor(.text01)
           }
           .padding(.horizontal, 16)
@@ -277,7 +277,7 @@ struct HabitCompletionBottomSheet: View {
         onDismiss?()
       }) {
         Text("Skip")
-          .font(.appButtonText1)
+          .font(Font.appButtonText1)
           .foregroundColor(.text02)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
@@ -299,7 +299,7 @@ struct HabitCompletionBottomSheet: View {
         onDismiss?()
       }) {
         Text("Submit")
-          .font(.appButtonText1)
+          .font(Font.appButtonText1)
           .foregroundColor(.onPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)

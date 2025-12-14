@@ -30,12 +30,12 @@ struct GoalBottomSheet: View {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
               Text("I want to achieve this goal")
-                .font(.appTitleMedium)
+                .font(Font.appTitleMedium)
                 .foregroundColor(.text01)
 
               HStack {
                 Text(selectedGoalText)
-                  .font(.appBodyLarge)
+                  .font(Font.appBodyLarge)
                   .foregroundColor(.onPrimary)
                   .padding(.horizontal, 16)
                   .padding(.vertical, 8)
@@ -65,7 +65,7 @@ struct GoalBottomSheet: View {
                   if dailyValue > 1 { dailyValue -= 1 }
                 }) {
                   Image(systemName: "minus")
-                    .font(.appTitleMedium)
+                    .font(Font.appTitleMedium)
                     .foregroundColor(dailyValue > 1 ? Color.white : .onDisabledBackground)
                     .frame(width: 44, height: 44)
                     .background(dailyValue > 1 ? .primary : .disabledBackground)
@@ -76,7 +76,7 @@ struct GoalBottomSheet: View {
 
                 // Number display
                 Text("\(dailyValue)")
-                  .font(.appHeadlineSmallEmphasised)
+                  .font(Font.appHeadlineSmallEmphasised)
                   .foregroundColor(.text01)
                   .frame(width: 52, height: 52)
                   .background(.surface)
@@ -90,7 +90,7 @@ struct GoalBottomSheet: View {
                   if dailyValue < 30 { dailyValue += 1 }
                 }) {
                   Image(systemName: "plus")
-                    .font(.appTitleMedium)
+                    .font(Font.appTitleMedium)
                     .foregroundColor(dailyValue < 30 ? Color.white : .onDisabledBackground)
                     .frame(width: 44, height: 44)
                     .background(dailyValue < 30 ? .primary : .disabledBackground)
@@ -112,12 +112,12 @@ struct GoalBottomSheet: View {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
               Text("I want to achieve this goal")
-                .font(.appTitleMedium)
+                .font(Font.appTitleMedium)
                 .foregroundColor(.text01)
 
               HStack {
                 Text(selectedGoalText)
-                  .font(.appBodyLarge)
+                  .font(Font.appBodyLarge)
                   .foregroundColor(.onPrimary)
                   .padding(.horizontal, 16)
                   .padding(.vertical, 8)

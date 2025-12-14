@@ -28,7 +28,7 @@ struct YearPickerModal: View {
         Spacer()
 
         Text("Select Year")
-          .font(.appTitleMediumEmphasised)
+          .font(Font.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
@@ -56,9 +56,9 @@ struct YearPickerModal: View {
         }) {
           HStack {
             Image(systemName: "arrow.clockwise")
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
             Text("Reset to current year")
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
           }
           .foregroundColor(.text02)
         }
@@ -80,7 +80,7 @@ struct YearPickerModal: View {
             .foregroundColor(.surface)
 
           Text(String(tempSelectedYear))
-            .font(.appTitleMediumEmphasised)
+            .font(Font.appTitleMediumEmphasised)
             .foregroundColor(.surface)
         }
         .frame(maxWidth: .infinity)
@@ -137,7 +137,7 @@ struct YearPicker: View {
         Spacer()
 
         Text(String(currentYear))
-          .font(.appTitleMedium)
+          .font(Font.appTitleMedium)
           .foregroundColor(.text01)
 
         Spacer()
@@ -234,7 +234,7 @@ struct YearButton: View {
   var body: some View {
     Button(action: onTap) {
       Text(String(year))
-        .font(.appBodyMedium)
+        .font(Font.appBodyMedium)
         .foregroundColor(isSelected ? .white : .text01)
         .frame(maxWidth: .infinity)
         .frame(height: 44)

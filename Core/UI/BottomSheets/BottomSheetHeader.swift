@@ -38,7 +38,7 @@ struct BottomSheetHeader: View {
       // Title and description container
       VStack(alignment: .leading, spacing: 4) {
         Text(title)
-          .font(.appHeadlineSmallEmphasised)
+          .font(Font.appHeadlineSmallEmphasised)
           .foregroundColor(.text01)
         Text(description)
           .font(.appTitleSmall)
