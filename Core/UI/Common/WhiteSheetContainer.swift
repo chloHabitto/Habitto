@@ -20,7 +20,7 @@ struct WhiteSheetContainer<Content: View>: View {
     self.rightButton = rightButton
     self.showGrabber = showGrabber
     // Use .surface as default (adapts to dark mode), or use provided color
-    self.contentBackground = contentBackground ?? Color("MainSheetBG")
+    self.contentBackground = contentBackground ?? Color("surface01")
     self.content = content()
   }
 
