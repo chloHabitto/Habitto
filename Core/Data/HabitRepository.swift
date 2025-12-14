@@ -684,6 +684,12 @@ class HabitRepository: ObservableObject {
         }
       }
 
+      // ✅ DIAGNOSTIC: Log all loaded habits before deduplication
+      print("🔍 [HABIT_LOAD] Before deduplication: \(loadedHabits.count) habits loaded")
+      for (index, habit) in loadedHabits.enumerated() {
+        print("   [\(index)] '\(habit.name)' (ID: \(habit.id))")
+      }
+      
       // Deduplicate habits by ID to prevent duplicates
       var uniqueHabits: [Habit] = []
       var seenIds: Set<UUID> = []
@@ -695,7 +701,49 @@ class HabitRepository: ObservableObject {
         } else {
           debugLog(
             "⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+          print("⚠️ [HABIT_LOAD] Duplicate detected: '\(habit.name)' (ID: \(habit.id)) - excluded from uniqueHabits")
         }
+      }
+      
+      // ✅ DIAGNOSTIC: Log after deduplication and verify against SwiftData
+      print("🔍 [HABIT_LOAD] After deduplication: \(uniqueHabits.count) unique habits")
+      if loadedHabits.count != uniqueHabits.count {
+        print("⚠️ [HABIT_LOAD] WARNING: \(loadedHabits.count - uniqueHabits.count) habit(s) were filtered out as duplicates")
+      }
+      
+      // ✅ DIAGNOSTIC: Compare with SwiftData to find missing habits
+      // Reuse currentUserId from above (line 666)
+      do {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let habitPredicate = #Predicate<HabitData> { habit in
+          habit.userId == currentUserId
+        }
+        let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+        let swiftDataHabits = try modelContext.fetch(habitDescriptor)
+        
+        if swiftDataHabits.count != uniqueHabits.count {
+          print("⚠️ [HABIT_LOAD] MISMATCH: SwiftData has \(swiftDataHabits.count) habits, but HabitRepository has \(uniqueHabits.count)")
+          print("   SwiftData habits:")
+          for habitData in swiftDataHabits {
+            print("     - '\(habitData.name)' (ID: \(habitData.id))")
+          }
+          print("   HabitRepository habits:")
+          for habit in uniqueHabits {
+            print("     - '\(habit.name)' (ID: \(habit.id))")
+          }
+          
+          // Find which habits are in SwiftData but not in HabitRepository
+          let loadedHabitIds = Set(uniqueHabits.map { $0.id })
+          let missingHabits = swiftDataHabits.filter { !loadedHabitIds.contains($0.id) }
+          if !missingHabits.isEmpty {
+            print("   ⚠️ Missing habits (in SwiftData but not loaded):")
+            for missing in missingHabits {
+              print("     - '\(missing.name)' (ID: \(missing.id), userId: '\(missing.userId.isEmpty ? "EMPTY" : String(missing.userId.prefix(8)) + "...")')")
+            }
+          }
+        }
+      } catch {
+        print("   ❌ Error comparing with SwiftData: \(error.localizedDescription)")
       }
 
       // Update on main thread and notify observers
