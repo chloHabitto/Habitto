@@ -232,6 +232,24 @@ class DailyAwardIntegrityService {
     func cleanupInvalidAwards(userId: String) async throws -> Int {
         logger.info("🔧 DailyAwardIntegrityService: Starting cleanup for userId: '\(userId.isEmpty ? "guest" : userId.prefix(8))...'")
         
+        // ✅ CRITICAL FIX: Verify habits exist before cleanup to prevent data loss
+        // If no habits are found, skip cleanup (likely a timing/cache issue after sign-in)
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let habitPredicate = #Predicate<HabitData> { habit in
+            habit.userId == userId
+        }
+        let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+        let habitsForUser = (try? modelContext.fetch(habitDescriptor)) ?? []
+        
+        if habitsForUser.isEmpty {
+            logger.warning("⚠️ DailyAwardIntegrityService: Skipping cleanup - no habits found for userId '\(userId.isEmpty ? "guest" : userId.prefix(8))...' (possible timing issue)")
+            print("⚠️ [DAILY_AWARD_INTEGRITY] Skipping cleanup - no habits found for user (possible timing/cache issue)")
+            print("   This prevents data loss if cleanup runs before habits are fully loaded after sign-in")
+            return 0
+        }
+        
+        logger.info("✅ Found \(habitsForUser.count) habits for user - proceeding with cleanup")
+        
         // Investigate first
         let investigation = try await investigateDailyAwards(userId: userId)
         
@@ -241,8 +259,6 @@ class DailyAwardIntegrityService {
         }
         
         logger.info("🔧 Removing \(investigation.invalidAwards.count) invalid awards...")
-        
-        let modelContext = SwiftDataContainer.shared.modelContext
         
         // Delete invalid awards
         var removedCount = 0

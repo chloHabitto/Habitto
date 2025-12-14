@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import UIKit
+import StoreKit
 
 // MARK: - SubscriptionView
 
@@ -121,6 +122,9 @@ struct SubscriptionView: View {
       .onDisappear {
         stopAutoScroll()
       }
+      .task {
+        await loadProducts()
+      }
     }
   }
   
@@ -167,6 +171,11 @@ struct SubscriptionView: View {
   @State private var showingTermsConditions = false
   @State private var selectedLegalTab: Int = 0 // 0 = Terms, 1 = Privacy Policy
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+  
+  // Dynamic pricing state
+  @State private var products: [Product] = []
+  @State private var isLoadingProducts = true
+  @State private var productLoadError: String?
   
   /// Get the current subscription option based on active subscription
   private var currentSubscriptionOption: SubscriptionOption? {
@@ -381,42 +390,85 @@ struct SubscriptionView: View {
   
   private var subscriptionOptions: some View {
     VStack(spacing: 12) {
-      // Lifetime Access
-      subscriptionOptionCard(
-        option: .lifetime,
-        emoji: "",
-        title: "Lifetime Access",
-        length: "Lifetime",
-        price: "€24.99",
-        badge: "Popular",
-        showBadge: true,
-        showCrossedPrice: false
-      )
-      
-      // Annual
-      subscriptionOptionCard(
-        option: .annual,
-        emoji: "",
-        title: "Annual",
-        length: "1 year",
-        price: "€12.99/year",
-        originalPrice: "€23.88",
-        badge: "50% off",
-        showBadge: true,
-        showCrossedPrice: true
-      )
-      
-      // Monthly
-      subscriptionOptionCard(
-        option: .monthly,
-        emoji: "",
-        title: "Monthly",
-        length: "1 month",
-        price: "€1.99/month",
-        badge: nil,
-        showBadge: false,
-        showCrossedPrice: false
-      )
+      if isLoadingProducts {
+        // Loading state
+        VStack(spacing: 16) {
+          ProgressView()
+            .scaleEffect(1.2)
+          Text("Loading prices...")
+            .font(.appBodyMedium)
+            .foregroundColor(.text02)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+      } else if let error = productLoadError {
+        // Error state with retry button
+        VStack(spacing: 16) {
+          Image(systemName: "exclamationmark.triangle")
+            .font(.system(size: 32))
+            .foregroundColor(.text03)
+          Text("Failed to load prices")
+            .font(.appBodyMedium)
+            .foregroundColor(.text02)
+          Text(error)
+            .font(.appBodySmall)
+            .foregroundColor(.text03)
+            .multilineTextAlignment(.center)
+          Button(action: {
+            Task {
+              await loadProducts()
+            }
+          }) {
+            Text("Retry")
+              .font(.appBodyMedium)
+              .foregroundColor(.primary)
+              .padding(.horizontal, 24)
+              .padding(.vertical, 12)
+              .background(Color.primary.opacity(0.1))
+              .cornerRadius(12)
+          }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+      } else {
+        // Content state with dynamic prices
+        // Lifetime Access
+        subscriptionOptionCard(
+          option: .lifetime,
+          emoji: "",
+          title: "Lifetime Access",
+          length: "Lifetime",
+          price: priceString(for: .lifetime),
+          badge: "Popular",
+          showBadge: true,
+          showCrossedPrice: false
+        )
+        
+        // Annual
+        subscriptionOptionCard(
+          option: .annual,
+          emoji: "",
+          title: "Annual",
+          length: "1 year",
+          price: priceString(for: .annual),
+          originalPrice: originalAnnualPrice(),
+          badge: savingsPercentage() != nil ? "\(savingsPercentage()!)% off" : nil,
+          showBadge: savingsPercentage() != nil,
+          showCrossedPrice: originalAnnualPrice() != nil
+        )
+        
+        // Monthly
+        subscriptionOptionCard(
+          option: .monthly,
+          emoji: "",
+          title: "Monthly",
+          length: "1 month",
+          price: priceString(for: .monthly),
+          badge: nil,
+          showBadge: false,
+          showCrossedPrice: false
+        )
+      }
     }
     .onAppear {
       // Set initial selected option to current subscription if available, otherwise default to lifetime
@@ -876,6 +928,106 @@ struct SubscriptionView: View {
         showingPurchaseAlert = true
       }
     }
+  }
+  
+  // MARK: - Dynamic Pricing Helpers
+  
+  /// Load products from StoreKit
+  private func loadProducts() async {
+    isLoadingProducts = true
+    productLoadError = nil
+    
+    let loadedProducts = await subscriptionManager.getAvailableProducts()
+    
+    await MainActor.run {
+      self.products = loadedProducts
+      self.isLoadingProducts = false
+      
+      if loadedProducts.isEmpty {
+        self.productLoadError = "No products available. Please check your internet connection."
+      }
+    }
+  }
+  
+  /// Get the Product for a given subscription option
+  private func product(for option: SubscriptionOption) -> Product? {
+    let productID: String
+    switch option {
+    case .lifetime:
+      productID = SubscriptionManager.ProductID.lifetime
+    case .annual:
+      productID = SubscriptionManager.ProductID.annual
+    case .monthly:
+      productID = SubscriptionManager.ProductID.monthly
+    }
+    
+    return products.first { $0.id == productID }
+  }
+  
+  /// Get the price string for a subscription option
+  private func priceString(for option: SubscriptionOption) -> String {
+    guard let product = product(for: option) else {
+      // Fallback to hardcoded prices if product not loaded
+      switch option {
+      case .lifetime:
+        return "€24.99"
+      case .annual:
+        return "€12.99/year"
+      case .monthly:
+        return "€1.99/month"
+      }
+    }
+    
+    switch option {
+    case .lifetime:
+      return product.displayPrice
+    case .annual:
+      return "\(product.displayPrice)/year"
+    case .monthly:
+      return "\(product.displayPrice)/month"
+    }
+  }
+  
+  /// Calculate savings percentage (annual vs 12× monthly)
+  private func savingsPercentage() -> Int? {
+    guard let annualProduct = product(for: .annual),
+          let monthlyProduct = product(for: .monthly) else {
+      return nil
+    }
+    
+    // Get numeric prices
+    let annualPrice = annualProduct.price
+    let monthlyPrice = monthlyProduct.price
+    let monthlyYearlyPrice = monthlyPrice * 12
+    
+    guard monthlyYearlyPrice > 0 else { return nil }
+    
+    let savings = ((monthlyYearlyPrice - annualPrice) / monthlyYearlyPrice) * 100
+    return Int(NSDecimalNumber(decimal: savings).doubleValue.rounded())
+  }
+  
+  /// Calculate original annual price (12× monthly price)
+  private func originalAnnualPrice() -> String? {
+    guard let monthlyProduct = product(for: .monthly) else {
+      return nil
+    }
+    
+    // Calculate 12× monthly price
+    let monthlyPrice = monthlyProduct.price
+    let yearlyPrice = monthlyPrice * 12
+    
+    // Format using currency formatter with current locale
+    // StoreKit's displayPrice is already in the user's App Store currency,
+    // so we use the current locale which should match
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.locale = Locale.current
+    
+    guard let formattedPrice = formatter.string(from: NSDecimalNumber(decimal: yearlyPrice)) else {
+      return nil
+    }
+    
+    return formattedPrice
   }
   
   /// Restore previous purchases
