@@ -27,30 +27,50 @@ final class DataRepairService {
     let allProgress = try modelContext.fetch(FetchDescriptor<UserProgressData>())
     
     // Find all unique userIds (excluding current user)
+    // ✅ FIX: Include empty userId when user is authenticated (orphaned guest data)
     var userIds = Set<String>()
+    let isAuthenticated = !currentUserId.isEmpty
+    
     for habit in allHabits {
+      // Include orphaned data (non-empty, non-current userId)
       if habit.userId != currentUserId && !habit.userId.isEmpty {
         userIds.insert(habit.userId)
+      }
+      // ALSO include guest data (empty userId) when user is authenticated
+      else if habit.userId.isEmpty && isAuthenticated {
+        userIds.insert("")  // Track empty userId as orphaned guest data
       }
     }
     for record in allCompletions {
       if record.userId != currentUserId && !record.userId.isEmpty {
         userIds.insert(record.userId)
       }
+      else if record.userId.isEmpty && isAuthenticated {
+        userIds.insert("")
+      }
     }
     for award in allAwards {
       if award.userId != currentUserId && !award.userId.isEmpty {
         userIds.insert(award.userId)
+      }
+      else if award.userId.isEmpty && isAuthenticated {
+        userIds.insert("")
       }
     }
     for streak in allStreaks {
       if streak.userId != currentUserId && !streak.userId.isEmpty {
         userIds.insert(streak.userId)
       }
+      else if streak.userId.isEmpty && isAuthenticated {
+        userIds.insert("")
+      }
     }
     for progress in allProgress {
       if progress.userId != currentUserId && !progress.userId.isEmpty {
         userIds.insert(progress.userId)
+      }
+      else if progress.userId.isEmpty && isAuthenticated {
+        userIds.insert("")
       }
     }
     
@@ -78,7 +98,8 @@ final class DataRepairService {
         totalXP: totalXP
       )
       
-      logger.info("   → userId '\(orphanedUserId.prefix(8))...': \(habits.count) habits, \(completions.count) completions, \(awards.count) awards (\(totalXP) XP), \(streaks.count) streaks")
+      let userIdDisplay = orphanedUserId.isEmpty ? "EMPTY (guest)" : "\(orphanedUserId.prefix(8))..."
+      logger.info("   → userId '\(userIdDisplay)': \(habits.count) habits, \(completions.count) completions, \(awards.count) awards (\(totalXP) XP), \(streaks.count) streaks")
     }
     
     return OrphanedDataSummary(
@@ -91,10 +112,12 @@ final class DataRepairService {
   /// Migrate all orphaned data to current user
   func migrateOrphanedData(from orphanedUserId: String, to currentUserId: String) async throws {
     logger.info("🔄 DataRepair: Migrating orphaned data...")
-    logger.info("   From: '\(orphanedUserId.prefix(8))...'")
+    let fromDisplay = orphanedUserId.isEmpty ? "EMPTY (guest)" : "\(orphanedUserId.prefix(8))..."
+    logger.info("   From: '\(fromDisplay)'")
     logger.info("   To: '\(currentUserId.prefix(8))...'")
     
     // Use existing GuestToAuthMigration which handles all data types
+    // ✅ This handles both empty string (guest) and specific userId (anonymous account)
     try await GuestToAuthMigration.shared.migrateGuestDataIfNeeded(
       from: orphanedUserId,
       to: currentUserId
@@ -172,7 +195,11 @@ struct OrphanedDataSummary {
     let habitsText = totalHabits == 1 ? "habit" : "habits"
     let sessionsText = orphanedUserIds.count == 1 ? "previous session" : "previous sessions"
     
-    return "Found \(totalHabits) \(habitsText) and \(totalXP) XP from \(orphanedUserIds.count) \(sessionsText)."
+    // ✅ FIX: Handle empty userId in description
+    let hasGuestData = orphanedUserIds.contains("")
+    let dataSource = hasGuestData ? "guest mode" : "previous session(s)"
+    
+    return "Found \(totalHabits) \(habitsText) and \(totalXP) XP from \(dataSource)."
   }
 }
 
