@@ -28,19 +28,43 @@ class UserAwareStorage: HabitStorageProtocol {
   }
 
   func loadHabits() async throws -> [Habit] {
+    // ✅ CRITICAL FIX: Always clear cache on user change to prevent stale data
     clearCacheIfUserChanged()
+    
+    // ✅ CRITICAL FIX: Get current userId to verify filtering
+    let currentUserId = await getCurrentUserId()
+    let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
+    print("🔄 [USER_AWARE_STORAGE] Loading habits for userId: '\(userIdForLogging)'")
 
-    // Return cached data if available
-    if let cached = cachedHabits {
+    // ✅ CRITICAL FIX: Clear cache if userId changed
+    if let cachedUserId = self.currentUserId, cachedUserId != currentUserId {
+      print("🔄 [USER_AWARE_STORAGE] User changed - clearing cache (old: '\(cachedUserId.isEmpty ? "EMPTY" : String(cachedUserId.prefix(8)) + "...")', new: '\(userIdForLogging)')")
+      cachedHabits = nil
+      self.currentUserId = currentUserId
+    }
+
+    // Return cached data if available AND userId matches
+    // ✅ CRITICAL FIX: Only use cache if userId hasn't changed
+    if let cached = cachedHabits,
+       let cachedUserId = self.currentUserId,
+       cachedUserId == currentUserId {
+      print("🔄 [USER_AWARE_STORAGE] Returning cached habits (count: \(cached.count)) for userId: '\(userIdForLogging)'")
       return cached
     }
 
     // Use the specific loadHabits method from base storage instead of generic load
     // This avoids the "Generic load called" warning
     let habits = try await baseStorage.loadHabits()
+    
+    // ✅ CRITICAL FIX: Log results to verify filtering
+    print("🔄 [USER_AWARE_STORAGE] Base storage returned \(habits.count) habits for userId: '\(userIdForLogging)'")
+    if !habits.isEmpty && currentUserId.isEmpty {
+      print("⚠️ [USER_AWARE_STORAGE] WARNING: Found \(habits.count) habits in guest mode - should be 0!")
+    }
 
     // Update cache
     cachedHabits = habits
+    self.currentUserId = currentUserId
     return habits
   }
 

@@ -56,7 +56,23 @@ final actor HabitStore {
 
     // Use active storage (SwiftData or DualWrite based on feature flags)
     logger.info("HabitStore: Loading habits from active storage...")
+    
+    // ✅ CRITICAL FIX: Log current userId before loading to verify filtering
+    let currentUserId = await CurrentUser().idOrGuest
+    let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
+    logger.info("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)'")
+    print("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)'")
+    print("🔄 [HABIT_STORE] CurrentUser().idOrGuest = '\(currentUserId.isEmpty ? "EMPTY" : currentUserId)'")
+    
     var habits = try await activeStorage.loadHabits()
+    
+    // ✅ CRITICAL FIX: Log results to verify filtering worked
+    logger.info("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
+    print("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
+    if !habits.isEmpty {
+      logger.warning("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
+      print("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
+    }
 
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
     if habits.isEmpty {
