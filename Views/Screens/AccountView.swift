@@ -20,10 +20,10 @@ struct AccountView: View {
                 // Signed in status section
                 signedInStatusSection
                 
-                // Data Repair Section (only show if signed in)
-                if isLoggedIn {
-                  dataRepairSection
-                }
+                // Data Repair Section (hidden)
+                // if isLoggedIn {
+                //   dataRepairSection
+                // }
 
                 Spacer(minLength: 40)
               }
