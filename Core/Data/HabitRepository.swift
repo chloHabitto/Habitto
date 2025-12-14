@@ -1581,6 +1581,13 @@ class HabitRepository: ObservableObject {
       // Load guest habits (queries will filter by userId = "" which returns no account data)
       await loadHabits(force: true)
       debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user (habits count: \(self.habits.count))")
+      
+      // ✅ CRITICAL FIX: Refresh XP state for guest mode
+      // This ensures XP is recalculated with the new userId (empty string) after sign-out
+      // Query DailyAwards for userId == "" will return 0 awards, so XP will be 0
+      await DailyAwardService.shared.refreshXPState()
+      debugLog("✅ HabitRepository: XP state refreshed for guest mode")
+      print("🔄 [XP_REFRESH] HabitRepository: Triggered XP refresh after sign-out")
 
     case .authenticating:
       debugLog("🔄 HabitRepository: User authenticating, keeping current data...")
