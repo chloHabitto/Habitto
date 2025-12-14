@@ -261,6 +261,12 @@ class HabitRepository: ObservableObject {
     print("🔄 [MIGRATION] \(timestamp) Forcing ModelContext refresh to invalidate cached queries...")
     await forceModelContextRefresh()
     
+    // ✅ CRITICAL FIX: Clear UserAwareStorage cache before loading habits
+    // After migration, data changes but userId doesn't, so the cache might have stale data
+    // This ensures we load fresh data from SwiftData instead of returning cached habits
+    print("🔄 [MIGRATION] \(timestamp) Clearing storage cache to force fresh load...")
+    await habitStore.clearStorageCache()
+    
     // ✅ CRITICAL FIX: Await loadHabits() to ensure data is loaded before returning
     print("🔄 [MIGRATION] \(timestamp) Starting loadHabits(force: true)...")
     await loadHabits(force: true)
