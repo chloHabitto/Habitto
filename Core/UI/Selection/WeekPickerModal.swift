@@ -35,7 +35,7 @@ struct WeekPickerModal: View {
         Spacer()
 
         Text("Select Week")
-          .font(.appTitleMediumEmphasised)
+          .font(Font.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
@@ -64,9 +64,9 @@ struct WeekPickerModal: View {
         }) {
           HStack {
             Image(systemName: "arrow.clockwise")
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
             Text("Reset to current week")
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
           }
           .foregroundColor(.text02)
         }
@@ -85,11 +85,11 @@ struct WeekPickerModal: View {
         }) {
           VStack(spacing: 8) {
             Text("Selected Week")
-              .font(.appBodyMedium)
+              .font(Font.appBodyMedium)
               .foregroundColor(.surface)
 
             Text(weekRangeText(from: range))
-              .font(.appTitleMediumEmphasised)
+              .font(Font.appTitleMediumEmphasised)
               .foregroundColor(.surface)
           }
           .frame(maxWidth: .infinity)

@@ -15,10 +15,10 @@ struct BottomSheetSelectionRow: View {
       HStack {
         VStack(alignment: .leading, spacing: 4) {
           Text(title)
-            .font(.appBodyLarge)
+            .font(Font.appBodyLarge)
             .foregroundColor(.text01)
           Text(subtitle)
-            .font(.appBodyMedium)
+            .font(Font.appBodyMedium)
             .foregroundColor(.text04)
         }
 
@@ -26,7 +26,7 @@ struct BottomSheetSelectionRow: View {
 
         if isSelected {
           Image(systemName: "checkmark")
-            .font(.appLabelMedium)
+            .font(Font.appLabelMedium)
             .foregroundColor(.primary)
         }
       }
@@ -53,14 +53,14 @@ struct SelectionRow: View {
     Button(action: action) {
       HStack {
         Text(title)
-          .font(.appTitleMedium)
+          .font(Font.appTitleMedium)
           .foregroundColor(.text01)
         Spacer()
         Text(value)
-          .font(.appBodyLarge)
+          .font(Font.appBodyLarge)
           .foregroundColor(.text04)
         Image(systemName: "chevron.right")
-          .font(.appLabelMedium)
+          .font(Font.appLabelMedium)
           .foregroundColor(.primaryDim)
       }
     }
@@ -87,17 +87,17 @@ struct SelectionRowWithVisual: View {
     Button(action: action) {
       HStack {
         Text(title)
-          .font(.appTitleMedium)
+          .font(Font.appTitleMedium)
           .foregroundColor(.text01)
         Spacer()
         HStack(spacing: 8) {
           visualView
           Text(value)
-            .font(.appBodyLarge)
+            .font(Font.appBodyLarge)
             .foregroundColor(.text04)
         }
         Image(systemName: "chevron.right")
-          .font(.appLabelMedium)
+          .font(Font.appLabelMedium)
           .foregroundColor(.primaryDim)
       }
     }
@@ -134,7 +134,7 @@ struct SelectionRowWithVisual: View {
         } else {
           // Emoji or system icon
           Text(icon)
-            .font(.system(size: 14))
+            .font(Font.appBodyMedium)
         }
       }
     }
@@ -207,7 +207,7 @@ struct PillSelectionRow: View {
   @ViewBuilder
   private var titleView: some View {
     Text(title)
-      .font(.appBodyLarge)
+      .font(Font.appBodyLarge)
       .foregroundColor(.text01)
   }
 
@@ -225,7 +225,7 @@ struct PillSelectionRow: View {
   @ViewBuilder
   private func pillView(for pill: String) -> some View {
     Text(pill)
-      .font(.appBodyMedium)
+      .font(Font.appBodyMedium)
       .foregroundColor(.white)
       .padding(.horizontal, 12)
       .padding(.vertical, 6)
@@ -245,7 +245,7 @@ struct NumberStepper: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(title)
-        .font(.appTitleMedium)
+        .font(Font.appTitleMedium)
         .foregroundColor(.text01)
 
       HStack {
@@ -268,10 +268,10 @@ struct NumberStepper: View {
 
         VStack(spacing: 4) {
           Text("\(value.wrappedValue)")
-            .font(.appHeadlineMediumEmphasised)
+            .font(Font.appHeadlineMediumEmphasised)
             .foregroundColor(.text01)
           Text(unit)
-            .font(.appBodyMedium)
+            .font(Font.appBodyMedium)
             .foregroundColor(.text04)
         }
 
@@ -309,14 +309,14 @@ struct TimePicker: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(title)
-        .font(.appTitleMedium)
+        .font(Font.appTitleMedium)
         .foregroundColor(.text01)
 
       HStack(spacing: 16) {
         // Hours
         VStack(spacing: 8) {
           Text("Hours")
-            .font(.appBodyMedium)
+            .font(Font.appBodyMedium)
             .foregroundColor(.text04)
 
           Picker("Hours", selection: hours) {
@@ -332,7 +332,7 @@ struct TimePicker: View {
         // Minutes
         VStack(spacing: 8) {
           Text("Minutes")
-            .font(.appBodyMedium)
+            .font(Font.appBodyMedium)
             .foregroundColor(.text04)
 
           Picker("Minutes", selection: minutes) {
@@ -348,7 +348,7 @@ struct TimePicker: View {
         // Seconds
         VStack(spacing: 8) {
           Text("Seconds")
-            .font(.appBodyMedium)
+            .font(Font.appBodyMedium)
             .foregroundColor(.text04)
 
           Picker("Seconds", selection: seconds) {

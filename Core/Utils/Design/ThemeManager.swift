@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import UIKit
 
 // MARK: - ThemeManager
 
@@ -14,16 +13,6 @@ class ThemeManager: ObservableObject {
     {
       self.selectedTheme = theme
     }
-    
-    // Load saved color scheme preference
-    if let savedColorScheme = UserDefaults.standard.string(forKey: "colorScheme"),
-       let colorScheme = ColorSchemeOption(rawValue: savedColorScheme)
-    {
-      self.selectedColorScheme = colorScheme
-    }
-    
-    // Initialize effective color scheme
-    updateEffectiveColorScheme()
     updateAppColors()
   }
 
@@ -35,53 +24,6 @@ class ThemeManager: ObservableObject {
     didSet {
       UserDefaults.standard.set(selectedTheme.rawValue, forKey: "selectedTheme")
       updateAppColors()
-    }
-  }
-  
-  @Published var selectedColorScheme: ColorSchemeOption = .system {
-    didSet {
-      UserDefaults.standard.set(selectedColorScheme.rawValue, forKey: "colorScheme")
-      NotificationCenter.default.post(name: .colorSchemeDidChange, object: selectedColorScheme)
-      // Update effective color scheme immediately
-      updateEffectiveColorScheme()
-    }
-  }
-  
-  @Published var effectiveColorScheme: ColorScheme?
-  
-  /// Update the effective color scheme based on current selection
-  private func updateEffectiveColorScheme() {
-    switch selectedColorScheme {
-    case .system:
-      // Read the current system color scheme from the main window
-      // This ensures immediate updates when "Auto" is selected
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-         let window = windowScene.windows.first {
-        let currentStyle = window.traitCollection.userInterfaceStyle
-        switch currentStyle {
-        case .dark:
-          effectiveColorScheme = .dark
-        case .light:
-          effectiveColorScheme = .light
-        default:
-          effectiveColorScheme = .light // Default fallback
-        }
-      } else {
-        // Fallback: use current trait collection
-        let currentStyle = UITraitCollection.current.userInterfaceStyle
-        switch currentStyle {
-        case .dark:
-          effectiveColorScheme = .dark
-        case .light:
-          effectiveColorScheme = .light
-        default:
-          effectiveColorScheme = .light // Default fallback
-        }
-      }
-    case .light:
-      effectiveColorScheme = .light
-    case .dark:
-      effectiveColorScheme = .dark
     }
   }
 
@@ -260,46 +202,4 @@ struct ThemeColorPalette {
 
 extension Notification.Name {
   static let themeDidChange = Notification.Name("themeDidChange")
-  static let colorSchemeDidChange = Notification.Name("colorSchemeDidChange")
-}
-
-// MARK: - ColorSchemeOption
-
-enum ColorSchemeOption: String {
-  case system
-  case light
-  case dark
-  
-  var title: String {
-    switch self {
-    case .system:
-      "Auto"
-    case .light:
-      "Light"
-    case .dark:
-      "Dark"
-    }
-  }
-  
-  var description: String {
-    switch self {
-    case .system:
-      "Match system appearance"
-    case .light:
-      "Always use light mode"
-    case .dark:
-      "Always use dark mode"
-    }
-  }
-  
-  var iconName: String {
-    switch self {
-    case .system:
-      "Icon-Theme_Auto"
-    case .light:
-      "Icon-lightMode_Filled"
-    case .dark:
-      "Icon-darkMode_Filled"
-    }
-  }
 }

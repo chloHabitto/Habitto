@@ -51,12 +51,12 @@ struct TutorialSlideView: View {
       // Text Content
       VStack(spacing: 12) {
         Text(slide.title)
-          .font(.system(size: 24, weight: .bold))
+          .font(Font.system(size: 24, weight: .bold))
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
 
         Text(slide.description)
-          .font(.system(size: 16, weight: .regular))
+          .font(Font.system(size: 16, weight: .regular))
           .foregroundColor(.text02)
           .multilineTextAlignment(.center)
           .lineLimit(nil)

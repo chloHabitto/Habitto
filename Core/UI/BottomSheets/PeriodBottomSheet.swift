@@ -75,7 +75,7 @@ struct PeriodBottomSheet: View {
           Spacer()
 
           Text(monthYearString(from: currentMonth))
-            .font(.appTitleMediumEmphasised)
+            .font(Font.appTitleMediumEmphasised)
             .foregroundColor(.text01)
 
           Spacer()
@@ -98,7 +98,7 @@ struct PeriodBottomSheet: View {
           // Day headers
           ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
             Text(day)
-              .font(.appLabelMedium)
+              .font(Font.appLabelMedium)
               .foregroundColor(.text05)
               .frame(height: 32)
           }
@@ -117,7 +117,7 @@ struct PeriodBottomSheet: View {
                 }
               }) {
                 Text("\(Calendar.current.component(.day, from: date))")
-                  .font(.appBodyMedium)
+                  .font(Font.appBodyMedium)
                   .foregroundColor(dateColor(for: date))
                   .frame(width: 40, height: 40)
                   .background(backgroundForDate(date))
@@ -147,7 +147,7 @@ struct PeriodBottomSheet: View {
               Image(systemName: "xmark.circle.fill")
                 .foregroundColor(.text04)
               Text("No end date")
-                .font(.appBodyLarge)
+                .font(Font.appBodyLarge)
                 .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity)
@@ -168,7 +168,7 @@ struct PeriodBottomSheet: View {
               Image(systemName: "arrow.clockwise")
                 .foregroundColor(.text04)
               Text("Reset")
-                .font(.appBodyLarge)
+                .font(Font.appBodyLarge)
                 .foregroundColor(.text04)
             }
             .frame(maxWidth: .infinity)

@@ -202,15 +202,15 @@ struct BackupNotificationView: View {
       HStack(spacing: 12) {
         Image(systemName: notificationService.notificationType.icon)
           .foregroundColor(notificationService.notificationType.color)
-          .font(.system(size: 20, weight: .medium))
+          .font(.appTitleLarge)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(notificationService.notificationTitle)
-            .font(.system(size: 16, weight: .semibold))
+            .font(Font.appTitleMediumEmphasised)
             .foregroundColor(.text01)
 
           Text(notificationService.notificationMessage)
-            .font(.system(size: 14, weight: .regular))
+            .font(.appBodyMedium)
             .foregroundColor(.text02)
             .lineLimit(2)
         }
@@ -222,7 +222,7 @@ struct BackupNotificationView: View {
         }) {
           Image(systemName: "xmark")
             .foregroundColor(.text03)
-            .font(.system(size: 14, weight: .medium))
+            .font(.appBodyMediumEmphasised)
         }
       }
       .padding(.horizontal, 20)

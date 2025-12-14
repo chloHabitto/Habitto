@@ -99,10 +99,6 @@ enum ColorTokens {
   static let surfaceContainer = Color("grey100")
   static let hover = Color("grey800").opacity(0.16) // Using asset color with opacity
 
-  static let text05 = Color("grey800")
-  static let text06 = Color("grey700")
-  static let text07 = Color("navy300")
-
   // Outline Colors
   static let outline2 = Color("grey100")
   static let outline3 = Color("grey200")
@@ -124,6 +120,12 @@ enum ColorTokens {
   static let errorBackground = Color("red50")
   static let disabledBackground = Color("grey100")
   static let onDisabledBackground = Color("grey400")
+
+  // Text Colors from Themes.xcassets (static, not theme-dependent)
+  static let text01 = Color("text01")
+  static let text05 = Color("text04_black")
+  static let text06 = Color("text06")
+  static let text07 = Color("text07")
 
   /// Primary Colors - Now dynamic based on theme
   static var primary: Color {
@@ -208,17 +210,13 @@ enum ColorTokens {
     }
   }
 
-  /// Text Colors - Now dynamic based on theme
-  static var text01: Color {
-    Color("greyBlack")
-  }
-
+  /// Text Colors - Now using Themes.xcassets (text01, text05, text06, text07 are in Color extension)
   static var text02: Color {
     switch ThemeManager.shared.selectedTheme {
     case .default:
-      Color("navy500")
+      Color("text02_default")
     case .black:
-      Color("themeBlack500")
+      Color("text02_black")
     case .purple:
       Color("themePurple500")
     case .pink:
@@ -229,9 +227,9 @@ enum ColorTokens {
   static var text03: Color {
     switch ThemeManager.shared.selectedTheme {
     case .default:
-      Color("navy300")
+      Color("text03_default")
     case .black:
-      Color("themeBlack300")
+      Color("text03_black")
     case .purple:
       Color("themePurple300")
     case .pink:
@@ -242,9 +240,9 @@ enum ColorTokens {
   static var text04: Color {
     switch ThemeManager.shared.selectedTheme {
     case .default:
-      Color("navy400")
+      Color("text07")
     case .black:
-      Color("themeBlack400")
+      Color("text04_black")
     case .purple:
       Color("themePurple400")
     case .pink:
@@ -285,9 +283,6 @@ extension Color {
   static let surfaceContainer = ColorTokens.surfaceContainer
   static let hover = ColorTokens.hover
 
-  static let text05 = ColorTokens.text05
-  static let text06 = ColorTokens.text06
-  static let text07 = ColorTokens.text07
   // Outline Colors - Now dynamic for theme-dependent colors
   static let outline1 = ColorTokens.outline1
   static let outline2 = ColorTokens.outline2
@@ -315,11 +310,14 @@ extension Color {
   static var primaryDim: Color { ColorTokens.primaryDim }
   static var primaryContainerFocus: Color { ColorTokens.primaryContainerFocus }
 
-  // Text Colors - Now dynamic for theme-dependent colors
-  static var text01: Color { ColorTokens.text01 }
+  // Text Colors - Now using Themes.xcassets directly
+  static let text01 = ColorTokens.text01
   static var text02: Color { ColorTokens.text02 }
   static var text03: Color { ColorTokens.text03 }
   static var text04: Color { ColorTokens.text04 }
+  static let text05 = ColorTokens.text05
+  static let text06 = ColorTokens.text06
+  static let text07 = ColorTokens.text07
 
   static var outlineHighlight: Color { ColorTokens.outlineHighlight }
 }
@@ -352,13 +350,14 @@ extension ShapeStyle where Self == Color {
   static var surfaceContainer: Color { ColorTokens.surfaceContainer }
   static var hover: Color { ColorTokens.hover }
 
-  // Text Colors - Now dynamic for theme-dependent colors
+  // Text Colors - Now using Themes.xcassets directly
   static var text01: Color { ColorTokens.text01 }
   static var text02: Color { ColorTokens.text02 }
   static var text03: Color { ColorTokens.text03 }
   static var text04: Color { ColorTokens.text04 }
   static var text05: Color { ColorTokens.text05 }
   static var text06: Color { ColorTokens.text06 }
+  static var text07: Color { ColorTokens.text07 }
 
   // Outline Colors - Now dynamic for theme-dependent colors
   static var outline2: Color { ColorTokens.outline2 }

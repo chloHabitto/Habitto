@@ -56,7 +56,7 @@ struct ReminderBottomSheet: View {
             Button(isEditMode ? "Done" : "Edit") {
               isEditMode.toggle()
             }
-            .font(.appButtonText2)
+            .font(Font.appButtonText2)
             .foregroundColor(.text01)
             .frame(width: 62, height: 44)
 
@@ -108,14 +108,14 @@ struct ReminderBottomSheet: View {
 
                   HStack {
                     Text(formatTime(reminder.time))
-                      .font(.appBodyLarge)
+                      .font(Font.appBodyLarge)
                       .foregroundColor(.text01)
 
                     Spacer()
 
                     if isEditMode {
                       Image(systemName: "chevron.right")
-                        .font(.appLabelMedium)
+                        .font(Font.appLabelMedium)
                         .foregroundColor(.primaryDim)
                         .frame(width: 32, height: 32)
                     } else {
@@ -269,7 +269,7 @@ struct AddReminderSheet: View {
 
       // Title
       Text("Select Time")
-        .font(.appHeadlineSmallEmphasised)
+        .font(Font.appHeadlineSmallEmphasised)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
