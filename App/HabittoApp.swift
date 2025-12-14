@@ -254,6 +254,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // Configure notification center delegate
     UNUserNotificationCenter.current().delegate = self
     
+    // Clear app icon badge on launch
+    clearAppIconBadge()
+    
     // Register event compaction background task
     debugLog("📅 EventCompactor: Registering background task handler...")
     NSLog("📅 EventCompactor: Registering background task handler...")
@@ -262,6 +265,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     NSLog("✅ EventCompactor: Background task handler registered")
 
     return true
+  }
+  
+  /// Clear the app icon badge count
+  func clearAppIconBadge() {
+    if #available(iOS 16.0, *) {
+      UNUserNotificationCenter.current().setBadgeCount(0)
+    } else {
+      UIApplication.shared.applicationIconBadgeNumber = 0
+    }
+    debugLog("✅ AppDelegate: Cleared app icon badge")
+  }
+  
+  /// Called when app becomes active - clear badge
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    clearAppIconBadge()
   }
 
   // MARK: - Notification Handling
