@@ -1542,14 +1542,19 @@ class HabitRepository: ObservableObject {
       // before authState changes to .unauthenticated, so we don't need to clear it here
       debugLog("🔄 HabitRepository: User signed out")
       
-      // ✅ CRITICAL FIX: Reset all user data to userId = "" when signing out
-      // This ensures habits/completions/awards are detected as guest data for streak calculation
-      await resetUserDataToGuest()
+      // ✅ OPTION B: Account data isolation - do NOT convert account data to guest
+      // Account data stays with the account (userId = "abc123") and is hidden on sign-out
+      // Queries filter by CurrentUser().idOrGuest which returns "" when signed out
+      // This means queries return no account data, showing empty app state
+      
+      // Clear in-memory caches (NOT persisted data)
+      self.habits = []
+      debugLog("✅ HabitRepository: Cleared in-memory habits array")
       
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")
-      // Instead of clearing data, load guest habits
+      // Load guest habits (queries will filter by userId = "" which returns no account data)
       await loadHabits(force: true)
       debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user")
 
@@ -1649,68 +1654,20 @@ class HabitRepository: ObservableObject {
   /// Reset all user data to userId = "" when signing out
   /// This ensures habits/completions/awards are detected as guest data for streak calculation
   /// ✅ FIX: Resets ALL data that doesn't have userId = "" (since user has already signed out)
+  /// ⚠️ DISABLED: Option B - Account Data Isolation
+  /// This function is disabled to preserve account data ownership.
+  /// Account data (userId = "abc123") stays with the account and is hidden on sign-out
+  /// by filtering queries by CurrentUser().idOrGuest (which returns "" when signed out).
+  /// 
+  /// Previous behavior (Option A): Converted account data to guest data on sign-out
+  /// Current behavior (Option B): Account data remains unchanged, queries hide it
   private func resetUserDataToGuest() async {
-    debugLog("🔄 HabitRepository: Resetting user data to guest (userId = '')...")
-    
-    await MainActor.run {
-      let container = SwiftDataContainer.shared.modelContainer
-      let context = container.mainContext
-      
-      do {
-        var resetCount = 0
-        
-        // Reset HabitData - reset all habits that don't have userId = ""
-        let allHabitsDescriptor = FetchDescriptor<HabitData>()
-        let allHabits = (try? context.fetch(allHabitsDescriptor)) ?? []
-        let userHabits = allHabits.filter { !$0.userId.isEmpty && $0.userId != "guest" }
-        
-        for habit in userHabits {
-          habit.userId = ""
-          resetCount += 1
-        }
-        debugLog("  ✓ Reset \(userHabits.count) habits to userId = ''")
-        
-        // Reset CompletionRecords - reset all records that don't have userId = ""
-        let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
-        let allRecords = (try? context.fetch(allRecordsDescriptor)) ?? []
-        let userRecords = allRecords.filter { !$0.userId.isEmpty && $0.userId != "guest" }
-        
-        for record in userRecords {
-          record.userId = ""
-        }
-        debugLog("  ✓ Reset \(userRecords.count) completion records to userId = ''")
-        
-        // Reset DailyAwards - reset all awards that don't have userId = ""
-        let allAwardsDescriptor = FetchDescriptor<DailyAward>()
-        let allAwards = (try? context.fetch(allAwardsDescriptor)) ?? []
-        let userAwards = allAwards.filter { !$0.userId.isEmpty && $0.userId != "guest" }
-        
-        for award in userAwards {
-          award.userId = ""
-        }
-        debugLog("  ✓ Reset \(userAwards.count) daily awards to userId = ''")
-        
-        // Reset UserProgressData - reset all progress that doesn't have userId = ""
-        let allProgressDescriptor = FetchDescriptor<UserProgressData>()
-        let allProgress = (try? context.fetch(allProgressDescriptor)) ?? []
-        let userProgress = allProgress.filter { !$0.userId.isEmpty && $0.userId != "guest" }
-        
-        for progress in userProgress {
-          progress.userId = ""
-        }
-        debugLog("  ✓ Reset \(userProgress.count) progress records to userId = ''")
-        
-        // Save all changes
-        if resetCount > 0 || !userRecords.isEmpty || !userAwards.isEmpty || !userProgress.isEmpty {
-          try context.save()
-          debugLog("✅ HabitRepository: Successfully reset \(resetCount) habits, \(userRecords.count) completion records, \(userAwards.count) awards, \(userProgress.count) progress records to guest (userId = '')")
-        } else {
-          debugLog("ℹ️ HabitRepository: No user data found to reset")
-        }
-      } catch {
-        debugLog("❌ HabitRepository: Failed to reset user data to guest: \(error.localizedDescription)")
-      }
-    }
+    // ✅ OPTION B: Do nothing - account data stays with the account
+    // Queries filter by userId, so account data is automatically hidden when signed out
+    debugLog("ℹ️ HabitRepository: resetUserDataToGuest() disabled - account data isolation enabled")
+    debugLog("   Account data remains unchanged. Queries filter by CurrentUser().idOrGuest")
+    debugLog("   When signed out, queries return no account data (empty app state)")
+    return
   }
 }
 

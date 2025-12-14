@@ -105,14 +105,10 @@ class HomeViewState: ObservableObject {
         
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        // ✅ PRIORITY: Firebase Auth UID first (including anonymous), then fallback to ""
-        // Anonymous users ARE authenticated users with real Firebase UIDs
-        let userId: String
-        if let firebaseUser = Auth.auth().currentUser {
-          userId = firebaseUser.uid // Use UID for ALL authenticated users (including anonymous)
-        } else {
-          userId = "" // Only use empty string if no Firebase Auth user exists
-        }
+        // ✅ OPTION B: Use CurrentUser().idOrGuest for consistency
+        // Returns Firebase UID when signed in, "" when signed out
+        // This ensures queries filter correctly for account data isolation
+        let userId = await CurrentUser().idOrGuest
         
         var descriptor = FetchDescriptor<GlobalStreakModel>(
           predicate: #Predicate { streak in
