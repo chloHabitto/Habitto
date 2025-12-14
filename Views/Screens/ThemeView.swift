@@ -32,7 +32,6 @@ struct ThemeView: View {
         }
       }
     }
-    .id("themeView-\(themeManager.selectedColorScheme.rawValue)") // Force view update when color scheme changes
   }
 
   // MARK: Private
