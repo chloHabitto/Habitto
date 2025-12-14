@@ -69,7 +69,8 @@ final actor HabitStore {
     // ✅ CRITICAL FIX: Log results to verify filtering worked
     logger.info("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
     print("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
-    if !habits.isEmpty {
+    // ✅ FIX: Only warn if actually in guest mode (userId is empty)
+    if !habits.isEmpty && currentUserId.isEmpty {
       logger.warning("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
       print("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
     }
