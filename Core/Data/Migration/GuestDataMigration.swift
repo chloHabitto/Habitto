@@ -668,12 +668,17 @@ final class GuestDataMigration: ObservableObject {
     print("✅ GuestDataMigration: Migrated guest backups to user \(userId)")
   }
 
-  /// Delete all cloud habits from Firestore for the given user
+  /// Delete all account data from both Firestore AND SwiftData for the given user
+  /// ✅ CRITICAL FIX: "Keep Local Data Only" should delete ALL account data, not just Firestore
+  /// This ensures guest data replaces account data instead of merging with it
   private func deleteCloudHabits(for userId: String) async throws {
     let db = Firestore.firestore()
     
     do {
-      print("🔄 GuestDataMigration: Deleting cloud habits for user \(userId)...")
+      print("🔄 GuestDataMigration: Deleting account data for user \(userId)...")
+      
+      // ✅ STEP 1: Delete from Firestore (cloud data)
+      print("🔄 GuestDataMigration: Deleting cloud habits from Firestore...")
       
       // Get all habits for the user from Firestore
       let snapshot = try await db.collection("users")
@@ -682,18 +687,17 @@ final class GuestDataMigration: ObservableObject {
         .getDocuments()
       
       if snapshot.documents.isEmpty {
-        print("ℹ️ GuestDataMigration: No cloud habits to delete")
-        return
+        print("ℹ️ GuestDataMigration: No cloud habits to delete from Firestore")
+      } else {
+        // Delete in batches
+        let batch = db.batch()
+        for document in snapshot.documents {
+          batch.deleteDocument(document.reference)
+        }
+        
+        try await batch.commit()
+        print("✅ GuestDataMigration: Deleted \(snapshot.documents.count) cloud habits from Firestore")
       }
-      
-      // Delete in batches
-      let batch = db.batch()
-      for document in snapshot.documents {
-        batch.deleteDocument(document.reference)
-      }
-      
-      try await batch.commit()
-      print("✅ GuestDataMigration: Deleted \(snapshot.documents.count) cloud habits")
       
       // Also delete XP state if it exists
       let xpStateRef = db.collection("users")
@@ -702,10 +706,25 @@ final class GuestDataMigration: ObservableObject {
         .document("state")
       
       try? await xpStateRef.delete()
-      print("✅ GuestDataMigration: Deleted XP state")
+      print("✅ GuestDataMigration: Deleted XP state from Firestore")
+      
+      // ✅ STEP 2: Delete from SwiftData (local data)
+      // ✅ CRITICAL FIX: Also delete account data from SwiftData
+      // This ensures "Keep Local Data Only" actually replaces account data with guest data
+      print("🔄 GuestDataMigration: Deleting account data from SwiftData...")
+      
+      do {
+        let swiftDataStorage = SwiftDataStorage()
+        try await swiftDataStorage.clearAllHabits(for: userId)
+        print("✅ GuestDataMigration: Deleted all account data from SwiftData (habits, awards, completions, XP, streaks)")
+      } catch {
+        print("❌ GuestDataMigration: Error deleting SwiftData: \(error.localizedDescription)")
+        // Don't throw - continue with migration even if SwiftData deletion fails
+        // This prevents blocking the migration if there's a SwiftData issue
+      }
       
     } catch {
-      print("❌ GuestDataMigration: Error deleting cloud habits: \(error.localizedDescription)")
+      print("❌ GuestDataMigration: Error deleting account data: \(error.localizedDescription)")
       throw error
     }
   }
