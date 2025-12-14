@@ -451,10 +451,10 @@ struct SubscriptionView: View {
           title: "Annual",
           length: "1 year",
           price: priceString(for: .annual),
-          originalPrice: originalAnnualPrice(),
+          originalPrice: nil,
           badge: savingsPercentage() != nil ? "\(savingsPercentage()!)% off" : nil,
-          showBadge: savingsPercentage() != nil,
-          showCrossedPrice: originalAnnualPrice() != nil
+          showBadge: false, // ✅ Hidden: 50% off badge
+          showCrossedPrice: false
         )
         
         // Monthly
