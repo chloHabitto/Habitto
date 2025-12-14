@@ -387,6 +387,7 @@ struct HabittoApp: App {
           ZStack {
             HomeView()
               .preferredColorScheme(themeManager.colorScheme) // Use selected color scheme (nil = system, .light, or .dark)
+              .id("colorScheme-\(themeManager.selectedColorScheme.rawValue)") // Force view update when color scheme changes
               // ✅ CRITICAL: Use SwiftDataContainer's ModelContainer to ensure all code uses the same database
               // This prevents XPDataMigration from creating a separate container with Persistent History enabled
               .modelContainer(SwiftDataContainer.shared.modelContainer)
