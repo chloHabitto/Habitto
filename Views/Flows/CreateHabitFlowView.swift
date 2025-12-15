@@ -121,6 +121,7 @@ struct CreateHabitFlowView: View {
       }
     }
     .onAppear {
+      print("⌨️ CREATE_FLOW: Sheet appeared at \(Date())")
       // Initialize values if editing
       if let habit = habitToEdit {
         name = habit.name
