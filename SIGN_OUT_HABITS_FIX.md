@@ -218,3 +218,4 @@ But UI still shows 4 habits → **UI refresh issue**, not data issue.
 ✅ **Enhanced:** Retry logic logging to detect interference
 
 **Next step:** Test sign-out and check logs to identify where the issue occurs.
+
