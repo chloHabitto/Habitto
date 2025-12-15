@@ -220,9 +220,9 @@ struct CreateHabitStep1View: View {
             .frame(maxWidth: .infinity)
           }
           .padding(.horizontal, 16)
-          .padding(.vertical, 12)
+          .padding(.vertical, 16)
           .background(.appSurface2)
-          .cornerRadius(12)
+          .cornerRadius(16)
         }
         .padding(.horizontal, 20)
         .padding(.top, 0)
