@@ -292,6 +292,11 @@ struct CreateHabitStep1View: View {
       DispatchQueue.main.async {
         print("⌨️ STEP1: Main thread responsive at \(Date())")
       }
+      
+      // Auto-focus name field after sheet animation (keyboard loads during this natural pause)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        isNameFieldFocused = true
+      }
     }
   }
 
