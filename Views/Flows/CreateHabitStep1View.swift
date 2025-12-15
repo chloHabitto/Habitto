@@ -82,9 +82,9 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 16)
           .background(.surface)
           .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
               .stroke((validationError != nil || duplicateError != nil) ? .error : .outline3, lineWidth: 1.5))
-          .cornerRadius(16)
+          .cornerRadius(20)
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
@@ -102,9 +102,9 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 16)
           .background(.surface)
           .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
               .stroke(.outline3, lineWidth: 1.5))
-          .cornerRadius(16)
+          .cornerRadius(20)
 
           // Colour selection
           HStack(spacing: 12) {
@@ -129,7 +129,7 @@ struct CreateHabitStep1View: View {
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(.appSurface)
-          .cornerRadius(12)
+          .cornerRadius(16)
           .onTapGesture {
             showingColorSheet = true
           }
@@ -176,7 +176,7 @@ struct CreateHabitStep1View: View {
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(.appSurface)
-          .cornerRadius(12)
+          .cornerRadius(16)
           .onTapGesture {
             showingEmojiPicker = true
           }
@@ -205,7 +205,7 @@ struct CreateHabitStep1View: View {
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
           .background(.appSurface)
-          .cornerRadius(16)
+          .cornerRadius(20)
         }
         .padding(.horizontal, 20)
         .padding(.top, 0)
