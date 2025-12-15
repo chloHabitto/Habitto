@@ -48,7 +48,7 @@ struct CreateHabitStep1View: View {
               .focused($isNameFieldFocused)
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
-              .background(.surface)
+              .background(.appSurface3)
               .overlay(
                 RoundedRectangle(cornerRadius: 12)
                   .stroke(.outline3, lineWidth: 1.5))
@@ -57,10 +57,36 @@ struct CreateHabitStep1View: View {
                 if validationError != nil {
                   validationError = nil
                 }
+                if duplicateError != nil {
+                  duplicateError = nil
+                }
+              }
+              .onChange(of: isNameFieldFocused) { _, isFocused in
+                // When field loses focus, check for duplicate
+                if !isFocused {
+                  let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                  if !trimmedName.isEmpty {
+                    let existingHabits = HabitRepository.shared.habits
+                    let isDuplicate = existingHabits.contains {
+                      $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased()
+                    }
+                    duplicateError = isDuplicate ? "A habit with this name already exists" : nil
+                  } else {
+                    duplicateError = nil
+                  }
+                }
               }
 
+            // Character counter
+            HStack {
+              Spacer()
+              Text("\(name.count)/50")
+                .font(.appBodySmall)
+                .foregroundColor(name.count > 50 ? .error : .text03)
+            }
+
             // Error message display
-            if let errorMessage = validationError {
+            if let errorMessage = validationError ?? duplicateError {
               HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
                   .font(.system(size: 14, weight: .medium))
@@ -77,10 +103,10 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.surface)
+          .background(.appSurface2)
           .overlay(
             RoundedRectangle(cornerRadius: 16)
-              .stroke(validationError == nil ? .outline3 : .error, lineWidth: 1.5))
+              .stroke((validationError == nil && duplicateError == nil) ? .outline3 : .error, lineWidth: 1.5))
           .cornerRadius(16)
 
           // Description field - container with surface background and stroke
@@ -95,7 +121,7 @@ struct CreateHabitStep1View: View {
               .focused($isDescriptionFieldFocused)
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
-              .background(.surface)
+              .background(.appSurface3)
               .overlay(
                 RoundedRectangle(cornerRadius: 12)
                   .stroke(.outline3, lineWidth: 1.5))
@@ -103,7 +129,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.surface)
+          .background(.appSurface2)
           .overlay(
             RoundedRectangle(cornerRadius: 16)
               .stroke(.outline3, lineWidth: 1.5))
@@ -123,7 +149,7 @@ struct CreateHabitStep1View: View {
                 .overlay(
                   RoundedRectangle(cornerRadius: 8)
                     .stroke(.outline3, lineWidth: 1))
-              Text(getColorName(for: color))
+              Text(cachedColorName)
                 .font(.appBodyMedium)
                 .foregroundColor(.text02)
             }
@@ -134,7 +160,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(.surface)
+          .background(.appSurface2)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(.outline3, lineWidth: 1.5))
@@ -187,7 +213,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(.surface)
+          .background(.appSurface2)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(.outline3, lineWidth: 1.5))
@@ -219,7 +245,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(.surface)
+          .background(.appSurface2)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(.outline3, lineWidth: 1.5))
@@ -251,13 +277,8 @@ struct CreateHabitStep1View: View {
             return
           }
           
-          // Check duplicate
-          let existingHabits = HabitRepository.shared.habits
-          let isDuplicate = existingHabits.contains { 
-            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased() 
-          }
-          if isDuplicate {
-            validationError = "A habit with this name already exists"
+          // Check if there's still a duplicate error showing
+          if duplicateError != nil {
             return
           }
           
@@ -278,9 +299,9 @@ struct CreateHabitStep1View: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 20)
-      .background(bottomGradient)
+      .background(Self.bottomGradient)
     }
-    .background(.surface2)
+    .background(.appSurface)
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -309,6 +330,12 @@ struct CreateHabitStep1View: View {
           showingColorSheet = false
         })
     }
+    .onChange(of: color) { _, newColor in
+      cachedColorName = getColorName(for: newColor)
+    }
+    .onAppear {
+      cachedColorName = getColorName(for: color)
+    }
   }
 
   // MARK: Private
@@ -320,6 +347,10 @@ struct CreateHabitStep1View: View {
 
   // Validation
   @State private var validationError: String? = nil
+  @State private var duplicateError: String? = nil
+  
+  // Cached values for performance
+  @State private var cachedColorName: String = "Navy"
 
   /// Cache screen width to avoid repeated UIScreen.main.bounds.width access
   private let screenWidth = UIScreen.main.bounds.width
@@ -347,17 +378,15 @@ struct CreateHabitStep1View: View {
   }
 
   /// Pre-computed gradient for performance
-  private var bottomGradient: LinearGradient {
-    LinearGradient(
-      gradient: Gradient(colors: [
-        Color.surface2.opacity(0),
-        Color.surface2.opacity(0.3),
-        Color.surface2.opacity(0.7),
-        Color.surface2.opacity(1.0)
-      ]),
-      startPoint: .top,
-      endPoint: .bottom)
-  }
+  private static let bottomGradient = LinearGradient(
+    gradient: Gradient(colors: [
+      Color.surface2.opacity(0),
+      Color.surface2.opacity(0.3),
+      Color.surface2.opacity(0.7),
+      Color.surface2.opacity(1.0)
+    ]),
+    startPoint: .top,
+    endPoint: .bottom)
 
   /// Ultra-lightweight TextField for maximum initial load performance
   private func OptimizedTextField(
@@ -373,7 +402,7 @@ struct CreateHabitStep1View: View {
       .focused(isFocused)
       .frame(maxWidth: .infinity, minHeight: 48)
       .padding(.horizontal, 16)
-      .background(.surface)
+      .background(.appSurface2)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
           .stroke(.outline3, lineWidth: 1.5))
