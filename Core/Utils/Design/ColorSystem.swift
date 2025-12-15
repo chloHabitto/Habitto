@@ -29,6 +29,7 @@ enum ColorTokens {
   static let surfaceBright = Color("appSurfaceBright")
   static let surfaceBright2 = Color("appSurfaceBright2")
   static let surfaceContainer = Color("appSurfaceContainer")
+  static let surfaceTabBar = Color("appSurfaceTabBar")
   static let hover = Color("appHover")
 
   // MARK: - Text Colors
@@ -91,6 +92,7 @@ extension Color {
   static let surfaceBright = ColorTokens.surfaceBright
   static let surfaceBright2 = ColorTokens.surfaceBright2
   static let surfaceContainer = ColorTokens.surfaceContainer
+  static let surfaceTabBar = ColorTokens.surfaceTabBar
   static let hover = ColorTokens.hover
 
   // Text Colors
@@ -146,6 +148,7 @@ extension ShapeStyle where Self == Color {
   static var surfaceBright: Color { ColorTokens.surfaceBright }
   static var surfaceBright2: Color { ColorTokens.surfaceBright2 }
   static var surfaceContainer: Color { ColorTokens.surfaceContainer }
+  static var surfaceTabBar: Color { ColorTokens.surfaceTabBar }
   static var hover: Color { ColorTokens.hover }
 
   static var text01: Color { ColorTokens.text01 }

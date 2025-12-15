@@ -50,7 +50,7 @@ struct TabBarView: View {
       }
       .padding(.vertical, 2)
       .padding(.horizontal, 8)
-      .background(Color.surface.ignoresSafeArea(edges: .bottom))
+      .background(Color.surfaceTabBar.ignoresSafeArea(edges: .bottom))
     }
   }
 
