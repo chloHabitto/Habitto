@@ -639,14 +639,9 @@ class BackupManager: ObservableObject {
       defaults.set(value, forKey: key)
     }
 
-    // Restore theme settings (feature flag protected)
-    if FeatureFlags.themePersistence {
-      for (key, value) in settings.themeSettings {
-        defaults.set(value, forKey: key)
-      }
-      print("🚩 BackupManager: Theme persistence restored")
-    } else {
-      print("🚩 BackupManager: Theme persistence disabled by feature flag")
+    // Restore color scheme preference
+    for (key, value) in settings.themeSettings {
+      defaults.set(value, forKey: key)
     }
 
     // Restore privacy settings
@@ -1029,14 +1024,10 @@ class BackupManager: ObservableObject {
       "emailNotifications": defaults.bool(forKey: "emailNotifications")
     ]
 
-    // Feature flag protection: Only backup theme settings if feature is enabled
-    let themeSettings: [String: String] = FeatureFlags.themePersistence
-      ? [
-        "selectedTheme": defaults.string(forKey: "selectedTheme") ?? "default",
-        "colorScheme": defaults.string(forKey: "colorScheme") ?? "system",
-        "accentColor": defaults.string(forKey: "accentColor") ?? "blue"
-      ]
-      : [:]
+    // Backup color scheme preference (system/light/dark)
+    let themeSettings: [String: String] = [
+      "colorSchemePreference": defaults.string(forKey: "colorSchemePreference") ?? "system"
+    ]
 
     let privacySettings: [String: Bool] = [
       "analyticsEnabled": defaults.bool(forKey: "analyticsEnabled"),

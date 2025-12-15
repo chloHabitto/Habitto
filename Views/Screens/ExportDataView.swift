@@ -908,8 +908,7 @@ struct ExportDataView: View {
       let totalNotifications = backup.userSettings.notificationSettings.count
 
       reportContent += "Notifications Enabled: \(enabledNotifications) / \(totalNotifications)\n"
-      reportContent += "Selected Theme: \(backup.userSettings.themeSettings["selectedTheme"] ?? "default")\n"
-      reportContent += "Color Scheme: \(backup.userSettings.themeSettings["colorScheme"] ?? "system")\n"
+      reportContent += "Color Scheme: \(backup.userSettings.themeSettings["colorSchemePreference"] ?? "system")\n"
       reportContent += "Language: \(backup.userSettings.appSettings["language"] ?? "en")\n"
       reportContent += "Timezone: \(backup.userSettings.appSettings["timezone"] ?? "system")\n\n"
     }
