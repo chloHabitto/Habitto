@@ -39,95 +39,72 @@ struct CreateHabitStep1View: View {
           // Name field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Name")
-
-            TextField("Habit name", text: $name)
-              .font(.appBodyLarge)
-              .foregroundColor(.text01)
-              .textFieldStyle(PlainTextFieldStyle())
-              .submitLabel(.done)
-              .focused($isNameFieldFocused)
-              .frame(maxWidth: .infinity, minHeight: 48)
-              .padding(.horizontal, 16)
-              .background(.appSurface2)
-              .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                  .stroke(.outline3, lineWidth: 1.5))
-              .cornerRadius(12)
-              .onChange(of: name) { _, _ in
-                if validationError != nil {
-                  validationError = nil
-                }
-                if duplicateError != nil {
+            
+            LimitedTextField(
+              placeholder: "Habit name",
+              text: $name,
+              isFocused: $isNameFieldFocused,
+              maxLength: 50,
+              limitReached: $nameLimitReached
+            )
+            .onChange(of: isNameFieldFocused) { _, isFocused in
+              // When field loses focus, check for duplicate
+              if !isFocused {
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedName.isEmpty {
+                  let existingHabits = HabitRepository.shared.habits
+                  let isDuplicate = existingHabits.contains {
+                    $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased()
+                  }
+                  duplicateError = isDuplicate ? "A habit with this name already exists" : nil
+                } else {
                   duplicateError = nil
                 }
               }
-              .onChange(of: isNameFieldFocused) { _, isFocused in
-                // When field loses focus, check for duplicate
-                if !isFocused {
-                  let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                  if !trimmedName.isEmpty {
-                    let existingHabits = HabitRepository.shared.habits
-                    let isDuplicate = existingHabits.contains {
-                      $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased()
-                    }
-                    duplicateError = isDuplicate ? "A habit with this name already exists" : nil
-                  } else {
-                    duplicateError = nil
-                  }
-                }
-              }
-
-            // Character counter
-            HStack {
-              Spacer()
-              Text("\(name.count)/50")
-                .font(.appBodySmall)
-                .foregroundColor(name.count > 50 ? .error : .text03)
             }
-
-            // Error message display
+            
+            // Keep error message for duplicate habit names (shown on focus loss)
             if let errorMessage = validationError ?? duplicateError {
               HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
                   .font(.system(size: 14, weight: .medium))
                   .foregroundColor(.error)
-
+                
                 Text(errorMessage)
                   .font(.appBodyMedium)
                   .foregroundColor(.error)
-
+                
                 Spacer()
               }
-              .padding(.top, 4)
             }
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.appSurface)
-          .cornerRadius(20)
+          .background(.surface)
+          .overlay(
+            RoundedRectangle(cornerRadius: 16)
+              .stroke((validationError != nil || duplicateError != nil) ? .error : .outline3, lineWidth: 1.5))
+          .cornerRadius(16)
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Description")
-
-            TextField("Description (Optional)", text: $description)
-              .font(.appBodyLarge)
-              .foregroundColor(.text01)
-              .textFieldStyle(PlainTextFieldStyle())
-              .submitLabel(.done)
-              .focused($isDescriptionFieldFocused)
-              .frame(maxWidth: .infinity, minHeight: 48)
-              .padding(.horizontal, 16)
-              .background(.appSurface2)
-              .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                  .stroke(.outline3, lineWidth: 1.5))
-              .cornerRadius(12)
+            
+            LimitedTextField(
+              placeholder: "Description (Optional)",
+              text: $description,
+              isFocused: $isDescriptionFieldFocused,
+              maxLength: 50,
+              limitReached: $descriptionLimitReached
+            )
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.appSurface)
-          .cornerRadius(20)
+          .background(.surface)
+          .overlay(
+            RoundedRectangle(cornerRadius: 16)
+              .stroke(.outline3, lineWidth: 1.5))
+          .cornerRadius(16)
 
           // Colour selection
           HStack(spacing: 12) {
@@ -149,7 +126,7 @@ struct CreateHabitStep1View: View {
               .font(.appLabelSmall)
               .foregroundColor(.text03)
           }
-          .padding(.horizontal, 16)
+          .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(.appSurface)
           .cornerRadius(12)
@@ -196,7 +173,7 @@ struct CreateHabitStep1View: View {
               .font(.appLabelSmall)
               .foregroundColor(.text03)
           }
-          .padding(.horizontal, 16)
+          .padding(.horizontal, 20)
           .padding(.vertical, 12)
           .background(.appSurface)
           .cornerRadius(12)
@@ -225,7 +202,7 @@ struct CreateHabitStep1View: View {
             }
             .frame(maxWidth: .infinity)
           }
-          .padding(.horizontal, 16)
+          .padding(.horizontal, 20)
           .padding(.vertical, 16)
           .background(.appSurface)
           .cornerRadius(16)
@@ -241,18 +218,11 @@ struct CreateHabitStep1View: View {
       HStack {
         Spacer()
         Button(action: {
-          // Validate before proceeding
           let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
           
           // Check empty
           if trimmedName.isEmpty {
             validationError = "Please enter a habit name"
-            return
-          }
-          
-          // Check length
-          if trimmedName.count > 50 {
-            validationError = "Habit name must be 50 characters or less"
             return
           }
           
@@ -328,6 +298,10 @@ struct CreateHabitStep1View: View {
   @State private var validationError: String? = nil
   @State private var duplicateError: String? = nil
   
+  // Character limit tracking
+  @State private var nameLimitReached: Bool = false
+  @State private var descriptionLimitReached: Bool = false
+  
   // Cached values for performance
   @State private var cachedColorName: String = "Navy"
 
@@ -356,22 +330,57 @@ struct CreateHabitStep1View: View {
     name.isEmpty ? .disabledBackground : .primary
   }
 
-  /// Ultra-lightweight TextField for maximum initial load performance
-  private func OptimizedTextField(
+  /// TextField with character limit and inline feedback
+  @ViewBuilder
+  private func LimitedTextField(
     placeholder: String,
     text: Binding<String>,
-    isFocused: FocusState<Bool>.Binding) -> some View
-  {
-    TextField(placeholder, text: text)
-      .font(.appBodyLarge)
-      .foregroundColor(.text01)
-      .textFieldStyle(PlainTextFieldStyle())
-      .submitLabel(.done)
-      .focused(isFocused)
-      .frame(maxWidth: .infinity, minHeight: 48)
-      .padding(.horizontal, 16)
-      .background(.appSurface2)
-      .cornerRadius(12)
+    isFocused: FocusState<Bool>.Binding,
+    maxLength: Int,
+    limitReached: Binding<Bool>
+  ) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      TextField(placeholder, text: text)
+        .font(.appBodyLarge)
+        .foregroundColor(.text01)
+        .textFieldStyle(PlainTextFieldStyle())
+        .submitLabel(.done)
+        .focused(isFocused)
+        .frame(maxWidth: .infinity, minHeight: 48)
+        .padding(.horizontal, 16)
+        .background(.surface2)
+        .overlay(
+          RoundedRectangle(cornerRadius: 12)
+            .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))
+        .cornerRadius(12)
+        .onChange(of: text.wrappedValue) { oldValue, newValue in
+          // Enforce character limit
+          if newValue.count > maxLength {
+            text.wrappedValue = String(newValue.prefix(maxLength))
+          }
+          // Update limit reached state
+          limitReached.wrappedValue = text.wrappedValue.count >= maxLength
+        }
+      
+      // Counter and message - only show when focused
+      if isFocused.wrappedValue {
+        HStack {
+          // Limit reached message
+          if limitReached.wrappedValue {
+            Text("Maximum \(maxLength) characters reached")
+              .font(.appBodySmall)
+              .foregroundColor(.warning)
+          }
+          
+          Spacer()
+          
+          // Character counter
+          Text("\(text.wrappedValue.count)/\(maxLength)")
+            .font(.appBodySmall)
+            .foregroundColor(limitReached.wrappedValue ? .warning : .text03)
+        }
+      }
+    }
   }
 
   /// Helper function for selection rows with visual elements
