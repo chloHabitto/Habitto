@@ -48,7 +48,7 @@ struct CreateHabitStep1View: View {
               .focused($isNameFieldFocused)
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
-              .background(.appSurface3)
+              .background(.appSurface2)
               .cornerRadius(12)
               .onChange(of: name) { _, _ in
                 if validationError != nil {
@@ -100,7 +100,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.appSurface2)
+          .background(.appSurface)
           .cornerRadius(20)
 
           // Description field - container with surface background and stroke
@@ -115,12 +115,12 @@ struct CreateHabitStep1View: View {
               .focused($isDescriptionFieldFocused)
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
-              .background(.appSurface3)
+              .background(.appSurface2)
               .cornerRadius(12)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.appSurface2)
+          .background(.appSurface)
           .cornerRadius(20)
 
           // Colour selection
@@ -145,7 +145,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(.appSurface2)
+          .background(.appSurface)
           .cornerRadius(12)
           .onTapGesture {
             showingColorSheet = true
@@ -192,7 +192,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
-          .background(.appSurface2)
+          .background(.appSurface)
           .cornerRadius(12)
           .onTapGesture {
             showingEmojiPicker = true
@@ -221,7 +221,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 16)
           .padding(.vertical, 16)
-          .background(.appSurface2)
+          .background(.appSurface)
           .cornerRadius(16)
         }
         .padding(.horizontal, 20)
@@ -272,7 +272,7 @@ struct CreateHabitStep1View: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 20)
-      .background(Self.bottomGradient)
+      .background(.appSheetBackground)
     }
     .background(.appSheetBackground)
     .navigationBarHidden(true)
@@ -349,17 +349,6 @@ struct CreateHabitStep1View: View {
   private var continueButtonBackground: Color {
     name.isEmpty ? .disabledBackground : .primary
   }
-
-  /// Pre-computed gradient for performance
-  private static let bottomGradient = LinearGradient(
-    gradient: Gradient(colors: [
-      Color.surface2.opacity(0),
-      Color.surface2.opacity(0.3),
-      Color.surface2.opacity(0.7),
-      Color.surface2.opacity(1.0)
-    ]),
-    startPoint: .top,
-    endPoint: .bottom)
 
   /// Ultra-lightweight TextField for maximum initial load performance
   private func OptimizedTextField(
