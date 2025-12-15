@@ -22,7 +22,7 @@ struct InputFieldModifier: ViewModifier {
 struct SelectionRowModifier: ViewModifier {
   func body(content: Content) -> some View {
     content
-      .padding(.horizontal, 16)
+      .padding(.horizontal, 20)
       .padding(.vertical, 12)
       .background(.appSurface)
       .cornerRadius(12)
