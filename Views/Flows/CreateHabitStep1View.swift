@@ -27,6 +27,7 @@ struct CreateHabitStep1View: View {
   let onCancel: () -> Void
 
   var body: some View {
+    let _ = print("⌨️ STEP1: body evaluated at \(Date())")
     VStack(spacing: 0) {
       // Header - always show
       CreateHabitHeader(
@@ -254,7 +255,7 @@ struct CreateHabitStep1View: View {
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
-    .keyboardDoneButton()
+    // .keyboardDoneButton()  // TEMP: Testing keyboard lag
     .sheet(isPresented: $showingEmojiPicker) {
       EmojiKeyboardBottomSheet(
         selectedEmoji: $icon,
@@ -283,7 +284,14 @@ struct CreateHabitStep1View: View {
       cachedColorName = getColorName(for: newColor)
     }
     .onAppear {
+      print("⌨️ STEP1: onAppear START at \(Date())")
       cachedColorName = getColorName(for: color)
+      print("⌨️ STEP1: onAppear END at \(Date())")
+      
+      // Check if main thread is responsive
+      DispatchQueue.main.async {
+        print("⌨️ STEP1: Main thread responsive at \(Date())")
+      }
     }
   }
 
@@ -346,6 +354,12 @@ struct CreateHabitStep1View: View {
         .textFieldStyle(PlainTextFieldStyle())
         .submitLabel(.done)
         .focused(isFocused)
+        .onAppear {
+          print("⌨️ TEXTFIELD: onAppear at \(Date())")
+        }
+        .onChange(of: isFocused.wrappedValue) { oldValue, newValue in
+          print("⌨️ TEXTFIELD: focus changed \(oldValue) → \(newValue) at \(Date())")
+        }
         .frame(maxWidth: .infinity, minHeight: 48)
         .padding(.horizontal, 16)
         .background(.surface2)
