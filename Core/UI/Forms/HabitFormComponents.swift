@@ -359,6 +359,7 @@ struct FormActionButtons: View {
     HStack(spacing: 12) {
       Button(action: onBack) {
         Image(.iconLeftArrow)
+          .renderingMode(.template)
           .resizable()
           .frame(width: 24, height: 24)
           .foregroundColor(.onPrimaryContainer)
