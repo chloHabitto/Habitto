@@ -162,6 +162,7 @@ class HomeViewState: ObservableObject {
   
   /// Check if user can create a new habit and handle paywall if needed
   func handleCreateHabitRequest() {
+    print("⌨️ HOME: Create button tapped at \(Date())")
     let currentHabitCount = habits.count
     
     let canCreate = subscriptionManager.canCreateHabit(currentHabitCount: currentHabitCount)
@@ -1062,6 +1063,7 @@ struct HomeView: View {
       state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
     }
     .sheet(isPresented: $state.showingCreateHabit) {
+      let _ = print("⌨️ HOME: Sheet closure executing at \(Date())")
       CreateHabitFlowView(onSave: { habit in
         #if DEBUG
         debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
