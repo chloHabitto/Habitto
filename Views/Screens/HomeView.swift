@@ -771,7 +771,7 @@ struct HomeView: View {
   private var homeTabContent: some View {
     ZStack {
       // Primary color background behind white sheet
-      Color.primary
+      Color.appHeaderBackground
         .ignoresSafeArea(.all)
       
       VStack(spacing: 0) {
@@ -854,7 +854,7 @@ struct HomeView: View {
   private var progressTabContent: some View {
     ZStack {
       // Primary color background behind white sheet
-      Color.primary
+      Color.appHeaderBackground
         .ignoresSafeArea(.all)
       
       VStack(spacing: 0) {
@@ -883,7 +883,7 @@ struct HomeView: View {
   private var habitsTabContent: some View {
     ZStack {
       // Primary color background behind white sheet
-      Color.primary
+      Color.appHeaderBackground
         .ignoresSafeArea(.all)
       
       VStack(spacing: 0) {
@@ -932,7 +932,7 @@ struct HomeView: View {
   private var moreTabContent: some View {
     ZStack {
       // Primary color background behind white sheet
-      Color.primary
+      Color.appHeaderBackground
         .ignoresSafeArea(.all)
       
       VStack(spacing: 0) {
@@ -961,7 +961,7 @@ struct HomeView: View {
   var body: some View {
     return ZStack(alignment: .top) {
       // Dynamic theme background fills entire screen
-      Color.primary
+      Color.appHeaderBackground
         .ignoresSafeArea(.all)
       
       // Vacation mode banner overlay
