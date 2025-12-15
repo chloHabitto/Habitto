@@ -1,4 +1,3 @@
-import Combine
 import SwiftUI
 
 /// CreateHabitStep1View - Optimized for keyboard performance
@@ -41,16 +40,27 @@ struct CreateHabitStep1View: View {
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Name")
 
-            FormInputComponents.CustomTextField(
-              placeholder: "Habit name",
-              text: $name,
-              externalFocus: $isNameFieldFocused)
-              .onChange(of: name) { _, newValue in
-                validationManager.nameInput = newValue
+            TextField("Habit name", text: $name)
+              .font(.appBodyLarge)
+              .foregroundColor(.text01)
+              .textFieldStyle(PlainTextFieldStyle())
+              .submitLabel(.done)
+              .focused($isNameFieldFocused)
+              .frame(maxWidth: .infinity, minHeight: 48)
+              .padding(.horizontal, 16)
+              .background(.surface)
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(.outline3, lineWidth: 1.5))
+              .cornerRadius(12)
+              .onChange(of: name) { _, _ in
+                if validationError != nil {
+                  validationError = nil
+                }
               }
 
             // Error message display
-            if let errorMessage = validationManager.errorMessage {
+            if let errorMessage = validationError {
               HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
                   .font(.system(size: 14, weight: .medium))
@@ -70,17 +80,26 @@ struct CreateHabitStep1View: View {
           .background(.surface)
           .overlay(
             RoundedRectangle(cornerRadius: 16)
-              .stroke(validationManager.isValid ? .outline3 : .error, lineWidth: 1.5))
+              .stroke(validationError == nil ? .outline3 : .error, lineWidth: 1.5))
           .cornerRadius(16)
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Description")
 
-            FormInputComponents.CustomTextField(
-              placeholder: "Description (Optional)",
-              text: $description,
-              externalFocus: $isDescriptionFieldFocused)
+            TextField("Description (Optional)", text: $description)
+              .font(.appBodyLarge)
+              .foregroundColor(.text01)
+              .textFieldStyle(PlainTextFieldStyle())
+              .submitLabel(.done)
+              .focused($isDescriptionFieldFocused)
+              .frame(maxWidth: .infinity, minHeight: 48)
+              .padding(.horizontal, 16)
+              .background(.surface)
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(.outline3, lineWidth: 1.5))
+              .cornerRadius(12)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
@@ -217,6 +236,33 @@ struct CreateHabitStep1View: View {
       HStack {
         Spacer()
         Button(action: {
+          // Validate before proceeding
+          let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+          
+          // Check empty
+          if trimmedName.isEmpty {
+            validationError = "Please enter a habit name"
+            return
+          }
+          
+          // Check length
+          if trimmedName.count > 50 {
+            validationError = "Habit name must be 50 characters or less"
+            return
+          }
+          
+          // Check duplicate
+          let existingHabits = HabitRepository.shared.habits
+          let isDuplicate = existingHabits.contains { 
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased() 
+          }
+          if isDuplicate {
+            validationError = "A habit with this name already exists"
+            return
+          }
+          
+          // Valid - proceed
+          validationError = nil
           onNext(name, description, icon, color, habitType)
         }) {
           Text("Continue")
@@ -263,14 +309,6 @@ struct CreateHabitStep1View: View {
           showingColorSheet = false
         })
     }
-    .onAppear {
-      // Configure debounced validation
-      validationManager.configure {
-        (name, description, icon, color, habitType, cachedHabits)
-      }
-      // Seed initial value
-      validationManager.nameInput = name
-    }
   }
 
   // MARK: Private
@@ -281,10 +319,7 @@ struct CreateHabitStep1View: View {
   @FocusState private var isDescriptionFieldFocused: Bool
 
   // Validation
-  @StateObject private var validationManager = ValidationManager()
-
-  // Cache existing habits list to avoid repeated MainActor calls during validation
-  @State private var cachedHabits: [Habit] = HabitRepository.shared.habits
+  @State private var validationError: String? = nil
 
   /// Cache screen width to avoid repeated UIScreen.main.bounds.width access
   private let screenWidth = UIScreen.main.bounds.width
@@ -300,7 +335,7 @@ struct CreateHabitStep1View: View {
 
   /// Performance optimization: Pre-computed values to reduce view updates
   private var continueButtonDisabled: Bool {
-    name.isEmpty || !validationManager.isValid
+    name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
 
   private var continueButtonColor: Color {
@@ -448,54 +483,3 @@ struct CreateHabitStep1View: View {
     onCancel: { })
 }
 #endif
-
-// MARK: - ValidationManager
-
-@MainActor
-final class ValidationManager: ObservableObject {
-  // Inputs
-  @Published var nameInput: String = ""
-
-  // Outputs
-  @Published var errorMessage: String? = nil
-  @Published var isValid: Bool = true
-
-  // Internals
-  private var cancellables = Set<AnyCancellable>()
-  private var contextProvider: (() -> (String, String, String, Color, HabitType, [Habit]))?
-
-  func configure(
-    debounceMilliseconds: Int = 150,
-    contextProvider: @escaping () -> (String, String, String, Color, HabitType, [Habit]))
-  {
-    self.contextProvider = contextProvider
-
-    $nameInput
-      .debounce(for: .milliseconds(debounceMilliseconds), scheduler: RunLoop.main)
-      .removeDuplicates()
-      .sink { [weak self] latestName in
-        guard let self = self, let ctx = self.contextProvider?() else { return }
-        let (currentName, currentDescription, currentIcon, currentColor, currentHabitType, habits) = ctx
-
-        // If the debounced value differs from the current binding, prefer the debounced text
-        let nameToValidate = latestName.isEmpty ? currentName : latestName
-        if nameToValidate.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-          self.isValid = true
-          self.errorMessage = nil
-          return
-        }
-
-        let result = ValidationBusinessRulesLogic.validateHabitCreation(
-          name: nameToValidate,
-          description: currentDescription,
-          icon: currentIcon,
-          color: currentColor,
-          habitType: currentHabitType,
-          existingHabits: habits)
-
-        self.isValid = result.isValid
-        self.errorMessage = result.errorMessage
-      }
-      .store(in: &cancellables)
-  }
-}
