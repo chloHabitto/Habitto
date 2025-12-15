@@ -10,6 +10,9 @@ struct InputFieldModifier: ViewModifier {
       .padding(.horizontal, 8)
       .padding(.vertical, 12)
       .background(.appSurface2)
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .stroke(.outline3, lineWidth: 1.5))
       .cornerRadius(12)
   }
 }
