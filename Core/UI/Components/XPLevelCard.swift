@@ -90,7 +90,7 @@ struct XPLevelCard: View {
       }
     }
     .padding(16)
-    .background(Color.white)
+    .background(.surface)
     .cornerRadius(16)
     .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     .scaleEffect(isAnimating ? 1.02 : 1.0)

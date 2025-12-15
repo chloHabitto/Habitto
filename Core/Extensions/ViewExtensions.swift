@@ -275,7 +275,7 @@ extension String {
 
 extension View {
   func roundedTopBackground() -> some View {
-    background(Color.white)
+    background(.surface)
       .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
   }
 }

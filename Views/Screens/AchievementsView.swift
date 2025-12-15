@@ -95,7 +95,7 @@ struct AchievementsView: View {
     .padding(.vertical, 16)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.white)
+        .fill(.surface)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2))
     .padding(.horizontal, 20)
   }
@@ -232,7 +232,7 @@ struct AchievementsView: View {
       .padding(.vertical, 12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(isSelected ? Color.blue : Color.white)
+          .fill(isSelected ? Color.blue : .surface)
           .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2))
     }
     .buttonStyle(PlainButtonStyle())

@@ -66,7 +66,7 @@ struct GoalBottomSheet: View {
                 }) {
                   Image(systemName: "minus")
                     .font(Font.appTitleMedium)
-                    .foregroundColor(dailyValue > 1 ? Color.white : .onDisabledBackground)
+                    .foregroundColor(dailyValue > 1 ? .onPrimary : .onDisabledBackground)
                     .frame(width: 44, height: 44)
                     .background(dailyValue > 1 ? .primary : .disabledBackground)
                     .clipShape(Circle())
@@ -91,7 +91,7 @@ struct GoalBottomSheet: View {
                 }) {
                   Image(systemName: "plus")
                     .font(Font.appTitleMedium)
-                    .foregroundColor(dailyValue < 30 ? Color.white : .onDisabledBackground)
+                    .foregroundColor(dailyValue < 30 ? .onPrimary : .onDisabledBackground)
                     .frame(width: 44, height: 44)
                     .background(dailyValue < 30 ? .primary : .disabledBackground)
                     .clipShape(Circle())

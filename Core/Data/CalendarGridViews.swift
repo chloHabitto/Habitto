@@ -119,7 +119,7 @@ struct WeeklyCalendarGridView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .frame(height: 36)
                 .padding(.leading, 8)
-                .background(Color.white)
+                .background(.surface)
                 .overlay(
                   Rectangle()
                     .stroke(.outline3, lineWidth: 1))
@@ -146,7 +146,7 @@ struct WeeklyCalendarGridView: View {
                         value: dayIndex,
                         to: selectedWeekStartDate) ?? selectedWeekStartDate))
                     .frame(width: 24, height: 36)
-                    .background(Color.white)
+                    .background(.surface)
                     .overlay(
                       Rectangle()
                         .stroke(.outline3, lineWidth: 1))
@@ -388,7 +388,7 @@ struct MonthlyCalendarGridView: View {
             .foregroundColor(.text01)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             .frame(height: 36)
-            .background(Color.white)
+                    .background(.surface)
             .overlay(
               Rectangle()
                 .stroke(.outline3, lineWidth: 1))
@@ -404,7 +404,7 @@ struct MonthlyCalendarGridView: View {
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage)
               .frame(width: 24, height: 36)
-              .background(Color.white)
+                    .background(.surface)
               .overlay(
                 Rectangle()
                   .stroke(.outline3, lineWidth: 1))

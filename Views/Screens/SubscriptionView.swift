@@ -272,7 +272,7 @@ struct SubscriptionView: View {
         ForEach(0..<5) { _ in
           Image(systemName: "star.fill")
             .font(.system(size: 16))
-            .foregroundColor(Color("yellow300"))
+            .foregroundColor(.warning)
         }
       }
       
@@ -511,17 +511,17 @@ struct SubscriptionView: View {
           HStack(spacing: 8) {
             if showBadge, let badge = badge {
               Text(badge)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(Color("navy900"))
+                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
+                .foregroundColor(.primary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color("pastelBlue300"))
+                .background(ColorTokens.secondary)
                 .cornerRadius(8)
             }
             
             if isCurrentPlan {
               Text("Current Plan")
-                .font(.system(size: 10, weight: .semibold))
+                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
                 .foregroundColor(.text02)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -569,7 +569,7 @@ struct SubscriptionView: View {
           
           if isSelected {
             Circle()
-              .fill(isCurrentPlan ? Color.text04.opacity(0.6) : Color.white)
+              .fill(isCurrentPlan ? Color.text04.opacity(0.6) : .onPrimary)
               .frame(width: 8, height: 8)
               .animation(.easeInOut(duration: 0.2), value: selectedOption)
           }
@@ -601,7 +601,7 @@ struct SubscriptionView: View {
           
           VStack(spacing: 0) {
             // Header row background
-            Color.navy50
+            Color.primaryContainer
               .opacity(0.4)
               .frame(height: 56)
             
@@ -616,12 +616,12 @@ struct SubscriptionView: View {
           .cornerRadius(16)
           
           // Premium column background
-          Color("pastelBlue100")
+          Color.secondaryContainer
             .frame(width: 100, height: CGFloat(56 + (56 * subscriptionFeatures.count)))
             .cornerRadius(16)
             .overlay(
               RoundedRectangle(cornerRadius: 16)
-                .stroke(Color("pastelBlue300"), lineWidth: 2)
+                .stroke(ColorTokens.secondary, lineWidth: 2)
             )
         }
         
@@ -716,7 +716,7 @@ struct SubscriptionView: View {
       if isPremium {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 24, weight: .semibold))
-          .foregroundColor(Color("pastelBlue500"))
+          .foregroundColor(.secondaryDim)
       } else {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 16, weight: .semibold))

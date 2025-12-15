@@ -90,7 +90,7 @@ struct VacationSummaryView: View {
     .padding(20)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.white))
+        .fill(.surface))
     .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
   }
 
@@ -174,7 +174,7 @@ struct VacationSummaryView: View {
         .padding(40)
         .background(
           RoundedRectangle(cornerRadius: 16)
-            .fill(Color.white))
+            .fill(.surface))
       } else {
         LazyVStack(spacing: 12) {
           ForEach(vacationManager.history.sorted(by: { $0.start > $1.start })) { period in
@@ -222,7 +222,7 @@ struct VacationSummaryView: View {
     .padding(16)
     .background(
       RoundedRectangle(cornerRadius: 12)
-        .fill(Color.white))
+        .fill(.surface))
   }
 
   // MARK: - Stat Card
@@ -251,7 +251,7 @@ struct VacationSummaryView: View {
     .padding(20)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.white))
+        .fill(.surface))
     .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
   }
 

@@ -139,7 +139,7 @@ struct SimpleMonthlyCalendar: View {
             }
           })
     }
-    .background(Color.white)
+    .background(.surface)
     .cornerRadius(24)
     .onAppear {
       updateTodayButtonVisibility()

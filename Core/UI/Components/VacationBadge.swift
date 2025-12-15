@@ -22,7 +22,7 @@ struct VacationBadge: View {
       .padding(.vertical, 4)
       .background(
         RoundedRectangle(cornerRadius: 8)
-          .fill(Color.white.opacity(0.95)))
+          .fill(.surface.opacity(0.95)))
       .overlay(
         RoundedRectangle(cornerRadius: 8)
           .stroke(Color.navy200.opacity(0.3), lineWidth: 1))

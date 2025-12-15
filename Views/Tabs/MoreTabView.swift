@@ -414,7 +414,7 @@ struct MoreTabView: View {
       .padding(.vertical, 16)
       
       Rectangle()
-        .fill(Color(hex: "F0F0F6"))
+        .fill(.surface2)
         .frame(height: 8)
     }
   }
@@ -437,7 +437,7 @@ struct MoreTabView: View {
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
-      .background(Color.white)
+      .background(.surface)
       .cornerRadius(8)
     }
   }
@@ -563,7 +563,7 @@ struct MoreTabView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color.white)
+        .background(.surface)
         .onTapGesture {
           if let action = item.action {
             action()
@@ -587,14 +587,14 @@ struct MoreTabView: View {
         // Add divider after the last item if it's the Account & Notifications group
         if index == items.count - 1, title == "Account & Notifications" {
           Rectangle()
-            .fill(Color(hex: "F0F0F6"))
+            .fill(.surface2)
             .frame(height: 8)
         }
 
         // Add divider after the last item if it's the Data Management group
         if index == items.count - 1, title == "Data Management" {
           Rectangle()
-            .fill(Color(hex: "F0F0F6"))
+            .fill(.surface2)
             .frame(height: 8)
         }
       }
