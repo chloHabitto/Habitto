@@ -108,7 +108,10 @@ struct UnifiedInputElement: View {
           .padding(.top, 8)
       }
     }
-    .selectionRowStyle()
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .background(.appSurface)
+    .cornerRadius(20)
   }
 }
 
@@ -379,19 +382,12 @@ struct FormActionButtons: View {
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 20)
-    .background(bottomGradient)
+    .background(.appSheetBackground)
   }
 
   // MARK: Private
 
   private let screenWidth = UIScreen.main.bounds.width
-
-  private var bottomGradient: some View {
-    LinearGradient(
-      colors: [.surface2, .surface2.opacity(0.8)],
-      startPoint: .top,
-      endPoint: .bottom)
-  }
 }
 
 // MARK: - Helper Functions
