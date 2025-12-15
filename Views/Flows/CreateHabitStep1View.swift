@@ -49,7 +49,7 @@ struct CreateHabitStep1View: View {
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
               .background(.appSurface3)
-              .cornerRadius(20)
+              .cornerRadius(12)
               .onChange(of: name) { _, _ in
                 if validationError != nil {
                   validationError = nil
@@ -116,7 +116,7 @@ struct CreateHabitStep1View: View {
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
               .background(.appSurface3)
-              .cornerRadius(20)
+              .cornerRadius(12)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
@@ -274,7 +274,7 @@ struct CreateHabitStep1View: View {
       .padding(.bottom, 20)
       .background(Self.bottomGradient)
     }
-    .background(.appSurface)
+    .background(.appSheetBackground)
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
