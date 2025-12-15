@@ -49,6 +49,9 @@ struct CreateHabitStep1View: View {
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
               .background(.appSurface2)
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(.outline3, lineWidth: 1.5))
               .cornerRadius(12)
               .onChange(of: name) { _, _ in
                 if validationError != nil {
@@ -116,6 +119,9 @@ struct CreateHabitStep1View: View {
               .frame(maxWidth: .infinity, minHeight: 48)
               .padding(.horizontal, 16)
               .background(.appSurface2)
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(.outline3, lineWidth: 1.5))
               .cornerRadius(12)
           }
           .padding(.horizontal, 20)
