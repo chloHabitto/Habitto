@@ -498,7 +498,7 @@ struct CreateHabitStep2View: View {
           saveHabit()
         })
     }
-    .background(.surface2)
+    .background(.appSurface)
   }
 
   // MARK: - Focus State Modifiers
