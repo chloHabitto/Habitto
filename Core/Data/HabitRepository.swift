@@ -1288,6 +1288,11 @@ class HabitRepository: ObservableObject {
   private var lastWarmupDate: Date?
   private var hasLoggedStartupState = false
   private var isUserCurrentlyAuthenticated = false
+  
+  /// Sync monitoring timer cancellable (stored separately for pause/resume)
+  private var syncMonitoringCancellable: AnyCancellable?
+  /// Flag to pause sync monitoring (e.g., when create habit sheet is open)
+  private var isSyncMonitoringPaused = false
 
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
@@ -1409,14 +1414,31 @@ class HabitRepository: ObservableObject {
     }
     
     // Set up periodic updates (every 5 seconds)
-    Timer.publish(every: 5.0, on: .main, in: .common)
+    syncMonitoringCancellable = Timer.publish(every: 5.0, on: .main, in: .common)
       .autoconnect()
       .sink { [weak self] _ in
+        guard let self = self, !self.isSyncMonitoringPaused else { return }
         Task { @MainActor in
-          await self?.updateUnsyncedCount()
+          await self.updateUnsyncedCount()
         }
       }
-      .store(in: &cancellables)
+  }
+  
+  /// Pause sync monitoring (e.g., when create habit sheet is open)
+  /// This prevents the 5-second timer from triggering view re-renders
+  func pauseSyncMonitoring() {
+    isSyncMonitoringPaused = true
+    debugLog("⏸️ HabitRepository: Sync monitoring paused")
+  }
+  
+  /// Resume sync monitoring after it was paused
+  func resumeSyncMonitoring() {
+    isSyncMonitoringPaused = false
+    debugLog("▶️ HabitRepository: Sync monitoring resumed")
+    // Immediately update count when resuming
+    Task { @MainActor in
+      await updateUnsyncedCount()
+    }
   }
   
   /// Query SwiftData for unsynced events, completions, and awards count
@@ -1919,3 +1941,4 @@ struct MoodLog {
   let mood: Int // 1-10 scale
   let timestamp: Date
 }
+
