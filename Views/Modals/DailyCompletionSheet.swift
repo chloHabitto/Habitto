@@ -151,7 +151,7 @@ struct DailyCompletionSheet: View {
       .buttonStyle(PlainButtonStyle())
     }
     .padding(24)
-    .background(Color.white)
+    .background(.surface)
     .cornerRadius(24)
     .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
     .onAppear {

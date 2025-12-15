@@ -117,7 +117,7 @@ struct HabitSelectorView: View {
 
   private var allHabitsCardBackground: some View {
     RoundedRectangle(cornerRadius: 20)
-      .fill(Color.white)
+      .fill(.surface)
       .overlay(
         RoundedRectangle(cornerRadius: 20)
           .stroke(
@@ -257,7 +257,7 @@ struct HabitSelectorView: View {
 
   private func habitCardBackground(for habit: Habit) -> some View {
     RoundedRectangle(cornerRadius: 20)
-      .fill(Color.white)
+      .fill(.surface)
       .overlay(
         RoundedRectangle(cornerRadius: 20)
           .stroke(
@@ -302,7 +302,7 @@ struct HabitSelectorView: View {
     .padding(.horizontal, 20)
     .background(
       RoundedRectangle(cornerRadius: 20)
-        .fill(Color.white)
+        .fill(.surface)
         .overlay(
           RoundedRectangle(cornerRadius: 20)
             .stroke(Color.outline3.opacity(0.2), lineWidth: 1)))

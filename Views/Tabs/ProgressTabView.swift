@@ -508,10 +508,10 @@ struct ProgressTabView: View {
       ZStack(alignment: .bottom) {
         LinearGradient(
           gradient: Gradient(stops: [
-            .init(color: Color.white.opacity(0.0), location: 0.0),  // 0% opacity at top
-            .init(color: Color.white.opacity(0.3), location: 0.3), // 30% opacity at 30%
-            .init(color: Color.white.opacity(0.6), location: 0.6), // 60% opacity at 60%
-            .init(color: Color.white.opacity(1.0), location: 1.0)  // 100% opacity at bottom
+            .init(color: .surface.opacity(0.0), location: 0.0),  // 0% opacity at top
+            .init(color: .surface.opacity(0.3), location: 0.3), // 30% opacity at 30%
+            .init(color: .surface.opacity(0.6), location: 0.6), // 60% opacity at 60%
+            .init(color: .surface.opacity(1.0), location: 1.0)  // 100% opacity at bottom
           ]),
           startPoint: .top,
           endPoint: .bottom
@@ -4832,11 +4832,11 @@ struct DifficultyLineChart: View {
         ZStack {
           // White background circle with subtle shadow
           Circle()
-            .fill(Color.white)
+            .fill(.surface)
             .frame(width: 26, height: 26)
             .overlay(
               Circle()
-                .stroke(Color.grey300, lineWidth: 1.5))
+                .stroke(.outline4, lineWidth: 1.5))
             .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 
           // Difficulty image
@@ -5097,11 +5097,11 @@ struct MonthlyDifficultyChart: View {
         ZStack {
           // White background circle with subtle shadow
           Circle()
-            .fill(Color.white)
+            .fill(.surface)
             .frame(width: 26, height: 26)
             .overlay(
               Circle()
-                .stroke(Color.grey300, lineWidth: 1.5))
+                .stroke(.outline4, lineWidth: 1.5))
             .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
 
           // Difficulty image

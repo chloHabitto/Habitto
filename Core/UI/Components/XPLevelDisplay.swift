@@ -187,7 +187,7 @@ struct XPLevelDisplayCompact: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 10)
-    .background(Color.white)
+    .background(.surface)
     .cornerRadius(8)
     .padding(.horizontal, 20)
   }

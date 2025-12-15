@@ -73,7 +73,7 @@ struct AchievementCard: View {
     .padding(16)
     .background(
       RoundedRectangle(cornerRadius: 12)
-        .fill(achievement.isUnlocked ? Color.yellow.opacity(0.05) : Color.white)
+        .fill(achievement.isUnlocked ? Color.yellow.opacity(0.05) : .surface)
         .overlay(
           RoundedRectangle(cornerRadius: 12)
             .stroke(

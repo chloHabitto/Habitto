@@ -49,7 +49,7 @@ struct CelebrationView: View {
 
           // Checkmark
           FilledCheckmarkShape(progress: checkmarkProgress)
-            .fill(Color.white)
+            .fill(.surface)
             .frame(width: 60, height: 60)
         }
         .scaleEffect(scale)

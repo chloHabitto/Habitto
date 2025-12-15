@@ -226,7 +226,7 @@ struct ScheduleBottomSheet: View {
                   }) {
                     Image(systemName: "minus")
                       .font(Font.appTitleMedium)
-                      .foregroundColor(monthlyValue > 1 ? Color.white : .onDisabledBackground)
+                      .foregroundColor(monthlyValue > 1 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
                       .background(monthlyValue > 1 ? .primary : .disabledBackground)
                       .clipShape(Circle())
@@ -253,7 +253,7 @@ struct ScheduleBottomSheet: View {
                   }) {
                     Image(systemName: "plus")
                       .font(Font.appTitleMedium)
-                      .foregroundColor(monthlyValue < 30 ? Color.white : .onDisabledBackground)
+                      .foregroundColor(monthlyValue < 30 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
                       .background(monthlyValue < 30 ? .primary : .disabledBackground)
                       .clipShape(Circle())
@@ -282,7 +282,7 @@ struct ScheduleBottomSheet: View {
                   }) {
                     Image(systemName: "minus")
                       .font(Font.appTitleMedium)
-                      .foregroundColor(weeklyValue > 1 ? Color.white : .onDisabledBackground)
+                      .foregroundColor(weeklyValue > 1 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
                       .background(weeklyValue > 1 ? .primary : .disabledBackground)
                       .clipShape(Circle())
@@ -309,7 +309,7 @@ struct ScheduleBottomSheet: View {
                   }) {
                     Image(systemName: "plus")
                       .font(Font.appTitleMedium)
-                      .foregroundColor(weeklyValue < 7 ? Color.white : .onDisabledBackground)
+                      .foregroundColor(weeklyValue < 7 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
                       .background(weeklyValue < 7 ? .primary : .disabledBackground)
                       .clipShape(Circle())

@@ -24,7 +24,7 @@ struct VacationHeatmapOverlay: View {
         .padding(.vertical, 6)
         .background(
           RoundedRectangle(cornerRadius: 12)
-            .fill(Color.white.opacity(0.9)))
+            .fill(.surface.opacity(0.9)))
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
 
         if let current = vacationManager.current {
