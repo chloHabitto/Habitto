@@ -10,7 +10,7 @@ struct InputFieldModifier: ViewModifier {
       .padding(.horizontal, 8)
       .padding(.vertical, 12)
       .background(.surface)
-      .cornerRadius(12)
+      .cornerRadius(16)
   }
 }
 
@@ -22,7 +22,7 @@ struct SelectionRowModifier: ViewModifier {
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
       .background(.surface)
-      .cornerRadius(12)
+      .cornerRadius(16)
   }
 }
 
