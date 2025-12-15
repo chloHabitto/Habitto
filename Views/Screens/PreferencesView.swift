@@ -8,16 +8,7 @@ struct PreferencesView: View {
   @State private var showingTheme = false
 
   private var iconColor: Color {
-    switch themeManager.selectedTheme {
-    case .default:
-      Color("navy200")
-    case .black:
-      Color("themeBlack200")
-    case .purple:
-      Color("themePurple200")
-    case .pink:
-      Color("themePink200")
-    }
+    Color.primaryDim
   }
 
   var body: some View {

@@ -744,16 +744,7 @@ struct MoreTabView: View {
   }
 
   private func iconColorForSetting(_: String) -> Color {
-    switch themeManager.selectedTheme {
-    case .default:
-      Color("navy200")
-    case .black:
-      Color("themeBlack200")
-    case .purple:
-      Color("themePurple200")
-    case .pink:
-      Color("themePink200")
-    }
+    Color.primaryDim
   }
 
   // MARK: - App Rating
