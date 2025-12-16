@@ -250,7 +250,7 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(Color.grey50)
+        .background(Color.surface3)
         .cornerRadius(24)
 
         // Weekly Analysis Card
@@ -1779,7 +1779,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(Color.grey50))
+          .fill(Color.surface3))
 
       // Swipeable content
       TabView(selection: $currentHighlightPage) {

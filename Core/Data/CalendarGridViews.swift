@@ -62,7 +62,7 @@ struct WeeklyCalendarGridView: View {
               .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
               .frame(height: 24)
               .padding(.leading, 16)
-              .background(Color.grey50)
+              .background(Color.surface3)
               .clipShape(
                 UnevenRoundedRectangle(
                   topLeadingRadius: 12,
@@ -82,7 +82,7 @@ struct WeeklyCalendarGridView: View {
                 .font(.appBodyMediumEmphasised)
                 .foregroundColor(.text02)
                 .frame(width: 24, height: 24)
-                .background(Color.grey50)
+                .background(Color.surface3)
                 .clipShape(
                   UnevenRoundedRectangle(
                     topLeadingRadius: 0,
@@ -165,7 +165,7 @@ struct WeeklyCalendarGridView: View {
               .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
               .frame(height: 32)
               .padding(.leading, 16)
-              .background(Color.grey50)
+              .background(Color.surface3)
               .clipShape(
                 UnevenRoundedRectangle(
                   topLeadingRadius: 0,
@@ -206,7 +206,7 @@ struct WeeklyCalendarGridView: View {
                 dayIndex: dayIndex,
                 weekStartDate: selectedWeekStartDate)
                 .frame(width: 24, height: 32)
-                .background(Color.grey50)
+                .background(Color.surface3)
                 .clipShape(
                   UnevenRoundedRectangle(
                     topLeadingRadius: 0,
