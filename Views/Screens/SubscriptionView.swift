@@ -679,7 +679,7 @@ struct SubscriptionView: View {
   
   private var ctaButton: some View {
     HabittoButton.largeFillPrimary(
-      text: isPurchasing ? "Processing..." : "Begin free trial",
+      text: isPurchasing ? "Processing..." : "Let's go!",
       state: isPurchasing ? .loading : .default
     ) {
       Task {
