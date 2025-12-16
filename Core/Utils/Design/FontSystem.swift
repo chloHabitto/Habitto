@@ -116,6 +116,21 @@ extension View {
   func labelMediumFont() -> some View {
     font(.appLabelMedium)
   }
+
+  /// Apply title small font with consistent styling
+  func titleSmallFont() -> some View {
+    font(.appTitleSmall)
+  }
+
+  /// Apply headline small emphasised font with consistent styling
+  func headlineSmallEmphasisedFont() -> some View {
+    font(.appHeadlineSmallEmphasised)
+  }
+
+  /// Apply label medium emphasised font with consistent styling
+  func labelMediumEmphasisedFont() -> some View {
+    font(.appLabelMediumEmphasised)
+  }
 }
 
 // MARK: - Common Font Patterns
