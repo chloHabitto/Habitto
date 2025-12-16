@@ -798,7 +798,13 @@ struct NameEditBottomSheet: View {
   let onClose: () -> Void
   let onSave: () -> Void
   
+  @State private var originalName: String = ""
+  
   private let maxLength = 12
+  
+  private var hasChanges: Bool {
+    name.trimmingCharacters(in: .whitespacesAndNewlines) != originalName.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
   
   var body: some View {
     BaseBottomSheet(
@@ -809,7 +815,8 @@ struct NameEditBottomSheet: View {
       confirmButton: {
         onSave()
       },
-      confirmButtonTitle: "Done")
+      confirmButtonTitle: "Done",
+      isConfirmButtonDisabled: !hasChanges)
     {
       VStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 8) {
@@ -833,6 +840,8 @@ struct NameEditBottomSheet: View {
               }
             }
             .onAppear {
+              // Store original name when sheet appears
+              originalName = name
               // Focus the field when sheet appears
               DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 isFocused = true
