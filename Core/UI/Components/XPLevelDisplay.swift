@@ -94,13 +94,9 @@ struct XPLevelDisplay: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 20)
-    .background(Color.surfaceDim.opacity(0.1))
-    .cornerRadius(20)
-    .overlay(
-      RoundedRectangle(cornerRadius: 20)
-        .stroke(Color.surfaceDim, lineWidth: 1)
-    )
-    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    .background(.surface)
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     .padding(.horizontal, 20)
     .opacity(appeared ? 1 : 0)
     .scaleEffect(appeared ? 1 : 0.95)
