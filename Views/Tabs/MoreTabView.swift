@@ -31,7 +31,8 @@ struct MoreTabView: View {
     return WhiteSheetContainer(
       headerContent: {
         AnyView(EmptyView())
-      }) {
+      },
+      contentBackground: .sheetBackground02) {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
@@ -266,7 +267,7 @@ struct MoreTabView: View {
   // MARK: - Settings Sections
 
   private var settingsSections: some View {
-    VStack(spacing: 0) {
+    VStack(spacing: 24) {
       // General Settings Group
       settingsGroup(
         title: "General Settings",
@@ -492,112 +493,107 @@ struct MoreTabView: View {
 
   private func settingsGroup(title: String, items: [SettingItem]) -> some View {
     VStack(spacing: 0) {
-      ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-        HStack(spacing: 12) {
-          // Icon based on item type
-          if iconForSetting(item.title).hasPrefix("Icon-") {
-            // Custom icon
-            Image(iconForSetting(item.title))
-              .renderingMode(.template)
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: 24, height: 24)
-              .foregroundColor(iconColorForSetting(item.title))
-          } else {
-            // System icon
-            Group {
-              if item.title == "Sync Status" {
-                let isSyncing = habitRepository.syncStatus == .syncing
-                // Animated sync icon when syncing
-                Image(systemName: iconForSetting(item.title))
-                  .font(.system(size: 16, weight: .medium))
-                  .foregroundColor(iconColorForSetting(item.title))
-                  .frame(width: 24, height: 24)
-                  .rotationEffect(.degrees(isSyncing ? 360 : 0))
-                  .animation(
-                    isSyncing
-                      ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
-                      : .default,
-                    value: isSyncing
-                  )
-              } else {
-                Image(systemName: iconForSetting(item.title))
-                  .font(.system(size: 16, weight: .medium))
-                  .foregroundColor(iconColorForSetting(item.title))
-                  .frame(width: 24, height: 24)
+      // Section header
+      HStack {
+        Text(title)
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 12)
+      .padding(.bottom, 16)
+
+      // Options container with rounded background
+      VStack(spacing: 0) {
+        ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+          HStack(spacing: 12) {
+            // Icon based on item type
+            if iconForSetting(item.title).hasPrefix("Icon-") {
+              // Custom icon
+              Image(iconForSetting(item.title))
+                .renderingMode(.template)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .foregroundColor(iconColorForSetting(item.title))
+            } else {
+              // System icon
+              Group {
+                if item.title == "Sync Status" {
+                  let isSyncing = habitRepository.syncStatus == .syncing
+                  // Animated sync icon when syncing
+                  Image(systemName: iconForSetting(item.title))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(iconColorForSetting(item.title))
+                    .frame(width: 24, height: 24)
+                    .rotationEffect(.degrees(isSyncing ? 360 : 0))
+                    .animation(
+                      isSyncing
+                        ? Animation.linear(duration: 1.0).repeatForever(autoreverses: false)
+                        : .default,
+                      value: isSyncing
+                    )
+                } else {
+                  Image(systemName: iconForSetting(item.title))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(iconColorForSetting(item.title))
+                    .frame(width: 24, height: 24)
+                }
+              }
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text(item.title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(item.title == "Sign Out" ? .red600 : .text01)
+            }
+
+            Spacer()
+
+            HStack(spacing: 4) {
+              if let value = item.value {
+                Text(value)
+                  .font(.system(size: 14, weight: .regular))
+                  .foregroundColor(.text04)
+              }
+              
+              if let badgeCount = item.badgeCount, badgeCount > 0 {
+                Text("\(badgeCount)")
+                  .font(.system(size: 12, weight: .semibold))
+                  .foregroundColor(.white)
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(Color.red600)
+                  .clipShape(Capsule())
+              }
+
+              if item.hasChevron {
+                Image(systemName: "chevron.right")
+                  .font(.system(size: 12, weight: .medium))
+                  .foregroundColor(.text04)
               }
             }
           }
-
-          VStack(alignment: .leading, spacing: 2) {
-            Text(item.title)
-              .font(.system(size: 16, weight: .medium))
-              .foregroundColor(item.title == "Sign Out" ? .red600 : .text01)
-          }
-
-          Spacer()
-
-          HStack(spacing: 4) {
-            if let value = item.value {
-              Text(value)
-                .font(.system(size: 14, weight: .regular))
-                .foregroundColor(.text04)
-            }
-            
-            if let badgeCount = item.badgeCount, badgeCount > 0 {
-              Text("\(badgeCount)")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.red600)
-                .clipShape(Capsule())
-            }
-
-            if item.hasChevron {
-              Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.text04)
+          .padding(.horizontal, 20)
+          .padding(.vertical, 16)
+          .background(Color.clear)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            if let action = item.action {
+              action()
             }
           }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(.surface)
-        .onTapGesture {
-          if let action = item.action {
-            action()
+
+          if index < items.count - 1 {
+            Divider()
+              .background(Color(.systemGray4))
+              .padding(.leading, 56)
           }
-        }
-
-        if index < items.count - 1 {
-          Divider()
-            .background(Color(.systemGray4))
-            .padding(.leading, 56)
-        }
-
-        // Add divider after the last item if it's the General Settings group
-        // Special case: Add thin divider for Notifications row
-        if index == items.count - 1, title == "General Settings", item.title == "Notifications" {
-          Divider()
-            .background(Color(.systemGray4))
-            .padding(.leading, 56)
-        }
-
-        // Add divider after the last item if it's the Account & Notifications group
-        if index == items.count - 1, title == "Account & Notifications" {
-          Rectangle()
-            .fill(.surface2)
-            .frame(height: 8)
-        }
-
-        // Add divider after the last item if it's the Data Management group
-        if index == items.count - 1, title == "Data Management" {
-          Rectangle()
-            .fill(.surface2)
-            .frame(height: 8)
         }
       }
+      .background(.surface)
+      .clipShape(RoundedRectangle(cornerRadius: 24))
+      .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
   }
 
