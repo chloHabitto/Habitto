@@ -24,7 +24,6 @@ struct SubscriptionView: View {
               .aspectRatio(contentMode: .fit)
               .frame(width: 32, height: 32)
               .foregroundColor(.primary)
-              .padding(.top, 8)
               .padding(.bottom, 12)
             
             // Header text (smaller)
@@ -35,13 +34,13 @@ struct SubscriptionView: View {
             comparisonTable
               .padding(.bottom, 32)
             
+            // Subscription options (moved from sheet)
+            subscriptionOptions
+              .padding(.bottom, 32)
+            
             // Review carousel
             reviewCarousel
               .padding(.bottom, 32)
-            
-            // Subscription options (moved from sheet)
-            subscriptionOptions
-              .padding(.bottom, 48)
             
             // Legal links (Privacy Policy and Terms of Use)
             mainLegalLinks
