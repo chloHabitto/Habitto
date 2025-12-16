@@ -14,46 +14,29 @@ struct AccountView: View {
         // Main content area
         if isLoggedIn {
           // Account Options for authenticated users
-          VStack(spacing: 0) {
+          ZStack(alignment: .bottom) {
             ScrollView {
-              VStack(spacing: 24) {
-                // Signed in status section
-                signedInStatusSection
+              VStack(spacing: 0) {
+                // Profile Section
+                profileSection
+                  .padding(.top, 20)
                 
-                // Data Repair Section (hidden)
-                // if isLoggedIn {
-                //   dataRepairSection
-                // }
-
-                Spacer(minLength: 40)
+                // User Information Section
+                userInformationSection
+                  .padding(.top, 32)
+                
+                // Login Information Section
+                loginInformationSection
+                  .padding(.top, 32)
+                
+                // Spacer for bottom button
+                Spacer(minLength: 100)
               }
               .padding(.bottom, 20)
             }
-
-            // Account Actions Section - Fixed at bottom
-            VStack(spacing: 16) {
-              // Sign Out Button
-              HabittoButton(
-                size: .large,
-                style: .fillTertiary,
-                content: .text("Sign Out"),
-                action: {
-                  showingSignOutAlert = true
-                })
-
-              // Delete Account Button
-              HabittoButton(
-                size: .large,
-                style: .fillDestructive,
-                content: .text("Delete Account"),
-                action: {
-                  showingDeleteAccountAlert = true
-                })
-                .disabled(isDeletingAccount)
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-            .background(Color.surface2)
+            
+            // Log out Button - Fixed at bottom
+            logOutButton
           }
         } else {
           // Guest mode - Sign in with Apple
@@ -98,8 +81,8 @@ struct AccountView: View {
           Button(action: {
             dismiss()
           }) {
-            Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
+            Image(systemName: "chevron.left")
+              .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
           }
         }
@@ -107,6 +90,9 @@ struct AccountView: View {
     }
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
+    }
+    .sheet(isPresented: $showingProfileView) {
+      ProfileView()
     }
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) { }
@@ -174,6 +160,7 @@ struct AccountView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+  @ObservedObject private var avatarManager = AvatarManager.shared
 
   // State variables for showing different screens
   @State private var showingDataPrivacy = false
@@ -183,6 +170,13 @@ struct AccountView: View {
   @State private var deletionError: String?
   @State private var showingDeletionError = false
   @State private var showingDeletionSuccess = false
+  @State private var showingProfileView = false
+  @State private var showingBirthdayView = false
+  @State private var showingGenderView = false
+  @State private var showingChangeAccountView = false
+  @State private var showingChangeServerView = false
+  @State private var userID: String = ""
+  @State private var copiedUserID = false
   
   // Data Repair state
   @State private var showingRepairAlert = false
@@ -196,34 +190,305 @@ struct AccountView: View {
   @StateObject private var deletionService = AccountDeletionService()
   private let repairService = DataRepairService.shared
 
-  // Signed in status section
-  private var signedInStatusSection: some View {
+  // MARK: - Profile Section
+  
+  private var profileSection: some View {
     VStack(spacing: 16) {
-      HStack(spacing: 12) {
-        // Checkmark icon
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 24))
-          .foregroundColor(.green)
-        
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Signed in with Apple")
-            .font(.appBodyLarge)
-            .fontWeight(.semibold)
-            .foregroundColor(.text01)
+      // Profile Picture
+      Button(action: {
+        showingProfileView = true
+      }) {
+        ZStack(alignment: .bottomTrailing) {
+          Group {
+            if avatarManager.selectedAvatar.isCustomPhoto,
+               let imageData = avatarManager.selectedAvatar.customPhotoData,
+               let uiImage = UIImage(data: imageData)
+            {
+              Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+            } else {
+              Image(avatarManager.selectedAvatar.imageName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+            }
+          }
+          .frame(width: 80, height: 80)
+          .clipShape(Circle())
+          .overlay(
+            Circle()
+              .stroke(Color.primaryContainer, lineWidth: 3))
           
-          Text("Your habits sync across all your devices")
-            .font(.appBodySmall)
-            .foregroundColor(.text03)
+          // Edit Icon
+          Image("Icon-pen")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 20, height: 20)
+            .foregroundColor(.primary)
+            .padding(6)
+            .background(Color.primaryContainer)
+            .clipShape(Circle())
+            .overlay(
+              Circle()
+                .stroke(Color.primaryContainer, lineWidth: 2))
         }
+      }
+      .buttonStyle(PlainButtonStyle())
+      
+      // Name with edit icon
+      HStack(spacing: 8) {
+        Text(userDisplayName)
+          .font(.system(size: 18, weight: .medium))
+          .foregroundColor(.text01)
         
-        Spacer()
+        Button(action: {
+          showingProfileView = true
+        }) {
+          Image(systemName: "pencil")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.text01)
+        }
       }
     }
-    .padding(20)
-    .background(Color.surface)
-    .cornerRadius(16)
-    .padding(.horizontal, 20)
-    .padding(.top, 8)
+    .frame(maxWidth: .infinity)
+    .onAppear {
+      loadUserID()
+    }
+  }
+  
+  // MARK: - User Information Section
+  
+  private var userInformationSection: some View {
+    VStack(spacing: 0) {
+      // User ID Row
+      accountRow(
+        icon: "person.fill",
+        title: "User ID",
+        value: userID.isEmpty ? "Loading..." : userID,
+        trailing: AnyView(
+          Button(action: {
+            copyUserID()
+          }) {
+            Text(copiedUserID ? "Copied" : "Copy")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.primary)
+          }
+        ))
+      
+      Divider()
+        .padding(.leading, 56)
+      
+      // Add birthday Row
+      accountRow(
+        icon: "gift.fill",
+        title: "Add birthday",
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingBirthdayView = true
+        })
+      
+      Divider()
+        .padding(.leading, 56)
+      
+      // Add gender Row
+      accountRow(
+        icon: "person.2.fill",
+        title: "Add gender",
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingGenderView = true
+        })
+    }
+    .background(Color.surface2)
+    .sheet(isPresented: $showingBirthdayView) {
+      // Placeholder for birthday view
+      Text("Birthday View")
+        .navigationTitle("Birthday")
+    }
+    .sheet(isPresented: $showingGenderView) {
+      // Placeholder for gender view
+      Text("Gender View")
+        .navigationTitle("Gender")
+    }
+  }
+  
+  // MARK: - Login Information Section
+  
+  private var loginInformationSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("Login Information")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.bottom, 16)
+      
+      // My social account Row
+      accountRow(
+        icon: "apple.logo",
+        title: "My social account",
+        value: userEmail)
+      
+      Divider()
+        .padding(.leading, 56)
+      
+      // Change social account Row
+      accountRow(
+        icon: "arrow.triangle.2.circlepath",
+        title: "Change social account",
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingChangeAccountView = true
+        })
+      
+      Divider()
+        .padding(.leading, 56)
+      
+      // Change server Row
+      accountRow(
+        icon: "externaldrive.fill",
+        title: "Change server",
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingChangeServerView = true
+        })
+    }
+    .background(Color.surface2)
+    .sheet(isPresented: $showingChangeAccountView) {
+      // Placeholder for change account view
+      Text("Change Account View")
+        .navigationTitle("Change Account")
+    }
+    .sheet(isPresented: $showingChangeServerView) {
+      // Placeholder for change server view
+      Text("Change Server View")
+        .navigationTitle("Change Server")
+    }
+  }
+  
+  // MARK: - Log Out Button
+  
+  private var logOutButton: some View {
+    VStack(spacing: 0) {
+      // Gradient overlay to fade content behind button
+      LinearGradient(
+        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+        startPoint: .top,
+        endPoint: .bottom)
+        .frame(height: 20)
+      
+      // Button container
+      HStack {
+        Button(action: {
+          showingSignOutAlert = true
+        }) {
+          Text("Log out")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.orange)
+        }
+      }
+      .padding(.horizontal, 20)
+      .padding(.bottom, 40)
+      .background(Color.surface2)
+    }
+  }
+  
+  // MARK: - Helper Views
+  
+  private func accountRow(
+    icon: String,
+    title: String,
+    value: String?,
+    hasChevron: Bool = false,
+    trailing: AnyView? = nil,
+    action: (() -> Void)? = nil
+  ) -> some View {
+    Button(action: {
+      action?()
+    }) {
+      HStack(spacing: 12) {
+        // Icon
+        Image(systemName: icon)
+          .font(.system(size: 20))
+          .foregroundColor(.primaryDim)
+          .frame(width: 24, height: 24)
+        
+        // Title and Value
+        HStack(spacing: 8) {
+          Text(title)
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          
+          if let value = value {
+            Text(value)
+              .font(.system(size: 14, weight: .regular))
+              .foregroundColor(.text04)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        // Trailing content (Copy button, chevron, etc.)
+        if let trailing = trailing {
+          trailing
+        } else if hasChevron {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.text04)
+        }
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(PlainButtonStyle())
+  }
+  
+  // MARK: - Helper Properties
+  
+  private var userDisplayName: String {
+    if let user = authManager.currentUser,
+       let displayName = user.displayName,
+       !displayName.isEmpty
+    {
+      return displayName
+    }
+    return "User"
+  }
+  
+  private var userEmail: String {
+    if let user = authManager.currentUser,
+       let email = user.email
+    {
+      return email
+    }
+    return ""
+  }
+  
+  private func loadUserID() {
+    Task {
+      let currentUser = CurrentUser()
+      userID = await currentUser.id
+    }
+  }
+  
+  private func copyUserID() {
+    UIPasteboard.general.string = userID
+    copiedUserID = true
+    
+    // Reset after 2 seconds
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      copiedUserID = false
+    }
   }
 
   private var isLoggedIn: Bool {
