@@ -443,7 +443,7 @@ struct SubscriptionView: View {
         }
       }
     }) {
-      HStack(spacing: 16) {
+      HStack(alignment: .center, spacing: 16) {
         if !emoji.isEmpty {
           Text(emoji)
             .font(.system(size: 24))
@@ -477,6 +477,7 @@ struct SubscriptionView: View {
             .font(.appTitleMediumEmphasised)
             .foregroundColor(isCurrentPlan ? .text03 : .text02)
         }
+        .frame(maxHeight: .infinity, alignment: .center)
         
         Spacer()
         
@@ -499,6 +500,7 @@ struct SubscriptionView: View {
               .foregroundColor(isCurrentPlan ? .text04 : .text05)
           }
         }
+        .frame(maxHeight: .infinity, alignment: .center)
         
         // Radio button circle
         ZStack {
