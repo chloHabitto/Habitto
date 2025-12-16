@@ -24,7 +24,7 @@ struct SubscriptionView: View {
               .aspectRatio(contentMode: .fit)
               .frame(width: 32, height: 32)
               .foregroundColor(.primary)
-              .padding(.top, 20)
+              .padding(.top, 8)
               .padding(.bottom, 12)
             
             // Header text (smaller)
@@ -41,7 +41,7 @@ struct SubscriptionView: View {
             
             // Subscription options (moved from sheet)
             subscriptionOptions
-              .padding(.bottom, 24)
+              .padding(.bottom, 48)
             
             // Legal links (Privacy Policy and Terms of Use)
             mainLegalLinks
@@ -484,19 +484,19 @@ struct SubscriptionView: View {
         // Duration and price on the right
         VStack(alignment: .trailing, spacing: 4) {
           Text(length)
-            .font(.appBodySmall)
+            .font(.appBodyMedium)
             .foregroundColor(isCurrentPlan ? .text04 : .text03)
           
           HStack(spacing: 8) {
             if showCrossedPrice, let originalPrice = originalPrice {
               Text(originalPrice)
-                .font(.appBodySmall)
+                .font(.appBodyMedium)
                 .foregroundColor(.text04)
                 .strikethrough()
             }
             
             Text(price)
-              .font(.appBodySmallEmphasised)
+              .font(.appBodyMediumEmphasised)
               .foregroundColor(isCurrentPlan ? .text04 : .text05)
           }
         }
