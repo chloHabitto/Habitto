@@ -175,6 +175,7 @@ struct AccountView: View {
   @State private var showingGenderView = false
   @State private var userID: String = ""
   @State private var copiedUserID = false
+  @State private var copiedEmail = false
   
   // Data Repair state
   @State private var showingRepairAlert = false
@@ -347,11 +348,40 @@ struct AccountView: View {
       .padding(.horizontal, 20)
       .padding(.bottom, 16)
       
-      // My social account Row
-      accountRow(
-        icon: "apple.logo",
-        title: "My social account",
-        value: userEmail)
+      // My social account Row - Custom layout with VStack for title and value
+      HStack(spacing: 12) {
+        // Icon
+        Image(systemName: "apple.logo")
+          .font(.system(size: 20))
+          .foregroundColor(.primaryDim)
+          .frame(width: 24, height: 24)
+        
+        // Title and Value in VStack
+        VStack(alignment: .leading, spacing: 4) {
+          Text("My social account")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          
+          Text(userEmail)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        // Copy button
+        Button(action: {
+          copyEmail()
+        }) {
+          Text(copiedEmail ? "Copied" : "Copy")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.primary)
+        }
+        .buttonStyle(PlainButtonStyle())
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
     }
     .background(Color.surface2)
   }
@@ -470,6 +500,16 @@ struct AccountView: View {
     // Reset after 2 seconds
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
       copiedUserID = false
+    }
+  }
+  
+  private func copyEmail() {
+    UIPasteboard.general.string = userEmail
+    copiedEmail = true
+    
+    // Reset after 2 seconds
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      copiedEmail = false
     }
   }
 
