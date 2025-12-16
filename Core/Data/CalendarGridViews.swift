@@ -288,7 +288,7 @@ struct MonthlyCalendarGridView: View {
               .padding(.top, 12)
               .padding(.bottom, 16)
             }
-            .background(Color("appSurface3a"))
+            .background(.surface3a)
             .cornerRadius(24)
             .id("month-habit-\(habit.id)-\(index)")
           }
@@ -772,7 +772,7 @@ struct YearlyCalendarGridView: View {
               .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity)
-            .background(Color("appSurface3a"))
+            .background(.surface3a)
             .cornerRadius(24)
             .id("year-habit-\(habit.id)-\(index)")
           }
