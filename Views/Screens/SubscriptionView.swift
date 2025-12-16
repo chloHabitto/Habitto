@@ -40,7 +40,7 @@ struct SubscriptionView: View {
             
             // Review carousel
             reviewCarousel
-              .padding(.bottom, 32)
+              .padding(.bottom, 48)
             
             // Legal links (Privacy Policy and Terms of Use)
             mainLegalLinks
