@@ -202,15 +202,15 @@ struct SubscriptionView: View {
   
   private var headerText: some View {
     (Text("Unlock your full Habitto experience with ")
+       .font(.appBodyLarge)
        .foregroundColor(.text02.opacity(0.85)) +
      Text("Premium")
        .font(.system(size: 20, weight: .bold))
        .foregroundColor(.primary) +
      Text("")
     )
-    .font(.appBodyMedium)
     .multilineTextAlignment(.center)
-    .frame(maxWidth: .infinity)
+    .frame(maxWidth: 280) // Constrain width to force two lines
   }
   
   private var reviewCarousel: some View {
@@ -783,9 +783,6 @@ struct SubscriptionView: View {
         .font(.appBodySmall)
         .foregroundColor(.text02)
     }
-    .padding(16)
-    .background(Color.surface)
-    .cornerRadius(12)
   }
   
   /// Open Privacy Policy in Safari
