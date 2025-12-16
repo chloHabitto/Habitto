@@ -56,7 +56,7 @@ struct MoreTabView: View {
             // Settings Sections
             settingsSections
           }
-          .padding(.horizontal, 0)
+          .padding(.horizontal, 20)
           .padding(.top, 20)
           .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
         }
@@ -257,7 +257,6 @@ struct MoreTabView: View {
     .frame(height: 80)
     .background(Color.surfaceDim)
     .cornerRadius(24)
-    .padding(.horizontal, 20)
     .padding(.top, 0)
     .padding(.bottom, 0)
     }
