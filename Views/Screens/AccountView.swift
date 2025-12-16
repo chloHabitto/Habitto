@@ -243,6 +243,7 @@ struct AccountView: View {
   @State private var editedName = ""
   @FocusState private var isNameFieldFocused: Bool
   @State private var showingBirthdayView = false
+  @State private var selectedBirthday: Date = Date()
   @State private var showingGenderView = false
   @State private var userID: String = ""
   @State private var copiedUserID = false
@@ -398,9 +399,15 @@ struct AccountView: View {
     }
     .background(Color.surface2)
     .sheet(isPresented: $showingBirthdayView) {
-      // Placeholder for birthday view
-      Text("Birthday View")
-        .navigationTitle("Birthday")
+      BirthdayBottomSheet(
+        selectedDate: $selectedBirthday,
+        onClose: {
+          showingBirthdayView = false
+        },
+        onSave: {
+          // Save birthday logic here
+          saveBirthday()
+        })
     }
     .sheet(isPresented: $showingGenderView) {
       // Placeholder for gender view
@@ -750,6 +757,12 @@ struct AccountView: View {
     }
   }
   
+  private func saveBirthday() {
+    // Save birthday logic - can be implemented later
+    print("✅ Birthday saved: \(selectedBirthday)")
+    showingBirthdayView = false
+  }
+  
   private func saveName() {
     let newDisplayName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
     
@@ -788,6 +801,126 @@ struct AccountView: View {
       UserDefaults.standard.set(newDisplayName, forKey: "GuestName")
       print("✅ Guest name saved: \(newDisplayName)")
       showingNameEditSheet = false
+    }
+  }
+}
+
+// MARK: - BirthdayBottomSheet
+
+struct BirthdayBottomSheet: View {
+  @Binding var selectedDate: Date
+  let onClose: () -> Void
+  let onSave: () -> Void
+  
+  @State private var selectedMonth: Int
+  @State private var selectedDay: Int
+  @State private var selectedYear: Int
+  
+  private let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  private let currentYear = Calendar.current.component(.year, from: Date())
+  private let minYear = 1900
+  private let maxYear: Int
+  
+  init(selectedDate: Binding<Date>, onClose: @escaping () -> Void, onSave: @escaping () -> Void) {
+    self._selectedDate = selectedDate
+    self.onClose = onClose
+    self.onSave = onSave
+    
+    let calendar = Calendar.current
+    let components = calendar.dateComponents([.year, .month, .day], from: selectedDate.wrappedValue)
+    
+    self._selectedMonth = State(initialValue: components.month ?? calendar.component(.month, from: Date()))
+    self._selectedDay = State(initialValue: components.day ?? calendar.component(.day, from: Date()))
+    self._selectedYear = State(initialValue: components.year ?? calendar.component(.year, from: Date()))
+    self.maxYear = calendar.component(.year, from: Date())
+  }
+  
+  var body: some View {
+    BaseBottomSheet(
+      title: "Birthday",
+      description: "",
+      onClose: onClose,
+      useGlassCloseButton: true,
+      confirmButton: {
+        updateSelectedDate()
+        onSave()
+      },
+      confirmButtonTitle: "Done")
+    {
+      VStack(spacing: 0) {
+        // Date Picker with three columns
+        HStack(spacing: 0) {
+          // Month Picker
+          Picker("Month", selection: $selectedMonth) {
+            ForEach(1...12, id: \.self) { month in
+              Text(months[month - 1])
+                .tag(month)
+            }
+          }
+          .pickerStyle(.wheel)
+          .frame(maxWidth: .infinity)
+          
+          // Day Picker
+          Picker("Day", selection: $selectedDay) {
+            ForEach(1...daysInMonth, id: \.self) { day in
+              Text("\(day)")
+                .tag(day)
+            }
+          }
+          .pickerStyle(.wheel)
+          .frame(maxWidth: .infinity)
+          .onChange(of: selectedMonth) { _, _ in
+            // Adjust day if it exceeds days in new month
+            if selectedDay > daysInMonth {
+              selectedDay = daysInMonth
+            }
+          }
+          .onChange(of: selectedYear) { _, _ in
+            // Adjust day for leap year changes
+            if selectedDay > daysInMonth {
+              selectedDay = daysInMonth
+            }
+          }
+          
+          // Year Picker
+          Picker("Year", selection: $selectedYear) {
+            ForEach((minYear...maxYear).reversed(), id: \.self) { year in
+              Text("\(year)")
+                .tag(year)
+            }
+          }
+          .pickerStyle(.wheel)
+          .frame(maxWidth: .infinity)
+        }
+        .frame(height: 200)
+        
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .presentationDetents([.height(400)])
+  }
+  
+  private var daysInMonth: Int {
+    let calendar = Calendar.current
+    let dateComponents = DateComponents(year: selectedYear, month: selectedMonth)
+    if let date = calendar.date(from: dateComponents),
+       let range = calendar.range(of: .day, in: .month, for: date) {
+      return range.count
+    }
+    return 31
+  }
+  
+  private func updateSelectedDate() {
+    let calendar = Calendar.current
+    var components = DateComponents()
+    components.year = selectedYear
+    components.month = selectedMonth
+    components.day = selectedDay
+    
+    if let date = calendar.date(from: components) {
+      selectedDate = date
     }
   }
 }
