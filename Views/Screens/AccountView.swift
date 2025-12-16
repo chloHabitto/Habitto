@@ -91,8 +91,61 @@ struct AccountView: View {
     .sheet(isPresented: $showingDataPrivacy) {
       DataPrivacyView()
     }
-    .sheet(isPresented: $showingProfileView) {
-      ProfileView()
+    .sheet(isPresented: $showingPhotoOptions) {
+      PhotoOptionsBottomSheet(
+        onClose: {
+          showingPhotoOptions = false
+        },
+        onAvatarSelection: {
+          showingAvatarSelection = true
+        },
+        onTakePhoto: {
+          requestCameraPermissionAndOpen()
+        },
+        onChooseFromLibrary: {
+          requestPhotoLibraryPermissionAndOpen()
+        })
+    }
+    .sheet(isPresented: $showingAvatarSelection) {
+      AvatarSelectionView()
+    }
+    .sheet(isPresented: $showingCamera) {
+      if permissionManager.canUseCamera {
+        CameraView { image in
+          avatarManager.selectCustomPhoto(image)
+        }
+      } else {
+        VStack(spacing: 20) {
+          Image(systemName: "camera.fill")
+            .font(.system(size: 60))
+            .foregroundColor(.text03)
+
+          Text("Camera Not Available")
+            .font(.appTitleMedium)
+            .foregroundColor(.text01)
+
+          Text("Camera is not available or permission is required.")
+            .font(.appBodyMedium)
+            .foregroundColor(.text02)
+            .multilineTextAlignment(.center)
+
+          Button("OK") {
+            showingCamera = false
+          }
+          .font(.appLabelLarge)
+          .foregroundColor(.primary)
+          .padding(.horizontal, 20)
+          .padding(.vertical, 12)
+          .background(Color.primary.opacity(0.1))
+          .cornerRadius(25)
+        }
+        .padding(40)
+      }
+    }
+    .sheet(isPresented: $showingPhotoLibrary) {
+      PhotoLibraryView { image in
+        avatarManager.selectCustomPhoto(image)
+      }
     }
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) { }
@@ -161,6 +214,7 @@ struct AccountView: View {
 
   @Environment(\.dismiss) private var dismiss
   @ObservedObject private var avatarManager = AvatarManager.shared
+  @ObservedObject private var permissionManager = PermissionManager.shared
 
   // State variables for showing different screens
   @State private var showingDataPrivacy = false
@@ -170,7 +224,10 @@ struct AccountView: View {
   @State private var deletionError: String?
   @State private var showingDeletionError = false
   @State private var showingDeletionSuccess = false
-  @State private var showingProfileView = false
+  @State private var showingPhotoOptions = false
+  @State private var showingAvatarSelection = false
+  @State private var showingCamera = false
+  @State private var showingPhotoLibrary = false
   @State private var showingBirthdayView = false
   @State private var showingGenderView = false
   @State private var userID: String = ""
@@ -195,7 +252,7 @@ struct AccountView: View {
     VStack(spacing: 16) {
       // Profile Picture
       Button(action: {
-        showingProfileView = true
+        showingPhotoOptions = true
       }) {
         ZStack(alignment: .bottomTrailing) {
           Group {
@@ -242,7 +299,7 @@ struct AccountView: View {
           .foregroundColor(.text01)
         
         Button(action: {
-          showingProfileView = true
+          showingPhotoOptions = true
         }) {
           Image(systemName: "pencil")
             .font(.system(size: 14, weight: .medium))
@@ -648,6 +705,30 @@ struct AccountView: View {
         showingDeletionError = true
         isDeletingAccount = false
       }
+    }
+  }
+  
+  private func requestCameraPermissionAndOpen() {
+    if permissionManager.cameraPermissionStatus == .notDetermined {
+      permissionManager.requestCameraPermission { granted in
+        if granted {
+          showingCamera = true
+        }
+      }
+    } else {
+      showingCamera = true
+    }
+  }
+
+  private func requestPhotoLibraryPermissionAndOpen() {
+    if permissionManager.photoLibraryPermissionStatus == .notDetermined {
+      permissionManager.requestPhotoLibraryPermission { granted in
+        if granted {
+          showingPhotoLibrary = true
+        }
+      }
+    } else {
+      showingPhotoLibrary = true
     }
   }
 }
