@@ -43,29 +43,29 @@ struct ScheduleBottomSheet: View {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
               Text("I want to repeat this habit")
-                .font(Font.appTitleMedium)
+                .titleMediumFont()
                 .foregroundColor(.text01)
 
               HStack {
                 if selectedSchedule == "Weekly" {
                   if pillTexts.isEmpty {
                     Text("Select days")
-                      .font(Font.appBodyLarge)
+                      .appBodyLargeFont()
                       .foregroundColor(.onPrimary)
                       .padding(.horizontal, 16)
                       .padding(.vertical, 8)
-                      .background(Color(hex: "1C274C"))
+                      .background(ColorTokens.primary)
                       .clipShape(Capsule())
                   } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                       HStack(spacing: 8) {
                         ForEach(pillTexts, id: \.self) { pillText in
                           Text(pillText)
-                            .font(Font.appBodyLarge)
+                            .appBodyLargeFont()
                             .foregroundColor(.onPrimary)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color(hex: "1C274C"))
+                            .background(ColorTokens.primary)
                             .clipShape(Capsule())
                         }
                       }
@@ -73,11 +73,11 @@ struct ScheduleBottomSheet: View {
                   }
                 } else {
                   Text(selectedDays)
-                    .font(.appBodyLarge)
+                    .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color(hex: "1C274C"))
+                            .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 }
               }
@@ -89,7 +89,7 @@ struct ScheduleBottomSheet: View {
 
             // 2. Divider
             Divider()
-              .background(.outline3)
+              .background(ColorTokens.outline3)
               .padding(.vertical, 20)
               .padding(.horizontal, 16)
 
@@ -110,7 +110,7 @@ struct ScheduleBottomSheet: View {
                   .frame(height: 16)
 
                 Text("On those days")
-                  .font(Font.appTitleSmall)
+                  .titleSmallFont()
                   .foregroundColor(.text05)
 
                 HStack(spacing: 8) {
@@ -123,19 +123,19 @@ struct ScheduleBottomSheet: View {
                       }
                     }) {
                       Text(day)
-                        .font(.appLabelMediumEmphasised)
+                        .labelMediumEmphasisedFont()
                         .foregroundColor(selectedWeekDays.contains(day)
                           ? .onPrimary
                           : .onSecondaryContainer)
                           .frame(maxWidth: .infinity)
                           .frame(height: 36)
                           .background(selectedWeekDays.contains(day)
-                            ? .primary
-                            : .secondaryContainer)
+                            ? ColorTokens.primary
+                            : ColorTokens.secondaryContainer)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .overlay(
                               RoundedRectangle(cornerRadius: 8)
-                                .stroke(.outline3, lineWidth: 1))
+                                .stroke(ColorTokens.outline3, lineWidth: 1))
                     }
                   }
                 }
@@ -168,25 +168,25 @@ struct ScheduleBottomSheet: View {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
               Text("I want to repeat this habit")
-                .font(Font.appTitleMedium)
+                .titleMediumFont()
                 .foregroundColor(.text01)
 
               HStack {
                 if selectedFrequency == "Monthly" {
                   Text(formatMonthlyFrequency(monthlyValue))
-                    .font(.appBodyLarge)
+                    .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color(hex: "1C274C"))
+                            .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 } else {
                   Text(formatWeeklyFrequency(weeklyValue))
-                    .font(.appBodyLarge)
+                    .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color(hex: "1C274C"))
+                            .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 }
               }
@@ -198,7 +198,7 @@ struct ScheduleBottomSheet: View {
 
             // 2. Divider
             Divider()
-              .background(.outline3)
+              .background(ColorTokens.outline3)
               .padding(.vertical, 20)
               .padding(.horizontal, 16)
 
@@ -226,10 +226,10 @@ struct ScheduleBottomSheet: View {
                     }
                   }) {
                     Image(systemName: "minus")
-                      .font(Font.appTitleMedium)
+                      .titleMediumFont()
                       .foregroundColor(monthlyValue > 1 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
-                      .background(monthlyValue > 1 ? .primary : .disabledBackground)
+                      .background(monthlyValue > 1 ? ColorTokens.primary : ColorTokens.disabledBackground)
                       .clipShape(Circle())
                   }
                   .frame(width: 48, height: 48)
@@ -237,13 +237,13 @@ struct ScheduleBottomSheet: View {
 
                   // Number display
                   Text("\(monthlyValue)")
-                    .font(Font.appHeadlineSmallEmphasised)
+                    .headlineSmallEmphasisedFont()
                     .foregroundColor(.text01)
                     .frame(width: 52, height: 52)
-                    .background(.surface)
+                    .background(ColorTokens.surface)
                     .overlay(
                       RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline3, lineWidth: 1))
+                        .stroke(ColorTokens.outline3, lineWidth: 1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                   // Plus button
@@ -253,10 +253,10 @@ struct ScheduleBottomSheet: View {
                     }
                   }) {
                     Image(systemName: "plus")
-                      .font(Font.appTitleMedium)
+                      .titleMediumFont()
                       .foregroundColor(monthlyValue < 30 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
-                      .background(monthlyValue < 30 ? .primary : .disabledBackground)
+                      .background(monthlyValue < 30 ? ColorTokens.primary : ColorTokens.disabledBackground)
                       .clipShape(Circle())
                   }
                   .frame(width: 48, height: 48)
@@ -282,10 +282,10 @@ struct ScheduleBottomSheet: View {
                     }
                   }) {
                     Image(systemName: "minus")
-                      .font(Font.appTitleMedium)
+                      .titleMediumFont()
                       .foregroundColor(weeklyValue > 1 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
-                      .background(weeklyValue > 1 ? .primary : .disabledBackground)
+                      .background(weeklyValue > 1 ? ColorTokens.primary : ColorTokens.disabledBackground)
                       .clipShape(Circle())
                   }
                   .frame(width: 48, height: 48)
@@ -293,13 +293,13 @@ struct ScheduleBottomSheet: View {
 
                   // Number display
                   Text("\(weeklyValue)")
-                    .font(Font.appHeadlineSmallEmphasised)
+                    .headlineSmallEmphasisedFont()
                     .foregroundColor(.text01)
                     .frame(width: 52, height: 52)
-                    .background(.surface)
+                    .background(ColorTokens.surface)
                     .overlay(
                       RoundedRectangle(cornerRadius: 8)
-                        .stroke(.outline3, lineWidth: 1))
+                        .stroke(ColorTokens.outline3, lineWidth: 1))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                   // Plus button
@@ -309,10 +309,10 @@ struct ScheduleBottomSheet: View {
                     }
                   }) {
                     Image(systemName: "plus")
-                      .font(Font.appTitleMedium)
+                      .titleMediumFont()
                       .foregroundColor(weeklyValue < 7 ? .onPrimary : .onDisabledBackground)
                       .frame(width: 44, height: 44)
-                      .background(weeklyValue < 7 ? .primary : .disabledBackground)
+                      .background(weeklyValue < 7 ? ColorTokens.primary : ColorTokens.disabledBackground)
                       .clipShape(Circle())
                   }
                   .frame(width: 48, height: 48)
