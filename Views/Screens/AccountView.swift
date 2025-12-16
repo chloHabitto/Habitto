@@ -818,7 +818,7 @@ struct BirthdayBottomSheet: View {
   
   private let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   private let currentYear = Calendar.current.component(.year, from: Date())
-  private let minYear = 1900
+  private let minYear = 1930
   private let maxYear: Int
   
   init(selectedDate: Binding<Date>, onClose: @escaping () -> Void, onSave: @escaping () -> Void) {
@@ -827,12 +827,21 @@ struct BirthdayBottomSheet: View {
     self.onSave = onSave
     
     let calendar = Calendar.current
-    let components = calendar.dateComponents([.year, .month, .day], from: selectedDate.wrappedValue)
+    let today = Date()
+    let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
+    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate.wrappedValue)
     
-    self._selectedMonth = State(initialValue: components.month ?? calendar.component(.month, from: Date()))
-    self._selectedDay = State(initialValue: components.day ?? calendar.component(.day, from: Date()))
-    self._selectedYear = State(initialValue: components.year ?? calendar.component(.year, from: Date()))
-    self.maxYear = calendar.component(.year, from: Date())
+    let todayYear = todayComponents.year ?? calendar.component(.year, from: today)
+    let selectedYear = selectedComponents.year ?? todayYear
+    
+    // Ensure year is within valid range (1930 to current year), default to current year
+    let validYear = (selectedYear >= 1930 && selectedYear <= todayYear) ? selectedYear : todayYear
+    
+    // Default to current year, month, and day
+    self._selectedMonth = State(initialValue: selectedComponents.month ?? todayComponents.month ?? calendar.component(.month, from: today))
+    self._selectedDay = State(initialValue: selectedComponents.day ?? todayComponents.day ?? calendar.component(.day, from: today))
+    self._selectedYear = State(initialValue: validYear)
+    self.maxYear = todayYear
   }
   
   var body: some View {
