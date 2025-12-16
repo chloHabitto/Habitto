@@ -12,6 +12,7 @@ struct BaseBottomSheet<Content: View>: View {
     useGlassCloseButton: Bool = false,
     confirmButton: (() -> Void)? = nil,
     confirmButtonTitle: String? = nil,
+    isConfirmButtonDisabled: Bool = false,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -20,6 +21,7 @@ struct BaseBottomSheet<Content: View>: View {
     self.useGlassCloseButton = useGlassCloseButton
     self.confirmButton = confirmButton
     self.confirmButtonTitle = confirmButtonTitle
+    self.isConfirmButtonDisabled = isConfirmButtonDisabled
     self.content = content()
   }
 
@@ -32,6 +34,7 @@ struct BaseBottomSheet<Content: View>: View {
   let content: Content
   let confirmButton: (() -> Void)?
   let confirmButtonTitle: String?
+  let isConfirmButtonDisabled: Bool
 
   var body: some View {
     VStack(spacing: 0) {
@@ -101,6 +104,7 @@ struct BaseBottomSheet<Content: View>: View {
 
           HabittoButton.largeFillPrimary(
             text: confirmButtonTitle,
+            state: isConfirmButtonDisabled ? .disabled : .default,
             action: confirmButton)
             .padding(24)
         }
