@@ -3416,7 +3416,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(Color.grey50))
+          .fill(Color.surface3))
 
       // Swipeable content
       TabView(selection: $currentMonthlyHighlightPage) {
@@ -3437,7 +3437,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface))
+        .fill(Color.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))

@@ -285,10 +285,10 @@ struct MonthlyCalendarGridView: View {
               // Summary statistics row
               summaryStatisticsView(for: habit)
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
+              .padding(.top, 12)
+              .padding(.bottom, 16)
             }
-            .background(Color.grey50)
+            .background(Color.surface3)
             .cornerRadius(24)
             .id("month-habit-\(habit.id)-\(index)")
           }
@@ -340,7 +340,7 @@ struct MonthlyCalendarGridView: View {
           .fill(.clear)
           .frame(minWidth: 0, maxWidth: .infinity)
           .frame(height: 24)
-          .background(Color.grey50)
+          .background(Color.surface3)
           .clipShape(
             UnevenRoundedRectangle(
               topLeadingRadius: 12,
@@ -361,7 +361,7 @@ struct MonthlyCalendarGridView: View {
             .font(.appBodyMediumEmphasised)
             .foregroundColor(.text02)
             .frame(width: 24, height: 24)
-            .background(Color.grey50)
+            .background(Color.surface3)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -388,7 +388,7 @@ struct MonthlyCalendarGridView: View {
             .foregroundColor(.text01)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             .frame(height: 36)
-                    .background(.surface)
+                    .background(.surface3)
             .overlay(
               Rectangle()
                 .stroke(.outline3, lineWidth: 1))
@@ -404,7 +404,7 @@ struct MonthlyCalendarGridView: View {
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage)
               .frame(width: 24, height: 36)
-                    .background(.surface)
+                    .background(.surface3)
               .overlay(
                 Rectangle()
                   .stroke(.outline3, lineWidth: 1))
@@ -420,7 +420,7 @@ struct MonthlyCalendarGridView: View {
           .foregroundColor(.text01)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
           .frame(height: 32)
-          .background(Color.grey50)
+          .background(Color.surface3)
           .clipShape(
             UnevenRoundedRectangle(
               topLeadingRadius: 0,
@@ -443,7 +443,7 @@ struct MonthlyCalendarGridView: View {
             selectedMonth: selectedMonth,
             getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit)
             .frame(width: 24, height: 32)
-            .background(Color.grey50)
+            .background(Color.surface3)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -768,11 +768,11 @@ struct YearlyCalendarGridView: View {
               // Summary statistics row
               summaryStatisticsView(for: habit)
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
+              .padding(.top, 12)
+              .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity)
-            .background(Color.grey50)
+            .background(Color.surface3)
             .cornerRadius(24)
             .id("year-habit-\(habit.id)-\(index)")
           }
