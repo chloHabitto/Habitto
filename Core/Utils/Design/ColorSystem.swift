@@ -63,6 +63,8 @@ enum ColorTokens {
   static let componentBackground = Color("appComponentBackground")
   static let sheetBackground = Color("appSheetBackground")
   static let sheetBackground02 = Color("appSheetBackground02")
+  static let bottomNavIconActive = Color("appBottomeNavIcon_Active")
+  static let bottomNavIconInactive = Color("appBottomeNavIcon_Inactive")
 
   // MARK: - Basic Colors
   static let white = Color.white
@@ -129,6 +131,8 @@ extension Color {
   static let componentBackground = ColorTokens.componentBackground
   static let sheetBackground = ColorTokens.sheetBackground
   static let sheetBackground02 = ColorTokens.sheetBackground02
+  static let bottomNavIconActive = ColorTokens.bottomNavIconActive
+  static let bottomNavIconInactive = ColorTokens.bottomNavIconInactive
 }
 
 // MARK: - ShapeStyle Extension for SwiftUI Modifiers
@@ -184,6 +188,8 @@ extension ShapeStyle where Self == Color {
   static var componentBackground: Color { ColorTokens.componentBackground }
   static var sheetBackground: Color { ColorTokens.sheetBackground }
   static var sheetBackground02: Color { ColorTokens.sheetBackground02 }
+  static var bottomNavIconActive: Color { ColorTokens.bottomNavIconActive }
+  static var bottomNavIconInactive: Color { ColorTokens.bottomNavIconInactive }
 }
 
 // MARK: - Color Hex Conversion
