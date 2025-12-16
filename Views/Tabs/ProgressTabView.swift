@@ -429,7 +429,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface))
+        .fill(Color.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1219,7 +1219,7 @@ struct ProgressTabView: View {
     .frame(width: 140, height: 120)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.surface))
+        .fill(Color.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1713,12 +1713,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
-    .background(
-      Image("Light-gradient-BG@4x")
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-        .clipped()
-        .allowsHitTesting(false))
+    .background(Color.surface3)
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .padding(.horizontal, 20)
   }
@@ -1751,12 +1746,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(
-      Image("Light-gradient-BG@4x")
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-        .clipped()
-        .allowsHitTesting(false))
+    .background(Color.surface3)
     .clipShape(RoundedRectangle(cornerRadius: 24))
   }
 
@@ -1810,7 +1800,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface))
+        .fill(Color.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -2916,7 +2906,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.surface)
+        .fill(Color.surface3)
         .overlay(
           RoundedRectangle(cornerRadius: 16)
             .stroke(Color.outline3, lineWidth: 1)))
@@ -3394,12 +3384,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(
-      Image("Light-gradient-BG@4x")
-        .resizable()
-        .aspectRatio(contentMode: .fill)
-        .clipped()
-        .allowsHitTesting(false))
+    .background(Color.surface3)
     .clipShape(RoundedRectangle(cornerRadius: 32))
   }
 
