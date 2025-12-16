@@ -11,7 +11,8 @@ struct TutorialBottomSheet: View {
       description: "Let's get you started with building healthy habits",
       onClose: {
         tutorialManager.markTutorialAsSeen()
-      }) {
+      },
+      useGlassCloseButton: true) {
         VStack(spacing: 0) {
           // Carousel
           TutorialCarousel(

@@ -27,6 +27,7 @@ struct ColorBottomSheet: View {
       title: "Colour",
       description: "Set a colour for your habit",
       onClose: onClose,
+      useGlassCloseButton: true,
       confirmButton: {
         onSave(selectedColor)
       },

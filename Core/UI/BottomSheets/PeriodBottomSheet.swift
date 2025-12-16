@@ -47,6 +47,7 @@ struct PeriodBottomSheet: View {
       onClose: {
         dismiss()
       },
+      useGlassCloseButton: true,
       confirmButton: {
         if isSelectingStartDate {
           onStartDateSelected(selectedDate)
