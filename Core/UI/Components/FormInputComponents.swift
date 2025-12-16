@@ -295,7 +295,7 @@ enum FormInputComponents {
           }
 
           Text(title)
-            .font(.appBodyLarge)
+            .font(isSelected ? .appBodyLargeEmphasised : .appBodyLarge)
             .foregroundColor(isSelected ? selectedTextColor : unselectedTextColor)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
