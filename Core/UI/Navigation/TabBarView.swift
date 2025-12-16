@@ -67,7 +67,7 @@ struct TabBarView: View {
           .resizable()
           .renderingMode(.template)
           .frame(width: 24, height: 24)
-          .foregroundColor(selectedTab == tab ? .bottomNavIconActive : .bottomNavIconInactive)
+          .foregroundColor(selectedTab == tab ? Color(uiColor: UIColor(named: "appBottomeNavIcon_Active") ?? UIColor.systemBlue) : Color(uiColor: UIColor(named: "appBottomeNavIcon_Inactive") ?? UIColor.systemGray))
         Text(title)
           .font(.appLabelSmallEmphasised)
           .lineLimit(1)
