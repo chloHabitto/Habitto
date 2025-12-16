@@ -438,7 +438,6 @@ struct SubscriptionView: View {
         if !emoji.isEmpty {
           Text(emoji)
             .font(.system(size: 24))
-            .opacity(isCurrentPlan ? 0.5 : 1.0)
         }
         
         VStack(alignment: .leading, spacing: 4) {
@@ -456,17 +455,17 @@ struct SubscriptionView: View {
             if isCurrentPlan {
               Text("Current Plan")
                 .font(SwiftUI.Font.system(size: 10, weight: .semibold))
-                .foregroundColor(.text02)
+                .foregroundColor(.onPrimary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.text04.opacity(0.2))
+                .background(Color.primary)
                 .cornerRadius(8)
             }
           }
           
           Text(title)
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(isCurrentPlan ? .text03 : .text02)
+            .foregroundColor(isCurrentPlan ? .text01 : .text02)
         }
         .frame(maxHeight: .infinity, alignment: .center)
         
@@ -476,7 +475,7 @@ struct SubscriptionView: View {
         VStack(alignment: .trailing, spacing: 4) {
           Text(length)
             .font(.appBodyMedium)
-            .foregroundColor(isCurrentPlan ? .text04 : .text03)
+            .foregroundColor(isCurrentPlan ? .text02 : .text03)
           
           HStack(spacing: 8) {
             if showCrossedPrice, let originalPrice = originalPrice {
@@ -488,7 +487,7 @@ struct SubscriptionView: View {
             
             Text(price)
               .font(.appBodyMediumEmphasised)
-              .foregroundColor(isCurrentPlan ? .text04 : .text05)
+              .foregroundColor(isCurrentPlan ? .text01 : .text05)
           }
         }
         .frame(maxHeight: .infinity, alignment: .center)
@@ -496,32 +495,30 @@ struct SubscriptionView: View {
         // Radio button circle
         ZStack {
           Circle()
-            .fill(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.3) : Color.primary) : Color.clear)
+            .fill(isSelected ? (isCurrentPlan ? Color.primary.opacity(0.2) : Color.primary) : Color.clear)
             .frame(width: 24, height: 24)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
           
           Circle()
-            .stroke(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.5) : Color.primary) : Color.outline3, lineWidth: 2)
+            .stroke(isSelected ? (isCurrentPlan ? Color.primary : Color.primary) : Color.outline3, lineWidth: isCurrentPlan ? 2.5 : 2)
             .frame(width: 24, height: 24)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
-            .opacity(isCurrentPlan ? 0.5 : 1.0)
           
           if isSelected {
             Circle()
-              .fill(isCurrentPlan ? Color.text04.opacity(0.6) : .onPrimary)
+              .fill(isCurrentPlan ? Color.primary : .onPrimary)
               .frame(width: 8, height: 8)
               .animation(.easeInOut(duration: 0.2), value: selectedOption)
           }
         }
       }
       .padding(16)
-      .background(isSelected ? (isCurrentPlan ? Color.surfaceContainer : Color.primary.opacity(0.05)) : Color.surface)
+      .background(isSelected ? (isCurrentPlan ? Color.primaryContainer.opacity(0.6) : Color.primary.opacity(0.05)) : Color.surface)
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .stroke(isSelected ? (isCurrentPlan ? Color.primaryContainer : Color.primary) : Color.outline3, lineWidth: isCurrentPlan ? 2.5 : 2)
+          .stroke(isSelected ? Color.primary : Color.outline3, lineWidth: isCurrentPlan ? 3 : 2)
       )
-      .opacity(isCurrentPlan ? 0.85 : 1.0)
     }
     .buttonStyle(PlainButtonStyle())
     .disabled(isCurrentPlan)
