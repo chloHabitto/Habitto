@@ -259,20 +259,40 @@ struct AccountView: View {
   
   private var userInformationSection: some View {
     VStack(spacing: 0) {
-      // User ID Row
-      accountRow(
-        icon: "person.fill",
-        title: "User ID",
-        value: userID.isEmpty ? "Loading..." : userID,
-        trailing: AnyView(
-          Button(action: {
-            copyUserID()
-          }) {
-            Text(copiedUserID ? "Copied" : "Copy")
-              .font(.system(size: 14, weight: .medium))
-              .foregroundColor(.primary)
-          }
-        ))
+      // User ID Row - Custom layout with VStack for title and value
+      HStack(spacing: 12) {
+        // Icon
+        Image(systemName: "person.fill")
+          .font(.system(size: 20))
+          .foregroundColor(.primaryDim)
+          .frame(width: 24, height: 24)
+        
+        // Title and Value in VStack
+        VStack(alignment: .leading, spacing: 4) {
+          Text("User ID")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          
+          Text(userID.isEmpty ? "Loading..." : userID)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        // Copy button
+        Button(action: {
+          copyUserID()
+        }) {
+          Text(copiedUserID ? "Copied" : "Copy")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.primary)
+        }
+        .buttonStyle(PlainButtonStyle())
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
       
       Divider()
         .padding(.leading, 56)
