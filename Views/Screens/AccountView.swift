@@ -173,8 +173,6 @@ struct AccountView: View {
   @State private var showingProfileView = false
   @State private var showingBirthdayView = false
   @State private var showingGenderView = false
-  @State private var showingChangeAccountView = false
-  @State private var showingChangeServerView = false
   @State private var userID: String = ""
   @State private var copiedUserID = false
   
@@ -334,44 +332,8 @@ struct AccountView: View {
         icon: "apple.logo",
         title: "My social account",
         value: userEmail)
-      
-      Divider()
-        .padding(.leading, 56)
-      
-      // Change social account Row
-      accountRow(
-        icon: "arrow.triangle.2.circlepath",
-        title: "Change social account",
-        value: nil,
-        hasChevron: true,
-        action: {
-          showingChangeAccountView = true
-        })
-      
-      Divider()
-        .padding(.leading, 56)
-      
-      // Change server Row
-      accountRow(
-        icon: "externaldrive.fill",
-        title: "Change server",
-        value: nil,
-        hasChevron: true,
-        action: {
-          showingChangeServerView = true
-        })
     }
     .background(Color.surface2)
-    .sheet(isPresented: $showingChangeAccountView) {
-      // Placeholder for change account view
-      Text("Change Account View")
-        .navigationTitle("Change Account")
-    }
-    .sheet(isPresented: $showingChangeServerView) {
-      // Placeholder for change server view
-      Text("Change Server View")
-        .navigationTitle("Change Server")
-    }
   }
   
   // MARK: - Log Out Button
@@ -392,7 +354,7 @@ struct AccountView: View {
         }) {
           Text("Log out")
             .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.orange)
+            .foregroundColor(.primary)
         }
       }
       .padding(.horizontal, 20)
