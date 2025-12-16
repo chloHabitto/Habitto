@@ -220,7 +220,7 @@ struct HeaderView: View {
     // CRITICAL: Force view to observe isPremium changes by using it in .id()
     .id("header-premium-\(subscriptionManager.isPremium)")
     .sheet(isPresented: $showingProfileView) {
-      ProfileView()
+      AccountView()
     }
     .onAppear {
       loadGuestName()
