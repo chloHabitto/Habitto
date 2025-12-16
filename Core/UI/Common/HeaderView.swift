@@ -1,3 +1,4 @@
+import AuthenticationServices
 import FirebaseAuth
 import SwiftUI
 import UIKit
@@ -86,6 +87,41 @@ struct HeaderView: View {
                 }
               }
             }
+          }
+          
+          Spacer()
+          
+          // Sign Up/In button for guest mode
+          if !isLoggedIn {
+            Button(action: {
+              handleSignInWithApple()
+            }) {
+              Text("Sign Up/In")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background {
+                  RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                      RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                          LinearGradient(
+                            stops: [
+                              .init(color: Color.white.opacity(0.4), location: 0.0),
+                              .init(color: Color.white.opacity(0.1), location: 0.5),
+                              .init(color: Color.white.opacity(0.4), location: 1.0)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                          ),
+                          lineWidth: 1.5
+                        )
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
           }
         }
       } else {
@@ -299,5 +335,73 @@ struct HeaderView: View {
     } else {
       "\(streak) days"
     }
+  }
+  
+  private func handleSignInWithApple() {
+    print("🍎 [HeaderView] Sign in with Apple button tapped")
+    
+    // Get the authorization request from AuthenticationManager
+    let request = authManager.startSignInWithApple()
+    
+    // Create and store delegate and presentation context provider to prevent deallocation
+    let delegate = HeaderSignInWithAppleDelegate(authManager: authManager)
+    let presentationContextProvider = HeaderPresentationContextProvider()
+    
+    // Create authorization controller
+    let controller = ASAuthorizationController(authorizationRequests: [request])
+    controller.delegate = delegate
+    controller.presentationContextProvider = presentationContextProvider
+    
+    // Store them to prevent deallocation
+    signInDelegate = delegate
+    signInPresentationContextProvider = presentationContextProvider
+    signInController = controller
+    
+    // Perform the request
+    controller.performRequests()
+  }
+  
+  @State private var signInDelegate: HeaderSignInWithAppleDelegate?
+  @State private var signInPresentationContextProvider: HeaderPresentationContextProvider?
+  @State private var signInController: ASAuthorizationController?
+}
+
+// MARK: - Header Sign In Helper Classes
+
+private class HeaderSignInWithAppleDelegate: NSObject, ASAuthorizationControllerDelegate {
+  let authManager: AuthenticationManager
+  
+  init(authManager: AuthenticationManager) {
+    self.authManager = authManager
+  }
+  
+  func authorizationController(
+    controller: ASAuthorizationController,
+    didCompleteWithAuthorization authorization: ASAuthorization)
+  {
+    print("🍎 [HeaderView] Authorization completed successfully")
+    Task { @MainActor in
+      await authManager.handleSignInWithApple(result: .success(authorization))
+    }
+  }
+  
+  func authorizationController(
+    controller: ASAuthorizationController,
+    didCompleteWithError error: Error)
+  {
+    print("🍎 [HeaderView] Authorization failed: \(error.localizedDescription)")
+    Task { @MainActor in
+      await authManager.handleSignInWithApple(result: .failure(error))
+    }
+  }
+}
+
+private class HeaderPresentationContextProvider: NSObject, ASAuthorizationControllerPresentationContextProviding {
+  func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+          let window = windowScene.windows.first else {
+      fatalError("No window found for Sign in with Apple presentation")
+    }
+    return window
   }
 }
