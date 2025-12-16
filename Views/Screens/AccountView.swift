@@ -244,6 +244,7 @@ struct AccountView: View {
   @FocusState private var isNameFieldFocused: Bool
   @State private var showingBirthdayView = false
   @State private var selectedBirthday: Date = Date()
+  @State private var hasSetBirthday = false
   @State private var showingGenderView = false
   @State private var userID: String = ""
   @State private var copiedUserID = false
@@ -327,6 +328,15 @@ struct AccountView: View {
     .frame(maxWidth: .infinity)
     .onAppear {
       loadUserID()
+      loadBirthday()
+    }
+  }
+  
+  private func loadBirthday() {
+    // Load birthday from UserDefaults if available
+    if let savedBirthday = UserDefaults.standard.object(forKey: "UserBirthday") as? Date {
+      selectedBirthday = savedBirthday
+      hasSetBirthday = true
     }
   }
   
@@ -372,15 +382,41 @@ struct AccountView: View {
       Divider()
         .padding(.leading, 56)
       
-      // Add birthday Row
-      accountRow(
-        icon: "gift.fill",
-        title: "Birthday",
-        value: nil,
-        hasChevron: true,
-        action: {
-          showingBirthdayView = true
-        })
+      // Birthday Row - Custom layout to show date below title
+      Button(action: {
+        showingBirthdayView = true
+      }) {
+        HStack(spacing: 12) {
+          // Icon
+          Image(systemName: "gift.fill")
+            .font(.system(size: 20))
+            .foregroundColor(.primaryDim)
+            .frame(width: 24, height: 24)
+          
+          // Title and Value in VStack
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Birthday")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+            
+            if hasSetBirthday {
+              Text(formattedBirthday)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundColor(.text04)
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          
+          // Chevron
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.text04)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(PlainButtonStyle())
       
       // Add gender Row - Hidden for now
       /*
@@ -758,9 +794,19 @@ struct AccountView: View {
   }
   
   private func saveBirthday() {
-    // Save birthday logic - can be implemented later
+    // Mark that birthday has been set
+    hasSetBirthday = true
+    // Save birthday logic - can be implemented later (e.g., to UserDefaults or backend)
     print("✅ Birthday saved: \(selectedBirthday)")
+    // Optionally save to UserDefaults
+    UserDefaults.standard.set(selectedBirthday, forKey: "UserBirthday")
     showingBirthdayView = false
+  }
+  
+  private var formattedBirthday: String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d, yyyy" // e.g., "Dec 16, 2006"
+    return formatter.string(from: selectedBirthday)
   }
   
   private func saveName() {
