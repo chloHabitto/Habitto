@@ -192,7 +192,7 @@ struct StreakSummaryCardsView: View {
         isAnimating: isAnimating,
         delay: 0.2)
     }
-    .background(StreakColors.glassBackground)
+    .background(.surface3)
     .overlay(
       RoundedRectangle(cornerRadius: StreakCorners.lg)
         .stroke(
@@ -589,7 +589,7 @@ struct SummaryStatisticsView: View {
         isAnimating: isAnimating,
         delay: 0.4)
     }
-    .background(StreakColors.glassBackground)
+    .background(.surface3)
     .overlay(
       RoundedRectangle(cornerRadius: StreakCorners.lg)
         .stroke(
