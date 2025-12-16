@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HabitIconView: View {
   let habit: Habit
+  @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     ZStack {
@@ -10,15 +11,15 @@ struct HabitIconView: View {
         .frame(width: 30, height: 30)
 
       if habit.icon.hasPrefix("Icon-") {
-        // Asset icon
+        // Asset icon - brighter in dark mode
         Image(habit.icon)
           .resizable()
           .frame(width: 14, height: 14)
-          .foregroundColor(habit.color.color)
+          .foregroundColor(iconColor)
       } else if habit.icon == "None" {
-        // No icon selected - show colored rounded rectangle
+        // No icon selected - show colored rounded rectangle - brighter in dark mode
         RoundedRectangle(cornerRadius: 4)
-          .fill(habit.color.color)
+          .fill(iconColor)
           .frame(width: 14, height: 14)
       } else {
         // Emoji or system icon
@@ -28,6 +29,32 @@ struct HabitIconView: View {
     }
     .padding(.horizontal, 4)
     .padding(.vertical, 12)
+  }
+  
+  private var iconColor: Color {
+    // Make icon color brighter in dark mode
+    if colorScheme == .dark {
+      return lightenColor(habit.color.color, by: 0.3)
+    } else {
+      return habit.color.color
+    }
+  }
+  
+  private func lightenColor(_ color: Color, by amount: CGFloat) -> Color {
+    let uiColor = UIColor(color)
+    var hue: CGFloat = 0
+    var saturation: CGFloat = 0
+    var brightness: CGFloat = 0
+    var alpha: CGFloat = 0
+    
+    if uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) {
+      // Increase brightness while maintaining hue and saturation
+      let newBrightness = min(1.0, brightness + amount)
+      return Color(hue: hue, saturation: saturation, brightness: newBrightness, opacity: alpha)
+    } else {
+      // If color space conversion fails, return original color
+      return color
+    }
   }
 }
 
