@@ -34,30 +34,83 @@ struct BaseBottomSheet<Content: View>: View {
   let confirmButtonTitle: String?
 
   var body: some View {
-    VStack(spacing: 0) {
-      // Header
-      BottomSheetHeader(
-        title: title,
-        description: description,
-        onClose: onClose,
-        useGlassCloseButton: useGlassCloseButton)
+    NavigationView {
+      VStack(spacing: 0) {
+        // Custom title and description section (below navigation bar)
+        VStack(alignment: .leading, spacing: 4) {
+          Text(title)
+            .font(Font.appHeadlineSmallEmphasised)
+            .foregroundColor(.text01)
+          Text(description)
+            .font(.appTitleSmall)
+            .foregroundColor(.text05)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
 
-      // Content
-      content
+        // Content
+        content
 
-      // Confirm button if provided
-      if let confirmButton, let confirmButtonTitle {
-        VStack(spacing: 0) {
-          Divider()
+        // Confirm button if provided
+        if let confirmButton, let confirmButtonTitle {
+          VStack(spacing: 0) {
+            Divider()
 
-          HabittoButton.largeFillPrimary(
-            text: confirmButtonTitle,
-            action: confirmButton)
-            .padding(24)
+            HabittoButton.largeFillPrimary(
+              text: confirmButtonTitle,
+              action: confirmButton)
+              .padding(24)
+          }
+        }
+      }
+      .background(.surface)
+      .navigationTitle("")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationBarBackButtonHidden(true)
+      .toolbarBackground(Color.surface, for: .navigationBar)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarLeading) {
+          Button(action: onClose) {
+            if useGlassCloseButton {
+              Image(.iconClose)
+                .resizable()
+                .frame(width: 20, height: 20)
+                .foregroundColor(.text04)
+            } else {
+              Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.text01)
+            }
+          }
+          .buttonStyle(PlainButtonStyle())
+          .frame(width: 36, height: 36)
+          .background {
+            if useGlassCloseButton {
+              Circle()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                  Circle()
+                    .stroke(
+                      LinearGradient(
+                        stops: [
+                          .init(color: Color.white.opacity(0.4), location: 0.0),
+                          .init(color: Color.white.opacity(0.1), location: 0.5),
+                          .init(color: Color.white.opacity(0.4), location: 1.0)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                      ),
+                      lineWidth: 1.5
+                    )
+                }
+            }
+          }
+          .clipShape(Circle())
         }
       }
     }
-    .background(.surface)
     .presentationDetents([.large])
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(32)
