@@ -250,7 +250,7 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(Color.surface3)
+        .background(Color("appSurface3a"))
         .cornerRadius(24)
 
         // Weekly Analysis Card
@@ -429,7 +429,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface3))
+        .fill(Color("appSurface3a")))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1022,6 +1022,7 @@ struct ProgressTabView: View {
             HStack(spacing: 8) {
               // Calendar icon
               Image(.iconCalendar)
+                .renderingMode(.template)
                 .resizable()
                 .frame(width: 16, height: 16)
                 .foregroundColor(.text03)
@@ -1039,6 +1040,7 @@ struct ProgressTabView: View {
 
               // Chevron icon
               Image(.iconArrowDropDownFilled)
+                .renderingMode(.template)
                 .resizable()
                 .frame(width: 20, height: 20)
                 .foregroundColor(.text07)
@@ -1219,7 +1221,7 @@ struct ProgressTabView: View {
     .frame(width: 140, height: 120)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.surface3))
+        .fill(Color("appSurface3a")))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1713,7 +1715,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
-    .background(Color.surface3)
+    .background(Color("appSurface3a"))
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .padding(.horizontal, 20)
   }
@@ -1746,7 +1748,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(Color.surface3)
+    .background(Color("appSurface3a"))
     .clipShape(RoundedRectangle(cornerRadius: 24))
   }
 
@@ -1779,7 +1781,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(Color.surface3))
+          .fill(Color("appSurface3a")))
 
       // Swipeable content
       TabView(selection: $currentHighlightPage) {
@@ -1800,7 +1802,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface3))
+        .fill(Color("appSurface3a")))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -2906,7 +2908,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.surface3)
+        .fill(Color("appSurface3a"))
         .overlay(
           RoundedRectangle(cornerRadius: 16)
             .stroke(Color.outline3, lineWidth: 1)))
@@ -3384,7 +3386,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(Color.surface3)
+    .background(Color("appSurface3a"))
     .clipShape(RoundedRectangle(cornerRadius: 32))
   }
 
@@ -3416,7 +3418,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(Color.surface3))
+          .fill(Color("appSurface3a")))
 
       // Swipeable content
       TabView(selection: $currentMonthlyHighlightPage) {
@@ -3437,7 +3439,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(Color.surface3))
+        .fill(Color("appSurface3a")))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
