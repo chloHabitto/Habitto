@@ -486,7 +486,7 @@ struct MoreTabView: View {
       HStack {
         Text(title)
           .font(.system(size: 14, weight: .semibold))
-          .foregroundColor(.text01)
+          .foregroundColor(.text07)
         Spacer()
       }
       .padding(.horizontal, 12)
