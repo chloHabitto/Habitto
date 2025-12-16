@@ -445,10 +445,10 @@ struct SubscriptionView: View {
             if showBadge, let badge = badge {
               Text(badge)
                 .font(SwiftUI.Font.system(size: 10, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundColor(.onSecondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(ColorTokens.secondary)
+                .background(Color.secondary)
                 .cornerRadius(8)
             }
             
