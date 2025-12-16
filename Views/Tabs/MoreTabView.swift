@@ -63,9 +63,6 @@ struct MoreTabView: View {
         // CRITICAL: Force view to observe isPremium changes by using it in .id()
         .id("moretab-premium-\(subscriptionManager.isPremium)")
       }
-      .sheet(isPresented: $showingProfileView) {
-        ProfileView()
-      }
       .sheet(isPresented: $showingVacationModeSheet) {
         VacationModeSheet()
       }
@@ -180,7 +177,6 @@ struct MoreTabView: View {
 
   // MARK: Private
 
-  @State private var showingProfileView = false
   @State private var showingVacationModeSheet = false
   @State private var showingVacationSummary = false
   @State private var showingAboutUs = false
