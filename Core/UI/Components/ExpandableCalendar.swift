@@ -87,14 +87,14 @@ struct ExpandableCalendar: View {
           Text(formattedCurrentDate)
             .font(.appTitleMediumEmphasised)
             .lineSpacing(8)
-            .foregroundColor(.primary)
+            .foregroundColor(.text01)
 
           Image(isExpanded ? "Icon-arrowDropUp_Filled" : "Icon-arrowDropDown_Filled")
             .renderingMode(.template)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 24, height: 24)
-            .foregroundColor(.navy100)
+            .foregroundColor(.text06)
             .opacity(1.0)
             .rotationEffect(.degrees(isExpanded ? 0 : 0))
         }
@@ -261,11 +261,11 @@ struct ExpandableCalendar: View {
           VStack(spacing: 4) {
             Text(dayAbbreviation(for: date))
               .font(.appLabelSmall)
-              .foregroundColor(isSelected ? .onPrimaryContainer.opacity(0.8) : .text04)
+              .foregroundColor(isSelected ? .onPrimary.opacity(0.8) : .text04)
 
             Text("\(calendar.component(.day, from: date))")
               .font(.appBodyMedium)
-              .foregroundColor(isSelected ? .onPrimaryContainer : (isToday ? .primary : .text01))
+              .foregroundColor(isSelected ? .onPrimary : (isToday ? .primary : .text01))
           }
           .frame(maxWidth: .infinity)
           .frame(height: 48)
