@@ -52,6 +52,20 @@ struct TabBarView: View {
       .padding(.horizontal, 8)
       .background(Color.surfaceTabBar.ignoresSafeArea(edges: .bottom))
     }
+    .onAppear {
+      print("🔍 TAB BAR DEBUG - Active color: \(ColorTokens.bottomNavIconActive)")
+      print("🔍 TAB BAR DEBUG - Inactive color: \(ColorTokens.bottomNavIconInactive)")
+      if let activeUIColor = UIColor(named: "appBottomeNavIcon_Active") {
+        print("🔍 TAB BAR DEBUG - Active UIColor found: \(activeUIColor)")
+      } else {
+        print("🔍 TAB BAR DEBUG - ⚠️ Active UIColor NOT found!")
+      }
+      if let inactiveUIColor = UIColor(named: "appBottomeNavIcon_Inactive") {
+        print("🔍 TAB BAR DEBUG - Inactive UIColor found: \(inactiveUIColor)")
+      } else {
+        print("🔍 TAB BAR DEBUG - ⚠️ Inactive UIColor NOT found!")
+      }
+    }
   }
 
   // MARK: Private
@@ -67,7 +81,7 @@ struct TabBarView: View {
           .resizable()
           .renderingMode(.template)
           .frame(width: 24, height: 24)
-          .foregroundColor(selectedTab == tab ? Color(uiColor: UIColor(named: "appBottomeNavIcon_Active") ?? UIColor.systemBlue) : Color(uiColor: UIColor(named: "appBottomeNavIcon_Inactive") ?? UIColor.systemGray))
+          .foregroundColor(selectedTab == tab ? ColorTokens.bottomNavIconActive : ColorTokens.bottomNavIconInactive)
         Text(title)
           .font(.appLabelSmallEmphasised)
           .lineLimit(1)
