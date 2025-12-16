@@ -373,7 +373,7 @@ struct FormActionButtons: View {
       Button(action: onSave) {
         Text("Save")
           .font(.appButtonText1)
-          .foregroundColor(isFormValid ? .white : .text06)
+          .foregroundColor(isFormValid ? .onPrimary : .text06)
           .frame(width: screenWidth * 0.5)
           .padding(.vertical, 16)
           .background(isFormValid ? .primary : .disabledBackground)
