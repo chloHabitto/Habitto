@@ -894,7 +894,7 @@ struct BirthdayBottomSheet: View {
           // Year Picker
           Picker("Year", selection: $selectedYear) {
             ForEach((minYear...maxYear).reversed(), id: \.self) { year in
-              Text("\(year)")
+              Text(String(year))
                 .tag(year)
             }
           }

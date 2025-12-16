@@ -41,13 +41,15 @@ struct BaseBottomSheet<Content: View>: View {
       // Custom header with close button
       HStack(alignment: .top) {
         // Title and description
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: description.isEmpty ? 0 : 4) {
           Text(title)
             .font(Font.appHeadlineSmallEmphasised)
             .foregroundColor(.text01)
-          Text(description)
-            .font(.appTitleSmall)
-            .foregroundColor(.text05)
+          if !description.isEmpty {
+            Text(description)
+              .font(.appTitleSmall)
+              .foregroundColor(.text05)
+          }
         }
         
         Spacer()
