@@ -381,10 +381,11 @@ struct AccountView: View {
           showingBirthdayView = true
         })
       
+      // Add gender Row - Hidden for now
+      /*
       Divider()
         .padding(.leading, 56)
       
-      // Add gender Row
       accountRow(
         icon: "person.2.fill",
         title: "Add gender",
@@ -393,6 +394,7 @@ struct AccountView: View {
         action: {
           showingGenderView = true
         })
+      */
     }
     .background(Color.surface2)
     .sheet(isPresented: $showingBirthdayView) {
