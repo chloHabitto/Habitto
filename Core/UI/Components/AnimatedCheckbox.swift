@@ -36,7 +36,7 @@ struct AnimatedCheckbox: View {
         // Checkmark
         AnimatedCheckmarkShape()
           .trim(from: 0, to: isChecked ? 1 : 0)
-          .stroke(.onPrimary, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+          .stroke(.surfaceBright, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
           .frame(width: 16, height: 12)
           .opacity(isHovered && !isChecked ? 0.3 : (isChecked ? 1 : 0))
           .offset(x: isChecked ? -0.5 : 0)
