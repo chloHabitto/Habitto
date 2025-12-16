@@ -289,16 +289,7 @@ struct SubscriptionView: View {
     .frame(maxWidth: .infinity)
     .background {
       RoundedRectangle(cornerRadius: 20)
-        .fill(
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color(hex: "F6F9FF"),
-              Color(hex: "E9EFFF")
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-          )
-        )
+        .fill(Color.surfaceContainer)
     }
   }
   
@@ -524,13 +515,13 @@ struct SubscriptionView: View {
         }
       }
       .padding(16)
-      .background(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.05) : Color.primary.opacity(0.05)) : Color.surface)
+      .background(isSelected ? (isCurrentPlan ? Color.surfaceContainer : Color.primary.opacity(0.05)) : Color.surface)
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .stroke(isSelected ? (isCurrentPlan ? Color.text04.opacity(0.3) : Color.primary) : Color.outline3, lineWidth: 2)
+          .stroke(isSelected ? (isCurrentPlan ? Color.primaryContainer : Color.primary) : Color.outline3, lineWidth: isCurrentPlan ? 2.5 : 2)
       )
-      .opacity(isCurrentPlan ? 0.7 : 1.0)
+      .opacity(isCurrentPlan ? 0.85 : 1.0)
     }
     .buttonStyle(PlainButtonStyle())
     .disabled(isCurrentPlan)
@@ -555,7 +546,7 @@ struct SubscriptionView: View {
             
             // Feature rows background
             ForEach(subscriptionFeatures, id: \.title) { _ in
-              Color.navy50
+              Color.primaryContainer
                 .opacity(0.4)
                 .frame(height: 56)
             }
