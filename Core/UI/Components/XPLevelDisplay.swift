@@ -94,7 +94,7 @@ struct XPLevelDisplay: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 20)
-    .background(.surface)
+    .background(.surface3)
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     .opacity(appeared ? 1 : 0)
