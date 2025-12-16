@@ -594,7 +594,7 @@ struct SubscriptionView: View {
           Text("Premium")
             .font(.appTitleSmallEmphasised)
             .fontWeight(.black)
-            .foregroundColor(.black)
+            .foregroundColor(.onPrimaryContainer)
             .frame(width: 100, alignment: .center)
             .background(Color.clear)
         }
