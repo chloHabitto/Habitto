@@ -513,7 +513,7 @@ struct SubscriptionView: View {
         }
       }
       .padding(16)
-      .background(isSelected ? (isCurrentPlan ? Color.primaryContainer.opacity(0.6) : Color.primary.opacity(0.05)) : Color.surface)
+      .background(isSelected ? (isCurrentPlan ? Color.primaryContainer.opacity(0.9) : Color.primary.opacity(0.05)) : Color.surface)
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
