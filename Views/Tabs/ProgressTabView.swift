@@ -4034,7 +4034,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 20)
     .background(
       RoundedRectangle(cornerRadius: 32)
-        .fill(Color.surface))
+        .fill(Color("appSurface3a")))
     .overlay(
       RoundedRectangle(cornerRadius: 32)
         .stroke(Color.outline3, lineWidth: 1.0))
