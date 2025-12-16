@@ -105,9 +105,11 @@ struct BaseBottomSheet<Content: View>: View {
                       lineWidth: 1.5
                     )
                 }
+            } else {
+              Circle()
+                .fill(Color.text01.opacity(0.1))
             }
           }
-          .clipShape(Circle())
         }
       }
     }
