@@ -32,7 +32,7 @@ struct SubscriptionView: View {
             
             // Comparison table / Features (Benefits)
             comparisonTable
-              .padding(.bottom, 32)
+              .padding(.bottom, 48)
             
             // Subscription options (moved from sheet)
             subscriptionOptions
