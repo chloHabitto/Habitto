@@ -22,16 +22,16 @@ struct SubscriptionView: View {
               .padding(.top, 20)
               .padding(.bottom, 24)
             
+            // Comparison table / Features (Benefits)
+            comparisonTable
+              .padding(.bottom, 32)
+            
             // Review carousel
             reviewCarousel
               .padding(.bottom, 32)
             
             // Subscription options (moved from sheet)
             subscriptionOptions
-              .padding(.bottom, 32)
-            
-            // Comparison table / Features
-            comparisonTable
               .padding(.bottom, 24)
             
             // Legal links (Privacy Policy and Terms of Use)
