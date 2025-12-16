@@ -11,27 +11,28 @@ struct SubscriptionView: View {
   var body: some View {
     NavigationView {
       ZStack(alignment: .bottom) {
-        // Background
-        Image("secondaryBlueGradient(top,bottom)@4x")
-          .resizable()
-          .aspectRatio(contentMode: .fill)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Background - use semantic color for light/dark mode
+        Color.surface2
           .ignoresSafeArea(.all)
         
         ScrollView {
           VStack(spacing: 0) {
-            // Header text
+            // Header text (smaller)
             headerText
               .padding(.top, 20)
-              .padding(.bottom, 32)
-            
-            // Comparison table
-            comparisonTable
-              .padding(.bottom, 32)
+              .padding(.bottom, 24)
             
             // Review carousel
             reviewCarousel
               .padding(.bottom, 32)
+            
+            // Subscription options (moved from sheet)
+            subscriptionOptions
+              .padding(.bottom, 32)
+            
+            // Comparison table / Features
+            comparisonTable
+              .padding(.bottom, 24)
             
             // Legal links (Privacy Policy and Terms of Use)
             mainLegalLinks
@@ -40,10 +41,6 @@ struct SubscriptionView: View {
             // Subscription terms
             subscriptionTerms
               .padding(.bottom, 40)
-            
-            // Benefits list (commented out for future use)
-            // benefitsList
-            //   .padding(.bottom, 32)
           }
           .padding(.horizontal, 20)
           .padding(.bottom, 120) // Padding to prevent content from being covered by bottom buttons
@@ -91,9 +88,6 @@ struct SubscriptionView: View {
               .foregroundColor(.text01)
           }
         }
-      }
-      .sheet(isPresented: $showingSubscriptionOptions) {
-        subscriptionOptionsSheet
       }
       .sheet(isPresented: $showingTermsConditions) {
         TermsConditionsView(initialTab: selectedLegalTab)
@@ -159,7 +153,6 @@ struct SubscriptionView: View {
   
   @Environment(\.dismiss) private var dismiss
   @State private var selectedOption: SubscriptionOption = .lifetime
-  @State private var showingSubscriptionOptions = false
   @State private var currentReviewIndex: Int = 1 // Start at 1 (first real item)
   @State private var autoScrollTimer: Timer?
   @State private var isRestoring = false
@@ -211,11 +204,11 @@ struct SubscriptionView: View {
     (Text("Unlock your full Habitto experience with ")
        .foregroundColor(.text02.opacity(0.85)) +
      Text("Premium")
-       .font(.system(size: 28, weight: .black))
+       .font(.system(size: 20, weight: .bold))
        .foregroundColor(.primary) +
      Text("")
     )
-    .font(.appHeadlineMedium)
+    .font(.appBodyMedium)
     .multilineTextAlignment(.center)
     .frame(maxWidth: .infinity)
   }
@@ -327,65 +320,6 @@ struct SubscriptionView: View {
         }
       }
     }
-  }
-  
-  private var subscriptionOptionsSheet: some View {
-    NavigationView {
-      VStack(spacing: 0) {
-        ScrollView {
-          VStack(spacing: 20) {
-            // Profile image
-            Image("Default-Profile@4x")
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: 80, height: 80)
-              .clipShape(Circle())
-            
-            subscriptionOptions
-            
-            // Privacy Policy and Terms of Use links
-            mainLegalLinks
-              .padding(.top, 8)
-            
-            // Subscription terms
-            subscriptionTerms
-              .padding(.top, 16)
-          }
-          .padding(.horizontal, 20)
-          .padding(.top, 20)
-          .padding(.bottom, 20)
-        }
-        
-        // Bottom buttons
-        VStack(spacing: 12) {
-          HabittoButton.largeFillPrimary(
-            text: isPurchasing ? "Processing..." : "Continue",
-            state: isPurchasing ? .loading : .default
-          ) {
-            Task {
-              await purchaseSubscription()
-            }
-          }
-          
-          HabittoButton(
-            size: .medium,
-            style: .tertiary,
-            content: .text("Maybe Later"),
-            action: {
-              showingSubscriptionOptions = false
-            }
-          )
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        .padding(.top, 12)
-        .background(Color.surface)
-      }
-      .navigationTitle("Choose Your Plan")
-      .navigationBarTitleDisplayMode(.inline)
-    }
-    .presentationDetents([.height(650), .large])
-    .presentationDragIndicator(.visible)
   }
   
   private var subscriptionOptions: some View {
@@ -731,8 +665,13 @@ struct SubscriptionView: View {
   }
   
   private var ctaButton: some View {
-    HabittoButton.largeFillPrimary(text: "See all plans") {
-      showingSubscriptionOptions = true
+    HabittoButton.largeFillPrimary(
+      text: isPurchasing ? "Processing..." : "Begin free trial",
+      state: isPurchasing ? .loading : .default
+    ) {
+      Task {
+        await purchaseSubscription()
+      }
     }
   }
   
@@ -908,23 +847,15 @@ struct SubscriptionView: View {
       isPurchasing = false
       purchaseMessage = result.message
       
-      // If purchase was successful and user is now premium, dismiss the sheet first
+      // If purchase was successful and user is now premium, dismiss the view
       if result.success && subscriptionManager.isPremium {
-        showingSubscriptionOptions = false
-        // Wait for sheet dismissal animation to complete (iOS sheet animations are ~0.3-0.4s)
-        // Add extra buffer to ensure all view transitions complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-          // Ensure we're still on main thread and view is still present
-          Task { @MainActor in
-            showingPurchaseAlert = true
-            // Then dismiss the entire view after showing success message
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-              dismiss()
-            }
-          }
+        showingPurchaseAlert = true
+        // Dismiss the entire view after showing success message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+          dismiss()
         }
       } else {
-        // For errors, show alert immediately (sheet stays open)
+        // For errors, show alert immediately
         showingPurchaseAlert = true
       }
     }
