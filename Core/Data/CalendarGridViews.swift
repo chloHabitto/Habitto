@@ -119,7 +119,7 @@ struct WeeklyCalendarGridView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .frame(height: 36)
                 .padding(.leading, 8)
-                .background(.surface)
+                .background(.surface3)
                 .overlay(
                   Rectangle()
                     .stroke(.outline3, lineWidth: 1))
@@ -146,7 +146,7 @@ struct WeeklyCalendarGridView: View {
                         value: dayIndex,
                         to: selectedWeekStartDate) ?? selectedWeekStartDate))
                     .frame(width: 24, height: 36)
-                    .background(.surface)
+                    .background(.surface3)
                     .overlay(
                       Rectangle()
                         .stroke(.outline3, lineWidth: 1))
