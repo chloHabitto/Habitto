@@ -147,6 +147,17 @@ struct AccountView: View {
         avatarManager.selectCustomPhoto(image)
       }
     }
+    .sheet(isPresented: $showingNameEditSheet) {
+      NameEditBottomSheet(
+        name: $editedName,
+        isFocused: $isNameFieldFocused,
+        onClose: {
+          showingNameEditSheet = false
+        },
+        onSave: {
+          saveName()
+        })
+    }
     .alert("Sign Out", isPresented: $showingSignOutAlert) {
       Button("Cancel", role: .cancel) { }
       Button("Sign Out", role: .destructive) {
@@ -228,6 +239,9 @@ struct AccountView: View {
   @State private var showingAvatarSelection = false
   @State private var showingCamera = false
   @State private var showingPhotoLibrary = false
+  @State private var showingNameEditSheet = false
+  @State private var editedName = ""
+  @FocusState private var isNameFieldFocused: Bool
   @State private var showingBirthdayView = false
   @State private var showingGenderView = false
   @State private var userID: String = ""
@@ -292,20 +306,22 @@ struct AccountView: View {
       }
       .buttonStyle(PlainButtonStyle())
       
-      // Name with edit icon
-      HStack(spacing: 8) {
-        Text(userDisplayName)
-          .font(.system(size: 18, weight: .medium))
-          .foregroundColor(.text01)
-        
-        Button(action: {
-          showingPhotoOptions = true
-        }) {
+      // Name with edit icon - clickable button
+      Button(action: {
+        editedName = userDisplayName == "User" ? "" : userDisplayName
+        showingNameEditSheet = true
+      }) {
+        HStack(spacing: 8) {
+          Text(userDisplayName)
+            .font(.system(size: 18, weight: .medium))
+            .foregroundColor(.text01)
+          
           Image(systemName: "pencil")
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.text01)
         }
       }
+      .buttonStyle(PlainButtonStyle())
     }
     .frame(maxWidth: .infinity)
     .onAppear {
@@ -730,6 +746,114 @@ struct AccountView: View {
     } else {
       showingPhotoLibrary = true
     }
+  }
+  
+  private func saveName() {
+    let newDisplayName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+    
+    if let user = Auth.auth().currentUser {
+      // Update display name using Firebase Auth
+      let changeRequest = user.createProfileChangeRequest()
+      changeRequest.displayName = newDisplayName.isEmpty ? nil : newDisplayName
+      
+      changeRequest.commitChanges { error in
+        DispatchQueue.main.async {
+          if let error = error {
+            print("❌ Failed to update name: \(error.localizedDescription)")
+          } else {
+            // Reload the user to get updated profile information
+            user.reload { reloadError in
+              DispatchQueue.main.async {
+                if let reloadError = reloadError {
+                  print("⚠️ Name updated but failed to reload user: \(reloadError.localizedDescription)")
+                } else {
+                  print("✅ Name updated and user reloaded successfully")
+                  
+                  // Update authManager's currentUser to reflect the reloaded user
+                  if let reloadedUser = Auth.auth().currentUser {
+                    authManager.currentUser = reloadedUser
+                    print("✅ Updated authManager.currentUser with reloaded user (displayName: \(reloadedUser.displayName ?? "nil"))")
+                  }
+                }
+                showingNameEditSheet = false
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // Save for guest user - store in UserDefaults
+      UserDefaults.standard.set(newDisplayName, forKey: "GuestName")
+      print("✅ Guest name saved: \(newDisplayName)")
+      showingNameEditSheet = false
+    }
+  }
+}
+
+// MARK: - NameEditBottomSheet
+
+struct NameEditBottomSheet: View {
+  @Binding var name: String
+  @FocusState.Binding var isFocused: Bool
+  let onClose: () -> Void
+  let onSave: () -> Void
+  
+  private let maxLength = 12
+  
+  var body: some View {
+    BaseBottomSheet(
+      title: "Change Name",
+      description: "",
+      onClose: onClose,
+      useGlassCloseButton: true,
+      confirmButton: {
+        onSave()
+      },
+      confirmButtonTitle: "Done")
+    {
+      VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
+          TextField("Enter name", text: $name)
+            .font(.appBodyLarge)
+            .foregroundColor(.text01)
+            .accentColor(.text01)
+            .focused($isFocused)
+            .submitLabel(.done)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 16)
+            .background(Color.surface2)
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(isFocused ? .primary : .outline3, lineWidth: isFocused ? 2 : 1.5))
+            .cornerRadius(12)
+            .onChange(of: name) { oldValue, newValue in
+              // Enforce character limit
+              if newValue.count > maxLength {
+                name = String(newValue.prefix(maxLength))
+              }
+            }
+            .onAppear {
+              // Focus the field when sheet appears
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isFocused = true
+              }
+            }
+          
+          // Character count
+          HStack {
+            Spacer()
+            Text("\(name.count)/\(maxLength)")
+              .font(.appLabelSmall)
+              .foregroundColor(.text04)
+          }
+        }
+        
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .presentationDetents([.height(350)])
   }
 }
 
