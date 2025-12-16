@@ -17,9 +17,18 @@ struct SubscriptionView: View {
         
         ScrollView {
           VStack(spacing: 0) {
+            // Crown icon
+            Image("Icon-crown_Filled")
+              .renderingMode(.template)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 32, height: 32)
+              .foregroundColor(.primary)
+              .padding(.top, 20)
+              .padding(.bottom, 12)
+            
             // Header text (smaller)
             headerText
-              .padding(.top, 20)
               .padding(.bottom, 24)
             
             // Comparison table / Features (Benefits)
@@ -203,6 +212,7 @@ struct SubscriptionView: View {
   private var headerText: some View {
     (Text("Unlock your full Habitto experience with ")
        .font(.appBodyLarge)
+       .fontWeight(.semibold)
        .foregroundColor(.text02.opacity(0.85)) +
      Text("Premium")
        .font(.system(size: 20, weight: .bold))
@@ -467,7 +477,12 @@ struct SubscriptionView: View {
           Text(title)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(isCurrentPlan ? .text03 : .text02)
-          
+        }
+        
+        Spacer()
+        
+        // Duration and price on the right
+        VStack(alignment: .trailing, spacing: 4) {
           Text(length)
             .font(.appBodySmall)
             .foregroundColor(isCurrentPlan ? .text04 : .text03)
@@ -485,8 +500,6 @@ struct SubscriptionView: View {
               .foregroundColor(isCurrentPlan ? .text04 : .text05)
           }
         }
-        
-        Spacer()
         
         // Radio button circle
         ZStack {
