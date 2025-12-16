@@ -1024,7 +1024,7 @@ struct ProgressTabView: View {
               Image(.iconCalendar)
                 .resizable()
                 .frame(width: 16, height: 16)
-                .foregroundColor(.primaryFocus)
+                .foregroundColor(.text03)
 
               // Date text
               Text(selectedTimePeriod == 0
@@ -1035,13 +1035,13 @@ struct ProgressTabView: View {
                     ? formatMonth(selectedProgressDate)
                     : String(selectedYear))
                 .font(.appBodySmallEmphasised)
-                .foregroundColor(.primaryFocus)
+                .foregroundColor(.text03)
 
               // Chevron icon
               Image(.iconArrowDropDownFilled)
                 .resizable()
                 .frame(width: 20, height: 20)
-                .foregroundColor(.primaryFocus)
+                .foregroundColor(.text07)
             }
             .padding(.leading, 16)
             .padding(.trailing, 12)
