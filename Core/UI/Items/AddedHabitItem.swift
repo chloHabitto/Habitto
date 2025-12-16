@@ -118,7 +118,7 @@ struct AddedHabitItem: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.bottom, 14)
     }
-    .background(.surface)
+    .background(.surface3)
     .overlay(
       RoundedRectangle(cornerRadius: 20)
         .stroke(.outline3, lineWidth: 2))
