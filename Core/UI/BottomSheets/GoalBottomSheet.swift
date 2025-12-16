@@ -11,6 +11,7 @@ struct GoalBottomSheet: View {
       title: "Goal",
       description: "Set how many times or how long you want to do this habit for each session",
       onClose: onClose,
+      useGlassCloseButton: true,
       confirmButton: {
         onGoalSelected(selectedGoalText)
         onClose()

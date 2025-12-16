@@ -193,6 +193,7 @@ struct ConfigurableBottomSheet: View {
       title: config.title,
       description: config.description,
       onClose: onClose,
+      useGlassCloseButton: true,
       confirmButton: onConfirm,
       confirmButtonTitle: config.confirmButtonTitle)
     {

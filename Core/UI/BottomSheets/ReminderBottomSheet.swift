@@ -38,6 +38,7 @@ struct ReminderBottomSheet: View {
       title: "Reminder",
       description: "Choose when you want to be reminded about this habit",
       onClose: onClose,
+      useGlassCloseButton: true,
       confirmButton: {
         if reminders.isEmpty {
           // When no reminders, open the add reminder sheet
