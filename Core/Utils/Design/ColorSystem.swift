@@ -27,12 +27,15 @@ enum ColorTokens {
   static let surface1 = Color("appSurface1")
   static let surface2 = Color("appSurface2")
   static let surface3 = Color("appSurface3")
+  static let surface3a = Color("appSurface3a")
+  static let surface4 = Color("appSurface4")
   static let surfaceDim = Color("appSurfaceDim")
   static let surfaceBright = Color("appSurfaceBright")
   static let surfaceBright2 = Color("appSurfaceBright2")
   static let surfaceContainer = Color("appSurfaceContainer")
   static let surfaceTabBar = Color("appSurfaceTabBar")
   static let hover = Color("appHover")
+  static let headerBackground = Color("appHeaderBackground")
 
   // MARK: - Text Colors
   static let text01 = Color("appText01")
@@ -96,12 +99,15 @@ extension Color {
   static let surface1 = ColorTokens.surface1
   static let surface2 = ColorTokens.surface2
   static let surface3 = ColorTokens.surface3
+  static let surface3a = ColorTokens.surface3a
+  static let surface4 = ColorTokens.surface4
   static let surfaceDim = ColorTokens.surfaceDim
   static let surfaceBright = ColorTokens.surfaceBright
   static let surfaceBright2 = ColorTokens.surfaceBright2
   static let surfaceContainer = ColorTokens.surfaceContainer
   static let surfaceTabBar = ColorTokens.surfaceTabBar
   static let hover = ColorTokens.hover
+  static let headerBackground = ColorTokens.headerBackground
 
   // Text Colors
   static let text01 = ColorTokens.text01
@@ -158,12 +164,15 @@ extension ShapeStyle where Self == Color {
   static var surface1: Color { ColorTokens.surface1 }
   static var surface2: Color { ColorTokens.surface2 }
   static var surface3: Color { ColorTokens.surface3 }
+  static var surface3a: Color { ColorTokens.surface3a }
+  static var surface4: Color { ColorTokens.surface4 }
   static var surfaceDim: Color { ColorTokens.surfaceDim }
   static var surfaceBright: Color { ColorTokens.surfaceBright }
   static var surfaceBright2: Color { ColorTokens.surfaceBright2 }
   static var surfaceContainer: Color { ColorTokens.surfaceContainer }
   static var surfaceTabBar: Color { ColorTokens.surfaceTabBar }
   static var hover: Color { ColorTokens.hover }
+  static var headerBackground: Color { ColorTokens.headerBackground }
 
   static var text01: Color { ColorTokens.text01 }
   static var text02: Color { ColorTokens.text02 }
