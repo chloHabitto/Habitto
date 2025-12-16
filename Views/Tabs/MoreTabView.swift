@@ -494,7 +494,7 @@ struct MoreTabView: View {
         Spacer()
       }
       .padding(.horizontal, 12)
-      .padding(.bottom, 16)
+      .padding(.bottom, title == "General Settings" || title == "Support & Legal" ? 12 : 16)
 
       // Options container with rounded background
       VStack(spacing: 0) {
