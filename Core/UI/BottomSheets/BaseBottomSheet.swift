@@ -72,44 +72,49 @@ struct BaseBottomSheet<Content: View>: View {
       .toolbarBackground(Color.surface, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
-          Button(action: onClose) {
-            if useGlassCloseButton {
-              Image(.iconClose)
-                .resizable()
-                .frame(width: 20, height: 20)
-                .foregroundColor(.text04)
-            } else {
-              Image(systemName: "xmark")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.text01)
-            }
-          }
-          .buttonStyle(PlainButtonStyle())
-          .frame(width: 36, height: 36)
-          .background {
-            if useGlassCloseButton {
-              Circle()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                  Circle()
-                    .stroke(
-                      LinearGradient(
-                        stops: [
-                          .init(color: Color.white.opacity(0.4), location: 0.0),
-                          .init(color: Color.white.opacity(0.1), location: 0.5),
-                          .init(color: Color.white.opacity(0.4), location: 1.0)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                      ),
-                      lineWidth: 1.5
-                    )
+          Color.clear
+            .frame(width: 36, height: 36)
+            .overlay {
+              Button(action: onClose) {
+                if useGlassCloseButton {
+                  ZStack {
+                    Circle()
+                      .fill(.ultraThinMaterial)
+                    
+                    Circle()
+                      .stroke(
+                        LinearGradient(
+                          stops: [
+                            .init(color: Color.white.opacity(0.4), location: 0.0),
+                            .init(color: Color.white.opacity(0.1), location: 0.5),
+                            .init(color: Color.white.opacity(0.4), location: 1.0)
+                          ],
+                          startPoint: .topLeading,
+                          endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                      )
+                    
+                    Image(.iconClose)
+                      .resizable()
+                      .frame(width: 20, height: 20)
+                      .foregroundColor(.text04)
+                  }
+                  .frame(width: 36, height: 36)
+                } else {
+                  ZStack {
+                    Circle()
+                      .fill(Color.text01.opacity(0.1))
+                    
+                    Image(systemName: "xmark")
+                      .font(.system(size: 12, weight: .bold))
+                      .foregroundColor(.text01)
+                  }
+                  .frame(width: 36, height: 36)
                 }
-            } else {
-              Circle()
-                .fill(Color.text01.opacity(0.1))
+              }
+              .buttonStyle(PlainButtonStyle())
             }
-          }
         }
       }
     }
