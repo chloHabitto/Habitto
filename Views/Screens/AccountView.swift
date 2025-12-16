@@ -810,7 +810,7 @@ struct NameEditBottomSheet: View {
   
   var body: some View {
     BaseBottomSheet(
-      title: "Change Name",
+      title: "Name",
       description: "",
       onClose: onClose,
       useGlassCloseButton: true,
