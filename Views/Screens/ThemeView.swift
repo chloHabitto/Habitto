@@ -5,7 +5,7 @@ struct ThemeView: View {
 
   var body: some View {
     NavigationView {
-      VStack(spacing: 0) {
+      ZStack(alignment: .bottom) {
         ScrollView {
           VStack(spacing: 24) {
             // Color Scheme Section
@@ -13,8 +13,22 @@ struct ThemeView: View {
           }
           .padding(.horizontal, 20)
           .padding(.top, 24)
-          .padding(.bottom, 40)
+          .padding(.bottom, 100) // Space for Save button
         }
+        
+        // Save button at bottom
+        VStack(spacing: 0) {
+          Divider()
+          
+          HabittoButton.largeFillPrimary(
+            text: "Save",
+            state: hasChanges ? .default : .disabled,
+            action: {
+              saveTheme()
+            })
+            .padding(24)
+        }
+        .background(Color.surface2)
       }
       .background(Color.surface2)
       .navigationTitle("Theme")
@@ -39,6 +53,16 @@ struct ThemeView: View {
 
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject var themeManager: ThemeManager
+  @State private var selectedPreference: ColorSchemePreference
+  
+  init() {
+    // Initialize with current preference
+    _selectedPreference = State(initialValue: ThemeManager.shared.colorSchemePreference)
+  }
+  
+  private var hasChanges: Bool {
+    selectedPreference != themeManager.colorSchemePreference
+  }
 
   // MARK: - Color Scheme Section
 
@@ -56,13 +80,13 @@ struct ThemeView: View {
 
       // Options
       VStack(spacing: 0) {
-        colorSchemeRow(preference: .system, isSelected: themeManager.colorSchemePreference == .system)
+        colorSchemeRow(preference: .system, isSelected: selectedPreference == .system)
         Divider()
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
-        colorSchemeRow(preference: .light, isSelected: themeManager.colorSchemePreference == .light)
+        colorSchemeRow(preference: .light, isSelected: selectedPreference == .light)
         Divider()
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
-        colorSchemeRow(preference: .dark, isSelected: themeManager.colorSchemePreference == .dark)
+        colorSchemeRow(preference: .dark, isSelected: selectedPreference == .dark)
       }
       .background(Color.surface)
       .cornerRadius(16)
@@ -73,7 +97,7 @@ struct ThemeView: View {
 
   private func colorSchemeRow(preference: ColorSchemePreference, isSelected: Bool) -> some View {
     Button(action: {
-      themeManager.colorSchemePreference = preference
+      selectedPreference = preference
     }) {
       HStack(spacing: 16) {
         // Icon
@@ -112,6 +136,11 @@ struct ThemeView: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(PlainButtonStyle())
+  }
+  
+  private func saveTheme() {
+    themeManager.colorSchemePreference = selectedPreference
+    dismiss()
   }
 }
 
