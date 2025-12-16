@@ -299,13 +299,7 @@ struct MoreTabView: View {
           }),
           SettingItem(title: "Notifications", value: nil, hasChevron: true, action: {
             showingNotifications = true
-          })
-        ])
-
-      // Data Management Group
-      settingsGroup(
-        title: "Data Management",
-        items: [
+          }),
           SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
             showingDataPrivacy = true
           })
