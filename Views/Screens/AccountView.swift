@@ -374,7 +374,7 @@ struct AccountView: View {
       // Add birthday Row
       accountRow(
         icon: "gift.fill",
-        title: "Add birthday",
+        title: "Birthday",
         value: nil,
         hasChevron: true,
         action: {
