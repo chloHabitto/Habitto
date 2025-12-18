@@ -961,28 +961,6 @@ struct HomeView: View {
       Color.headerBackground
         .ignoresSafeArea(.all)
       
-      // Vacation mode banner overlay
-      if VacationManager.shared.isActive {
-        VStack {
-          HStack(spacing: 6) {
-            Image("Icon-Vacation_Filled")
-              .resizable()
-              .frame(width: 16, height: 16)
-              .foregroundColor(.blue)
-            Text("Vacation Mode")
-              .font(.system(size: 12, weight: .medium))
-              .foregroundColor(.blue)
-          }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-          .background(Color.blue.opacity(0.1))
-          .frame(maxWidth: .infinity)
-          Spacer()
-        }
-        .ignoresSafeArea(.all)
-        .zIndex(1)
-      }
-      
       // Main content structure with custom tab bar
       VStack(spacing: 0) {
         // Tab content - switches based on selected tab

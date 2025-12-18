@@ -42,12 +42,10 @@ struct WhiteSheetContainer<Content: View>: View {
       // Content area with custom background
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.bottom, 40) // Padding to prevent content from being covered by bottom navigation
         .background(contentBackground)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
-    .ignoresSafeArea(edges: .bottom)
   }
 
   // MARK: Private
