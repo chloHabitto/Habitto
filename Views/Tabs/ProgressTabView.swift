@@ -1797,15 +1797,13 @@ struct ProgressTabView: View {
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
+          .clipped() // CRITICAL: Clip the fill image to prevent it from extending beyond bounds
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 24))
+    .contentShape(Rectangle()) // Constrain hit testing to actual frame
+    .clipped() // Prevent content from extending beyond bounds
     .padding(.horizontal, 20)
-    .simultaneousGesture(
-      TapGesture().onEnded { _ in
-        print("🟠 TAP ON todayProgressCard")
-      }
-    )
   }
 
   // MARK: - Weekly Progress Card
@@ -1842,14 +1840,12 @@ struct ProgressTabView: View {
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
+          .clipped() // CRITICAL: Clip the fill image to prevent it from extending beyond bounds
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 24))
-    .simultaneousGesture(
-      TapGesture().onEnded { _ in
-        print("🟦 TAP ON weeklyProgressCard (simultaneous)")
-      }
-    )
+    .contentShape(Rectangle()) // Constrain hit testing to actual frame
+    .clipped() // Prevent content from extending beyond bounds
   }
 
   // MARK: - Weekly Analysis Card
@@ -3492,14 +3488,12 @@ struct ProgressTabView: View {
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
+          .clipped() // CRITICAL: Clip the fill image to prevent it from extending beyond bounds
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 32))
-    .simultaneousGesture(
-      TapGesture().onEnded { _ in
-        print("🟩 TAP ON monthlyProgressCard (simultaneous)")
-      }
-    )
+    .contentShape(Rectangle()) // Constrain hit testing to actual frame
+    .clipped() // Prevent content from extending beyond bounds
   }
 
   // MARK: - Monthly Analysis Card
