@@ -250,8 +250,11 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(.containerBG01)
+        .background(.appSurface3)
         .cornerRadius(24)
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color.outline3, lineWidth: 1.0))
 
         // Weekly Analysis Card
         weeklyAnalysisCard
@@ -429,7 +432,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.containerBG01))
+        .fill(.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1221,7 +1224,7 @@ struct ProgressTabView: View {
     .frame(width: 140, height: 120)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(.containerBG01))
+        .fill(.surface3))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -1795,7 +1798,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(.containerBG01))
+          .fill(.appSurface3))
 
       // Swipeable content
       TabView(selection: $currentHighlightPage) {
@@ -1816,7 +1819,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.containerBG01))
+        .fill(.appSurface3))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
@@ -4053,11 +4056,10 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
-    .background(
-      RoundedRectangle(cornerRadius: 32)
-        .fill(.containerBG01))
+    .background(.surface3)
+    .cornerRadius(24)
     .overlay(
-      RoundedRectangle(cornerRadius: 32)
+      RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.0))
   }
 
