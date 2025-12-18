@@ -58,7 +58,7 @@ struct MoreTabView: View {
           }
           .padding(.horizontal, 20)
           .padding(.top, 20)
-          .padding(.bottom, 40) // Increased padding to prevent content from being covered by bottom navigation
+          .padding(.bottom, 20)
         }
         // CRITICAL: Force view to observe isPremium changes by using it in .id()
         .id("moretab-premium-\(subscriptionManager.isPremium)")
