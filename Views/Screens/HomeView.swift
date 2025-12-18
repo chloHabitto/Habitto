@@ -1025,6 +1025,9 @@ struct HomeView: View {
       }
     }
     .onAppear {
+      // Configure tab bar items with outlined/filled icons
+      TabBarAppearance.configureTabBarItems()
+      
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
       
