@@ -35,7 +35,7 @@ struct HabitDetailView: View {
                     value: contentGeometry.frame(in: .global).minY)
               })
         }
-        .background(Color.surface)
+        .background(.appSheetBackground)
         .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
           let newOffset = -value
           if abs(newOffset - scrollOffset) > 1 {
@@ -124,7 +124,7 @@ struct HabitDetailView: View {
         }
       }
       .toolbarBackground(.visible, for: .navigationBar)
-      .toolbarBackground(Color.surface, for: .navigationBar)
+      .toolbarBackground(.appSheetBackground, for: .navigationBar)
       .navigationViewStyle(.stack)
     }
     .onChange(of: habit.id) { _, _ in
@@ -366,7 +366,7 @@ struct HabitDetailView: View {
       // Today's Progress Section
       todayProgressSection
     }
-    .background(.surface3)
+    .background(.surface2)
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
   }

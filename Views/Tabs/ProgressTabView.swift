@@ -519,8 +519,14 @@ struct ProgressTabView: View {
         .frame(height: 100)
         .allowsHitTesting(false) // Allow touches to pass through to tabs below
       
+      // Date button area - allow touches to pass through
+      // Estimated date button area: ~50 points (button + padding)
+      Color.clear
+        .frame(height: 50)
+        .allowsHitTesting(false) // Allow touches to pass through to date button
+      
       // Gradient overlay: white with opacity from 0% at top to 100% at bottom
-      // Covers only the content area (below header)
+      // Covers only the content area (below header and date button)
       ZStack(alignment: .bottom) {
         LinearGradient(
           gradient: Gradient(stops: [
@@ -1089,7 +1095,6 @@ struct ProgressTabView: View {
             .contentShape(RoundedRectangle(cornerRadius: 20))
           }
           .buttonStyle(PlainButtonStyle())
-          .allowsHitTesting(true)
 
           // Spacer between date button and Today/This week/This month/This year button
           if (selectedHabit == nil && selectedTimePeriod == 0 && !isTodaySelected) ||
