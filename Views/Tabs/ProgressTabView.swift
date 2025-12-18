@@ -513,35 +513,39 @@ struct ProgressTabView: View {
   @ViewBuilder
   private var paywallOverlay: some View {
     GeometryReader { geometry in
+      // Calculate the safe area top inset (status bar, notch, Dynamic Island)
+      let safeAreaTop = geometry.safeAreaInsets.top
+      
+      // Header height: habit selector (~50pt) + tabs (~44pt) + padding (~16pt) = ~110pt
+      let headerHeight: CGFloat = 110
+      
+      // Date section height: top padding (20pt) + date button row (~50pt) = ~70pt
+      let dateSectionHeight: CGFloat = 70
+      
+      // Total passthrough zone from actual screen top
+      let passthroughHeight = safeAreaTop + headerHeight + dateSectionHeight
+      
       VStack(spacing: 0) {
-        // Header area - transparent, allows touches to pass through to tabs
-        // Estimated header height: ~100 points (habit selector + tabs + padding)
+        // Touch passthrough zone - covers safe area + header + date button
         Color.clear
-          .frame(height: 100)
-          .allowsHitTesting(false) // Allow touches to pass through to tabs below
+          .frame(height: passthroughHeight)
+          .allowsHitTesting(false)
         
-        // Date button area - allow touches to pass through
-        // Increased to ~70 points to ensure full button coverage (button ~40pt + padding)
-        Color.clear
-          .frame(height: 70)
-          .allowsHitTesting(false) // Allow touches to pass through to date button
-        
-        // Gradient overlay: white with opacity from 0% at top to 100% at bottom
-        // Covers only the content area (below header and date button)
+        // Gradient overlay for remaining content
         ZStack(alignment: .bottom) {
           LinearGradient(
             gradient: Gradient(stops: [
-              .init(color: .surface.opacity(0.0), location: 0.0),  // 0% opacity at top
-              .init(color: .surface.opacity(0.3), location: 0.3), // 30% opacity at 30%
-              .init(color: .surface.opacity(0.6), location: 0.6), // 60% opacity at 60%
-              .init(color: .surface.opacity(1.0), location: 1.0)  // 100% opacity at bottom
+              .init(color: .surface.opacity(0.0), location: 0.0),
+              .init(color: .surface.opacity(0.3), location: 0.3),
+              .init(color: .surface.opacity(0.6), location: 0.6),
+              .init(color: .surface.opacity(1.0), location: 1.0)
             ]),
             startPoint: .top,
             endPoint: .bottom
           )
-          .allowsHitTesting(true) // Block touches to prevent scrolling
+          .allowsHitTesting(true)
           
-          // Button on top of overlay
+          // CTA Button
           VStack {
             Spacer()
             
@@ -549,7 +553,7 @@ struct ProgressTabView: View {
               activeSheet = .paywall
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20) // Space above bottom navigation
+            .padding(.bottom, 20)
           }
         }
         .frame(maxHeight: .infinity)
