@@ -82,9 +82,6 @@ struct CreateHabitStep1View: View {
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
           .background(.surface)
-          .overlay(
-            RoundedRectangle(cornerRadius: 20)
-              .stroke((validationError != nil || duplicateError != nil) ? .error : .outline3, lineWidth: 1.5))
           .cornerRadius(20)
 
           // Description field - container with surface background and stroke
@@ -102,9 +99,6 @@ struct CreateHabitStep1View: View {
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
           .background(.surface)
-          .overlay(
-            RoundedRectangle(cornerRadius: 20)
-              .stroke(.outline3, lineWidth: 1.5))
           .cornerRadius(20)
 
           // Colour selection
