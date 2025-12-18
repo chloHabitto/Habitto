@@ -1715,7 +1715,14 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
-    .background(.containerBG01)
+    .background(
+      ZStack {
+        Color.primaryContainer
+        Image("Gradient01")
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+      }
+    )
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .padding(.horizontal, 20)
   }
@@ -1748,7 +1755,14 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(.containerBG01)
+    .background(
+      ZStack {
+        Color.primaryContainer
+        Image("Gradient01")
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+      }
+    )
     .clipShape(RoundedRectangle(cornerRadius: 24))
   }
 
@@ -3386,7 +3400,14 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(.containerBG01)
+    .background(
+      ZStack {
+        Color.primaryContainer
+        Image("Gradient01")
+          .resizable()
+          .aspectRatio(contentMode: .fill)
+      }
+    )
     .clipShape(RoundedRectangle(cornerRadius: 32))
   }
 
@@ -5137,7 +5158,7 @@ struct AnimatedCircularProgressRing: View {
     ZStack {
       // Background circle (unfilled part)
       Circle()
-        .stroke(Color.primaryContainer, lineWidth: 8)
+        .stroke(Color.appOutline4, lineWidth: 8)
         .frame(width: size, height: size)
 
       // Progress circle (filled part)
