@@ -346,7 +346,7 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
-    // Configure tab bar appearance for proper icon colors
+    // MUST be first - configure tab bar before any views are created
     TabBarAppearance.configure()
     
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
