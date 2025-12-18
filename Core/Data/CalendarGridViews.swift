@@ -774,6 +774,9 @@ struct YearlyCalendarGridView: View {
             .frame(maxWidth: .infinity)
             .background(.containerBG01)
             .cornerRadius(24)
+            .overlay(
+              RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.0))
             .id("year-habit-\(habit.id)-\(index)")
           }
         }
