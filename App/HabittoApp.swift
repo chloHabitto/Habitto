@@ -346,6 +346,9 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
+    // Configure tab bar appearance for proper icon colors
+    TabBarAppearance.configure()
+    
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
     _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
     _migrationService = StateObject(wrappedValue: MigrationService.shared)
