@@ -987,47 +987,30 @@ struct HomeView: View {
         .zIndex(1)
       }
       
-      // Native iOS TabView
-      // Tab bar automatically overlays on top of content
-      TabView(selection: $state.selectedTab) {
-        // Home Tab
-        homeTabContent
-          .tabItem {
-            Label("Home", image: "Icon-home-filled")
+      // Main content structure with custom tab bar
+      VStack(spacing: 0) {
+        // Tab content - switches based on selected tab
+        Group {
+          switch state.selectedTab {
+          case .home:
+            homeTabContent
+          case .progress:
+            progressTabContent
+          case .habits:
+            habitsTabContent
+          case .more:
+            moreTabContent
           }
-          .tag(Tab.home)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         
-        // Progress Tab
-        progressTabContent
-          .tabItem {
-            Label("Progress", image: "Icon-chart-filled")
-          }
-          .tag(Tab.progress)
-        
-        // Habits Tab
-        habitsTabContent
-          .tabItem {
-            Label("Habits", image: "Icon-book-filled")
-          }
-          .tag(Tab.habits)
-        
-        // More Tab
-        moreTabContent
-          .tabItem {
-            Label("More", image: "Icon-more-filled")
-          }
-          .tag(Tab.more)
-      }
-      .onChange(of: state.selectedTab) { oldValue, newValue in
-        // Haptic feedback when tab changes
-        let generator = UISelectionFeedbackGenerator()
-        generator.selectionChanged()
+        // Custom tab bar at bottom
+        TabBarView(selectedTab: $state.selectedTab, onCreateHabit: {
+          state.handleCreateHabitRequest()
+        })
       }
     }
     .onAppear {
-      // Configure tab bar items with outlined/filled icons
-      TabBarAppearance.configureTabBarItems()
-      
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
       
