@@ -26,19 +26,6 @@ struct PreferencesView: View {
           // App Preferences
           VStack(spacing: 0) {
             AccountOptionRow(
-              icon: "Icon-Language_Filled",
-              title: "Language",
-              subtitle: "Choose your preferred language",
-              hasChevron: true,
-              iconColor: iconColor)
-            {
-              showingLanguage = true
-            }
-
-            Divider()
-              .padding(.leading, 56)
-
-            AccountOptionRow(
               icon: "Icon-Theme_Filled",
               title: "Theme",
               subtitle: "Choose your preferred app theme",
@@ -51,13 +38,6 @@ struct PreferencesView: View {
           .background(Color.surface)
           .cornerRadius(16)
           .padding(.horizontal, 20)
-
-          // Note about upcoming updates
-          Text("Language and theme will be updated soon")
-            .font(.appBodySmall)
-            .foregroundColor(.text03)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 20)
 
           Spacer(minLength: 24)
         }
