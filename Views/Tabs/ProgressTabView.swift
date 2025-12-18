@@ -1050,7 +1050,7 @@ struct ProgressTabView: View {
             .padding(.vertical, 8)
             .background(
               RoundedRectangle(cornerRadius: 20)
-                .fill(Color.primaryContainer))
+                .fill(Color.containerBG01))
           }
 
           // Spacer between date button and Today/This week/This month/This year button
