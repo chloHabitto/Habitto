@@ -70,7 +70,7 @@ struct OverviewView: View {
         .padding(.bottom, 20)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(.surface)
+      .background(.surfaceOverview)
       .navigationTitle("Overview")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

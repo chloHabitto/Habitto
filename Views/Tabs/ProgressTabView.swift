@@ -1059,7 +1059,10 @@ struct ProgressTabView: View {
             .background(
               RoundedRectangle(cornerRadius: 20)
                 .fill(Color.containerBG01))
+            .contentShape(RoundedRectangle(cornerRadius: 20))
           }
+          .buttonStyle(PlainButtonStyle())
+          .allowsHitTesting(true)
 
           // Spacer between date button and Today/This week/This month/This year button
           if (selectedHabit == nil && selectedTimePeriod == 0 && !isTodaySelected) ||
