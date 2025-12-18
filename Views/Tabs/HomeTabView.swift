@@ -538,7 +538,7 @@ struct HomeTabView: View {
       }
       .padding(.horizontal, 20)
       .padding(.top, 18)
-      .padding(.bottom, 100)
+      .padding(.bottom, 20)
     .refreshable {
       // Refresh habits data and trigger manual sync when user pulls down
       await refreshHabits()

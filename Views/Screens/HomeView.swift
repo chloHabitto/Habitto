@@ -848,7 +848,6 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .ignoresSafeArea(edges: .bottom)
     }
   }
   
@@ -877,7 +876,6 @@ struct HomeView: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .ignoresSafeArea(edges: .bottom)
     }
   }
   
@@ -926,7 +924,6 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .ignoresSafeArea(edges: .bottom)
     }
   }
   
@@ -955,7 +952,6 @@ struct HomeView: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .ignoresSafeArea(edges: .bottom)
     }
   }
 

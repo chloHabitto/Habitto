@@ -526,7 +526,7 @@ struct ProgressTabView: View {
             showingPaywall = true
           }
           .padding(.horizontal, 20)
-          .padding(.bottom, 100) // Space above bottom navigation
+          .padding(.bottom, 20) // Space above bottom navigation
         }
       }
       .frame(maxHeight: .infinity)
@@ -543,7 +543,7 @@ struct ProgressTabView: View {
           ScrollView {
             mainContentView
               .padding(.top, 20)
-              .padding(.bottom, 80) // Increased padding to prevent content from being covered by bottom navigation
+              .padding(.bottom, 20) // Padding for content spacing
           }
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
@@ -1716,6 +1716,28 @@ struct ProgressTabView: View {
     .padding(.horizontal, 20)
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(.containerBG01)
+    .overlay(
+      ZStack {
+        // Top right gradient
+        Image("Gradient01")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 150, height: 150)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+          .padding(.top, -10)
+          .padding(.trailing, -10)
+        
+        // Bottom left gradient
+        Image("Gradient01")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 150, height: 150)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+          .padding(.bottom, -10)
+          .padding(.leading, -10)
+      }
+      .clipShape(RoundedRectangle(cornerRadius: 24))
+    )
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .padding(.horizontal, 20)
   }
