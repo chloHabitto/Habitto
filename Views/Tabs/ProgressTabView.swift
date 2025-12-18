@@ -351,7 +351,7 @@ struct ProgressTabView: View {
   @ViewBuilder
   private var yearlyIndividualHabitContent: some View {
     VStack(spacing: 20) {
-      // Yearly Calendar Grid for individual habit
+      // Yearly Calendar Grid and Stats Container
       YearlyCalendarGridView(
         userHabits: [selectedHabit!],
         selectedWeekStartDate: selectedWeekStartDate,
@@ -359,6 +359,11 @@ struct ProgressTabView: View {
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
         selectedYear: selectedYear)
+        .background(.appSurface3)
+        .cornerRadius(24)
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color.outline3, lineWidth: 1.0))
     }
     .padding(.horizontal, 20)
   }
