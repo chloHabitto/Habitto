@@ -48,7 +48,7 @@ struct TabBarView: View {
           title: "More",
           tab: .more)
       }
-      .padding(.vertical, 2)
+      .padding(.top, 2)
       .padding(.horizontal, 8)
       .background(Color.surfaceTabBar.ignoresSafeArea(edges: .bottom))
     }
@@ -66,16 +66,15 @@ struct TabBarView: View {
         Image(icon)
           .resizable()
           .renderingMode(.template)
-          .frame(width: 24, height: 24)
+          .frame(width: 20, height: 20)
           .foregroundColor(selectedTab == tab ? ColorTokens.bottomNavIconActive : ColorTokens.bottomNavIconInactive)
         Text(title)
-          .font(.appLabelSmallEmphasised)
+          .font(.system(size: 11, weight: selectedTab == tab ? .medium : .regular))
           .lineLimit(1)
           .foregroundColor(selectedTab == tab ? .primary : .text03)
       }
       .frame(maxWidth: .infinity)
       .padding(.top, 10)
-      .padding(.bottom, 8)
     }
     .buttonStyle(PlainButtonStyle())
   }
