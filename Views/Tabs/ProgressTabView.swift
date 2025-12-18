@@ -93,6 +93,21 @@ struct Arc: Shape {
   }
 }
 
+// MARK: - ActiveSheet
+
+enum ActiveSheet: Identifiable {
+  case habitSelector
+  case datePicker
+  case weekPicker
+  case monthPicker
+  case yearPicker
+  case allReminders
+  case paywall
+  case difficultyExplanation
+  
+  var id: Int { hashValue }
+}
+
 // MARK: - ProgressTabView
 
 struct ProgressTabView: View {
@@ -101,27 +116,20 @@ struct ProgressTabView: View {
   // MARK: - Subscription
   
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
-  @State private var showingPaywall = false
 
   // MARK: - State
 
   @State private var selectedTimePeriod = 0
   @State private var selectedHabit: Habit?
   @State private var selectedProgressDate = Date()
-  @State private var showingHabitSelector = false
-  @State private var showingDatePicker = false
-  @State private var showingWeekPicker = false
-  @State private var showingMonthPicker = false
-  @State private var showingYearPicker = false
+  @State private var activeSheet: ActiveSheet?
   @State private var selectedWeekStartDate: Date = {
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let today = Date()
     return calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
   }()
 
-  @State private var showingDifficultyExplanation = false
   @State private var testDifficultyValue = 3.0
-  @State private var showingAllReminders = false
   @State private var streakStatistics = StreakStatistics(
     currentStreak: 0,
     longestStreak: 0,
@@ -167,7 +175,7 @@ struct ProgressTabView: View {
       // First Filter - Habit Selection
       HStack {
         Button(action: {
-          showingHabitSelector = true
+          activeSheet = .habitSelector
         }) {
           HStack(spacing: 0) {
             Text(selectedHabit?.name ?? "All habits")
@@ -382,7 +390,7 @@ struct ProgressTabView: View {
         Spacer()
 
         Button(action: {
-          showingAllReminders = true
+          activeSheet = .allReminders
         }) {
           HStack(spacing: 4) {
             Text("See more")
@@ -531,7 +539,7 @@ struct ProgressTabView: View {
           Spacer()
           
           HabittoButton.largeFillPrimary(text: "See more progress") {
-            showingPaywall = true
+            activeSheet = .paywall
           }
           .padding(.horizontal, 20)
           .padding(.bottom, 20) // Space above bottom navigation
@@ -561,65 +569,84 @@ struct ProgressTabView: View {
         paywallOverlay
       }
     }
-    .sheet(isPresented: $showingHabitSelector) {
-      habitSelectorSheet
-    }
-    .sheet(isPresented: $showingDatePicker) {
-      DatePickerModal(
-        isPresented: $showingDatePicker,
-        selectedDate: $selectedProgressDate)
-      { newDate in
-        selectedProgressDate = newDate
-      }
-      .presentationDetents([.height(520)])
-      .presentationDragIndicator(.hidden)
-      .presentationCornerRadius(32)
-    }
-    .sheet(isPresented: $showingWeekPicker) {
-      WeekPickerModal(
-        selectedWeekStartDate: $selectedWeekStartDate,
-        isPresented: $showingWeekPicker)
+    .sheet(item: $activeSheet) { sheet in
+      switch sheet {
+      case .habitSelector:
+        habitSelectorSheet
+        
+      case .datePicker:
+        DatePickerModal(
+          isPresented: Binding(
+            get: { activeSheet == .datePicker },
+            set: { if !$0 { activeSheet = nil } }
+          ),
+          selectedDate: $selectedProgressDate)
+        { newDate in
+          selectedProgressDate = newDate
+        }
         .presentationDetents([.height(520)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
-    }
-    .sheet(isPresented: $showingMonthPicker) {
-      MonthPickerModal(selectedMonth: $selectedProgressDate, isPresented: $showingMonthPicker)
+        
+      case .weekPicker:
+        WeekPickerModal(
+          selectedWeekStartDate: $selectedWeekStartDate,
+          isPresented: Binding(
+            get: { activeSheet == .weekPicker },
+            set: { if !$0 { activeSheet = nil } }
+          ))
         .presentationDetents([.height(520)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
-    }
-    .sheet(isPresented: $showingYearPicker) {
-      YearPickerModal(selectedYear: $selectedYear, isPresented: $showingYearPicker)
+        
+      case .monthPicker:
+        MonthPickerModal(
+          selectedMonth: $selectedProgressDate,
+          isPresented: Binding(
+            get: { activeSheet == .monthPicker },
+            set: { if !$0 { activeSheet = nil } }
+          ))
+        .presentationDetents([.height(520)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(32)
+        
+      case .yearPicker:
+        YearPickerModal(
+          selectedYear: $selectedYear,
+          isPresented: Binding(
+            get: { activeSheet == .yearPicker },
+            set: { if !$0 { activeSheet = nil } }
+          ))
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
-    }
-    .sheet(isPresented: $showingAllReminders) {
-      AllRemindersPopup(
-        selectedDate: selectedProgressDate,
-        reminders: getAllRemindersForDate(selectedProgressDate),
-        isReminderEnabled: { reminder, date in
-          isReminderEnabled(for: reminder, on: date)
-        },
-        isReminderTimePassed: { reminder, date in
-          isReminderTimePassed(for: reminder, on: date)
-        },
-        toggleReminder: { reminder, date in
-          toggleReminder(for: reminder, on: date)
-        },
-        onDismiss: {
-          showingAllReminders = false
-        })
+        
+      case .allReminders:
+        AllRemindersPopup(
+          selectedDate: selectedProgressDate,
+          reminders: getAllRemindersForDate(selectedProgressDate),
+          isReminderEnabled: { reminder, date in
+            isReminderEnabled(for: reminder, on: date)
+          },
+          isReminderTimePassed: { reminder, date in
+            isReminderTimePassed(for: reminder, on: date)
+          },
+          toggleReminder: { reminder, date in
+            toggleReminder(for: reminder, on: date)
+          },
+          onDismiss: {
+            activeSheet = nil
+          })
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
-    }
-    .sheet(isPresented: $showingPaywall) {
-      SubscriptionView()
-    }
-    .sheet(isPresented: $showingDifficultyExplanation) {
-      difficultyExplanationSheet
+        
+      case .paywall:
+        SubscriptionView()
+        
+      case .difficultyExplanation:
+        difficultyExplanationSheet
+      }
     }
     .onAppear {
       // Calculate streak statistics when view appears
@@ -706,7 +733,7 @@ struct ProgressTabView: View {
       Spacer()
 
       Button("Done") {
-        showingHabitSelector = false
+        activeSheet = nil
       }
       .foregroundColor(.primary)
     }
@@ -718,7 +745,7 @@ struct ProgressTabView: View {
   private var allHabitsOption: some View {
     Button(action: {
       selectedHabit = nil
-      showingHabitSelector = false
+      activeSheet = nil
     }) {
       HStack(spacing: 16) {
         // All habits icon
@@ -808,7 +835,7 @@ struct ProgressTabView: View {
   private func habitOption(habit: Habit) -> some View {
     Button(action: {
       selectedHabit = habit
-      showingHabitSelector = false
+      activeSheet = nil
     }) {
       HStack(spacing: 16) {
         // Habit icon
@@ -1018,13 +1045,13 @@ struct ProgressTabView: View {
         HStack {
           Button(action: {
             if selectedTimePeriod == 0 { // Daily
-              showingDatePicker = true
+              activeSheet = .datePicker
             } else if selectedTimePeriod == 1 { // Weekly
-              showingWeekPicker = true
+              activeSheet = .weekPicker
             } else if selectedTimePeriod == 2 { // Monthly
-              showingMonthPicker = true
+              activeSheet = .monthPicker
             } else if selectedTimePeriod == 3 { // Yearly
-              showingYearPicker = true
+              activeSheet = .yearPicker
             }
           }) {
             HStack(spacing: 8) {
@@ -2685,7 +2712,7 @@ struct ProgressTabView: View {
         Spacer()
         
         Button(action: {
-          showingDifficultyExplanation = false
+          activeSheet = nil
         }) {
           Image(systemName: "xmark")
             .font(.system(size: 16, weight: .medium))
@@ -2733,7 +2760,7 @@ struct ProgressTabView: View {
       
       // Close button
       Button(action: {
-        showingDifficultyExplanation = false
+        activeSheet = nil
       }) {
         Text("Got it")
           .font(.appButtonText1)
@@ -2908,7 +2935,7 @@ struct ProgressTabView: View {
 
               // "What does this stat mean?" link (centered)
               Button(action: {
-                showingDifficultyExplanation = true
+                activeSheet = .difficultyExplanation
               }) {
                 Text("What does this stat mean?")
                   .font(.appBodySmall)
