@@ -346,9 +346,6 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
-    // MUST be first - configure tab bar before any views are created
-    TabBarAppearance.configure()
-    
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
     _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
     _migrationService = StateObject(wrappedValue: MigrationService.shared)
