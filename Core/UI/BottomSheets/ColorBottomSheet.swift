@@ -50,9 +50,9 @@ struct ColorBottomSheet: View {
         }
         .frame(maxWidth: .infinity)
 
-        // Second row - 4 colors
+        // Second row - 3 colors
         HStack(spacing: 16) {
-          ForEach(4 ..< 8, id: \.self) { index in
+          ForEach(4 ..< 7, id: \.self) { index in
             ColorButton(
               color: colors[index].color,
               name: colors[index].name,
@@ -79,7 +79,6 @@ struct ColorBottomSheet: View {
   @State private var selectedColor: Color
 
   private let colors: [(color: Color, name: String)] = [
-    (Color(hex: "222222"), "Black"),
     (.primary, "Navy"),
     (Color(hex: "6096FD"), "Blue"),
     (Color(hex: "CB30E0"), "Purple"),

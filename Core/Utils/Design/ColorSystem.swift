@@ -27,6 +27,7 @@ enum ColorTokens {
   static let surface1 = Color("appSurface1")
   static let surface2 = Color("appSurface2")
   static let surface3 = Color("appSurface3")
+  static let surfaceOverview = Color("appSurface(Overview)")
   static let containerBG01 = Color("appContainerBG01")
   static let surface4 = Color("appSurface4")
   static let surfaceDim = Color("appSurfaceDim")
@@ -99,6 +100,7 @@ extension Color {
   static let surface1 = ColorTokens.surface1
   static let surface2 = ColorTokens.surface2
   static let surface3 = ColorTokens.surface3
+  static let surfaceOverview = ColorTokens.surfaceOverview
   static let containerBG01 = ColorTokens.containerBG01
   static let surface4 = ColorTokens.surface4
   static let surfaceDim = ColorTokens.surfaceDim
@@ -164,6 +166,7 @@ extension ShapeStyle where Self == Color {
   static var surface1: Color { ColorTokens.surface1 }
   static var surface2: Color { ColorTokens.surface2 }
   static var surface3: Color { ColorTokens.surface3 }
+  static var surfaceOverview: Color { ColorTokens.surfaceOverview }
   static var containerBG01: Color { ColorTokens.containerBG01 }
   static var surface4: Color { ColorTokens.surface4 }
   static var surfaceDim: Color { ColorTokens.surfaceDim }
