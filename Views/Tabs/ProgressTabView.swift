@@ -1801,6 +1801,11 @@ struct ProgressTabView: View {
     )
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .padding(.horizontal, 20)
+    .simultaneousGesture(
+      TapGesture().onEnded { _ in
+        print("🟠 TAP ON todayProgressCard")
+      }
+    )
   }
 
   // MARK: - Weekly Progress Card
@@ -1840,6 +1845,11 @@ struct ProgressTabView: View {
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 24))
+    .simultaneousGesture(
+      TapGesture().onEnded { _ in
+        print("🟦 TAP ON weeklyProgressCard (simultaneous)")
+      }
+    )
   }
 
   // MARK: - Weekly Analysis Card
@@ -3485,6 +3495,11 @@ struct ProgressTabView: View {
       }
     )
     .clipShape(RoundedRectangle(cornerRadius: 32))
+    .simultaneousGesture(
+      TapGesture().onEnded { _ in
+        print("🟩 TAP ON monthlyProgressCard (simultaneous)")
+      }
+    )
   }
 
   // MARK: - Monthly Analysis Card
