@@ -1018,7 +1018,6 @@ struct HomeView: View {
           }
           .tag(Tab.more)
       }
-      .accentColor(.primary)
       .onChange(of: state.selectedTab) { oldValue, newValue in
         // Haptic feedback when tab changes
         let generator = UISelectionFeedbackGenerator()

@@ -52,44 +52,6 @@ struct TabBarView: View {
       .padding(.horizontal, 8)
       .background(Color.surfaceTabBar.ignoresSafeArea(edges: .bottom))
     }
-    .onAppear {
-      // Check if running in dark mode
-      let isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
-      print("🔍 TAB BAR DEBUG - System is in dark mode: \(isDarkMode)")
-      
-      // Check UIColor resolution
-      if let activeUIColor = UIColor(named: "appBottomeNavIcon_Active") {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        activeUIColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        print("🔍 TAB BAR DEBUG - Active UIColor RGB: R=\(r), G=\(g), B=\(b)")
-      } else {
-        print("🔍 TAB BAR DEBUG - ⚠️ Active UIColor 'appBottomeNavIcon_Active' NOT FOUND!")
-      }
-      
-      if let inactiveUIColor = UIColor(named: "appBottomeNavIcon_Inactive") {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        inactiveUIColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        print("🔍 TAB BAR DEBUG - Inactive UIColor RGB: R=\(r), G=\(g), B=\(b)")
-      } else {
-        print("🔍 TAB BAR DEBUG - ⚠️ Inactive UIColor 'appBottomeNavIcon_Inactive' NOT FOUND!")
-      }
-      
-      // Force resolve with dark trait
-      let darkTraits = UITraitCollection(userInterfaceStyle: .dark)
-      if let activeUIColor = UIColor(named: "appBottomeNavIcon_Active") {
-        let resolvedColor = activeUIColor.resolvedColor(with: darkTraits)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        print("🔍 TAB BAR DEBUG - Active DARK MODE RGB: R=\(r), G=\(g), B=\(b)")
-      }
-      
-      if let inactiveUIColor = UIColor(named: "appBottomeNavIcon_Inactive") {
-        let resolvedColor = inactiveUIColor.resolvedColor(with: darkTraits)
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        print("🔍 TAB BAR DEBUG - Inactive DARK MODE RGB: R=\(r), G=\(g), B=\(b)")
-      }
-    }
   }
 
   // MARK: Private
