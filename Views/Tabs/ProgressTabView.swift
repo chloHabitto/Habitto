@@ -558,6 +558,15 @@ struct ProgressTabView: View {
         }
         .frame(maxHeight: .infinity)
       }
+      .onAppear {
+        // DEBUG LOGGING
+        print("🔒 PAYWALL OVERLAY SHOWING")
+        print("🔒 safeAreaTop: \(safeAreaTop)")
+        print("🔒 headerHeight: \(headerHeight)")
+        print("🔒 dateSectionHeight: \(dateSectionHeight)")
+        print("🔒 TOTAL passthroughHeight: \(passthroughHeight)")
+        print("🔒 geometry.size: \(geometry.size)")
+      }
     }
     .ignoresSafeArea(.all)
   }
@@ -580,6 +589,15 @@ struct ProgressTabView: View {
       if !subscriptionManager.isPremium {
         paywallOverlay
       }
+    }
+    .onAppear {
+      print("👤 isPremium: \(subscriptionManager.isPremium)")
+    }
+    .onChange(of: subscriptionManager.isPremium) { _, newValue in
+      print("👤 isPremium changed to: \(newValue)")
+    }
+    .onChange(of: activeSheet) { oldValue, newValue in
+      print("📋 activeSheet changed: \(String(describing: oldValue)) → \(String(describing: newValue))")
     }
     .sheet(item: $activeSheet) { sheet in
       switch sheet {
@@ -1056,16 +1074,22 @@ struct ProgressTabView: View {
       {
         HStack {
           Button(action: {
+            print("📅 DATE BUTTON TAPPED - selectedTimePeriod: \(selectedTimePeriod)")
             switch selectedTimePeriod {
             case 0: // Daily
+              print("📅 Setting activeSheet to .datePicker")
               activeSheet = .datePicker
             case 1: // Weekly
+              print("📅 Setting activeSheet to .weekPicker")
               activeSheet = .weekPicker
             case 2: // Monthly
+              print("📅 Setting activeSheet to .monthPicker")
               activeSheet = .monthPicker
             case 3: // Yearly
+              print("📅 Setting activeSheet to .yearPicker")
               activeSheet = .yearPicker
             default:
+              print("📅 Unknown selectedTimePeriod: \(selectedTimePeriod)")
               break
             }
           }) {
