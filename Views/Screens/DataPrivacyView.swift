@@ -88,9 +88,9 @@ struct DataPrivacyView: View {
           }
           .padding(.bottom, 24)
         }
-        .background(Color.surface2)
+        .background(Color.sheetBackground)
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Data & Privacy")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

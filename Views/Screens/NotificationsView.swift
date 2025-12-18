@@ -30,7 +30,7 @@ struct NotificationsView: View {
           saveButton
         }
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Notifications")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

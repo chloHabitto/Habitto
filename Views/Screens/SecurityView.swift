@@ -32,7 +32,7 @@ struct SecurityView: View {
         }
 
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Account")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

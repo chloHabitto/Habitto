@@ -186,7 +186,7 @@ struct AboutUsView: View {
       .navigationTitle("About Us")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(.visible, for: .navigationBar)
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationBarBackButtonHidden(true)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {

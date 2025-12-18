@@ -26,7 +26,7 @@ struct FAQView: View {
           Spacer(minLength: 24)
         }
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("FAQ")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

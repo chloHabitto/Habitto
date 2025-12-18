@@ -37,7 +37,7 @@ struct DateCalendarView: View {
           saveButton
         }
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Date & Calendar")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
