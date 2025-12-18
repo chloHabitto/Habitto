@@ -1050,14 +1050,17 @@ struct ProgressTabView: View {
       {
         HStack {
           Button(action: {
-            if selectedTimePeriod == 0 { // Daily
+            switch selectedTimePeriod {
+            case 0: // Daily
               activeSheet = .datePicker
-            } else if selectedTimePeriod == 1 { // Weekly
+            case 1: // Weekly
               activeSheet = .weekPicker
-            } else if selectedTimePeriod == 2 { // Monthly
+            case 2: // Monthly
               activeSheet = .monthPicker
-            } else if selectedTimePeriod == 3 { // Yearly
+            case 3: // Yearly
               activeSheet = .yearPicker
+            default:
+              break
             }
           }) {
             HStack(spacing: 8) {

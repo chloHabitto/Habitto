@@ -122,7 +122,7 @@ struct CustomRatingView: View {
           .padding(.bottom, 20)
         }
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Rate App")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

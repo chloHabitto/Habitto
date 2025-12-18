@@ -28,9 +28,9 @@ struct ThemeView: View {
             })
             .padding(24)
         }
-        .background(Color.surface2)
+        .background(Color.sheetBackground)
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Theme")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

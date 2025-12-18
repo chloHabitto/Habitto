@@ -169,7 +169,7 @@ struct VacationModeView: View {
           Spacer(minLength: 24)
         }
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Vacation Mode")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

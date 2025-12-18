@@ -25,9 +25,9 @@ struct LanguageView: View {
         .padding(.horizontal, 0)
         .padding(.top, 0)
         .padding(.bottom, 20)
-        .background(Color.surface2)
+        .background(Color.sheetBackground)
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Language")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

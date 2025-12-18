@@ -20,7 +20,7 @@ struct VacationSummaryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
       }
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
       .navigationTitle("Vacation Summary")
       .navigationBarTitleDisplayMode(.large)
       .toolbar {
