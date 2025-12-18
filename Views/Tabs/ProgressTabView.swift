@@ -512,46 +512,48 @@ struct ProgressTabView: View {
   
   @ViewBuilder
   private var paywallOverlay: some View {
-    VStack(spacing: 0) {
-      // Header area - transparent, allows touches to pass through to tabs
-      // Estimated header height: ~100 points (habit selector + tabs + padding)
-      Color.clear
-        .frame(height: 100)
-        .allowsHitTesting(false) // Allow touches to pass through to tabs below
-      
-      // Date button area - allow touches to pass through
-      // Estimated date button area: ~50 points (button + padding)
-      Color.clear
-        .frame(height: 50)
-        .allowsHitTesting(false) // Allow touches to pass through to date button
-      
-      // Gradient overlay: white with opacity from 0% at top to 100% at bottom
-      // Covers only the content area (below header and date button)
-      ZStack(alignment: .bottom) {
-        LinearGradient(
-          gradient: Gradient(stops: [
-            .init(color: .surface.opacity(0.0), location: 0.0),  // 0% opacity at top
-            .init(color: .surface.opacity(0.3), location: 0.3), // 30% opacity at 30%
-            .init(color: .surface.opacity(0.6), location: 0.6), // 60% opacity at 60%
-            .init(color: .surface.opacity(1.0), location: 1.0)  // 100% opacity at bottom
-          ]),
-          startPoint: .top,
-          endPoint: .bottom
-        )
-        .allowsHitTesting(true) // Block touches to prevent scrolling
+    GeometryReader { geometry in
+      VStack(spacing: 0) {
+        // Header area - transparent, allows touches to pass through to tabs
+        // Estimated header height: ~100 points (habit selector + tabs + padding)
+        Color.clear
+          .frame(height: 100)
+          .allowsHitTesting(false) // Allow touches to pass through to tabs below
         
-        // Button on top of overlay
-        VStack {
-          Spacer()
+        // Date button area - allow touches to pass through
+        // Increased to ~70 points to ensure full button coverage (button ~40pt + padding)
+        Color.clear
+          .frame(height: 70)
+          .allowsHitTesting(false) // Allow touches to pass through to date button
+        
+        // Gradient overlay: white with opacity from 0% at top to 100% at bottom
+        // Covers only the content area (below header and date button)
+        ZStack(alignment: .bottom) {
+          LinearGradient(
+            gradient: Gradient(stops: [
+              .init(color: .surface.opacity(0.0), location: 0.0),  // 0% opacity at top
+              .init(color: .surface.opacity(0.3), location: 0.3), // 30% opacity at 30%
+              .init(color: .surface.opacity(0.6), location: 0.6), // 60% opacity at 60%
+              .init(color: .surface.opacity(1.0), location: 1.0)  // 100% opacity at bottom
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+          )
+          .allowsHitTesting(true) // Block touches to prevent scrolling
           
-          HabittoButton.largeFillPrimary(text: "See more progress") {
-            activeSheet = .paywall
+          // Button on top of overlay
+          VStack {
+            Spacer()
+            
+            HabittoButton.largeFillPrimary(text: "See more progress") {
+              activeSheet = .paywall
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20) // Space above bottom navigation
           }
-          .padding(.horizontal, 20)
-          .padding(.bottom, 20) // Space above bottom navigation
         }
+        .frame(maxHeight: .infinity)
       }
-      .frame(maxHeight: .infinity)
     }
     .ignoresSafeArea(.all)
   }
@@ -1095,9 +1097,9 @@ struct ProgressTabView: View {
             .background(
               RoundedRectangle(cornerRadius: 20)
                 .fill(Color.containerBG01))
-            .contentShape(RoundedRectangle(cornerRadius: 20))
           }
           .buttonStyle(PlainButtonStyle())
+          .contentShape(Rectangle())
 
           // Spacer between date button and Today/This week/This month/This year button
           if (selectedHabit == nil && selectedTimePeriod == 0 && !isTodaySelected) ||
