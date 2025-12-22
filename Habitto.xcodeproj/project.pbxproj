@@ -42,6 +42,7 @@
 		89622B172ED9AB7C00A238B9 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8968BCF62EE9C6BE0005345A /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8973D26A2ED9D3C400BF3B8C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89883C6D2EF446610077E5B9 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		899811FC2ED863AA006B0EA7 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89A47E022EF433C0005DA26B /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AB97882EF1A57B002787E6 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -154,6 +155,11 @@
 			sourceTree = "<group>";
 		};
 		8973D2792ED9D3C400BF3B8C /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		89883C822EF446610077E5B9 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -320,6 +326,10 @@
 				{
 					ProductGroup = 892A1A6E2ED87C4D00939C59 /* Products */;
 					ProjectRef = 892A1A5F2ED87C4D00939C59 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89883C822EF446610077E5B9 /* Products */;
+					ProjectRef = 89883C6D2EF446610077E5B9 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89FDE58C2EF1DAFC00B06073 /* Products */;
@@ -576,7 +586,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
@@ -628,7 +638,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;

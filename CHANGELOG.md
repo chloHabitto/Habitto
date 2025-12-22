@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-01-XX
+
+### Added
+- **Dark Mode Support**
+  - Added ThemeManager for managing color scheme preferences
+  - Users can choose between light, dark, or system appearance
+  - Theme preference persists across app launches
+  - Added ThemeView in settings for easy theme selection
+  - All UI components now support both light and dark modes
+
+- **Premium Subscription Paywall Updates**
+  - Redesigned subscription view with improved layout
+  - Enhanced feature comparison table
+  - Updated subscription options presentation
+  - Improved call-to-action buttons and user experience
+
+### Fixed
+- **XP and Streak Stability**
+  - Fixed race condition causing XP values to flicker between different values
+  - Added grace period to prevent observer from overwriting recent calculated values
+  - Improved streak calculation to display correct values immediately
+  - Added comprehensive logging for debugging XP and streak updates
+
+- **Daily Award Integrity**
+  - Fixed invalid daily awards being created when not all habits were completed
+  - Added validation to prevent invalid awards from being imported from Firestore
+  - Created DailyAwardIntegrityService for investigation and cleanup of invalid awards
+  - Added debug UI for verifying and repairing award data
+
+- **Sign-Out Data Isolation**
+  - Fixed issue where habits remained visible after signing out
+  - Added delay to ensure authentication state is fully cleared before loading habits
+  - Enhanced logging to track sign-out and data loading flow
+  - Improved user data isolation between accounts
+
+- **Data Migration and Repair**
+  - Fixed SwiftData queries not refreshing after guest-to-authenticated migration
+  - Added verification step to ensure migrations actually completed (not just flag set)
+  - Fixed incomplete migrations being skipped forever
+  - Added automatic repair for incomplete migrations
+  - Improved ModelContext refresh after data migration
+  - Added data repair UI accessible from Account settings
+
+- **General Stability**
+  - Improved app stability and performance
+  - Enhanced error handling and logging throughout the app
+  - Better handling of race conditions in async operations
+
 ## [0.3.2] - 2025-01-XX
 
 ### Added
