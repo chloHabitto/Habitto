@@ -567,7 +567,8 @@ struct ProgressTabView: View {
       WhiteSheetContainer(
         headerContent: {
           AnyView(headerContent)
-        }) {
+        },
+        contentBackground: .surface1) {
           ScrollView {
             mainContentView
               .padding(.top, 20)
