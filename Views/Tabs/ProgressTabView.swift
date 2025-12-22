@@ -568,6 +568,7 @@ struct ProgressTabView: View {
         headerContent: {
           AnyView(headerContent)
         },
+        headerBackground: .surface1,
         contentBackground: .surface1) {
           ScrollView {
             mainContentView
