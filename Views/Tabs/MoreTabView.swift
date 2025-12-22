@@ -718,7 +718,7 @@ struct MoreTabView: View {
   }
 
   private func iconColorForSetting(_: String) -> Color {
-    Color.appIcon
+    Color.appIconColor
   }
 
   // MARK: - App Rating
