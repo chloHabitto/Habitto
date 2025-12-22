@@ -9,13 +9,10 @@ struct CustomRatingView: View {
         VStack(spacing: 24) {
           // Header
           VStack(spacing: 16) {
-            Image(systemName: "star.fill")
-              .font(.system(size: 48))
-              .foregroundColor(.primary)
-
-            Text("Rate Habitto")
-              .font(.appTitleLarge)
-              .foregroundColor(.text01)
+            Image("Rate")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 120, height: 120)
 
             Text("Your feedback helps us improve the app for everyone")
               .font(.appBodyMedium)
@@ -152,7 +149,7 @@ struct CustomRatingView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
-  @State private var selectedRating = 0
+  @State private var selectedRating = 5
   @State private var comment = ""
   @State private var showingAppStore = false
 
