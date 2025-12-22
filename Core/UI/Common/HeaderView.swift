@@ -250,8 +250,8 @@ struct HeaderView: View {
     }
     .padding(.leading, 20)
     .padding(.trailing, 16)
-    .padding(.top, 16)
-    .padding(.bottom, 24)
+    .padding(.top, 8)
+    .padding(.bottom, 16)
     .background(.headerBackground)
     // CRITICAL: Force view to observe isPremium changes by using it in .id()
     .id("header-premium-\(subscriptionManager.isPremium)")

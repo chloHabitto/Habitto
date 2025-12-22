@@ -231,7 +231,7 @@ struct MoreTabView: View {
       Image("Love")
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: 40, height: 40)
+        .frame(width: 52, height: 52)
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
@@ -491,7 +491,7 @@ struct MoreTabView: View {
                 .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 52, height: 52)
+                .frame(width: 24, height: 24)
                 .foregroundColor(iconColorForSetting(item.title))
             } else {
               // System icon
@@ -500,9 +500,9 @@ struct MoreTabView: View {
                   let isSyncing = habitRepository.syncStatus == .syncing
                   // Animated sync icon when syncing
                   Image(systemName: iconForSetting(item.title))
-                    .font(.system(size: 32, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(iconColorForSetting(item.title))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 24, height: 24)
                     .rotationEffect(.degrees(isSyncing ? 360 : 0))
                     .animation(
                       isSyncing
@@ -512,9 +512,9 @@ struct MoreTabView: View {
                     )
                 } else {
                   Image(systemName: iconForSetting(item.title))
-                    .font(.system(size: 32, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(iconColorForSetting(item.title))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 24, height: 24)
                 }
               }
             }
