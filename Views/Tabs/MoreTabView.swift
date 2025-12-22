@@ -231,7 +231,7 @@ struct MoreTabView: View {
       Image("Love")
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: 52, height: 52)
+        .frame(width: 120, height: 120)
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
