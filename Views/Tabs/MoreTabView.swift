@@ -222,16 +222,17 @@ struct MoreTabView: View {
       HStack {
       Text("Build better habits with Premium!")
         .font(.system(size: 16, weight: .medium))
+        .lineSpacing(4)
         .foregroundColor(.onPrimary)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 16)
+        .padding(.leading, 24)
 
       Spacer()
 
       Image("Love")
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: 120, height: 120)
+        .frame(width: 100, height: 100)
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
@@ -717,7 +718,7 @@ struct MoreTabView: View {
   }
 
   private func iconColorForSetting(_: String) -> Color {
-    Color.primaryDim
+    Color.appIcon
   }
 
   // MARK: - App Rating
