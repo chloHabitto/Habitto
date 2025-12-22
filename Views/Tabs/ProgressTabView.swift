@@ -207,7 +207,8 @@ struct ProgressTabView: View {
         ],
         selectedIndex: selectedTimePeriod,
         style: .underline,
-        expandToFullWidth: true)
+        expandToFullWidth: true,
+        backgroundColor: .surface1)
       { index in
         selectedTimePeriod = index
         // Haptic feedback
