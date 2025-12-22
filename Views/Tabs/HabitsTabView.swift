@@ -237,7 +237,8 @@ struct HabitsTabView: View {
     return UnifiedTabBarView(
       tabs: tabs,
       selectedIndex: selectedStatsTab,
-      style: .underline)
+      style: .underline,
+      backgroundColor: .surface1)
     { index in
       if index < 2 { // Only allow clicking for first two tabs (Active, Inactive)
         // Haptic feedback when switching tabs

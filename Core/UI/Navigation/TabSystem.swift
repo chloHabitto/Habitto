@@ -38,12 +38,14 @@ struct UnifiedTabBarView: View {
     selectedIndex: Int,
     style: TabStyle = .underline,
     expandToFullWidth: Bool = false,
+    backgroundColor: Color? = nil,
     onTabSelected: @escaping (Int) -> Void)
   {
     self.tabs = tabs
     self.selectedIndex = selectedIndex
     self.style = style
     self.expandToFullWidth = expandToFullWidth
+    self.backgroundColor = backgroundColor
     self.onTabSelected = onTabSelected
   }
 
@@ -54,6 +56,7 @@ struct UnifiedTabBarView: View {
   let style: TabStyle
   let onTabSelected: (Int) -> Void
   let expandToFullWidth: Bool
+  let backgroundColor: Color?
 
   var body: some View {
     HStack(alignment: .top, spacing: style == .underline ? 0 : 8) {
@@ -80,7 +83,7 @@ struct UnifiedTabBarView: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(style == .underline ? .surface : Color.clear)
+    .background(style == .underline ? (backgroundColor ?? .surface) : Color.clear)
     .overlay(
       // Bottom stroke for the entire tab bar - only for underline style
       VStack {
