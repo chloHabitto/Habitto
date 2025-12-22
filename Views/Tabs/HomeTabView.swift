@@ -312,7 +312,9 @@ struct HomeTabView: View {
   private var mainContent: some View {
     WhiteSheetContainer(
       headerContent: { AnyView(headerContent) },
-      rightButton: { AnyView(rightButtonContent) })
+      rightButton: { AnyView(rightButtonContent) },
+      headerBackground: .surface1,
+      contentBackground: .surface1)
     {
       habitsListSection
     }

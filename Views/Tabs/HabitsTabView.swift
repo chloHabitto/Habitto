@@ -67,7 +67,8 @@ struct HabitsTabView: View {
               .padding(.top, 8)
             }
           })
-      }) {
+      },
+      contentBackground: .surface1) {
         if habits.isEmpty {
           // No habits created in the app at all
           VStack {

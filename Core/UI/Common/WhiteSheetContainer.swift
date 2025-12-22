@@ -11,6 +11,7 @@ struct WhiteSheetContainer<Content: View>: View {
     headerContent: (() -> AnyView)? = nil,
     rightButton: (() -> AnyView)? = nil,
     showGrabber: Bool = false,
+    headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     @ViewBuilder content: () -> Content)
   {
@@ -19,6 +20,7 @@ struct WhiteSheetContainer<Content: View>: View {
     self.headerContent = headerContent
     self.rightButton = rightButton
     self.showGrabber = showGrabber
+    self.headerBackground = headerBackground
     self.contentBackground = contentBackground
     self.content = content()
   }
@@ -30,14 +32,15 @@ struct WhiteSheetContainer<Content: View>: View {
   let headerContent: (() -> AnyView)?
   let rightButton: (() -> AnyView)?
   let showGrabber: Bool
+  let headerBackground: Color
   let contentBackground: Color
   let content: Content
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section with surface background
+      // Header section with custom background
       headerSection
-        .background(.surface)
+        .background(headerBackground)
 
       // Content area with custom background
       content
@@ -104,13 +107,14 @@ struct WhiteSheetContainer<Content: View>: View {
 
 extension WhiteSheetContainer {
   /// Creates a white sheet container with just a title
-  init(title: String, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+  init(title: String, headerBackground: Color = .surface, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
     self.init(
       title: title,
       subtitle: nil,
       headerContent: nil,
       rightButton: nil,
       showGrabber: false,
+      headerBackground: headerBackground,
       contentBackground: contentBackground,
       content: content)
   }
@@ -119,6 +123,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     subtitle: String,
+    headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     @ViewBuilder content: () -> Content)
   {
@@ -128,6 +133,7 @@ extension WhiteSheetContainer {
       headerContent: nil,
       rightButton: nil,
       showGrabber: false,
+      headerBackground: headerBackground,
       contentBackground: contentBackground,
       content: content)
   }
@@ -136,6 +142,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     headerContent: @escaping () -> AnyView,
+    headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     @ViewBuilder content: () -> Content)
   {
@@ -145,6 +152,7 @@ extension WhiteSheetContainer {
       headerContent: headerContent,
       rightButton: nil,
       showGrabber: false,
+      headerBackground: headerBackground,
       contentBackground: contentBackground,
       content: content)
   }
@@ -152,6 +160,7 @@ extension WhiteSheetContainer {
   /// Creates a white sheet container with only custom header content (no title)
   init(
     headerContent: @escaping () -> AnyView,
+    headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     @ViewBuilder content: () -> Content)
   {
@@ -161,6 +170,7 @@ extension WhiteSheetContainer {
       headerContent: headerContent,
       rightButton: nil,
       showGrabber: false,
+      headerBackground: headerBackground,
       contentBackground: contentBackground,
       content: content)
   }
@@ -169,6 +179,7 @@ extension WhiteSheetContainer {
   init(
     title: String,
     rightButton: @escaping () -> AnyView,
+    headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     @ViewBuilder content: () -> Content)
   {
@@ -177,6 +188,8 @@ extension WhiteSheetContainer {
       subtitle: nil,
       headerContent: nil,
       rightButton: rightButton,
+      showGrabber: false,
+      headerBackground: headerBackground,
       contentBackground: contentBackground,
       content: content)
   }
