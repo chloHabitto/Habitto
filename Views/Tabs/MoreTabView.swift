@@ -220,38 +220,26 @@ struct MoreTabView: View {
       showingSubscriptionView = true
     }) {
       HStack {
-      ZStack {
-        Circle()
-          .fill(Color(hex: "FCD884").opacity(0.2))
-          .frame(width: 92, height: 92)
-        
-        Circle()
-          .fill(Color(hex: "FCD884").opacity(0.3))
-          .frame(width: 52, height: 52)
-        
-        Image("Icon-crown_Filled")
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: 24, height: 24)
-          .foregroundColor(Color(hex: "FFCD02"))
-      }
-      
       Text("Build better habits with Premium!")
         .font(.system(size: 16, weight: .medium))
-        .foregroundColor(.text01)
+        .foregroundColor(.onPrimary)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 12)
+        .padding(.leading, 16)
 
       Spacer()
 
+      Image("Love")
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 40, height: 40)
+
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .medium))
-        .foregroundColor(.text01)
+        .foregroundColor(.onPrimary)
     }
-    .padding(.leading, -4)
     .padding(.trailing, 16)
     .frame(height: 80)
-    .background(Color.surfaceDim)
+    .background(Color.primary)
     .cornerRadius(24)
     .padding(.top, 0)
     .padding(.bottom, 0)
@@ -503,7 +491,7 @@ struct MoreTabView: View {
                 .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
+                .frame(width: 52, height: 52)
                 .foregroundColor(iconColorForSetting(item.title))
             } else {
               // System icon
@@ -512,9 +500,9 @@ struct MoreTabView: View {
                   let isSyncing = habitRepository.syncStatus == .syncing
                   // Animated sync icon when syncing
                   Image(systemName: iconForSetting(item.title))
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 32, weight: .medium))
                     .foregroundColor(iconColorForSetting(item.title))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 52, height: 52)
                     .rotationEffect(.degrees(isSyncing ? 360 : 0))
                     .animation(
                       isSyncing
@@ -524,9 +512,9 @@ struct MoreTabView: View {
                     )
                 } else {
                   Image(systemName: iconForSetting(item.title))
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 32, weight: .medium))
                     .foregroundColor(iconColorForSetting(item.title))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 52, height: 52)
                 }
               }
             }
