@@ -68,6 +68,7 @@ struct HabitsTabView: View {
             }
           })
       },
+      headerBackground: .surface1,
       contentBackground: .surface1) {
         if habits.isEmpty {
           // No habits created in the app at all
