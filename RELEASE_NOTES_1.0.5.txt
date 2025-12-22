@@ -1,0 +1,18 @@
+What's New in Version 1.0.5
+
+This update includes exciting new features and important improvements:
+
+✨ New Features
+• Added dark mode support - choose between light, dark, or system appearance
+• Updated premium subscription paywall with improved design and features
+
+🐛 Bug Fixes
+• Fixed XP and streak values displaying correctly without flickering
+• Improved data integrity for daily completion awards
+• Fixed issue where habits remained visible after signing out
+• Enhanced data migration when signing in with an account
+• Added automatic data repair for incomplete migrations
+• Improved app stability and performance
+
+Thank you for using Habitto! We're continuously working to improve your experience.
+
