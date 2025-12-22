@@ -433,7 +433,7 @@ struct AccountView: View {
         })
       */
     }
-    .background(Color.surface2)
+    .background(Color.sheetBackground)
     .sheet(isPresented: $showingBirthdayView) {
       BirthdayBottomSheet(
         selectedDate: $selectedBirthday,
@@ -501,7 +501,7 @@ struct AccountView: View {
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
     }
-    .background(Color.surface2)
+    .background(Color.sheetBackground)
   }
   
   // MARK: - Log Out Button
@@ -510,7 +510,7 @@ struct AccountView: View {
     VStack(spacing: 0) {
       // Gradient overlay to fade content behind button
       LinearGradient(
-        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+        gradient: Gradient(colors: [Color.sheetBackground.opacity(0), Color.sheetBackground]),
         startPoint: .top,
         endPoint: .bottom)
         .frame(height: 20)
@@ -527,7 +527,7 @@ struct AccountView: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 40)
-      .background(Color.surface2)
+      .background(Color.sheetBackground)
     }
   }
   
