@@ -196,21 +196,33 @@ class HomeViewState: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func deleteHabit(_ habit: Habit) async {
+    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    
     // Immediately remove from local state for instant UI update
     DispatchQueue.main.async {
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Removing from local habits array")
       var updatedHabits = self.habits
+      let beforeCount = updatedHabits.count
       updatedHabits.removeAll { $0.id == habit.id }
+      let afterCount = updatedHabits.count
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local habits: \(beforeCount) → \(afterCount)")
       self.habits = updatedHabits
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local state updated")
     }
 
     // Then delete from storage
+    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Calling habitRepository.deleteHabit()")
     do {
       try await habitRepository.deleteHabit(habit)
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - habitRepository.deleteHabit() completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
     } catch {
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - ERROR: habitRepository.deleteHabit() failed: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
     }
+    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Clearing habitToDelete")
     habitToDelete = nil
+    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - END")
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
@@ -830,8 +842,13 @@ struct HomeView: View {
           }
         },
         onDeleteHabit: { habit in
+          print("🗑️ DELETE_FLOW: HomeView - onDeleteHabit callback received for habit: \(habit.name) (ID: \(habit.id))")
+          print("🗑️ DELETE_FLOW: HomeView - Setting state.habitToDelete")
           state.habitToDelete = habit
+          print("🗑️ DELETE_FLOW: HomeView - state.habitToDelete set to: \(habit.name) (ID: \(habit.id))")
+          print("🗑️ DELETE_FLOW: HomeView - Setting showingDeleteConfirmation = true")
           state.showingDeleteConfirmation = true
+          print("🗑️ DELETE_FLOW: HomeView - showingDeleteConfirmation set, confirmationDialog should appear")
         },
         onCompletionDismiss: {
           // ✅ FIX: Update streak UI after completion flow finishes
@@ -903,8 +920,13 @@ struct HomeView: View {
         HabitsTabView(
         state: state,
         onDeleteHabit: { habit in
+          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - onDeleteHabit callback received for habit: \(habit.name) (ID: \(habit.id))")
+          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - Setting state.habitToDelete")
           state.habitToDelete = habit
+          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - state.habitToDelete set to: \(habit.name) (ID: \(habit.id))")
+          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - Setting showingDeleteConfirmation = true")
           state.showingDeleteConfirmation = true
+          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - showingDeleteConfirmation set, confirmationDialog should appear")
         },
         onEditHabit: { habit in
           debugLog("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
@@ -1061,17 +1083,22 @@ struct HomeView: View {
       titleVisibility: .visible)
     {
       Button("Cancel", role: .cancel) {
+        print("🗑️ DELETE_FLOW: HomeView - Delete cancelled in confirmationDialog")
         debugLog("❌ Delete cancelled")
         state.habitToDelete = nil
       }
       Button("Delete", role: .destructive) {
+        print("🗑️ DELETE_FLOW: HomeView - Delete button tapped in confirmationDialog")
         if let habit = state.habitToDelete {
+          print("🗑️ DELETE_FLOW: HomeView - Calling state.deleteHabit() for habit: \(habit.name) (ID: \(habit.id))")
           debugLog("🗑️ Deleting habit: \(habit.name)")
           Task {
             await state.deleteHabit(habit)
           }
+          print("🗑️ DELETE_FLOW: HomeView - state.deleteHabit() Task started")
           debugLog("🗑️ Delete completed")
         } else {
+          print("🗑️ DELETE_FLOW: HomeView - ERROR: No habit to delete (state.habitToDelete is nil)")
           debugLog("❌ No habit to delete")
         }
       }

@@ -986,22 +986,32 @@ class HabitRepository: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func deleteHabit(_ habit: Habit) async throws {
+    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    
     // Remove all notifications for this habit first
+    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Removing notifications")
     NotificationManager.shared.removeAllNotifications(for: habit)
     debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
 
     do {
       // Use the HabitStore actor for data operations
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Calling habitStore.deleteHabit()")
       try await habitStore.deleteHabit(habit)
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - habitStore.deleteHabit() completed")
       
       // Reload habits to get the updated list
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Reloading habits")
       await loadHabits(force: true)
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Habits reloaded, new count: \(habits.count)")
       debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
 
     } catch {
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - ERROR: \(error.localizedDescription)")
       debugLog("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
       throw error
     }
+    
+    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - END")
   }
 
   // MARK: - Clear All Habits
