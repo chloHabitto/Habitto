@@ -83,6 +83,13 @@ class FirebaseBackupService {
   func deleteHabitBackupAwait(habitId: UUID) async {
     await performHabitDeletion(habitId: habitId)
   }
+  
+  /// Delete all completion records for a habit from Firestore backup (blocking/awaited)
+  /// ✅ CRITICAL FIX: This prevents orphaned completion records from recreating the habit
+  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/records/{habitId}_{dateKey}
+  func deleteCompletionRecordsForHabitAwait(habitId: UUID) async {
+    await performCompletionRecordsDeletion(habitId: habitId)
+  }
 
   // MARK: - Private Implementation
 
@@ -277,6 +284,68 @@ class FirebaseBackupService {
     }
     
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - END")
+  }
+  
+  /// Delete all completion records for a habit from Firestore
+  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/records/{habitId}_{dateKey}
+  /// Uses collection group query to find all records across all yearMonth collections
+  private func performCompletionRecordsDeletion(habitId: UUID) async {
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - START for habit ID: \(habitId)")
+    
+    guard let userId = await getCurrentUserId() else {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - No user ID, skipping")
+      return
+    }
+
+    guard FirebaseApp.app() != nil else {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Firebase not configured, skipping")
+      return
+    }
+
+    do {
+      let habitIdString = habitId.uuidString
+      
+      // ✅ Use collection group query to find all records across all yearMonth collections
+      // Collection group queries search all collections named "records" regardless of path
+      // We filter by habitId field and userId (via path check) to ensure we only delete this user's records
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Querying all completion records for habitId")
+      
+      let recordsCollectionGroup = db.collectionGroup("records")
+      let query = recordsCollectionGroup.whereField("habitId", isEqualTo: habitIdString)
+      let recordsSnapshot = try await query.getDocuments()
+      
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) completion records")
+      
+      var totalDeleted = 0
+      var totalSkipped = 0
+      
+      // Delete all matching records, but verify they belong to the current user
+      for recordDoc in recordsSnapshot.documents {
+        // Verify the record belongs to the current user by checking the path
+        let path = recordDoc.reference.path
+        if path.contains("/users/\(userId)/completions/") {
+          try await recordDoc.reference.delete()
+          totalDeleted += 1
+        } else {
+          totalSkipped += 1
+          print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipped record (wrong user): \(path)")
+        }
+      }
+      
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records (skipped \(totalSkipped))")
+      print("☁️ [CLOUD_BACKUP] Completion records deleted from Firestore")
+      print("   Habit ID: \(habitIdString.prefix(8))...")
+      print("   Total records deleted: \(totalDeleted)")
+      logger.info("✅ FirebaseBackupService: Deleted \(totalDeleted) completion records for habit \(habitIdString.prefix(8))... from Firestore")
+    } catch {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR: \(error.localizedDescription)")
+      print("⚠️ [CLOUD_BACKUP] Completion records deletion failed: \(error.localizedDescription)")
+      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
+      logger.warning("⚠️ FirebaseBackupService: Failed to delete completion records: \(error.localizedDescription)")
+      // Don't throw - deletion failures shouldn't block habit deletion
+    }
+    
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - END")
   }
 
   // MARK: - Helper Methods
