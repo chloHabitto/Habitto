@@ -410,9 +410,11 @@ final actor HabitStore {
   // MARK: - Delete Habit
 
   func deleteHabit(_ habit: Habit) async throws {
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     logger.info("Deleting habit: \(habit.name)")
 
     // Record user analytics
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Recording analytics")
     let analytics = await userAnalytics
     await analytics.recordEvent(.featureUsed, metadata: [
       "action": "habit_deleted",
@@ -421,20 +423,34 @@ final actor HabitStore {
     ])
 
     // Load current habits
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Loading current habits")
     var currentHabits = try await loadHabits()
+    let beforeCount = currentHabits.count
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Loaded \(beforeCount) habits")
+    
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Removing habit from array")
     currentHabits.removeAll { $0.id == habit.id }
+    let afterCount = currentHabits.count
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
     // Save updated habits (complete array)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Saving updated habits array")
     try await saveHabits(currentHabits)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits array saved")
 
     // Also delete the individual habit item from active storage
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit()")
     try await activeStorage.deleteHabit(id: habit.id)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
     
     // ✅ CLOUD BACKUP: Delete habit from Firestore backup (non-blocking)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting from Firestore backup")
     await MainActor.run {
       FirebaseBackupService.shared.deleteHabitBackup(habitId: habit.id)
     }
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore backup deletion initiated")
 
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - END")
     logger.info("Successfully deleted habit: \(habit.name)")
   }
 

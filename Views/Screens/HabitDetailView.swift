@@ -112,6 +112,7 @@ struct HabitDetailView: View {
             }
 
             Button(role: .destructive, action: {
+              print("🗑️ DELETE_FLOW: HabitDetailView - Delete button tapped for habit: \(habit.name) (ID: \(habit.id))")
               showingDeleteConfirmation = true
             }) {
               Label("Delete", systemImage: "trash")
@@ -178,7 +179,9 @@ struct HabitDetailView: View {
     .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) { }
       Button("Delete", role: .destructive) {
+        print("🗑️ DELETE_FLOW: HabitDetailView - Delete confirmed, calling onDeleteHabit callback for habit: \(habit.name) (ID: \(habit.id))")
         onDeleteHabit?(habit)
+        print("🗑️ DELETE_FLOW: HabitDetailView - onDeleteHabit callback completed, dismissing view")
         dismiss()
       }
     } message: {

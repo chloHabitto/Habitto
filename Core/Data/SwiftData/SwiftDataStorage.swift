@@ -770,20 +770,30 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func deleteHabit(id: UUID) async throws {
+    print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - START for habit ID: \(id)")
     logger.info("Deleting habit with ID: \(id)")
 
     do {
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Loading habit data by ID")
       guard let habitData = try await loadHabitData(by: id) else {
+        print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - WARNING: Habit not found for deletion: \(id)")
         logger.warning("Habit not found for deletion: \(id)")
         return
       }
 
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id))")
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Deleting from modelContext")
       container.modelContext.delete(habitData)
+      
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Saving modelContext")
       try container.modelContext.save()
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - modelContext.save() completed")
 
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - END")
       logger.info("Successfully deleted habit with ID: \(id)")
 
     } catch {
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - ERROR: \(error.localizedDescription)")
       logger.error("Failed to delete habit: \(error.localizedDescription)")
       throw DataError.storage(StorageError(
         type: .unknown,
