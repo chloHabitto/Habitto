@@ -107,6 +107,13 @@ struct HomeTabView: View {
       .onChange(of: habits) { oldHabits, newHabits in
         handleHabitsChange(oldHabits: oldHabits, newHabits: newHabits)
       }
+      .onReceive(NotificationCenter.default.publisher(for: .streakModeDidChange)) { _ in
+        debugLog("🔄 STREAK_MODE: Mode changed in HomeTabView, refreshing completion status")
+        // Refresh completion status map when mode changes
+        Task {
+          await prefetchCompletionStatus()
+        }
+      }
       .fullScreenCover(item: $selectedHabit, content: habitDetailView)
       .overlay(celebrationOverlay)
       .onChange(of: habitsForSelectedDate) { oldHabits, newHabits in

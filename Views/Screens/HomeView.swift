@@ -59,6 +59,15 @@ class HomeViewState: ObservableObject {
         }
       }
       .store(in: &cancellables)
+    
+    // ✅ STREAK MODE: Listen for streak mode changes and recalculate streaks
+    NotificationCenter.default.publisher(for: .streakModeDidChange)
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] _ in
+        debugLog("🔄 STREAK_MODE: Mode changed, recalculating streaks")
+        self?.requestStreakRecalculation(reason: "Streak mode changed")
+      }
+      .store(in: &cancellables)
   }
 
   // MARK: Internal
