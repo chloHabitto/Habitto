@@ -438,6 +438,28 @@ final actor HabitStore {
     try await activeStorage.deleteHabit(id: habit.id)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
 
+    // ✅ CRITICAL FIX: Also delete from UserDefaults to prevent habit resurrection
+    // UserDefaults acts as a fallback during app initialization - if the habit exists there,
+    // it will be restored to SwiftData on app restart
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Cleaning up UserDefaults to prevent resurrection")
+    do {
+      try await userDefaultsStorage.deleteHabit(id: habit.id)
+      print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - UserDefaults individual key deleted")
+      
+      // Also ensure the SavedHabits array is updated
+      var userDefaultsHabits = try await userDefaultsStorage.loadHabits()
+      let beforeCount = userDefaultsHabits.count
+      userDefaultsHabits.removeAll { $0.id == habit.id }
+      let afterCount = userDefaultsHabits.count
+      if beforeCount != afterCount {
+        try await userDefaultsStorage.saveHabits(userDefaultsHabits, immediate: true)
+        print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - UserDefaults SavedHabits array updated: \(beforeCount) → \(afterCount)")
+      }
+    } catch {
+      // Don't fail the deletion if UserDefaults cleanup fails - SwiftData is the source of truth
+      print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - WARNING: UserDefaults cleanup failed: \(error.localizedDescription)")
+    }
+
     // THEN save the updated array (without the deleted habit)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Now saving updated habits array")
     try await saveHabits(currentHabits)
