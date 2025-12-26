@@ -12,7 +12,7 @@ struct SubscriptionView: View {
     NavigationView {
       ZStack(alignment: .bottom) {
         // Background - use semantic color for light/dark mode
-        Color.surface2
+        Color("appSurface2")
           .ignoresSafeArea(.all)
         
         ScrollView {
@@ -22,8 +22,8 @@ struct SubscriptionView: View {
               .renderingMode(.template)
               .resizable()
               .aspectRatio(contentMode: .fit)
-              .frame(width: 32, height: 32)
-              .foregroundColor(.primary)
+              .frame(width: 24, height: 24)
+              .foregroundColor(Color("yellow400"))
               .padding(.bottom, 12)
             
             // Header text (smaller)
@@ -67,8 +67,8 @@ struct SubscriptionView: View {
             // Gradient background starting from top (80pt total, including 16pt top padding)
             LinearGradient(
               gradient: Gradient(colors: [
-                Color.surface2.opacity(0),
-                Color.surface2.opacity(0.8)
+                Color("appSurface2").opacity(0),
+                Color("appSurface2").opacity(0.8)
               ]),
               startPoint: .top,
               endPoint: .bottom
@@ -76,7 +76,7 @@ struct SubscriptionView: View {
             .frame(height: 80)
             
             // Solid background extending to bottom
-            Color.surface2.opacity(0.8)
+            Color("appSurface2").opacity(0.8)
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
           .padding(.top, 16)
@@ -209,17 +209,21 @@ struct SubscriptionView: View {
   }
   
   private var headerText: some View {
-    (Text("Unlock your full Habitto experience with ")
-       .font(.appBodyLarge)
-       .fontWeight(.semibold)
-       .foregroundColor(.text02.opacity(0.85)) +
-     Text("Premium")
-       .font(.system(size: 20, weight: .bold))
-       .foregroundColor(.primary) +
-     Text("")
-    )
+    VStack(spacing: 0) {
+      Text("Unlock your full Habitto ")
+        .font(.appBodyLargeEmphasised)
+        .foregroundColor(.text04)
+      
+      (Text("experience with ")
+         .font(.appBodyLargeEmphasised)
+         .foregroundColor(.text04) +
+       Text("Premium")
+         .font(.appTitleLargeEmphasised)
+         .fontWeight(.bold)
+         .foregroundColor(.primary))
+    }
+    .frame(maxWidth: 280)
     .multilineTextAlignment(.center)
-    .frame(maxWidth: 280) // Constrain width to force two lines
   }
   
   private var reviewCarousel: some View {
@@ -513,7 +517,7 @@ struct SubscriptionView: View {
         }
       }
       .padding(16)
-      .background(isSelected ? (isCurrentPlan ? Color.primaryContainer.opacity(0.9) : Color.primary.opacity(0.05)) : Color.surface)
+      .background(isSelected ? Color("appPaywallCardBG_selected") : Color.surface)
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
@@ -567,22 +571,20 @@ struct SubscriptionView: View {
         HStack(spacing: 0) {
           Text("Benefits")
             .font(.appTitleSmallEmphasised)
-            .fontWeight(.black)
-            .foregroundColor(.text02)
+            .foregroundColor(.text04)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16)
             .background(Color.clear)
           
           Text("Free")
             .font(.appTitleSmallEmphasised)
-            .fontWeight(.black)
-            .foregroundColor(.text02)
+            .foregroundColor(.text04)
             .frame(width: 80, alignment: .center)
             .background(Color.clear)
           
           Text("Premium")
             .font(.appTitleSmallEmphasised)
-            .fontWeight(.black)
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(.text04)
             .frame(width: 100, alignment: .center)
             .background(Color.clear)
         }
@@ -612,6 +614,7 @@ struct SubscriptionView: View {
         .font(.appBodyMedium)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 16)
         .background(Color.clear)
       
       // Free column - transparent background so container shows through
@@ -660,7 +663,7 @@ struct SubscriptionView: View {
       }
     } else {
       Image(systemName: "xmark.circle.fill")
-        .font(.system(size: 16, weight: .semibold))
+        .font(.system(size: 24, weight: .semibold))
         .foregroundColor(.text04) // Grey cross
         .opacity(0.5)
     }
