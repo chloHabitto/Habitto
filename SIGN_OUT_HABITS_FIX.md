@@ -223,3 +223,4 @@ But UI still shows 4 habits → **UI refresh issue**, not data issue.
 
 
 
+
