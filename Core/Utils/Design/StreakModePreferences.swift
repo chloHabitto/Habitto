@@ -52,9 +52,9 @@ enum StreakMode: String, CaseIterable {
   var icon: String {
     switch self {
     case .fullCompletion:
-      return "checkmark.circle.fill"
+      return "Icon-MinimalStars_Filled"
     case .anyProgress:
-      return "circle.fill"
+      return "Icon-Stars_Filled"
     }
   }
 }
