@@ -6,6 +6,7 @@ struct PreferencesView: View {
 
   @State private var showingLanguage = false
   @State private var showingTheme = false
+  @State private var showingDateCalendar = false
 
   private var iconColor: Color {
     Color.primaryDim
@@ -33,6 +34,20 @@ struct PreferencesView: View {
               iconColor: iconColor)
             {
               showingTheme = true
+            }
+            
+            Divider()
+              .background(Color(.systemGray4))
+              .padding(.leading, 56)
+            
+            AccountOptionRow(
+              icon: "Icon-Calendar_Filled",
+              title: "Date & Calendar",
+              subtitle: "Customize date format and calendar settings",
+              hasChevron: true,
+              iconColor: iconColor)
+            {
+              showingDateCalendar = true
             }
           }
           .background(Color.surface)
@@ -67,6 +82,9 @@ struct PreferencesView: View {
     }
     .sheet(isPresented: $showingTheme) {
       ThemeView()
+    }
+    .sheet(isPresented: $showingDateCalendar) {
+      DateCalendarView()
     }
   }
 }

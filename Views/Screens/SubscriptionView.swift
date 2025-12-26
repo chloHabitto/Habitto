@@ -438,24 +438,30 @@ struct SubscriptionView: View {
         }
       }
     }) {
-      HStack(alignment: .center, spacing: 16) {
-        if !emoji.isEmpty {
-          Text(emoji)
-            .font(.system(size: 24))
+      VStack(spacing: 0) {
+        // Badge row (only for Lifetime with "Popular" badge)
+        if showBadge, let badge = badge {
+          HStack {
+            Text(badge)
+              .font(SwiftUI.Font.system(size: 10, weight: .semibold))
+              .foregroundColor(.onSecondary)
+              .padding(.horizontal, 8)
+              .padding(.vertical, 4)
+              .background(Color.secondary)
+              .cornerRadius(8)
+            Spacer()
+          }
+          .padding(.bottom, 8)
         }
         
-        VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: 8) {
-            if showBadge, let badge = badge {
-              Text(badge)
-                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
-                .foregroundColor(.onSecondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.secondary)
-                .cornerRadius(8)
-            }
-            
+        // Main content row
+        HStack(alignment: .center, spacing: 16) {
+          if !emoji.isEmpty {
+            Text(emoji)
+              .font(.system(size: 24))
+          }
+          
+          VStack(alignment: .leading, spacing: 4) {
             if isCurrentPlan {
               Text("Current Plan")
                 .font(SwiftUI.Font.system(size: 10, weight: .semibold))
@@ -465,54 +471,54 @@ struct SubscriptionView: View {
                 .background(Color.primary)
                 .cornerRadius(8)
             }
-          }
-          
-          Text(title)
-            .font(.appTitleMediumEmphasised)
-            .foregroundColor(isCurrentPlan ? .text01 : .text02)
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
-        
-        Spacer()
-        
-        // Duration and price on the right
-        VStack(alignment: .trailing, spacing: 4) {
-          Text(length)
-            .font(.appBodyMedium)
-            .foregroundColor(isCurrentPlan ? .text02 : .text03)
-          
-          HStack(spacing: 8) {
-            if showCrossedPrice, let originalPrice = originalPrice {
-              Text(originalPrice)
-                .font(.appBodyMedium)
-                .foregroundColor(.text04)
-                .strikethrough()
-            }
             
-            Text(price)
-              .font(.appBodyMediumEmphasised)
-              .foregroundColor(isCurrentPlan ? .text01 : .text05)
+            Text(title)
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(isCurrentPlan ? .text01 : .text02)
           }
-        }
-        .frame(maxHeight: .infinity, alignment: .center)
-        
-        // Checkmark icon for selected subscription
-        if isSelected {
-          Image(systemName: "checkmark.circle.fill")
-            .font(.system(size: 24, weight: .semibold))
-            .foregroundColor(.primary)
-            .animation(.easeInOut(duration: 0.2), value: selectedOption)
-        } else {
-          Circle()
-            .stroke(Color.outline3, lineWidth: 2)
-            .frame(width: 24, height: 24)
+          .frame(maxHeight: .infinity, alignment: .center)
+          
+          Spacer()
+          
+          // Duration and price on the right
+          VStack(alignment: .trailing, spacing: 4) {
+            Text(length)
+              .font(.appBodyMedium)
+              .foregroundColor(isCurrentPlan ? .text02 : .text03)
+            
+            HStack(spacing: 8) {
+              if showCrossedPrice, let originalPrice = originalPrice {
+                Text(originalPrice)
+                  .font(.appBodyMedium)
+                  .foregroundColor(.text04)
+                  .strikethrough()
+              }
+              
+              Text(price)
+                .font(.appBodyMediumEmphasised)
+                .foregroundColor(isCurrentPlan ? .text01 : .text05)
+            }
+          }
+          .frame(maxHeight: .infinity, alignment: .center)
+          
+          // Checkmark icon for selected subscription
+          if isSelected {
+            Image(systemName: "checkmark.circle.fill")
+              .font(.system(size: 24, weight: .semibold))
+              .foregroundColor(.primary)
+              .animation(.easeInOut(duration: 0.2), value: selectedOption)
+          } else {
+            Circle()
+              .stroke(Color.outline3, lineWidth: 2)
+              .frame(width: 24, height: 24)
+          }
         }
       }
       .padding(16)
       .background(isSelected ? Color("appPaywallCardBG_selected") : Color.surface)
-      .cornerRadius(16)
+      .cornerRadius(24)
       .overlay(
-        RoundedRectangle(cornerRadius: 16)
+        RoundedRectangle(cornerRadius: 24)
           .stroke(isSelected ? Color("appStroke01") : Color.outline3, lineWidth: isCurrentPlan ? 3 : 2)
       )
     }
