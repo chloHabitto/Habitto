@@ -451,7 +451,6 @@ struct SubscriptionView: View {
               .cornerRadius(8)
             Spacer()
           }
-          .padding(.bottom, 8)
         }
         
         // Main content row
@@ -590,7 +589,7 @@ struct SubscriptionView: View {
         .frame(height: 48)
         .overlay(
           Rectangle()
-            .frame(height: 1)
+            .frame(height: 1.5)
             .foregroundColor(.outline3),
           alignment: .bottom
         )
@@ -676,6 +675,15 @@ struct SubscriptionView: View {
         await purchaseSubscription()
       }
     }
+    .overlay(
+      // Shimmer effect overlay - only show when not purchasing
+      Group {
+        if !isPurchasing {
+          ShimmerEffect()
+            .clipShape(RoundedRectangle(cornerRadius: 28)) // Match button corner radius
+        }
+      }
+    )
   }
   
   private var restorePurchaseButton: some View {
@@ -1039,6 +1047,40 @@ struct SubscriptionFeature {
     self.freeText = freeText
     self.isFreeAvailable = isFreeAvailable
     self.isPremiumAvailable = isPremiumAvailable
+  }
+}
+
+// MARK: - ShimmerEffect
+
+struct ShimmerEffect: View {
+  @State private var phase: CGFloat = 0
+  
+  var body: some View {
+    GeometryReader { geometry in
+      LinearGradient(
+        gradient: Gradient(stops: [
+          .init(color: .white.opacity(0), location: 0),
+          .init(color: .white.opacity(0.4), location: 0.5),
+          .init(color: .white.opacity(0), location: 1)
+        ]),
+        startPoint: .leading,
+        endPoint: .trailing
+      )
+      .frame(width: geometry.size.width * 0.5)
+      .offset(x: phase * (geometry.size.width * 1.5) - geometry.size.width * 0.25)
+      .blendMode(.overlay)
+      .allowsHitTesting(false)
+    }
+    .onAppear {
+      // Reset phase to start from left
+      phase = -0.5
+      withAnimation(
+        Animation.linear(duration: 2.5)
+          .repeatForever(autoreverses: false)
+      ) {
+        phase = 1.5
+      }
+    }
   }
 }
 
