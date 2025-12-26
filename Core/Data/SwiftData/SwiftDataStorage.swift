@@ -774,14 +774,24 @@ final class SwiftDataStorage: HabitStorageProtocol {
     logger.info("Deleting habit with ID: \(id)")
 
     do {
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Loading habit data by ID")
-      guard let habitData = try await loadHabitData(by: id) else {
+      // ✅ CRITICAL FIX: Search by ID only - don't filter by userId
+      // The habit ID is unique, and userId lookup can be inconsistent
+      // Using loadHabitData(by:) filters by both ID and userId, which can fail
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Querying by habit ID only")
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { habitData in
+          habitData.id == id
+        }
+      )
+      
+      let results = try container.modelContext.fetch(descriptor)
+      guard let habitData = results.first else {
         print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - WARNING: Habit not found for deletion: \(id)")
         logger.warning("Habit not found for deletion: \(id)")
         return
       }
 
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id))")
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id), userId: '\(habitData.userId.isEmpty ? "EMPTY" : String(habitData.userId.prefix(8)) + "...")')")
       print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Deleting from modelContext")
       container.modelContext.delete(habitData)
       
