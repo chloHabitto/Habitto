@@ -433,15 +433,15 @@ final actor HabitStore {
     let afterCount = currentHabits.count
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
-    // Save updated habits (complete array)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Saving updated habits array")
-    try await saveHabits(currentHabits)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits array saved")
-
-    // Also delete the individual habit item from active storage
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit()")
+    // ✅ CRITICAL FIX: Delete from storage FIRST (before saveHabits modifies the context)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() FIRST")
     try await activeStorage.deleteHabit(id: habit.id)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
+
+    // THEN save the updated array (without the deleted habit)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Now saving updated habits array")
+    try await saveHabits(currentHabits)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits array saved")
     
     // ✅ CRITICAL FIX: Delete completion records FIRST to prevent habit recreation
     // Orphaned completion records can cause the habit to be recreated during migration/sync
