@@ -93,9 +93,6 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingDataPrivacy) {
         DataPrivacyView()
       }
-      .sheet(isPresented: $showingDateCalendar) {
-        DateCalendarView()
-      }
       .sheet(isPresented: $showingNotifications) {
         NotificationsView()
       }
@@ -190,7 +187,6 @@ struct MoreTabView: View {
   @State private var showingVacationMode = false
   @State private var showingSecurity = false
   @State private var showingDataPrivacy = false
-  @State private var showingDateCalendar = false
   @State private var showingNotifications = false
   @State private var showingLanguageView = false
   @State private var showingThemeView = false
@@ -279,9 +275,6 @@ struct MoreTabView: View {
           // SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
           //     showingDataPrivacy = true
           // }),
-          SettingItem(title: "Date & Calendar", value: nil, hasChevron: true, action: {
-            showingDateCalendar = true
-          }),
           SettingItem(title: "Notifications", value: nil, hasChevron: true, action: {
             showingNotifications = true
           }),
@@ -686,8 +679,6 @@ struct MoreTabView: View {
       "Icon-Profile_Filled"
     case "Data & Privacy":
       "Icon-Cloud_Filled"
-    case "Date & Calendar":
-      "Icon-Calendar_Filled"
     case "Notifications":
       "Icon-Bell_Filled"
     case "Sync Status":
