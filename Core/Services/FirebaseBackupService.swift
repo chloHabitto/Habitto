@@ -288,7 +288,7 @@ class FirebaseBackupService {
   
   /// Delete all completion records for a habit from Firestore
   /// Completion records are stored at: users/{userId}/completions/{yearMonth}/records/{habitId}_{dateKey}
-  /// Uses collection group query to find all records across all yearMonth collections
+  /// Checks yearMonth collections for the last 2 years and deletes records matching the habitId prefix
   private func performCompletionRecordsDeletion(habitId: UUID) async {
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - START for habit ID: \(habitId)")
     
@@ -304,35 +304,58 @@ class FirebaseBackupService {
 
     do {
       let habitIdString = habitId.uuidString
+      let completionsRef = db.collection("users")
+        .document(userId)
+        .collection("completions")
       
-      // ✅ Use collection group query to find all records across all yearMonth collections
-      // Collection group queries search all collections named "records" regardless of path
-      // We filter by habitId field and userId (via path check) to ensure we only delete this user's records
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Querying all completion records for habitId")
+      // ✅ Generate yearMonth values for the last 2 years (reasonable range for habit completions)
+      // Format: "YYYY-MM" (e.g., "2024-12", "2025-01")
+      let calendar = Calendar.current
+      let now = Date()
+      var yearMonths: [String] = []
       
-      let recordsCollectionGroup = db.collectionGroup("records")
-      let query = recordsCollectionGroup.whereField("habitId", isEqualTo: habitIdString)
-      let recordsSnapshot = try await query.getDocuments()
+      // Generate yearMonth values for last 24 months
+      for monthOffset in 0..<24 {
+        guard let date = calendar.date(byAdding: .month, value: -monthOffset, to: now) else { continue }
+        let year = calendar.component(.year, from: date)
+        let month = calendar.component(.month, from: date)
+        let yearMonth = String(format: "%04d-%02d", year, month)
+        yearMonths.append(yearMonth)
+      }
       
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) completion records")
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Checking \(yearMonths.count) yearMonth collections")
       
       var totalDeleted = 0
-      var totalSkipped = 0
       
-      // Delete all matching records, but verify they belong to the current user
-      for recordDoc in recordsSnapshot.documents {
-        // Verify the record belongs to the current user by checking the path
-        let path = recordDoc.reference.path
-        if path.contains("/users/\(userId)/completions/") {
-          try await recordDoc.reference.delete()
-          totalDeleted += 1
-        } else {
-          totalSkipped += 1
-          print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipped record (wrong user): \(path)")
+      // Check each yearMonth collection
+      for yearMonth in yearMonths {
+        let recordsRef = completionsRef
+          .document(yearMonth)
+          .collection("records")
+        
+        // Get all records in this yearMonth
+        // Note: This will return empty if the subcollection doesn't exist or has no documents
+        let recordsSnapshot = try await recordsRef.getDocuments()
+        
+        if recordsSnapshot.documents.isEmpty {
+          continue // Skip empty collections
+        }
+        
+        print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)")
+        
+        // Filter and delete records where document ID starts with habitId prefix
+        for recordDoc in recordsSnapshot.documents {
+          let recordId = recordDoc.documentID
+          // Document ID format: "{habitId}_{dateKey}"
+          if recordId.hasPrefix(habitIdString + "_") {
+            try await recordDoc.reference.delete()
+            totalDeleted += 1
+            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId)")
+          }
         }
       }
       
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records (skipped \(totalSkipped))")
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records total")
       print("☁️ [CLOUD_BACKUP] Completion records deleted from Firestore")
       print("   Habit ID: \(habitIdString.prefix(8))...")
       print("   Total records deleted: \(totalDeleted)")
