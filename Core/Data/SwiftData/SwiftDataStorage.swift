@@ -3,6 +3,7 @@ import OSLog
 import SwiftData
 import FirebaseAuth
 import FirebaseCore
+import SQLite3
 
 // MARK: - SwiftData Storage Implementation
 
@@ -798,6 +799,37 @@ final class SwiftDataStorage: HabitStorageProtocol {
       print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Calling modelContext.save()")
       try container.modelContext.save()
       print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - modelContext.save() completed")
+
+      // ✅ CRITICAL FIX: Force WAL checkpoint to ensure deletion is persisted to disk
+      // Without this, if the app is killed before automatic checkpoint, changes are lost
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Forcing WAL checkpoint...")
+      if let storeURL = container.modelContainer.configurations.first?.url {
+        let dbPath = storeURL.path
+        var db: OpaquePointer?
+        if sqlite3_open(dbPath, &db) == SQLITE_OK {
+          var pnLog: Int32 = 0
+          var pnCkpt: Int32 = 0
+          let result = sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_FULL, &pnLog, &pnCkpt)
+          if result == SQLITE_OK {
+            print("🗑️ DELETE_FLOW: WAL checkpoint successful (log frames: \(pnLog), checkpointed: \(pnCkpt))")
+          } else {
+            let errorMsg = String(cString: sqlite3_errmsg(db))
+            print("🗑️ DELETE_FLOW: WAL checkpoint returned: \(result) - \(errorMsg)")
+          }
+          sqlite3_close(db)
+        } else {
+          if let db = db {
+            let errorMsg = String(cString: sqlite3_errmsg(db))
+            print("🗑️ DELETE_FLOW: Failed to open database for WAL checkpoint: \(errorMsg)")
+            sqlite3_close(db)
+          } else {
+            print("🗑️ DELETE_FLOW: Failed to open database for WAL checkpoint: database pointer is nil")
+          }
+        }
+      } else {
+        print("🗑️ DELETE_FLOW: Could not get store URL for WAL checkpoint")
+      }
+      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - WAL checkpoint completed")
 
       print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - END - Successfully deleted")
       logger.info("Successfully deleted habit with ID: \(id)")
