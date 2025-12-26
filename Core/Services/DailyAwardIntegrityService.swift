@@ -179,40 +179,41 @@ class DailyAwardIntegrityService {
             )
         }
         
-        // Check completion records for this date
-        let scheduledHabitIds: Set<UUID> = Set(scheduledHabits.map { $0.id })
+        // ✅ STREAK MODE: Use meetsStreakCriteria to validate awards (respects Streak Mode)
+        let currentMode = CompletionMode.current
+        logger.info("🔍 INTEGRITY_CHECK: Using streak mode: \(currentMode.rawValue)")
         
-        // Extract to local constant for #Predicate macro
-        let awardDateKey = award.dateKey
-        let completionPredicate = #Predicate<CompletionRecord> { record in
-            record.userId == userId && record.dateKey == awardDateKey && record.isCompleted == true
+        // Check each scheduled habit using meetsStreakCriteria (respects Streak Mode)
+        var completedHabits: [Habit] = []
+        var missingHabits: [String] = []
+        
+        for habit in scheduledHabits {
+            let meetsCriteria = habit.meetsStreakCriteria(for: date)
+            logger.info("🔍 INTEGRITY_CHECK: Habit '\(habit.name)' meetsStreakCriteria=\(meetsCriteria)")
+            
+            if meetsCriteria {
+                completedHabits.append(habit)
+            } else {
+                missingHabits.append(habit.name)
+            }
         }
-        let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
-        let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
-        let completedIds = Set(completionRecords.map(\.habitId))
         
-        // Check if all scheduled habits were completed
-        let missingHabitIds = scheduledHabitIds.subtracting(completedIds)
-        let allCompleted = missingHabitIds.isEmpty
+        let allCompleted = missingHabits.isEmpty
         
         if allCompleted {
             return ValidationResult(
                 isValid: true,
-                reason: "All scheduled habits completed",
+                reason: "All scheduled habits meet streak criteria",
                 scheduledHabitsCount: scheduledHabits.count,
-                completedHabitsCount: completedIds.count,
+                completedHabitsCount: completedHabits.count,
                 missingHabits: []
             )
         } else {
-            let missingHabits = scheduledHabits
-                .filter { missingHabitIds.contains($0.id) }
-                .map(\.name)
-            
             return ValidationResult(
                 isValid: false,
-                reason: "Not all scheduled habits were completed",
+                reason: "Not all scheduled habits meet streak criteria",
                 scheduledHabitsCount: scheduledHabits.count,
-                completedHabitsCount: completedIds.count,
+                completedHabitsCount: completedHabits.count,
                 missingHabits: missingHabits
             )
         }

@@ -22,6 +22,13 @@ enum CompletionMode: String, Codable, CaseIterable, Identifiable {
         }
     }
     
+    var icon: String {
+        switch self {
+        case .full: return "Icon-MinimalStars_Filled"
+        case .partial: return "Icon-Stars_Filled"
+        }
+    }
+    
     // MARK: - Storage
     
     private static let storageKey = "streak_completion_mode"
