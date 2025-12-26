@@ -23,8 +23,11 @@ class UserAwareStorage: HabitStorageProtocol {
     // This avoids the "Generic save called" warning
     try await baseStorage.saveHabits(habits, immediate: immediate)
 
-    // Update cache
+    // ✅ CRITICAL FIX: Update cache with the new habits array
+    // This ensures cache is always in sync with storage
+    print("🗑️ DELETE_FLOW: UserAwareStorage.saveHabits() - Updating cache with \(habits.count) habits")
     cachedHabits = habits
+    print("🗑️ DELETE_FLOW: UserAwareStorage.saveHabits() - Cache updated")
   }
 
   func loadHabits() async throws -> [Habit] {
@@ -92,26 +95,52 @@ class UserAwareStorage: HabitStorageProtocol {
   }
 
   func deleteHabit(id: UUID) async throws {
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - START for habit ID: \(id)")
     clearCacheIfUserChanged()
 
-    // Load current habits
-    var habits = try await loadHabits()
+    // ✅ CRITICAL FIX: Clear cache before loading to ensure we get fresh data
+    // The cache might be stale if HabitStore already saved the updated array
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Clearing cache before load")
+    cachedHabits = nil
+
+    // Load current habits (will now fetch fresh from base storage)
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Loading habits from base storage")
+    var habits = try await baseStorage.loadHabits()
+    let beforeCount = habits.count
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Loaded \(beforeCount) habits from base storage")
 
     // Remove habit
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Removing habit from array")
     habits.removeAll { $0.id == id }
+    let afterCount = habits.count
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
     // Save updated habits
-    try await saveHabits(habits, immediate: true)
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Saving updated habits")
+    try await baseStorage.saveHabits(habits, immediate: true)
+    
+    // ✅ CRITICAL FIX: Update cache with the new habits array (without the deleted habit)
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Updating cache with \(afterCount) habits")
+    cachedHabits = habits
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - END")
   }
 
   func clearAllHabits() async throws {
+    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - START")
     clearCacheIfUserChanged()
 
+    // ✅ CRITICAL FIX: Clear cache before saving to ensure consistency
+    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Clearing cache")
+    cachedHabits = nil
+
     // Use the specific saveHabits method with empty array instead of generic save
+    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Saving empty array to base storage")
     try await baseStorage.saveHabits([], immediate: true)
 
-    // Clear cache
+    // ✅ CRITICAL FIX: Update cache to empty array (not nil) to prevent stale data
+    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Setting cache to empty array")
     cachedHabits = []
+    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - END")
   }
 
   func loadHabit(id: UUID) async throws -> Habit? {
