@@ -11,7 +11,14 @@ struct CelebrationView: View {
   @State private var showMessage = false
   @State private var scale: CGFloat = 0.8
 
+  let isPartialCompletion: Bool
   let onDismiss: () -> Void
+  
+  init(isPresented: Binding<Bool>, isPartialCompletion: Bool = false, onDismiss: @escaping () -> Void) {
+    self._isPresented = isPresented
+    self.isPartialCompletion = isPartialCompletion
+    self.onDismiss = onDismiss
+  }
 
   var body: some View {
     ZStack {
@@ -64,7 +71,7 @@ struct CelebrationView: View {
               .foregroundColor(.white)
               .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
-            Text("All habits completed for today")
+            Text(isPartialCompletion ? "Progress over perfection 🌱" : "All habits completed for today")
               .font(.appBodyLarge)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)
@@ -445,5 +452,6 @@ struct DiamondShape: Shape {
 #Preview {
   CelebrationView(
     isPresented: .constant(true),
+    isPartialCompletion: false,
     onDismiss: { })
 }

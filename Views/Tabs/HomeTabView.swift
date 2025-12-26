@@ -179,6 +179,7 @@ struct HomeTabView: View {
   @State private var sortedHabits: [Habit] = []
   @State private var cancellables = Set<AnyCancellable>()
   @State private var lastHabitJustCompleted = false
+  @State private var wasPartialCompletion: Bool = false
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
@@ -418,6 +419,7 @@ struct HomeTabView: View {
     if showCelebration {
       CelebrationView(
         isPresented: $showCelebration,
+        isPartialCompletion: wasPartialCompletion,
         onDismiss: {
           // Celebration dismissed, ready for next time
         })
@@ -1091,39 +1093,36 @@ struct HomeTabView: View {
     // This ensures the last habit detection works correctly
     completionStatusMap[habit.id] = true
 
-    // ✅ BUG FIX: Calculate completion status on-the-fly from actual habit data (don't use prefetched map)
+    // ✅ STREAK MODE: Use meetsStreakCriteria to check remaining habits for streak/XP purposes
+    let currentMode = CompletionMode.current
+    debugLog("🎯 CELEBRATION_CHECK: Using streak mode: \(currentMode.rawValue)")
+    
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
       if h.id == habit.id { return false } // Exclude current habit
       
       // ✅ CRITICAL: Check actual completion from the habits array (source of truth)
       // DON'T use completionStatusMap as it may be stale/prefetched
       let habitData = habits.first(where: { $0.id == h.id }) ?? h
-      let dateKey = Habit.dateKey(for: selectedDate)
       
-      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
-      // Both check: progress >= goal (extracted from goal string)
-      let progress = habitData.completionHistory[dateKey] ?? 0
-      let goalAmount = habitData.goalAmount(for: selectedDate)
-      
-      let isComplete: Bool
-      if goalAmount > 0 {
-        isComplete = progress >= goalAmount
-        debugLog("  🔍 \(habitData.habitType == .breaking ? "Breaking" : "Formation") habit '\(h.name)': progress=\(progress), goal=\(goalAmount), complete=\(isComplete)")
-    } else {
-        isComplete = progress > 0
-        debugLog("  🔍 Habit '\(h.name)': progress=\(progress) (fallback: any progress)")
-  }
-
-      // ✅ UNIVERSAL RULE: Both types use completionHistory
-      debugLog("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | isComplete=\(isComplete) | progress=\(habitData.completionHistory[dateKey] ?? 0)")
-      return !isComplete // Return true if NOT complete
+      // Use meetsStreakCriteria for streak/XP purposes (respects Streak Mode)
+      let meetsCriteria = habitData.meetsStreakCriteria(for: selectedDate)
+      debugLog("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | meetsStreakCriteria=\(meetsCriteria)")
+      return !meetsCriteria // Return true if NOT meeting criteria
     }
+    
+    // Check if this is full completion or partial completion
+    let isFullCompletion = baseHabitsForSelectedDate.allSatisfy { h in
+      h.isCompleted(for: selectedDate)  // Using isCompleted for "true" 100% completion
+    }
+    
+    let isPartialCompletion = !isFullCompletion && remainingHabits.isEmpty
 
         if remainingHabits.isEmpty {
           // This is the last habit - set flag and let difficulty sheet be shown
       // The celebration will be triggered after the difficulty sheet is dismissed
-      debugLog(
-        "🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
+      wasPartialCompletion = isPartialCompletion
+      debugLog("🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
+      debugLog("🎯 CELEBRATION_CHECK: Triggering celebration - isPartialCompletion: \(isPartialCompletion)")
           onLastHabitCompleted()
       // Don't set selectedHabit = nil here - let the difficulty sheet show
         } else {
