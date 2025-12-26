@@ -98,30 +98,29 @@ class UserAwareStorage: HabitStorageProtocol {
     print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - START for habit ID: \(id)")
     clearCacheIfUserChanged()
 
-    // ✅ CRITICAL FIX: Clear cache before loading to ensure we get fresh data
-    // The cache might be stale if HabitStore already saved the updated array
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Clearing cache before load")
+    // ✅ CRITICAL FIX: Clear cache before deletion
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Clearing cache")
     cachedHabits = nil
 
-    // Load current habits (will now fetch fresh from base storage)
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Loading habits from base storage")
-    var habits = try await baseStorage.loadHabits()
-    let beforeCount = habits.count
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Loaded \(beforeCount) habits from base storage")
-
-    // Remove habit
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Removing habit from array")
-    habits.removeAll { $0.id == id }
-    let afterCount = habits.count
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
-
-    // Save updated habits
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Saving updated habits")
-    try await baseStorage.saveHabits(habits, immediate: true)
+    // ✅ CRITICAL FIX: Call the actual deleteHabit method that does modelContext.delete()
+    // The previous approach (load → remove → save) doesn't actually delete the HabitData record
+    // We must call baseStorage.deleteHabit(id:) which properly does modelContext.delete(habitData)
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Calling baseStorage.deleteHabit()")
+    try await baseStorage.deleteHabit(id: id)
+    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - baseStorage.deleteHabit() completed")
     
-    // ✅ CRITICAL FIX: Update cache with the new habits array (without the deleted habit)
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Updating cache with \(afterCount) habits")
-    cachedHabits = habits
+    // ✅ CRITICAL FIX: Update cache by removing from cached array if present
+    // This ensures cache stays in sync after deletion
+    if var cached = cachedHabits {
+      let beforeCount = cached.count
+      cached.removeAll { $0.id == id }
+      let afterCount = cached.count
+      if beforeCount != afterCount {
+        print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Updated cache: \(beforeCount) → \(afterCount) habits")
+        cachedHabits = cached
+      }
+    }
+    
     print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - END")
   }
 
