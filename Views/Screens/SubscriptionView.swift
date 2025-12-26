@@ -531,7 +531,7 @@ struct SubscriptionView: View {
   // MARK: - Comparison Table
   
   private var comparisonTable: some View {
-    let tableHeight = CGFloat(56 + (56 * subscriptionFeatures.count))
+    let tableHeight = CGFloat(48 + (48 * subscriptionFeatures.count))
     
     return ZStack {
         // Free column background
@@ -543,13 +543,13 @@ struct SubscriptionView: View {
             // Header row background
             Color.primaryContainer
               .opacity(0.4)
-              .frame(height: 56)
+              .frame(height: 48)
             
             // Feature rows background
             ForEach(subscriptionFeatures, id: \.title) { _ in
               Color.primaryContainer
                 .opacity(0.4)
-                .frame(height: 56)
+                .frame(height: 48)
             }
           }
           .frame(width: 80)
@@ -557,7 +557,7 @@ struct SubscriptionView: View {
           
           // Premium column background
           Color.secondaryContainer
-            .frame(width: 100, height: CGFloat(56 + (56 * subscriptionFeatures.count)))
+            .frame(width: 100, height: CGFloat(48 + (48 * subscriptionFeatures.count)))
             .cornerRadius(16)
             .overlay(
               RoundedRectangle(cornerRadius: 16)
@@ -588,8 +588,8 @@ struct SubscriptionView: View {
             .frame(width: 100, alignment: .center)
             .background(Color.clear)
         }
-        .padding(.vertical, 16)
-        .frame(height: 56)
+        .padding(.vertical, 8)
+        .frame(height: 48)
         .overlay(
           Rectangle()
             .frame(height: 1)
@@ -635,8 +635,8 @@ struct SubscriptionView: View {
         .frame(width: 100, alignment: .center)
         .background(Color.clear)
     }
-    .padding(.vertical, 16)
-    .frame(height: 56)
+    .padding(.vertical, 8)
+    .frame(height: 48)
     .overlay(
       Group {
         if !isLast {
