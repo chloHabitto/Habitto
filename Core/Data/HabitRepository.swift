@@ -999,10 +999,12 @@ class HabitRepository: ObservableObject {
       try await habitStore.deleteHabit(habit)
       print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - habitStore.deleteHabit() completed")
       
-      // Reload habits to get the updated list
-      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Reloading habits")
-      await loadHabits(force: true)
-      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Habits reloaded, new count: \(habits.count)")
+      // ✅ CRITICAL FIX: DO NOT reload habits after deletion
+      // Reloading triggers sync/migration that can recreate the habit from Firestore
+      // The local state is already correct (updated in HomeViewState before calling deleteHabit)
+      // We don't need to reload - it just causes problems
+      // REMOVED: await loadHabits(force: true)
+      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Skipping reload (local state already correct)")
       debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
 
     } catch {
