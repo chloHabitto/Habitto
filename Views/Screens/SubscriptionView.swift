@@ -496,24 +496,16 @@ struct SubscriptionView: View {
         }
         .frame(maxHeight: .infinity, alignment: .center)
         
-        // Radio button circle
-        ZStack {
-          Circle()
-            .fill(isSelected ? (isCurrentPlan ? Color.primary.opacity(0.2) : Color.primary) : Color.clear)
-            .frame(width: 24, height: 24)
+        // Checkmark icon for selected subscription
+        if isSelected {
+          Image(systemName: "checkmark.circle.fill")
+            .font(.system(size: 24, weight: .semibold))
+            .foregroundColor(.primaryFocus)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
-          
+        } else {
           Circle()
-            .stroke(isSelected ? (isCurrentPlan ? Color.primary : Color.primary) : Color.outline3, lineWidth: isCurrentPlan ? 2.5 : 2)
+            .stroke(Color.outline3, lineWidth: 2)
             .frame(width: 24, height: 24)
-            .animation(.easeInOut(duration: 0.2), value: selectedOption)
-          
-          if isSelected {
-            Circle()
-              .fill(isCurrentPlan ? Color.primary : .onPrimary)
-              .frame(width: 8, height: 8)
-              .animation(.easeInOut(duration: 0.2), value: selectedOption)
-          }
         }
       }
       .padding(16)
@@ -521,7 +513,7 @@ struct SubscriptionView: View {
       .cornerRadius(16)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
-          .stroke(isSelected ? Color.primary : Color.outline3, lineWidth: isCurrentPlan ? 3 : 2)
+          .stroke(isSelected ? Color("appStroke01") : Color.outline3, lineWidth: isCurrentPlan ? 3 : 2)
       )
     }
     .buttonStyle(PlainButtonStyle())
