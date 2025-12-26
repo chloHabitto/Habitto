@@ -36,6 +36,9 @@ enum StreakCalculator {
         todayWasComplete: false)
     }
 
+    let currentMode = CompletionMode.current
+    print("🔥 STREAK_CALC: Computing streak with mode: \(currentMode.rawValue)")
+
     let normalizedToday = DateUtils.startOfDay(for: today)
     var checkDate = normalizedToday
     var currentStreakCount = 0
@@ -62,12 +65,11 @@ enum StreakCalculator {
 
       processedDays += 1
 
-      // ✅ CRITICAL FIX: Always use habit.isCompleted(for:) which respects historical goals
-      // CompletionRecords may have been created with current goal, not historical goal for that date
-      // habit.isCompleted(for:) uses goalHistory to determine the correct goal for each date
-      // Example: If goal changed from 1→2 on 15th, then 12th/13th/14th should check against goal=1, not goal=2
+      // ✅ CRITICAL FIX: Use habit.meetsStreakCriteria(for:) which respects Streak Mode setting
+      // This method respects the user's CompletionMode (full vs partial) for streak calculation
+      // while isCompleted(for:) remains for UI display purposes only
       let allComplete = scheduledHabits.allSatisfy { habit in
-        habit.isCompleted(for: checkDate)
+        habit.meetsStreakCriteria(for: checkDate)
       }
 
       if allComplete {
@@ -111,6 +113,9 @@ enum StreakCalculator {
       return 0
     }
     
+    let currentMode = CompletionMode.current
+    print("📊 LONGEST_STREAK: Computing with mode: \(currentMode.rawValue)")
+    
     let today = DateUtils.startOfDay(for: Date())
     let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
     let earliestHabitStart = habits
@@ -147,7 +152,7 @@ enum StreakCalculator {
       var incompleteHabits: [String] = []
       
       for habit in scheduledHabits {
-        let isComplete = habit.isCompleted(for: checkDate)
+        let isComplete = habit.meetsStreakCriteria(for: checkDate)
         if isComplete {
           completedHabits.append(habit.name)
         } else {
