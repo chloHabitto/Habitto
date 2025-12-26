@@ -7,6 +7,7 @@ struct PreferencesView: View {
   @State private var showingLanguage = false
   @State private var showingTheme = false
   @State private var showingDateCalendar = false
+  @State private var showingStreakMode = false
 
   private var iconColor: Color {
     Color.primaryDim
@@ -49,6 +50,20 @@ struct PreferencesView: View {
             {
               showingDateCalendar = true
             }
+            
+            Divider()
+              .background(Color(.systemGray4))
+              .padding(.leading, 56)
+            
+            AccountOptionRow(
+              icon: "Icon-flag-filled",
+              title: "Streak Mode",
+              subtitle: "Define what counts as a completed day",
+              hasChevron: true,
+              iconColor: iconColor)
+            {
+              showingStreakMode = true
+            }
           }
           .background(Color.surface)
           .cornerRadius(16)
@@ -85,6 +100,9 @@ struct PreferencesView: View {
     }
     .sheet(isPresented: $showingDateCalendar) {
       DateCalendarView()
+    }
+    .sheet(isPresented: $showingStreakMode) {
+      StreakModeView()
     }
   }
 }

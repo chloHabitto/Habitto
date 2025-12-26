@@ -58,6 +58,7 @@
 		89EA957F2EE04D58007D9E24 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89EE1B192EE4320100522849 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F196012ECF79D10034041F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		89FB7B0F2EFE771000365C11 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89FBC1F52EEF33E7000FEF4E /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89FDE5772EF1DAFC00B06073 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -247,6 +248,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		89FB7B252EFE771000365C11 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		89FBC20A2EEF33E7000FEF4E /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
@@ -330,6 +336,10 @@
 				{
 					ProductGroup = 89883C822EF446610077E5B9 /* Products */;
 					ProjectRef = 89883C6D2EF446610077E5B9 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89FB7B252EFE771000365C11 /* Products */;
+					ProjectRef = 89FB7B0F2EFE771000365C11 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89FDE58C2EF1DAFC00B06073 /* Products */;
