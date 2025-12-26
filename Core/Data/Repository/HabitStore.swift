@@ -25,6 +25,9 @@ final actor HabitStore {
   
   // ✅ FIX #18: Track cleanup per app session to prevent excessive runs
   private static var hasRunCleanupThisSession = false
+  
+  // ✅ CRITICAL FIX: Track deleted habit IDs to prevent restoration
+  private static let deletedHabitsKey = "DeletedHabitIDs"
 
   // MARK: - Load Habits
 
@@ -412,6 +415,10 @@ final actor HabitStore {
   func deleteHabit(_ habit: Habit) async throws {
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     logger.info("Deleting habit: \(habit.name)")
+
+    // ✅ CRITICAL FIX: Mark habit as deleted FIRST (before any deletion operations)
+    // This ensures we can filter it out even if deletion fails
+    markHabitAsDeleted(habit.id)
 
     // Record user analytics
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Recording analytics")
@@ -1064,6 +1071,24 @@ final actor HabitStore {
     get async {
       await MainActor.run { UserAnalytics.shared }
     }
+  }
+
+  /// Mark a habit as deleted in UserDefaults (safety mechanism)
+  private func markHabitAsDeleted(_ habitId: UUID) {
+    var deletedIds = UserDefaults.standard.stringArray(forKey: Self.deletedHabitsKey) ?? []
+    let idString = habitId.uuidString
+    if !deletedIds.contains(idString) {
+      deletedIds.append(idString)
+      UserDefaults.standard.set(deletedIds, forKey: Self.deletedHabitsKey)
+      UserDefaults.standard.synchronize()
+      print("🗑️ DELETE_FLOW: Marked habit \(idString) as deleted in UserDefaults")
+    }
+  }
+  
+  /// Check if a habit is marked as deleted
+  private func isHabitMarkedAsDeleted(_ habitId: UUID) -> Bool {
+    let deletedIds = UserDefaults.standard.stringArray(forKey: Self.deletedHabitsKey) ?? []
+    return deletedIds.contains(habitId.uuidString)
   }
 
   /// Check for habits stored in UserDefaults (legacy storage)
