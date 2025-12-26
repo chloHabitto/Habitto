@@ -91,7 +91,7 @@ struct StreakModeView: View {
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 24, height: 24)
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appIconColor)
         
         VStack(alignment: .leading, spacing: 4) {
           Text(mode.displayName)

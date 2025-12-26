@@ -700,11 +700,14 @@ class XPManager {
   }
 
   private func calculateTotalXPForHabits(_ habits: [Habit], for date: Date) -> Int {
+    let currentMode = CompletionMode.current
+    print("💰 XP_CHECK: Using streak mode: \(currentMode.rawValue)")
+    
     var totalXP = 0
     var completedHabitsCount = 0
 
     for habit in habits {
-      if habit.isCompleted(for: date) {
+      if habit.meetsStreakCriteria(for: date) {
         let baseXP = XPRewards.completeHabit
         let streakBonus = calculateStreakBonus(for: habit)
         totalXP += baseXP + streakBonus
