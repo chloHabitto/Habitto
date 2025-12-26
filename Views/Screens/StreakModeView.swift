@@ -87,10 +87,11 @@ struct StreakModeView: View {
     }) {
       HStack(spacing: 16) {
         // Icon
-        Image(systemName: mode.icon)
-          .font(.system(size: 20, weight: .medium))
-          .foregroundColor(.primaryDim)
+        Image(mode.icon)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
           .frame(width: 24, height: 24)
+          .foregroundColor(.primaryDim)
         
         VStack(alignment: .leading, spacing: 4) {
           Text(mode.displayName)
