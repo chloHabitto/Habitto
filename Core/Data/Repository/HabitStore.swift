@@ -1351,23 +1351,17 @@ final actor HabitStore {
     
     let scheduledHabitIds = Set(scheduledHabits.map(\.id))
     
+    // ✅ STREAK MODE: Use meetsStreakCriteria to check completion for XP purposes
+    let currentMode = CompletionMode.current
+    logger.info("💰 XP_AWARD_CHECK: Using streak mode: \(currentMode.rawValue)")
+    
     let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
-      let modelContext = SwiftDataContainer.shared.modelContext
-      
-      // ✅ FIX: Include pending changes to see CompletionRecord that was just saved
-      // This ensures we query fresh data, not stale cached results
-      let completionPredicate = #Predicate<CompletionRecord> { record in
-        record.userId == userId && record.dateKey == dateKey && record.isCompleted == true
-      }
-      var completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
-      completionDescriptor.includePendingChanges = true  // ✅ FIX: See just-saved records
-      let completionRecords = (try? modelContext.fetch(completionDescriptor)) ?? []
-      let completedIds = Set(completionRecords.map(\.habitId))
-      let missingHabits = scheduledHabits
-        .filter { !completedIds.contains($0.id) }
+      // Check each scheduled habit using meetsStreakCriteria (respects Streak Mode)
+      let incompleteHabits = scheduledHabits
+        .filter { !$0.meetsStreakCriteria(for: date) }
         .map(\.name)
-      let allDone = scheduledHabitIds.isSubset(of: completedIds)
-      return (allDone, missingHabits)
+      let allDone = incompleteHabits.isEmpty
+      return (allDone, incompleteHabits)
     }
     
     for habitName in incompleteHabits {

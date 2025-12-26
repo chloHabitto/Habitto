@@ -1125,13 +1125,35 @@ struct HomeTabView: View {
     let isPartialCompletion = !isFullCompletion && remainingHabits.isEmpty
 
         if remainingHabits.isEmpty {
-          // This is the last habit - set flag and let difficulty sheet be shown
-      // The celebration will be triggered after the difficulty sheet is dismissed
-      wasPartialCompletion = isPartialCompletion
-      debugLog("🎯 COMPLETION_FLOW: Last habit completed - will trigger celebration after sheet dismissal")
-      debugLog("🎯 CELEBRATION_CHECK: Triggering celebration - isPartialCompletion: \(isPartialCompletion)")
-          onLastHabitCompleted()
-      // Don't set selectedHabit = nil here - let the difficulty sheet show
+          wasPartialCompletion = isPartialCompletion
+          debugLog("🎯 CELEBRATION_CHECK: Triggering celebration - isPartialCompletion: \(isPartialCompletion)")
+          
+          // Check if this specific habit is fully complete (progress >= goal)
+          let habitIsFullyComplete = habit.isCompleted(for: selectedDate)
+          
+          if habitIsFullyComplete {
+            // Normal flow: difficulty sheet will show, celebration after dismiss
+            debugLog("🎯 COMPLETION_FLOW: Last habit fully completed - will trigger celebration after sheet dismissal")
+            onLastHabitCompleted()
+            // Don't set selectedHabit = nil here - let the difficulty sheet show
+          } else if isPartialCompletion {
+            // Partial completion: habit not fully done, but day meets streak criteria
+            // Skip difficulty sheet, trigger celebration directly
+            debugLog("🎉 PARTIAL_COMPLETION: Triggering celebration directly (no difficulty sheet)")
+            
+            // XP will be awarded automatically via HabitStore.checkDailyCompletionAndAwardXP
+            // (which now uses meetsStreakCriteria) when progress is saved
+            debugLog("✅ PARTIAL_COMPLETION: XP will be awarded automatically via HabitStore.checkDailyCompletionAndAwardXP")
+            
+            // Show celebration after short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              self.showCelebration = true
+              debugLog("🎉 PARTIAL_COMPLETION: Celebration shown!")
+            }
+            
+            // Trigger streak recalculation
+            onStreakRecalculationNeeded?()
+          }
         } else {
       // Present difficulty sheet (existing logic)
       // Don't set selectedHabit here as it triggers habit detail screen
