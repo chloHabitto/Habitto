@@ -344,13 +344,30 @@ class FirebaseBackupService {
         print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)")
         
         // Filter and delete records where document ID starts with habitId prefix
+        // OR where the habitId field in the document data matches
         for recordDoc in recordsSnapshot.documents {
           let recordId = recordDoc.documentID
+          let recordData = recordDoc.data()
+          let recordHabitId = recordData["habitId"] as? String ?? ""
+          
+          // ✅ CRITICAL FIX: Check both document ID prefix AND habitId field
           // Document ID format: "{habitId}_{dateKey}"
-          if recordId.hasPrefix(habitIdString + "_") {
-            try await recordDoc.reference.delete()
-            totalDeleted += 1
-            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId)")
+          // Some records might have different ID formats, so also check the habitId field
+          let matchesById = recordId.hasPrefix(habitIdString + "_")
+          let matchesByField = recordHabitId == habitIdString
+          
+          if matchesById || matchesByField {
+            do {
+              try await recordDoc.reference.delete()
+              totalDeleted += 1
+              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchesById ? "ID" : "field"))")
+            } catch {
+              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
+              // Continue with other records even if one fails
+            }
+          } else {
+            // Debug logging to understand why records aren't matching
+            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
           }
         }
       }
