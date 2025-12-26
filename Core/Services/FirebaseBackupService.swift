@@ -76,6 +76,13 @@ class FirebaseBackupService {
       await self?.performHabitDeletion(habitId: habitId)
     }
   }
+  
+  /// Delete a habit from Firestore backup (blocking/awaited)
+  /// ✅ CRITICAL FIX: This method awaits deletion completion to prevent habit restoration
+  /// Use this when deletion must complete before proceeding (e.g., before reloading habits)
+  func deleteHabitBackupAwait(habitId: UUID) async {
+    await performHabitDeletion(habitId: habitId)
+  }
 
   // MARK: - Private Implementation
 
@@ -237,11 +244,15 @@ class FirebaseBackupService {
   }
 
   private func performHabitDeletion(habitId: UUID) async {
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - START for habit ID: \(habitId)")
+    
     guard let userId = await getCurrentUserId() else {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - No user ID, skipping")
       return
     }
 
     guard FirebaseApp.app() != nil else {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Firebase not configured, skipping")
       return
     }
 
@@ -251,16 +262,21 @@ class FirebaseBackupService {
         .collection("habits")
         .document(habitId.uuidString)
 
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Calling Firestore delete()")
       try await docRef.delete()
       
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Firestore delete() completed")
       print("☁️ [CLOUD_BACKUP] Habit deleted from Firestore")
       print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.info("✅ FirebaseBackupService: Deleted habit backup \(habitId.uuidString.prefix(8))... from Firestore")
     } catch {
+      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - ERROR: \(error.localizedDescription)")
       print("⚠️ [CLOUD_BACKUP] Habit deletion failed: \(error.localizedDescription)")
       print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.warning("⚠️ FirebaseBackupService: Failed to delete habit backup: \(error.localizedDescription)")
     }
+    
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - END")
   }
 
   // MARK: - Helper Methods

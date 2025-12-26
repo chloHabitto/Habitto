@@ -443,12 +443,14 @@ final actor HabitStore {
     try await activeStorage.deleteHabit(id: habit.id)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
     
-    // ✅ CLOUD BACKUP: Delete habit from Firestore backup (non-blocking)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting from Firestore backup")
-    await MainActor.run {
-      FirebaseBackupService.shared.deleteHabitBackup(habitId: habit.id)
-    }
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore backup deletion initiated")
+    // ✅ CRITICAL FIX: AWAIT Firestore deletion to prevent habit restoration
+    // Previously this was fire-and-forget, which caused the habit to be restored
+    // from Firestore when loadHabits() was called immediately after deletion
+    // By awaiting the deletion, we ensure it completes BEFORE any reload happens
+    // Note: FirebaseBackupService is @MainActor, so await automatically handles the actor hop
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting from Firestore backup (AWAITED)")
+    await FirebaseBackupService.shared.deleteHabitBackupAwait(habitId: habit.id)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore backup deletion COMPLETED")
 
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - END")
     logger.info("Successfully deleted habit: \(habit.name)")
