@@ -51,16 +51,15 @@ struct StreakModeView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
-  @StateObject private var streakModePreferences = StreakModePreferences.shared
-  @State private var selectedMode: StreakMode
+  @State private var selectedMode: CompletionMode
   
   init() {
-    // Initialize with current preference
-    _selectedMode = State(initialValue: StreakModePreferences.shared.streakMode)
+    // Initialize with current preference from CompletionMode
+    _selectedMode = State(initialValue: CompletionMode.current)
   }
   
   private var hasChanges: Bool {
-    selectedMode != streakModePreferences.streakMode
+    selectedMode != CompletionMode.current
   }
 
   // MARK: - Streak Mode Section
@@ -69,10 +68,10 @@ struct StreakModeView: View {
     VStack(spacing: 0) {
       // Options
       VStack(spacing: 0) {
-        streakModeRow(mode: .fullCompletion, isSelected: selectedMode == .fullCompletion)
+        streakModeRow(mode: .full, isSelected: selectedMode == .full)
         Divider()
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
-        streakModeRow(mode: .anyProgress, isSelected: selectedMode == .anyProgress)
+        streakModeRow(mode: .partial, isSelected: selectedMode == .partial)
       }
       .background(Color.surface)
       .cornerRadius(16)
@@ -81,13 +80,13 @@ struct StreakModeView: View {
 
   // MARK: - Streak Mode Row
 
-  private func streakModeRow(mode: StreakMode, isSelected: Bool) -> some View {
+  private func streakModeRow(mode: CompletionMode, isSelected: Bool) -> some View {
     Button(action: {
       selectedMode = mode
     }) {
       HStack(spacing: 16) {
-        // Icon
-        Image(mode.icon)
+        // Icon - using placeholder icons, can be customized later
+        Image(systemName: mode == .full ? "checkmark.circle.fill" : "circle.fill")
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 24, height: 24)
@@ -126,7 +125,8 @@ struct StreakModeView: View {
   }
   
   private func saveStreakMode() {
-    streakModePreferences.streakMode = selectedMode
+    // Save to CompletionMode.current (which persists to UserDefaults and posts notification)
+    CompletionMode.current = selectedMode
     dismiss()
   }
 }

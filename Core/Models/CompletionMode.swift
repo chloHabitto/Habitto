@@ -29,11 +29,31 @@ enum CompletionMode: String, Codable, CaseIterable, Identifiable {
     /// Current streak mode setting (persisted in UserDefaults)
     static var current: CompletionMode {
         get {
-            guard let raw = UserDefaults.standard.string(forKey: storageKey),
-                  let mode = CompletionMode(rawValue: raw) else {
-                return .full // Default to current strict behavior
+            // Check new storage key first
+            if let raw = UserDefaults.standard.string(forKey: storageKey),
+               let mode = CompletionMode(rawValue: raw) {
+                return mode
             }
-            return mode
+            
+            // ✅ MIGRATION: Check old StreakModePreferences system and migrate
+            if let oldRaw = UserDefaults.standard.string(forKey: "streakModePreference") {
+                let migratedMode: CompletionMode
+                switch oldRaw {
+                case "fullCompletion":
+                    migratedMode = .full
+                case "anyProgress":
+                    migratedMode = .partial
+                default:
+                    migratedMode = .full
+                }
+                // Migrate to new system
+                UserDefaults.standard.set(migratedMode.rawValue, forKey: storageKey)
+                // Clean up old key
+                UserDefaults.standard.removeObject(forKey: "streakModePreference")
+                return migratedMode
+            }
+            
+            return .full // Default to current strict behavior
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: storageKey)
