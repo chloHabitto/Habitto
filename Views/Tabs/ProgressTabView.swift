@@ -553,6 +553,11 @@ struct ProgressTabView: View {
             HabittoButton.largeFillPrimary(text: "See more progress") {
               activeSheet = .paywall
             }
+            .overlay(
+              // Shimmer effect overlay
+              ShimmerEffect()
+                .clipShape(RoundedRectangle(cornerRadius: 28)) // Match button corner radius
+            )
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
           }
