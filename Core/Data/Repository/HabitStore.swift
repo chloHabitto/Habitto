@@ -1349,8 +1349,6 @@ final actor HabitStore {
       return
     }
     
-    let scheduledHabitIds = Set(scheduledHabits.map(\.id))
-    
     // ✅ STREAK MODE: Use meetsStreakCriteria to check completion for XP purposes
     let currentMode = CompletionMode.current
     logger.info("💰 XP_AWARD_CHECK: Using streak mode: \(currentMode.rawValue)")

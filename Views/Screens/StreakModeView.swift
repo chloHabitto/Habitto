@@ -85,8 +85,9 @@ struct StreakModeView: View {
       selectedMode = mode
     }) {
       HStack(spacing: 16) {
-        // Icon - using placeholder icons, can be customized later
-        Image(systemName: mode == .full ? "checkmark.circle.fill" : "circle.fill")
+        // Icon
+        Image(mode.icon)
+          .renderingMode(.template)
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 24, height: 24)
