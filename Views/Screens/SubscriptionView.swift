@@ -663,7 +663,7 @@ struct SubscriptionView: View {
       }
     } else {
       Image(systemName: "xmark.circle.fill")
-        .font(.system(size: 24, weight: .semibold))
+        .font(.system(size: 20, weight: .semibold))
         .foregroundColor(.text04) // Grey cross
         .opacity(0.5)
     }
