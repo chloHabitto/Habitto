@@ -110,7 +110,7 @@ struct UnifiedInputElement: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .background(.appSurface)
+    .background(.appSurface3)
     .cornerRadius(20)
   }
 }
