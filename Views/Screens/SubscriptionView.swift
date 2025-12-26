@@ -500,7 +500,7 @@ struct SubscriptionView: View {
         if isSelected {
           Image(systemName: "checkmark.circle.fill")
             .font(.system(size: 24, weight: .semibold))
-            .foregroundColor(.primaryFocus)
+            .foregroundColor(.primary)
             .animation(.easeInOut(duration: 0.2), value: selectedOption)
         } else {
           Circle()
@@ -548,13 +548,13 @@ struct SubscriptionView: View {
           .cornerRadius(16)
           
           // Premium column background
-          Color.secondaryContainer
-            .frame(width: 100, height: CGFloat(48 + (48 * subscriptionFeatures.count)))
-            .cornerRadius(16)
-            .overlay(
-              RoundedRectangle(cornerRadius: 16)
-                .stroke(ColorTokens.secondary, lineWidth: 2)
-            )
+//          Color.secondaryContainer
+//            .frame(width: 100, height: CGFloat(48 + (48 * subscriptionFeatures.count)))
+//            .cornerRadius(16)
+//            .overlay(
+//              RoundedRectangle(cornerRadius: 16)
+//                .stroke(ColorTokens.secondary, lineWidth: 2)
+//            )
         }
         
         // Main table
