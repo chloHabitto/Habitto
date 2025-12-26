@@ -433,8 +433,21 @@ final actor HabitStore {
     let afterCount = currentHabits.count
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
-    // ✅ CRITICAL FIX: Delete from storage FIRST (before saveHabits modifies the context)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() FIRST")
+    // ✅ CRITICAL FIX: Delete from Firestore FIRST to prevent SyncEngine from restoring it
+    // If we delete from SwiftData first, SyncEngine might restore it from Firestore on next sync
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting from Firestore FIRST to prevent restoration")
+    await FirebaseBackupService.shared.deleteHabitBackupAwait(habitId: habit.id)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore habit deletion completed")
+    
+    // ✅ CRITICAL FIX: Delete completion records from Firestore BEFORE deleting habit
+    // Orphaned completion records can cause the habit to be recreated during sync
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting completion records from Firestore (AWAITED)")
+    await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habit.id)
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Completion records deletion COMPLETED")
+    
+    // ✅ CRITICAL FIX: Delete from storage AFTER Firestore deletion
+    // This ensures Firestore is clean before we delete locally
+    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() AFTER Firestore deletion")
     try await activeStorage.deleteHabit(id: habit.id)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
 
@@ -465,21 +478,6 @@ final actor HabitStore {
     try await saveHabits(currentHabits)
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits array saved")
     
-    // ✅ CRITICAL FIX: Delete completion records FIRST to prevent habit recreation
-    // Orphaned completion records can cause the habit to be recreated during migration/sync
-    // This must happen BEFORE the habit deletion so records are gone before any reload
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting completion records from Firestore (AWAITED)")
-    await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habit.id)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Completion records deletion COMPLETED")
-    
-    // ✅ CRITICAL FIX: AWAIT Firestore habit deletion to prevent habit restoration
-    // Previously this was fire-and-forget, which caused the habit to be restored
-    // from Firestore when loadHabits() was called immediately after deletion
-    // By awaiting the deletion, we ensure it completes BEFORE any reload happens
-    // Note: FirebaseBackupService is @MainActor, so await automatically handles the actor hop
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting habit from Firestore backup (AWAITED)")
-    await FirebaseBackupService.shared.deleteHabitBackupAwait(habitId: habit.id)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore habit deletion COMPLETED")
 
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - END")
     logger.info("Successfully deleted habit: \(habit.name)")

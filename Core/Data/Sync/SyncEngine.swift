@@ -1232,12 +1232,37 @@ actor SyncEngine {
                     try? modelContext.save()
                 }
             } else {
+                // ✅ CRITICAL FIX: Check if habit was recently deleted before recreating
+                // If a habit was deleted but still exists in Firestore (deletion didn't complete),
+                // we should NOT recreate it on sync - this causes deleted habits to reappear
+                // 
+                // Check if there are any completion records for this habit that would indicate
+                // it was recently active. If no completion records exist, the habit might be orphaned
+                // and we should skip it to prevent resurrection.
+                let completionPredicate = #Predicate<CompletionRecord> { record in
+                    record.habitId == habitId && record.userId == userId
+                }
+                let completionDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionPredicate)
+                let existingCompletions = (try? modelContext.fetch(completionDescriptor)) ?? []
+                
+                // ✅ FIX: Only create habit if it has completion records OR if it's explicitly in Firestore
+                // If habit exists in Firestore habits collection, it's legitimate (not orphaned)
+                // But if it was deleted and Firestore deletion failed, we don't want to recreate it
+                // 
+                // For now, we'll create it if it exists in Firestore (trust Firestore as source of truth)
+                // But log a warning if there are no completion records (might be orphaned)
+                if existingCompletions.isEmpty {
+                    logger.warning("⚠️ SyncEngine: Creating habit \(habitId.uuidString.prefix(8))... from Firestore but no local completion records found - might be orphaned")
+                }
+                
                 // Create new habit
                 guard let habitData = Self.createHabitData(from: data, habitId: habitId, userId: userId) else {
+                    logger.warning("⚠️ SyncEngine: Failed to create HabitData from Firestore data for habit \(habitId.uuidString.prefix(8))...")
                     return
                 }
                 modelContext.insert(habitData)
                 try? modelContext.save()
+                logger.info("✅ SyncEngine: Created habit \(habitId.uuidString.prefix(8))... from Firestore")
             }
         }
     }
