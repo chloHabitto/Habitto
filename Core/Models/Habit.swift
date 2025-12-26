@@ -662,6 +662,46 @@ struct Habit: Identifiable, Codable, Equatable {
     return isCompletedInternal(for: date)
   }
 
+  // MARK: - Streak Mode Completion Check
+
+  /// Checks if this habit meets the completion criteria for STREAK and XP purposes.
+  /// This respects the user's Streak Mode setting.
+  ///
+  /// - Important: This is DIFFERENT from `isCompleted(for:)` which is for UI display.
+  ///   - `isCompleted(for:)` → UI checkmarks, calendars, progress charts (always uses full completion)
+  ///   - `meetsStreakCriteria(for:)` → Streak calculation, XP awards (respects Streak Mode)
+  ///
+  /// - Parameter date: The date to check
+  /// - Returns: true if the habit meets streak criteria based on current CompletionMode
+  func meetsStreakCriteria(for date: Date) -> Bool {
+    let mode = CompletionMode.current
+    return meetsStreakCriteria(for: date, mode: mode)
+  }
+
+  /// Checks if this habit meets the completion criteria for the given mode.
+  /// - Parameters:
+  ///   - date: The date to check
+  ///   - mode: The completion mode to evaluate against
+  /// - Returns: true if the habit meets the criteria for the given mode
+  func meetsStreakCriteria(for date: Date, mode: CompletionMode) -> Bool {
+    let progress = getProgress(for: date)
+    
+    switch mode {
+    case .full:
+      // Strict mode: progress must meet or exceed goal (current behavior)
+      let goalAmount = goalAmount(for: date)
+      if goalAmount > 0 {
+        return progress >= goalAmount
+      } else {
+        return progress > 0
+      }
+      
+    case .partial:
+      // Lenient mode: any progress counts
+      return progress > 0
+    }
+  }
+
   func getProgress(for date: Date) -> Int {
     let dateKey = Self.dateKey(for: date)
 

@@ -9,7 +9,7 @@ struct InputFieldModifier: ViewModifier {
     content
       .padding(.horizontal, 8)
       .padding(.vertical, 12)
-      .background(.appSurface2)
+      .background(.appSurface3)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
           .stroke(.outline3, lineWidth: 1.5))
@@ -24,7 +24,7 @@ struct SelectionRowModifier: ViewModifier {
     content
       .padding(.horizontal, 20)
       .padding(.vertical, 12)
-      .background(.appSurface)
+      .background(.appSurface3)
       .cornerRadius(12)
   }
 }

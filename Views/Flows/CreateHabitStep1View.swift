@@ -81,7 +81,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.surface)
+          .background(.appSurface3)
           .cornerRadius(20)
 
           // Description field - container with surface background and stroke
@@ -98,7 +98,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.surface)
+          .background(.appSurface3)
           .cornerRadius(20)
 
           // Colour selection
@@ -123,7 +123,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
-          .background(.appSurface)
+          .background(.appSurface3)
           .cornerRadius(16)
           .onTapGesture {
             showingColorSheet = true
@@ -170,7 +170,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
-          .background(.appSurface)
+          .background(.appSurface3)
           .cornerRadius(16)
           .onTapGesture {
             showingEmojiPicker = true
@@ -199,7 +199,7 @@ struct CreateHabitStep1View: View {
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 16)
-          .background(.appSurface)
+          .background(.appSurface3)
           .cornerRadius(20)
         }
         .padding(.horizontal, 20)
@@ -243,9 +243,9 @@ struct CreateHabitStep1View: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 20)
-      .background(.appSheetBackground)
+      .background(.appSurface2)
     }
-    .background(.appSheetBackground)
+    .background(.appSurface2)
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -361,7 +361,7 @@ struct CreateHabitStep1View: View {
         }
         .frame(maxWidth: .infinity, minHeight: 48)
         .padding(.horizontal, 16)
-        .background(.surface2)
+        .background(.appSurface3)
         .overlay(
           RoundedRectangle(cornerRadius: 12)
             .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))
