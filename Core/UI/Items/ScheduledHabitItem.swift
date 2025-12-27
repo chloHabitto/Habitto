@@ -13,7 +13,7 @@ struct ScheduledHabitItem: View {
   var onCompletionDismiss: (() -> Void)?
 
   var body: some View {
-    HStack(spacing: 12) {
+    HStack(spacing: 20) {
       // ColorMark
       Rectangle()
         .fill(habit.color.color.opacity(0.7))
