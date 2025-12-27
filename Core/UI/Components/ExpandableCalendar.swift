@@ -350,11 +350,11 @@ fileprivate struct WeekDayButton: View {
     Button(action: onTap) {
       VStack(spacing: 4) {
         Text(dayAbbreviation(for: date).uppercased())
-          .font(.appLabelMediumEmphasised)
+          .font(.system(size: 11, weight: .bold))
           .foregroundColor(dayAbbreviationColor)
         
         Text("\(calendar.component(.day, from: date))")
-          .font(.appBodyLarge)
+          .font(.appBodyMedium)
           .foregroundColor(dayNumberColor)
       }
       .frame(maxWidth: .infinity)
@@ -370,11 +370,11 @@ fileprivate struct WeekDayButton: View {
   }
   
   private var dayAbbreviationColor: Color {
-    isSelected ? .onPrimary.opacity(0.8) : .text04
+    isSelected ? .onPrimary.opacity(0.8) : .text04.opacity(0.8)
   }
   
   private var dayNumberColor: Color {
-    isSelected ? .onPrimary : .text07
+    isSelected ? .onPrimary : .text07.opacity(0.8)
   }
   
   private var backgroundColor: some View {
