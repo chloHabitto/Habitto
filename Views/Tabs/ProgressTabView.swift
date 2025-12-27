@@ -446,10 +446,10 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.surface3))
-    .overlay(
-      RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.0))
+        .fill(.primaryContainer))
+    // .overlay(
+    //   RoundedRectangle(cornerRadius: 24)
+    //     .stroke(Color.outline3, lineWidth: 1.0))
     .padding(.horizontal, 20)
   }
 
@@ -1777,7 +1777,7 @@ struct ProgressTabView: View {
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(
       ZStack {
-        Color.cardBG01
+        Color.primaryContainer
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -1820,7 +1820,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG01
+        Color.primaryContainer
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -3468,7 +3468,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG01
+        Color.primaryContainer
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
