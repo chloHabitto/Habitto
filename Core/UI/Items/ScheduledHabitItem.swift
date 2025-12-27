@@ -46,15 +46,15 @@ struct ScheduledHabitItem: View {
           ZStack(alignment: .leading) {
             // Background bar
             RoundedRectangle(cornerRadius: 4)
-              .fill(Color.outline3.opacity(0.3))
-              .frame(height: 6)
+              .fill(Color.outline3)
+              .frame(height: 8)
 
             // Progress bar
             RoundedRectangle(cornerRadius: 4)
-              .fill(habit.color.color.opacity(isCompletingAnimation ? 1.0 : 0.7))
+              .fill(progressBarGradient)
               .frame(
                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
-                height: isCompletingAnimation ? 8 : 6)
+                height: isCompletingAnimation ? 10 : 8)
               .opacity(isVacationDay ? 0.6 : 1.0)
               .scaleEffect(isCompletingAnimation ? 1.05 : 1.0)
               .animation(
@@ -62,7 +62,7 @@ struct ScheduledHabitItem: View {
                 value: isCompletingAnimation)
           }
         }
-        .frame(height: 8)
+        .frame(height: 10)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .frame(height: 80) // Fixed height for consistency
@@ -73,12 +73,12 @@ struct ScheduledHabitItem: View {
     }
     .padding(.trailing, 4)
     .background(
-      RoundedRectangle(cornerRadius: 16)
+      RoundedRectangle(cornerRadius: 20)
         .fill(backgroundColor))
+    .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(
       RoundedRectangle(cornerRadius: 20)
         .stroke(.outline3, lineWidth: 2))
-    .clipShape(RoundedRectangle(cornerRadius: 20))
     .contentShape(Rectangle())
     .offset(x: dragOffset)
     .overlay(
@@ -325,6 +325,30 @@ struct ScheduledHabitItem: View {
     // For Breaking habits: "0/10" where 10 comes from "Goal: 10 times/everyday"
     // baseline and current fields are DISPLAY-ONLY (for statistics, not progress)
     return "\(currentProgress)/\(extractGoalAmount(from: goalStringForSelectedDate))"
+  }
+
+  /// Computed property for progress bar gradient (lighter to darker)
+  private var progressBarGradient: LinearGradient {
+    let baseColor = habit.color.color
+    let uiColor = UIColor(baseColor)
+    
+    var hue: CGFloat = 0
+    var saturation: CGFloat = 0
+    var brightness: CGFloat = 0
+    var alpha: CGFloat = 0
+    uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+    
+    // Create lighter version (increase brightness)
+    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.15), opacity: Double(alpha))
+    
+    // Create darker version (decrease brightness)
+    let darkerColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: max(0.0, Double(brightness) - 0.15), opacity: Double(alpha))
+    
+    return LinearGradient(
+      colors: [lighterColor, darkerColor],
+      startPoint: .topLeading,
+      endPoint: .bottomTrailing
+    )
   }
 
   /// Computed property to check if it's a vacation day and vacation is currently active
