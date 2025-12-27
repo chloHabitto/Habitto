@@ -6,25 +6,25 @@ struct HabitIconView: View {
 
   var body: some View {
     ZStack {
-      RoundedRectangle(cornerRadius: 8)
+      RoundedRectangle(cornerRadius: 12)
         .fill(habit.color.color.opacity(0.15))
-        .frame(width: 30, height: 30)
+        .frame(width: 40, height: 40)
 
       if habit.icon.hasPrefix("Icon-") {
         // Asset icon - brighter in dark mode
         Image(habit.icon)
           .resizable()
-          .frame(width: 14, height: 14)
+          .frame(width: 18, height: 18)
           .foregroundColor(iconColor)
       } else if habit.icon == "None" {
         // No icon selected - show colored rounded rectangle - brighter in dark mode
         RoundedRectangle(cornerRadius: 4)
           .fill(iconColor)
-          .frame(width: 14, height: 14)
+          .frame(width: 18, height: 18)
       } else {
         // Emoji or system icon
         Text(habit.icon)
-          .font(.system(size: 14))
+          .font(.system(size: 18))
       }
     }
     .padding(.horizontal, 4)
