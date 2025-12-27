@@ -123,27 +123,46 @@ final class HabitData {
     
     print("🎨 [decodeColor] Components: \(components[0]), \(components[1]), \(components[2]), \(components[3])")
     
+    // Check for sentinel
     if components[0] < 0 {
         print("🎨 [decodeColor] ✅ Sentinel detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Explicitly use asset catalog color
     }
     
     let tolerance: CGFloat = 0.02
-    let navyRed: CGFloat = 42.0 / 255.0
-    let navyGreen: CGFloat = 53.0 / 255.0
-    let navyBlue: CGFloat = 99.0 / 255.0
     
-    print("🎨 [decodeColor] Checking Navy match...")
-    print("🎨 [decodeColor] Differences: red=\(abs(components[0] - navyRed)), green=\(abs(components[1] - navyGreen)), blue=\(abs(components[2] - navyBlue))")
+    // NEW Navy (appPrimary): #2A3563 = RGB(42, 53, 99)
+    let newNavyRed: CGFloat = 42.0 / 255.0
+    let newNavyGreen: CGFloat = 53.0 / 255.0
+    let newNavyBlue: CGFloat = 99.0 / 255.0
     
-    if abs(components[0] - navyRed) < tolerance &&
-       abs(components[1] - navyGreen) < tolerance &&
-       abs(components[2] - navyBlue) < tolerance {
-        print("🎨 [decodeColor] ✅ Navy RGB detected, returning Color(\"appPrimary\")")
+    // OLD Navy (navy500): #1C264C = RGB(28, 39, 76) - ACTUAL STORED VALUES
+    let oldNavyRed: CGFloat = 28.0 / 255.0
+    let oldNavyGreen: CGFloat = 39.0 / 255.0
+    let oldNavyBlue: CGFloat = 76.0 / 255.0
+    
+    print("🎨 [decodeColor] NEW Navy: red=\(newNavyRed), green=\(newNavyGreen), blue=\(newNavyBlue)")
+    print("🎨 [decodeColor] OLD Navy: red=\(oldNavyRed), green=\(oldNavyGreen), blue=\(oldNavyBlue)")
+    print("🎨 [decodeColor] NEW Differences: red=\(abs(components[0] - newNavyRed)), green=\(abs(components[1] - newNavyGreen)), blue=\(abs(components[2] - newNavyBlue))")
+    print("🎨 [decodeColor] OLD Differences: red=\(abs(components[0] - oldNavyRed)), green=\(abs(components[1] - oldNavyGreen)), blue=\(abs(components[2] - oldNavyBlue))")
+    
+    // Check for NEW Navy (appPrimary #2A3563)
+    if abs(components[0] - newNavyRed) < tolerance &&
+       abs(components[1] - newNavyGreen) < tolerance &&
+       abs(components[2] - newNavyBlue) < tolerance {
+        print("🎨 [decodeColor] ✅ NEW Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Return semantic color for dark mode adaptation
     }
     
-    print("🎨 [decodeColor] ❌ No match, returning fixed color")
+    // Check for OLD Navy (navy500 #1C264C) - THIS IS WHAT'S ACTUALLY STORED
+    if abs(components[0] - oldNavyRed) < tolerance &&
+       abs(components[1] - oldNavyGreen) < tolerance &&
+       abs(components[2] - oldNavyBlue) < tolerance {
+        print("🎨 [decodeColor] ✅ OLD Navy RGB detected, returning Color(\"appPrimary\")")
+        return Color("appPrimary")  // Return semantic color for dark mode adaptation
+    }
+    
+    print("🎨 [decodeColor] ❌ No Navy match, returning fixed color")
     return Color(
         red: Double(components[0]),
         green: Double(components[1]),
@@ -695,14 +714,29 @@ final class HabitData {
     
     // Also check if it matches JUST the light mode value (for existing habits)
     // This catches habits saved with fixed RGB that should be Navy
-    let navyLightRed: CGFloat = 42.0 / 255.0  // 0x2A = 42
-    let navyLightGreen: CGFloat = 53.0 / 255.0  // 0x35 = 53
-    let navyLightBlue: CGFloat = 99.0 / 255.0  // 0x63 = 99
     
-    if abs(colorRedLight - navyLightRed) < tolerance &&
-       abs(colorGreenLight - navyLightGreen) < tolerance &&
-       abs(colorBlueLight - navyLightBlue) < tolerance {
-      // This is Navy stored as fixed RGB, store as semantic
+    // NEW Navy (appPrimary): #2A3563 = RGB(42, 53, 99)
+    let newNavyLightRed: CGFloat = 42.0 / 255.0  // 0x2A = 42
+    let newNavyLightGreen: CGFloat = 53.0 / 255.0  // 0x35 = 53
+    let newNavyLightBlue: CGFloat = 99.0 / 255.0  // 0x63 = 99
+    
+    if abs(colorRedLight - newNavyLightRed) < tolerance &&
+       abs(colorGreenLight - newNavyLightGreen) < tolerance &&
+       abs(colorBlueLight - newNavyLightBlue) < tolerance {
+      // This is NEW Navy stored as fixed RGB, store as semantic
+      let components: [CGFloat] = [-1.0, 0.0, 0.0, 1.0]
+      return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
+    }
+    
+    // OLD Navy (navy500): #1C264C = RGB(28, 39, 76)
+    let oldNavyLightRed: CGFloat = 28.0 / 255.0
+    let oldNavyLightGreen: CGFloat = 39.0 / 255.0
+    let oldNavyLightBlue: CGFloat = 76.0 / 255.0
+    
+    if abs(colorRedLight - oldNavyLightRed) < tolerance &&
+       abs(colorGreenLight - oldNavyLightGreen) < tolerance &&
+       abs(colorBlueLight - oldNavyLightBlue) < tolerance {
+      // This is OLD Navy stored as fixed RGB, store as semantic
       let components: [CGFloat] = [-1.0, 0.0, 0.0, 1.0]
       return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
     }
