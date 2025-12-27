@@ -1252,8 +1252,6 @@ struct ProgressTabView: View {
     return VStack(alignment: .leading, spacing: 8) {
       // Top: Habit Icon
       HabitIconView(habit: reminderWithHabit.habit)
-        .frame(width: 30, height: 30)
-        .clipped()
 
       // Middle: Habit Name
       Text(reminderWithHabit.habit.name)
