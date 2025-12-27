@@ -139,11 +139,11 @@ struct HeaderView: View {
                 .frame(width: 24, height: 24)
             }
             Text(pluralizeStreak(currentStreak))
-              .font(.appTitleMediumEmphasised)
+              .font(.appTitleLargeEmphasised)
               .foregroundColor(.white)
           }
           .padding(.horizontal, 12)
-          .frame(height: 36)
+          .frame(height: 40)
           .background {
             // iOS glass effect using Material
             RoundedRectangle(cornerRadius: 24)
@@ -166,7 +166,7 @@ struct HeaderView: View {
               }
           }
         }
-        .padding(.vertical, 6)  // Maintain 48pt touch target (36pt visual + 6pt top + 6pt bottom)
+        .padding(.vertical, 6)  // Maintain 52pt touch target (40pt visual + 6pt top + 6pt bottom)
         .buttonStyle(PlainButtonStyle())
       }
 

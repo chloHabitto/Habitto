@@ -85,7 +85,7 @@ struct ExpandableCalendar: View {
       }) {
         HStack(spacing: 0) {
           Text(formattedCurrentDate)
-            .font(.appTitleMediumEmphasised)
+            .font(.system(size: 16, weight: .bold))
             .lineSpacing(8)
             .foregroundColor(.text01)
 
@@ -251,36 +251,19 @@ struct ExpandableCalendar: View {
   private func weekView(for weekOffset: Int, width _: CGFloat) -> some View {
     HStack(spacing: 2) {
       ForEach(daysOfWeek(for: weekOffset), id: \.timeIntervalSince1970) { date in
-        let calendar = AppDateFormatter.shared.getUserCalendar()
-        let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
-        let isToday = calendar.isDate(date, inSameDayAs: Date())
-
-        Button(action: {
-          selectDate(date)
-        }) {
-          VStack(spacing: 4) {
-            Text(dayAbbreviation(for: date).uppercased())
-              .font(.appTitleLabelEmphasised)
-              .foregroundColor(isSelected ? .onPrimary.opacity(0.8) : .text04)
-
-            Text("\(calendar.component(.day, from: date))")
-              .font(.appBodyLarge)
-              .foregroundColor(isSelected ? .onPrimary : .text07)
-          }
-          .frame(maxWidth: .infinity)
-          .frame(height: 48)
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .fill(isSelected
-                ? Color.primary
-                : (isToday ? Color.primary.opacity(0.1) : Color.clear)))
-            .overlay(
-              RoundedRectangle(cornerRadius: 12)
-                .stroke(isToday && !isSelected ? Color.primary : Color.clear, lineWidth: 1))
-        }
-        .buttonStyle(PlainButtonStyle())
+        WeekDayButton(date: date, isSelected: isDateSelected(date), isToday: isDateToday(date), onTap: { selectDate(date) })
       }
     }
+  }
+  
+  private func isDateSelected(_ date: Date) -> Bool {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    return calendar.isDate(date, inSameDayAs: selectedDate)
+  }
+  
+  private func isDateToday(_ date: Date) -> Bool {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    return calendar.isDate(date, inSameDayAs: Date())
   }
 
   private func daysOfWeek(for weekOffset: Int) -> [Date] {
@@ -352,6 +335,76 @@ struct ExpandableCalendar: View {
     if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
       currentMonth = newMonth
     }
+  }
+}
+
+// MARK: - WeekDayButton
+
+fileprivate struct WeekDayButton: View {
+  let date: Date
+  let isSelected: Bool
+  let isToday: Bool
+  let onTap: () -> Void
+  
+  var body: some View {
+    Button(action: onTap) {
+      VStack(spacing: 4) {
+        Text(dayAbbreviation(for: date).uppercased())
+          .font(.appLabelMediumEmphasised)
+          .foregroundColor(dayAbbreviationColor)
+        
+        Text("\(calendar.component(.day, from: date))")
+          .font(.appBodyLarge)
+          .foregroundColor(dayNumberColor)
+      }
+      .frame(maxWidth: .infinity)
+      .frame(height: 48)
+      .background(backgroundColor)
+      .overlay(overlayStroke)
+    }
+    .buttonStyle(PlainButtonStyle())
+  }
+  
+  private var calendar: Calendar {
+    AppDateFormatter.shared.getUserCalendar()
+  }
+  
+  private var dayAbbreviationColor: Color {
+    isSelected ? .onPrimary.opacity(0.8) : .text04
+  }
+  
+  private var dayNumberColor: Color {
+    isSelected ? .onPrimary : .text07
+  }
+  
+  private var backgroundColor: some View {
+    RoundedRectangle(cornerRadius: 12)
+      .fill(backgroundFillColor)
+  }
+  
+  private var backgroundFillColor: Color {
+    if isSelected {
+      return Color.primary
+    } else if isToday {
+      return Color.primary.opacity(0.1)
+    } else {
+      return Color.clear
+    }
+  }
+  
+  private var overlayStroke: some View {
+    RoundedRectangle(cornerRadius: 12)
+      .stroke(strokeColor, lineWidth: 1)
+  }
+  
+  private var strokeColor: Color {
+    (isToday && !isSelected) ? Color.primary : Color.clear
+  }
+  
+  private func dayAbbreviation(for date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "E"
+    return formatter.string(from: date)
   }
 }
 
