@@ -139,11 +139,11 @@ struct HeaderView: View {
                 .frame(width: 24, height: 24)
             }
             Text(pluralizeStreak(currentStreak))
-              .font(.appButtonText1)
+              .font(.appTitleSmallEmphasised)
               .foregroundColor(.white)
           }
           .padding(.horizontal, 12)
-          .frame(height: 44)
+          .frame(height: 36)
           .background {
             // iOS glass effect using Material
             RoundedRectangle(cornerRadius: 24)
@@ -166,6 +166,7 @@ struct HeaderView: View {
               }
           }
         }
+        .padding(.vertical, 4)  // Maintain 44pt touch target (36pt visual + 4pt top + 4pt bottom)
         .buttonStyle(PlainButtonStyle())
       }
 
@@ -191,7 +192,7 @@ struct HeaderView: View {
                 .frame(width: 20, height: 20)
                 .foregroundColor(Color(hex: "FCD884"))
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 32, height: 32)
             .background {
               // iOS glass effect using Material
               Circle()
@@ -222,7 +223,7 @@ struct HeaderView: View {
               .font(.system(size: 16, weight: .bold))
               .foregroundColor(.white)
           }
-          .frame(width: 36, height: 36)
+          .frame(width: 32, height: 32)
           .background {
             // iOS glass effect using Material
             Circle()
@@ -251,7 +252,7 @@ struct HeaderView: View {
     .padding(.leading, 20)
     .padding(.trailing, 16)
     .padding(.top, 8)
-    .padding(.bottom, 16)
+    .padding(.bottom, 24)
     .background(.headerBackground)
     // CRITICAL: Force view to observe isPremium changes by using it in .id()
     .id("header-premium-\(subscriptionManager.isPremium)")
