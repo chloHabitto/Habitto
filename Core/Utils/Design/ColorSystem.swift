@@ -361,23 +361,29 @@ struct CodableColor: Codable, Equatable {
   let alpha: Double
 
   var color: Color {
-    // ✅ FIX: Check for semantic color marker
+    print("🎨 [CodableColor.color] RGB stored: red=\(red), green=\(green), blue=\(blue), alpha=\(alpha)")
+    
     if red < 0 {
-        return Color("appPrimary")  // Explicitly return asset catalog color
+        print("🎨 [CodableColor.color] ✅ Sentinel detected, returning Color(\"appPrimary\")")
+        return Color("appPrimary")
     }
     
-    // ✅ FIX: Detect existing Navy stored as fixed RGB
     let tolerance: Double = 0.02
-    let navyRed: Double = 42.0 / 255.0
-    let navyGreen: Double = 53.0 / 255.0
-    let navyBlue: Double = 99.0 / 255.0
+    let navyRed: Double = 42.0 / 255.0  // 0.1647
+    let navyGreen: Double = 53.0 / 255.0  // 0.2078
+    let navyBlue: Double = 99.0 / 255.0  // 0.3882
+    
+    print("🎨 [CodableColor.color] Expected Navy: red=\(navyRed), green=\(navyGreen), blue=\(navyBlue)")
+    print("🎨 [CodableColor.color] Differences: red=\(abs(red - navyRed)), green=\(abs(green - navyGreen)), blue=\(abs(blue - navyBlue))")
     
     if abs(red - navyRed) < tolerance &&
        abs(green - navyGreen) < tolerance &&
        abs(blue - navyBlue) < tolerance {
+        print("🎨 [CodableColor.color] ✅ Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")
     }
     
+    print("🎨 [CodableColor.color] ❌ No match, returning fixed Color(red:green:blue:)")
     return Color(red: red, green: green, blue: blue, opacity: alpha)
   }
 
