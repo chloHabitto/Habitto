@@ -1297,10 +1297,10 @@ struct ProgressTabView: View {
       .frame(maxWidth: .infinity)
       .background(Color.red)
     }
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .frame(alignment: .leading)
     .background(Color.yellow)
     .padding(16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .frame(width: 160)
     .background(
       RoundedRectangle(cornerRadius: 16)
         .fill(.surface3))
