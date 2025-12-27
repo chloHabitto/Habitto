@@ -24,7 +24,7 @@ struct ScheduledHabitItem: View {
       HabitIconView(habit: habit)
 
       // VStack with title, progress text, and progress bar
-      VStack(alignment: .leading, spacing: 8) {
+      VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
           Text(habit.name)
             .font(.appTitleMediumEmphasised)
@@ -338,8 +338,8 @@ struct ScheduledHabitItem: View {
     var alpha: CGFloat = 0
     uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
     
-    // Create lighter version (increase brightness)
-    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.15), opacity: Double(alpha))
+    // Create lighter version (increase brightness significantly)
+    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.3), opacity: Double(alpha))
     
     // Create darker version (decrease brightness)
     let darkerColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: max(0.0, Double(brightness) - 0.15), opacity: Double(alpha))

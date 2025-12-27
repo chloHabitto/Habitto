@@ -79,7 +79,7 @@ struct WeeklyCalendarGridView: View {
 
             ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
               Text(day)
-                .font(.appBodyMediumEmphasised)
+                .font(.appLabelSmallEmphasised)
                 .foregroundColor(.text02)
                 .frame(width: 24, height: 24)
                 .background(Color.surface3)

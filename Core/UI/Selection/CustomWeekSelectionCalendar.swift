@@ -50,7 +50,7 @@ struct CustomWeekSelectionCalendar: View {
         // Day headers
         ForEach(weekdayNames, id: \.self) { day in
           Text(day)
-            .font(.appLabelMedium)
+            .font(.appLabelSmallEmphasised)
             .foregroundColor(.text04)
             .frame(height: 32)
         }
