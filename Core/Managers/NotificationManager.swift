@@ -940,7 +940,7 @@ class NotificationManager: ObservableObject {
         let activeReminders = habit.reminders.filter { $0.isActive }
 
         for reminder in activeReminders {
-          let notificationId = "\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: date))"
+          let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: date))"
 
           // Create content
           let content = UNMutableNotificationContent()
@@ -1921,14 +1921,23 @@ class NotificationManager: ObservableObject {
 
   /// Get notification IDs for a habit
   private func getNotificationIds(for habit: Habit) -> [String] {
-    // Generate IDs based on habit ID and reminder times
+    // Generate IDs based on habit ID, reminder times, and dates
+    // Match the format used in scheduling: habit_reminder_{habitId}_{reminderId}_{dateKey}
     var notificationIds: [String] = []
+    let calendar = Calendar.current
+    let today = Date()
 
-    // Generate IDs for all possible reminders (both active and inactive)
+    // Generate IDs for the next 7 days to match scheduling pattern
     // This ensures we can remove notifications even if reminders were deactivated
-    for reminder in habit.reminders {
-      let notificationId = "\(habit.id.uuidString)_\(reminder.id.uuidString)"
-      notificationIds.append(notificationId)
+    for dayOffset in 0 ..< 7 {
+      if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+        let dateKey = DateUtils.dateKey(for: targetDate)
+        for reminder in habit.reminders {
+          // Match the format used in scheduling: habit_reminder_{habitId}_{reminderId}_{dateKey}
+          let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(dateKey)"
+          notificationIds.append(notificationId)
+        }
+      }
     }
 
     return notificationIds
