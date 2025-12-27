@@ -166,7 +166,7 @@ struct HeaderView: View {
               }
           }
         }
-        .padding(.vertical, 4)  // Maintain 44pt touch target (36pt visual + 4pt top + 4pt bottom)
+        .padding(.vertical, 6)  // Maintain 48pt touch target (36pt visual + 6pt top + 6pt bottom)
         .buttonStyle(PlainButtonStyle())
       }
 

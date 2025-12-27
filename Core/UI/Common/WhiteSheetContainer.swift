@@ -48,7 +48,7 @@ struct WhiteSheetContainer<Content: View>: View {
         .background(contentBackground)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    .clipShape(RoundedCorner(radius: 24, corners: [.topLeft, .topRight]))
+    .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
   }
 
   // MARK: Private

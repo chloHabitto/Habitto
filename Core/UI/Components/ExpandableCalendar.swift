@@ -260,7 +260,7 @@ struct ExpandableCalendar: View {
         }) {
           VStack(spacing: 4) {
             Text(dayAbbreviation(for: date).uppercased())
-              .font(.appTitleMediumEmphasised)
+              .font(.appTitleLabelEmphasised)
               .foregroundColor(isSelected ? .onPrimary.opacity(0.8) : .text04)
 
             Text("\(calendar.component(.day, from: date))")
