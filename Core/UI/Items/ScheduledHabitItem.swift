@@ -327,7 +327,7 @@ struct ScheduledHabitItem: View {
     return "\(currentProgress)/\(extractGoalAmount(from: goalStringForSelectedDate))"
   }
 
-  /// Computed property for progress bar gradient (lighter to darker)
+  /// Computed property for progress bar gradient (lighter to lighter)
   private var progressBarGradient: LinearGradient {
     let baseColor = habit.color.color
     let uiColor = UIColor(baseColor)
@@ -338,14 +338,14 @@ struct ScheduledHabitItem: View {
     var alpha: CGFloat = 0
     uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
     
-    // Create lighter version (increase brightness significantly)
-    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.3), opacity: Double(alpha))
+    // Create lighter version (increase brightness by 40%)
+    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.4), opacity: Double(alpha))
     
-    // Create darker version (decrease brightness)
-    let darkerColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: max(0.0, Double(brightness) - 0.15), opacity: Double(alpha))
+    // Create less lighter version (increase brightness by 15%)
+    let lessLighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.15), opacity: Double(alpha))
     
     return LinearGradient(
-      colors: [lighterColor, darkerColor],
+      colors: [lighterColor, lessLighterColor],
       startPoint: .topLeading,
       endPoint: .bottomTrailing
     )
