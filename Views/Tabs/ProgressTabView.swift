@@ -1253,6 +1253,7 @@ struct ProgressTabView: View {
       // Top: Habit Icon
       HabitIconView(habit: reminderWithHabit.habit)
         .frame(width: 30, height: 30)
+        .clipped()
 
       // Middle: Habit Name
       Text(reminderWithHabit.habit.name)
@@ -1274,12 +1275,12 @@ struct ProgressTabView: View {
           set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
           .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
           .scaleEffect(0.6)
-          .padding(.trailing, 0)
           .fixedSize()
           .disabled(isTimePassed) // Disable toggle if time has passed
       }
       .frame(maxWidth: .infinity)
     }
+    .frame(maxWidth: .infinity, alignment: .leading)
     .background(Color.yellow)
     .padding(16)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
