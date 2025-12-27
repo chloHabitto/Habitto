@@ -7,7 +7,7 @@ struct HabitIconView: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: 12)
-        .fill(habit.color.color.opacity(0.15))
+        .fill(iconBackgroundColor)
         .frame(width: 40, height: 40)
 
       if habit.icon.hasPrefix("Icon-") {
@@ -29,6 +29,16 @@ struct HabitIconView: View {
     }
     .padding(.horizontal, 4)
     .padding(.vertical, 12)
+  }
+  
+  private var iconBackgroundColor: Color {
+    // In dark mode, use a much lighter version of the habit color
+    if colorScheme == .dark {
+      return lightenColor(habit.color.color, by: 0.4).opacity(0.25)
+    } else {
+      // In light mode, use the original color with 15% opacity
+      return habit.color.color.opacity(0.15)
+    }
   }
   
   private var iconColor: Color {
