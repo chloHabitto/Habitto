@@ -487,19 +487,6 @@ struct HomeTabView: View {
   private var habitsListSection: some View {
     ScrollView {
       LazyVStack(alignment: .leading, spacing: 12) {
-        // 🎨 DEBUG: Test appPrimary color in dark mode
-        HStack {
-          Rectangle()
-            .fill(Color("appPrimary"))
-            .frame(width: 50, height: 50)
-          Text("appPrimary test")
-            .foregroundColor(.white)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Color.surface2)
-        .cornerRadius(8)
-        
         // Vacation status indicator - first item in scrollable view
         if VacationManager.shared.isActive, VacationManager.shared.isVacationDay(selectedDate) {
           HStack(spacing: 8) {

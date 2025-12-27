@@ -117,15 +117,11 @@ final class HabitData {
         ofClasses: [NSArray.self, NSNumber.self],
         from: data) as? [CGFloat],
         components.count == 4 else {
-        print("🎨 [decodeColor] ❌ Failed to decode data, returning default")
         return Color("appPrimary") // Default to Navy
     }
     
-    print("🎨 [decodeColor] Components: \(components[0]), \(components[1]), \(components[2]), \(components[3])")
-    
     // Check for sentinel
     if components[0] < 0 {
-        print("🎨 [decodeColor] ✅ Sentinel detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Explicitly use asset catalog color
     }
     
@@ -141,16 +137,10 @@ final class HabitData {
     let oldNavyGreen: CGFloat = 39.0 / 255.0
     let oldNavyBlue: CGFloat = 76.0 / 255.0
     
-    print("🎨 [decodeColor] NEW Navy: red=\(newNavyRed), green=\(newNavyGreen), blue=\(newNavyBlue)")
-    print("🎨 [decodeColor] OLD Navy: red=\(oldNavyRed), green=\(oldNavyGreen), blue=\(oldNavyBlue)")
-    print("🎨 [decodeColor] NEW Differences: red=\(abs(components[0] - newNavyRed)), green=\(abs(components[1] - newNavyGreen)), blue=\(abs(components[2] - newNavyBlue))")
-    print("🎨 [decodeColor] OLD Differences: red=\(abs(components[0] - oldNavyRed)), green=\(abs(components[1] - oldNavyGreen)), blue=\(abs(components[2] - oldNavyBlue))")
-    
     // Check for NEW Navy (appPrimary #2A3563)
     if abs(components[0] - newNavyRed) < tolerance &&
        abs(components[1] - newNavyGreen) < tolerance &&
        abs(components[2] - newNavyBlue) < tolerance {
-        print("🎨 [decodeColor] ✅ NEW Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Return semantic color for dark mode adaptation
     }
     
@@ -158,11 +148,9 @@ final class HabitData {
     if abs(components[0] - oldNavyRed) < tolerance &&
        abs(components[1] - oldNavyGreen) < tolerance &&
        abs(components[2] - oldNavyBlue) < tolerance {
-        print("🎨 [decodeColor] ✅ OLD Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Return semantic color for dark mode adaptation
     }
     
-    print("🎨 [decodeColor] ❌ No Navy match, returning fixed color")
     return Color(
         red: Double(components[0]),
         green: Double(components[1]),

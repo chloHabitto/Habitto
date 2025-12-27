@@ -379,48 +379,37 @@ struct CodableColor: Codable, Equatable {
   let alpha: Double
 
   var color: Color {
-    print("🎨 [CodableColor.color] RGB stored: red=\(red), green=\(green), blue=\(blue), alpha=\(alpha)")
-    
-    // Check for sentinel value
+    // Check for sentinel value (Navy/appPrimary semantic color)
     if red < 0 {
-        print("🎨 [CodableColor.color] ✅ Sentinel detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")
     }
     
     let tolerance: Double = 0.02
     
-    // NEW Navy (appPrimary): #2A3563 = RGB(42, 53, 99)
-    let newNavyRed: Double = 42.0 / 255.0    // 0.1647
-    let newNavyGreen: Double = 53.0 / 255.0  // 0.2078
-    let newNavyBlue: Double = 99.0 / 255.0   // 0.3882
+    // NEW Navy (appPrimary): #2A3563
+    let newNavyRed: Double = 42.0 / 255.0
+    let newNavyGreen: Double = 53.0 / 255.0
+    let newNavyBlue: Double = 99.0 / 255.0
     
-    // OLD Navy (navy500): #1C264C = RGB(28, 39, 76) - the ACTUAL stored values
-    let oldNavyRed: Double = 28.0 / 255.0    // 0.1098
-    let oldNavyGreen: Double = 39.0 / 255.0  // 0.1529
-    let oldNavyBlue: Double = 76.0 / 255.0   // 0.2980
+    // OLD Navy (navy500): #1C264C
+    let oldNavyRed: Double = 28.0 / 255.0
+    let oldNavyGreen: Double = 39.0 / 255.0
+    let oldNavyBlue: Double = 76.0 / 255.0
     
-    print("🎨 [CodableColor.color] NEW Navy: red=\(newNavyRed), green=\(newNavyGreen), blue=\(newNavyBlue)")
-    print("🎨 [CodableColor.color] OLD Navy: red=\(oldNavyRed), green=\(oldNavyGreen), blue=\(oldNavyBlue)")
-    print("🎨 [CodableColor.color] NEW Differences: red=\(abs(red - newNavyRed)), green=\(abs(green - newNavyGreen)), blue=\(abs(blue - newNavyBlue))")
-    print("🎨 [CodableColor.color] OLD Differences: red=\(abs(red - oldNavyRed)), green=\(abs(green - oldNavyGreen)), blue=\(abs(blue - oldNavyBlue))")
-    
-    // Check for NEW Navy (appPrimary #2A3563)
+    // Check for NEW Navy
     if abs(red - newNavyRed) < tolerance &&
        abs(green - newNavyGreen) < tolerance &&
        abs(blue - newNavyBlue) < tolerance {
-        print("🎨 [CodableColor.color] ✅ NEW Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")
     }
     
-    // Check for OLD Navy (navy500 #1C264C) - THIS IS WHAT'S ACTUALLY STORED
+    // Check for OLD Navy
     if abs(red - oldNavyRed) < tolerance &&
        abs(green - oldNavyGreen) < tolerance &&
        abs(blue - oldNavyBlue) < tolerance {
-        print("🎨 [CodableColor.color] ✅ OLD Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")
     }
     
-    print("🎨 [CodableColor.color] ❌ No match, returning fixed Color(red:green:blue:)")
     return Color(red: red, green: green, blue: blue, opacity: alpha)
   }
 
