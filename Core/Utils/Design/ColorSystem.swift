@@ -29,6 +29,7 @@ enum ColorTokens {
   static let surface3 = Color("appSurface3")
   static let surfaceOverview = Color("appSurface(Overview)")
   static let containerBG01 = Color("appContainerBG01")
+  static let cardBG01 = Color("appCardBG01")
   static let surface4 = Color("appSurface4")
   static let surfaceDim = Color("appSurfaceDim")
   static let surfaceBright = Color("appSurfaceBright")
@@ -75,6 +76,7 @@ enum ColorTokens {
   // MARK: - Basic Colors
   static let white = Color.white
   static let black = Color.black
+  static let shade10Percent = Color("appShade10%")
 }
 
 // MARK: - Color Extension for Easy Access
@@ -103,6 +105,7 @@ extension Color {
   static let surface3 = ColorTokens.surface3
   static let surfaceOverview = ColorTokens.surfaceOverview
   static let containerBG01 = ColorTokens.containerBG01
+  static let cardBG01 = ColorTokens.cardBG01
   static let surface4 = ColorTokens.surface4
   static let surfaceDim = ColorTokens.surfaceDim
   static let surfaceBright = ColorTokens.surfaceBright
@@ -145,6 +148,9 @@ extension Color {
   static let bottomNavIconActive = ColorTokens.bottomNavIconActive
   static let bottomNavIconInactive = ColorTokens.bottomNavIconInactive
   static let appIconColor = ColorTokens.appIconColor
+  
+  // Basic Colors
+  static let shade10Percent = ColorTokens.shade10Percent
 }
 
 // MARK: - ShapeStyle Extension for SwiftUI Modifiers
@@ -170,6 +176,7 @@ extension ShapeStyle where Self == Color {
   static var surface3: Color { ColorTokens.surface3 }
   static var surfaceOverview: Color { ColorTokens.surfaceOverview }
   static var containerBG01: Color { ColorTokens.containerBG01 }
+  static var cardBG01: Color { ColorTokens.cardBG01 }
   static var surface4: Color { ColorTokens.surface4 }
   static var surfaceDim: Color { ColorTokens.surfaceDim }
   static var surfaceBright: Color { ColorTokens.surfaceBright }
@@ -207,6 +214,8 @@ extension ShapeStyle where Self == Color {
   static var sheetBackground02: Color { ColorTokens.sheetBackground02 }
   static var bottomNavIconActive: Color { ColorTokens.bottomNavIconActive }
   static var bottomNavIconInactive: Color { ColorTokens.bottomNavIconInactive }
+  
+  static var shade10Percent: Color { ColorTokens.shade10Percent }
 }
 
 // MARK: - Color Hex Conversion

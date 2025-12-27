@@ -1777,7 +1777,7 @@ struct ProgressTabView: View {
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG01
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -1820,7 +1820,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG01
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -3468,7 +3468,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG01
         Image("Gradient01")
           .resizable()
           .aspectRatio(contentMode: .fill)
@@ -5226,7 +5226,7 @@ struct AnimatedCircularProgressRing: View {
     ZStack {
       // Background circle (unfilled part)
       Circle()
-        .stroke(Color.appOutline4, lineWidth: 8)
+        .stroke(Color.shade10Percent, lineWidth: 8)
         .frame(width: size, height: size)
 
       // Progress circle (filled part)
