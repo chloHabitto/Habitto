@@ -344,7 +344,7 @@ struct HomeTabView: View {
   private var headerOverlay: some View {
     Rectangle()
       .frame(height: 1)
-      .foregroundColor(.outline3)
+      .foregroundColor(.outline1)
       .frame(maxWidth: .infinity)
   }
 
