@@ -1295,6 +1295,7 @@ struct ProgressTabView: View {
           .disabled(isTimePassed) // Disable toggle if time has passed
       }
       .frame(maxWidth: .infinity)
+      .background(Color.red)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(Color.yellow)
