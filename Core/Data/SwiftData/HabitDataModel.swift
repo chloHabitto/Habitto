@@ -113,43 +113,37 @@ final class HabitData {
   }
 
   static func decodeColor(_ data: Data) -> Color {
-    // ✅ FIX: NSKeyedUnarchiver warnings - must explicitly allow NSNumber for secure coding
-    // When using requiringSecureCoding: true, all classes (including NSNumber) must be declared
     guard let components = try? NSKeyedUnarchiver.unarchivedObject(
-      ofClasses: [NSArray.self, NSNumber.self],  // ✅ Include NSNumber
-      from: data) as? [CGFloat],
-      components.count == 4 else
-    {
-      return .blue // Default color
+        ofClasses: [NSArray.self, NSNumber.self],
+        from: data) as? [CGFloat],
+        components.count == 4 else {
+        return Color("appPrimary") // Default to Navy
     }
-
-    // ✅ FIX: Check for semantic color marker (red = -1.0 indicates .primary)
-    // This preserves dark mode adaptation for Navy color
-    if components[0] < 0 {
-      return .primary
-    }
-
-    // ✅ FIX: Detect existing habits with Navy color stored as fixed RGB
-    // Primary color in light mode is approximately (0.165, 0.208, 0.388)
-    // If stored RGB matches this, treat it as .primary for dark mode adaptation
-    let tolerance: CGFloat = 0.01
-    let primaryRed: CGFloat = 0.165
-    let primaryGreen: CGFloat = 0.208
-    let primaryBlue: CGFloat = 0.388
     
-    if abs(components[0] - primaryRed) < tolerance &&
-       abs(components[1] - primaryGreen) < tolerance &&
-       abs(components[2] - primaryBlue) < tolerance &&
-       abs(components[3] - 1.0) < tolerance {
-      // This is likely Navy color stored as fixed RGB, return semantic .primary
-      return .primary
+    // ✅ FIX: Check for semantic color marker (red = -1.0 indicates Navy/appPrimary)
+    if components[0] < 0 {
+        return Color("appPrimary")  // Explicitly use asset catalog color
     }
-
+    
+    // ✅ FIX: Detect existing habits with Navy color stored as fixed RGB
+    // Navy in light mode: #2A3563 = RGB(42, 53, 99) = (0.1647, 0.2078, 0.3882)
+    let tolerance: CGFloat = 0.02  // Increased tolerance
+    let navyRed: CGFloat = 42.0 / 255.0
+    let navyGreen: CGFloat = 53.0 / 255.0
+    let navyBlue: CGFloat = 99.0 / 255.0
+    
+    if abs(components[0] - navyRed) < tolerance &&
+       abs(components[1] - navyGreen) < tolerance &&
+       abs(components[2] - navyBlue) < tolerance {
+        return Color("appPrimary")  // Return semantic color for dark mode adaptation
+    }
+    
     return Color(
-      red: Double(components[0]),
-      green: Double(components[1]),
-      blue: Double(components[2]),
-      opacity: Double(components[3]))
+        red: Double(components[0]),
+        green: Double(components[1]),
+        blue: Double(components[2]),
+        opacity: Double(components[3])
+    )
   }
 
   private static func encodeGoalHistory(_ history: [String: String]) -> String {
@@ -652,73 +646,68 @@ final class HabitData {
   // MARK: - Color Encoding/Decoding
 
   private static func encodeColor(_ color: Color) -> Data {
-    // ✅ FIX: Preserve semantic colors (like .primary/Navy) for dark mode adaptation
-    // Check if the color is .primary by comparing in both light and dark trait collections
-    // This ensures we detect .primary regardless of current appearance
-    let primaryColor = Color.primary
-    let primaryUIColorLight = UIColor(primaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
-    let primaryUIColorDark = UIColor(primaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+    // ✅ FIX: Explicitly use Color("appPrimary") instead of .primary
+    // This avoids Swift's name resolution picking SwiftUI's built-in .primary
+    let appPrimaryColor = Color("appPrimary")
+    
+    // Resolve both colors in light AND dark mode for comparison
+    let primaryUIColorLight = UIColor(appPrimaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
+    let primaryUIColorDark = UIColor(appPrimaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
     let colorUIColorLight = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
     let colorUIColorDark = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
     
-    var primaryRedLight: CGFloat = 0
-    var primaryGreenLight: CGFloat = 0
-    var primaryBlueLight: CGFloat = 0
-    var primaryAlphaLight: CGFloat = 0
+    var primaryRedLight: CGFloat = 0, primaryGreenLight: CGFloat = 0, primaryBlueLight: CGFloat = 0, primaryAlphaLight: CGFloat = 0
     primaryUIColorLight.getRed(&primaryRedLight, green: &primaryGreenLight, blue: &primaryBlueLight, alpha: &primaryAlphaLight)
     
-    var primaryRedDark: CGFloat = 0
-    var primaryGreenDark: CGFloat = 0
-    var primaryBlueDark: CGFloat = 0
-    var primaryAlphaDark: CGFloat = 0
+    var primaryRedDark: CGFloat = 0, primaryGreenDark: CGFloat = 0, primaryBlueDark: CGFloat = 0, primaryAlphaDark: CGFloat = 0
     primaryUIColorDark.getRed(&primaryRedDark, green: &primaryGreenDark, blue: &primaryBlueDark, alpha: &primaryAlphaDark)
     
-    var colorRedLight: CGFloat = 0
-    var colorGreenLight: CGFloat = 0
-    var colorBlueLight: CGFloat = 0
-    var colorAlphaLight: CGFloat = 0
+    var colorRedLight: CGFloat = 0, colorGreenLight: CGFloat = 0, colorBlueLight: CGFloat = 0, colorAlphaLight: CGFloat = 0
     colorUIColorLight.getRed(&colorRedLight, green: &colorGreenLight, blue: &colorBlueLight, alpha: &colorAlphaLight)
     
-    var colorRedDark: CGFloat = 0
-    var colorGreenDark: CGFloat = 0
-    var colorBlueDark: CGFloat = 0
-    var colorAlphaDark: CGFloat = 0
+    var colorRedDark: CGFloat = 0, colorGreenDark: CGFloat = 0, colorBlueDark: CGFloat = 0, colorAlphaDark: CGFloat = 0
     colorUIColorDark.getRed(&colorRedDark, green: &colorGreenDark, blue: &colorBlueDark, alpha: &colorAlphaDark)
     
-    // Check if color matches .primary in both light and dark modes
-    // This ensures we correctly identify .primary regardless of current appearance
-    let tolerance: CGFloat = 0.01
+    // Use a more generous tolerance for floating point comparison
+    let tolerance: CGFloat = 0.02
+    
+    // Check if this color matches appPrimary in BOTH light and dark modes
     let matchesLight = abs(colorRedLight - primaryRedLight) < tolerance &&
-                      abs(colorGreenLight - primaryGreenLight) < tolerance &&
-                      abs(colorBlueLight - primaryBlueLight) < tolerance &&
-                      abs(colorAlphaLight - primaryAlphaLight) < tolerance
+                       abs(colorGreenLight - primaryGreenLight) < tolerance &&
+                       abs(colorBlueLight - primaryBlueLight) < tolerance
     
     let matchesDark = abs(colorRedDark - primaryRedDark) < tolerance &&
-                     abs(colorGreenDark - primaryGreenDark) < tolerance &&
-                     abs(colorBlueDark - primaryBlueDark) < tolerance &&
-                     abs(colorAlphaDark - primaryAlphaDark) < tolerance
+                      abs(colorGreenDark - primaryGreenDark) < tolerance &&
+                      abs(colorBlueDark - primaryBlueDark) < tolerance
     
-    // If colors match in both modes, it's .primary (semantic color)
+    // If it matches BOTH appearances, it's the semantic Navy/primary color
     if matchesLight && matchesDark {
-      // Store semantic color marker: -1.0 for red indicates .primary
-      let colorComponents: [CGFloat] = [-1.0, 0, 0, 0]
-      return try! NSKeyedArchiver.archivedData(
-        withRootObject: colorComponents,
-        requiringSecureCoding: true)
+      // Store sentinel value to preserve semantic color
+      let components: [CGFloat] = [-1.0, 0.0, 0.0, 1.0]
+      return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
     }
     
-    // Regular color: store RGB components from current appearance
+    // Also check if it matches JUST the light mode value (for existing habits)
+    // This catches habits saved with fixed RGB that should be Navy
+    let navyLightRed: CGFloat = 42.0 / 255.0  // 0x2A = 42
+    let navyLightGreen: CGFloat = 53.0 / 255.0  // 0x35 = 53
+    let navyLightBlue: CGFloat = 99.0 / 255.0  // 0x63 = 99
+    
+    if abs(colorRedLight - navyLightRed) < tolerance &&
+       abs(colorGreenLight - navyLightGreen) < tolerance &&
+       abs(colorBlueLight - navyLightBlue) < tolerance {
+      // This is Navy stored as fixed RGB, store as semantic
+      let components: [CGFloat] = [-1.0, 0.0, 0.0, 1.0]
+      return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
+    }
+    
+    // For non-Navy colors, store the actual RGB values
     let uiColor = UIColor(color)
-    var red: CGFloat = 0
-    var green: CGFloat = 0
-    var blue: CGFloat = 0
-    var alpha: CGFloat = 0
+    var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
     uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
     
-    let colorComponents = [red, green, blue, alpha]
-    return try! NSKeyedArchiver.archivedData(
-      withRootObject: colorComponents,
-      requiringSecureCoding: true)
+    let components: [CGFloat] = [red, green, blue, alpha]
+    return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
   }
 }
 

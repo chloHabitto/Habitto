@@ -276,72 +276,69 @@ struct CodableColor: Codable, Equatable {
   // MARK: Lifecycle
 
   init(_ color: Color) {
-    // ✅ FIX: Preserve semantic colors (like .primary/Navy) for dark mode adaptation
-    // Check if the color is .primary by comparing in both light and dark trait collections
-    let primaryColor = Color.primary
-    let primaryUIColorLight = UIColor(primaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
-    let primaryUIColorDark = UIColor(primaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
+    // ✅ FIX: Explicitly use Color("appPrimary") to detect Navy
+    let appPrimaryColor = Color("appPrimary")
+    
+    let primaryUIColorLight = UIColor(appPrimaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
+    let primaryUIColorDark = UIColor(appPrimaryColor).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
     let colorUIColorLight = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
     let colorUIColorDark = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark))
     
-    var primaryRedLight: CGFloat = 0
-    var primaryGreenLight: CGFloat = 0
-    var primaryBlueLight: CGFloat = 0
-    var primaryAlphaLight: CGFloat = 0
+    var primaryRedLight: CGFloat = 0, primaryGreenLight: CGFloat = 0, primaryBlueLight: CGFloat = 0, primaryAlphaLight: CGFloat = 0
     primaryUIColorLight.getRed(&primaryRedLight, green: &primaryGreenLight, blue: &primaryBlueLight, alpha: &primaryAlphaLight)
     
-    var primaryRedDark: CGFloat = 0
-    var primaryGreenDark: CGFloat = 0
-    var primaryBlueDark: CGFloat = 0
-    var primaryAlphaDark: CGFloat = 0
+    var primaryRedDark: CGFloat = 0, primaryGreenDark: CGFloat = 0, primaryBlueDark: CGFloat = 0, primaryAlphaDark: CGFloat = 0
     primaryUIColorDark.getRed(&primaryRedDark, green: &primaryGreenDark, blue: &primaryBlueDark, alpha: &primaryAlphaDark)
     
-    var colorRedLight: CGFloat = 0
-    var colorGreenLight: CGFloat = 0
-    var colorBlueLight: CGFloat = 0
-    var colorAlphaLight: CGFloat = 0
+    var colorRedLight: CGFloat = 0, colorGreenLight: CGFloat = 0, colorBlueLight: CGFloat = 0, colorAlphaLight: CGFloat = 0
     colorUIColorLight.getRed(&colorRedLight, green: &colorGreenLight, blue: &colorBlueLight, alpha: &colorAlphaLight)
     
-    var colorRedDark: CGFloat = 0
-    var colorGreenDark: CGFloat = 0
-    var colorBlueDark: CGFloat = 0
-    var colorAlphaDark: CGFloat = 0
+    var colorRedDark: CGFloat = 0, colorGreenDark: CGFloat = 0, colorBlueDark: CGFloat = 0, colorAlphaDark: CGFloat = 0
     colorUIColorDark.getRed(&colorRedDark, green: &colorGreenDark, blue: &colorBlueDark, alpha: &colorAlphaDark)
     
-    // Check if color matches .primary in both light and dark modes
-    let tolerance: CGFloat = 0.01
+    let tolerance: CGFloat = 0.02
+    
     let matchesLight = abs(colorRedLight - primaryRedLight) < tolerance &&
-                      abs(colorGreenLight - primaryGreenLight) < tolerance &&
-                      abs(colorBlueLight - primaryBlueLight) < tolerance &&
-                      abs(colorAlphaLight - primaryAlphaLight) < tolerance
+                       abs(colorGreenLight - primaryGreenLight) < tolerance &&
+                       abs(colorBlueLight - primaryBlueLight) < tolerance
     
     let matchesDark = abs(colorRedDark - primaryRedDark) < tolerance &&
-                     abs(colorGreenDark - primaryGreenDark) < tolerance &&
-                     abs(colorBlueDark - primaryBlueDark) < tolerance &&
-                     abs(colorAlphaDark - primaryAlphaDark) < tolerance
+                      abs(colorGreenDark - primaryGreenDark) < tolerance &&
+                      abs(colorBlueDark - primaryBlueDark) < tolerance
     
-    // If colors match in both modes, it's .primary (semantic color)
-    // Store -1.0 as sentinel value to indicate semantic color
     if matchesLight && matchesDark {
-      self.red = -1.0
-      self.green = 0
-      self.blue = 0
-      self.alpha = 0
-      return
+        // Store sentinel value for semantic Navy color
+        self.red = -1.0
+        self.green = 0.0
+        self.blue = 0.0
+        self.alpha = 1.0
+        return
     }
     
-    // Regular color: store RGB components
-    let uiColor = UIColor(color)
-    var red: CGFloat = 0
-    var green: CGFloat = 0
-    var blue: CGFloat = 0
-    var alpha: CGFloat = 0
-    uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+    // Also detect Navy stored as fixed light mode RGB
+    let navyLightRed: CGFloat = 42.0 / 255.0
+    let navyLightGreen: CGFloat = 53.0 / 255.0
+    let navyLightBlue: CGFloat = 99.0 / 255.0
     
-    self.red = Double(red)
-    self.green = Double(green)
-    self.blue = Double(blue)
-    self.alpha = Double(alpha)
+    if abs(colorRedLight - navyLightRed) < tolerance &&
+       abs(colorGreenLight - navyLightGreen) < tolerance &&
+       abs(colorBlueLight - navyLightBlue) < tolerance {
+        self.red = -1.0
+        self.green = 0.0
+        self.blue = 0.0
+        self.alpha = 1.0
+        return
+    }
+    
+    // For other colors, store actual RGB
+    let uiColor = UIColor(color)
+    var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+    
+    self.red = Double(r)
+    self.green = Double(g)
+    self.blue = Double(b)
+    self.alpha = Double(a)
   }
 
   init(from decoder: Decoder) throws {
@@ -364,26 +361,21 @@ struct CodableColor: Codable, Equatable {
   let alpha: Double
 
   var color: Color {
-    // ✅ FIX: Check for semantic color marker (red = -1.0 indicates .primary)
-    // This preserves dark mode adaptation for Navy color
+    // ✅ FIX: Check for semantic color marker
     if red < 0 {
-      return .primary
+        return Color("appPrimary")  // Explicitly return asset catalog color
     }
     
-    // ✅ FIX: Detect existing habits with Navy color stored as fixed RGB
-    // Primary color in light mode is approximately (0.165, 0.208, 0.388)
-    // If stored RGB matches this, treat it as .primary for dark mode adaptation
-    let tolerance: Double = 0.01
-    let primaryRed: Double = 0.165
-    let primaryGreen: Double = 0.208
-    let primaryBlue: Double = 0.388
+    // ✅ FIX: Detect existing Navy stored as fixed RGB
+    let tolerance: Double = 0.02
+    let navyRed: Double = 42.0 / 255.0
+    let navyGreen: Double = 53.0 / 255.0
+    let navyBlue: Double = 99.0 / 255.0
     
-    if abs(red - primaryRed) < tolerance &&
-       abs(green - primaryGreen) < tolerance &&
-       abs(blue - primaryBlue) < tolerance &&
-       abs(alpha - 1.0) < tolerance {
-      // This is likely Navy color stored as fixed RGB, return semantic .primary
-      return .primary
+    if abs(red - navyRed) < tolerance &&
+       abs(green - navyGreen) < tolerance &&
+       abs(blue - navyBlue) < tolerance {
+        return Color("appPrimary")
     }
     
     return Color(red: red, green: green, blue: blue, opacity: alpha)
