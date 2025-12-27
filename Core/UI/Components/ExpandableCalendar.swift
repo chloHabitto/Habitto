@@ -87,14 +87,14 @@ struct ExpandableCalendar: View {
           Text(formattedCurrentDate)
             .font(.system(size: 16, weight: .bold))
             .lineSpacing(8)
-            .foregroundColor(.text01)
+            .foregroundColor(.text02)
 
           Image(isExpanded ? "Icon-arrowDropUp_Filled" : "Icon-arrowDropDown_Filled")
             .renderingMode(.template)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 24, height: 24)
-            .foregroundColor(.text06)
+            .foregroundColor(.text04)
             .opacity(1.0)
             .rotationEffect(.degrees(isExpanded ? 0 : 0))
         }
@@ -370,7 +370,7 @@ fileprivate struct WeekDayButton: View {
   }
   
   private var dayAbbreviationColor: Color {
-    isSelected ? .onPrimary.opacity(0.8) : .text04.opacity(0.8)
+    isSelected ? .onPrimary : .text04
   }
   
   private var dayNumberColor: Color {
