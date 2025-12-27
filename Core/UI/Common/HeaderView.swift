@@ -139,7 +139,7 @@ struct HeaderView: View {
                 .frame(width: 24, height: 24)
             }
             Text(pluralizeStreak(currentStreak))
-              .font(.appTitleSmallEmphasised)
+              .font(.appTitleMediumEmphasised)
               .foregroundColor(.white)
           }
           .padding(.horizontal, 12)
