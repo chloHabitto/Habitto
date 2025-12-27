@@ -117,27 +117,33 @@ final class HabitData {
         ofClasses: [NSArray.self, NSNumber.self],
         from: data) as? [CGFloat],
         components.count == 4 else {
+        print("🎨 [decodeColor] ❌ Failed to decode data, returning default")
         return Color("appPrimary") // Default to Navy
     }
     
-    // ✅ FIX: Check for semantic color marker (red = -1.0 indicates Navy/appPrimary)
+    print("🎨 [decodeColor] Components: \(components[0]), \(components[1]), \(components[2]), \(components[3])")
+    
     if components[0] < 0 {
+        print("🎨 [decodeColor] ✅ Sentinel detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Explicitly use asset catalog color
     }
     
-    // ✅ FIX: Detect existing habits with Navy color stored as fixed RGB
-    // Navy in light mode: #2A3563 = RGB(42, 53, 99) = (0.1647, 0.2078, 0.3882)
-    let tolerance: CGFloat = 0.02  // Increased tolerance
+    let tolerance: CGFloat = 0.02
     let navyRed: CGFloat = 42.0 / 255.0
     let navyGreen: CGFloat = 53.0 / 255.0
     let navyBlue: CGFloat = 99.0 / 255.0
     
+    print("🎨 [decodeColor] Checking Navy match...")
+    print("🎨 [decodeColor] Differences: red=\(abs(components[0] - navyRed)), green=\(abs(components[1] - navyGreen)), blue=\(abs(components[2] - navyBlue))")
+    
     if abs(components[0] - navyRed) < tolerance &&
        abs(components[1] - navyGreen) < tolerance &&
        abs(components[2] - navyBlue) < tolerance {
+        print("🎨 [decodeColor] ✅ Navy RGB detected, returning Color(\"appPrimary\")")
         return Color("appPrimary")  // Return semantic color for dark mode adaptation
     }
     
+    print("🎨 [decodeColor] ❌ No match, returning fixed color")
     return Color(
         red: Double(components[0]),
         green: Double(components[1]),
