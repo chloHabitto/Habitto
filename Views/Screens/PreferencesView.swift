@@ -92,6 +92,7 @@ struct PreferencesView: View {
         }
       }
     }
+    .preferredColorScheme(themeManager.preferredColorScheme)
     .sheet(isPresented: $showingLanguage) {
       LanguageView()
     }
