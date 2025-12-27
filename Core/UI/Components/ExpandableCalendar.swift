@@ -143,7 +143,7 @@ struct ExpandableCalendar: View {
         .buttonStyle(PlainButtonStyle())
       }
     }
-    .padding(.horizontal, 16)
+    .padding(.horizontal, 20)
     .padding(.top, 12)
     .padding(.bottom, 8)
   }
@@ -153,8 +153,8 @@ struct ExpandableCalendar: View {
   private var weeklyCalendarView: some View {
     TabView(selection: $currentWeekOffset) {
       ForEach(-100 ... 100, id: \.self) { weekOffset in
-        weekView(for: weekOffset, width: UIScreen.main.bounds.width - 16)
-          .frame(width: UIScreen.main.bounds.width - 16)
+        weekView(for: weekOffset, width: UIScreen.main.bounds.width - 40)
+          .frame(width: UIScreen.main.bounds.width - 40)
           .tag(weekOffset)
       }
     }
@@ -171,7 +171,7 @@ struct ExpandableCalendar: View {
       currentWeekOffset = 0
     }
     .frame(height: 72)
-    .padding(.horizontal, 8)
+    .padding(.horizontal, 20)
     .padding(.top, 2)
     .padding(.bottom, 8)
   }
