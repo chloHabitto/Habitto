@@ -51,7 +51,7 @@ struct ScheduledHabitItem: View {
 
             // Progress bar
             RoundedRectangle(cornerRadius: 4)
-              .fill(progressBarGradient)
+              .fill(habit.color.color.opacity(isCompletingAnimation ? 1.0 : 0.7))
               .frame(
                 width: min(geometry.size.width * progressPercentage, geometry.size.width),
                 height: isCompletingAnimation ? 10 : 8)
@@ -325,30 +325,6 @@ struct ScheduledHabitItem: View {
     // For Breaking habits: "0/10" where 10 comes from "Goal: 10 times/everyday"
     // baseline and current fields are DISPLAY-ONLY (for statistics, not progress)
     return "\(currentProgress)/\(extractGoalAmount(from: goalStringForSelectedDate))"
-  }
-
-  /// Computed property for progress bar gradient (lighter to lighter)
-  private var progressBarGradient: LinearGradient {
-    let baseColor = habit.color.color
-    let uiColor = UIColor(baseColor)
-    
-    var hue: CGFloat = 0
-    var saturation: CGFloat = 0
-    var brightness: CGFloat = 0
-    var alpha: CGFloat = 0
-    uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-    
-    // Create lighter version (increase brightness by 40%)
-    let lighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.4), opacity: Double(alpha))
-    
-    // Create less lighter version (increase brightness by 15%)
-    let lessLighterColor = Color(hue: Double(hue), saturation: Double(saturation), brightness: min(1.0, Double(brightness) + 0.15), opacity: Double(alpha))
-    
-    return LinearGradient(
-      colors: [lighterColor, lessLighterColor],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
-    )
   }
 
   /// Computed property to check if it's a vacation day and vacation is currently active
