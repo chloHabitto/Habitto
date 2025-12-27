@@ -899,7 +899,7 @@ struct YearlyCalendarGridView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(.surfaceContainer)
+    .background(.appCardBG03)
     .cornerRadius(16)
   }
 
