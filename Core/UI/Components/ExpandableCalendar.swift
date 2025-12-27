@@ -259,13 +259,13 @@ struct ExpandableCalendar: View {
           selectDate(date)
         }) {
           VStack(spacing: 4) {
-            Text(dayAbbreviation(for: date))
-              .font(.appLabelSmall)
+            Text(dayAbbreviation(for: date).uppercased())
+              .font(.appTitleMediumEmphasised)
               .foregroundColor(isSelected ? .onPrimary.opacity(0.8) : .text04)
 
             Text("\(calendar.component(.day, from: date))")
-              .font(.appBodyMedium)
-              .foregroundColor(isSelected ? .onPrimary : (isToday ? .primary : .text01))
+              .font(.appBodyLarge)
+              .foregroundColor(isSelected ? .onPrimary : .text07)
           }
           .frame(maxWidth: .infinity)
           .frame(height: 48)
