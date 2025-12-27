@@ -938,6 +938,36 @@ class HabitRepository: ObservableObject {
 
   // MARK: - Update Habit
 
+  // MARK: - Navy Color Migration
+  
+  /// Migrate existing Navy-colored habits from fixed RGB to semantic color
+  /// This will reload all habits, triggering the decode → re-encode with sentinel value
+  /// Call this once at app startup to convert existing habits
+  func migrateNavyColorsToSemantic() async {
+    debugLog("🎨 HabitRepository: Starting Navy color migration...")
+    
+    do {
+      // Load all habits
+      await loadHabits(force: true)
+      let allHabits = habits
+      
+      debugLog("🎨 HabitRepository: Found \(allHabits.count) habits to check for Navy color migration")
+      
+      var migratedCount = 0
+      for habit in allHabits {
+        // Re-save each habit - the encode/decode cycle will convert Navy to semantic
+        // The decodeColor function automatically detects Navy stored as fixed RGB
+        // and the encodeColor function will store it as semantic color
+        try await updateHabit(habit)
+        migratedCount += 1
+      }
+      
+      debugLog("✅ HabitRepository: Navy color migration completed - \(migratedCount) habits processed")
+    } catch {
+      debugLog("❌ HabitRepository: Navy color migration failed: \(error.localizedDescription)")
+    }
+  }
+
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func updateHabit(_ habit: Habit) async throws {
     debugLog("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
