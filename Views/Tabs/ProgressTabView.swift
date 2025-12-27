@@ -1263,7 +1263,7 @@ struct ProgressTabView: View {
         .multilineTextAlignment(.leading)
 
       // Bottom: Reminder Time with Toggle
-      HStack {
+      HStack(spacing: 0) {
         Text(formatReminderTime(reminderWithHabit.reminder.time))
           .font(.appBodySmall)
           .foregroundColor(.text02)
@@ -1275,6 +1275,8 @@ struct ProgressTabView: View {
           set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
           .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
           .scaleEffect(0.6)
+          .padding(.trailing, 0)
+          .fixedSize()
           .disabled(isTimePassed) // Disable toggle if time has passed
       }
       .frame(maxWidth: .infinity)
