@@ -34,9 +34,9 @@ struct ColorBottomSheet: View {
       confirmButtonTitle: "Save")
     {
       VStack(spacing: 16) {
-        // First row - 4 colors
+        // First row - 3 colors
         HStack(spacing: 16) {
-          ForEach(0 ..< 4, id: \.self) { index in
+          ForEach(0 ..< 3, id: \.self) { index in
             ColorButton(
               color: colors[index].color,
               name: colors[index].name,
@@ -52,7 +52,7 @@ struct ColorBottomSheet: View {
 
         // Second row - 3 colors
         HStack(spacing: 16) {
-          ForEach(4 ..< 7, id: \.self) { index in
+          ForEach(3 ..< 6, id: \.self) { index in
             ColorButton(
               color: colors[index].color,
               name: colors[index].name,
@@ -82,7 +82,6 @@ struct ColorBottomSheet: View {
     (.primary, "Navy"),
     (Color(hex: "6096FD"), "Blue"),
     (Color(hex: "CB30E0"), "Purple"),
-    (Color(hex: "FF2D55"), "Red"),
     (Color(hex: "FF7838"), "Orange"),
     (Color(hex: "34C759"), "Green"),
     (Color(hex: "21EAF1"), "Teal")

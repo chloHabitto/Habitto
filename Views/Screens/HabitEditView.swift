@@ -973,7 +973,6 @@ struct HabitEditView: View {
       (.primary, "Navy"),
       (Color(hex: "6096FD"), "Blue"),
       (Color(hex: "CB30E0"), "Purple"),
-      (Color(hex: "FF2D55"), "Red"),
       (Color(hex: "FF7838"), "Orange"),
       (Color(hex: "34C759"), "Green"),
       (Color(hex: "21EAF1"), "Teal")
