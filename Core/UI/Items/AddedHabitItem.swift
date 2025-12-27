@@ -29,100 +29,104 @@ struct AddedHabitItem: View {
   let onLongPress: (() -> Void)?
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
+    HStack(alignment: .center, spacing: 20) {
       // ColorMark
       Rectangle()
-        .fill(habit.color.color)
+        .fill(habit.color.color.opacity(0.7))
         .frame(width: 8)
         .frame(maxHeight: .infinity)
 
-      // SelectedIcon
-      HabitIconView(habit: habit)
-        .padding(.top, 8)
+      // Content with vertical padding
+      HStack(alignment: .center, spacing: 20) {
+        // SelectedIcon
+        HabitIconView(habit: habit)
 
-      // HStack with content VStack and more button
-      HStack(alignment: .top, spacing: 4) {
-        // VStack with title, description, and goal row
-        VStack(alignment: .leading, spacing: 8) {
-          // Top row: Name and reminder icon
-          HStack(spacing: 6) {
-            Text(habit.name)
-              .font(.appTitleMediumEmphasised)
-              .foregroundColor(.text02)
+        // HStack with content VStack and more button
+        HStack(alignment: .top, spacing: 4) {
+          // VStack with title, description, and goal row
+          VStack(alignment: .leading, spacing: 8) {
+            // Top row: Name and reminder icon
+            HStack(spacing: 6) {
+              Text(habit.name)
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.text02)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+              reminderIcon
+            }
+
+            // Middle row: Description
+            Text(habit.description.isEmpty ? "No description" : habit.description)
+              .font(.appBodyExtraSmall)
+              .foregroundColor(.text05)
               .lineLimit(1)
               .truncationMode(.tail)
 
-            reminderIcon
+            // Bottom row: Goal
+            HStack(spacing: 4) {
+              Image(.iconFlagFilled)
+                .resizable()
+                .renderingMode(.template)
+                .frame(width: 16, height: 16)
+                .foregroundColor(.text05)
+
+              Text(habit.goal)
+                .font(.appBodyExtraSmall)
+                .foregroundColor(.text05)
+            }
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
+          .simultaneousGesture(
+            TapGesture(count: 1)
+              .onEnded {
+                onTap?()
+              })
+          .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.25)
+              .onEnded { _ in
+                print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
+                onLongPress?()
+              })
 
-          // Middle row: Description
-          Text(habit.description.isEmpty ? "No description" : habit.description)
-            .font(.appBodyExtraSmall)
-            .foregroundColor(.text05)
-            .lineLimit(1)
-            .truncationMode(.tail)
+          // More button (hidden in edit mode to show native List drag handle)
+          if !isEditMode {
+            Menu {
+              Button(action: {
+                onEdit?()
+              }) {
+                Label("Edit", systemImage: "pencil")
+              }
 
-          // Bottom row: Goal
-          HStack(spacing: 4) {
-            Image(.iconFlagFilled)
-              .resizable()
-              .renderingMode(.template)
-              .frame(width: 16, height: 16)
-              .foregroundColor(.text05)
-
-            Text(habit.goal)
-              .font(.appBodyExtraSmall)
-              .foregroundColor(.text05)
+              Button(role: .destructive, action: {
+                onDelete?()
+              }) {
+                Label("Delete", systemImage: "trash")
+              }
+            } label: {
+              Image(.iconMoreVert)
+                .resizable()
+                .frame(width: 24, height: 24)
+                .foregroundColor(.text05)
+                .contentShape(Rectangle())
+            }
+            .frame(width: 40)
+            .frame(maxHeight: .infinity)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 8)
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-          TapGesture(count: 1)
-            .onEnded {
-              onTap?()
-            })
-        .simultaneousGesture(
-          LongPressGesture(minimumDuration: 0.25)
-            .onEnded { _ in
-              print("🔍 AddedHabitItem: Long press gesture triggered for habit: \(habit.name)")
-              onLongPress?()
-            })
-
-        // More button (hidden in edit mode to show native List drag handle)
-        if !isEditMode {
-          Menu {
-            Button(action: {
-              onEdit?()
-            }) {
-              Label("Edit", systemImage: "pencil")
-            }
-
-            Button(role: .destructive, action: {
-              onDelete?()
-            }) {
-              Label("Delete", systemImage: "trash")
-            }
-          } label: {
-            Image(.iconMoreVert)
-              .resizable()
-              .frame(width: 24, height: 24)
-              .foregroundColor(.text05)
-              .contentShape(Rectangle())
-          }
-          .frame(width: 40)
-          .frame(maxHeight: .infinity)
-        }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.bottom, 14)
+      .padding(.vertical, 16)
     }
-    .background(.surface3)
+    .padding(.trailing, 4)
+    .background(
+      RoundedRectangle(cornerRadius: 20)
+        .fill(Color.surface3))
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(
       RoundedRectangle(cornerRadius: 20)
-        .stroke(.outline2, lineWidth: 4))
+        .stroke(.outline4.opacity(0.5), lineWidth: 1))
     .contentShape(Rectangle())
   }
 
