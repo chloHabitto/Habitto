@@ -249,6 +249,7 @@ struct ProgressTabView: View {
           WeeklyCalendarGridView(
             userHabits: getActiveHabits(),
             selectedWeekStartDate: selectedWeekStartDate)
+            .background(.appSurface3)
 
           // Summary Statistics
           WeeklySummaryStatsView(
@@ -1249,47 +1250,44 @@ struct ProgressTabView: View {
       for: reminderWithHabit.reminder,
       on: selectedProgressDate)
 
-    return ZStack(alignment: .topLeading) {
-      // Background
-      RoundedRectangle(cornerRadius: 16)
-        .fill(.surface3)
-        .overlay(
-          RoundedRectangle(cornerRadius: 16)
-            .stroke(Color.outline3, lineWidth: 1.0))
-      
-      // Content with padding
-      VStack(alignment: .leading, spacing: 8) {
-        // Top: Habit Icon
-        HabitIconView(habit: reminderWithHabit.habit)
-          .frame(width: 30, height: 30)
+    return VStack(alignment: .leading, spacing: 8) {
+      // Top: Habit Icon
+      HabitIconView(habit: reminderWithHabit.habit)
+        .frame(width: 30, height: 30)
 
-        // Middle: Habit Name
-        Text(reminderWithHabit.habit.name)
-          .font(.appBodyMedium)
-          .foregroundColor(.onPrimaryContainer)
-          .lineLimit(2)
-          .multilineTextAlignment(.leading)
+      // Middle: Habit Name
+      Text(reminderWithHabit.habit.name)
+        .font(.appBodyMedium)
+        .foregroundColor(.onPrimaryContainer)
+        .lineLimit(2)
+        .multilineTextAlignment(.leading)
 
-        // Bottom: Reminder Time with Toggle
-        HStack {
-          Text(formatReminderTime(reminderWithHabit.reminder.time))
-            .font(.appBodySmall)
-            .foregroundColor(.text02)
+      // Bottom: Reminder Time with Toggle
+      HStack {
+        Text(formatReminderTime(reminderWithHabit.reminder.time))
+          .font(.appBodySmall)
+          .foregroundColor(.text02)
 
-          Spacer()
+        Spacer()
 
-          Toggle("", isOn: Binding(
-            get: { isEnabled },
-            set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
-            .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
-            .scaleEffect(0.6)
-            .disabled(isTimePassed) // Disable toggle if time has passed
-        }
+        Toggle("", isOn: Binding(
+          get: { isEnabled },
+          set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
+          .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
+          .scaleEffect(0.6)
+          .disabled(isTimePassed) // Disable toggle if time has passed
       }
-      .padding(16)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .frame(maxWidth: .infinity)
     }
-    .frame(width: 140, height: 120)
+    .background(Color.yellow)
+    .padding(16)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(
+      RoundedRectangle(cornerRadius: 16)
+        .fill(.surface3))
+    .overlay(
+      RoundedRectangle(cornerRadius: 16)
+        .stroke(Color.outline3, lineWidth: 1.0))
     .clipShape(RoundedRectangle(cornerRadius: 16))
     .opacity(isEnabled ? 1.0 : 0.6)
   }
@@ -5340,7 +5338,7 @@ struct WeeklySummaryStatsView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(.surfaceContainer)
+    .background(.appCardBG03)
     .cornerRadius(16)
   }
 }
