@@ -121,7 +121,7 @@ struct AddedHabitItem: View {
     .background(.surface3)
     .overlay(
       RoundedRectangle(cornerRadius: 20)
-        .stroke(.outline3, lineWidth: 2))
+        .stroke(.outline2, lineWidth: 4))
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .contentShape(Rectangle())
   }
