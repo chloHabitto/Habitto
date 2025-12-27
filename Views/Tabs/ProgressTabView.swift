@@ -249,7 +249,6 @@ struct ProgressTabView: View {
           WeeklyCalendarGridView(
             userHabits: getActiveHabits(),
             selectedWeekStartDate: selectedWeekStartDate)
-            .background(.appSurface3)
 
           // Summary Statistics
           WeeklySummaryStatsView(
@@ -369,11 +368,11 @@ struct ProgressTabView: View {
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
         selectedYear: selectedYear)
-        .background(.appSurface3)
+        .background(.appCardBG02)
         .cornerRadius(24)
-        .overlay(
-          RoundedRectangle(cornerRadius: 24)
-            .stroke(Color.outline3, lineWidth: 1.0))
+        // .overlay(
+        //   RoundedRectangle(cornerRadius: 24)
+        //     .stroke(Color.outline3, lineWidth: 1.0))
     }
     .padding(.horizontal, 20)
   }
