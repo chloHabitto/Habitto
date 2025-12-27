@@ -1251,7 +1251,25 @@ struct ProgressTabView: View {
 
     return VStack(alignment: .leading, spacing: 8) {
       // Top: Habit Icon
-      HabitIconView(habit: reminderWithHabit.habit)
+      ZStack {
+        RoundedRectangle(cornerRadius: 12)
+          .fill(reminderWithHabit.habit.color.color.opacity(0.15))
+          .frame(width: 40, height: 40)
+
+        if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
+          Image(reminderWithHabit.habit.icon)
+            .resizable()
+            .frame(width: 18, height: 18)
+            .foregroundColor(reminderWithHabit.habit.color.color)
+        } else if reminderWithHabit.habit.icon == "None" {
+          RoundedRectangle(cornerRadius: 4)
+            .fill(reminderWithHabit.habit.color.color)
+            .frame(width: 18, height: 18)
+        } else {
+          Text(reminderWithHabit.habit.icon)
+            .font(.system(size: 18))
+        }
+      }
 
       // Middle: Habit Name
       Text(reminderWithHabit.habit.name)
