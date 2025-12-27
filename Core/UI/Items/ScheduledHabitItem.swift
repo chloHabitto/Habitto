@@ -78,7 +78,7 @@ struct ScheduledHabitItem: View {
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(
       RoundedRectangle(cornerRadius: 20)
-        .stroke(.outline3, lineWidth: 2))
+        .stroke(.outline4, lineWidth: 2))
     .contentShape(Rectangle())
     .offset(x: dragOffset)
     .overlay(
