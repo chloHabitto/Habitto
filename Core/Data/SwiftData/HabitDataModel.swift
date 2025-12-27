@@ -63,6 +63,7 @@ final class HabitData {
   var schedule: String
   var goal: String
   var reminder: String
+  var remindersData: Data?  // JSON-encoded [ReminderItem] array
   var goalHistoryJSON: String = "{}"
   var startDate: Date
   var endDate: Date?
@@ -150,6 +151,18 @@ final class HabitData {
     return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
   }
 
+  // MARK: - Reminders Encoding/Decoding
+
+  private static func encodeReminders(_ reminders: [ReminderItem]) -> Data? {
+    guard !reminders.isEmpty else { return nil }
+    return try? JSONEncoder().encode(reminders)
+  }
+
+  private static func decodeReminders(_ data: Data?) -> [ReminderItem] {
+    guard let data = data else { return [] }
+    return (try? JSONDecoder().decode([ReminderItem].self, from: data)) ?? []
+  }
+
   // MARK: - Update Methods
 
   @MainActor
@@ -162,6 +175,7 @@ final class HabitData {
     schedule = habit.schedule
     goal = habit.goal
     reminder = habit.reminder
+    remindersData = Self.encodeReminders(habit.reminders)
     startDate = habit.startDate
     endDate = habit.endDate
     baseline = habit.baseline
@@ -599,6 +613,8 @@ final class HabitData {
       reminder: reminder,
       startDate: startDate,
       endDate: endDate,
+      createdAt: createdAt,
+      reminders: Self.decodeReminders(remindersData),
       baseline: baseline,
       target: target,
       completionHistory: completionHistoryDict,
