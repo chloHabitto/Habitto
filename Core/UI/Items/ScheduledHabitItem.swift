@@ -62,7 +62,7 @@ struct ScheduledHabitItem: View {
                 value: isCompletingAnimation)
           }
         }
-        .frame(height: 6)
+        .frame(height: 8)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .frame(height: 80) // Fixed height for consistency
