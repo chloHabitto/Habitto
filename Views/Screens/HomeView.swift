@@ -987,32 +987,59 @@ struct HomeView: View {
   }
 
   var body: some View {
-    return ZStack(alignment: .top) {
-      // Dynamic theme background fills entire screen
-      Color.headerBackground
-        .ignoresSafeArea(.all)
-      
-      // Main content structure with custom tab bar
-      VStack(spacing: 0) {
-        // Tab content - switches based on selected tab
-        Group {
-          switch state.selectedTab {
-          case .home:
-            homeTabContent
-          case .progress:
-            progressTabContent
-          case .habits:
-            habitsTabContent
-          case .more:
-            moreTabContent
-          }
+    TabView(selection: $state.selectedTab) {
+      // Home Tab
+      homeTabContent
+        .tabItem {
+          Label("Home", image: "Icon-home-filled")
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        
-        // Custom tab bar at bottom
-        TabBarView(selectedTab: $state.selectedTab, onCreateHabit: {
-          state.handleCreateHabitRequest()
-        })
+        .tag(Tab.home)
+      
+      // Progress Tab
+      progressTabContent
+        .tabItem {
+          Label("Progress", image: "Icon-chart-filled")
+        }
+        .tag(Tab.progress)
+      
+      // Habits Tab
+      habitsTabContent
+        .tabItem {
+          Label("Habits", image: "Icon-book-filled")
+        }
+        .tag(Tab.habits)
+      
+      // More Tab
+      moreTabContent
+        .tabItem {
+          Label("More", image: "Icon-more-filled")
+        }
+        .tag(Tab.more)
+    }
+    .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+    .toolbarBackgroundVisibility(.visible, for: .tabBar)
+    .onChange(of: state.selectedTab) { oldValue, newValue in
+      // Add haptic feedback when tab is selected
+      UISelectionFeedbackGenerator().selectionChanged()
+    }
+    .safeAreaInset(edge: .bottom, spacing: 0) {
+      // Vacation mode banner
+      if VacationManager.shared.isActive {
+        VStack(spacing: 0) {
+          HStack(spacing: 6) {
+            Image("Icon-Vacation_Filled")
+              .resizable()
+              .frame(width: 16, height: 16)
+              .foregroundColor(.blue)
+            Text("Vacation Mode")
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.blue)
+          }
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(Color.blue.opacity(0.1))
+          .frame(maxWidth: .infinity)
+        }
       }
     }
     .onAppear {

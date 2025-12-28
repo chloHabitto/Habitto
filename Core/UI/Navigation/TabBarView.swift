@@ -1,6 +1,10 @@
 import SwiftUI
 import UIKit
 
+/// ⚠️ DEPRECATED: This custom tab bar has been replaced with native SwiftUI TabView in HomeView.swift
+/// This file is kept for reference but is no longer used in the main navigation.
+/// The native TabView provides better system integration and iOS 18+ liquid glass styling.
+@available(*, deprecated, message: "Use native SwiftUI TabView instead. This custom implementation is no longer used.")
 struct TabBarView: View {
   // MARK: Internal
 
