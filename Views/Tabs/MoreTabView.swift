@@ -32,7 +32,7 @@ struct MoreTabView: View {
       headerContent: {
         AnyView(EmptyView())
       },
-      contentBackground: .surface2) {
+      contentBackground: .surface2MoreTab) {
         // Settings content in main content area with banner and XP card at top
         ScrollView {
           VStack(spacing: 0) {
