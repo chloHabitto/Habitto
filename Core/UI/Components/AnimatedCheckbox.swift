@@ -36,10 +36,10 @@ struct AnimatedCheckbox: View {
         // Checkmark - scaled proportionally to match 28x28 circle
         AnimatedCheckmarkShape()
           .trim(from: 0, to: isChecked ? 1 : 0)
-          .stroke(.checkStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-          .frame(width: 22, height: 16)
+          .stroke(.checkStroke, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+          .frame(width: 21, height: 15)
           .opacity(isHovered && !isChecked ? 0.3 : (isChecked ? 1 : 0))
-          .offset(x: isChecked ? -0.5 : 0)
+          .offset(x: isChecked ? -1.5 : 0)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .animation(.easeInOut(duration: 0.2), value: isHovered)
       }
