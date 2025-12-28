@@ -562,7 +562,7 @@ struct MoreTabView: View {
           }
         }
       }
-      .background(.surface3)
+      .background(.appCardBG02)
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
