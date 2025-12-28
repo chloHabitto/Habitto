@@ -358,6 +358,9 @@ struct HabittoApp: App {
     // Force the UIApplicationDelegateAdaptor to instantiate AppDelegate before configuring Firebase.
     // This ensures GoogleUtilities' AppDelegate swizzler sees a valid delegate instance.
     _ = delegate
+    
+    // Configure tab bar appearance at app launch
+    UITabBar.appearance().unselectedItemTintColor = UIColor(named: "appBottomeNavIcon_Inactive")
   }
 
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
