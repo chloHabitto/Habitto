@@ -360,10 +360,33 @@ struct HabittoApp: App {
     _ = delegate
     
     // Configure tab bar appearance at app launch
-    UITabBar.appearance().unselectedItemTintColor = UIColor(named: "appBottomeNavIcon_Inactive")
+    configureTabBarAppearance()
   }
 
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  
+  // MARK: - Tab Bar Appearance
+  
+  private func configureTabBarAppearance() {
+    let appearance = UITabBarAppearance()
+    appearance.configureWithDefaultBackground()
+    appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
+    
+    // Unselected state
+    appearance.stackedLayoutAppearance.normal.iconColor = UIColor(named: "appBottomeNavIcon_Inactive")
+    appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+      .foregroundColor: UIColor(named: "appText03") ?? .gray
+    ]
+    
+    // Selected state
+    appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "appBottomeNavIcon_Active")
+    appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+      .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
+    ]
+    
+    UITabBar.appearance().standardAppearance = appearance
+    UITabBar.appearance().scrollEdgeAppearance = appearance
+  }
 
   var body: some Scene {
     WindowGroup {

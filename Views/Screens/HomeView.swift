@@ -992,34 +992,31 @@ struct HomeView: View {
       // Home Tab
       homeTabContent
         .tabItem {
-          Label("Home", systemImage: "house.fill")
+          Label("Home", image: "Icon-home-filled")
         }
         .tag(Tab.home)
       
       // Progress Tab
       progressTabContent
         .tabItem {
-          Label("Progress", systemImage: "chart.bar.fill")
+          Label("Progress", image: "Icon-chart-filled")
         }
         .tag(Tab.progress)
       
       // Habits Tab
       habitsTabContent
         .tabItem {
-          Label("Habits", systemImage: "book.fill")
+          Label("Habits", image: "Icon-book-filled")
         }
         .tag(Tab.habits)
       
       // More Tab
       moreTabContent
         .tabItem {
-          Label("More", systemImage: "ellipsis")
+          Label("More", image: "Icon-more-filled")
         }
         .tag(Tab.more)
     }
-    .tint(Color("appBottomeNavIcon_Active"))  // Selected state color
-    .toolbarBackground(.ultraThinMaterial, for: .tabBar)
-    .toolbarBackgroundVisibility(.visible, for: .tabBar)
     .onChange(of: state.selectedTab) { oldValue, newValue in
       // Add haptic feedback when tab is selected
       UISelectionFeedbackGenerator().selectionChanged()
