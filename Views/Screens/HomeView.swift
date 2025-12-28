@@ -787,6 +787,11 @@ struct HomeView: View {
   
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
+  
+  init() {
+    // Configure tab bar appearance early, before views are created
+    Self.configureTabBarAppearance()
+  }
 
   // MARK: - Tab Content Views
   
@@ -1047,9 +1052,6 @@ struct HomeView: View {
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
       
-      // Configure tab bar colors to match custom TabBarView styling
-      configureTabBarAppearance()
-      
       // ✅ Ensure auth listener is set up (safety check)
       authManager.ensureAuthListenerSetup()
       
@@ -1185,27 +1187,9 @@ struct HomeView: View {
 
   // MARK: - Helpers
   
-  private func configureTabBarAppearance() {
-    let appearance = UITabBarAppearance()
-    appearance.configureWithTransparentBackground()  // Keep glass effect
-    appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
-    
-    // Unselected state - use UIColor directly from asset catalog
-    let normalColor = UIColor(named: "appBottomeNavIcon_Inactive") ?? .gray
-    appearance.stackedLayoutAppearance.normal.iconColor = normalColor
-    appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-      .foregroundColor: UIColor(named: "appText03") ?? .gray
-    ]
-    
-    // Selected state is handled by .tint() modifier, but set it here too for consistency
-    let selectedColor = UIColor(named: "appBottomeNavIcon_Active") ?? .systemBlue
-    appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
-    appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-      .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
-    ]
-    
-    UITabBar.appearance().standardAppearance = appearance
-    UITabBar.appearance().scrollEdgeAppearance = appearance
+  private static func configureTabBarAppearance() {
+    // Simple approach: just set the unselected tint color directly
+    UITabBar.appearance().unselectedItemTintColor = UIColor(named: "appBottomeNavIcon_Inactive")
   }
 
   // MARK: - Lifecycle

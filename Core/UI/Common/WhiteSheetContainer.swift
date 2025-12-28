@@ -77,7 +77,7 @@ struct WhiteSheetContainer<Content: View>: View {
             rightButton()
           }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 12)
 //                .background(.red)
       }
