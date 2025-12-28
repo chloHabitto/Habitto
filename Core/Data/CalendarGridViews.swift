@@ -291,9 +291,9 @@ struct MonthlyCalendarGridView: View {
             .background(
               RoundedRectangle(cornerRadius: 24)
                 .fill(.appCardBG02))
-            // .overlay(
-            //   RoundedRectangle(cornerRadius: 24)
-            //     .stroke(Color.outline3, lineWidth: 1.0))
+            .overlay(
+              RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.5))
             .id("month-habit-\(habit.id)-\(index)")
           }
         }
@@ -779,9 +779,9 @@ struct YearlyCalendarGridView: View {
             .background(
               RoundedRectangle(cornerRadius: 24)
                 .fill(.appCardBG02))
-            // .overlay(
-            //   RoundedRectangle(cornerRadius: 24)
-            //     .stroke(Color.outline3, lineWidth: 1.0))
+            .overlay(
+              RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.outline3, lineWidth: 1.5))
             .id("year-habit-\(habit.id)-\(index)")
           }
         }
