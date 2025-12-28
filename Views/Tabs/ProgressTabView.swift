@@ -194,7 +194,7 @@ struct ProgressTabView: View {
 
         Spacer()
       }
-      .padding(.horizontal, 16)
+      .padding(.horizontal, 20)
       .padding(.top, 12)
 
       // Second Filter - Period Selection
