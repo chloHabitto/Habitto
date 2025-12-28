@@ -1016,6 +1016,7 @@ struct HomeView: View {
         }
         .tag(Tab.more)
     }
+    .tint(Color("appBottomeNavIcon_Active"))  // Selected state color
     .toolbarBackground(.ultraThinMaterial, for: .tabBar)
     .toolbarBackgroundVisibility(.visible, for: .tabBar)
     .onChange(of: state.selectedTab) { oldValue, newValue in
@@ -1045,6 +1046,9 @@ struct HomeView: View {
     .onAppear {
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
+      
+      // Configure tab bar colors to match custom TabBarView styling
+      configureTabBarAppearance()
       
       // ✅ Ensure auth listener is set up (safety check)
       authManager.ensureAuthListenerSetup()
@@ -1177,6 +1181,31 @@ struct HomeView: View {
         state.requestStreakRecalculation(reason: "Habits publisher change")
       }
     }
+  }
+
+  // MARK: - Helpers
+  
+  private func configureTabBarAppearance() {
+    let appearance = UITabBarAppearance()
+    appearance.configureWithTransparentBackground()  // Keep glass effect
+    appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+    
+    // Unselected state - use UIColor directly from asset catalog
+    let normalColor = UIColor(named: "appBottomeNavIcon_Inactive") ?? .gray
+    appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+    appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+      .foregroundColor: UIColor(named: "appText03") ?? .gray
+    ]
+    
+    // Selected state is handled by .tint() modifier, but set it here too for consistency
+    let selectedColor = UIColor(named: "appBottomeNavIcon_Active") ?? .systemBlue
+    appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+    appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+      .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
+    ]
+    
+    UITabBar.appearance().standardAppearance = appearance
+    UITabBar.appearance().scrollEdgeAppearance = appearance
   }
 
   // MARK: - Lifecycle

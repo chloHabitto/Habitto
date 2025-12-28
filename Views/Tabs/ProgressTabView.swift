@@ -261,9 +261,9 @@ struct ProgressTabView: View {
         }
         .background(.appCardBG02)
         .cornerRadius(24)
-        // .overlay(
-        //   RoundedRectangle(cornerRadius: 24)
-        //     .stroke(Color.outline3, lineWidth: 1.0))
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color.outline3, lineWidth: 1.5))
 
         // Weekly Analysis Card
         weeklyAnalysisCard
@@ -312,6 +312,12 @@ struct ProgressTabView: View {
           userHabits: getActiveHabitsForSelectedMonth(),
           selectedMonth: selectedProgressDate)
           .id("monthly-\(refreshID)")
+          .padding(.vertical, 16)
+          .background(.appCardBG02)
+          .cornerRadius(24)
+          .overlay(
+            RoundedRectangle(cornerRadius: 24)
+              .stroke(Color.outline3, lineWidth: 1.5))
       }
       .padding(.horizontal, 20)
     }
@@ -352,6 +358,12 @@ struct ProgressTabView: View {
           isLoadingProgress: isLoadingProgress,
           selectedYear: selectedYear)
           .id("yearly-\(refreshID)")
+          .padding(.vertical, 16)
+          .background(.appCardBG02)
+          .cornerRadius(24)
+          .overlay(
+            RoundedRectangle(cornerRadius: 24)
+              .stroke(Color.outline3, lineWidth: 1.5))
       }
       .padding(.horizontal, 20)
     }
@@ -370,9 +382,9 @@ struct ProgressTabView: View {
         selectedYear: selectedYear)
         .background(.appCardBG02)
         .cornerRadius(24)
-        // .overlay(
-        //   RoundedRectangle(cornerRadius: 24)
-        //     .stroke(Color.outline3, lineWidth: 1.0))
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color.outline3, lineWidth: 1.5))
     }
     .padding(.horizontal, 20)
   }
@@ -447,9 +459,9 @@ struct ProgressTabView: View {
     .background(
       RoundedRectangle(cornerRadius: 24)
         .fill(.appCardBG02))
-    // .overlay(
-    //   RoundedRectangle(cornerRadius: 24)
-    //     .stroke(Color.outline3, lineWidth: 1.0))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color.outline3, lineWidth: 1.5))
     .padding(.horizontal, 20)
   }
 
@@ -1904,9 +1916,9 @@ struct ProgressTabView: View {
     .background(
       RoundedRectangle(cornerRadius: 24)
         .fill(.appCardBG02))
-    // .overlay(
-    //   RoundedRectangle(cornerRadius: 24)
-    //     .stroke(Color.outline3, lineWidth: 1.0))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color.outline3, lineWidth: 1.5))
   }
 
   // MARK: - Weekly Analysis Card Pages
@@ -3553,7 +3565,7 @@ struct ProgressTabView: View {
         .fill(.containerBG01))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.0))
+        .stroke(Color.outline3, lineWidth: 1.5))
   }
 
   // MARK: - Monthly Analysis Card Pages
