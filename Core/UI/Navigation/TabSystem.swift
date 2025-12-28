@@ -110,12 +110,12 @@ struct UnderlineTabButton: View {
         HStack(spacing: 4) {
           Text(tab.title)
             .font(.appTitleSmallEmphasised)
-            .foregroundColor(isSelected ? .primary : .text04)
+            .foregroundColor(isSelected ? .primary : .text08)
 
           if let value = tab.value {
             Text(value)
               .font(.appTitleSmallEmphasised)
-              .foregroundColor(isSelected ? .primary : .text04)
+              .foregroundColor(isSelected ? .primary : .text08)
           }
         }
         .padding(.horizontal, 16)
