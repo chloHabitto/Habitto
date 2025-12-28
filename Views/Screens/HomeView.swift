@@ -991,28 +991,28 @@ struct HomeView: View {
       // Home Tab
       homeTabContent
         .tabItem {
-          Label("Home", image: "Icon-home-filled")
+          Label("Home", systemImage: "house.fill")
         }
         .tag(Tab.home)
       
       // Progress Tab
       progressTabContent
         .tabItem {
-          Label("Progress", image: "Icon-chart-filled")
+          Label("Progress", systemImage: "chart.bar.fill")
         }
         .tag(Tab.progress)
       
       // Habits Tab
       habitsTabContent
         .tabItem {
-          Label("Habits", image: "Icon-book-filled")
+          Label("Habits", systemImage: "book.fill")
         }
         .tag(Tab.habits)
       
       // More Tab
       moreTabContent
         .tabItem {
-          Label("More", image: "Icon-more-filled")
+          Label("More", systemImage: "ellipsis")
         }
         .tag(Tab.more)
     }
