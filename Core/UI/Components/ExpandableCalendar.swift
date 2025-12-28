@@ -42,7 +42,20 @@ struct ExpandableCalendar: View {
   // MARK: - Helper Properties and Functions
 
   private var formattedCurrentDate: String {
-    AppDateFormatter.shared.formatDisplayDate(selectedDate)
+    let formatter = DateFormatter()
+    let dateFormat = DatePreferences.shared.dateFormat
+    
+    // Format without year, respecting user's date format preference
+    switch dateFormat {
+    case .dayMonthYear:
+      formatter.dateFormat = "E, d MMM" // Fri, 9 Aug
+    case .monthDayYear:
+      formatter.dateFormat = "E, MMM d" // Fri, Aug 9
+    case .yearMonthDay:
+      formatter.dateFormat = "MMM d, E" // Aug 9, Fri
+    }
+    
+    return formatter.string(from: selectedDate)
   }
 
   private var monthYearString: String {
@@ -85,7 +98,7 @@ struct ExpandableCalendar: View {
       }) {
         HStack(spacing: 0) {
           Text(formattedCurrentDate)
-            .font(.system(size: 16, weight: .bold))
+            .font(.appTitleMediumEmphasised)
             .lineSpacing(8)
             .foregroundColor(.text02)
 
@@ -145,7 +158,6 @@ struct ExpandableCalendar: View {
     }
     .padding(.horizontal, 20)
     .padding(.top, 12)
-    .padding(.bottom, 8)
   }
 
   // MARK: - Weekly Calendar View
@@ -172,8 +184,6 @@ struct ExpandableCalendar: View {
     }
     .frame(height: 72)
     .padding(.horizontal, 20)
-    .padding(.top, 2)
-    .padding(.bottom, 8)
   }
 
   // MARK: - Monthly Calendar View
@@ -350,7 +360,7 @@ fileprivate struct WeekDayButton: View {
     Button(action: onTap) {
       VStack(spacing: 4) {
         Text(dayAbbreviation(for: date).uppercased())
-          .font(.system(size: 10, weight: .semibold))
+          .font(.system(size: 10, weight: .bold))
           .frame(height: 16) // Line height 16
           .foregroundColor(dayAbbreviationColor)
         
