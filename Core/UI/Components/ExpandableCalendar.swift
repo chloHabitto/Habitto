@@ -358,7 +358,7 @@ fileprivate struct WeekDayButton: View {
   
   var body: some View {
     Button(action: onTap) {
-      VStack(spacing: 4) {
+      VStack(spacing: 0) {
         Text(dayAbbreviation(for: date).uppercased())
           .font(.system(size: 10, weight: .bold))
           .frame(height: 16) // Line height 16
