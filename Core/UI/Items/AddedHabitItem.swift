@@ -117,7 +117,7 @@ struct AddedHabitItem: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
       }
-      .padding(.vertical, 16)
+      .padding(.vertical, 12)
     }
     .padding(.trailing, 4)
     .background(
@@ -127,6 +127,11 @@ struct AddedHabitItem: View {
     .overlay(
       RoundedRectangle(cornerRadius: 20)
         .stroke(.outline4.opacity(0.5), lineWidth: 1))
+    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.1), radius: 0.5, x: 0, y: 1)
+    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.09), radius: 1.5, x: 0, y: 3)
+    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.05), radius: 2, x: 0, y: 6)
+    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.01), radius: 2, x: 0, y: 11)
+    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0), radius: 2.5, x: 0, y: 17)
     .contentShape(Rectangle())
   }
 

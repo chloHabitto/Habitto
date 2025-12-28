@@ -68,7 +68,7 @@ struct WhiteSheetContainer<Content: View>: View {
         HStack {
           Text(title)
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(.text02)
 
           Spacer()
 
