@@ -148,22 +148,22 @@ struct HeaderView: View {
             // iOS glass effect using Material
             RoundedRectangle(cornerRadius: 24)
               .fill(.ultraThinMaterial)
-              .overlay {
-                // Liquid glass effect with gradient opacity stroke
-                RoundedRectangle(cornerRadius: 24)
-                  .stroke(
-                    LinearGradient(
-                      stops: [
-                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-                      ],
-                      startPoint: .topLeading,
-                      endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                  )
-              }
+//              .overlay {
+//                // Liquid glass effect with gradient opacity stroke
+//                RoundedRectangle(cornerRadius: 24)
+//                  .stroke(
+//                    LinearGradient(
+//                      stops: [
+//                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+//                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+//                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+//                      ],
+//                      startPoint: .topLeading,
+//                      endPoint: .bottomTrailing
+//                    ),
+//                    lineWidth: 1.5
+//                  )
+//              }
           }
         }
         .padding(.vertical, 6)  // Maintain 52pt touch target (40pt visual + 6pt top + 6pt bottom)
@@ -197,22 +197,22 @@ struct HeaderView: View {
               // iOS glass effect using Material
               Circle()
                 .fill(.ultraThinMaterial)
-                .overlay {
-                  // Liquid glass effect with gradient opacity stroke
-                  Circle()
-                    .stroke(
-                      LinearGradient(
-                        stops: [
-                          .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-                          .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-                          .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                      ),
-                      lineWidth: 1.5
-                    )
-                }
+//                .overlay {
+//                  // Liquid glass effect with gradient opacity stroke
+//                  Circle()
+//                    .stroke(
+//                      LinearGradient(
+//                        stops: [
+//                          .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+//                          .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+//                          .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+//                        ],
+//                        startPoint: .topLeading,
+//                        endPoint: .bottomTrailing
+//                      ),
+//                      lineWidth: 1.5
+//                    )
+//                }
             }
             .id("crown-\(subscriptionManager.isPremium)") // Force recreation when isPremium changes
           }
@@ -228,22 +228,22 @@ struct HeaderView: View {
             // iOS glass effect using Material
             Circle()
               .fill(.ultraThinMaterial)
-              .overlay {
-                // Liquid glass effect with gradient opacity stroke
-                Circle()
-                  .stroke(
-                    LinearGradient(
-                      stops: [
-                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-                      ],
-                      startPoint: .topLeading,
-                      endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                  )
-              }
+//              .overlay {
+//                // Liquid glass effect with gradient opacity stroke
+//                Circle()
+//                  .stroke(
+//                    LinearGradient(
+//                      stops: [
+//                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
+//                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
+//                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
+//                      ],
+//                      startPoint: .topLeading,
+//                      endPoint: .bottomTrailing
+//                    ),
+//                    lineWidth: 1.5
+//                  )
+//              }
           }
         }
       }
