@@ -47,6 +47,8 @@ enum ColorTokens {
   static let text05 = Color("appText05")
   static let text06 = Color("appText06")
   static let text07 = Color("appText07")
+  static let text08 = Color("appText08")
+  static let text09 = Color("appText09")
 
   // MARK: - Outline Colors
   static let outline1 = Color("appOutline1")
@@ -124,6 +126,8 @@ extension Color {
   static let text05 = ColorTokens.text05
   static let text06 = ColorTokens.text06
   static let text07 = ColorTokens.text07
+  static let text08 = ColorTokens.text08
+  static let text09 = ColorTokens.text09
 
   // Outline Colors
   static let outline1 = ColorTokens.outline1
@@ -195,6 +199,8 @@ extension ShapeStyle where Self == Color {
   static var text05: Color { ColorTokens.text05 }
   static var text06: Color { ColorTokens.text06 }
   static var text07: Color { ColorTokens.text07 }
+  static var text08: Color { ColorTokens.text08 }
+  static var text09: Color { ColorTokens.text09 }
 
   static var outline1: Color { ColorTokens.outline1 }
   static var outline2: Color { ColorTokens.outline2 }
