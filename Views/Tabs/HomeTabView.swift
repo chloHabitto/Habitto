@@ -546,6 +546,9 @@ struct HomeTabView: View {
           }
           .animation(.spring(response: 0.5, dampingFraction: 0.8), value: sortedHabits.map { $0.id })
         }
+        
+        Spacer()
+          .frame(height: 40)
       }
       .padding(.horizontal, 20)
       .padding(.top, 18)
