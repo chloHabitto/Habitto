@@ -57,7 +57,7 @@ struct MoreTabView: View {
             settingsSections
             
             Spacer()
-              .frame(height: 40)
+              .frame(height: 80)
           }
           .padding(.horizontal, 20)
           .padding(.top, 20)
