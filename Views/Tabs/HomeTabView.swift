@@ -548,7 +548,7 @@ struct HomeTabView: View {
         }
         
         Spacer()
-          .frame(height: 40)
+          .frame(height: 80)
       }
       .padding(.horizontal, 20)
       .padding(.top, 18)

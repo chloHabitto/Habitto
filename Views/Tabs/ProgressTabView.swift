@@ -508,7 +508,7 @@ struct ProgressTabView: View {
       }
       
       Spacer()
-        .frame(height: 40)
+        .frame(height: 80)
     }
   }
   
