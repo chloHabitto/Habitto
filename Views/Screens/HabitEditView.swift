@@ -416,7 +416,8 @@ struct HabitEditView: View {
             onSave: { color in
               form.selectedColor = color
               showingColorSheet = false
-            })
+            },
+            initialColor: form.selectedColor)
         }
         .sheet(isPresented: $showingScheduleSheet) {
           ScheduleBottomSheet(

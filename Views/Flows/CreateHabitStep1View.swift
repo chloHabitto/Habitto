@@ -272,7 +272,8 @@ struct CreateHabitStep1View: View {
         onSave: { selectedColor in
           color = selectedColor
           showingColorSheet = false
-        })
+        },
+        initialColor: color)
     }
     .onChange(of: color) { _, newColor in
       cachedColorName = getColorName(for: newColor)
@@ -454,13 +455,9 @@ struct CreateHabitStep1View: View {
   private func getColorName(for color: Color) -> String {
     // Use the same color definitions as ColorBottomSheet for consistency
     let colors: [(color: Color, name: String)] = [
-      (Color(hex: "222222"), "Black"),
-      (.primary, "Navy"),
-      (Color(hex: "6096FD"), "Blue"),
-      (Color(hex: "CB30E0"), "Purple"),
-      (Color(hex: "FF7838"), "Orange"),
-      (Color(hex: "34C759"), "Green"),
-      (Color(hex: "21EAF1"), "Teal")
+      (Color("pastelYellow"), "Yellow"),
+      (Color("pastelBlue"), "Blue"),
+      (Color("pastelPurple"), "Purple")
     ]
 
     // Find the matching color and return its name
@@ -470,7 +467,7 @@ struct CreateHabitStep1View: View {
       }
     }
 
-    return "Navy" // Default fallback
+    return "Blue" // Default fallback to pastelBlue
   }
 
   private func getIconDisplayValue(_ icon: String) -> String {

@@ -16,28 +16,28 @@ struct AnimatedCheckbox: View {
         // Background circle
         Circle()
           .fill(isChecked ? accentColor : .surface)
-          .frame(width: 26, height: 26)
+          .frame(width: 24, height: 24)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .scaleEffect(isAnimating ? 1.2 : 1.0)
           .animation(
             .spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1),
             value: isAnimating)
 
-        // Stroke circle
+        // Stroke circle - frame is 22x22 so with 2pt stroke it visually matches the 24x24 filled circle
         Circle()
           .stroke(.outline3, lineWidth: 2)
-          .frame(width: 26, height: 26)
+          .frame(width: 22, height: 22)
           .scaleEffect(isAnimating ? 1.2 : 1.0)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .animation(
             .spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.1),
             value: isAnimating)
 
-        // Checkmark
+        // Checkmark - scaled proportionally to match 24x24 circle
         AnimatedCheckmarkShape()
           .trim(from: 0, to: isChecked ? 1 : 0)
           .stroke(.checkStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-          .frame(width: 16, height: 12)
+          .frame(width: 19, height: 14)
           .opacity(isHovered && !isChecked ? 0.3 : (isChecked ? 1 : 0))
           .offset(x: isChecked ? -0.5 : 0)
           .animation(.easeInOut(duration: 0.6), value: isChecked)

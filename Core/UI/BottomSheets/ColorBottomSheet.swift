@@ -8,12 +8,14 @@ struct ColorBottomSheet: View {
   init(
     onClose: @escaping () -> Void,
     onColorSelected: @escaping (Color) -> Void,
-    onSave: @escaping (Color) -> Void)
+    onSave: @escaping (Color) -> Void,
+    initialColor: Color? = nil)
   {
     self.onClose = onClose
     self.onColorSelected = onColorSelected
     self.onSave = onSave
-    self._selectedColor = State(initialValue: .primary) // Navy is selected by default
+    // Default to pastelBlue if no initial color provided, otherwise use the provided color
+    self._selectedColor = State(initialValue: initialColor ?? Color("pastelBlue"))
   }
 
   // MARK: Internal
@@ -33,39 +35,20 @@ struct ColorBottomSheet: View {
       },
       confirmButtonTitle: "Save")
     {
-      VStack(spacing: 16) {
-        // First row - 3 colors
-        HStack(spacing: 16) {
-          ForEach(0 ..< 3, id: \.self) { index in
-            ColorButton(
-              color: colors[index].color,
-              name: colors[index].name,
-              isSelected: selectedColor == colors[index].color)
-            {
-              selectedColor = colors[index].color
-              onColorSelected(colors[index].color)
-            }
-            .frame(maxWidth: .infinity)
+      HStack(spacing: 16) {
+        ForEach(colors.indices, id: \.self) { index in
+          ColorButton(
+            color: colors[index].color,
+            name: colors[index].name,
+            isSelected: selectedColor == colors[index].color)
+          {
+            selectedColor = colors[index].color
+            onColorSelected(colors[index].color)
           }
+          .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
-
-        // Second row - 3 colors
-        HStack(spacing: 16) {
-          ForEach(3 ..< 6, id: \.self) { index in
-            ColorButton(
-              color: colors[index].color,
-              name: colors[index].name,
-              isSelected: selectedColor == colors[index].color)
-            {
-              selectedColor = colors[index].color
-              onColorSelected(colors[index].color)
-            }
-            .frame(maxWidth: .infinity)
-          }
-        }
-        .frame(maxWidth: .infinity)
       }
+      .frame(maxWidth: .infinity)
       .padding(.horizontal, 16)
       .padding(.top, 16)
       .padding(.bottom, 32)
@@ -79,12 +62,9 @@ struct ColorBottomSheet: View {
   @State private var selectedColor: Color
 
   private let colors: [(color: Color, name: String)] = [
-    (.primary, "Navy"),
-    (Color(hex: "6096FD"), "Blue"),
-    (Color(hex: "CB30E0"), "Purple"),
-    (Color(hex: "FF7838"), "Orange"),
-    (Color(hex: "34C759"), "Green"),
-    (Color(hex: "21EAF1"), "Teal")
+    (Color("pastelYellow"), "Yellow"),
+    (Color("pastelBlue"), "Blue"),
+    (Color("pastelPurple"), "Purple")
   ]
 }
 

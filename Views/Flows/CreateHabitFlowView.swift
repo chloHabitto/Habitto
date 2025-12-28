@@ -164,7 +164,7 @@ struct CreateHabitFlowView: View {
   @State private var name = ""
   @State private var description = ""
   @State private var icon = "None"
-  @State private var color = Color(red: 0.11, green: 0.15, blue: 0.30)
+  @State private var color = Color("pastelBlue")
   @State private var habitType: HabitType = .formation
 
   // Step 2 state variables
