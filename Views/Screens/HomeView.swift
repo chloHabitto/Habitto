@@ -788,10 +788,6 @@ struct HomeView: View {
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
   
-  init() {
-    // Configure tab bar appearance early, before views are created
-    Self.configureTabBarAppearance()
-  }
 
   // MARK: - Tab Content Views
   
@@ -1183,13 +1179,6 @@ struct HomeView: View {
         state.requestStreakRecalculation(reason: "Habits publisher change")
       }
     }
-  }
-
-  // MARK: - Helpers
-  
-  private static func configureTabBarAppearance() {
-    // Simple approach: just set the unselected tint color directly
-    UITabBar.appearance().unselectedItemTintColor = UIColor(named: "appBottomeNavIcon_Inactive")
   }
 
   // MARK: - Lifecycle
