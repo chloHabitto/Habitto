@@ -94,6 +94,12 @@ struct HabitsTabView: View {
             }
             .onMove(perform: moveHabit)
             .onDelete(perform: deleteHabit)
+            
+            Spacer()
+              .frame(height: 40)
+              .listRowInsets(EdgeInsets())
+              .listRowSeparator(.hidden)
+              .listRowBackground(Color.clear)
           }
           .listStyle(.plain)
           .scrollContentBackground(.hidden)

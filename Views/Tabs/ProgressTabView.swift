@@ -506,6 +506,9 @@ struct ProgressTabView: View {
       if selectedHabit == nil, selectedTimePeriod == 0 {
         remindersSection
       }
+      
+      Spacer()
+        .frame(height: 40)
     }
   }
   
