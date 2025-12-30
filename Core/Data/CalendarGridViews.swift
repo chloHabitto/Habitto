@@ -290,7 +290,7 @@ struct MonthlyCalendarGridView: View {
             }
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.appCardBG02))
+                .fill(.surface4))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
                 .stroke(Color.outline3, lineWidth: 1.5))
@@ -778,7 +778,7 @@ struct YearlyCalendarGridView: View {
             .frame(maxWidth: .infinity)
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.appCardBG02))
+                .fill(.surface4))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
                 .stroke(Color.outline3, lineWidth: 1.5))
