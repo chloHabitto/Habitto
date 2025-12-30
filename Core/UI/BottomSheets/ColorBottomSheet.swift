@@ -35,26 +35,29 @@ struct ColorBottomSheet: View {
       },
       confirmButtonTitle: "Save")
     {
-      HStack(spacing: 16) {
-        ForEach(colors.indices, id: \.self) { index in
-          ColorButton(
-            color: colors[index].color,
-            name: colors[index].name,
-            isSelected: selectedColor == colors[index].color)
-          {
-            selectedColor = colors[index].color
-            onColorSelected(colors[index].color)
+      VStack(spacing: 0) {
+        HStack(spacing: 16) {
+          ForEach(colors.indices, id: \.self) { index in
+            ColorButton(
+              color: colors[index].color,
+              name: colors[index].name,
+              isSelected: selectedColor == colors[index].color)
+            {
+              selectedColor = colors[index].color
+              onColorSelected(colors[index].color)
+            }
+            .frame(maxWidth: .infinity)
           }
-          .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 16)
+        
+        Spacer()
       }
-      .frame(maxWidth: .infinity)
-      .padding(.horizontal, 16)
-      .padding(.top, 16)
-      .padding(.bottom, 32)
-      Spacer()
     }
-    .presentationDetents([.height(280)])
+    .presentationDetents([.height(300)])
   }
 
   // MARK: Private
