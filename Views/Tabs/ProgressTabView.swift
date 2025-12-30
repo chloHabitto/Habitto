@@ -1801,7 +1801,7 @@ struct ProgressTabView: View {
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -1844,7 +1844,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -3492,7 +3492,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.primaryContainer
+        Color.cardBG02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
