@@ -24,30 +24,35 @@ struct CreateHabitHeader: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Cancel button
-      HStack {
-        Spacer()
-        Button("Cancel") {
-          onCancel()
+      // Progress indicator and Cancel button on same row
+      ZStack {
+        // Bottom layer: Progress indicator - truly centered
+        HStack {
+          Spacer()
+          HStack(spacing: 0) {
+            Rectangle()
+              .fill(.primaryDim)
+              .frame(width: 32, height: 8)
+            Rectangle()
+              .fill(stepNumber >= 2 ? .primaryDim : .surfaceContainer)
+              .frame(width: 32, height: 8)
+          }
+          .frame(width: 64, height: 8)
+          .clipShape(RoundedRectangle(cornerRadius: 4))
+          Spacer()
         }
-        .foregroundColor(.blue)
+        
+        // Top layer: Cancel button - right aligned
+        HStack {
+          Spacer()
+          Button("Cancel") {
+            onCancel()
+          }
+          .foregroundColor(.blue)
+        }
       }
       .padding(.horizontal, 20)
       .padding(.top, 16)
-
-      // Progress indicator
-      HStack(spacing: 0) {
-        Rectangle()
-          .fill(.primaryDim)
-          .frame(width: 32, height: 8)
-        Rectangle()
-          .fill(stepNumber >= 2 ? .primaryDim : .surfaceContainer)
-          .frame(width: 32, height: 8)
-      }
-      .frame(width: 64, height: 8)
-      .clipShape(RoundedRectangle(cornerRadius: 4))
-      .padding(.horizontal, 20)
-      .padding(.top, 8)
 
       // Header
       VStack(alignment: .leading, spacing: 8) {
