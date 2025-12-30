@@ -44,7 +44,7 @@ struct PreferencesView: View {
             AccountOptionRow(
               icon: "Icon-Calendar_Filled",
               title: "Date & Calendar",
-              subtitle: "Customize date format and calendar settings",
+              subtitle: "Customise date format & calendar",
               hasChevron: true,
               iconColor: iconColor)
             {
