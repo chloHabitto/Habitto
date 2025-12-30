@@ -112,6 +112,11 @@ struct UnifiedInputElement: View {
     .padding(.vertical, 16)
     .background(.appSurface3)
     .cornerRadius(20)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
   }
 }
 
@@ -141,6 +146,7 @@ struct ReminderSection: View {
           .font(.appLabelMedium)
           .foregroundColor(.primaryDim)
       }
+      .frame(minHeight: 24)
       .onTapGesture {
         onTap()
       }
@@ -171,6 +177,12 @@ struct ReminderSection: View {
       }
     }
     .selectionRowStyle()
+    .cornerRadius(16)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
   }
 
   // MARK: Private
@@ -234,6 +246,15 @@ struct PeriodSection: View {
         .frame(maxWidth: .infinity)
       }
     }
+    .padding(.horizontal, 20)
+    .padding(.vertical, 12)
+    .background(.appSurface3)
+    .cornerRadius(20)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
   }
 
   // MARK: Private
@@ -263,7 +284,7 @@ struct HabitBuildingForm: View {
   @FocusState.Binding var isGoalNumberFocused: Bool
 
   var body: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 12) {
       // Goal
       UnifiedInputElement(
         title: "Goal",
@@ -282,7 +303,6 @@ struct HabitBuildingForm: View {
 
       // Period
       periodSection
-        .selectionRowStyle()
     }
   }
 }
@@ -308,7 +328,7 @@ struct HabitBreakingForm: View {
   @FocusState.Binding var isTargetFieldFocused: Bool
 
   var body: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 12) {
       // Current
       UnifiedInputElement(
         title: "Current",
@@ -340,7 +360,6 @@ struct HabitBreakingForm: View {
 
       // Period
       periodSection
-        .selectionRowStyle()
     }
   }
 }
@@ -383,7 +402,7 @@ struct FormActionButtons: View {
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 20)
-    .background(.appSheetBackground)
+    .background(.appSurface2)
   }
 
   // MARK: Private

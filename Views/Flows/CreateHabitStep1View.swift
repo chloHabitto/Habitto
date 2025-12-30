@@ -36,7 +36,7 @@ struct CreateHabitStep1View: View {
 
       // Main content with simplified structure
       ScrollView(showsIndicators: false) {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
           // Name field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
             FormInputComponents.FormSectionHeader(title: "Name")
@@ -83,6 +83,11 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 16)
           .background(.appSurface3)
           .cornerRadius(20)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
@@ -100,6 +105,11 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 16)
           .background(.appSurface3)
           .cornerRadius(20)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
 
           // Colour selection
           HStack(spacing: 12) {
@@ -125,6 +135,11 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 12)
           .background(.appSurface3)
           .cornerRadius(16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
           .onTapGesture {
             showingColorSheet = true
           }
@@ -172,6 +187,11 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 12)
           .background(.appSurface3)
           .cornerRadius(16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
           .onTapGesture {
             showingEmojiPicker = true
           }
@@ -201,6 +221,11 @@ struct CreateHabitStep1View: View {
           .padding(.vertical, 16)
           .background(.appSurface3)
           .cornerRadius(20)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+          .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
         }
         .padding(.horizontal, 20)
         .padding(.top, 0)
