@@ -1111,7 +1111,7 @@ struct ProgressTabView: View {
             .padding(.vertical, 8)
             .background(
               RoundedRectangle(cornerRadius: 20)
-                .fill(Color.surface4))
+                .fill(Color.appPrimaryContainer))
           }
           .buttonStyle(PlainButtonStyle())
           .contentShape(Rectangle())
@@ -1801,7 +1801,7 @@ struct ProgressTabView: View {
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(
       ZStack {
-        Color.cardBG02
+        Color.secondaryContainer
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -1844,7 +1844,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG02
+        Color.secondaryContainer
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -3492,7 +3492,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG02
+        Color.secondaryContainer
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
