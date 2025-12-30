@@ -54,7 +54,7 @@ struct ColorBottomSheet: View {
       .padding(.bottom, 32)
       Spacer()
     }
-    .presentationDetents([.height(800)])
+    .presentationDetents([.height(280)])
   }
 
   // MARK: Private
