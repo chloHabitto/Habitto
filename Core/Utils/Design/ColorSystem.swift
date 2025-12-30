@@ -29,9 +29,10 @@ enum ColorTokens {
   static let surface2MoreTab = Color("appSurface2(moreTab)")
   static let surface3 = Color("appSurface3")
   static let surfaceOverview = Color("appSurface(Overview)")
-  static let containerBG01 = Color("appContainerBG01")
-  static let cardBG01 = Color("appCardBG01")
-  static let surface4 = Color("appSurface4")
+    static let containerBG01 = Color("appContainerBG01")
+    static let cardBG01 = Color("appCardBG01")
+    static let cardBG02 = Color("appCardBG02")
+    static let surface4 = Color("appSurface4")
   static let surfaceDim = Color("appSurfaceDim")
   static let surfaceBright = Color("appSurfaceBright")
   static let surfaceBright2 = Color("appSurfaceBright2")
@@ -109,9 +110,10 @@ extension Color {
   static let surface2MoreTab = ColorTokens.surface2MoreTab
   static let surface3 = ColorTokens.surface3
   static let surfaceOverview = ColorTokens.surfaceOverview
-  static let containerBG01 = ColorTokens.containerBG01
-  static let cardBG01 = ColorTokens.cardBG01
-  static let surface4 = ColorTokens.surface4
+    static let containerBG01 = ColorTokens.containerBG01
+    static let cardBG01 = ColorTokens.cardBG01
+    static let cardBG02 = ColorTokens.cardBG02
+    static let surface4 = ColorTokens.surface4
   static let surfaceDim = ColorTokens.surfaceDim
   static let surfaceBright = ColorTokens.surfaceBright
   static let surfaceBright2 = ColorTokens.surfaceBright2
@@ -184,9 +186,10 @@ extension ShapeStyle where Self == Color {
   static var surface2MoreTab: Color { ColorTokens.surface2MoreTab }
   static var surface3: Color { ColorTokens.surface3 }
   static var surfaceOverview: Color { ColorTokens.surfaceOverview }
-  static var containerBG01: Color { ColorTokens.containerBG01 }
-  static var cardBG01: Color { ColorTokens.cardBG01 }
-  static var surface4: Color { ColorTokens.surface4 }
+    static var containerBG01: Color { ColorTokens.containerBG01 }
+    static var cardBG01: Color { ColorTokens.cardBG01 }
+    static var cardBG02: Color { ColorTokens.cardBG02 }
+    static var surface4: Color { ColorTokens.surface4 }
   static var surfaceDim: Color { ColorTokens.surfaceDim }
   static var surfaceBright: Color { ColorTokens.surfaceBright }
   static var surfaceBright2: Color { ColorTokens.surfaceBright2 }

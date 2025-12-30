@@ -567,11 +567,11 @@ struct MoreTabView: View {
       }
       .background(.appCardBG02)
       .clipShape(RoundedRectangle(cornerRadius: 24))
-      .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.1), radius: 0.5, x: 0, y: 1)
-      .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.09), radius: 1.5, x: 0, y: 3)
-      .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.05), radius: 2, x: 0, y: 6)
-      .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.01), radius: 2, x: 0, y: 11)
-      .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0), radius: 2.5, x: 0, y: 17)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
     }
   }
 
