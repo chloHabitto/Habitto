@@ -259,7 +259,7 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(.appCardBG02)
+        .background(.surface4)
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
@@ -368,7 +368,7 @@ struct ProgressTabView: View {
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
         selectedYear: selectedYear)
-        .background(.appCardBG02)
+        .background(.surface4)
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
@@ -446,7 +446,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.appCardBG02))
+        .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.5))
@@ -1111,7 +1111,7 @@ struct ProgressTabView: View {
             .padding(.vertical, 8)
             .background(
               RoundedRectangle(cornerRadius: 20)
-                .fill(Color.containerBG01))
+                .fill(Color.surface4))
           }
           .buttonStyle(PlainButtonStyle())
           .contentShape(Rectangle())
@@ -1885,7 +1885,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(.appCardBG02))
+          .fill(.surface4))
 
       // Swipeable content
       TabView(selection: $currentHighlightPage) {
@@ -1906,7 +1906,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.appCardBG02))
+        .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.5))
@@ -3012,7 +3012,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(.containerBG01)
+        .fill(.surface4)
         .overlay(
           RoundedRectangle(cornerRadius: 16)
             .stroke(Color.outline3, lineWidth: 1)))
@@ -3532,7 +3532,7 @@ struct ProgressTabView: View {
       .padding(.bottom, 20)
       .background(
         RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
-          .fill(.containerBG01))
+          .fill(.surface4))
 
       // Swipeable content
       TabView(selection: $currentMonthlyHighlightPage) {
@@ -3553,7 +3553,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.containerBG01))
+        .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color.outline3, lineWidth: 1.5))
@@ -4146,7 +4146,7 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
-    .background(.surface3)
+    .background(.surface4)
     .cornerRadius(24)
     .overlay(
       RoundedRectangle(cornerRadius: 24)
