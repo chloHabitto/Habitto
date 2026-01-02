@@ -71,6 +71,7 @@ enum ColorTokens {
   // MARK: - Component Colors
   static let disabledBackground = Color("appDisabledBackground")
   static let onDisabledBackground = Color("appOnDisabledBackground")
+  static let onSurfaceFixed = Color("appOnSurfaceFixed")
   static let componentBackground = Color("appComponentBackground")
   static let sheetBackground = Color("appSheetBackground")
   static let sheetBackground02 = Color("appSheetBackground02")
@@ -153,6 +154,7 @@ extension Color {
   // Component Colors
   static let disabledBackground = ColorTokens.disabledBackground
   static let onDisabledBackground = ColorTokens.onDisabledBackground
+  static let onSurfaceFixed = ColorTokens.onSurfaceFixed
   static let componentBackground = ColorTokens.componentBackground
   static let sheetBackground = ColorTokens.sheetBackground
   static let sheetBackground02 = ColorTokens.sheetBackground02
@@ -226,6 +228,7 @@ extension ShapeStyle where Self == Color {
 
   static var disabledBackground: Color { ColorTokens.disabledBackground }
   static var onDisabledBackground: Color { ColorTokens.onDisabledBackground }
+  static var onSurfaceFixed: Color { ColorTokens.onSurfaceFixed }
   static var componentBackground: Color { ColorTokens.componentBackground }
   static var sheetBackground: Color { ColorTokens.sheetBackground }
   static var sheetBackground02: Color { ColorTokens.sheetBackground02 }
