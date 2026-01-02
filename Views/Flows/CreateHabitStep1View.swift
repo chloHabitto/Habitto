@@ -268,9 +268,9 @@ struct CreateHabitStep1View: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 20)
-      .background(.appSurface2)
+      .background(.appSurface02)
     }
-    .background(.appSurface2)
+    .background(.appSurface02)
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)

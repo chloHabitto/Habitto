@@ -12,7 +12,7 @@ struct SubscriptionView: View {
     NavigationView {
       ZStack(alignment: .bottom) {
         // Background - use semantic color for light/dark mode
-        Color("appSurface2")
+        Color("appSurface02")
           .ignoresSafeArea(.all)
         
         ScrollView {
@@ -67,8 +67,8 @@ struct SubscriptionView: View {
             // Gradient background starting from top (80pt total, including 16pt top padding)
             LinearGradient(
               gradient: Gradient(colors: [
-                Color("appSurface2").opacity(0),
-                Color("appSurface2").opacity(0.8)
+                Color("appSurface02").opacity(0),
+                Color("appSurface02").opacity(0.8)
               ]),
               startPoint: .top,
               endPoint: .bottom
@@ -76,7 +76,7 @@ struct SubscriptionView: View {
             .frame(height: 80)
             
             // Solid background extending to bottom
-            Color("appSurface2").opacity(0.8)
+            Color("appSurface02").opacity(0.8)
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
           .padding(.top, 16)

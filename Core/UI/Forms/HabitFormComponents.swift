@@ -402,7 +402,7 @@ struct FormActionButtons: View {
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 20)
-    .background(.appSurface2)
+    .background(.appSurface02)
   }
 
   // MARK: Private
