@@ -302,7 +302,7 @@ struct ScheduledHabitItem: View {
     } else if dragOffset < -30 {
       Color.red.opacity(0.2)
     } else {
-      .surface3
+      .surface02
     }
   }
 
