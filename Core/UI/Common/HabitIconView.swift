@@ -32,8 +32,8 @@ struct HabitIconView: View {
   }
   
   private var iconBackgroundColor: Color {
-    // Using appOutline3 color for icon background
-    return .outline3
+    // Using appOutline02 color for icon background
+    return .outline02
     
     // Previous implementation - commented out for potential reversion:
     // In dark mode, use a much lighter version of the habit color
