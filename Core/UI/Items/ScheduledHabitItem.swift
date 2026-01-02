@@ -46,7 +46,7 @@ struct ScheduledHabitItem: View {
           ZStack(alignment: .leading) {
             // Background bar
             RoundedRectangle(cornerRadius: 4)
-              .fill(Color.outline3)
+              .fill(Color.outline02)
               .frame(height: 8)
 
             // Progress bar
@@ -79,7 +79,7 @@ struct ScheduledHabitItem: View {
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(
       RoundedRectangle(cornerRadius: 20)
-        .stroke(.outline4.opacity(0.5), lineWidth: 1))
+        .stroke(.outline02.opacity(0.5), lineWidth: 1))
     .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.1), radius: 0.5, x: 0, y: 1)
     .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.09), radius: 1.5, x: 0, y: 3)
     .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.05), radius: 2, x: 0, y: 6)
