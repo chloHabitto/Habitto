@@ -262,9 +262,9 @@ enum FormInputComponents {
       isSelected: Bool,
       action: @escaping () -> Void,
       primaryColor: Color = .primary,
-      secondaryColor: Color = .surface,
+      secondaryColor: Color = .appPrimaryContainer,
       selectedTextColor: Color = .onPrimary,
-      unselectedTextColor: Color = .text01)
+      unselectedTextColor: Color = .appOnPrimaryContainer)
     {
       self.title = title
       self.isSelected = isSelected
