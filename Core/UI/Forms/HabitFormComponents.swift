@@ -381,9 +381,9 @@ struct FormActionButtons: View {
           .renderingMode(.template)
           .resizable()
           .frame(width: 24, height: 24)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appOnPrimaryContainer)
           .frame(width: 48, height: 48)
-          .background(.primaryContainer)
+          .background(.appPrimaryContainerVariant)
           .clipShape(Circle())
       }
 

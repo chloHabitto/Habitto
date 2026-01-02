@@ -21,7 +21,7 @@ enum ButtonStyle {
            .hover:
         .primary
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .primary // TODO: Update in the future
       }
@@ -32,7 +32,7 @@ enum ButtonStyle {
            .hover:
         .secondary // TODO: Update in the future
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .secondary // TODO: Update in the future
       }
@@ -43,7 +43,7 @@ enum ButtonStyle {
            .hover:
         .clear // TODO: Update in the future
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .clear // TODO: Update in the future
       }
@@ -54,7 +54,7 @@ enum ButtonStyle {
            .hover:
         .clear // TODO: Update in the future
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .clear // TODO: Update in the future
       }
@@ -65,7 +65,7 @@ enum ButtonStyle {
            .hover:
         .primaryContainer
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .primaryContainer // TODO: Update in the future
       }
@@ -77,7 +77,7 @@ enum ButtonStyle {
       case .hover:
         .primaryContainerFocus
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .primaryContainer // TODO: Update in the future
       }
@@ -88,7 +88,7 @@ enum ButtonStyle {
            .hover:
         .red500
       case .disabled:
-        .disabledBackground
+        .appDisabledBackground
       case .loading:
         .red500 // TODO: Update in the future
       }
@@ -103,7 +103,7 @@ enum ButtonStyle {
            .hover:
         .onPrimary
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .onPrimary // TODO: Update in the future
       }
@@ -114,7 +114,7 @@ enum ButtonStyle {
            .hover:
         .onSecondary
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .onSecondary // TODO: Update in the future
       }
@@ -125,7 +125,7 @@ enum ButtonStyle {
            .hover:
         .primary
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .primary // TODO: Update in the future
       }
@@ -136,7 +136,7 @@ enum ButtonStyle {
            .hover:
         .primary
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .primary // TODO: Update in the future
       }
@@ -147,7 +147,7 @@ enum ButtonStyle {
            .hover:
         .onPrimaryContainer
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .onPrimaryContainer // TODO: Update in the future
       }
@@ -159,7 +159,7 @@ enum ButtonStyle {
       case .hover:
         .onPrimaryContainer
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .onPrimaryContainer // TODO: Update in the future
       }
@@ -170,7 +170,7 @@ enum ButtonStyle {
            .hover:
         .onPrimary
       case .disabled:
-        .text04
+        .appOnDisabledBackground
       case .loading:
         .onPrimary // TODO: Update in the future
       }
