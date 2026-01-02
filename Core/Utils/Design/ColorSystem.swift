@@ -40,6 +40,7 @@ enum ColorTokens {
   static let surfaceTabBar = Color("appSurfaceTabBar")
   static let hover = Color("appHover")
   static let headerBackground = Color("appSurfaceFixed")
+  static let surfaceFixed20 = Color("appSurfaceFixed20")
 
   // MARK: - Text Colors
   static let text01 = Color("appText01")
@@ -121,6 +122,7 @@ extension Color {
   static let surfaceTabBar = ColorTokens.surfaceTabBar
   static let hover = ColorTokens.hover
   static let headerBackground = ColorTokens.headerBackground
+  static let surfaceFixed20 = ColorTokens.surfaceFixed20
 
   // Text Colors
   static let text01 = ColorTokens.text01
@@ -197,6 +199,7 @@ extension ShapeStyle where Self == Color {
   static var surfaceTabBar: Color { ColorTokens.surfaceTabBar }
   static var hover: Color { ColorTokens.hover }
   static var headerBackground: Color { ColorTokens.headerBackground }
+  static var surfaceFixed20: Color { ColorTokens.surfaceFixed20 }
 
   static var text01: Color { ColorTokens.text01 }
   static var text02: Color { ColorTokens.text02 }

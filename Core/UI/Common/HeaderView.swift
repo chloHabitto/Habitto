@@ -145,9 +145,8 @@ struct HeaderView: View {
           .padding(.horizontal, 12)
           .frame(height: 40)
           .background {
-            // iOS glass effect using Material
             RoundedRectangle(cornerRadius: 24)
-              .fill(.ultraThinMaterial)
+              .fill(.surfaceFixed20)
 //              .overlay {
 //                // Liquid glass effect with gradient opacity stroke
 //                RoundedRectangle(cornerRadius: 24)
@@ -194,9 +193,8 @@ struct HeaderView: View {
             }
             .frame(width: 32, height: 32)
             .background {
-              // iOS glass effect using Material
               Circle()
-                .fill(.ultraThinMaterial)
+                .fill(.surfaceFixed20)
 //                .overlay {
 //                  // Liquid glass effect with gradient opacity stroke
 //                  Circle()
@@ -225,9 +223,8 @@ struct HeaderView: View {
           }
           .frame(width: 32, height: 32)
           .background {
-            // iOS glass effect using Material
             Circle()
-              .fill(.ultraThinMaterial)
+              .fill(.surfaceFixed20)
 //              .overlay {
 //                // Liquid glass effect with gradient opacity stroke
 //                Circle()
