@@ -376,9 +376,8 @@ struct HomeTabView: View {
     .frame(width: 28, height: 28)
     .fixedSize()
     .background {
-      // iOS glass effect using Material
       Circle()
-        .fill(.ultraThinMaterial)
+        .fill(.surfaceFixed20)
         .frame(width: 28, height: 28)
 //        .overlay {
 //          // Liquid glass effect with gradient opacity stroke
