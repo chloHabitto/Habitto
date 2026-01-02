@@ -124,7 +124,7 @@ struct CreateHabitStep1View: View {
                 .frame(width: 24, height: 24)
               Text(cachedColorName)
                 .font(.appBodyMedium)
-                .foregroundColor(.text02)
+                .foregroundColor(.appText04)
             }
 
             Image(systemName: "chevron.right")
@@ -176,7 +176,7 @@ struct CreateHabitStep1View: View {
               }
               Text(getIconDisplayValue(icon))
                 .font(.appBodyMedium)
-                .foregroundColor(.text02)
+                .foregroundColor(.appText04)
             }
 
             Image(systemName: "chevron.right")
@@ -373,25 +373,34 @@ struct CreateHabitStep1View: View {
     limitReached: Binding<Bool>
   ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      TextField(placeholder, text: text)
-        .font(.appBodyLarge)
-        .foregroundColor(.text01)
-        .textFieldStyle(PlainTextFieldStyle())
-        .submitLabel(.done)
-        .focused(isFocused)
-        .onAppear {
-          print("⌨️ TEXTFIELD: onAppear at \(Date())")
+      ZStack(alignment: .leading) {
+        // Placeholder text
+        if text.wrappedValue.isEmpty {
+          Text(placeholder)
+            .font(.appBodyLarge)
+            .foregroundColor(.text05)
         }
-        .onChange(of: isFocused.wrappedValue) { oldValue, newValue in
-          print("⌨️ TEXTFIELD: focus changed \(oldValue) → \(newValue) at \(Date())")
-        }
-        .frame(maxWidth: .infinity, minHeight: 48)
-        .padding(.horizontal, 16)
-        .background(.appSurface01Variant)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))
-        .cornerRadius(12)
+        // Actual text field
+        TextField("", text: text)
+          .font(.appBodyLarge)
+          .foregroundColor(.text01)
+          .textFieldStyle(PlainTextFieldStyle())
+          .submitLabel(.done)
+          .focused(isFocused)
+          .onAppear {
+            print("⌨️ TEXTFIELD: onAppear at \(Date())")
+          }
+          .onChange(of: isFocused.wrappedValue) { oldValue, newValue in
+            print("⌨️ TEXTFIELD: focus changed \(oldValue) → \(newValue) at \(Date())")
+          }
+      }
+      .frame(maxWidth: .infinity, minHeight: 48)
+      .padding(.horizontal, 16)
+      .background(.appSurface01Variant)
+      .overlay(
+        RoundedRectangle(cornerRadius: 12)
+          .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))
+      .cornerRadius(12)
         .onChange(of: text.wrappedValue) { oldValue, newValue in
           // Enforce character limit
           if newValue.count > maxLength {
