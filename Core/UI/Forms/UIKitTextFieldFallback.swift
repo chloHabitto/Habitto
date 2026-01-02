@@ -28,6 +28,7 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
     // Appearance
     font: UIFont = UIFont.systemFont(ofSize: 16),
     textColor: UIColor = .label,
+    placeholderColor: UIColor? = nil,
     backgroundColor: UIColor = .systemBackground,
     borderColor: UIColor = .systemGray4,
     cornerRadius: CGFloat = 12,
@@ -57,6 +58,7 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
       self.showDoneToolbar = showDoneToolbar
     self.font = font
     self.textColor = textColor
+    self.placeholderColor = placeholderColor
     self.backgroundColor = backgroundColor
     self.borderColor = borderColor
     self.cornerRadius = cornerRadius
@@ -135,6 +137,7 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
     let showDoneToolbar: Bool
   let font: UIFont
   let textColor: UIColor
+  let placeholderColor: UIColor?
   let backgroundColor: UIColor
   let borderColor: UIColor
   let cornerRadius: CGFloat
@@ -158,7 +161,14 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
     }
 
     // Configure text field
-    textField.placeholder = placeholder
+    if let placeholderColor = placeholderColor {
+      textField.attributedPlaceholder = NSAttributedString(
+        string: placeholder,
+        attributes: [NSAttributedString.Key.foregroundColor: placeholderColor]
+      )
+    } else {
+      textField.placeholder = placeholder
+    }
     textField.keyboardType = keyboardType
     textField.returnKeyType = returnKeyType
     textField.textContentType = textContentType
@@ -225,6 +235,13 @@ struct UIKitTextFieldWithDoneButton: UIViewRepresentable {
 
   func updateUIView(_ uiView: UITextField, context _: Context) {
     uiView.text = text
+    // Update placeholder color if needed
+    if let placeholderColor = placeholderColor, !placeholder.isEmpty {
+      uiView.attributedPlaceholder = NSAttributedString(
+        string: placeholder,
+        attributes: [NSAttributedString.Key.foregroundColor: placeholderColor]
+      )
+    }
     // Programmatic focus control
     if let shouldFocus = isFocused?.wrappedValue {
       if shouldFocus && uiView.isFirstResponder == false {
