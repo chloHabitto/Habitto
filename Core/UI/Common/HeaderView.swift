@@ -140,7 +140,7 @@ struct HeaderView: View {
             }
             Text(pluralizeStreak(currentStreak))
               .font(.appTitleLargeEmphasised)
-              .foregroundColor(.white)
+              .foregroundColor(.onSurfaceFixed)
           }
           .padding(.horizontal, 12)
           .frame(height: 40)
@@ -219,7 +219,7 @@ struct HeaderView: View {
           Button(action: onCreateHabit) {
             Image(systemName: "plus")
               .font(.system(size: 16, weight: .bold))
-              .foregroundColor(.white)
+              .foregroundColor(.onSurfaceFixed)
           }
           .frame(width: 32, height: 32)
           .background {

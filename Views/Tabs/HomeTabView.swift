@@ -371,7 +371,7 @@ struct HomeTabView: View {
         .renderingMode(.template)
         .resizable()
         .frame(width: 28, height: 28)
-        .foregroundColor(Color.white)
+        .foregroundColor(.onSurfaceFixed)
     }
     .frame(width: 28, height: 28)
     .fixedSize()
