@@ -19,7 +19,7 @@ struct UnifiedInputElement: View {
       HStack {
         Text(title)
           .font(.appTitleMedium)
-          .foregroundColor(.text01)
+          .foregroundColor(.text02)
       }
 
       Text(description)
@@ -132,9 +132,9 @@ struct ReminderSection: View {
     VStack(alignment: .leading, spacing: 8) {
       // Main reminder row
       HStack {
-        Text("Reminder")
-          .font(.appTitleMedium)
-          .foregroundColor(.text01)
+      Text("Reminder")
+        .font(.appTitleMedium)
+        .foregroundColor(.text02)
         Spacer()
         Text(reminders.isEmpty
           ? "Add"
@@ -212,7 +212,7 @@ struct PeriodSection: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Period")
         .font(.appTitleMedium)
-        .foregroundColor(.text01)
+        .foregroundColor(.text02)
 
       HStack(spacing: 12) {
         // Start Date

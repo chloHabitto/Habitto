@@ -324,7 +324,7 @@ enum FormInputComponents {
       subtitle: String? = nil,
       titleFont: Font = .appTitleMedium,
       subtitleFont: Font = .appBodySmall,
-      titleColor: Color = .text01,
+      titleColor: Color = .text02,
       subtitleColor: Color = .text02,
       spacing: CGFloat = 12)
     {
