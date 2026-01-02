@@ -39,7 +39,7 @@ enum ColorTokens {
   static let surfaceContainer = Color("appSurfaceContainer")
   static let surfaceTabBar = Color("appSurfaceTabBar")
   static let hover = Color("appHover")
-  static let headerBackground = Color("appHeaderBackground")
+  static let headerBackground = Color("appSurfaceFixed")
 
   // MARK: - Text Colors
   static let text01 = Color("appText01")
