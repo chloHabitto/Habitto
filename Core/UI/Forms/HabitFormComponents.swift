@@ -31,8 +31,8 @@ struct UnifiedInputElement: View {
         // Number input field - using direct @FocusState binding
         TextField("1", text: $numberText)
           .font(.appBodyLarge)
-          .foregroundColor(.text01)
-          .accentColor(.text01)
+          .foregroundColor(.appText03)
+          .accentColor(.appText03)
           .keyboardType(.numberPad) // Back to .numberPad - toolbar will work
           .focused($isFocused)
           .multilineTextAlignment(.center)
@@ -48,7 +48,7 @@ struct UnifiedInputElement: View {
               .foregroundColor(isValid ? .text04 : .text06)
             Image(systemName: "chevron.right")
               .font(.appLabelSmall)
-              .foregroundColor(.primaryDim)
+              .foregroundColor(.appPrimaryDim)
           }
           .frame(minWidth: 70)
           .fixedSize(horizontal: true, vertical: false)
@@ -72,7 +72,7 @@ struct UnifiedInputElement: View {
               .minimumScaleFactor(0.8)
             Image(systemName: "chevron.right")
               .font(.appLabelSmall)
-              .foregroundColor(.primaryDim)
+              .foregroundColor(.appPrimaryDim)
           }
           .frame(maxWidth: .infinity)
           .inputFieldStyle()
@@ -141,10 +141,10 @@ struct ReminderSection: View {
           :
           "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
           .font(.appBodyLarge)
-          .foregroundColor(.text04)
+          .foregroundColor(.appText04)
         Image(systemName: "chevron.right")
           .font(.appLabelMedium)
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appPrimaryDim)
       }
       .frame(minHeight: 24)
       .onTapGesture {

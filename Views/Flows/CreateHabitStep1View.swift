@@ -129,7 +129,7 @@ struct CreateHabitStep1View: View {
 
             Image(systemName: "chevron.right")
               .font(.appLabelSmall)
-              .foregroundColor(.text03)
+              .foregroundColor(.appPrimaryDim)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
@@ -181,7 +181,7 @@ struct CreateHabitStep1View: View {
 
             Image(systemName: "chevron.right")
               .font(.appLabelSmall)
-              .foregroundColor(.text03)
+              .foregroundColor(.appPrimaryDim)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
