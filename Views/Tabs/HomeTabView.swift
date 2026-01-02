@@ -321,8 +321,8 @@ struct HomeTabView: View {
     WhiteSheetContainer(
       headerContent: { AnyView(headerContent) },
       rightButton: { AnyView(rightButtonContent) },
-      headerBackground: .surface1,
-      contentBackground: .surface1)
+      headerBackground: .surface01,
+      contentBackground: .surface01)
     {
       habitsListSection
     }
