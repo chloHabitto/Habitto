@@ -115,7 +115,7 @@ struct CreateHabitStep1View: View {
           HStack(spacing: 12) {
             Text("Colour")
               .font(.appTitleMedium)
-              .foregroundColor(.text01)
+              .foregroundColor(.text02)
               .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 8) {
@@ -200,7 +200,7 @@ struct CreateHabitStep1View: View {
           VStack(alignment: .leading, spacing: 12) {
             Text("Habit Type")
               .font(.appTitleMedium)
-              .foregroundColor(.text01)
+              .foregroundColor(.text02)
 
             HStack(spacing: 12) {
               // Habit Building button
