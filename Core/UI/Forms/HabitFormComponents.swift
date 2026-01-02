@@ -110,7 +110,7 @@ struct UnifiedInputElement: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .background(.appSurface3)
+    .background(.appSurface01Variant)
     .cornerRadius(20)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
@@ -248,7 +248,7 @@ struct PeriodSection: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(.appSurface3)
+    .background(.appSurface01Variant)
     .cornerRadius(20)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
