@@ -94,7 +94,7 @@ struct XPLevelDisplay: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 20)
-    .background(Color("appSecondaryContainerFixed"))
+    .background(Color("appSecondaryContainerFixed02"))
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
