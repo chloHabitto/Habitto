@@ -1754,7 +1754,7 @@ struct ProgressTabView: View {
         VStack(spacing: 12) {
           Text("No Progress Today")
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(Color("greyBlack"))
 
           Text(
             "\(selectedHabit?.name ?? "This habit") is not scheduled for \(formatDate(selectedProgressDate))")
@@ -1772,17 +1772,17 @@ struct ProgressTabView: View {
           VStack(alignment: .leading, spacing: 4) {
             Text("Today's Progress")
               .font(.appTitleMediumEmphasised)
-              .foregroundColor(.onPrimaryContainer)
+              .foregroundColor(Color("greyBlack"))
 
             if selectedHabit != nil {
               Text(getCompletedHabitsCount() == 1 ? "Completed" : "Not completed")
                 .font(.appBodySmall)
-                .foregroundColor(.primaryFocus)
+                .foregroundColor(Color("navy300"))
                 .multilineTextAlignment(.leading)
             } else {
               Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
                 .font(.appBodySmall)
-                .foregroundColor(.primaryFocus)
+                .foregroundColor(Color("navy300"))
                 .multilineTextAlignment(.leading)
             }
           }
@@ -1801,7 +1801,7 @@ struct ProgressTabView: View {
     .padding(.vertical, selectedHabit != nil && getScheduledHabitsCount() == 0 ? 24 : 12)
     .background(
       ZStack {
-        Color.cardBG02
+        .appSecondaryContainerFixed02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -1823,11 +1823,11 @@ struct ProgressTabView: View {
         VStack(alignment: .leading, spacing: 4) {
           Text("This Week's Progress")
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(Color("greyBlack"))
 
           Text(getWeeklyEncouragingMessage())
             .font(.appBodySmall)
-            .foregroundColor(.primaryFocus)
+            .foregroundColor(Color("navy300"))
             .multilineTextAlignment(.leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1844,7 +1844,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG02
+        .appSecondaryContainerFixed02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -3471,11 +3471,11 @@ struct ProgressTabView: View {
         VStack(alignment: .leading, spacing: 4) {
           Text("This Month's Progress")
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(Color("greyBlack"))
 
           Text(getMonthlyEncouragingMessage())
             .font(.appBodySmall)
-            .foregroundColor(.primaryFocus)
+            .foregroundColor(Color("navy300"))
             .multilineTextAlignment(.leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -3492,7 +3492,7 @@ struct ProgressTabView: View {
     .padding(.vertical, 12)
     .background(
       ZStack {
-        Color.cardBG02
+        .appSecondaryContainerFixed02
         // Image("Gradient01")
         //   .resizable()
         //   .aspectRatio(contentMode: .fill)
@@ -5250,7 +5250,7 @@ struct AnimatedCircularProgressRing: View {
     ZStack {
       // Background circle (unfilled part)
       Circle()
-        .stroke(Color.shade10Percent, lineWidth: 8)
+        .stroke(.appInverseSurfaceFixed15, lineWidth: 8)
         .frame(width: size, height: size)
 
       // Progress circle (filled part)
