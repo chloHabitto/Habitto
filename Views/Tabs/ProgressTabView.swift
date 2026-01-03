@@ -266,7 +266,7 @@ struct ProgressTabView: View {
             .stroke(Color("appOutline02"), lineWidth: 2))
 
         // Weekly Analysis Card
-        weeklyAnalysisCard
+        // weeklyAnalysisCard // Hidden
       }
       .padding(.horizontal, 20)
     }

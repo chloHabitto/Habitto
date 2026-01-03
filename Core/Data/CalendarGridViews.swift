@@ -62,7 +62,6 @@ struct WeeklyCalendarGridView: View {
               .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
               .frame(height: 24)
               .padding(.leading, 16)
-              .background(Color.surface3)
               .clipShape(
                 UnevenRoundedRectangle(
                   topLeadingRadius: 12,
@@ -146,7 +145,6 @@ struct WeeklyCalendarGridView: View {
                         value: dayIndex,
                         to: selectedWeekStartDate) ?? selectedWeekStartDate))
                     .frame(width: 24, height: 36)
-                    .background(.surface3)
                     .overlay(
                       Rectangle()
                         .stroke(Color("appOutline02Variant"), lineWidth: 1))
@@ -206,7 +204,6 @@ struct WeeklyCalendarGridView: View {
                 dayIndex: dayIndex,
                 weekStartDate: selectedWeekStartDate)
                 .frame(width: 24, height: 32)
-                .background(Color.surface3)
                 .clipShape(
                   UnevenRoundedRectangle(
                     topLeadingRadius: 0,
