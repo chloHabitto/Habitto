@@ -15,12 +15,12 @@ struct XPLevelDisplay: View {
         // Level Badge
         VStack(spacing: 4) {
           Text("Level")
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.text04)
+            .font(.appBodySmall)
+            .foregroundColor(Color("grey700"))
 
           Text("\(xpManager.currentLevel)")  // ✅ Read from @Published property
-            .font(.system(size: 24, weight: .bold))
-            .foregroundColor(.text01)
+            .font(.appHeadlineSmallEmphasised)
+            .foregroundColor(Color("navy700"))
         }
         .frame(width: 60)
 
@@ -28,15 +28,15 @@ struct XPLevelDisplay: View {
         VStack(alignment: .leading, spacing: 6) {
           HStack {
             Text("XP Progress")
-              .font(.system(size: 12, weight: .medium))
-              .foregroundColor(.text04)
+              .font(.appBodySmall)
+              .foregroundColor(Color("grey700"))
 
             Spacer()
 
             Text(
               "\(xpManager.userProgress.xpForCurrentLevel)/\(xpManager.userProgress.xpForNextLevel)")
-              .font(.system(size: 12, weight: .medium))
-              .foregroundColor(.text04)
+              .font(.appBodySmall)
+              .foregroundColor(Color("grey700"))
           }
 
           // Progress Bar
@@ -44,12 +44,12 @@ struct XPLevelDisplay: View {
             ZStack(alignment: .leading) {
               // Background
               RoundedRectangle(cornerRadius: 4)
-                .fill(Color.surfaceDim)
+                .fill(Color("appInverseSurfaceFixed15"))
                 .frame(height: 8)
 
               // Progress
               RoundedRectangle(cornerRadius: 4)
-                .fill(progressGradient)
+                .fill(Color("navy500"))
                 .frame(width: progressWidth(geometry.size.width), height: 8)
             }
           }
@@ -57,8 +57,8 @@ struct XPLevelDisplay: View {
 
           // Total XP
           Text("\(xpManager.totalXP) total XP")  // ✅ Read from @Published property
-            .font(.system(size: 10, weight: .regular))
-            .foregroundColor(.text04)
+            .font(.appLabelSmall)
+            .foregroundColor(Color("grey700"))
         }
       }
 
@@ -94,7 +94,7 @@ struct XPLevelDisplay: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 20)
-    .background(.appCardBG02)
+    .background(Color("appSecondaryContainerFixed"))
     .clipShape(RoundedRectangle(cornerRadius: 24))
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
