@@ -81,16 +81,16 @@ struct DataPrivacyView: View {
                   showingDeleteData = true
                 }
               }
-              .background(Color.surface)
+              .background(Color("appSurface02Variant"))
               .cornerRadius(24)
               .padding(.horizontal, 20)
             }
           }
           .padding(.bottom, 24)
         }
-        .background(Color.sheetBackground)
+        .background(Color("appSurface01Variant02"))
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Data & Privacy")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

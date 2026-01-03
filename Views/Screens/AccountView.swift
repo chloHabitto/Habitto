@@ -72,7 +72,7 @@ struct AccountView: View {
           }
         }
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Account")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -433,7 +433,7 @@ struct AccountView: View {
         })
       */
     }
-    .background(Color.sheetBackground)
+    .background(Color("appSurface02Variant"))
     .sheet(isPresented: $showingBirthdayView) {
       BirthdayBottomSheet(
         selectedDate: $selectedBirthday,
@@ -501,7 +501,7 @@ struct AccountView: View {
       .padding(.horizontal, 20)
       .padding(.vertical, 16)
     }
-    .background(Color.sheetBackground)
+    .background(Color("appSurface02Variant"))
   }
   
   // MARK: - Log Out Button
