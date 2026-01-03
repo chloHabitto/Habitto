@@ -48,25 +48,34 @@ struct HabitsTabView: View {
       headerContent: {
         AnyView(
           VStack(spacing: 0) {
-            // Stats row with tabs - now can expand to full width
-            statsRow
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 0)
-              .padding(.top, 2)
-              .padding(.bottom, 0)
+            HStack(alignment: .center, spacing: 0) {
+              // Stats row with tabs on the left
+              statsRow
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 0)
+                .padding(.top, 2)
+                .padding(.bottom, 0)
 
-            // Edit button in its own row
-            if !filteredHabits.isEmpty {
-              HStack {
-                Spacer()
+              // Edit button on the right
+              if !filteredHabits.isEmpty {
                 EditButton()
                   .font(.appButtonText2)
                   .foregroundColor(.accentColor)
                   .padding(.trailing, 20)
               }
-              .padding(.top, 8)
             }
-          })
+          }
+          .overlay(
+            // Full-width underline stroke at the bottom, spanning entire screen width
+            VStack {
+              Spacer()
+              Rectangle()
+                .fill(Color.outline3)
+                .frame(height: 1)
+            }
+            .frame(maxWidth: .infinity)
+          )
+        )
       },
       headerBackground: .surface01,
       contentBackground: .surface01) {
@@ -103,6 +112,7 @@ struct HabitsTabView: View {
           }
           .listStyle(.plain)
           .scrollContentBackground(.hidden)
+          .padding(.top, 18)
           .animation(.default, value: filteredHabits.map { $0.id })
           .refreshable {
             await refreshHabits()
