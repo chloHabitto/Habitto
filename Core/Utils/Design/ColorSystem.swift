@@ -29,7 +29,7 @@ enum ColorTokens {
   static let surface2 = Color("appSurface02")
   static let surface02 = Color("appSurface02")
   static let surface2MoreTab = Color("appSurface2(moreTab)")
-  static let surface3 = Color("appSurface3")
+  static let surface3 = Color("appSurface03")
   static let surfaceOverview = Color("appSurface(Overview)")
     static let containerBG01 = Color("appContainerBG01")
     static let cardBG01 = Color("appCardBG01")
