@@ -192,16 +192,16 @@ struct StreakSummaryCardsView: View {
         isAnimating: isAnimating,
         delay: 0.2)
     }
-    .background(.surface3)
+    .background(Color("appSurface01"))
     .overlay(
-      RoundedRectangle(cornerRadius: StreakCorners.lg)
+      RoundedRectangle(cornerRadius: StreakCorners.xl)
         .stroke(
           LinearGradient(
             colors: [StreakColors.fireOrange.opacity(0.3), StreakColors.streakGold.opacity(0.3)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing),
           lineWidth: 1))
-    .streakCorner(StreakCorners.lg)
+    .streakCorner(StreakCorners.xl)
     .streakShadow(StreakShadows.soft)
     .padding(.horizontal, StreakSpacing.lg)
     .onAppear {
@@ -254,8 +254,8 @@ struct ModernStreakCardView: View {
 
         // Value with Modern Typography
         Text(value)
-          .font(StreakTypography.titleLarge)
-          .foregroundColor(StreakColors.primaryText)
+          .font(.appTitleLargeEmphasised)
+          .foregroundColor(.text04)
           .opacity(isAnimating ? 1.0 : 0.0)
           .animation(StreakAnimations.easeInOut.delay(delay + 0.1), value: isAnimating)
       }
@@ -263,8 +263,8 @@ struct ModernStreakCardView: View {
       // Label and (optional) Description
       VStack(spacing: StreakSpacing.xs) {
         Text(label)
-          .font(StreakTypography.labelMedium)
-          .foregroundColor(StreakColors.secondaryText)
+          .font(.system(size: 12, weight: .bold, design: .rounded))
+          .foregroundColor(.text03)
           .opacity(isAnimating ? 1.0 : 0.0)
           .animation(StreakAnimations.easeInOut.delay(delay + 0.2), value: isAnimating)
 
