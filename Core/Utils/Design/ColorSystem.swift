@@ -61,7 +61,7 @@ enum ColorTokens {
   static let outline1 = Color("appOutline1")
   static let outline2 = Color("appOutline02")
   static let outline02 = Color("appOutline02")
-  static let outline3 = Color("appOutline3")
+  static let outline3 = Color("appOutline03")
   static let outline4 = Color("appOutline4")
   static let outlineHighlight = Color("appOutlineHighlight")
 

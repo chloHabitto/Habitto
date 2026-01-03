@@ -368,11 +368,11 @@ struct ProgressTabView: View {
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
         selectedYear: selectedYear)
-        .background(.surface4)
+        .background(.appSurface01)
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
-            .stroke(Color.outline3, lineWidth: 1.5))
+            .stroke(Color("appOutline02"), lineWidth: 2))
     }
     .padding(.horizontal, 20)
   }
