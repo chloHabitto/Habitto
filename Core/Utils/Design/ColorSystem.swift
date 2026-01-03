@@ -19,6 +19,7 @@ enum ColorTokens {
   static let secondary = Color("appSecondary")
   static let onSecondary = Color("appOnSecondary")
   static let secondaryContainer = Color("appSecondaryContainer")
+  static let secondaryContainer03 = Color("appSecondaryContainer03")
   static let onSecondaryContainer = Color("appOnSecondaryContainer")
   static let secondaryDim = Color("appSecondaryDim")
 
@@ -107,6 +108,7 @@ extension Color {
   static let secondary = ColorTokens.secondary
   static let onSecondary = ColorTokens.onSecondary
   static let secondaryContainer = ColorTokens.secondaryContainer
+  static let secondaryContainer03 = ColorTokens.secondaryContainer03
   static let onSecondaryContainer = ColorTokens.onSecondaryContainer
   static let secondaryDim = ColorTokens.secondaryDim
 
@@ -191,6 +193,7 @@ extension ShapeStyle where Self == Color {
   static var secondary: Color { ColorTokens.secondary }
   static var onSecondary: Color { ColorTokens.onSecondary }
   static var secondaryContainer: Color { ColorTokens.secondaryContainer }
+  static var secondaryContainer03: Color { ColorTokens.secondaryContainer03 }
   static var onSecondaryContainer: Color { ColorTokens.onSecondaryContainer }
   static var secondaryDim: Color { ColorTokens.secondaryDim }
 

@@ -1305,7 +1305,7 @@ struct ProgressTabView: View {
     .frame(width: 160)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color("appOnSecondaryContainer03")))
+        .fill(Color("appSecondaryContainer03")))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color("appOutline02"), lineWidth: 1.0))
@@ -5359,7 +5359,7 @@ struct WeeklySummaryStatsView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(Color("appOnSecondaryContainer03"))
+    .background(Color("appSecondaryContainer03"))
     .cornerRadius(16)
   }
 }
