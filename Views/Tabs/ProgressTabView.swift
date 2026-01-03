@@ -446,7 +446,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.surface4))
+        .fill(.appSurface01))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
         .stroke(Color("appOutline02"), lineWidth: 2))
@@ -1292,7 +1292,7 @@ struct ProgressTabView: View {
         Toggle("", isOn: Binding(
           get: { isEnabled },
           set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
-          .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
+          .toggleStyle(SwitchToggleStyle())
           .controlSize(.mini)
           .scaleEffect(0.75)
           .labelsHidden()
@@ -1308,7 +1308,7 @@ struct ProgressTabView: View {
         .fill(Color("appOnSecondaryContainer03")))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
-        .stroke(Color.outline3, lineWidth: 1.0))
+        .stroke(Color("appOutline02"), lineWidth: 1.0))
     .clipShape(RoundedRectangle(cornerRadius: 16))
     .opacity(isEnabled ? 1.0 : 0.6)
   }
@@ -1777,12 +1777,12 @@ struct ProgressTabView: View {
             if selectedHabit != nil {
               Text(getCompletedHabitsCount() == 1 ? "Completed" : "Not completed")
                 .font(.appBodySmall)
-                .foregroundColor(Color("navy300"))
+                .foregroundColor(Color("navy400"))
                 .multilineTextAlignment(.leading)
             } else {
               Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
                 .font(.appBodySmall)
-                .foregroundColor(Color("navy300"))
+                .foregroundColor(Color("navy400"))
                 .multilineTextAlignment(.leading)
             }
           }
@@ -5257,7 +5257,7 @@ struct AnimatedCircularProgressRing: View {
       Circle()
         .trim(from: 0, to: animatedProgress)
         .stroke(
-          Color.primary,
+          Color("navy500"),
           style: StrokeStyle(lineWidth: 8, lineCap: .round))
         .frame(width: size, height: size)
         .rotationEffect(.degrees(-90))
@@ -5266,8 +5266,8 @@ struct AnimatedCircularProgressRing: View {
       // Percentage text - always show actual progress, not animated value
       VStack(spacing: 2) {
         Text("\(Int(progress * 100))%")
-          .font(.appLabelMediumEmphasised)
-          .foregroundColor(.primaryFocus)
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(Color("navy700"))
       }
     }
     .onAppear {
