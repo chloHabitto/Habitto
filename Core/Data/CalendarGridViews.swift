@@ -81,7 +81,6 @@ struct WeeklyCalendarGridView: View {
                 .font(.appLabelSmallEmphasised)
                 .foregroundColor(.text02)
                 .frame(width: 24, height: 24)
-                .background(Color.surface3)
                 .clipShape(
                   UnevenRoundedRectangle(
                     topLeadingRadius: 0,
@@ -118,7 +117,6 @@ struct WeeklyCalendarGridView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .frame(height: 36)
                 .padding(.leading, 8)
-                .background(.surface3)
                 .overlay(
                   Rectangle()
                     .stroke(Color("appOutline02Variant"), lineWidth: 1))
@@ -163,7 +161,6 @@ struct WeeklyCalendarGridView: View {
               .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
               .frame(height: 32)
               .padding(.leading, 16)
-              .background(Color.surface3)
               .clipShape(
                 UnevenRoundedRectangle(
                   topLeadingRadius: 0,
@@ -287,10 +284,10 @@ struct MonthlyCalendarGridView: View {
             }
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.surface4))
+                .fill(.appSurface01))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.outline3, lineWidth: 1.5))
+                .stroke(Color("appOutline02"), lineWidth: 2))
             .id("month-habit-\(habit.id)-\(index)")
           }
         }
@@ -341,7 +338,6 @@ struct MonthlyCalendarGridView: View {
           .fill(.clear)
           .frame(minWidth: 0, maxWidth: .infinity)
           .frame(height: 24)
-          .background(Color.surface3)
           .clipShape(
             UnevenRoundedRectangle(
               topLeadingRadius: 12,
@@ -362,7 +358,6 @@ struct MonthlyCalendarGridView: View {
             .font(.appBodyMediumEmphasised)
             .foregroundColor(.text02)
             .frame(width: 24, height: 24)
-            .background(Color.surface3)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -389,7 +384,6 @@ struct MonthlyCalendarGridView: View {
             .foregroundColor(.text01)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             .frame(height: 36)
-                    .background(.surface3)
             .overlay(
               Rectangle()
                         .stroke(Color("appOutline02Variant"), lineWidth: 1))
@@ -405,7 +399,6 @@ struct MonthlyCalendarGridView: View {
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage)
               .frame(width: 24, height: 36)
-                    .background(.surface3)
               .overlay(
                 Rectangle()
                   .stroke(Color("appOutline02Variant"), lineWidth: 1))
@@ -421,7 +414,6 @@ struct MonthlyCalendarGridView: View {
           .foregroundColor(.text01)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
           .frame(height: 32)
-          .background(Color.surface3)
           .clipShape(
             UnevenRoundedRectangle(
               topLeadingRadius: 0,
@@ -444,7 +436,6 @@ struct MonthlyCalendarGridView: View {
             selectedMonth: selectedMonth,
             getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit)
             .frame(width: 24, height: 32)
-            .background(Color.surface3)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -473,7 +464,7 @@ struct MonthlyCalendarGridView: View {
       // Completion percentage
       VStack(spacing: 4) {
         Text("\(Int(calculateHabitCompletionPercentage(for: habit)))%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Completion")
           .font(.appBodySmall)
@@ -489,7 +480,7 @@ struct MonthlyCalendarGridView: View {
       // Best streak
       VStack(spacing: 4) {
         Text(pluralizeDay(calculateHabitBestStreak(for: habit)))
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Best Streak")
           .font(.appBodySmall)
@@ -505,7 +496,7 @@ struct MonthlyCalendarGridView: View {
       // Consistency percentage
       VStack(spacing: 4) {
         Text("\(Int(calculateHabitConsistency(for: habit)))%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Consistency")
           .font(.appBodySmall)
@@ -514,7 +505,7 @@ struct MonthlyCalendarGridView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(.appCardBG03)
+    .background(Color("appOnSecondaryContainer03"))
     .cornerRadius(16)
   }
 
@@ -775,10 +766,10 @@ struct YearlyCalendarGridView: View {
             .frame(maxWidth: .infinity)
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.surface4))
+                .fill(.appSurface01))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.outline3, lineWidth: 1.5))
+                .stroke(Color("appOutline02"), lineWidth: 2))
             .id("year-habit-\(habit.id)-\(index)")
           }
         }
@@ -855,7 +846,7 @@ struct YearlyCalendarGridView: View {
       // Completion percentage
       VStack(spacing: 4) {
         Text("\(Int(calculateHabitCompletionPercentage(for: habit)))%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Completion")
           .font(.appBodySmall)
@@ -871,7 +862,7 @@ struct YearlyCalendarGridView: View {
       // Best streak
       VStack(spacing: 4) {
         Text(pluralizeDay(calculateHabitBestStreak(for: habit)))
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Best Streak")
           .font(.appBodySmall)
@@ -887,7 +878,7 @@ struct YearlyCalendarGridView: View {
       // Consistency percentage
       VStack(spacing: 4) {
         Text("\(Int(calculateHabitConsistency(for: habit)))%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Consistency")
           .font(.appBodySmall)
@@ -896,7 +887,7 @@ struct YearlyCalendarGridView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(.appCardBG03)
+    .background(Color("appOnSecondaryContainer03"))
     .cornerRadius(16)
   }
 

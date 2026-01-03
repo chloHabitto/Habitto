@@ -108,7 +108,7 @@ struct AddedHabitItem: View {
               Image(.iconMoreVert)
                 .resizable()
                 .frame(width: 24, height: 24)
-                .foregroundColor(.text05)
+                .foregroundColor(.outline3)
                 .contentShape(Rectangle())
             }
             .frame(width: 40)
@@ -122,16 +122,11 @@ struct AddedHabitItem: View {
     .padding(.trailing, 4)
     .background(
       RoundedRectangle(cornerRadius: 20)
-        .fill(Color.surface3))
+        .fill(.surface02))
     .clipShape(RoundedRectangle(cornerRadius: 20))
     .overlay(
       RoundedRectangle(cornerRadius: 20)
-        .stroke(.outline4.opacity(0.5), lineWidth: 1))
-    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.1), radius: 0.5, x: 0, y: 1)
-    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.09), radius: 1.5, x: 0, y: 3)
-    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.05), radius: 2, x: 0, y: 6)
-    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0.01), radius: 2, x: 0, y: 11)
-    .shadow(color: Color(red: 0.82, green: 0.83, blue: 0.89).opacity(0), radius: 2.5, x: 0, y: 17)
+        .stroke(.outline02.opacity(0.5), lineWidth: 1))
     .contentShape(Rectangle())
   }
 
