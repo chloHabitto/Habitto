@@ -439,16 +439,29 @@ struct SubscriptionView: View {
       }
     }) {
       VStack(spacing: 0) {
-        // Badge row (only for Lifetime with "Popular" badge)
-        if showBadge, let badge = badge {
-          HStack {
-            Text(badge)
-              .font(SwiftUI.Font.system(size: 10, weight: .semibold))
-              .foregroundColor(.onSecondary)
-              .padding(.horizontal, 8)
-              .padding(.vertical, 4)
-              .background(Color.secondary)
-              .cornerRadius(8)
+        // Badge row - show both "Popular" and "Current Plan" in HStack when both are present
+        if (showBadge && badge != nil) || isCurrentPlan {
+          HStack(spacing: 4) {
+            if showBadge, let badge = badge {
+              Text(badge)
+                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
+                .foregroundColor(.onSecondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary)
+                .cornerRadius(8)
+            }
+            
+            if isCurrentPlan {
+              Text("Current Plan")
+                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
+                .foregroundColor(.onPrimary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.primary)
+                .cornerRadius(8)
+            }
+            
             Spacer()
           }
         }
@@ -461,16 +474,6 @@ struct SubscriptionView: View {
           }
           
           VStack(alignment: .leading, spacing: 4) {
-            if isCurrentPlan {
-              Text("Current Plan")
-                .font(SwiftUI.Font.system(size: 10, weight: .semibold))
-                .foregroundColor(.onPrimary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.primary)
-                .cornerRadius(8)
-            }
-            
             Text(title)
               .font(.appTitleMediumEmphasised)
               .foregroundColor(isCurrentPlan ? .text01 : .text02)
