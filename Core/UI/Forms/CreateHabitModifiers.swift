@@ -24,7 +24,7 @@ struct SelectionRowModifier: ViewModifier {
     content
       .padding(.horizontal, 20)
       .padding(.vertical, 12)
-      .background(.appSurface3)
+      .background(.surface3)
       .cornerRadius(12)
   }
 }
