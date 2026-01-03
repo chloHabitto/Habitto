@@ -89,7 +89,7 @@ struct UnifiedTabBarView: View {
       VStack {
         Spacer()
         Rectangle()
-          .fill(Color.outline3)
+          .fill(Color.outline2)
           .frame(height: 1)
       }
       .opacity(style == .underline ? 1 : 0))

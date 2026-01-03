@@ -70,7 +70,7 @@ struct HabitsTabView: View {
             VStack {
               Spacer()
               Rectangle()
-                .fill(Color.outline3)
+                .fill(Color.outline2)
                 .frame(height: 1)
             }
             .frame(maxWidth: .infinity)
