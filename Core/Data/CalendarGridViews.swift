@@ -75,7 +75,7 @@ struct WeeklyCalendarGridView: View {
                   bottomLeadingRadius: 0,
                   bottomTrailingRadius: 0,
                   topTrailingRadius: 0)
-                  .stroke(.outline3, lineWidth: 1))
+                  .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
             ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
               Text(day)
@@ -95,7 +95,7 @@ struct WeeklyCalendarGridView: View {
                     bottomLeadingRadius: 0,
                     bottomTrailingRadius: 0,
                     topTrailingRadius: index == 6 ? 12 : 0)
-                    .stroke(.outline3, lineWidth: 1))
+                    .stroke(Color("appOutline02Variant"), lineWidth: 1))
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,7 +122,7 @@ struct WeeklyCalendarGridView: View {
                 .background(.surface3)
                 .overlay(
                   Rectangle()
-                    .stroke(.outline3, lineWidth: 1))
+                    .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
                 // Heatmap cells with modern styling
                 ForEach(0 ..< 7, id: \.self) { dayIndex in
@@ -149,7 +149,7 @@ struct WeeklyCalendarGridView: View {
                     .background(.surface3)
                     .overlay(
                       Rectangle()
-                        .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
                 }
               }
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,7 +178,7 @@ struct WeeklyCalendarGridView: View {
                   bottomLeadingRadius: 12,
                   bottomTrailingRadius: 0,
                   topTrailingRadius: 0)
-                  .stroke(.outline3, lineWidth: 1))
+                  .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
             ForEach(0 ..< 7, id: \.self) { dayIndex in
               let totalHeatmapData = StreakDataCalculator.getWeeklyTotalHeatmapData(
@@ -219,7 +219,7 @@ struct WeeklyCalendarGridView: View {
                     bottomLeadingRadius: 0,
                     bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
                     topTrailingRadius: 0)
-                    .stroke(.outline3, lineWidth: 1))
+                    .stroke(Color("appOutline02Variant"), lineWidth: 1))
             }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -357,7 +357,7 @@ struct MonthlyCalendarGridView: View {
               bottomLeadingRadius: 0,
               bottomTrailingRadius: 0,
               topTrailingRadius: 0)
-              .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
         // Day headers - must match heatmap cells exactly
         ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
@@ -378,7 +378,7 @@ struct MonthlyCalendarGridView: View {
                 bottomLeadingRadius: 0,
                 bottomTrailingRadius: 0,
                 topTrailingRadius: index == 6 ? 12 : 0)
-                .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -395,7 +395,7 @@ struct MonthlyCalendarGridView: View {
                     .background(.surface3)
             .overlay(
               Rectangle()
-                .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
           // Week heatmap cells - must match day headers exactly
           ForEach(0 ..< 7, id: \.self) { dayIndex in
@@ -411,7 +411,7 @@ struct MonthlyCalendarGridView: View {
                     .background(.surface3)
               .overlay(
                 Rectangle()
-                  .stroke(.outline3, lineWidth: 1))
+                  .stroke(Color("appOutline02Variant"), lineWidth: 1))
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -437,7 +437,7 @@ struct MonthlyCalendarGridView: View {
               bottomLeadingRadius: 12,
               bottomTrailingRadius: 0,
               topTrailingRadius: 0)
-              .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
         ForEach(0 ..< 7, id: \.self) { dayIndex in
           MonthlyTotalEmojiCell(
@@ -460,7 +460,7 @@ struct MonthlyCalendarGridView: View {
                 bottomLeadingRadius: 0,
                 bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
                 topTrailingRadius: 0)
-                .stroke(.outline3, lineWidth: 1))
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
