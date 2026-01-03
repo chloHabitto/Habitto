@@ -228,15 +228,11 @@ struct ModernStreakCardView: View {
   let delay: Double
 
   var body: some View {
-    VStack(spacing: StreakSpacing.md) {
+    VStack(spacing: StreakSpacing.xs) {
       // Icon and Value Row
       HStack(spacing: StreakSpacing.sm) {
-        // Enhanced Icon with Background
-        ZStack {
-          Circle()
-            .fill(iconColor.opacity(0.15))
-            .frame(width: 32, height: 32)
-
+        // Icon
+        Group {
           if icon.hasPrefix("Icon-") {
             Image(icon)
               .resizable()

@@ -141,23 +141,23 @@ enum CalendarGridComponents {
       } else if isSelected {
         .text01
       } else if isCurrentMonth {
-        .text01
+        Color(hex: "E8E8E8")
       } else {
-        .outline2
+        .white.opacity(0.2)
       }
     }
 
     private var progressRingGradient: LinearGradient {
       if progress > 0 {
-        // Progress - beautiful pastel blue gradient
+        // Progress - pastel blue
         LinearGradient(
-          colors: [Color.pastelBlue500, Color.pastelBlue500.opacity(0.7)],
+          colors: [Color.pastelBlue500, Color.pastelBlue500],
           startPoint: .topLeading,
           endPoint: .bottomTrailing)
       } else {
-        // No progress - subtle outline
+        // No progress - white at 20% opacity
         LinearGradient(
-          colors: [Color.outline3, Color.outline3.opacity(0.7)],
+          colors: [Color.white.opacity(0.2), Color.white.opacity(0.2)],
           startPoint: .topLeading,
           endPoint: .bottomTrailing)
       }

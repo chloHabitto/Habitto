@@ -61,8 +61,17 @@ struct OverviewView: View {
           SimpleMonthlyCalendar(
             selectedDate: $selectedDate,
             userHabits: userHabits)
-            .background(.surface3)
-            .cornerRadius(24)
+            .background(
+              LinearGradient(
+                stops: [
+                  Gradient.Stop(color: .white.opacity(0.15), location: 0.00),
+                  Gradient.Stop(color: .white.opacity(0.05), location: 1.00),
+                ],
+                startPoint: UnitPoint(x: 0.04, y: 0.04),
+                endPoint: UnitPoint(x: 0.98, y: 0.97)
+              )
+            )
+            .cornerRadius(32)
             .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             .padding(.horizontal, 20)
         }

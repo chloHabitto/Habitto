@@ -16,7 +16,7 @@ struct SimpleMonthlyCalendar: View {
         // Month/Year text aligned to the left
         Text(monthYearString)
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.text01)
+          .foregroundColor(.white)
 
         Spacer()
 
@@ -28,14 +28,14 @@ struct SimpleMonthlyCalendar: View {
             HStack(spacing: 4) {
               Image(systemName: "arrow.clockwise")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
               Text("Today")
                 .font(.appLabelMedium)
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.primary.opacity(0.1))
+            .background(Color.white.opacity(0.4))
             .cornerRadius(16)
           }
           .buttonStyle(PlainButtonStyle())
@@ -50,12 +50,11 @@ struct SimpleMonthlyCalendar: View {
         ForEach(weekdayNames, id: \.self) { day in
           Text(day)
             .font(.appLabelMedium)
-            .foregroundColor(.text04)
+            .foregroundColor(Color("grey200"))
             .frame(maxWidth: .infinity)
         }
       }
       .padding(.horizontal, 20)
-      .padding(.bottom, 8)
 
       // Calendar grid with swipe gestures
       VStack(spacing: 8) {
@@ -139,8 +138,7 @@ struct SimpleMonthlyCalendar: View {
             }
           })
     }
-    .background(.surface3)
-    .cornerRadius(24)
+    .cornerRadius(32)
     .onAppear {
       updateTodayButtonVisibility()
     }
