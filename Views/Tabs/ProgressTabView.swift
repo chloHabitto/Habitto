@@ -259,11 +259,11 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(.surface4)
+        .background(.appSurface01)
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
-            .stroke(Color.outline3, lineWidth: 1.5))
+            .stroke(Color("appOutline02"), lineWidth: 2))
 
         // Weekly Analysis Card
         weeklyAnalysisCard
@@ -5318,7 +5318,7 @@ struct WeeklySummaryStatsView: View {
       // Completion Rate
       VStack(spacing: 4) {
         Text("\(completionRate)%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Completion")
           .font(.appBodySmall)
@@ -5334,7 +5334,7 @@ struct WeeklySummaryStatsView: View {
       // Best Streak
       VStack(spacing: 4) {
         Text(pluralizeDay(bestStreak))
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Best Streak")
           .font(.appBodySmall)
@@ -5350,7 +5350,7 @@ struct WeeklySummaryStatsView: View {
       // Consistency Rate
       VStack(spacing: 4) {
         Text("\(consistencyRate)%")
-          .font(.appTitleMedium)
+          .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Consistency")
           .font(.appBodySmall)
@@ -5359,7 +5359,7 @@ struct WeeklySummaryStatsView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(.appCardBG03)
+    .background(Color("appOnSecondaryContainer03"))
     .cornerRadius(16)
   }
 }
