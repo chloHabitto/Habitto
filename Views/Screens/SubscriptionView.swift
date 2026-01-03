@@ -12,7 +12,7 @@ struct SubscriptionView: View {
     NavigationView {
       ZStack(alignment: .bottom) {
         // Background - use semantic color for light/dark mode
-        Color("appSurface02")
+        Color("appSurface01Variant02")
           .ignoresSafeArea(.all)
         
         ScrollView {
@@ -67,8 +67,8 @@ struct SubscriptionView: View {
             // Gradient background starting from top (80pt total, including 16pt top padding)
             LinearGradient(
               gradient: Gradient(colors: [
-                Color("appSurface02").opacity(0),
-                Color("appSurface02").opacity(0.8)
+                Color("appSurface01Variant02").opacity(0),
+                Color("appSurface01Variant02").opacity(0.8)
               ]),
               startPoint: .top,
               endPoint: .bottom
@@ -76,7 +76,7 @@ struct SubscriptionView: View {
             .frame(height: 80)
             
             // Solid background extending to bottom
-            Color("appSurface02").opacity(0.8)
+            Color("appSurface01Variant02").opacity(0.8)
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
           .padding(.top, 16)
@@ -514,7 +514,7 @@ struct SubscriptionView: View {
         }
       }
       .padding(16)
-      .background(isSelected ? Color("appPaywallCardBG_selected") : Color.surface)
+      .background(isSelected ? Color("appSurface01Variant") : Color("appCardBG01Variant"))
       .cornerRadius(24)
       .overlay(
         RoundedRectangle(cornerRadius: 24)
@@ -532,27 +532,27 @@ struct SubscriptionView: View {
     
     return ZStack {
         // Free column background
-        HStack(spacing: 0) {
-          Spacer()
-            .frame(maxWidth: .infinity)
-          
-          VStack(spacing: 0) {
-            // Header row background
-            Color.primaryContainer
-              .opacity(0.4)
-              .frame(height: 48)
-            
-            // Feature rows background
-            ForEach(subscriptionFeatures, id: \.title) { _ in
-              Color.primaryContainer
-                .opacity(0.4)
-                .frame(height: 48)
-            }
-          }
-          .frame(width: 80)
-          .cornerRadius(16)
-          
-          // Premium column background
+//        HStack(spacing: 0) {
+//          Spacer()
+//            .frame(maxWidth: .infinity)
+//          
+//          VStack(spacing: 0) {
+//            // Header row background
+//            Color.primaryContainer
+//              .opacity(0.4)
+//              .frame(height: 48)
+//            
+//            // Feature rows background
+//            ForEach(subscriptionFeatures, id: \.title) { _ in
+//              Color.primaryContainer
+//                .opacity(0.4)
+//                .frame(height: 48)
+//            }
+//          }
+//          .frame(width: 80)
+//          .cornerRadius(16)
+//          
+//          // Premium column background
 //          Color.secondaryContainer
 //            .frame(width: 100, height: CGFloat(48 + (48 * subscriptionFeatures.count)))
 //            .cornerRadius(16)
@@ -560,7 +560,7 @@ struct SubscriptionView: View {
 //              RoundedRectangle(cornerRadius: 16)
 //                .stroke(ColorTokens.secondary, lineWidth: 2)
 //            )
-        }
+//        }
         
         // Main table
       VStack(spacing: 0) {
@@ -590,7 +590,7 @@ struct SubscriptionView: View {
         .overlay(
           Rectangle()
             .frame(height: 1.5)
-            .foregroundColor(.outline3),
+            .foregroundColor(.outline2),
           alignment: .bottom
         )
         
@@ -639,7 +639,7 @@ struct SubscriptionView: View {
         if !isLast {
           Rectangle()
             .frame(height: 1)
-            .foregroundColor(.outline3)
+            .foregroundColor(.outline2)
         }
       },
       alignment: .bottom
