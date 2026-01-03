@@ -505,7 +505,7 @@ struct MonthlyCalendarGridView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(Color("appOnSecondaryContainer03"))
+    .background(Color("appSecondaryContainer03"))
     .cornerRadius(16)
   }
 
@@ -887,7 +887,7 @@ struct YearlyCalendarGridView: View {
       .frame(maxWidth: .infinity)
     }
     .padding(.vertical, 16)
-    .background(Color("appOnSecondaryContainer03"))
+    .background(Color("appSecondaryContainer03"))
     .cornerRadius(16)
   }
 
