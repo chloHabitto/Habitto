@@ -386,7 +386,7 @@ struct ProgressTabView: View {
       HStack {
         Text("Reminders")
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appText03)
 
         Spacer()
 
@@ -395,12 +395,12 @@ struct ProgressTabView: View {
         }) {
           HStack(spacing: 4) {
             Text("See more")
-              .font(.appBodySmall)
-              .foregroundColor(.text02)
+              .font(.appBodyMediumEmphasised)
+              .foregroundColor(.appText05)
 
             Image(systemName: "chevron.right")
               .font(.system(size: 8, weight: .bold))
-              .foregroundColor(.text02)
+              .foregroundColor(.appText05)
           }
         }
       }
@@ -449,7 +449,7 @@ struct ProgressTabView: View {
         .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.5))
+        .stroke(Color("appOutline02"), lineWidth: 2))
     .padding(.horizontal, 20)
   }
 
@@ -1305,7 +1305,7 @@ struct ProgressTabView: View {
     .frame(width: 160)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(.surface3))
+        .fill(Color("appOnSecondaryContainer03")))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color.outline3, lineWidth: 1.0))
