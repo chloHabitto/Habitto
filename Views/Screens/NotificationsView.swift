@@ -30,7 +30,7 @@ struct NotificationsView: View {
           saveButton
         }
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Notifications")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -113,7 +113,7 @@ struct NotificationsView: View {
           planReminderTimeRow
         }
       }
-      .background(.surface)
+      .background(Color("appSurface02Variant"))
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -128,7 +128,7 @@ struct NotificationsView: View {
         // Habit Reminder Toggle
         habitReminderToggleRow
       }
-      .background(.surface)
+      .background(Color("appSurface02Variant"))
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -151,7 +151,7 @@ struct NotificationsView: View {
           completionReminderTimeRow
         }
       }
-      .background(.surface)
+      .background(Color("appSurface02Variant"))
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }

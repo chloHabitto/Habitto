@@ -65,7 +65,7 @@ struct PreferencesView: View {
               showingStreakMode = true
             }
           }
-          .background(Color.surface)
+          .background(Color("appSurface02Variant"))
           .cornerRadius(16)
           .padding(.horizontal, 20)
 
@@ -74,9 +74,9 @@ struct PreferencesView: View {
         .padding(.horizontal, 0)
         .padding(.top, 0)
         .padding(.bottom, 20)
-        .background(Color.sheetBackground)
+        .background(Color("appSurface01Variant02"))
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Preferences")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)

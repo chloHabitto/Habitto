@@ -130,7 +130,7 @@ struct VacationModeView: View {
           .padding(.bottom, 16)
         }
         .padding(.top, 16)
-        .background(Color.surface)
+        .background(Color("appSurface02Variant"))
         .cornerRadius(12)
         .padding(.horizontal, 20)
 
@@ -173,14 +173,14 @@ struct VacationModeView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color.surface)
+        .background(Color("appSurface02Variant"))
         .cornerRadius(12)
         .padding(.horizontal, 20)
 
           Spacer(minLength: 24)
         }
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Vacation Mode")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
