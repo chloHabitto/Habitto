@@ -140,7 +140,7 @@ struct ExpandableCalendar: View {
             Image(.iconReplay)
               .resizable()
               .frame(width: 12, height: 12)
-              .foregroundColor(.appText05)
+              .foregroundColor(.appText06)
             Text("Today")
               .font(.appLabelMedium)
               .foregroundColor(.appText05)
