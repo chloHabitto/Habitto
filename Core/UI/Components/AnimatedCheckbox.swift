@@ -27,6 +27,7 @@ struct AnimatedCheckbox: View {
         Circle()
           .stroke(.outline02, lineWidth: 2)
           .frame(width: 26, height: 26)
+          .opacity(isChecked ? 0 : 1)
           .scaleEffect(isAnimating ? 1.2 : 1.0)
           .animation(.easeInOut(duration: 0.6), value: isChecked)
           .animation(

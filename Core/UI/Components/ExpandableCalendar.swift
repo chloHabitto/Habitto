@@ -140,10 +140,10 @@ struct ExpandableCalendar: View {
             Image(.iconReplay)
               .resizable()
               .frame(width: 12, height: 12)
-              .foregroundColor(.primaryFocus)
+              .foregroundColor(.appText05)
             Text("Today")
               .font(.appLabelMedium)
-              .foregroundColor(.primaryFocus)
+              .foregroundColor(.appText05)
           }
           .padding(.leading, 12)
           .padding(.trailing, 8)
@@ -151,13 +151,13 @@ struct ExpandableCalendar: View {
           .padding(.bottom, 4)
           .overlay(
             RoundedRectangle(cornerRadius: .infinity)
-              .stroke(.primaryFocus, lineWidth: 1))
+              .stroke(.appText05, lineWidth: 1))
         }
         .buttonStyle(PlainButtonStyle())
       }
     }
     .padding(.horizontal, 20)
-    .padding(.top, 12)
+    .padding(.top, 16)
   }
 
   // MARK: - Weekly Calendar View
@@ -189,12 +189,13 @@ struct ExpandableCalendar: View {
   // MARK: - Monthly Calendar View
 
   private var monthlyCalendarView: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 4) {
       // Month navigation
       HStack {
         Button(action: { changeMonth(by: -1) }) {
           Image(systemName: "chevron.left")
-            .foregroundColor(.text01)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.text05)
             .frame(width: 44, height: 44)
         }
 
@@ -208,7 +209,8 @@ struct ExpandableCalendar: View {
 
         Button(action: { changeMonth(by: 1) }) {
           Image(systemName: "chevron.right")
-            .foregroundColor(.text01)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.text05)
             .frame(width: 44, height: 44)
         }
       }
@@ -221,9 +223,9 @@ struct ExpandableCalendar: View {
       {
         // Day headers
         ForEach(weekdayNames, id: \.self) { day in
-          Text(day)
-            .font(.appLabelMedium)
-            .foregroundColor(.text04)
+          Text(day.uppercased())
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.text08)
             .frame(height: 32)
         }
 
@@ -381,7 +383,13 @@ fileprivate struct WeekDayButton: View {
   }
   
   private var dayAbbreviationColor: Color {
-    isSelected ? .text09 : .text08
+    if isSelected {
+      return .text09
+    } else if isToday {
+      return Color("navy200")
+    } else {
+      return .text08
+    }
   }
   
   private var dayNumberColor: Color {
@@ -397,7 +405,7 @@ fileprivate struct WeekDayButton: View {
     if isSelected {
       return Color.primary
     } else if isToday {
-      return Color.primary.opacity(0.1)
+      return Color("appPrimaryOpacity10")
     } else {
       return Color.clear
     }
@@ -409,7 +417,8 @@ fileprivate struct WeekDayButton: View {
   }
   
   private var strokeColor: Color {
-    (isToday && !isSelected) ? Color.primary : Color.clear
+    // No border for today's date
+    return Color.clear
   }
   
   private func dayAbbreviation(for date: Date) -> String {
@@ -434,12 +443,11 @@ struct MonthlyCalendarDayView: View {
     Text("\(calendar.component(.day, from: date))")
       .font(.appBodyMedium)
       .foregroundColor(textColor)
-      .frame(maxWidth: .infinity)
-      .frame(height: 32)
+      .frame(width: 32, height: 32)
       .background(backgroundColor)
-      .clipShape(Circle())
+      .clipShape(RoundedRectangle(cornerRadius: 8))
       .overlay(
-        Circle()
+        RoundedRectangle(cornerRadius: 8)
           .stroke(isToday && !isSelected ? Color.primary : Color.clear, lineWidth: 1))
       .opacity(isCurrentMonth ? 1.0 : 0.3)
   }
