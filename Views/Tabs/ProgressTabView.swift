@@ -111,6 +111,7 @@ enum ActiveSheet: Identifiable {
 // MARK: - HabitFilterStatus
 
 enum HabitFilterStatus: String {
+  case all = "All"
   case active = "Active"
   case inactive = "Inactive"
 }
@@ -130,7 +131,7 @@ struct ProgressTabView: View {
   @State private var selectedHabit: Habit?
   @State private var selectedProgressDate = Date()
   @State private var activeSheet: ActiveSheet?
-  @State private var selectedHabitFilterStatus: HabitFilterStatus = .active
+  @State private var selectedHabitFilterStatus: HabitFilterStatus = .all
   @State private var selectedWeekStartDate: Date = {
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let today = Date()
@@ -746,7 +747,6 @@ struct ProgressTabView: View {
       VStack(spacing: 0) {
         habitSelectorHeader
         habitFilterPills
-        allHabitsOption
         habitList
         Spacer()
       }
@@ -777,19 +777,19 @@ struct ProgressTabView: View {
     .padding(.leading, 20)
     .padding(.trailing, 8)
     .padding(.top, 6)
-    .padding(.bottom, 6)
   }
 
   private var habitFilterPills: some View {
     HStack(spacing: 8) {
+      habitFilterPill(title: "All", status: .all)
       habitFilterPill(title: "Active", status: .active)
       habitFilterPill(title: "Inactive", status: .inactive)
       Spacer()
     }
     .padding(.leading, 20)
     .padding(.trailing, 20)
-    .padding(.top, 12)
-    .padding(.bottom, 12)
+    .padding(.top, 8)
+    .padding(.bottom, 16)
   }
 
   private func habitFilterPill(title: String, status: HabitFilterStatus) -> some View {
@@ -826,64 +826,74 @@ struct ProgressTabView: View {
       selectedHabit = nil
       activeSheet = nil
     }) {
-      HStack(spacing: 16) {
+      HStack(spacing: 0) {
+        // ColorMark
+        Rectangle()
+          .fill(Color.primaryFocus.opacity(0.7))
+          .frame(width: 8)
+          .frame(maxHeight: .infinity)
+
         // All habits icon
         ZStack {
           RoundedRectangle(cornerRadius: 12)
-            .fill(Color.primaryFocus.opacity(0.15))
-            .frame(width: 48, height: 48)
+            .fill(Color.outline02)
+            .frame(width: 40, height: 40)
 
           Image(systemName: "chart.bar.fill")
-            .font(.system(size: 20, weight: .medium))
+            .font(.system(size: 18, weight: .medium))
             .foregroundColor(.primaryFocus)
         }
+        .padding(.leading, 16)
+        .padding(.trailing, 16)
 
-        VStack(alignment: .leading, spacing: 4) {
+        // VStack with title and description
+        VStack(alignment: .leading, spacing: 2) {
           Text("All habits")
-            .font(.appTitleMedium)
-            .foregroundColor(.onPrimaryContainer)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.text02)
+            .lineLimit(1)
+            .truncationMode(.tail)
 
           Text("View progress for all habits")
-            .font(.appBodySmall)
-            .foregroundColor(.text02)
+            .font(.appLabelSmall)
+            .foregroundColor(.text05)
+            .lineLimit(1)
+            .truncationMode(.tail)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 76)
 
-        Spacer()
-
+        // Selection indicator
         if selectedHabit == nil {
-          ZStack {
-            Circle()
-              .fill(Color.primaryFocus)
-              .frame(width: 24, height: 24)
-
-            Image(systemName: "checkmark")
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.white)
-          }
+          Image(systemName: "checkmark")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.primary)
+            .padding(.leading, 24)
+            .padding(.trailing, 8)
         } else {
-          Circle()
-            .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
-            .frame(width: 24, height: 24)
+          Spacer()
+            .frame(width: 8)
         }
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.trailing, 4)
       .background(
-        RoundedRectangle(cornerRadius: 16)
-          .fill(selectedHabit == nil ? Color.primaryFocus.opacity(0.05) : Color.surface))
+        RoundedRectangle(cornerRadius: 20)
+          .fill(Color.surface02))
+      .clipShape(RoundedRectangle(cornerRadius: 20))
       .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .stroke(
-            selectedHabit == nil ? Color.primaryFocus.opacity(0.2) : Color.outline3.opacity(0.3),
-            lineWidth: 1))
+        RoundedRectangle(cornerRadius: 20)
+          .stroke(Color.outline02.opacity(0.5), lineWidth: 1))
+      .contentShape(Rectangle())
     }
-    .padding(.horizontal, 20)
-    .padding(.bottom, 16)
+    .buttonStyle(PlainButtonStyle())
   }
 
   private var habitList: some View {
     ScrollView {
       LazyVStack(spacing: 12) {
+        if selectedHabitFilterStatus == .all {
+          allHabitsOption
+        }
         ForEach(sortedHabits, id: \.id) { habit in
           habitOption(habit: habit)
         }
@@ -892,9 +902,21 @@ struct ProgressTabView: View {
     }
   }
   
-  /// Habits sorted with active habits first, then inactive habits
+  /// Habits filtered and sorted based on selected filter status
   private var sortedHabits: [Habit] {
-    habits.sorted { habit1, habit2 in
+    // First, filter based on selected status
+    let filteredHabits: [Habit]
+    switch selectedHabitFilterStatus {
+    case .all:
+      filteredHabits = habits
+    case .active:
+      filteredHabits = habits.filter { isHabitActive($0) }
+    case .inactive:
+      filteredHabits = habits.filter { !isHabitActive($0) }
+    }
+    
+    // Then sort: active habits first, then inactive habits, then alphabetically
+    return filteredHabits.sorted { habit1, habit2 in
       let habit1Active = isHabitActive(habit1)
       let habit2Active = isHabitActive(habit2)
       
@@ -916,76 +938,83 @@ struct ProgressTabView: View {
       selectedHabit = habit
       activeSheet = nil
     }) {
-      HStack(spacing: 16) {
-        // Habit icon
-        habitIcon(for: habit)
+      HStack(spacing: 0) {
+        // ColorMark
+        Rectangle()
+          .fill(habit.color.color.opacity(0.7))
+          .frame(width: 8)
+          .frame(maxHeight: .infinity)
 
-        VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: 8) {
+        // HabitIcon
+        HabitIconView(habit: habit)
+          .padding(.leading, 16)
+          .padding(.trailing, 16)
+
+        // VStack with title, badge, and goal text
+        VStack(alignment: .leading, spacing: 2) {
+          HStack(spacing: 6) {
             Text(habit.name)
-              .font(.appTitleMedium)
-              .foregroundColor(.onPrimaryContainer)
-            
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(.text02)
+              .lineLimit(1)
+              .truncationMode(.tail)
+
             // Active/Inactive badge
             if isHabitActive(habit) {
               Text("Active")
                 .font(.appLabelSmall)
-                .foregroundColor(.success)
+                .foregroundColor(.onGreenBadgeBackground)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                   RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.success.opacity(0.1))
+                    .fill(Color.greenBadgeBackground)
                 )
             } else {
               Text("Inactive")
                 .font(.appLabelSmall)
-                .foregroundColor(.text02)
+                .foregroundColor(.onBadgeBackground)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
                   RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.text02.opacity(0.1))
+                    .fill(Color.badgeBackground)
                 )
             }
           }
 
           Text("View progress for this habit")
-            .font(.appBodySmall)
-            .foregroundColor(.text02)
+            .font(.appLabelSmall)
+            .foregroundColor(.text05)
+            .lineLimit(1)
+            .truncationMode(.tail)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 76)
 
-        Spacer()
-
+        // Selection indicator
         if selectedHabit?.id == habit.id {
-          ZStack {
-            Circle()
-              .fill(habit.color.color)
-              .frame(width: 24, height: 24)
-
-            Image(systemName: "checkmark")
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.white)
-          }
+          Image(systemName: "checkmark")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.primary)
+            .padding(.leading, 24)
+            .padding(.trailing, 8)
         } else {
-          Circle()
-            .stroke(Color.outline3.opacity(0.3), lineWidth: 2)
-            .frame(width: 24, height: 24)
+          Spacer()
+            .frame(width: 8)
         }
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.trailing, 4)
       .background(
-        RoundedRectangle(cornerRadius: 16)
-          .fill(selectedHabit?.id == habit.id ? habit.color.color.opacity(0.05) : Color.surface))
+        RoundedRectangle(cornerRadius: 20)
+          .fill(Color.surface02))
+      .clipShape(RoundedRectangle(cornerRadius: 20))
       .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .stroke(
-            selectedHabit?.id == habit.id
-              ? habit.color.color.opacity(0.2)
-              : Color.outline3.opacity(0.3),
-            lineWidth: 1))
+        RoundedRectangle(cornerRadius: 20)
+          .stroke(Color.outline02.opacity(0.5), lineWidth: 1))
+      .contentShape(Rectangle())
     }
+    .buttonStyle(PlainButtonStyle())
   }
   
   /// Check if a habit is currently active

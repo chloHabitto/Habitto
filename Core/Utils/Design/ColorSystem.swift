@@ -85,6 +85,10 @@ enum ColorTokens {
   static let bottomNavIconInactive = Color("appBottomeNavIcon_Inactive")
   static let appIconColor = Color("appIcon")
   static let checkStroke = Color("appCheckStroke")
+  static let greenBadgeBackground = Color("appGreenBadgeBackground")
+  static let onGreenBadgeBackground = Color("apponGreenBadgeBackground")
+  static let badgeBackground = Color("appBadgeBackground")
+  static let onBadgeBackground = Color("apponBadgeBackground")
 
   // MARK: - Basic Colors
   static let white = Color.white
@@ -174,6 +178,10 @@ extension Color {
   static let bottomNavIconInactive = ColorTokens.bottomNavIconInactive
   static let appIconColor = ColorTokens.appIconColor
   static let checkStroke = ColorTokens.checkStroke
+  static let greenBadgeBackground = ColorTokens.greenBadgeBackground
+  static let onGreenBadgeBackground = ColorTokens.onGreenBadgeBackground
+  static let badgeBackground = ColorTokens.badgeBackground
+  static let onBadgeBackground = ColorTokens.onBadgeBackground
   
   // Basic Colors
   static let shade10Percent = ColorTokens.shade10Percent
@@ -253,6 +261,10 @@ extension ShapeStyle where Self == Color {
   static var bottomNavIconActive: Color { ColorTokens.bottomNavIconActive }
   static var bottomNavIconInactive: Color { ColorTokens.bottomNavIconInactive }
   static var checkStroke: Color { ColorTokens.checkStroke }
+  static var greenBadgeBackground: Color { ColorTokens.greenBadgeBackground }
+  static var onGreenBadgeBackground: Color { ColorTokens.onGreenBadgeBackground }
+  static var badgeBackground: Color { ColorTokens.badgeBackground }
+  static var onBadgeBackground: Color { ColorTokens.onBadgeBackground }
   
   static var shade10Percent: Color { ColorTokens.shade10Percent }
 }
