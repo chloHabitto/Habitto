@@ -655,7 +655,7 @@ struct SubscriptionView: View {
       if isPremium {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 24, weight: .semibold))
-          .foregroundColor(.secondaryDim)
+          .foregroundColor(Color("pastelBlue400"))
       } else {
         Image(systemName: "checkmark.circle.fill")
           .font(.system(size: 16, weight: .semibold))
@@ -758,7 +758,7 @@ struct SubscriptionView: View {
       }) {
         Text("Terms of Use")
           .font(.appBodySmall)
-          .foregroundColor(.primary)
+          .foregroundColor(Color("appText04"))
           .underline()
       }
       
@@ -772,7 +772,7 @@ struct SubscriptionView: View {
       }) {
         Text("Privacy Policy")
           .font(.appBodySmall)
-          .foregroundColor(.primary)
+          .foregroundColor(Color("appText04"))
           .underline()
       }
     }
@@ -783,19 +783,19 @@ struct SubscriptionView: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("- Payment will be charged to your Apple ID account at confirmation of purchase")
         .font(.appBodySmall)
-        .foregroundColor(.text02)
+        .foregroundColor(Color("appText05"))
       
       Text("- Subscription automatically renews unless canceled at least 24 hours before the end of the current period")
         .font(.appBodySmall)
-        .foregroundColor(.text02)
+        .foregroundColor(Color("appText05"))
       
       Text("- Your account will be charged for renewal within 24 hours prior to the end of the current period")
         .font(.appBodySmall)
-        .foregroundColor(.text02)
+        .foregroundColor(Color("appText05"))
       
       Text("- You can manage and cancel your subscriptions by going to your App Store account settings after purchase")
         .font(.appBodySmall)
-        .foregroundColor(.text02)
+        .foregroundColor(Color("appText05"))
     }
   }
   
