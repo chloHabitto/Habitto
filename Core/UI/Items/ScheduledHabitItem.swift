@@ -13,7 +13,7 @@ struct ScheduledHabitItem: View {
   var onCompletionDismiss: (() -> Void)?
 
   var body: some View {
-    HStack(spacing: 24) {
+    HStack(spacing: 0) {
       // ColorMark
       Rectangle()
         .fill(habit.color.color.opacity(0.7))
@@ -22,6 +22,8 @@ struct ScheduledHabitItem: View {
 
       // SelectedIcon
       HabitIconView(habit: habit)
+        .padding(.leading, 16)
+        .padding(.trailing, 16)
 
       // VStack with title, progress text, and progress bar
       VStack(alignment: .leading, spacing: 2) {
@@ -70,6 +72,7 @@ struct ScheduledHabitItem: View {
 
       // Completion Button
       completionButton
+        .padding(.leading, 24)
         .padding(.trailing, 8)
     }
     .padding(.trailing, 4)
