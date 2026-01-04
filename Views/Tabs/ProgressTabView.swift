@@ -108,6 +108,13 @@ enum ActiveSheet: Identifiable {
   var id: Int { hashValue }
 }
 
+// MARK: - HabitFilterStatus
+
+enum HabitFilterStatus: String {
+  case active = "Active"
+  case inactive = "Inactive"
+}
+
 // MARK: - ProgressTabView
 
 struct ProgressTabView: View {
@@ -123,6 +130,7 @@ struct ProgressTabView: View {
   @State private var selectedHabit: Habit?
   @State private var selectedProgressDate = Date()
   @State private var activeSheet: ActiveSheet?
+  @State private var selectedHabitFilterStatus: HabitFilterStatus = .active
   @State private var selectedWeekStartDate: Date = {
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let today = Date()
@@ -737,6 +745,7 @@ struct ProgressTabView: View {
     NavigationView {
       VStack(spacing: 0) {
         habitSelectorHeader
+        habitFilterPills
         allHabitsOption
         habitList
         Spacer()
@@ -750,19 +759,66 @@ struct ProgressTabView: View {
   private var habitSelectorHeader: some View {
     HStack {
       Text("Select Habit")
-        .font(.appTitleMediumEmphasised)
+        .font(.appTitleLargeEmphasised)
         .foregroundColor(.text01)
 
       Spacer()
 
-      Button("Done") {
+      Button(action: {
         activeSheet = nil
+      }) {
+        Image(systemName: "xmark")
+          .font(.system(size: 16, weight: .heavy))
+          .foregroundColor(Color("appText07Variant"))
       }
-      .foregroundColor(.primary)
+      .frame(width: 44, height: 44)
+      .buttonStyle(PlainButtonStyle())
     }
-    .padding(.horizontal, 20)
-    .padding(.top, 16)
-    .padding(.bottom, 20)
+    .padding(.leading, 20)
+    .padding(.trailing, 8)
+    .padding(.top, 6)
+    .padding(.bottom, 6)
+  }
+
+  private var habitFilterPills: some View {
+    HStack(spacing: 8) {
+      habitFilterPill(title: "Active", status: .active)
+      habitFilterPill(title: "Inactive", status: .inactive)
+      Spacer()
+    }
+    .padding(.leading, 20)
+    .padding(.trailing, 20)
+    .padding(.top, 12)
+    .padding(.bottom, 12)
+  }
+
+  private func habitFilterPill(title: String, status: HabitFilterStatus) -> some View {
+    Button(action: {
+      selectedHabitFilterStatus = status
+    }) {
+      HStack(spacing: 4) {
+        if selectedHabitFilterStatus == status {
+          Image(systemName: "checkmark")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.onPrimaryContainer)
+        }
+        Text(title)
+          .font(selectedHabitFilterStatus == status ? .appLabelMediumEmphasised : .appLabelMedium)
+          .foregroundColor(.onPrimaryContainer)
+      }
+      .padding(.leading, selectedHabitFilterStatus == status ? 16 : 12)
+      .padding(.trailing, 12)
+      .frame(height: 32)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(selectedHabitFilterStatus == status ? Color.primaryContainer : Color.clear)
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(selectedHabitFilterStatus == status ? Color.clear : Color.outline02, lineWidth: 1)
+      )
+    }
+    .buttonStyle(PlainButtonStyle())
   }
 
   private var allHabitsOption: some View {
@@ -5266,7 +5322,7 @@ struct AnimatedCircularProgressRing: View {
       // Percentage text - always show actual progress, not animated value
       VStack(spacing: 2) {
         Text("\(Int(progress * 100))%")
-          .font(.appTitleMediumEmphasised)
+          .font(.appTitleSmallEmphasised)
           .foregroundColor(Color("navy700"))
       }
     }
