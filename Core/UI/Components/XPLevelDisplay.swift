@@ -16,7 +16,7 @@ struct XPLevelDisplay: View {
         VStack(spacing: 4) {
           Text("Level")
             .font(.appBodySmall)
-            .foregroundColor(Color("grey700"))
+            .foregroundColor(Color("grey800"))
 
           Text("\(xpManager.currentLevel)")  // ✅ Read from @Published property
             .font(.appHeadlineSmallEmphasised)
@@ -29,14 +29,14 @@ struct XPLevelDisplay: View {
           HStack {
             Text("XP Progress")
               .font(.appBodySmall)
-              .foregroundColor(Color("grey700"))
+              .foregroundColor(Color("grey800"))
 
             Spacer()
 
             Text(
               "\(xpManager.userProgress.xpForCurrentLevel)/\(xpManager.userProgress.xpForNextLevel)")
               .font(.appBodySmall)
-              .foregroundColor(Color("grey700"))
+              .foregroundColor(Color("grey800"))
           }
 
           // Progress Bar
@@ -58,7 +58,7 @@ struct XPLevelDisplay: View {
           // Total XP
           Text("\(xpManager.totalXP) total XP")  // ✅ Read from @Published property
             .font(.appLabelSmall)
-            .foregroundColor(Color("grey700"))
+            .foregroundColor(Color("grey800"))
         }
       }
 

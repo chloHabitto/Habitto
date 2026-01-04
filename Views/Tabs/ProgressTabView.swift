@@ -268,8 +268,20 @@ struct ProgressTabView: View {
             .padding(.top, 12)
             .padding(.bottom, 16)
         }
-        .background(.appSurface01)
-        .cornerRadius(24)
+        .background(
+          RoundedRectangle(cornerRadius: 24)
+            .fill(.appSurface01)
+            .overlay(
+              LinearGradient(
+                stops: [
+                  Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                  Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                ],
+                startPoint: UnitPoint(x: 0.08, y: 0.09),
+                endPoint: UnitPoint(x: 0.88, y: 1)
+              )
+              .clipShape(RoundedRectangle(cornerRadius: 24))
+            ))
         .overlay(
           RoundedRectangle(cornerRadius: 24)
             .stroke(Color("appOutline1Variant"), lineWidth: 2))
@@ -377,8 +389,20 @@ struct ProgressTabView: View {
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
         selectedYear: selectedYear)
-        .background(.appSurface01)
-        .cornerRadius(24)
+        .background(
+          RoundedRectangle(cornerRadius: 24)
+            .fill(.appSurface01)
+            .overlay(
+              LinearGradient(
+                stops: [
+                  Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                  Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                ],
+                startPoint: UnitPoint(x: 0.08, y: 0.09),
+                endPoint: UnitPoint(x: 0.88, y: 1)
+              )
+              .clipShape(RoundedRectangle(cornerRadius: 24))
+            ))
         .overlay(
           RoundedRectangle(cornerRadius: 24)
             .stroke(Color("appOutline1Variant"), lineWidth: 2))
@@ -459,8 +483,8 @@ struct ProgressTabView: View {
         .overlay(
           LinearGradient(
             stops: [
-              Gradient.Stop(color: .white.opacity(0.04), location: 0.00),
-              Gradient.Stop(color: .white.opacity(0.01), location: 1.00),
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
             ],
             startPoint: UnitPoint(x: 0.08, y: 0.09),
             endPoint: UnitPoint(x: 0.88, y: 1)
@@ -3112,8 +3136,8 @@ struct ProgressTabView: View {
         .overlay(
           LinearGradient(
             stops: [
-              Gradient.Stop(color: .white.opacity(0.04), location: 0.00),
-              Gradient.Stop(color: .white.opacity(0.01), location: 1.00),
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
             ],
             startPoint: UnitPoint(x: 0.08, y: 0.09),
             endPoint: UnitPoint(x: 0.88, y: 1)
@@ -4198,11 +4222,22 @@ struct ProgressTabView: View {
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
     .background(
-      RoundedRectangle(cornerRadius: 32)
-        .fill(Color.surface))
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
     .overlay(
-      RoundedRectangle(cornerRadius: 32)
-        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
   }
 
   // MARK: - Monthly Difficulty Graph
@@ -4253,11 +4288,22 @@ struct ProgressTabView: View {
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
     .background(
-      RoundedRectangle(cornerRadius: 32)
-        .fill(Color.surface))
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
     .overlay(
-      RoundedRectangle(cornerRadius: 32)
-        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
   }
 
   // MARK: - Time Base Completion Chart
@@ -4349,11 +4395,22 @@ struct ProgressTabView: View {
     }
     .padding(20)
     .background(
-      RoundedRectangle(cornerRadius: 32)
-        .fill(Color.surface))
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
     .overlay(
-      RoundedRectangle(cornerRadius: 32)
-        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
   }
 
   // MARK: - Time Base Completion Data Helper
