@@ -60,6 +60,7 @@ enum ColorTokens {
 
   // MARK: - Outline Colors
   static let outline1 = Color("appOutline1")
+  static let outline1Variant = Color("appOutline1Variant")
   static let outline2 = Color("appOutline02")
   static let outline02 = Color("appOutline02")
   static let outline3 = Color("appOutline03")
@@ -239,6 +240,7 @@ extension ShapeStyle where Self == Color {
   static var text09: Color { ColorTokens.text09 }
 
   static var outline1: Color { ColorTokens.outline1 }
+  static var outline1Variant: Color { ColorTokens.outline1Variant }
   static var outline2: Color { ColorTokens.outline2 }
   static var outline02: Color { ColorTokens.outline02 }
   static var outline3: Color { ColorTokens.outline3 }
